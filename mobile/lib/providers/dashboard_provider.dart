@@ -66,7 +66,20 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     try {
       final response = await _apiService.get(ApiConfig.dashboard);
 
+      debugPrint('DashboardNotifier: Response status: ${response.statusCode}');
+      debugPrint('DashboardNotifier: Response success: ${response.success}');
+
       if (response.success && response.data != null) {
+        debugPrint('DashboardNotifier: Response keys: ${response.data!.keys.toList()}');
+        debugPrint('DashboardNotifier: tasks data type: ${response.data!['tasks']?.runtimeType}');
+        if (response.data!['tasks'] != null) {
+          final tasksList = response.data!['tasks'] as List<dynamic>;
+          debugPrint('DashboardNotifier: tasks count: ${tasksList.length}');
+          if (tasksList.isNotEmpty) {
+            debugPrint('DashboardNotifier: first task: ${tasksList.first}');
+          }
+        }
+
         final dashboardData = DashboardData.fromJson(response.data!);
         state = state.copyWith(
           data: dashboardData,
@@ -84,9 +97,11 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
           error: response.message ?? 'Failed to load dashboard data',
         );
         debugPrint('DashboardNotifier: API error - ${response.message}');
+        debugPrint('DashboardNotifier: Response data: ${response.data}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('DashboardNotifier: Exception - $e');
+      debugPrint('DashboardNotifier: Stack trace - $stackTrace');
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load dashboard: ${e.toString()}',

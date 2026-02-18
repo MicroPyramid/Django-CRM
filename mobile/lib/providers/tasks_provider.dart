@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
+import '../data/models/lead.dart' show Priority;
 import '../data/models/task.dart';
 import '../services/api_service.dart';
 
@@ -236,11 +237,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
       final response = await _apiService.put(url, data);
 
       if (response.success) {
-        // Update the task in local state
-        final updatedTask = Task.fromJson(response.data!);
-        state = state.copyWith(
-          tasks: state.tasks.map((t) => t.id == taskId ? updatedTask : t).toList(),
-        );
+        debugPrint('TasksNotifier: Update successful, refreshing task list');
+        // Refresh the list to get updated data from server
+        await fetchTasks(refresh: true);
       }
 
       return response;
@@ -296,11 +295,26 @@ class TasksNotifier extends StateNotifier<TasksState> {
 
       final response = await _apiService.patch(url, data);
 
-      if (response.success && response.data != null) {
-        // Update the task in local state
-        final updatedTask = Task.fromJson(response.data!);
+      if (response.success) {
+        debugPrint('TasksNotifier: Patch successful, updating local state optimistically');
+        // Update local state optimistically based on the patch data
         state = state.copyWith(
-          tasks: state.tasks.map((t) => t.id == taskId ? updatedTask : t).toList(),
+          tasks: state.tasks.map((t) {
+            if (t.id == taskId) {
+              // Apply patch data to existing task
+              return t.copyWith(
+                status: data.containsKey('status')
+                    ? TaskStatus.fromString(data['status'] as String?)
+                    : null,
+                priority: data.containsKey('priority')
+                    ? Priority.fromString(data['priority'] as String?)
+                    : null,
+                title: data['title'] as String?,
+                description: data['description'] as String?,
+              );
+            }
+            return t;
+          }).toList(),
         );
       }
 

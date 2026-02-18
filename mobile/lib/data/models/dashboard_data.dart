@@ -1,4 +1,5 @@
 // Dashboard data models for BottleCRM
+import 'package:flutter/foundation.dart';
 
 /// Urgent counts from dashboard API
 class UrgentCounts {
@@ -102,7 +103,7 @@ class HotLead {
 
   factory HotLead.fromJson(Map<String, dynamic> json) {
     return HotLead(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       firstName: json['first_name'] as String? ?? '',
       lastName: json['last_name'] as String? ?? '',
       company: json['company'] as String?,
@@ -145,7 +146,7 @@ class DashboardTask {
 
   factory DashboardTask.fromJson(Map<String, dynamic> json) {
     return DashboardTask(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       title: json['title'] as String? ?? 'Untitled',
       description: json['description'] as String?,
       status: json['status'] as String? ?? 'New',
@@ -234,7 +235,11 @@ class DashboardData {
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
+    debugPrint('DashboardData.fromJson: Starting to parse...');
+    debugPrint('DashboardData.fromJson: Keys: ${json.keys.toList()}');
+
     // Parse pipeline by stage
+    debugPrint('DashboardData.fromJson: Parsing pipeline_by_stage...');
     final pipelineMap = json['pipeline_by_stage'] as Map<String, dynamic>? ?? {};
     final pipelineStages = pipelineMap.entries
         .map((e) => PipelineStage.fromJson(e.key, e.value as Map<String, dynamic>))
@@ -247,31 +252,80 @@ class DashboardData {
       final bIndex = stageOrder.indexOf(b.code);
       return aIndex.compareTo(bIndex);
     });
+    debugPrint('DashboardData.fromJson: Pipeline stages parsed: ${pipelineStages.length}');
+
+    // Parse urgent counts
+    debugPrint('DashboardData.fromJson: Parsing urgent_counts...');
+    final urgentCounts = json['urgent_counts'] != null
+        ? UrgentCounts.fromJson(json['urgent_counts'] as Map<String, dynamic>)
+        : const UrgentCounts();
+    debugPrint('DashboardData.fromJson: Urgent counts parsed');
+
+    // Parse revenue metrics
+    debugPrint('DashboardData.fromJson: Parsing revenue_metrics...');
+    final revenueMetrics = json['revenue_metrics'] != null
+        ? RevenueMetrics.fromJson(json['revenue_metrics'] as Map<String, dynamic>)
+        : const RevenueMetrics();
+    debugPrint('DashboardData.fromJson: Revenue metrics parsed');
+
+    // Parse hot leads
+    debugPrint('DashboardData.fromJson: Parsing hot_leads...');
+    final hotLeadsList = <HotLead>[];
+    if (json['hot_leads'] != null) {
+      for (final item in json['hot_leads'] as List<dynamic>) {
+        try {
+          hotLeadsList.add(HotLead.fromJson(item as Map<String, dynamic>));
+        } catch (e) {
+          debugPrint('DashboardData.fromJson: Error parsing hot lead: $e');
+          debugPrint('DashboardData.fromJson: Hot lead data: $item');
+        }
+      }
+    }
+    debugPrint('DashboardData.fromJson: Hot leads parsed: ${hotLeadsList.length}');
+
+    // Parse tasks
+    debugPrint('DashboardData.fromJson: Parsing tasks...');
+    final tasksList = <DashboardTask>[];
+    if (json['tasks'] != null) {
+      for (final item in json['tasks'] as List<dynamic>) {
+        try {
+          tasksList.add(DashboardTask.fromJson(item as Map<String, dynamic>));
+        } catch (e) {
+          debugPrint('DashboardData.fromJson: Error parsing task: $e');
+          debugPrint('DashboardData.fromJson: Task data: $item');
+        }
+      }
+    }
+    debugPrint('DashboardData.fromJson: Tasks parsed: ${tasksList.length}');
+
+    // Parse activities
+    debugPrint('DashboardData.fromJson: Parsing activities...');
+    final activitiesList = <DashboardActivity>[];
+    if (json['activities'] != null) {
+      for (final item in json['activities'] as List<dynamic>) {
+        try {
+          activitiesList.add(DashboardActivity.fromJson(item as Map<String, dynamic>));
+        } catch (e) {
+          debugPrint('DashboardData.fromJson: Error parsing activity: $e');
+          debugPrint('DashboardData.fromJson: Activity data: $item');
+        }
+      }
+    }
+    debugPrint('DashboardData.fromJson: Activities parsed: ${activitiesList.length}');
+
+    debugPrint('DashboardData.fromJson: All parsing complete!');
 
     return DashboardData(
       accountsCount: json['accounts_count'] as int? ?? 0,
       contactsCount: json['contacts_count'] as int? ?? 0,
       leadsCount: json['leads_count'] as int? ?? 0,
       opportunitiesCount: json['opportunities_count'] as int? ?? 0,
-      urgentCounts: json['urgent_counts'] != null
-          ? UrgentCounts.fromJson(json['urgent_counts'] as Map<String, dynamic>)
-          : const UrgentCounts(),
+      urgentCounts: urgentCounts,
       pipelineByStage: pipelineStages,
-      revenueMetrics: json['revenue_metrics'] != null
-          ? RevenueMetrics.fromJson(json['revenue_metrics'] as Map<String, dynamic>)
-          : const RevenueMetrics(),
-      hotLeads: (json['hot_leads'] as List<dynamic>?)
-              ?.map((e) => HotLead.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      tasks: (json['tasks'] as List<dynamic>?)
-              ?.map((e) => DashboardTask.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      activities: (json['activities'] as List<dynamic>?)
-              ?.map((e) => DashboardActivity.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      revenueMetrics: revenueMetrics,
+      hotLeads: hotLeadsList,
+      tasks: tasksList,
+      activities: activitiesList,
     );
   }
 }
