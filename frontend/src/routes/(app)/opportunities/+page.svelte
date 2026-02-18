@@ -24,7 +24,8 @@
     Filter,
     Package,
     Trash2,
-    Receipt
+    Receipt,
+    Clock
   } from '@lucide/svelte';
   import { PageHeader } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -121,7 +122,7 @@
 
   /**
    * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
-   * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string }} ColumnDef
+   * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: any[], format?: (value: any) => string, cellClass?: (row: any) => string }} ColumnDef
    */
 
   /** @type {ColumnDef[]} */
@@ -184,6 +185,23 @@
       options: typeOptions,
       width: 'w-32',
       canHide: true
+    },
+    {
+      key: 'daysInStage',
+      label: 'Age',
+      type: 'text',
+      width: 'w-20',
+      canHide: true,
+      editable: false,
+      getValue: (row) => {
+        if (['CLOSED_WON', 'CLOSED_LOST'].includes(row.stage)) return '-';
+        return `${row.daysInStage ?? 0}d`;
+      },
+      cellClass: (row) => {
+        if (row.agingStatus === 'red') return 'text-red-600 font-semibold';
+        if (row.agingStatus === 'yellow') return 'text-amber-500 font-medium';
+        return 'text-green-600';
+      }
     }
   ];
 
@@ -427,7 +445,8 @@
       'created_at_gte',
       'created_at_lte',
       'closed_on_gte',
-      'closed_on_lte'
+      'closed_on_lte',
+      'rotten'
     ].forEach((key) => url.searchParams.delete(key));
     // Set new params
     Object.entries(newFilters).forEach(([key, value]) => {
@@ -533,7 +552,7 @@
   const stats = $derived(data.stats || { total: 0, totalValue: 0, wonValue: 0, pipeline: 0 });
 
   // Status chip filter for quick filtering (client-side on top of server filters)
-  let statusChipFilter = $state('ALL');
+  let statusChipFilter = $state($page.url.searchParams.get('rotten') === 'true' ? 'stale' : 'ALL');
 
   // Filter panel expansion state
   let filtersExpanded = $state(false);
@@ -551,6 +570,8 @@
         return opp.stage === 'CLOSED_WON';
       } else if (statusChipFilter === 'lost') {
         return opp.stage === 'CLOSED_LOST';
+      } else if (statusChipFilter === 'stale') {
+        return true; // Server-side filtered via ?rotten=true
       }
       return true;
     });
@@ -565,6 +586,9 @@
   );
   const lostCount = $derived(
     opportunities.filter((/** @type {any} */ o) => o.stage === 'CLOSED_LOST').length
+  );
+  const staleCount = $derived(
+    opportunities.filter((/** @type {any} */ o) => o.agingStatus === 'red').length
   );
 
   let currentUser = $state(null);
@@ -1099,7 +1123,7 @@
       <div class="flex gap-1">
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'ALL')}
+          onclick={() => { statusChipFilter = 'ALL'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'ALL'
             ? 'bg-[var(--color-primary-default)] text-white'
@@ -1116,7 +1140,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'open')}
+          onclick={() => { statusChipFilter = 'open'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'open'
             ? 'bg-[var(--stage-qualified)] text-white'
@@ -1133,7 +1157,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'won')}
+          onclick={() => { statusChipFilter = 'won'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'won'
             ? 'bg-[var(--stage-won)] text-white'
@@ -1150,7 +1174,7 @@
         </button>
         <button
           type="button"
-          onclick={() => (statusChipFilter = 'lost')}
+          onclick={() => { statusChipFilter = 'lost'; updateFilters({}); }}
           class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
           'lost'
             ? 'bg-[var(--stage-lost)] text-white'
@@ -1165,6 +1189,26 @@
             {lostCount}
           </span>
         </button>
+        {#if staleCount > 0}
+          <button
+            type="button"
+            onclick={() => { statusChipFilter = 'stale'; updateFilters({ rotten: 'true' }); }}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'stale'
+              ? 'bg-red-600 text-white'
+              : 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'}"
+          >
+            <Clock class="h-3.5 w-3.5" />
+            Stale
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'stale'
+                ? 'bg-black/20 text-white/90'
+                : 'bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300'}"
+            >
+              {staleCount}
+            </span>
+          </button>
+        {/if}
       </div>
 
       <div class="bg-border mx-1 h-6 w-px"></div>
@@ -1340,6 +1384,14 @@
               <p class="text-xs text-[var(--text-tertiary)]">Created</p>
               <p class="font-medium text-[var(--text-primary)]">
                 {formatRelativeDate(selectedRow.createdAt)}
+              </p>
+            </div>
+          {/if}
+          {#if !isClosed && selectedRow.daysInStage != null}
+            <div>
+              <p class="text-xs text-[var(--text-tertiary)]">Days in Stage</p>
+              <p class="font-medium {selectedRow.agingStatus === 'red' ? 'text-red-600' : selectedRow.agingStatus === 'yellow' ? 'text-amber-500' : 'text-green-600'}">
+                {selectedRow.daysInStage}d
               </p>
             </div>
           {/if}

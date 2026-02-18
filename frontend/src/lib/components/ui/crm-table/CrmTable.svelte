@@ -19,6 +19,7 @@
    * @property {(value: any, row?: any) => string} [format] - Custom value formatter (receives value and optional row data)
    * @property {(row: any) => any} [getValue] - Custom value getter for nested data
    * @property {string} [relationIcon] - Icon type for relation cells ('building' | 'user')
+   * @property {(row: any) => string} [cellClass] - Dynamic CSS class for cell text based on row data
    */
 
   /**
@@ -283,7 +284,7 @@
                       {/if}
                     </button>
                   {:else}
-                    <span class="text-sm text-gray-900 dark:text-gray-100">
+                    <span class="text-sm {column.cellClass ? column.cellClass(row) : 'text-gray-900 dark:text-gray-100'}">
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
@@ -314,7 +315,7 @@
                       {/if}
                     </button>
                   {:else}
-                    <span class="text-sm text-gray-900 dark:text-gray-100">
+                    <span class="text-sm {column.cellClass ? column.cellClass(row) : 'text-gray-900 dark:text-gray-100'}">
                       {#if formattedValue}
                         {formattedValue}
                       {:else}

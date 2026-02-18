@@ -40,7 +40,8 @@ export async function load({ locals, cookies, url }) {
     created_at_gte: url.searchParams.get('created_at_gte') || '',
     created_at_lte: url.searchParams.get('created_at_lte') || '',
     closed_on_gte: url.searchParams.get('closed_on_gte') || '',
-    closed_on_lte: url.searchParams.get('closed_on_lte') || ''
+    closed_on_lte: url.searchParams.get('closed_on_lte') || '',
+    rotten: url.searchParams.get('rotten') || ''
   };
 
   try {
@@ -59,6 +60,7 @@ export async function load({ locals, cookies, url }) {
     if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
     if (filters.closed_on_gte) queryParams.append('closed_on__gte', filters.closed_on_gte);
     if (filters.closed_on_lte) queryParams.append('closed_on__lte', filters.closed_on_lte);
+    if (filters.rotten) queryParams.append('rotten', filters.rotten);
 
     const queryString = queryParams.toString();
 
@@ -209,6 +211,11 @@ export async function load({ locals, cookies, url }) {
       })),
       lineItemsTotal: opp.line_items_total ? Number(opp.line_items_total) : 0,
       amountSource: opp.amount_source || 'MANUAL',
+
+      // Deal Aging
+      stageChangedAt: opp.stage_changed_at,
+      daysInStage: opp.days_in_stage ?? 0,
+      agingStatus: opp.aging_status || 'green',
 
       // Counts
       _count: {

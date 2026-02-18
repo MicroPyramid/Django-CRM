@@ -1,7 +1,9 @@
 import json
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
@@ -22,7 +24,7 @@ from common.utils import CURRENCY_CODES, SOURCES, STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from opportunity import swagger_params
-from opportunity.models import Opportunity
+from opportunity.models import Opportunity, StageAgingConfig
 from opportunity.serializer import (
     OpportunityCreateSerializer,
     OpportunityCreateSwaggerSerializer,
@@ -30,6 +32,7 @@ from opportunity.serializer import (
     OpportunitySerializer,
 )
 from opportunity.tasks import send_email_to_assigned_user
+from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
@@ -93,11 +96,41 @@ class OpportunityListView(APIView, LimitOffsetPagination):
             if params.get("amount__lte"):
                 queryset = queryset.filter(amount__lte=params.get("amount__lte"))
 
+            if params.get("rotten") == "true":
+                # Filter for rotten deals at DB level using stage-specific thresholds
+                queryset = queryset.exclude(stage__in=CLOSED_STAGES).filter(
+                    stage_changed_at__isnull=False
+                )
+                org = self.request.profile.org
+                aging_configs = {
+                    c.stage: c
+                    for c in StageAgingConfig.objects.filter(org=org)
+                }
+                now = timezone.now()
+                rotten_q = Q()
+                for stage, default_days in DEFAULT_STAGE_EXPECTED_DAYS.items():
+                    config = aging_configs.get(stage)
+                    expected = config.expected_days if config else default_days
+                    threshold_date = now - timedelta(
+                        days=int(expected * ROTTEN_MULTIPLIER)
+                    )
+                    rotten_q |= Q(stage=stage, stage_changed_at__lte=threshold_date)
+                queryset = queryset.filter(rotten_q)
+
         context = {}
+        # Prefetch aging configs for serializer context (avoids N+1)
+        org = self.request.profile.org
+        aging_configs = {
+            c.stage: c
+            for c in StageAgingConfig.objects.filter(org=org)
+        }
         results_opportunities = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
-        opportunities = OpportunitySerializer(results_opportunities, many=True).data
+        opportunities = OpportunitySerializer(
+            results_opportunities, many=True,
+            context={"aging_configs": aging_configs}
+        ).data
         if results_opportunities:
             offset = queryset.filter(id__gte=results_opportunities[-1].id).count()
             if offset == queryset.count():

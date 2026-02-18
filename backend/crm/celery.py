@@ -44,4 +44,9 @@ app.conf.beat_schedule = {
         "task": "invoices.tasks.check_expired_estimates",
         "schedule": crontab(hour=0, minute=30),
     },
+    # Check for stale/rotten opportunities - daily at 8 AM
+    "check-stale-opportunities": {
+        "task": "opportunity.tasks.check_stale_opportunities",
+        "schedule": crontab(hour=8, minute=0),
+    },
 }
