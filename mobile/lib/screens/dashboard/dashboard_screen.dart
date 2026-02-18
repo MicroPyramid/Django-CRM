@@ -147,13 +147,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // Today's Tasks
         _buildTasksSection(data.tasks),
 
-        const SizedBox(height: 16),
-
-        // Recent Activity
-        if (data.activities.isNotEmpty) ...[
-          _buildActivitySection(data.activities),
-        ],
-
         const SizedBox(height: 80),
       ],
     );
@@ -537,42 +530,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       return _TaskItem(
                         task: task,
                         showDivider: index < upcomingTasks.length - 1,
+                        onTap: () => context.push('/tasks/${task.id}'),
                       );
                     }).toList(),
                   ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivitySection(List<DashboardActivity> activities) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('Recent Activity', style: AppTypography.labelSmall),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppLayout.borderRadiusMd,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: activities.take(5).toList().asMap().entries.map((entry) {
-                final index = entry.key;
-                final activity = entry.value;
-                return _ActivityItem(
-                  activity: activity,
-                  showDivider: index < activities.length - 1 && index < 4,
-                );
-              }).toList(),
-            ),
           ),
         ),
       ],
@@ -780,10 +741,12 @@ class _UrgentBadge extends StatelessWidget {
 class _TaskItem extends StatelessWidget {
   final DashboardTask task;
   final bool showDivider;
+  final VoidCallback? onTap;
 
   const _TaskItem({
     required this.task,
     this.showDivider = true,
+    this.onTap,
   });
 
   Color _getPriorityColor() {
@@ -804,75 +767,78 @@ class _TaskItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 3,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _getPriorityColor(),
-                  borderRadius: BorderRadius.circular(2),
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w500,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (task.relatedTo != null || task.dueDate != null)
-                      Row(
-                        children: [
-                          if (task.relatedTo != null)
-                            Flexible(
-                              child: Text(
-                                task.relatedTo!,
+                      if (task.relatedTo != null || task.dueDate != null)
+                        Row(
+                          children: [
+                            if (task.relatedTo != null)
+                              Flexible(
+                                child: Text(
+                                  task.relatedTo!,
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            if (task.relatedTo != null && task.dueDate != null)
+                              Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
+                            if (task.dueDate != null)
+                              Text(
+                                DateFormat.MMMd().format(task.dueDate!),
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.textTertiary,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          if (task.relatedTo != null && task.dueDate != null)
-                            Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
-                          if (task.dueDate != null)
-                            Text(
-                              DateFormat.MMMd().format(task.dueDate!),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor().withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  task.priority,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _getPriorityColor(),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor().withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    task.priority,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _getPriorityColor(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         if (showDivider) const Divider(height: 1, indent: 24),
@@ -881,114 +847,3 @@ class _TaskItem extends StatelessWidget {
   }
 }
 
-// Activity Item
-class _ActivityItem extends StatelessWidget {
-  final DashboardActivity activity;
-  final bool showDivider;
-
-  const _ActivityItem({
-    required this.activity,
-    this.showDivider = true,
-  });
-
-  IconData _getActivityIcon() {
-    switch (activity.activityType.toLowerCase()) {
-      case 'create':
-        return LucideIcons.plus;
-      case 'update':
-        return LucideIcons.edit;
-      case 'delete':
-        return LucideIcons.trash;
-      case 'comment':
-        return LucideIcons.messageSquare;
-      case 'email':
-        return LucideIcons.mail;
-      case 'call':
-        return LucideIcons.phone;
-      default:
-        return LucideIcons.activity;
-    }
-  }
-
-  Color _getActivityColor() {
-    switch (activity.activityType.toLowerCase()) {
-      case 'create':
-        return AppColors.success500;
-      case 'update':
-        return AppColors.primary500;
-      case 'delete':
-        return AppColors.danger500;
-      case 'comment':
-        return AppColors.warning500;
-      default:
-        return AppColors.gray500;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: _getActivityColor().withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _getActivityIcon(),
-                  size: 14,
-                  color: _getActivityColor(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      activity.description,
-                      style: AppTypography.body,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Row(
-                      children: [
-                        if (activity.userName != null) ...[
-                          Flexible(
-                            child: Text(
-                              activity.userName!.split('@').first,
-                              style: AppTypography.caption.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
-                        ],
-                        Text(
-                          activity.relativeTime,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (showDivider) const Divider(height: 1, indent: 48),
-      ],
-    );
-  }
-}
