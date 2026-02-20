@@ -15,6 +15,7 @@ import axios from 'axios';
 import { env } from '$env/dynamic/public';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * @typedef {{ default_currency?: string, currency_symbol?: string, default_country?: string|null }} OrgSettingsPayload
@@ -169,7 +170,10 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
     };
 
     // Check if org cookie is set and token has org context
-    if (orgId) {
+    if (orgId && !UUID_RE.test(orgId)) {
+      // Invalid org cookie value, clear it
+      event.cookies.delete('org', { path: '/' });
+    } else if (orgId) {
       const token = /** @type {string} */ (accessToken);
 
       if (tokenHasOrgContext(token, orgId)) {

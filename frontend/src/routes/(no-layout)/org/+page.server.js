@@ -13,6 +13,8 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { redirect, fail } from '@sveltejs/kit';
 import axios from 'axios';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, locals }) {
   const user = locals.user;
@@ -65,8 +67,8 @@ export const actions = {
     const orgId = formData.get('org_id')?.toString();
     const orgName = formData.get('org_name')?.toString();
 
-    if (!orgId) {
-      return fail(400, { error: 'Organization ID is required' });
+    if (!orgId || !UUID_RE.test(orgId)) {
+      return fail(400, { error: 'Invalid Organization ID' });
     }
 
     const jwtAccess = cookies.get('jwt_access');
