@@ -1,17 +1,19 @@
 import { apiRequest } from '$lib/api-helpers.js';
 import { redirect, fail } from '@sveltejs/kit';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, url }) {
   let status;
   try {
     status = await apiRequest('/salesforce/status/', {}, { cookies });
   } catch {
-    redirect(302, '/settings/salesforce');
+    throw redirect(302, '/settings/salesforce');
   }
 
   if (!status?.connected) {
-    redirect(302, '/settings/salesforce');
+    throw redirect(302, '/settings/salesforce');
   }
 
   let history = { jobs: [] };
@@ -27,7 +29,7 @@ export async function load({ cookies, url }) {
   const jobIdParam = url.searchParams.get('job');
   let activeJob = null;
 
-  if (jobIdParam) {
+  if (jobIdParam && UUID_RE.test(jobIdParam)) {
     try {
       const result = await apiRequest(`/salesforce/import/${jobIdParam}/`, {}, { cookies });
       activeJob = result.job || result;
@@ -44,7 +46,10 @@ export async function load({ cookies, url }) {
     const runningJob = jobs.find((/** @type {any} */ j) => {
       if (j.status !== 'PENDING' && j.status !== 'IN_PROGRESS') return false;
       const startedAt = j.started_at || j.created_at;
-      if (startedAt && now - new Date(startedAt).getTime() > STALE_MS) return false;
+      if (startedAt) {
+        const startMs = new Date(startedAt).getTime();
+        if (isNaN(startMs) || now - startMs > STALE_MS) return false;
+      }
       return true;
     });
     if (runningJob) {
@@ -92,6 +97,10 @@ export const actions = {
 
     if (!jobId) {
       return fail(400, { importError: 'No job ID provided.' });
+    }
+
+    if (!UUID_RE.test(jobId)) {
+      return fail(400, { importError: 'Invalid job ID.' });
     }
 
     try {

@@ -121,8 +121,16 @@
     }
   }
 
+  // Track whether polling should be active separately to avoid reactive cycle
+  // (isImportActive depends on polledJob which gets updated by polling)
+  let shouldPoll = $state(false);
+
   $effect(() => {
-    if (isImportActive) {
+    shouldPoll = !!isImportActive;
+  });
+
+  $effect(() => {
+    if (shouldPoll) {
       startPolling();
     } else {
       stopPolling();
@@ -199,8 +207,9 @@
                 {@const imported = detail.imported || 0}
                 {@const skipped = detail.skipped || 0}
                 {@const errors = detail.errors || 0}
-                {@const total = imported + skipped + errors}
-                {@const pct = total > 0 ? 100 : 0}
+                {@const processed = imported + skipped + errors}
+                {@const total = detail.total || processed}
+                {@const pct = total > 0 ? Math.round((processed / total) * 100) : 0}
                 {@const rawStatus = detail.status || 'importing'}
                 {@const objStatus = rawStatus === 'done' ? 'COMPLETED' : rawStatus === 'importing' ? 'IN_PROGRESS' : rawStatus === 'error' ? 'FAILED' : 'PENDING'}
                 {@const StatusIcon = getStatusIcon(objStatus)}
@@ -222,7 +231,7 @@
                       </Badge>
                     </div>
                   </div>
-                  {#if total > 0}
+                  {#if processed > 0 || total > 0}
                     <div class="mt-2">
                       <Progress.Root value={pct} max={100} class="h-1" />
                     </div>
@@ -260,19 +269,23 @@
 
   <!-- Completion Summary -->
   {#if activeJob && !isImportActive}
-    <Card.Root class={activeJob.status === 'COMPLETED' ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800'}>
+    <Card.Root class={activeJob.status === 'COMPLETED' ? 'border-emerald-200 dark:border-emerald-800' : activeJob.status === 'CANCELLED' ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800'}>
       <Card.Header>
         <div class="flex items-center gap-3">
           {#if activeJob.status === 'COMPLETED'}
             <CheckCircle class="size-5 text-emerald-600 dark:text-emerald-400" />
+          {:else if activeJob.status === 'CANCELLED'}
+            <AlertTriangle class="size-5 text-amber-600 dark:text-amber-400" />
           {:else}
             <XCircle class="size-5 text-red-600 dark:text-red-400" />
           {/if}
           <div>
-            <Card.Title>Import {activeJob.status === 'COMPLETED' ? 'Completed' : 'Failed'}</Card.Title>
+            <Card.Title>Import {activeJob.status === 'COMPLETED' ? 'Completed' : activeJob.status === 'CANCELLED' ? 'Cancelled' : 'Failed'}</Card.Title>
             <Card.Description>
               {#if activeJob.status === 'COMPLETED'}
                 Your Salesforce data has been imported successfully.
+              {:else if activeJob.status === 'CANCELLED'}
+                The import was cancelled. Already-imported data has been kept.
               {:else}
                 The import encountered errors. Check the details below.
               {/if}

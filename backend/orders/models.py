@@ -123,9 +123,6 @@ class Order(BaseOrgModel):
         verbose_name_plural = "Orders"
         db_table = "orders"
         ordering = ("-created_at",)
-        indexes = [
-            models.Index(fields=["org", "-created_at"]),
-        ]
 
     def __str__(self):
         return self.name
@@ -168,9 +165,6 @@ class OrderLineItem(BaseOrgModel):
         verbose_name_plural = "Order Line Items"
         db_table = "order_line_item"
         ordering = ("sort_order",)
-        indexes = [
-            models.Index(fields=["org", "-created_at"]),
-        ]
 
     def __str__(self):
         return self.name
@@ -179,4 +173,9 @@ class OrderLineItem(BaseOrgModel):
         # Inherit org from order if not set
         if not self.org_id and self.order_id:
             self.org_id = self.order.org_id
+        elif self.org_id and self.order_id and self.order.org_id != self.org_id:
+            raise ValueError("OrderLineItem.org must match its parent Order.org")
+
+        # Compute total: quantity * unit_price - discount
+        self.total = self.quantity * self.unit_price - self.discount_amount
         super().save(*args, **kwargs)

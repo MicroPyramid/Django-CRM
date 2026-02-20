@@ -1,6 +1,6 @@
 <script>
   import { page } from '$app/stores';
-  import { afterNavigate } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import imgLogo from '$lib/assets/images/logo.png';
 
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -251,7 +251,7 @@
    * @param {string} url
    */
   const navigateTo = (url) => {
-    window.location.href = url;
+    goto(url);
   };
 </script>
 

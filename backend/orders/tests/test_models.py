@@ -15,6 +15,7 @@ Covers:
 Run with: pytest orders/tests/test_models.py -v
 """
 
+import uuid
 from decimal import Decimal
 
 import pytest
@@ -182,8 +183,6 @@ class TestOrderModel:
 
     def test_order_has_uuid_pk(self, org_a):
         """Order primary key should be a UUID (inherited from BaseOrgModel)."""
-        import uuid
-
         account = Account.objects.create(name="UUID Account", org=org_a)
         order = Order.objects.create(name="UUID Order", account=account, org=org_a)
         assert isinstance(order.pk, uuid.UUID)
@@ -240,12 +239,12 @@ class TestOrderLineItemModel:
         item.save()
         assert item.org_id == org_a.pk
 
-    def test_explicit_org_not_overridden(self, org_a, org_b):
-        """OrderLineItem with explicitly set org should keep it."""
+    def test_cross_org_raises_error(self, org_a, org_b):
+        """OrderLineItem with org different from order.org should raise ValueError."""
         order = self._make_order(org_a)
-        item = OrderLineItem(order=order, name="Explicit Org Item", org=org_b)
-        item.save()
-        assert item.org_id == org_b.pk
+        item = OrderLineItem(order=order, name="Cross Org Item", org=org_b)
+        with pytest.raises(ValueError, match="must match"):
+            item.save()
 
     def test_line_item_all_fields(self, org_a):
         """OrderLineItem can be created with all fields populated."""
@@ -257,13 +256,13 @@ class TestOrderLineItemModel:
             quantity=Decimal("5.00"),
             unit_price=Decimal("25.50"),
             discount_amount=Decimal("10.00"),
-            total=Decimal("117.50"),
             sort_order=1,
             org=org_a,
         )
         assert item.quantity == Decimal("5.00")
         assert item.unit_price == Decimal("25.50")
         assert item.discount_amount == Decimal("10.00")
+        # total is computed: 5 * 25.50 - 10 = 117.50
         assert item.total == Decimal("117.50")
         assert item.sort_order == 1
 
@@ -309,6 +308,7 @@ class TestOrderLineItemModel:
         assert item.quantity == Decimal("1")
         assert item.unit_price == Decimal("0")
         assert item.discount_amount == Decimal("0")
+        # total computed: 1 * 0 - 0 = 0
         assert item.total == Decimal("0")
         assert item.sort_order == 0
 
