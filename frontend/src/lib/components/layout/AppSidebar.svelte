@@ -1,6 +1,6 @@
 <script>
   import { page } from '$app/stores';
-  import { afterNavigate } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import imgLogo from '$lib/assets/images/logo.png';
 
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -36,7 +36,8 @@
     Tag,
     Sparkles,
     Home,
-    Trophy
+    Trophy,
+    Cloud
   } from '@lucide/svelte';
 
   /**
@@ -250,7 +251,7 @@
    * @param {string} url
    */
   const navigateTo = (url) => {
-    window.location.href = url;
+    goto(url);
   };
 </script>
 
@@ -267,9 +268,9 @@
             <a href="/" {...props} class="flex items-center gap-3">
               <!-- Logo Container -->
               <div
-                class="flex size-9 items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                class="flex shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105"
               >
-                <img src={imgLogo} alt="Logo" class="size-8" />
+                <img src={imgLogo} alt="Logo" class="size-8 group-data-[collapsible=icon]:size-6" />
               </div>
               <div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span
@@ -296,7 +297,7 @@
         CRM
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <Sidebar.Menu class="space-y-0.5">
+        <Sidebar.Menu class="space-y-2">
           {#each crmItems as item}
             <Sidebar.MenuItem>
               <Sidebar.MenuButton
@@ -314,22 +315,15 @@
                     data-sveltekit-preload-data={item.preload || 'hover'}
                     class="flex items-center gap-2.5"
                   >
-                    <div
-                      class="flex size-6 items-center justify-center rounded-md transition-all duration-200
-                        {currentPath === item.href
-                        ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
-                        : 'group-hover/item:bg-sidebar-accent text-current'}"
-                    >
-                      <item.icon
-                        class="size-[15px] transition-transform duration-200 {currentPath ===
-                        item.href
-                          ? 'scale-105'
-                          : 'group-hover/item:scale-105'}"
-                        strokeWidth={2}
-                      />
-                    </div>
+                    <item.icon
+                      class="size-5 shrink-0 transition-transform duration-200 {currentPath ===
+                      item.href
+                        ? 'scale-105'
+                        : 'group-hover/item:scale-105'}"
+                      strokeWidth={1.75}
+                    />
                     <span
-                      class="text-[13px] {currentPath === item.href
+                      class="text-[13px] group-data-[collapsible=icon]:hidden {currentPath === item.href
                         ? 'font-semibold'
                         : 'font-medium'}">{item.label}</span
                     >
@@ -350,7 +344,7 @@
         Sales
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <Sidebar.Menu class="space-y-0.5">
+        <Sidebar.Menu class="space-y-2">
           {#each salesItems as item}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
@@ -374,21 +368,14 @@
                       >
                         {#snippet child({ props: btnProps })}
                           <button {...btnProps} class="flex w-full items-center gap-2.5">
-                            <div
-                              class="flex size-6 items-center justify-center rounded-md transition-all duration-200
-                                {hasActiveChild(item.children ?? [])
-                                ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
-                                : 'group-hover/item:bg-sidebar-accent text-current'}"
-                            >
-                              <item.icon class="size-[15px]" strokeWidth={2} />
-                            </div>
+                            <item.icon class="size-5 shrink-0" strokeWidth={1.75} />
                             <span
-                              class="text-[13px] {hasActiveChild(item.children ?? [])
+                              class="text-[13px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? [])
                                 ? 'font-semibold'
                                 : 'font-medium'}">{item.label}</span
                             >
                             <ChevronDown
-                              class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                              class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
                             />
                           </button>
                         {/snippet}
@@ -442,7 +429,7 @@
         Support
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
-        <Sidebar.Menu class="space-y-0.5">
+        <Sidebar.Menu class="space-y-2">
           {#each supportItems as item}
             <Sidebar.MenuItem>
               <Sidebar.MenuButton
@@ -460,22 +447,15 @@
                     data-sveltekit-preload-data={item.preload || 'hover'}
                     class="flex items-center gap-2.5"
                   >
-                    <div
-                      class="flex size-6 items-center justify-center rounded-md transition-all duration-200
-                        {currentPath === item.href
-                        ? 'bg-[var(--color-primary-default)] text-white shadow-[var(--color-primary-default)]/25 shadow-sm'
-                        : 'group-hover/item:bg-sidebar-accent text-current'}"
-                    >
-                      <item.icon
-                        class="size-[15px] transition-transform duration-200 {currentPath ===
-                        item.href
-                          ? 'scale-105'
-                          : 'group-hover/item:scale-105'}"
-                        strokeWidth={2}
-                      />
-                    </div>
+                    <item.icon
+                      class="size-5 shrink-0 transition-transform duration-200 {currentPath ===
+                      item.href
+                        ? 'scale-105'
+                        : 'group-hover/item:scale-105'}"
+                      strokeWidth={1.75}
+                    />
                     <span
-                      class="text-[13px] {currentPath === item.href
+                      class="text-[13px] group-data-[collapsible=icon]:hidden {currentPath === item.href
                         ? 'font-semibold'
                         : 'font-medium'}">{item.label}</span
                     >
@@ -491,32 +471,23 @@
 
   <Sidebar.Footer class="border-sidebar-border/60 border-t px-2 py-3">
     <Sidebar.Menu class="space-y-1">
-      <!-- Collapse/Expand Toggle - HubSpot Style -->
-      <Sidebar.MenuItem class="group-data-[collapsible=icon]:hidden">
+      <!-- Collapse/Expand Toggle -->
+      <Sidebar.MenuItem>
         <Sidebar.MenuButton
           onclick={() => sidebar.toggle()}
-          tooltipContent="Collapse sidebar"
-          class="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground h-8 rounded-lg px-3 transition-all duration-150"
+          tooltipContent={sidebar.state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}
+          class="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground h-9 rounded-lg px-2.5 transition-all duration-150"
         >
           {#snippet child({ props })}
-            <button {...props} class="flex w-full items-center gap-3">
-              <PanelLeftClose class="size-4" strokeWidth={1.75} />
-              <span class="text-[12px] font-medium">Collapse</span>
-            </button>
-          {/snippet}
-        </Sidebar.MenuButton>
-      </Sidebar.MenuItem>
-
-      <!-- Expand button when collapsed -->
-      <Sidebar.MenuItem class="hidden group-data-[collapsible=icon]:block">
-        <Sidebar.MenuButton
-          onclick={() => sidebar.toggle()}
-          tooltipContent="Expand sidebar"
-          class="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground flex h-8 w-full items-center justify-center rounded-lg transition-all duration-150"
-        >
-          {#snippet child({ props })}
-            <button {...props} class="flex items-center justify-center">
-              <PanelLeft class="size-4" strokeWidth={1.75} />
+            <button {...props} class="flex w-full items-center gap-2.5">
+              {#if sidebar.state === 'collapsed'}
+                <PanelLeft class="size-5 shrink-0" strokeWidth={1.75} />
+              {:else}
+                <PanelLeftClose class="size-5 shrink-0" strokeWidth={1.75} />
+              {/if}
+              <span class="text-[12px] font-medium group-data-[collapsible=icon]:hidden">
+                Collapse
+              </span>
             </button>
           {/snippet}
         </Sidebar.MenuButton>
@@ -553,13 +524,13 @@
                     class="border-sidebar absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 bg-emerald-500"
                   ></div>
                 </div>
-                <div class="grid flex-1 text-left leading-tight">
+                <div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                   <span class="text-sidebar-foreground truncate text-[13px] font-semibold"
                     >{user.name}</span
                   >
                   <span class="text-sidebar-foreground/50 truncate text-[11px]">{user.email}</span>
                 </div>
-                <ChevronsUpDown class="text-sidebar-foreground/40 ml-auto size-4" />
+                <ChevronsUpDown class="text-sidebar-foreground/40 ml-auto size-4 group-data-[collapsible=icon]:hidden" />
               </Sidebar.MenuButton>
             {/snippet}
           </DropdownMenu.Trigger>
@@ -598,6 +569,14 @@
               >
                 <Settings class="size-4" />
                 <span>Settings</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/salesforce')}
+                class="gap-2.5"
+              >
+                <Cloud class="size-4" />
+                <span>Salesforce</span>
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 inset={false}

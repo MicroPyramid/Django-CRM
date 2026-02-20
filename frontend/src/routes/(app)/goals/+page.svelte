@@ -625,8 +625,8 @@
 
       <!-- Period Type -->
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Period Type</label
+        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+          >Period Type</span
         >
         <Select.Root
           type="single"
@@ -676,8 +676,8 @@
 
       <!-- Assigned To -->
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Assign to User</label
+        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+          >Assign to User</span
         >
         <Select.Root
           type="single"
@@ -701,8 +701,8 @@
 
       <!-- Team -->
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Assign to Team</label
+        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+          >Assign to Team</span
         >
         <Select.Root
           type="single"

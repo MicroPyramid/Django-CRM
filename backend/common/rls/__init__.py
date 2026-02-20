@@ -70,6 +70,9 @@ ORG_SCOPED_TABLES = [
     "recurring_invoice_line_item",
     # Products
     "product",
+    # Orders
+    "orders",
+    "order_line_item",
     # Security & Audit
     "security_audit_log",
 ]
