@@ -1,3 +1,5 @@
+import {sequence} from '@sveltejs/kit/hooks';
+import * as Sentry from '@sentry/sveltekit';
 /**
  * SvelteKit Server Hooks with JWT Authentication
  *
@@ -117,8 +119,9 @@ async function switchOrg(accessToken, orgId) {
   }
 }
 
-/** @type {import('@sveltejs/kit').Handle} */
-export async function handle({ event, resolve }) {
+export const handleError = Sentry.handleErrorWithSentry();
+
+export const handle = sequence(Sentry.sentryHandle(), async function _handle({ event, resolve }) {
   // Get tokens from cookies
   /** @type {string | undefined} */
   let accessToken = event.cookies.get('jwt_access');
@@ -265,4 +268,4 @@ export async function handle({ event, resolve }) {
   }
 
   return resolve(event);
-}
+});
