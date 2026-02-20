@@ -1,6 +1,7 @@
 import json
 import logging
 import secrets
+import uuid
 
 import requests
 from django.conf import settings
@@ -293,6 +294,13 @@ class LoginView(APIView):
             default_org = None
 
             if org_id:
+                try:
+                    uuid.UUID(str(org_id))
+                except (ValueError, AttributeError):
+                    return Response(
+                        {"error": "org_id must be a valid UUID"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 # Use specified org if user has access
                 try:
                     profile = profiles.get(org_id=org_id)
@@ -545,6 +553,14 @@ class OrgSwitchView(APIView):
         if not org_id:
             return Response(
                 {"error": "org_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            uuid.UUID(str(org_id))
+        except (ValueError, AttributeError):
+            return Response(
+                {"error": "org_id must be a valid UUID"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Get current org for audit logging

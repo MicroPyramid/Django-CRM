@@ -10,6 +10,8 @@
 import { env } from '$env/dynamic/public';
 import { goto } from '$app/navigation';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // API Base URL from environment variables
 // Note: VITE_ prefix is required for client-side env vars
 const API_BASE_URL = env.PUBLIC_DJANGO_API_URL
@@ -231,6 +233,9 @@ export const auth = {
     /** @type {Record<string, string>} */
     const body = { email, password };
     if (orgId) {
+      if (!UUID_RE.test(orgId)) {
+        throw new Error('Invalid organization ID format');
+      }
       body.org_id = orgId;
     }
 
@@ -276,6 +281,9 @@ export const auth = {
    * @returns {Promise<any>} New tokens and org data
    */
   async switchOrg(orgId) {
+    if (!orgId || !UUID_RE.test(orgId)) {
+      throw new Error('Invalid organization ID format');
+    }
     /** @type {any} */
     const data = await apiRequest('/auth/switch-org/', {
       method: 'POST',
