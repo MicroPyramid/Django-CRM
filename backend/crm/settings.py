@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "opportunity",
     "tasks",
     "invoices",
+    "orders",
     # "teams",  # Merged into common app
 ]
 
