@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 generated/*
 src/generated/*
 .github/prompts/*
+
+# Sentry Config File
+.env.sentry-build-plugin
