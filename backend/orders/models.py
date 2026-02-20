@@ -31,7 +31,7 @@ class Order(BaseOrgModel):
     # Core Order Information
     name = models.CharField(_("Order Name"), max_length=255)
     order_number = models.CharField(
-        _("Order Number"), max_length=100, blank=True, null=True
+        _("Order Number"), max_length=100, blank=True, default=""
     )
     status = models.CharField(
         _("Status"), max_length=20, choices=ORDER_STATUS, default="DRAFT"
@@ -62,7 +62,7 @@ class Order(BaseOrgModel):
     )
 
     # Financial
-    currency = models.CharField(_("Currency"), max_length=3, blank=True, null=True)
+    currency = models.CharField(_("Currency"), max_length=3, blank=True, default="")
     subtotal = models.DecimalField(
         _("Subtotal"), max_digits=15, decimal_places=2, default=0
     )
@@ -83,40 +83,40 @@ class Order(BaseOrgModel):
 
     # Billing Address
     billing_address_line = models.CharField(
-        _("Billing Address"), max_length=255, blank=True, null=True
+        _("Billing Address"), max_length=255, blank=True, default=""
     )
     billing_city = models.CharField(
-        _("Billing City"), max_length=100, blank=True, null=True
+        _("Billing City"), max_length=100, blank=True, default=""
     )
     billing_state = models.CharField(
-        _("Billing State"), max_length=100, blank=True, null=True
+        _("Billing State"), max_length=100, blank=True, default=""
     )
     billing_postcode = models.CharField(
-        _("Billing Postal Code"), max_length=20, blank=True, null=True
+        _("Billing Postal Code"), max_length=20, blank=True, default=""
     )
     billing_country = models.CharField(
-        _("Billing Country"), max_length=3, choices=COUNTRIES, blank=True, null=True
+        _("Billing Country"), max_length=3, choices=COUNTRIES, blank=True, default=""
     )
 
     # Shipping Address
     shipping_address_line = models.CharField(
-        _("Shipping Address"), max_length=255, blank=True, null=True
+        _("Shipping Address"), max_length=255, blank=True, default=""
     )
     shipping_city = models.CharField(
-        _("Shipping City"), max_length=100, blank=True, null=True
+        _("Shipping City"), max_length=100, blank=True, default=""
     )
     shipping_state = models.CharField(
-        _("Shipping State"), max_length=100, blank=True, null=True
+        _("Shipping State"), max_length=100, blank=True, default=""
     )
     shipping_postcode = models.CharField(
-        _("Shipping Postal Code"), max_length=20, blank=True, null=True
+        _("Shipping Postal Code"), max_length=20, blank=True, default=""
     )
     shipping_country = models.CharField(
-        _("Shipping Country"), max_length=3, choices=COUNTRIES, blank=True, null=True
+        _("Shipping Country"), max_length=3, choices=COUNTRIES, blank=True, default=""
     )
 
     # Notes
-    description = models.TextField(_("Description"), blank=True, null=True)
+    description = models.TextField(_("Description"), blank=True, default="")
 
     class Meta:
         verbose_name = "Order"
@@ -150,7 +150,7 @@ class OrderLineItem(BaseOrgModel):
         related_name="order_line_items",
     )
     name = models.CharField(_("Item Name"), max_length=255)
-    description = models.TextField(_("Description"), blank=True, null=True)
+    description = models.TextField(_("Description"), blank=True, default="")
     quantity = models.DecimalField(
         _("Quantity"), max_digits=10, decimal_places=2, default=1
     )
