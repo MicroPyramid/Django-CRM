@@ -1,12 +1,15 @@
 {% extends 'root_email_template_new.html' %}
 
-{% block heading %}
-Hi {{email}}
-{% endblock heading %}
+{% block preheader %}Your BottleCRM account has been deleted{% endblock preheader %}
 
+{% block heading %}Account Deleted{% endblock heading %}
 
-{% if message == 'deleted' %}
 {% block content_body %}
-Your account has been deleted by {{deleted_by}}. You are no longer able to access your account.
+<p style="margin:0 0 8px 0;">Your account has been deleted by {{ deleted_by }}. You are no longer able to access your account.</p>
 {% endblock content_body %}
-{% endif %}
+
+{% block extra_content %}
+<p style="font-size:13px;color:#757575;margin:0;">
+  If you believe this was a mistake, please contact your organization administrator.
+</p>
+{% endblock extra_content %}

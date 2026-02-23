@@ -1,18 +1,18 @@
 {% extends 'root_email_template_new.html' %}
 
-{% block heading %}
-Hi {{mentioned_user}}
-{% endblock heading %}
+{% block preheader %}{{ commented_by }} mentioned you in a comment{% endblock preheader %}
+
+{% block heading %}Hi {{ mentioned_user }},{% endblock heading %}
 
 {% block content_body %}
-You have been tagged for the comment posted by {{commented_by}}
+<p style="margin:0 0 8px 0;">{{ commented_by }} mentioned you in a comment.</p>
 {% endblock content_body %}
 
 {% block button_link %}
 {% if url %}
-<div style="margin-bottom:20px">
-    <a href="{{url}}"
-        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Click here</a>
-</div>
+<a class="btn-link" href="{{ url }}"
+   style="display:inline-block;padding:14px 32px;background-color:#EA580C;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:600;line-height:1;">
+  View Comment
+</a>
 {% endif %}
 {% endblock button_link %}
