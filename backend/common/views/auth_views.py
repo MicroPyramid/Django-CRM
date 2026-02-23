@@ -595,12 +595,14 @@ class MagicLinkRequestView(APIView):
         from common.models import MagicLinkToken
         from common.tasks import send_magic_link_email
 
+        generic_response = Response(
+            {"message": "If this email is valid, you will receive a sign-in link."},
+            status=status.HTTP_200_OK,
+        )
+
         serializer_obj = serializer.MagicLinkRequestSerializer(data=request.data)
         if not serializer_obj.is_valid():
-            return Response(
-                {"message": "If this email is valid, you will receive a sign-in link."},
-                status=status.HTTP_200_OK,
-            )
+            return generic_response
 
         email = serializer_obj.validated_data["email"].lower()
 
@@ -610,10 +612,7 @@ class MagicLinkRequestView(APIView):
             email=email, created_at__gte=one_hour_ago
         ).count()
         if recent_count >= 5:
-            return Response(
-                {"message": "If this email is valid, you will receive a sign-in link."},
-                status=status.HTTP_200_OK,
-            )
+            return generic_response
 
         # Invalidate any existing unused tokens for this email
         MagicLinkToken.objects.filter(email=email, is_used=False).update(is_used=True)

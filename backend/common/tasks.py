@@ -1,11 +1,18 @@
+import logging
+
+from botocore.exceptions import ClientError
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 from common.models import Comment, MagicLinkToken, Profile, Teams, User
+
+logger = logging.getLogger(__name__)
 
 
 def set_rls_context(org_id):
@@ -32,8 +39,14 @@ def send_welcome_email(user_id):
     if not user_obj:
         return
 
+    email = user_obj.email.strip()
+    try:
+        validate_email(email)
+    except ValidationError:
+        logger.warning("Welcome email skipped: invalid email for user %s", user_id)
+        return
+
     context = {"url": settings.FRONTEND_URL}
-    recipients = [user_obj.email]
     subject = "Welcome to BottleCRM"
     html_content = render_to_string("welcome_email.html", context=context)
 
@@ -41,10 +54,13 @@ def send_welcome_email(user_id):
         subject,
         html_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to=recipients,
+        to=[email],
     )
     msg.content_subtype = "html"
-    msg.send()
+    try:
+        msg.send()
+    except ClientError:
+        logger.exception("SES rejected welcome email for user %s", user_id)
 
 
 @shared_task
@@ -52,6 +68,13 @@ def send_magic_link_email(token_id):
     """Send magic link email for passwordless authentication."""
     magic_token = MagicLinkToken.objects.filter(id=token_id).first()
     if not magic_token:
+        return
+
+    email = magic_token.email.strip()
+    try:
+        validate_email(email)
+    except ValidationError:
+        logger.warning("Magic link skipped: invalid email format for token %s", token_id)
         return
 
     magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
@@ -64,10 +87,13 @@ def send_magic_link_email(token_id):
         "Your BottleCRM sign-in link",
         html_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[magic_token.email],
+        to=[email],
     )
     msg.content_subtype = "html"
-    msg.send()
+    try:
+        msg.send()
+    except ClientError:
+        logger.exception("SES rejected email for magic link token %s", token_id)
 
 
 @shared_task
