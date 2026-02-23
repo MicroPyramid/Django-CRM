@@ -128,7 +128,9 @@ USE_I18N = True
 
 USE_TZ = True
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
 
 AUTH_USER_MODEL = "common.User"
 
@@ -145,6 +147,15 @@ elif ENV_TYPE == "prod":
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@localhost")
+
+# AWS SES settings (loaded when EMAIL_BACKEND is django_ses.SESBackend)
+if "django_ses" in EMAIL_BACKEND:
+    AWS_SES_REGION_NAME = os.environ.get("AWS_SES_REGION_NAME", "ap-south-1")
+    AWS_SES_REGION_ENDPOINT = os.environ.get(
+        "AWS_SES_REGION_ENDPOINT", f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
+    )
+    # Uses AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from env if set;
+    # otherwise falls back to IAM role credentials.
 
 
 # celery Tasks
@@ -333,6 +344,7 @@ JWT_ALGO = "HS256"
 
 
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "http://localhost:8000")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 SWAGGER_ROOT_URL = os.environ.get("SWAGGER_ROOT_URL", "http://localhost:8000")
 
 # Google OAuth Configuration

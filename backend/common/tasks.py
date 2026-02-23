@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from common.models import Comment, Profile, Teams, User
+from common.models import Comment, MagicLinkToken, Profile, Teams, User
 from common.token_generator import account_activation_token
 
 
@@ -67,6 +67,29 @@ def send_email_to_new_user(user_id):
         )
         msg.content_subtype = "html"
         msg.send()
+
+
+@shared_task
+def send_magic_link_email(token_id):
+    """Send magic link email for passwordless authentication."""
+    magic_token = MagicLinkToken.objects.filter(id=token_id).first()
+    if not magic_token:
+        return
+
+    magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+
+    html_content = render_to_string(
+        "magic_link_email.html",
+        {"magic_link_url": magic_link_url},
+    )
+    msg = EmailMessage(
+        "Your BottleCRM sign-in link",
+        html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[magic_token.email],
+    )
+    msg.content_subtype = "html"
+    msg.send()
 
 
 @shared_task

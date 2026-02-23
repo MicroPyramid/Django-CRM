@@ -533,6 +533,29 @@ class SessionToken(BaseModel):
         return cls.objects.filter(expires_at__lt=timezone.now()).delete()
 
 
+class MagicLinkToken(models.Model):
+    """One-time magic link tokens for passwordless authentication."""
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    email = models.EmailField(db_index=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        db_table = "magic_link_token"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["email", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"MagicLink({self.email}, used={self.is_used})"
+
+
 # Activity Tracking for Recent Activities Dashboard
 
 

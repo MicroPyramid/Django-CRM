@@ -34,6 +34,8 @@ class GetProfileAndOrg:
             "/api/auth/refresh-token/",
             "/api/auth/me/",
             "/api/auth/switch-org/",
+            "/api/auth/magic-link/request/",
+            "/api/auth/magic-link/verify/",
         ]
         if request.path in auth_skip_paths:
             return

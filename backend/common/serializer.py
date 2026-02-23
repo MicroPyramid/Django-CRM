@@ -638,6 +638,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+class MagicLinkRequestSerializer(serializers.Serializer):
+    """Serializer for requesting a magic link."""
+    email = serializers.EmailField(required=True)
+
+
+class MagicLinkVerifySerializer(serializers.Serializer):
+    """Serializer for verifying a magic link token."""
+    token = serializers.CharField(required=True, max_length=64)
+
+
 class UserDetailSerializer(serializers.ModelSerializer):
     """Detailed user serializer with profile and organizations"""
 

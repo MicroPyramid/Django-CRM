@@ -5,8 +5,8 @@ Hi {{email}}
 {% endblock heading %}
 
 
-{% ifequal 'deleted' message  %}
+{% if message == 'deleted' %}
 {% block content_body %}
 Your account has been deleted by {{deleted_by}}. You are no longer able to access your account.
 {% endblock content_body %}
-{% endifequal %}
+{% endif %}
