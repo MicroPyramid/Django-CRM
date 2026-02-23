@@ -223,43 +223,6 @@ export async function apiRequest(endpoint, options = {}) {
  */
 export const auth = {
   /**
-   * Login with email and password
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @param {string} [orgId] - Optional organization ID to login to
-   * @returns {Promise<any>} User data with tokens and current_org
-   */
-  async login(email, password, orgId = undefined) {
-    /** @type {Record<string, string>} */
-    const body = { email, password };
-    if (orgId) {
-      if (!UUID_RE.test(orgId)) {
-        throw new Error('Invalid organization ID format');
-      }
-      body.org_id = orgId;
-    }
-
-    /** @type {any} */
-    const data = await apiRequest('/auth/login/', {
-      method: 'POST',
-      body,
-      requiresAuth: false
-    });
-
-    // Store tokens and user data
-    setInStorage(STORAGE_KEYS.ACCESS_TOKEN, data.access_token);
-    setInStorage(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token);
-    setInStorage(STORAGE_KEYS.USER, JSON.stringify(data.user));
-
-    // Store current org if provided
-    if (data.current_org) {
-      setInStorage(STORAGE_KEYS.ORG_ID, data.current_org.id);
-    }
-
-    return data;
-  },
-
-  /**
    * Switch to a different organization
    * This issues new JWT tokens with the new org context
    * @param {string} orgId - Organization UUID to switch to

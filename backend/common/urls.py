@@ -3,7 +3,6 @@ from django.urls import path
 from common.views.auth_views import (
     GoogleIdTokenView,
     GoogleOAuthCallbackView,
-    LoginView,
     MagicLinkRequestView,
     MagicLinkVerifyView,
     MeView,
@@ -35,7 +34,6 @@ app_name = "api_common"
 urlpatterns = [
     path("dashboard/", ApiHomeView.as_view()),
     # JWT Authentication endpoints for SvelteKit integration
-    path("auth/login/", LoginView.as_view(), name="login"),
     path(
         "auth/refresh-token/",
         OrgAwareTokenRefreshView.as_view(),

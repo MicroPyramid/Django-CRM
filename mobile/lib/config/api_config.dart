@@ -25,9 +25,6 @@ class ApiConfig {
   // AUTHENTICATION ENDPOINTS
   // ==========================================================================
 
-  /// Email/password login
-  static String get login => '$apiBaseUrl/auth/login/';
-
   /// Google Sign-In with ID token (same as old app)
   static String get googleLogin => '$apiBaseUrl/auth/google/';
 
@@ -42,9 +39,6 @@ class ApiConfig {
 
   /// Switch organization context
   static String get switchOrg => '$apiBaseUrl/auth/switch-org/';
-
-  /// User registration
-  static String get register => '$apiBaseUrl/auth/register/';
 
   // ==========================================================================
   // DASHBOARD
