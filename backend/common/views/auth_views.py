@@ -122,6 +122,7 @@ class GoogleOAuthCallbackView(APIView):
             )
 
         # Get or create user
+        created = False
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -130,9 +131,15 @@ class GoogleOAuthCallbackView(APIView):
                 profile_pic=picture,
                 password=make_password(secrets.token_urlsafe(32)),
             )
+            created = True
 
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
+
+        if created:
+            from common.tasks import send_welcome_email
+
+            send_welcome_email.delay(str(user.id))
 
         # Generate JWT tokens (with user info embedded)
         token = OrgAwareRefreshToken.for_user_and_org(user, None)
@@ -355,44 +362,6 @@ class LoginView(APIView):
         # Log failed login
         email = request.data.get("email", "unknown")
         audit_log.login_failure(email, str(serializer_obj.errors), request)
-        return Response(serializer_obj.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class RegisterView(APIView):
-    """
-    Register a new user account
-    """
-
-    permission_classes = []
-    authentication_classes = []
-
-    @extend_schema(
-        description="Register a new user account",
-        request=serializer.RegisterSerializer,
-        responses={
-            201: {
-                "type": "object",
-                "properties": {
-                    "message": {"type": "string"},
-                    "user_id": {"type": "string"},
-                    "email": {"type": "string"},
-                },
-            }
-        },
-    )
-    def post(self, request):
-        serializer_obj = serializer.RegisterSerializer(data=request.data)
-        if serializer_obj.is_valid():
-            user = serializer_obj.save()
-            return Response(
-                {
-                    "message": "User registered successfully. Please check your email for activation link.",
-                    "user_id": str(user.id),
-                    "email": user.email,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-
         return Response(serializer_obj.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -724,6 +693,7 @@ class MagicLinkVerifyView(APIView):
 
         # Get or create user
         email = token_obj.email
+        created = False
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -732,6 +702,12 @@ class MagicLinkVerifyView(APIView):
                 password=make_password(secrets.token_urlsafe(32)),
                 is_active=True,
             )
+            created = True
+
+        if created:
+            from common.tasks import send_welcome_email
+
+            send_welcome_email.delay(str(user.id))
 
         # Update last_login
         user.last_login = timezone.now()

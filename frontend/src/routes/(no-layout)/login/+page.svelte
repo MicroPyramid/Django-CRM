@@ -32,10 +32,10 @@
 </script>
 
 <svelte:head>
-  <title>Log in | BottleCRM</title>
+  <title>Sign in | BottleCRM</title>
   <meta
     name="description"
-    content="Log in to BottleCRM to manage your contacts, deals, and grow your business."
+    content="Sign in or sign up for BottleCRM to manage your contacts, deals, and grow your business."
   />
 </svelte:head>
 
@@ -50,7 +50,7 @@
 
     <!-- Login Card -->
     <div class="login-card">
-      <h1 class="login-title">Log in to your account</h1>
+      <h1 class="login-title">Sign in to your account</h1>
 
       <!-- Google Sign In -->
       <a
@@ -61,10 +61,10 @@
       >
         {#if isLoading}
           <span class="spinner"></span>
-          <span>Signing in...</span>
+          <span>Redirecting...</span>
         {:else}
           <img src={imgGoogle} alt="" class="google-icon" />
-          <span>Sign in with Google</span>
+          <span>Continue with Google</span>
         {/if}
       </a>
 
@@ -95,7 +95,7 @@
               <span class="spinner"></span>
               <span>Sending...</span>
             {:else}
-              <span>Send sign-in link</span>
+              <span>Continue with email</span>
               <ArrowRight size={16} />
             {/if}
           </button>
@@ -105,9 +105,7 @@
 
     <!-- Help Links -->
     <div class="help-section">
-      <p class="help-text">
-        Don't have an account? <a href={data['google_url']} class="help-link">Sign up for free</a>
-      </p>
+      <p class="help-text">New here? Just enter your email above to get started.</p>
     </div>
 
     <!-- Footer -->

@@ -9,7 +9,6 @@ from common.views.auth_views import (
     MeView,
     OrgAwareTokenRefreshView,
     OrgSwitchView,
-    RegisterView,
 )
 from common.views.dashboard_views import ActivityListView, ApiHomeView
 from common.views.document_views import DocumentDetailView, DocumentListView
@@ -37,7 +36,6 @@ urlpatterns = [
     path("dashboard/", ApiHomeView.as_view()),
     # JWT Authentication endpoints for SvelteKit integration
     path("auth/login/", LoginView.as_view(), name="login"),
-    path("auth/register/", RegisterView.as_view(), name="register"),
     path(
         "auth/refresh-token/",
         OrgAwareTokenRefreshView.as_view(),

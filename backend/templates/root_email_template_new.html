@@ -143,12 +143,6 @@
 
 <body style="margin: 0; padding: 0; background-color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';">
 
-  {% block preheader %}
-  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
-    {% block preheader_text %}{% endblock preheader_text %}
-  </div>
-  {% endblock preheader %}
-
   <!--[if mso]>
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" align="center"><tr><td>
   <![endif]-->
@@ -184,16 +178,18 @@
                 <!-- Heading -->
                 <tr>
                   <td style="padding-bottom: 16px;">
-                    {% block heading %}
-                    {% endblock heading %}
+                    <p class="heading-text" style="margin:0;font-size:24px;font-weight:600;color:#212121;line-height:1.3;">
+                      {% block heading %}{% endblock heading %}
+                    </p>
                   </td>
                 </tr>
 
                 <!-- Body Content -->
                 <tr>
                   <td style="padding-bottom: 24px;">
-                    {% block content_body %}
-                    {% endblock content_body %}
+                    <div class="body-text" style="font-size:16px;color:#424242;line-height:1.6;">
+                      {% block content_body %}{% endblock content_body %}
+                    </div>
                   </td>
                 </tr>
 
