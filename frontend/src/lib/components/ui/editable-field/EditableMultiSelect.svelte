@@ -120,7 +120,7 @@
       {#if options.length === 0}
         <div class="text-muted-foreground px-2 py-4 text-center text-sm">No options available</div>
       {:else}
-        <DropdownMenu.CheckboxGroup>
+        <DropdownMenu.CheckboxGroup value={value}>
           {#each options as opt (opt.id)}
             <DropdownMenu.CheckboxItem
               checked={value.includes(opt.id)}

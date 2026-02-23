@@ -31,26 +31,29 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
     Returns:
         tuple: (account, contact, opportunity) - the created entities (Contact/Opportunity may be None)
     """
-    # Create Account
-    account = Account.objects.create(
-        created_by=request.profile.user,
-        name=(
-            lead_obj.company_name
-            if lead_obj.company_name
-            else f"{lead_obj.first_name} {lead_obj.last_name}"
-        ),
-        email=lead_obj.email,
-        phone=lead_obj.phone,
-        description=lead_obj.description,
-        website=lead_obj.website,
+    # Create or get existing Account (handles unique_account_name_per_org constraint)
+    account_name = (
+        lead_obj.company_name
+        if lead_obj.company_name
+        else f"{lead_obj.first_name} {lead_obj.last_name}"
+    )
+    account, created = Account.objects.get_or_create(
+        name__iexact=account_name,
         org=request.profile.org,
-        is_active=True,
-        # Use correct address fields
-        address_line=lead_obj.address_line,
-        city=lead_obj.city,
-        state=lead_obj.state,
-        postcode=lead_obj.postcode,
-        country=lead_obj.country,
+        defaults={
+            "created_by": request.profile.user,
+            "name": account_name,
+            "email": lead_obj.email,
+            "phone": lead_obj.phone,
+            "description": lead_obj.description,
+            "website": lead_obj.website,
+            "is_active": True,
+            "address_line": lead_obj.address_line,
+            "city": lead_obj.city,
+            "state": lead_obj.state,
+            "postcode": lead_obj.postcode,
+            "country": lead_obj.country,
+        },
     )
 
     # Copy tags
@@ -81,27 +84,35 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
         org=request.profile.org,
     ).update(content_type=account_ct, object_id=account.id)
 
-    # Create Contact from Lead data (if lead has email)
+    # Create or get existing Contact from Lead data (handles unique_contact_email_per_org constraint)
     contact = None
     if lead_obj.email:
-        contact = Contact.objects.create(
-            first_name=lead_obj.first_name or "",
-            last_name=lead_obj.last_name or "",
-            email=lead_obj.email,
-            phone=lead_obj.phone,
-            organization=lead_obj.company_name or "",
-            title=lead_obj.job_title,
-            description=lead_obj.description,
-            address_line=lead_obj.address_line,
-            city=lead_obj.city,
-            state=lead_obj.state,
-            postcode=lead_obj.postcode,
-            country=lead_obj.country,
-            created_by=request.profile.user,
+        contact, contact_created = Contact.objects.get_or_create(
+            email__iexact=lead_obj.email,
             org=request.profile.org,
-            account=account,  # Set the primary account relationship
+            defaults={
+                "first_name": lead_obj.first_name or "",
+                "last_name": lead_obj.last_name or "",
+                "email": lead_obj.email,
+                "phone": lead_obj.phone,
+                "organization": lead_obj.company_name or "",
+                "title": lead_obj.job_title,
+                "description": lead_obj.description,
+                "address_line": lead_obj.address_line,
+                "city": lead_obj.city,
+                "state": lead_obj.state,
+                "postcode": lead_obj.postcode,
+                "country": lead_obj.country,
+                "created_by": request.profile.user,
+                "account": account,
+            },
         )
-        contact.assigned_to.set(lead_obj.assigned_to.all())
+        if contact_created:
+            contact.assigned_to.set(lead_obj.assigned_to.all())
+        elif not contact.account:
+            # Link existing contact to the account if not already linked
+            contact.account = account
+            contact.save(update_fields=["account"])
 
         # Also link contact to account via M2M (for backwards compatibility)
         account.contacts.add(contact)

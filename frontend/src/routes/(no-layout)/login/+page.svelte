@@ -343,16 +343,6 @@
     margin: 0;
   }
 
-  .help-link {
-    color: #ff7a59;
-    text-decoration: none;
-    font-weight: 500;
-  }
-
-  .help-link:hover {
-    text-decoration: underline;
-  }
-
   /* Footer */
   .login-footer {
     display: flex;
