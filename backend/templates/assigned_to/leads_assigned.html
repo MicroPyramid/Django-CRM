@@ -1,32 +1,46 @@
 {% extends 'root_email_template_new.html' %}
 
-{% block heading %}
+{% block preheader %}A lead has been assigned to you in BottleCRM{% endblock preheader %}
 
-Hi {{ user.get_username }}
-{% endblock heading %}
-
+{% block heading %}Hi {{ user.first_name|default:user.get_username }},{% endblock heading %}
 
 {% block content_body %}
-
-{% if created_by %}
-{{created_by}} assigned a lead for you - {{ lead.title }}<br>
-{% else %}
-A lead has been assigned for you - {{ lead.title }}<br>
-
-{% if source %}
-<p style="font-size: 15px; margin-right: 20em; margin-top: 2em;">
-    Source: {{ source }} <br>
+<p style="margin:0 0 8px 0;">
+  {% if created_by %}{{ created_by }} assigned a lead to you.{% else %}A lead has been assigned to you.{% endif %}
 </p>
-{% endif %}
-
-{% endif %}
-
 {% endblock content_body %}
 
+{% block metadata %}
+<table class="metadata-table" role="presentation" cellpadding="0" cellspacing="0" border="0"
+  style="width:100%;background-color:#FAFAFA;border-radius:6px;margin-bottom:24px;">
+  <tr>
+    <td class="metadata-label" style="padding:12px 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Lead</td>
+  </tr>
+  <tr>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ lead.title|default:lead_instance }}</td>
+  </tr>
+  {% if source %}
+  <tr>
+    <td class="metadata-label" style="padding:0 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Source</td>
+  </tr>
+  <tr>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ source }}</td>
+  </tr>
+  {% endif %}
+  {% if created_by %}
+  <tr>
+    <td class="metadata-label" style="padding:0 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Assigned by</td>
+  </tr>
+  <tr>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ created_by }}</td>
+  </tr>
+  {% endif %}
+</table>
+{% endblock metadata %}
+
 {% block button_link %}
-<div style="margin-bottom:20px">
-    <a href="{{url}}"
-        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Click
-        Here</a>
-</div>
+<a class="btn-link" href="{{ url|default:lead_detail_url }}"
+   style="display:inline-block;padding:14px 32px;background-color:#EA580C;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:600;line-height:1;">
+  View Lead
+</a>
 {% endblock button_link %}

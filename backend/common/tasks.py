@@ -1,16 +1,11 @@
-import datetime
-
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 
-from common.models import Comment, Profile, Teams, User
-from common.token_generator import account_activation_token
+from common.models import Comment, MagicLinkToken, Profile, Teams, User
 
 
 def set_rls_context(org_id):
@@ -31,42 +26,48 @@ def set_rls_context(org_id):
 
 
 @shared_task
-def send_email_to_new_user(user_id):
-    """Send Mail To Users When their account is created"""
+def send_welcome_email(user_id):
+    """Send welcome email to newly created users."""
     user_obj = User.objects.filter(id=user_id).first()
+    if not user_obj:
+        return
 
-    if user_obj:
-        context = {}
-        user_email = user_obj.email
-        context["url"] = settings.DOMAIN_NAME
-        context["uid"] = (urlsafe_base64_encode(force_bytes(user_obj.pk)),)
-        context["token"] = account_activation_token.make_token(user_obj)
-        time_delta_two_hours = datetime.datetime.strftime(
-            timezone.now() + datetime.timedelta(hours=2), "%Y-%m-%d-%H-%M-%S"
-        )
-        # creating an activation token and saving it in user model
-        activation_key = context["token"] + time_delta_two_hours
-        user_obj.activation_key = activation_key
-        user_obj.save()
+    context = {"url": settings.FRONTEND_URL}
+    recipients = [user_obj.email]
+    subject = "Welcome to BottleCRM"
+    html_content = render_to_string("welcome_email.html", context=context)
 
-        context["complete_url"] = (
-            context["url"]
-            + f"/auth/activate-user/{context['uid'][0]}/{context['token']}/{activation_key}/"
-        )
-        recipients = [
-            user_email,
-        ]
-        subject = "Welcome to Bottle CRM"
-        html_content = render_to_string("user_status_in.html", context=context)
+    msg = EmailMessage(
+        subject,
+        html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=recipients,
+    )
+    msg.content_subtype = "html"
+    msg.send()
 
-        msg = EmailMessage(
-            subject,
-            html_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=recipients,
-        )
-        msg.content_subtype = "html"
-        msg.send()
+
+@shared_task
+def send_magic_link_email(token_id):
+    """Send magic link email for passwordless authentication."""
+    magic_token = MagicLinkToken.objects.filter(id=token_id).first()
+    if not magic_token:
+        return
+
+    magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+
+    html_content = render_to_string(
+        "magic_link_email.html",
+        {"magic_link_url": magic_link_url},
+    )
+    msg = EmailMessage(
+        "Your BottleCRM sign-in link",
+        html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[magic_token.email],
+    )
+    msg.content_subtype = "html"
+    msg.send()
 
 
 @shared_task
@@ -194,52 +195,6 @@ def send_email_user_delete(
         recipients.append(user_email)
         subject = "CRM : Your account is Deleted. "
         html_content = render_to_string("user_delete_email.html", context=context)
-        if recipients:
-            msg = EmailMessage(
-                subject,
-                html_content,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=recipients,
-            )
-            msg.content_subtype = "html"
-            msg.send()
-
-
-@shared_task
-def resend_activation_link_to_user(
-    user_email="",
-):
-    """Send Mail To Users When their account is created"""
-
-    user_obj = User.objects.filter(email=user_email).first()
-    user_obj.is_active = False
-    user_obj.save()
-    if user_obj:
-        context = {}
-        context["user_email"] = user_email
-        context["url"] = settings.DOMAIN_NAME
-        context["uid"] = (urlsafe_base64_encode(force_bytes(user_obj.pk)),)
-        context["token"] = account_activation_token.make_token(user_obj)
-        time_delta_two_hours = datetime.datetime.strftime(
-            timezone.now() + datetime.timedelta(hours=2), "%Y-%m-%d-%H-%M-%S"
-        )
-        context["token"] = context["token"]
-        activation_key = context["token"] + time_delta_two_hours
-        # Profile.objects.filter(user=user_obj).update(
-        #     activation_key=activation_key,
-        #     key_expires=timezone.now() + datetime.timedelta(hours=2),
-        # )
-        user_obj.activation_key = activation_key
-        user_obj.key_expires = timezone.now() + datetime.timedelta(hours=2)
-        user_obj.save()
-
-        context["complete_url"] = (
-            context["url"]
-            + f"/auth/activate_user/{context['uid'][0]}/{context['token']}/{activation_key}/"
-        )
-        recipients = [user_email]
-        subject = "Welcome to Bottle CRM"
-        html_content = render_to_string("user_status_in.html", context=context)
         if recipients:
             msg = EmailMessage(
                 subject,

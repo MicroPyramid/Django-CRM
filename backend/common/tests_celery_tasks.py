@@ -5,8 +5,6 @@ from accounts.tests import AccountCreateTest
 from cases.tests import CaseCreation
 from common.models import User
 from common.tasks import (
-    resend_activation_link_to_user,
-    send_email_to_new_user,
     send_email_user_delete,
     send_email_user_mentions,
     send_email_user_status,
@@ -26,14 +24,6 @@ class TestCeleryTasks(ObjectsCreation, TestCase):
         BROKER_BACKEND="memory",
     )
     def test_celery_tasks(self):
-        task = send_email_to_new_user.apply(
-            (
-                self.user1.email,
-                self.user.email,
-            ),
-        )
-        self.assertEqual("SUCCESS", task.state)
-
         task = send_email_user_status.apply(
             (
                 self.user1.id,
@@ -63,16 +53,6 @@ class TestCeleryTasks(ObjectsCreation, TestCase):
         self.assertEqual("SUCCESS", task.state)
 
         task = send_email_user_delete.apply(
-            (self.user1.email,),
-        )
-        self.assertEqual("SUCCESS", task.state)
-
-        task = resend_activation_link_to_user.apply(
-            (self.user1.email,),
-        )
-        self.assertEqual("SUCCESS", task.state)
-
-        task = resend_activation_link_to_user.apply(
             (self.user1.email,),
         )
         self.assertEqual("SUCCESS", task.state)

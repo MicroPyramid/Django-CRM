@@ -18,7 +18,7 @@ export async function load({ cookies }) {
   // No data needed for load
 }
 
-/** @satisfies {import('./$types').Actions} */
+/** @type {import('./$types').Actions} */
 export const actions = {
   default: async ({ request, cookies, locals }) => {
     // Get the user from locals

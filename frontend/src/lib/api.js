@@ -260,21 +260,6 @@ export const auth = {
   },
 
   /**
-   * Register a new user
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @param {string} confirmPassword - Password confirmation
-   * @returns {Promise<Object>} Registration response
-   */
-  async register(email, password, confirmPassword) {
-    return await apiRequest('/auth/register/', {
-      method: 'POST',
-      body: { email, password, confirm_password: confirmPassword },
-      requiresAuth: false
-    });
-  },
-
-  /**
    * Switch to a different organization
    * This issues new JWT tokens with the new org context
    * @param {string} orgId - Organization UUID to switch to

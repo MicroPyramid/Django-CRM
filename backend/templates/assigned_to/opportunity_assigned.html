@@ -1,18 +1,34 @@
 {% extends 'root_email_template_new.html' %}
 
-{% block heading %}
+{% block preheader %}An opportunity has been assigned to you in BottleCRM{% endblock preheader %}
 
-Hello {{ user.get_username }}
-{% endblock heading %}
-
+{% block heading %}Hi {{ user.first_name|default:user.get_username }},{% endblock heading %}
 
 {% block content_body %}
-{{created_by}} assigned an opportunity for you - {{ opportunity.name }}<br>
+<p style="margin:0 0 8px 0;">{{ created_by }} assigned an opportunity to you.</p>
 {% endblock content_body %}
 
+{% block metadata %}
+<table class="metadata-table" role="presentation" cellpadding="0" cellspacing="0" border="0"
+  style="width:100%;background-color:#FAFAFA;border-radius:6px;margin-bottom:24px;">
+  <tr>
+    <td class="metadata-label" style="padding:12px 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Opportunity</td>
+  </tr>
+  <tr>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ opportunity.name }}</td>
+  </tr>
+  <tr>
+    <td class="metadata-label" style="padding:0 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Assigned by</td>
+  </tr>
+  <tr>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ created_by }}</td>
+  </tr>
+</table>
+{% endblock metadata %}
+
 {% block button_link %}
-<div style="margin-bottom:20px">
-    <a href="{{url}}"
-        style="display:inline-block;width:170px;background:#38abdd;padding:10px;text-align:center;color:#fff;font-size:1rem;font-weight:600;margin:0px auto;margin-bottom:20px;border-radius:5px;text-decoration:none;display:block">Click Here</a>
-</div>
+<a class="btn-link" href="{{ url }}"
+   style="display:inline-block;padding:14px 32px;background-color:#EA580C;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:600;line-height:1;">
+  View Opportunity
+</a>
 {% endblock button_link %}

@@ -1,5 +1,6 @@
 <script>
   import '../../../app.css';
+  import { enhance } from '$app/forms';
 
   import imgGoogle from '$lib/assets/images/google.svg';
   import imgLogo from '$lib/assets/images/logo.png';
@@ -8,17 +9,33 @@
   let { data } = $props();
 
   let isLoading = $state(false);
+  let email = $state('');
+  let magicLinkSent = $state(false);
+  let isSendingLink = $state(false);
+  let magicLinkError = $state('');
 
   function handleGoogleLogin() {
     isLoading = true;
   }
+
+  function handleMagicLink() {
+    isSendingLink = true;
+    return async ({ result }) => {
+      isSendingLink = false;
+      if (result.type === 'success') {
+        magicLinkSent = true;
+      } else if (result.type === 'failure') {
+        magicLinkError = result.data?.error || 'Something went wrong. Please try again.';
+      }
+    };
+  }
 </script>
 
 <svelte:head>
-  <title>Log in | BottleCRM</title>
+  <title>Sign in | BottleCRM</title>
   <meta
     name="description"
-    content="Log in to BottleCRM to manage your contacts, deals, and grow your business."
+    content="Sign in or sign up for BottleCRM to manage your contacts, deals, and grow your business."
   />
 </svelte:head>
 
@@ -33,7 +50,7 @@
 
     <!-- Login Card -->
     <div class="login-card">
-      <h1 class="login-title">Log in to your account</h1>
+      <h1 class="login-title">Sign in to your account</h1>
 
       <!-- Google Sign In -->
       <a
@@ -44,10 +61,10 @@
       >
         {#if isLoading}
           <span class="spinner"></span>
-          <span>Signing in...</span>
+          <span>Redirecting...</span>
         {:else}
           <img src={imgGoogle} alt="" class="google-icon" />
-          <span>Sign in with Google</span>
+          <span>Continue with Google</span>
         {/if}
       </a>
 
@@ -56,18 +73,39 @@
         <span>or</span>
       </div>
 
-      <!-- SSO Notice -->
-      <p class="sso-notice">
-        We use Google Sign-In for secure, passwordless authentication. Your data is protected with
-        enterprise-grade security.
-      </p>
+      <!-- Magic Link -->
+      {#if magicLinkSent}
+        <div class="magic-link-success">
+          <p>Check your email for a sign-in link.</p>
+          <p class="magic-link-hint">The link expires in 10 minutes.</p>
+        </div>
+      {:else}
+        <form method="POST" action="/login?/requestMagicLink" use:enhance={handleMagicLink} class="magic-link-form">
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email address"
+            class="email-input"
+            required
+            bind:value={email}
+            disabled={isSendingLink}
+          />
+          <button type="submit" class="magic-link-btn" disabled={isSendingLink}>
+            {#if isSendingLink}
+              <span class="spinner"></span>
+              <span>Sending...</span>
+            {:else}
+              <span>Continue with email</span>
+              <ArrowRight size={16} />
+            {/if}
+          </button>
+        </form>
+      {/if}
     </div>
 
     <!-- Help Links -->
     <div class="help-section">
-      <p class="help-text">
-        Don't have an account? <a href={data['google_url']} class="help-link">Sign up for free</a>
-      </p>
+      <p class="help-text">New here? Just enter your email above to get started.</p>
     </div>
 
     <!-- Footer -->
@@ -219,13 +257,78 @@
     text-transform: lowercase;
   }
 
-  /* SSO Notice */
-  .sso-notice {
-    font-size: 0.875rem;
-    color: #516f90;
+  /* Magic Link Form */
+  .magic-link-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .email-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 1rem;
+    border: 1px solid #cbd6e2;
+    border-radius: 6px;
+    font-size: 1rem;
+    color: #33475b;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+
+  .email-input:focus {
+    border-color: #ff7a59;
+  }
+
+  .email-input:disabled {
+    opacity: 0.6;
+  }
+
+  .magic-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 48px;
+    background: #33475b;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .magic-link-btn:hover {
+    background: #2d3e50;
+  }
+
+  .magic-link-btn:disabled {
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  .magic-link-success {
     text-align: center;
-    line-height: 1.5;
+    padding: 1rem 0;
+  }
+
+  .magic-link-success p {
+    color: #33475b;
+    font-size: 1rem;
+    font-weight: 500;
     margin: 0;
+  }
+
+  .magic-link-hint {
+    color: #7c98b6 !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    margin-top: 0.5rem !important;
   }
 
   /* Help Section */
@@ -238,16 +341,6 @@
     font-size: 0.9375rem;
     color: #516f90;
     margin: 0;
-  }
-
-  .help-link {
-    color: #ff7a59;
-    text-decoration: none;
-    font-weight: 500;
-  }
-
-  .help-link:hover {
-    text-decoration: underline;
   }
 
   /* Footer */
@@ -324,8 +417,27 @@
     color: #888;
   }
 
-  :global(.dark) .sso-notice {
-    color: #999;
+  :global(.dark) .email-input {
+    background: #1a1a1a;
+    border-color: #404040;
+    color: #fff;
+  }
+
+  :global(.dark) .email-input:focus {
+    border-color: #ff7a59;
+  }
+
+  :global(.dark) .magic-link-btn {
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  :global(.dark) .magic-link-btn:hover {
+    background: #e0e0e0;
+  }
+
+  :global(.dark) .magic-link-success p {
+    color: #fff;
   }
 
   :global(.dark) .help-text {

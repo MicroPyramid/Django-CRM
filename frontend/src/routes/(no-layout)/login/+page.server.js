@@ -186,3 +186,28 @@ async function generateOAuthUrl(cookies) {
 
   return { google_url: google_login_url };
 }
+
+/** @type {import('@sveltejs/kit').Actions} */
+export const actions = {
+  requestMagicLink: async ({ request }) => {
+    const formData = await request.formData();
+    const email = formData.get('email');
+
+    if (!email) {
+      return { success: false, error: 'Email is required' };
+    }
+
+    try {
+      const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
+      await axios.post(
+        `${apiUrl}/api/auth/magic-link/request/`,
+        { email },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+      );
+      return { success: true };
+    } catch (error) {
+      // Always show success to user (backend also returns 200 always)
+      return { success: true };
+    }
+  }
+};

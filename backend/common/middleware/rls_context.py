@@ -22,6 +22,7 @@ Usage in settings.py:
 import logging
 
 from django.db import connection
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,8 @@ class RequireOrgContext:
         "/api/auth/me/",
         "/api/auth/switch-org/",
         "/api/auth/google/",
+        "/api/auth/magic-link/request/",
+        "/api/auth/magic-link/verify/",
         "/api/org/",
         "/admin/",
         "/swagger-ui/",
@@ -134,10 +137,9 @@ class RequireOrgContext:
                 return self.get_response(request)
 
             if not hasattr(request, "org") or request.org is None:
-                from rest_framework.exceptions import PermissionDenied
-
-                raise PermissionDenied(
-                    "Organization context is required. Please login again."
+                return JsonResponse(
+                    {"detail": "Organization context is required. Please login again."},
+                    status=403,
                 )
 
         # Set org context

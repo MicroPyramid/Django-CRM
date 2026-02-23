@@ -2,10 +2,12 @@ import json
 import logging
 import secrets
 import uuid
+from datetime import timedelta
 
 import requests
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 
 from rest_framework import serializers, status
@@ -120,6 +122,7 @@ class GoogleOAuthCallbackView(APIView):
             )
 
         # Get or create user
+        created = False
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -128,9 +131,15 @@ class GoogleOAuthCallbackView(APIView):
                 profile_pic=picture,
                 password=make_password(secrets.token_urlsafe(32)),
             )
+            created = True
 
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
+
+        if created:
+            from common.tasks import send_welcome_email
+
+            send_welcome_email.delay(str(user.id))
 
         # Generate JWT tokens (with user info embedded)
         token = OrgAwareRefreshToken.for_user_and_org(user, None)
@@ -356,44 +365,6 @@ class LoginView(APIView):
         return Response(serializer_obj.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class RegisterView(APIView):
-    """
-    Register a new user account
-    """
-
-    permission_classes = []
-    authentication_classes = []
-
-    @extend_schema(
-        description="Register a new user account",
-        request=serializer.RegisterSerializer,
-        responses={
-            201: {
-                "type": "object",
-                "properties": {
-                    "message": {"type": "string"},
-                    "user_id": {"type": "string"},
-                    "email": {"type": "string"},
-                },
-            }
-        },
-    )
-    def post(self, request):
-        serializer_obj = serializer.RegisterSerializer(data=request.data)
-        if serializer_obj.is_valid():
-            user = serializer_obj.save()
-            return Response(
-                {
-                    "message": "User registered successfully. Please check your email for activation link.",
-                    "user_id": str(user.id),
-                    "email": user.email,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-
-        return Response(serializer_obj.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class MeView(APIView):
     """
     Get current authenticated user details
@@ -601,3 +572,177 @@ class OrgSwitchView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class MagicLinkRequestView(APIView):
+    """
+    Request a magic link for passwordless login/registration.
+    Always returns 200 to prevent email enumeration.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["auth"],
+        request=serializer.MagicLinkRequestSerializer,
+        responses={200: inline_serializer(
+            name="MagicLinkRequestResponse",
+            fields={"message": serializers.CharField()},
+        )},
+    )
+    def post(self, request):
+        from common.models import MagicLinkToken
+        from common.tasks import send_magic_link_email
+
+        serializer_obj = serializer.MagicLinkRequestSerializer(data=request.data)
+        if not serializer_obj.is_valid():
+            return Response(
+                {"message": "If this email is valid, you will receive a sign-in link."},
+                status=status.HTTP_200_OK,
+            )
+
+        email = serializer_obj.validated_data["email"].lower()
+
+        # Rate limit: max 5 tokens per email per hour
+        one_hour_ago = timezone.now() - timedelta(hours=1)
+        recent_count = MagicLinkToken.objects.filter(
+            email=email, created_at__gte=one_hour_ago
+        ).count()
+        if recent_count >= 5:
+            return Response(
+                {"message": "If this email is valid, you will receive a sign-in link."},
+                status=status.HTTP_200_OK,
+            )
+
+        # Invalidate any existing unused tokens for this email
+        MagicLinkToken.objects.filter(email=email, is_used=False).update(is_used=True)
+
+        # Create new token
+        token_obj = MagicLinkToken.objects.create(
+            email=email,
+            token=secrets.token_hex(32),
+            expires_at=timezone.now() + timedelta(minutes=10),
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+
+        # Send email via Celery
+        send_magic_link_email.delay(str(token_obj.id))
+
+        return Response(
+            {"message": "If this email is valid, you will receive a sign-in link."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class MagicLinkVerifyView(APIView):
+    """
+    Verify a magic link token and return JWT tokens.
+    Creates a new user if the email doesn't exist.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["auth"],
+        request=serializer.MagicLinkVerifySerializer,
+        responses={
+            200: inline_serializer(
+                name="MagicLinkVerifyResponse",
+                fields={
+                    "access_token": serializers.CharField(),
+                    "refresh_token": serializers.CharField(),
+                    "user": serializers.DictField(),
+                },
+            )
+        },
+    )
+    def post(self, request):
+        from django.contrib.auth.hashers import make_password
+
+        from common.audit_log import audit_log
+        from common.models import MagicLinkToken
+
+        serializer_obj = serializer.MagicLinkVerifySerializer(data=request.data)
+        if not serializer_obj.is_valid():
+            return Response(
+                {"error": "Invalid request"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token_value = serializer_obj.validated_data["token"]
+
+        # Opportunistic cleanup: delete expired tokens
+        MagicLinkToken.objects.filter(expires_at__lt=timezone.now()).delete()
+
+        # Atomically mark token as used (prevents race condition)
+        updated = MagicLinkToken.objects.filter(
+            token=token_value,
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        ).update(is_used=True, used_at=timezone.now())
+
+        if not updated:
+            return Response(
+                {"error": "Invalid or expired link"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token_obj = MagicLinkToken.objects.get(token=token_value)
+
+        # Get or create user
+        email = token_obj.email
+        created = False
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = User.objects.create(
+                email=email,
+                password=make_password(secrets.token_urlsafe(32)),
+                is_active=True,
+            )
+            created = True
+
+        if created:
+            from common.tasks import send_welcome_email
+
+            send_welcome_email.delay(str(user.id))
+
+        # Update last_login
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+
+        # Get user's organizations
+        profiles = Profile.objects.filter(user=user, is_active=True)
+        default_org = None
+        profile = None
+
+        if profiles.exists():
+            profile = profiles.first()
+            default_org = profile.org
+
+        # Generate JWT tokens (same as LoginView)
+        if default_org:
+            token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
+        else:
+            token = OrgAwareRefreshToken.for_user_and_org(user, None)
+
+        # Audit log
+        audit_log.login_success(user, default_org, request)
+
+        # Build response (same shape as LoginView)
+        user_serializer = serializer.UserDetailSerializer(user)
+        response_data = {
+            "access_token": str(token.access_token),
+            "refresh_token": str(token),
+            "user": user_serializer.data,
+        }
+
+        if default_org:
+            response_data["current_org"] = {
+                "id": str(default_org.id),
+                "name": default_org.name,
+            }
+
+        return Response(response_data, status=status.HTTP_200_OK)

@@ -1,3 +1,4 @@
+import logging
 import re
 
 from celery import shared_task
@@ -5,6 +6,8 @@ from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
+
+logger = logging.getLogger(__name__)
 
 from accounts.models import Account
 from common.models import Org, Profile
@@ -108,7 +111,14 @@ def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
             )
             msg = EmailMessage(subject, html_content, to=recipients_list)
             msg.content_subtype = "html"
-            msg.send()
+            try:
+                msg.send()
+            except Exception as e:
+                logger.error(
+                    "Failed to send lead assignment email to %s: %s",
+                    profile.user.email,
+                    e,
+                )
 
 
 @shared_task
