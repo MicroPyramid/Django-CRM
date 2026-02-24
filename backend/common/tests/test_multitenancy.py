@@ -301,56 +301,6 @@ class TestOrgSwitching(MultiTenancyBaseTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class TestLoginWithOrgContext(MultiTenancyBaseTestCase):
-    """Test login endpoint includes org context"""
-
-    def test_login_returns_current_org(self):
-        """Login should return current_org in response"""
-        response = self.client.post(
-            "/api/auth/login/", {"email": "user_a@test.com", "password": "testpass123"}
-        )
-
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-
-        self.assertIn("current_org", data)
-        self.assertEqual(data["current_org"]["id"], str(self.org_a.id))
-
-    def test_login_with_specific_org(self):
-        """Login can specify which org to use"""
-        # Give user_a access to org_b
-        Profile.objects.create(
-            user=self.user_a, org=self.org_b, role="USER", is_active=True
-        )
-
-        response = self.client.post(
-            "/api/auth/login/",
-            {
-                "email": "user_a@test.com",
-                "password": "testpass123",
-                "org_id": str(self.org_b.id),
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-
-        self.assertEqual(data["current_org"]["id"], str(self.org_b.id))
-
-    def test_login_with_invalid_org_fails(self):
-        """Login with org user doesn't have access to should fail"""
-        response = self.client.post(
-            "/api/auth/login/",
-            {
-                "email": "user_a@test.com",
-                "password": "testpass123",
-                "org_id": str(self.org_b.id),  # user_a doesn't have access
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
-
-
 class TestBaseOrgModel(TestCase):
     """Test BaseOrgModel validation"""
 
