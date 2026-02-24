@@ -12,6 +12,7 @@ sentry-sdk==2.53.0
 django_storages==1.14.6
 
 django-crum==0.7.9
+disposable-email-domains>=0.0.162
 redis==7.2.0
 pytz==2025.2
 requests==2.32.5
