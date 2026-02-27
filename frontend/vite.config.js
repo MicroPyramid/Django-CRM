@@ -7,5 +7,8 @@ export default defineConfig({
   plugins: [sentrySvelteKit({
     org: "micropyramid-fa",
     project: "bottlecrm-app"
-  }), tailwindcss(), sveltekit()]
+  }), tailwindcss(), sveltekit()],
+  optimizeDeps: {
+    exclude: ['esm-env']
+  }
 });
