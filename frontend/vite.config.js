@@ -6,7 +6,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [sentrySvelteKit({
     org: "micropyramid-fa",
-    project: "bottlecrm-app"
+    project: "bottlecrm-app",
+    sourceMapsUploadOptions: {
+      enabled: process.env.NODE_ENV === 'production'
+    }
   }), tailwindcss(), sveltekit()],
   optimizeDeps: {
     exclude: ['esm-env']
