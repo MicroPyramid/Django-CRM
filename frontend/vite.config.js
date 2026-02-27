@@ -7,9 +7,7 @@ export default defineConfig({
   plugins: [sentrySvelteKit({
     org: "micropyramid-fa",
     project: "bottlecrm-app",
-    sourceMapsUploadOptions: {
-      enabled: process.env.NODE_ENV === 'production'
-    }
+    autoUploadSourceMaps: !!process.env.PUBLIC_SENTRY_DSN
   }), tailwindcss(), sveltekit()],
   optimizeDeps: {
     exclude: ['esm-env']
