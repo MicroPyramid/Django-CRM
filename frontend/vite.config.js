@@ -14,8 +14,5 @@ export default defineConfig(({ mode }) => {
       },
       autoUploadSourceMaps: !!env.PUBLIC_SENTRY_DSN
     }), tailwindcss(), sveltekit()],
-    optimizeDeps: {
-      exclude: ['esm-env']
-    }
   };
 });

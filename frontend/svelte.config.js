@@ -1,6 +1,8 @@
 import adapter from '@sveltejs/adapter-node';
 
-const config = { kit: {
+const config = { vitePlugin: {
+  prebundleSvelteLibraries: false
+}, kit: {
   adapter: adapter(),
 
   version: {
