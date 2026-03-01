@@ -9,7 +9,7 @@ A modern, open-source CRM platform built with Django REST Framework and SvelteKi
 ![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
 ![Coverage](./coverage-badge.svg)
 
-<https://github.com/MicroPyramid/Django-CRM/raw/master/docs/media/demo.webm>
+<https://github.com/MicroPyramid/Django-CRM/raw/master/docs/assets/demo.webm>
 
 ## Overview
 
