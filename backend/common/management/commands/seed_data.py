@@ -4,6 +4,7 @@ Management command to seed test data for the CRM application.
 Usage:
     python manage.py seed_data --email admin@example.com
     python manage.py seed_data --email admin@example.com --orgs 2 --leads 100 --seed 42
+    python manage.py seed_data --email admin@example.com --currency EUR --country DE
     python manage.py seed_data --email admin@example.com --clear --no-input
 """
 
@@ -81,6 +82,24 @@ class Command(BaseCommand):
         "Partner Referral",
         "Inbound",
     ]
+
+    # Country code to Faker locale mapping
+    COUNTRY_FAKER_LOCALES = {
+        "US": "en_US",
+        "GB": "en_GB",
+        "CA": "en_CA",
+        "AU": "en_AU",
+        "DE": "de_DE",
+        "FR": "fr_FR",
+        "IN": "en_IN",
+        "JP": "ja_JP",
+        "CN": "zh_CN",
+        "BR": "pt_BR",
+        "MX": "es_MX",
+        "SG": "en_SG",
+        "AE": "ar_AE",
+        "CH": "de_CH",
+    }
 
     # Team name templates
     TEAM_NAMES = [
@@ -182,6 +201,22 @@ class Command(BaseCommand):
             help="Tags per organization (default: 5)",
         )
 
+        # Locale options
+        valid_currencies = [c[0] for c in CURRENCY_CODES]
+        parser.add_argument(
+            "--currency",
+            type=str,
+            default="USD",
+            choices=valid_currencies,
+            help=f"Default currency for organizations (default: USD). Choices: {', '.join(valid_currencies)}",
+        )
+        parser.add_argument(
+            "--country",
+            type=str,
+            default="US",
+            help="Default country code for organizations (default: US). Examples: US, GB, CA, AU, DE, FR, IN",
+        )
+
         # Invoice-related arguments
         parser.add_argument(
             "--products",
@@ -238,19 +273,25 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        # Initialize Faker
+        # Initialize Faker with locale matching the country
+        country = options["country"].upper()
+        locale = self.COUNTRY_FAKER_LOCALES.get(country, "en_US")
+
         seed = options.get("seed")
         if seed:
             random.seed(seed)
-            self.fake = Faker(["en_US"])
+            self.fake = Faker([locale])
             Faker.seed(seed)
         else:
-            self.fake = Faker(["en_US", "en_GB", "en_CA", "en_AU"])
+            self.fake = Faker([locale])
 
         # Initialize InvoiceSeeder
         self.invoice_seeder = InvoiceSeeder(self.fake, self.stdout)
 
         self.stdout.write(self.style.MIGRATE_HEADING("Seeding CRM database..."))
+        self.stdout.write(
+            f"Currency: {options['currency']}, Country: {country}, Locale: {locale}"
+        )
         if seed:
             self.stdout.write(f"Using seed: {seed}")
 
@@ -334,7 +375,7 @@ class Command(BaseCommand):
         """Main seeding orchestration."""
         for i in range(options["orgs"]):
             self.stdout.write(f"\n--- Organization {i + 1}/{options['orgs']} ---")
-            org = self.create_org()
+            org = self.create_org(options["currency"], options["country"])
             # Set RLS context for this org before creating org-scoped data
             self.set_rls_context(org.id)
             profiles = self.create_profiles(
@@ -404,15 +445,12 @@ class Command(BaseCommand):
                 options["tasks"],
             )
 
-    def create_org(self):
+    def create_org(self, currency, country):
         """Create an organization."""
-        currencies = [c[0] for c in CURRENCY_CODES]
-        countries = ["US", "GB", "CA", "AU", "DE", "FR", "IN"]
-
         org = Org.objects.create(
             name=self.fake.company(),
-            default_currency=random.choice(currencies),
-            default_country=random.choice(countries),
+            default_currency=currency,
+            default_country=country,
         )
         self.stats["orgs"] += 1
         self.stdout.write(
@@ -524,7 +562,7 @@ class Command(BaseCommand):
                 city=self.fake.city(),
                 state=self.fake.state_abbr(),
                 postcode=self.fake.postcode(),
-                country=random.choice(["US", "GB", "CA", "AU"]),
+                country=org.default_country or "US",
                 description=self.fake.paragraph() if random.random() > 0.5 else None,
                 org=org,
             )

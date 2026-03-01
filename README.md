@@ -9,6 +9,8 @@ A modern, open-source CRM platform built with Django REST Framework and SvelteKi
 ![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
 ![Coverage](./coverage-badge.svg)
 
+<https://github.com/MicroPyramid/Django-CRM/raw/master/docs/media/demo.webm>
+
 ## Overview
 
 BottleCRM is a full-featured Customer Relationship Management system designed for startups and small businesses. It combines a powerful Django REST API backend with a modern SvelteKit frontend, featuring multi-tenant architecture with PostgreSQL Row-Level Security (RLS) for enterprise-grade data isolation.
