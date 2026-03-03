@@ -22,10 +22,12 @@
     isSendingLink = true;
     return async ({ result }) => {
       isSendingLink = false;
-      if (result.type === 'success') {
+      if (result?.type === 'success') {
         magicLinkSent = true;
-      } else if (result.type === 'failure') {
+      } else if (result?.type === 'failure') {
         magicLinkError = result.data?.error || 'Something went wrong. Please try again.';
+      } else if (!result) {
+        magicLinkError = 'Something went wrong. Please try again.';
       }
     };
   }
