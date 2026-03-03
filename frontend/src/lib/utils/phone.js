@@ -1,12 +1,18 @@
-import { isValidPhoneNumber, parsePhoneNumber, isPossiblePhoneNumber } from 'libphonenumber-js';
+/** @type {Promise<typeof import('libphonenumber-js')> | null} */
+let _lib = null;
+
+function getLib() {
+  if (!_lib) _lib = import('libphonenumber-js');
+  return _lib;
+}
 
 /**
  * Validates a phone number and returns validation result
  * @param {string} phoneNumber - The phone number to validate
  * @param {string} [defaultCountry] - Default country code (e.g., 'US', 'IN')
- * @returns {{ isValid: boolean, formatted?: string, error?: string }}
+ * @returns {Promise<{ isValid: boolean, formatted?: string, error?: string }>}
  */
-export function validatePhoneNumber(phoneNumber, defaultCountry) {
+export async function validatePhoneNumber(phoneNumber, defaultCountry) {
   if (!phoneNumber || phoneNumber.trim() === '') {
     return { isValid: true }; // Allow empty phone numbers
   }
@@ -14,6 +20,8 @@ export function validatePhoneNumber(phoneNumber, defaultCountry) {
   const trimmed = phoneNumber.trim();
 
   try {
+    const { isValidPhoneNumber, parsePhoneNumber, isPossiblePhoneNumber } = await getLib();
+
     // If the number starts with +, validate as international
     if (trimmed.startsWith('+')) {
       const isValid = isValidPhoneNumber(trimmed);
@@ -88,12 +96,13 @@ export function validatePhoneNumber(phoneNumber, defaultCountry) {
  * Formats a phone number for display
  * @param {string} phoneNumber - The phone number to format
  * @param {string} defaultCountry - Default country code
- * @returns {string} Formatted phone number or original if invalid
+ * @returns {Promise<string>} Formatted phone number or original if invalid
  */
-export function formatPhoneNumber(phoneNumber, defaultCountry = 'US') {
+export async function formatPhoneNumber(phoneNumber, defaultCountry = 'US') {
   if (!phoneNumber) return '';
 
   try {
+    const { parsePhoneNumber } = await getLib();
     // @ts-ignore - defaultCountry is a valid CountryCode
     const parsed = parsePhoneNumber(phoneNumber, { defaultCountry });
     return parsed.formatInternational();
@@ -106,14 +115,16 @@ export function formatPhoneNumber(phoneNumber, defaultCountry = 'US') {
  * Formats a phone number for storage (E.164 format)
  * @param {string} phoneNumber - The phone number to format
  * @param {string} [defaultCountry] - Default country code
- * @returns {string} E.164 formatted phone number or original if invalid
+ * @returns {Promise<string>} E.164 formatted phone number or original if invalid
  */
-export function formatPhoneForStorage(phoneNumber, defaultCountry) {
+export async function formatPhoneForStorage(phoneNumber, defaultCountry) {
   if (!phoneNumber) return '';
 
   const trimmed = phoneNumber.trim();
 
   try {
+    const { parsePhoneNumber } = await getLib();
+
     // If starts with +, parse as international
     if (trimmed.startsWith('+')) {
       const parsed = parsePhoneNumber(trimmed);

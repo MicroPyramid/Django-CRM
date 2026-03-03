@@ -52,7 +52,6 @@
     "@sentry/sveltekit": "^10.40.0",
     "axios": "^1.13.6",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
     "libphonenumber-js": "^1.12.38",
     "svelte-dnd-action": "^0.9.69",
     "tailwind-merge": "^3.5.0",

@@ -18,6 +18,7 @@
   let isEditing = $state(false);
   let isSubmitting = $state(false);
   let phoneError = $state('');
+  let formattedDisplayPhone = $state('');
 
   // Form data state - initialized by $effect below
   let formData = $state({
@@ -36,14 +37,23 @@
     }
   });
 
+  // Format phone for display (async, resolved into state)
+  $effect(() => {
+    if (data.user.phone) {
+      formatPhoneNumber(data.user.phone).then((f) => (formattedDisplayPhone = f));
+    } else {
+      formattedDisplayPhone = '';
+    }
+  });
+
   // Validate phone number on input
-  function validatePhone() {
+  async function validatePhone() {
     if (!formData.phone.trim()) {
       phoneError = '';
       return;
     }
 
-    const validation = validatePhoneNumber(formData.phone);
+    const validation = await validatePhoneNumber(formData.phone);
     if (!validation.isValid) {
       phoneError = validation.error || 'Invalid phone number';
     } else {
@@ -277,7 +287,7 @@
                 Phone Number
               </div>
               <p class="text-foreground">
-                {data.user.phone ? formatPhoneNumber(data.user.phone) : 'Not provided'}
+                {formattedDisplayPhone || data.user.phone || 'Not provided'}
               </p>
             </div>
 

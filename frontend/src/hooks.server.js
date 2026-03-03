@@ -231,7 +231,7 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
         } else {
           // Org switch failed, clear org cookie and redirect
           event.cookies.delete('org', { path: '/' });
-          throw redirect(307, '/org');
+          throw redirect(303, '/org');
         }
       }
     }
