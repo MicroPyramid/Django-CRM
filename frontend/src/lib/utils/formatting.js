@@ -3,18 +3,33 @@
  * @module lib/utils/formatting
  */
 
-import { format, formatDistanceToNow } from 'date-fns';
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric'
+});
+
+const relativeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+const RELATIVE_UNITS = /** @type {const} */ ([
+  { unit: 'year', ms: 365.25 * 24 * 60 * 60 * 1000 },
+  { unit: 'month', ms: 30.44 * 24 * 60 * 60 * 1000 },
+  { unit: 'week', ms: 7 * 24 * 60 * 60 * 1000 },
+  { unit: 'day', ms: 24 * 60 * 60 * 1000 },
+  { unit: 'hour', ms: 60 * 60 * 1000 },
+  { unit: 'minute', ms: 60 * 1000 },
+  { unit: 'second', ms: 1000 }
+]);
 
 /**
- * Format a date string to a human-readable format
+ * Format a date string to a human-readable format (e.g., "Feb 18, 2026")
  * @param {string | Date | null | undefined} date - Date to format
- * @param {string} [formatStr='MMM d, yyyy'] - date-fns format string
  * @returns {string} Formatted date string or '-' if no date
  */
-export function formatDate(date, formatStr = 'MMM d, yyyy') {
+export function formatDate(date) {
   if (!date) return '-';
   try {
-    return format(new Date(date), formatStr);
+    return dateFormatter.format(new Date(date));
   } catch {
     return '-';
   }
@@ -28,7 +43,13 @@ export function formatDate(date, formatStr = 'MMM d, yyyy') {
 export function formatRelativeDate(date) {
   if (!date) return '-';
   try {
-    return formatDistanceToNow(new Date(date), { addSuffix: true });
+    const diff = new Date(date).getTime() - Date.now();
+    for (const { unit, ms } of RELATIVE_UNITS) {
+      if (Math.abs(diff) >= ms || unit === 'second') {
+        return relativeFormatter.format(Math.round(diff / ms), unit);
+      }
+    }
+    return '-';
   } catch {
     return '-';
   }

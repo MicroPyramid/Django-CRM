@@ -78,11 +78,11 @@ export const actions = {
     // Validate phone if provided
     let formattedPhone = null;
     if (phone && phone.trim().length > 0) {
-      const phoneValidation = validatePhoneNumber(phone.trim());
+      const phoneValidation = await validatePhoneNumber(phone.trim());
       if (!phoneValidation.isValid) {
         errors.phone = phoneValidation.error || 'Please enter a valid phone number';
       } else {
-        formattedPhone = formatPhoneForStorage(phone.trim());
+        formattedPhone = await formatPhoneForStorage(phone.trim());
       }
     }
 
