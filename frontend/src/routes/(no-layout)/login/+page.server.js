@@ -189,7 +189,7 @@ async function generateOAuthUrl(cookies) {
 
 /** @type {import('@sveltejs/kit').Actions} */
 export const actions = {
-  requestMagicLink: async ({ request }) => {
+  default: async ({ request }) => {
     const formData = await request.formData();
     const email = formData.get('email');
 

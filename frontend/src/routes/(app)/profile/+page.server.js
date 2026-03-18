@@ -63,17 +63,10 @@ export const actions = {
 
     const org = locals.org;
     const formData = await request.formData();
-    const name = formData.get('name')?.toString();
     const phone = formData.get('phone')?.toString();
 
     // Validation
     const errors = {};
-
-    if (!name || name.trim().length === 0) {
-      errors.name = 'Name is required';
-    } else if (name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters long';
-    }
 
     // Validate phone if provided
     let formattedPhone = null;
@@ -89,14 +82,12 @@ export const actions = {
     if (Object.keys(errors).length > 0) {
       return fail(400, {
         errors,
-        data: { name, phone }
+        data: { phone }
       });
     }
 
     try {
-      // Transform to Django field names
       const djangoData = {
-        name: name.trim(),
         phone: formattedPhone
       };
 
@@ -119,7 +110,7 @@ export const actions = {
       return fail(500, {
         error:
           'Failed to update profile: ' + (err instanceof Error ? err.message : 'Unknown error'),
-        data: { name, phone }
+        data: { phone }
       });
     }
   }

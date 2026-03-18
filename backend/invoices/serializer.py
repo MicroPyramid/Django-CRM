@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from accounts.models import Account
@@ -196,6 +198,42 @@ class InvoiceLineItemCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvoiceLineItem
+        fields = (
+            "product",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "discount_type",
+            "discount_value",
+            "tax_rate",
+            "order",
+        )
+
+
+class EstimateLineItemCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating Estimate Line Items"""
+
+    class Meta:
+        model = EstimateLineItem
+        fields = (
+            "product",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "discount_type",
+            "discount_value",
+            "tax_rate",
+            "order",
+        )
+
+
+class RecurringInvoiceLineItemCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating Recurring Invoice Line Items"""
+
+    class Meta:
+        model = RecurringInvoiceLineItem
         fields = (
             "product",
             "name",
@@ -681,6 +719,7 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
     opportunity_id = serializers.UUIDField(
         write_only=True, required=False, allow_null=True
     )
+    line_items = EstimateLineItemCreateSerializer(many=True, required=False)
 
     class Meta:
         model = Estimate
@@ -707,6 +746,7 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
             "public_link_enabled",
             "notes",
             "terms",
+            "line_items",
         )
 
     def __init__(self, *args, **kwargs):
@@ -748,9 +788,56 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate(self, attrs):
+        """Cross-field validation"""
+        account_id = attrs.get("account_id")
+        contact_id = attrs.get("contact_id")
+
+        if account_id and contact_id and self.org:
+            contact = Contact.objects.filter(id=contact_id, org=self.org).first()
+            if contact and contact.account_id and contact.account_id != account_id:
+                raise serializers.ValidationError(
+                    {"contact_id": "Contact does not belong to the selected account"}
+                )
+        return attrs
+
     def create(self, validated_data):
+        line_items_data = validated_data.pop("line_items", [])
         validated_data["org"] = self.org
-        return super().create(validated_data)
+
+        estimate = Estimate.objects.create(**validated_data)
+
+        for idx, item_data in enumerate(line_items_data):
+            EstimateLineItem.objects.create(
+                estimate=estimate,
+                org=self.org,
+                order=item_data.get("order", idx),
+                **{k: v for k, v in item_data.items() if k != "order"},
+            )
+
+        estimate.recalculate_totals()
+        estimate.save()
+        return estimate
+
+    def update(self, instance, validated_data):
+        line_items_data = validated_data.pop("line_items", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if line_items_data is not None:
+            instance.line_items.all().delete()
+            for idx, item_data in enumerate(line_items_data):
+                EstimateLineItem.objects.create(
+                    estimate=instance,
+                    org=self.org or instance.org,
+                    order=item_data.get("order", idx),
+                    **{k: v for k, v in item_data.items() if k != "order"},
+                )
+
+        instance.recalculate_totals()
+        instance.save()
+        return instance
 
 
 # =============================================================================
@@ -831,6 +918,7 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
     opportunity_id = serializers.UUIDField(
         write_only=True, required=False, allow_null=True
     )
+    line_items = RecurringInvoiceLineItemCreateSerializer(many=True, required=False)
 
     class Meta:
         model = RecurringInvoice
@@ -855,6 +943,7 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
             "tax_rate",
             "notes",
             "terms",
+            "line_items",
         )
 
     def __init__(self, *args, **kwargs):
@@ -896,9 +985,73 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate(self, attrs):
+        """Cross-field validation"""
+        account_id = attrs.get("account_id")
+        contact_id = attrs.get("contact_id")
+
+        if account_id and contact_id and self.org:
+            contact = Contact.objects.filter(id=contact_id, org=self.org).first()
+            if contact and contact.account_id and contact.account_id != account_id:
+                raise serializers.ValidationError(
+                    {"contact_id": "Contact does not belong to the selected account"}
+                )
+        return attrs
+
+    def _recalculate_totals(self, instance):
+        subtotal = sum(
+            (item.quantity * item.unit_price for item in instance.line_items.all()),
+            Decimal("0"),
+        )
+        instance.subtotal = subtotal
+
+        if instance.discount_type == "PERCENTAGE":
+            discount_amount = subtotal * (instance.discount_value / Decimal("100"))
+        else:
+            discount_amount = instance.discount_value
+
+        taxable = subtotal - discount_amount
+        instance.total_amount = taxable + (
+            taxable * (instance.tax_rate / Decimal("100"))
+        )
+
     def create(self, validated_data):
+        line_items_data = validated_data.pop("line_items", [])
         validated_data["org"] = self.org
-        return super().create(validated_data)
+
+        recurring = RecurringInvoice.objects.create(**validated_data)
+
+        for idx, item_data in enumerate(line_items_data):
+            RecurringInvoiceLineItem.objects.create(
+                recurring_invoice=recurring,
+                org=self.org,
+                order=item_data.get("order", idx),
+                **{k: v for k, v in item_data.items() if k != "order"},
+            )
+
+        self._recalculate_totals(recurring)
+        recurring.save()
+        return recurring
+
+    def update(self, instance, validated_data):
+        line_items_data = validated_data.pop("line_items", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if line_items_data is not None:
+            instance.line_items.all().delete()
+            for idx, item_data in enumerate(line_items_data):
+                RecurringInvoiceLineItem.objects.create(
+                    recurring_invoice=instance,
+                    org=self.org or instance.org,
+                    order=item_data.get("order", idx),
+                    **{k: v for k, v in item_data.items() if k != "order"},
+                )
+
+        self._recalculate_totals(instance)
+        instance.save()
+        return instance
 
 
 # =============================================================================

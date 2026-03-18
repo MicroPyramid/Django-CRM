@@ -6,8 +6,10 @@
 
   /**
    * @typedef {Object} SelectOption
-   * @property {string} id
-   * @property {string} name
+   * @property {string} [id]
+   * @property {string} [value]
+   * @property {string} [name]
+   * @property {string} [label]
    * @property {string} [email]
    */
 
@@ -57,9 +59,29 @@
   }
 
   /**
+   * Normalize option data so shared drawers can pass either `{ id, name }`
+   * or `{ value, label }` without crashing keyed each blocks.
+   * @returns {Array<SelectOption & { id: string, name: string }>}
+   */
+  const normalizedOptions = $derived(
+    options
+      .map((opt) => {
+        const id = opt?.id ?? opt?.value;
+        if (!id) return null;
+
+        return {
+          ...opt,
+          id,
+          name: opt?.name ?? opt?.label ?? opt?.email ?? id
+        };
+      })
+      .filter(Boolean)
+  );
+
+  /**
    * Get selected options
    */
-  const selectedOptions = $derived(options.filter((opt) => value.includes(opt.id)));
+  const selectedOptions = $derived(normalizedOptions.filter((opt) => value.includes(opt.id)));
 
   /**
    * Get display options (limited to maxDisplay)
@@ -117,11 +139,11 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="max-h-64 w-64 overflow-y-auto" align="start">
-      {#if options.length === 0}
+      {#if normalizedOptions.length === 0}
         <div class="text-muted-foreground px-2 py-4 text-center text-sm">No options available</div>
       {:else}
         <DropdownMenu.CheckboxGroup value={value}>
-          {#each options as opt (opt.id)}
+          {#each normalizedOptions as opt (opt.id)}
             <DropdownMenu.CheckboxItem
               checked={value.includes(opt.id)}
               onCheckedChange={() => toggleOption(opt.id)}

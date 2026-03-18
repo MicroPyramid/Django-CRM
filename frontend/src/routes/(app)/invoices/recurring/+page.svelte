@@ -1,4 +1,5 @@
 <script>
+  import { Plus, Trash2 } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
@@ -248,14 +249,25 @@
     autoSend: 'false',
     accountId: '',
     contactId: '',
+    currency: 'USD',
+    discountType: 'fixed',
+    discountValue: '0',
+    taxRate: '0',
     notes: '',
-    terms: ''
+    terms: '',
+    lineItems: '[]'
   });
 
   // Derived values
   const filters = $derived(data.filters);
   const pagination = $derived(data.pagination);
   const recurringInvoices = $derived(data.recurringInvoices);
+  const lineItemsSubtotal = $derived.by(() =>
+    (drawerFormData.lineItems || []).reduce(
+      (sum, item) => sum + getLineItemAmount(item),
+      0
+    )
+  );
 
   // Count active filters
   const activeFiltersCount = $derived(() => {
@@ -327,9 +339,13 @@
       endDate: '',
       paymentTerms: 'NET_30',
       autoSend: false,
+      currency: 'USD',
+      discountType: 'fixed',
+      discountValue: '0',
+      taxRate: '0',
       notes: '',
       terms: '',
-      lineItems: []
+      lineItems: [createRecurringLineItem()]
     };
     drawerOpen = true;
   }
@@ -347,7 +363,13 @@
       if (drawerMode === 'create') {
         // Already set in openCreateDrawer
       } else if (selectedRecurring) {
-        drawerFormData = { ...selectedRecurring };
+        drawerFormData = {
+          ...selectedRecurring,
+          lineItems:
+            selectedRecurring.lineItems?.length > 0
+              ? selectedRecurring.lineItems.map((item) => ({ ...item }))
+              : [createRecurringLineItem()]
+        };
       }
     }
   });
@@ -355,6 +377,38 @@
   // Field change handler
   function handleFieldChange(field, value) {
     drawerFormData[field] = value;
+  }
+
+  function createRecurringLineItem() {
+    return {
+      id: crypto.randomUUID(),
+      description: '',
+      quantity: 1,
+      unitPrice: '0',
+      discountType: 'fixed',
+      discountValue: '0',
+      taxRate: '0'
+    };
+  }
+
+  function getLineItemAmount(item) {
+    const quantity = Number(item?.quantity || 0);
+    const unitPrice = Number(item?.unitPrice || 0);
+    return quantity * unitPrice;
+  }
+
+  function addLineItem() {
+    drawerFormData.lineItems = [...(drawerFormData.lineItems || []), createRecurringLineItem()];
+  }
+
+  function removeLineItem(index) {
+    const existingItems = drawerFormData.lineItems || [];
+    if (existingItems.length === 1) {
+      drawerFormData.lineItems = [createRecurringLineItem()];
+      return;
+    }
+
+    drawerFormData.lineItems = existingItems.filter((_, itemIndex) => itemIndex !== index);
   }
 
   // Save handler
@@ -371,8 +425,19 @@
       formState.endDate = drawerFormData.endDate;
       formState.paymentTerms = drawerFormData.paymentTerms;
       formState.autoSend = drawerFormData.autoSend ? 'true' : 'false';
+      formState.accountId = drawerFormData.account?.id?.toString() || '';
+      formState.contactId = drawerFormData.contact?.id?.toString() || '';
+      formState.currency = drawerFormData.currency || 'USD';
+      formState.discountType = drawerFormData.discountType || 'fixed';
+      formState.discountValue = drawerFormData.discountValue?.toString() || '0';
+      formState.taxRate = drawerFormData.taxRate?.toString() || '0';
       formState.notes = drawerFormData.notes;
       formState.terms = drawerFormData.terms;
+      formState.lineItems = JSON.stringify(
+        (drawerFormData.lineItems || []).filter(
+          (item) => item.description || Number(item.unitPrice) > 0
+        )
+      );
 
       await tick();
       createForm.requestSubmit();
@@ -389,8 +454,19 @@
       formState.endDate = drawerFormData.endDate;
       formState.paymentTerms = drawerFormData.paymentTerms;
       formState.autoSend = drawerFormData.autoSend ? 'true' : 'false';
+      formState.accountId = drawerFormData.account?.id?.toString() || '';
+      formState.contactId = drawerFormData.contact?.id?.toString() || '';
+      formState.currency = drawerFormData.currency || 'USD';
+      formState.discountType = drawerFormData.discountType || 'fixed';
+      formState.discountValue = drawerFormData.discountValue?.toString() || '0';
+      formState.taxRate = drawerFormData.taxRate?.toString() || '0';
       formState.notes = drawerFormData.notes;
       formState.terms = drawerFormData.terms;
+      formState.lineItems = JSON.stringify(
+        (drawerFormData.lineItems || []).filter(
+          (item) => item.description || Number(item.unitPrice) > 0
+        )
+      );
 
       await tick();
       updateForm.requestSubmit();
@@ -491,10 +567,15 @@
   <input type="hidden" name="endDate" value={formState.endDate} />
   <input type="hidden" name="paymentTerms" value={formState.paymentTerms} />
   <input type="hidden" name="autoSend" value={formState.autoSend} />
+  <input type="hidden" name="currency" value={formState.currency} />
+  <input type="hidden" name="discountType" value={formState.discountType} />
+  <input type="hidden" name="discountValue" value={formState.discountValue} />
+  <input type="hidden" name="taxRate" value={formState.taxRate} />
   <input type="hidden" name="notes" value={formState.notes} />
   <input type="hidden" name="terms" value={formState.terms} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="contactId" value={formState.contactId} />
+  <input type="hidden" name="lineItems" value={formState.lineItems} />
 </form>
 
 <form
@@ -527,10 +608,15 @@
   <input type="hidden" name="endDate" value={formState.endDate} />
   <input type="hidden" name="paymentTerms" value={formState.paymentTerms} />
   <input type="hidden" name="autoSend" value={formState.autoSend} />
+  <input type="hidden" name="currency" value={formState.currency} />
+  <input type="hidden" name="discountType" value={formState.discountType} />
+  <input type="hidden" name="discountValue" value={formState.discountValue} />
+  <input type="hidden" name="taxRate" value={formState.taxRate} />
   <input type="hidden" name="notes" value={formState.notes} />
   <input type="hidden" name="terms" value={formState.terms} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="contactId" value={formState.contactId} />
+  <input type="hidden" name="lineItems" value={formState.lineItems} />
 </form>
 
 <form
@@ -829,40 +915,107 @@
   {/snippet}
 
   {#snippet activitySection()}
-    {#if selectedRecurring}
+    <div class="space-y-6">
       <div class="border-t pt-4">
-        <h4 class="text-muted-foreground mb-2 text-sm font-medium">Statistics</h4>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Created</span>
-            <span>{formatDate(selectedRecurring.createdAt)}</span>
+        <div class="mb-3 flex items-center justify-between">
+          <h4 class="text-muted-foreground text-sm font-medium">Line Items</h4>
+          <Button variant="ghost" size="sm" class="text-primary" onclick={addLineItem}>
+            <Plus class="mr-2 h-4 w-4" />
+            Add Line Item
+          </Button>
+        </div>
+        <div class="overflow-hidden rounded-md border">
+          <div
+            class="bg-muted/50 text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3 text-xs font-medium uppercase tracking-wide"
+          >
+            <div class="col-span-7">Description</div>
+            <div class="col-span-2 text-right">Qty</div>
+            <div class="col-span-2 text-right">Rate</div>
+            <div class="col-span-1"></div>
           </div>
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Start Date</span>
-            <span
-              >{selectedRecurring.startDate ? formatDate(selectedRecurring.startDate) : '-'}</span
-            >
-          </div>
-          {#if selectedRecurring.endDate}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">End Date</span>
-              <span>{formatDate(selectedRecurring.endDate)}</span>
+          {#each drawerFormData.lineItems || [] as item, index (item.id || `${index}`)}
+            <div class="grid grid-cols-12 items-start gap-3 border-b px-4 py-3 last:border-b-0">
+              <div class="col-span-7 space-y-2">
+                <input
+                  bind:value={item.description}
+                  class="bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  placeholder="Description"
+                />
+              </div>
+              <div class="col-span-2">
+                <input
+                  type="number"
+                  bind:value={item.quantity}
+                  min="0"
+                  step="1"
+                  class="bg-background w-full rounded-md border px-3 py-2 text-right text-sm"
+                />
+              </div>
+              <div class="col-span-2">
+                <input
+                  type="number"
+                  bind:value={item.unitPrice}
+                  min="0"
+                  step="0.01"
+                  class="bg-background w-full rounded-md border px-3 py-2 text-right text-sm"
+                />
+              </div>
+              <div class="col-span-1 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="text-muted-foreground hover:text-destructive h-8 w-8"
+                  onclick={() => removeLineItem(index)}
+                >
+                  <Trash2 class="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          {/if}
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Next Invoice</span>
-            <span
-              >{selectedRecurring.nextGenerationDate
-                ? formatDate(selectedRecurring.nextGenerationDate)
-                : '-'}</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Invoices Generated</span>
-            <span class="font-medium">{selectedRecurring.invoicesGenerated}</span>
+          {/each}
+          <div class="bg-muted/20 flex items-center justify-between px-4 py-3 text-sm">
+            <span class="text-muted-foreground">Subtotal</span>
+            <span class="font-medium">
+              {formatCurrency(lineItemsSubtotal, drawerFormData.currency || 'USD')}
+            </span>
           </div>
         </div>
       </div>
-    {/if}
+
+      {#if selectedRecurring}
+        <div class="border-t pt-4">
+          <h4 class="text-muted-foreground mb-2 text-sm font-medium">Statistics</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Created</span>
+              <span>{formatDate(selectedRecurring.createdAt)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Start Date</span>
+              <span
+                >{selectedRecurring.startDate ? formatDate(selectedRecurring.startDate) : '-'}</span
+              >
+            </div>
+            {#if selectedRecurring.endDate}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">End Date</span>
+                <span>{formatDate(selectedRecurring.endDate)}</span>
+              </div>
+            {/if}
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Next Invoice</span>
+              <span
+                >{selectedRecurring.nextGenerationDate
+                  ? formatDate(selectedRecurring.nextGenerationDate)
+                  : '-'}</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Invoices Generated</span>
+              <span class="font-medium">{selectedRecurring.invoicesGenerated}</span>
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
   {/snippet}
 </CrmDrawer>
