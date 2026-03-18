@@ -6,7 +6,7 @@
   import imgLogo from '$lib/assets/images/logo.png';
   import { ArrowRight } from '@lucide/svelte';
 
-  let { data } = $props();
+  let { data = {} } = $props();
 
   let isLoading = $state(false);
   let email = $state('');
@@ -20,6 +20,7 @@
 
   function handleMagicLink() {
     isSendingLink = true;
+    magicLinkError = '';
     return async ({ result }) => {
       isSendingLink = false;
       if (result?.type === 'success') {
@@ -82,7 +83,7 @@
           <p class="magic-link-hint">The link expires in 10 minutes.</p>
         </div>
       {:else}
-        <form method="POST" action="/login?/requestMagicLink" use:enhance={handleMagicLink} class="magic-link-form">
+        <form method="POST" use:enhance={handleMagicLink} class="magic-link-form">
           <input
             type="email"
             name="email"
@@ -102,6 +103,9 @@
             {/if}
           </button>
         </form>
+        {#if magicLinkError}
+          <p class="magic-link-error">{magicLinkError}</p>
+        {/if}
       {/if}
     </div>
 
@@ -317,6 +321,13 @@
   .magic-link-success {
     text-align: center;
     padding: 1rem 0;
+  }
+
+  .magic-link-error {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #c0392b;
+    text-align: center;
   }
 
   .magic-link-success p {

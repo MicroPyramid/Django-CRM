@@ -4,8 +4,8 @@
   import { Building2, LogOut, Plus, ChevronRight, Users, Shield } from '@lucide/svelte';
   import { enhance } from '$app/forms';
 
-  let { data } = $props();
-  let orgs = $derived(data.orgs);
+  let { data = { orgs: [] } } = $props();
+  let orgs = $derived(data?.orgs ?? []);
 
   let loading = $state(false);
   let selectedOrgId = $state(null);
@@ -47,7 +47,7 @@
       <!-- Organizations List -->
       {#if orgs.length > 0}
         <div class="space-y-3">
-          {#each orgs as org}
+          {#each orgs as org (org.id)}
             <form
               method="POST"
               action="?/selectOrg"
