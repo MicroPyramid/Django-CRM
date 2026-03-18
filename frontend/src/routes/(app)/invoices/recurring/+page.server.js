@@ -194,8 +194,8 @@ export const actions = {
         notes: form.get('notes')?.toString() || '',
         terms: form.get('terms')?.toString() || '',
         // Relationships
-        account: form.get('accountId')?.toString() || null,
-        contact: form.get('contactId')?.toString() || null
+        account_id: form.get('accountId')?.toString() || null,
+        contact_id: form.get('contactId')?.toString() || null
       };
 
       // Parse line items JSON
@@ -262,9 +262,22 @@ export const actions = {
         notes: form.get('notes')?.toString() || '',
         terms: form.get('terms')?.toString() || '',
         // Relationships
-        account: form.get('accountId')?.toString() || null,
-        contact: form.get('contactId')?.toString() || null
+        account_id: form.get('accountId')?.toString() || null,
+        contact_id: form.get('contactId')?.toString() || null
       };
+
+      // Parse line items JSON
+      const lineItemsJson = form.get('lineItems')?.toString() || '[]';
+      const lineItems = JSON.parse(lineItemsJson);
+      recurringData.line_items = lineItems.map((item, idx) => ({
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        unit_price: item.unitPrice || '0',
+        discount_type: item.discountType || 'fixed',
+        discount_value: item.discountValue || '0',
+        tax_rate: item.taxRate || '0',
+        order: item.order || idx
+      }));
 
       await apiRequest(
         `/invoices/recurring/${recurringId}/`,

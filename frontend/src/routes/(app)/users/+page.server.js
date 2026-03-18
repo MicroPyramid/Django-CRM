@@ -28,6 +28,23 @@ import { env } from '$env/dynamic/public';
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /**
+ * Flatten nested API validation errors into a readable message.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+function collectErrorMessages(value) {
+  if (!value) return [];
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectErrorMessages(item));
+  }
+  if (typeof value === 'object') {
+    return Object.values(value).flatMap((item) => collectErrorMessages(item));
+  }
+  return [];
+}
+
+/**
  * Make authenticated API request
  * @param {string} endpoint
  * @param {Object} options
@@ -50,7 +67,8 @@ async function apiRequest(endpoint, options = {}, context) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(errorData.errors || errorData.error || response.statusText);
+    const messages = collectErrorMessages(errorData.errors || errorData.error);
+    throw new Error(messages[0] || response.statusText);
   }
 
   return await response.json();
@@ -91,7 +109,7 @@ export async function load({ locals, cookies }) {
     // Combine active and inactive users, transform to match expected format
     const allUsers = [
       ...activeUsers.map((profile) => ({
-        odId: profile.user_details?.id || profile.id,
+        odId: profile.id,
         organizationId: org.id,
         role: profile.role,
         user: {
@@ -103,7 +121,7 @@ export async function load({ locals, cookies }) {
         profile
       })),
       ...inactiveUsers.map((profile) => ({
-        odId: profile.user_details?.id || profile.id,
+        odId: profile.id,
         organizationId: org.id,
         role: profile.role,
         user: {
@@ -162,13 +180,7 @@ export const actions = {
 
       // Create user via Django API
       // Django endpoint: POST /api/users/
-      const userData = {
-        email,
-        role,
-        // Django requires these fields for user creation
-        username: email.split('@')[0],
-        password: Math.random().toString(36).slice(-12) // Random password
-      };
+      const userData = { email, role };
 
       await apiRequest(
         '/users/',
@@ -179,7 +191,7 @@ export const actions = {
         { cookies, org }
       );
 
-      return { success: true };
+      return { success: true, action: 'add_user' };
     } catch (err) {
       console.error('Error adding user:', err);
       // Check for specific error messages

@@ -125,6 +125,21 @@ class TestUsersListView:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_create_user_minimal_payload(self, admin_client, org_a):
+        """Admin can create a user with just email and role."""
+        response = admin_client.post(
+            self.url,
+            {
+                "email": "new-member@test.com",
+                "role": "USER",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Profile.objects.filter(
+            user__email="new-member@test.com", org=org_a
+        ).exists()
+
 
 @pytest.mark.django_db
 class TestUserDetailView:

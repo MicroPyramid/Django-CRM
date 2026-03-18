@@ -1145,6 +1145,37 @@ class TestEstimateListView:
         assert data["error"] is False
         assert data["estimate"]["title"] == "New Estimate"
 
+    def test_create_estimate_with_line_items(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
+        response = admin_client.post(
+            "/api/invoices/estimates/",
+            {
+                "title": "Estimate With Items",
+                "account_id": str(account_for_invoice.id),
+                "contact_id": str(contact_for_invoice.id),
+                "client_name": "New Client",
+                "client_email": "new@example.com",
+                "currency": "USD",
+                "tax_rate": "10.00",
+                "line_items": [
+                    {
+                        "name": "Implementation",
+                        "quantity": "2.00",
+                        "unit_price": "100.00",
+                        "order": 0,
+                    }
+                ],
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        data = response.json()
+        created = Estimate.objects.get(id=data["estimate"]["id"])
+        assert created.line_items.count() == 1
+        assert created.subtotal == Decimal("200.00")
+        assert created.total_amount == Decimal("220.00")
+
     def test_create_estimate_invalid_account(
         self, admin_client, contact_for_invoice
     ):
@@ -1416,6 +1447,40 @@ class TestRecurringInvoiceListView:
         data = response.json()
         assert data["error"] is False
         assert data["recurring_invoice"]["title"] == "New Recurring"
+
+    def test_create_recurring_with_line_items(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
+        response = admin_client.post(
+            "/api/invoices/recurring/",
+            {
+                "title": "Recurring With Items",
+                "account_id": str(account_for_invoice.id),
+                "contact_id": str(contact_for_invoice.id),
+                "client_name": "Client",
+                "client_email": "client@example.com",
+                "frequency": "WEEKLY",
+                "start_date": "2026-03-01",
+                "next_generation_date": "2026-03-01",
+                "currency": "USD",
+                "tax_rate": "10.00",
+                "line_items": [
+                    {
+                        "name": "Hosting",
+                        "quantity": "2.00",
+                        "unit_price": "50.00",
+                        "order": 0,
+                    }
+                ],
+            },
+            format="json",
+        )
+        assert response.status_code == 201
+        data = response.json()
+        created = RecurringInvoice.objects.get(id=data["recurring_invoice"]["id"])
+        assert created.line_items.count() == 1
+        assert created.subtotal == Decimal("100.00")
+        assert created.total_amount == Decimal("110.00")
 
     def test_create_recurring_invalid_account(
         self, admin_client, contact_for_invoice

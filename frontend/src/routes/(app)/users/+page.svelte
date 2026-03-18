@@ -82,7 +82,9 @@
   // Handle form results
   $effect(() => {
     if (form?.success) {
-      if (form.action === 'create_team') {
+      if (form.action === 'add_user') {
+        toast.success('Member added successfully');
+      } else if (form.action === 'create_team') {
         toast.success('Team created successfully');
         teamDialogOpen = false;
         editingTeam = null;

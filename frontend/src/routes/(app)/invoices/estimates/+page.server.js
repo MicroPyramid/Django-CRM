@@ -269,9 +269,9 @@ export const actions = {
         client_postcode: form.get('clientPostcode')?.toString() || '',
         client_country: form.get('clientCountry')?.toString() || '',
         // Relationships
-        account: form.get('accountId')?.toString() || null,
-        contact: form.get('contactId')?.toString() || null,
-        opportunity: form.get('opportunityId')?.toString() || null
+        account_id: form.get('accountId')?.toString() || null,
+        contact_id: form.get('contactId')?.toString() || null,
+        opportunity_id: form.get('opportunityId')?.toString() || null
       };
 
       // Parse line items JSON
@@ -341,10 +341,24 @@ export const actions = {
         client_postcode: form.get('clientPostcode')?.toString() || '',
         client_country: form.get('clientCountry')?.toString() || '',
         // Relationships
-        account: form.get('accountId')?.toString() || null,
-        contact: form.get('contactId')?.toString() || null,
-        opportunity: form.get('opportunityId')?.toString() || null
+        account_id: form.get('accountId')?.toString() || null,
+        contact_id: form.get('contactId')?.toString() || null,
+        opportunity_id: form.get('opportunityId')?.toString() || null
       };
+
+      // Parse line items JSON
+      const lineItemsJson = form.get('lineItems')?.toString() || '[]';
+      const lineItems = JSON.parse(lineItemsJson);
+      estimateData.line_items = lineItems.map((item, idx) => ({
+        name: item.name || item.description || '',
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        unit_price: item.unitPrice || '0',
+        discount_type: item.discountType || 'fixed',
+        discount_value: item.discountValue || '0',
+        tax_rate: item.taxRate || '0',
+        order: item.order || idx
+      }));
 
       await apiRequest(
         `/invoices/estimates/${estimateId}/`,

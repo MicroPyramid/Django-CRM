@@ -1,4 +1,5 @@
 <script>
+  import { Plus, Trash2 } from '@lucide/svelte';
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
@@ -246,8 +247,19 @@
     expiryDate: '',
     accountId: '',
     contactId: '',
+    opportunityId: '',
+    currency: 'USD',
+    discountType: 'fixed',
+    discountValue: '0',
+    taxRate: '0',
+    clientAddressLine: '',
+    clientCity: '',
+    clientState: '',
+    clientPostcode: '',
+    clientCountry: '',
     notes: '',
-    terms: ''
+    terms: '',
+    lineItems: '[]'
   });
 
   // Derived values
@@ -255,6 +267,12 @@
   const pagination = $derived(data.pagination);
   const allEstimates = $derived(data.estimates);
   const template = $derived(data.template);
+  const lineItemsSubtotal = $derived.by(() =>
+    (drawerFormData.lineItems || []).reduce(
+      (sum, item) => sum + getLineItemAmount(item),
+      0
+    )
+  );
 
   // Filter estimates by chip selection (client-side filtering)
   const estimates = $derived.by(() => {
@@ -358,10 +376,19 @@
       clientPhone: '',
       issueDate: new Date().toISOString().split('T')[0],
       expiryDate: '',
+      currency: 'USD',
+      discountType: 'fixed',
+      discountValue: '0',
+      taxRate: '0',
+      clientAddressLine: '',
+      clientCity: '',
+      clientState: '',
+      clientPostcode: '',
+      clientCountry: '',
       // Pre-populate notes/terms from default template
       notes: template?.defaultNotes || '',
       terms: template?.defaultTerms || '',
-      lineItems: []
+      lineItems: [createEstimateLineItem()]
     };
     drawerOpen = true;
   }
@@ -379,7 +406,13 @@
       if (drawerMode === 'create') {
         // Already set in openCreateDrawer
       } else if (selectedEstimate) {
-        drawerFormData = { ...selectedEstimate };
+        drawerFormData = {
+          ...selectedEstimate,
+          lineItems:
+            selectedEstimate.lineItems?.length > 0
+              ? selectedEstimate.lineItems.map((item) => ({ ...item }))
+              : [createEstimateLineItem()]
+        };
       }
     }
   });
@@ -387,6 +420,39 @@
   // Field change handler
   function handleFieldChange(field, value) {
     drawerFormData[field] = value;
+  }
+
+  function createEstimateLineItem() {
+    return {
+      id: crypto.randomUUID(),
+      name: '',
+      description: '',
+      quantity: 1,
+      unitPrice: '0',
+      discountType: 'fixed',
+      discountValue: '0',
+      taxRate: '0'
+    };
+  }
+
+  function getLineItemAmount(item) {
+    const quantity = Number(item?.quantity || 0);
+    const unitPrice = Number(item?.unitPrice || 0);
+    return quantity * unitPrice;
+  }
+
+  function addLineItem() {
+    drawerFormData.lineItems = [...(drawerFormData.lineItems || []), createEstimateLineItem()];
+  }
+
+  function removeLineItem(index) {
+    const existingItems = drawerFormData.lineItems || [];
+    if (existingItems.length === 1) {
+      drawerFormData.lineItems = [createEstimateLineItem()];
+      return;
+    }
+
+    drawerFormData.lineItems = existingItems.filter((_, itemIndex) => itemIndex !== index);
   }
 
   // Save handler
@@ -400,8 +466,25 @@
       formState.clientPhone = drawerFormData.clientPhone;
       formState.issueDate = drawerFormData.issueDate;
       formState.expiryDate = drawerFormData.expiryDate;
+      formState.accountId = drawerFormData.account?.id?.toString() || '';
+      formState.contactId = drawerFormData.contact?.id?.toString() || '';
+      formState.opportunityId = drawerFormData.opportunity?.id?.toString() || '';
+      formState.currency = drawerFormData.currency || 'USD';
+      formState.discountType = drawerFormData.discountType || 'fixed';
+      formState.discountValue = drawerFormData.discountValue?.toString() || '0';
+      formState.taxRate = drawerFormData.taxRate?.toString() || '0';
+      formState.clientAddressLine = drawerFormData.clientAddressLine || '';
+      formState.clientCity = drawerFormData.clientCity || '';
+      formState.clientState = drawerFormData.clientState || '';
+      formState.clientPostcode = drawerFormData.clientPostcode || '';
+      formState.clientCountry = drawerFormData.clientCountry || '';
       formState.notes = drawerFormData.notes;
       formState.terms = drawerFormData.terms;
+      formState.lineItems = JSON.stringify(
+        (drawerFormData.lineItems || []).filter(
+          (item) => item.name || item.description || Number(item.unitPrice) > 0
+        )
+      );
 
       await tick();
       createForm.requestSubmit();
@@ -415,8 +498,25 @@
       formState.clientPhone = drawerFormData.clientPhone;
       formState.issueDate = drawerFormData.issueDate;
       formState.expiryDate = drawerFormData.expiryDate;
+      formState.accountId = drawerFormData.account?.id?.toString() || '';
+      formState.contactId = drawerFormData.contact?.id?.toString() || '';
+      formState.opportunityId = drawerFormData.opportunity?.id?.toString() || '';
+      formState.currency = drawerFormData.currency || 'USD';
+      formState.discountType = drawerFormData.discountType || 'fixed';
+      formState.discountValue = drawerFormData.discountValue?.toString() || '0';
+      formState.taxRate = drawerFormData.taxRate?.toString() || '0';
+      formState.clientAddressLine = drawerFormData.clientAddressLine || '';
+      formState.clientCity = drawerFormData.clientCity || '';
+      formState.clientState = drawerFormData.clientState || '';
+      formState.clientPostcode = drawerFormData.clientPostcode || '';
+      formState.clientCountry = drawerFormData.clientCountry || '';
       formState.notes = drawerFormData.notes;
       formState.terms = drawerFormData.terms;
+      formState.lineItems = JSON.stringify(
+        (drawerFormData.lineItems || []).filter(
+          (item) => item.name || item.description || Number(item.unitPrice) > 0
+        )
+      );
 
       await tick();
       updateForm.requestSubmit();
@@ -555,10 +655,21 @@
   <input type="hidden" name="clientPhone" value={formState.clientPhone} />
   <input type="hidden" name="issueDate" value={formState.issueDate} />
   <input type="hidden" name="expiryDate" value={formState.expiryDate} />
+  <input type="hidden" name="currency" value={formState.currency} />
+  <input type="hidden" name="discountType" value={formState.discountType} />
+  <input type="hidden" name="discountValue" value={formState.discountValue} />
+  <input type="hidden" name="taxRate" value={formState.taxRate} />
+  <input type="hidden" name="clientAddressLine" value={formState.clientAddressLine} />
+  <input type="hidden" name="clientCity" value={formState.clientCity} />
+  <input type="hidden" name="clientState" value={formState.clientState} />
+  <input type="hidden" name="clientPostcode" value={formState.clientPostcode} />
+  <input type="hidden" name="clientCountry" value={formState.clientCountry} />
   <input type="hidden" name="notes" value={formState.notes} />
   <input type="hidden" name="terms" value={formState.terms} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="contactId" value={formState.contactId} />
+  <input type="hidden" name="opportunityId" value={formState.opportunityId} />
+  <input type="hidden" name="lineItems" value={formState.lineItems} />
 </form>
 
 <form
@@ -586,10 +697,21 @@
   <input type="hidden" name="clientPhone" value={formState.clientPhone} />
   <input type="hidden" name="issueDate" value={formState.issueDate} />
   <input type="hidden" name="expiryDate" value={formState.expiryDate} />
+  <input type="hidden" name="currency" value={formState.currency} />
+  <input type="hidden" name="discountType" value={formState.discountType} />
+  <input type="hidden" name="discountValue" value={formState.discountValue} />
+  <input type="hidden" name="taxRate" value={formState.taxRate} />
+  <input type="hidden" name="clientAddressLine" value={formState.clientAddressLine} />
+  <input type="hidden" name="clientCity" value={formState.clientCity} />
+  <input type="hidden" name="clientState" value={formState.clientState} />
+  <input type="hidden" name="clientPostcode" value={formState.clientPostcode} />
+  <input type="hidden" name="clientCountry" value={formState.clientCountry} />
   <input type="hidden" name="notes" value={formState.notes} />
   <input type="hidden" name="terms" value={formState.terms} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="contactId" value={formState.contactId} />
+  <input type="hidden" name="opportunityId" value={formState.opportunityId} />
+  <input type="hidden" name="lineItems" value={formState.lineItems} />
 </form>
 
 <form
@@ -1032,51 +1154,127 @@
   {/snippet}
 
   {#snippet activitySection()}
-    {#if selectedEstimate}
+    <div class="space-y-6">
       <div class="border-t pt-4">
-        <h4 class="text-muted-foreground mb-2 text-sm font-medium">Activity</h4>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Created</span>
-            <span>{formatDate(selectedEstimate.createdAt)}</span>
+        <div class="mb-3 flex items-center justify-between">
+          <h4 class="text-muted-foreground text-sm font-medium">Line Items</h4>
+          <Button variant="ghost" size="sm" class="text-primary" onclick={addLineItem}>
+            <Plus class="mr-2 h-4 w-4" />
+            Add Line Item
+          </Button>
+        </div>
+        <div class="overflow-hidden rounded-md border">
+          <div
+            class="bg-muted/50 text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3 text-xs font-medium uppercase tracking-wide"
+          >
+            <div class="col-span-6">Description</div>
+            <div class="col-span-2 text-right">Qty</div>
+            <div class="col-span-2 text-right">Rate</div>
+            <div class="col-span-1 text-right">Total</div>
+            <div class="col-span-1"></div>
           </div>
-          {#if selectedEstimate.sentAt}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">Sent</span>
-              <span>{formatDate(selectedEstimate.sentAt)}</span>
+          {#each drawerFormData.lineItems || [] as item, index (item.id || `${index}`)}
+            <div class="grid grid-cols-12 items-start gap-3 border-b px-4 py-3 last:border-b-0">
+              <div class="col-span-6 space-y-2">
+                <input
+                  bind:value={item.name}
+                  class="bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  placeholder="Item name"
+                />
+                <input
+                  bind:value={item.description}
+                  class="bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  placeholder="Description"
+                />
+              </div>
+              <div class="col-span-2">
+                <input
+                  type="number"
+                  bind:value={item.quantity}
+                  min="0"
+                  step="1"
+                  class="bg-background w-full rounded-md border px-3 py-2 text-right text-sm"
+                />
+              </div>
+              <div class="col-span-2">
+                <input
+                  type="number"
+                  bind:value={item.unitPrice}
+                  min="0"
+                  step="0.01"
+                  class="bg-background w-full rounded-md border px-3 py-2 text-right text-sm"
+                />
+              </div>
+              <div class="col-span-1 pt-2 text-right text-sm font-medium">
+                {formatCurrency(getLineItemAmount(item), drawerFormData.currency || 'USD')}
+              </div>
+              <div class="col-span-1 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="text-muted-foreground hover:text-destructive h-8 w-8"
+                  onclick={() => removeLineItem(index)}
+                >
+                  <Trash2 class="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          {/if}
-          {#if selectedEstimate.viewedAt}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">Viewed</span>
-              <span>{formatDate(selectedEstimate.viewedAt)}</span>
-            </div>
-          {/if}
-          {#if selectedEstimate.acceptedAt}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">Accepted</span>
-              <span>{formatDate(selectedEstimate.acceptedAt)}</span>
-            </div>
-          {/if}
-          {#if selectedEstimate.declinedAt}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">Declined</span>
-              <span>{formatDate(selectedEstimate.declinedAt)}</span>
-            </div>
-          {/if}
-          {#if selectedEstimate.convertedToInvoice}
-            <div class="flex justify-between">
-              <span class="text-muted-foreground">Converted to Invoice</span>
-              <a
-                href="/invoices?selected={selectedEstimate.convertedToInvoice.id}"
-                class="text-primary hover:underline"
-              >
-                {selectedEstimate.convertedToInvoice.invoiceNumber || 'View Invoice'}
-              </a>
-            </div>
-          {/if}
+          {/each}
+          <div class="bg-muted/20 flex items-center justify-between px-4 py-3 text-sm">
+            <span class="text-muted-foreground">Subtotal</span>
+            <span class="font-medium">
+              {formatCurrency(lineItemsSubtotal, drawerFormData.currency || 'USD')}
+            </span>
+          </div>
         </div>
       </div>
-    {/if}
+
+      {#if selectedEstimate}
+        <div class="border-t pt-4">
+          <h4 class="text-muted-foreground mb-2 text-sm font-medium">Activity</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Created</span>
+              <span>{formatDate(selectedEstimate.createdAt)}</span>
+            </div>
+            {#if selectedEstimate.sentAt}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Sent</span>
+                <span>{formatDate(selectedEstimate.sentAt)}</span>
+              </div>
+            {/if}
+            {#if selectedEstimate.viewedAt}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Viewed</span>
+                <span>{formatDate(selectedEstimate.viewedAt)}</span>
+              </div>
+            {/if}
+            {#if selectedEstimate.acceptedAt}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Accepted</span>
+                <span>{formatDate(selectedEstimate.acceptedAt)}</span>
+              </div>
+            {/if}
+            {#if selectedEstimate.declinedAt}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Declined</span>
+                <span>{formatDate(selectedEstimate.declinedAt)}</span>
+              </div>
+            {/if}
+            {#if selectedEstimate.convertedToInvoice}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Converted to Invoice</span>
+                <a
+                  href="/invoices?selected={selectedEstimate.convertedToInvoice.id}"
+                  class="text-primary hover:underline"
+                >
+                  {selectedEstimate.convertedToInvoice.invoiceNumber || 'View Invoice'}
+                </a>
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+    </div>
   {/snippet}
 </CrmDrawer>
