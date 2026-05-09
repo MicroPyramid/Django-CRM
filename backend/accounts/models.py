@@ -97,7 +97,7 @@ class Account(AssignableMixin, BaseModel):
             ),
             # Annual revenue must be non-negative
             models.CheckConstraint(
-                check=Q(annual_revenue__gte=0) | Q(annual_revenue__isnull=True),
+                condition=Q(annual_revenue__gte=0) | Q(annual_revenue__isnull=True),
                 name="account_revenue_non_negative",
             ),
         ]

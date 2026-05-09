@@ -79,6 +79,7 @@
      ───────────────────────────────────────────────────────────────────────── */
   --color-primary-default: #ea580c;
   --color-primary-hover: #c2410c;
+  --color-primary-dark: #c2410c;
   --color-primary-active: #9a3412;
   --color-primary-light: #fff7ed;
 
@@ -98,6 +99,7 @@
 
   /* Success */
   --color-success-default: #28a745;
+  --color-success-dark: #1e7e34;
   --color-success-light: #e8f5e9;
 
   /* Info */
@@ -141,6 +143,7 @@
      BORDER COLORS
      ───────────────────────────────────────────────────────────────────────── */
   --border-default: #e0e0e0;
+  --border-subtle: #eeeeee;
   --border-strong: #bdbdbd;
   --border-focus: #ea580c;
   --border-error: #dc3545;
@@ -191,9 +194,13 @@
      PRIORITY LEVELS
      ───────────────────────────────────────────────────────────────────────── */
   --priority-urgent: #dc2626;
+  --priority-urgent-bg: #fee2e2;
   --priority-high: #f97316;
+  --priority-high-bg: #ffedd5;
   --priority-medium: #fbbf24;
+  --priority-medium-bg: #fef3c7;
   --priority-low: #22c55e;
+  --priority-low-bg: #dcfce7;
   --priority-none: #9ca3af;
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -344,6 +351,7 @@
      ───────────────────────────────────────────────────────────────────────── */
   --sidebar-width: 260px;
   --sidebar-width-collapsed: 72px;
+  --sidebar-width-icon: 3rem;
   --drawer-width: 520px;
   --header-height: 60px;
   --content-padding: 28px;
@@ -461,6 +469,7 @@
   /* Primary color scale - Dark mode */
   --color-primary-default: #fb923c;
   --color-primary-hover: #fdba74;
+  --color-primary-dark: #f97316;
   --color-primary-active: #f97316;
   --color-primary-light: #431407;
 
@@ -481,6 +490,7 @@
 
   /* Border Colors - Dark mode */
   --border-default: #3d3d3d;
+  --border-subtle: #2a2a2a;
   --border-strong: #525252;
   --border-focus: #fb923c;
   --border-error: #f87171;
@@ -517,6 +527,7 @@
   --color-warning-dark: #fcd34d;
   --color-warning-light: rgba(251, 191, 36, 0.15);
   --color-success-default: #34d399;
+  --color-success-dark: #10b981;
   --color-success-light: rgba(52, 211, 153, 0.15);
   --color-info-default: #38bdf8;
   --color-info-light: rgba(56, 189, 248, 0.15);

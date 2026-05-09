@@ -162,12 +162,12 @@ class Lead(AssignableMixin, BaseModel):
             ),
             # Probability must be 0-100
             models.CheckConstraint(
-                check=Q(probability__gte=0) & Q(probability__lte=100),
+                condition=Q(probability__gte=0) & Q(probability__lte=100),
                 name="lead_probability_range",
             ),
             # Opportunity amount must be non-negative
             models.CheckConstraint(
-                check=Q(opportunity_amount__gte=0) | Q(opportunity_amount__isnull=True),
+                condition=Q(opportunity_amount__gte=0) | Q(opportunity_amount__isnull=True),
                 name="lead_amount_non_negative",
             ),
         ]

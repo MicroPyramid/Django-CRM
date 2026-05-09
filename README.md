@@ -67,31 +67,50 @@ BottleCRM is a full-featured Customer Relationship Management system designed fo
 
 ### Backend Setup
 
+The backend uses [`uv`](https://docs.astral.sh/uv/) for Python dependency management — it reads `pyproject.toml`, installs from `uv.lock`, and creates the virtual environment for you. uv is much faster than pip and gives reproducible installs out of the box.
+
 ```bash
 # Clone the repository
 git clone https://github.com/MicroPyramid/Django-CRM.git
-cd Django-CRM
+cd Django-CRM/backend
 
-# Create and activate virtual environment
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Install uv (one time, system-wide)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Or on macOS via Homebrew: brew install uv
 
-# Install dependencies
-pip install -r requirements.txt
+# Install Python (matches the version in .python-version) and all deps into .venv/
+uv sync
 
 # Set up environment variables (see env.md for details)
 cp .env.example .env
 # Edit .env with your database and other settings
 
 # Run migrations
-python manage.py migrate
+uv run python manage.py migrate
 
 # Create a superuser
-python manage.py createsuperuser
+uv run python manage.py createsuperuser
 
 # Start the development server
-python manage.py runserver
+uv run python manage.py runserver
+```
+
+`uv run <cmd>` resolves binaries from `.venv/bin/` automatically — no need to `source .venv/bin/activate`. If you prefer the activate-then-run flow, that still works:
+
+```bash
+source .venv/bin/activate
+python manage.py runserver   # equivalent to `uv run python manage.py runserver`
+```
+
+Common dev commands (from `backend/`):
+
+```bash
+uv run pytest                                # run tests
+uv run python manage.py makemigrations       # create migrations
+uv run celery -A crm worker --loglevel=INFO  # background worker
+uv add <package>                             # add a dependency (updates pyproject.toml + uv.lock)
+uv add --group dev <package>                 # add a dev-only dependency
+uv lock --upgrade                            # refresh the lockfile
 ```
 
 ### Frontend Setup
@@ -112,8 +131,7 @@ pnpm run dev
 ```bash
 # In a new terminal
 cd backend
-source venv/bin/activate
-celery -A crm worker --loglevel=INFO
+uv run celery -A crm worker --loglevel=INFO
 ```
 
 ### Access the Application

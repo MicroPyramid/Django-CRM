@@ -128,12 +128,12 @@ class Opportunity(AssignableMixin, BaseModel):
         constraints = [
             # Probability must be 0-100
             models.CheckConstraint(
-                check=Q(probability__gte=0) & Q(probability__lte=100),
+                condition=Q(probability__gte=0) & Q(probability__lte=100),
                 name="opportunity_probability_range",
             ),
             # Amount must be non-negative
             models.CheckConstraint(
-                check=Q(amount__gte=0) | Q(amount__isnull=True),
+                condition=Q(amount__gte=0) | Q(amount__isnull=True),
                 name="opportunity_amount_non_negative",
             ),
         ]

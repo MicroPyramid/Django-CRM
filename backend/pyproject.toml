@@ -1,0 +1,118 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-crm"
+version = "1.0.0"
+description = "Open-source multi-tenant CRM platform built on Django REST Framework with row-level security."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "MicroPyramid", email = "hello@micropyramid.com" },
+]
+keywords = [
+    "django",
+    "crm",
+    "drf",
+    "django-rest-framework",
+    "multi-tenant",
+    "saas",
+    "sales",
+    "leads",
+    "contacts",
+    "opportunity",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 6.0",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "django>=6.0.5",
+    "celery>=5.6.2",
+    "python-dotenv>=1.2.1",
+    "django-cors-headers>=4.9.0",
+    "djangorestframework>=3.16.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "drf-spectacular>=0.29.0",
+    "django-ses>=4.7.1",
+    "psycopg2-binary>=2.9.11",
+    "whitenoise>=6.11.0",
+    "sentry-sdk>=2.53.0",
+    "django-storages>=1.14.6",
+    "django-crum>=0.7.9",
+    "disposable-email-domains>=0.0.162",
+    "redis>=7.2.0",
+    "pytz>=2025.2",
+    "requests>=2.32.5",
+    "faker>=40.4.0",
+    "python-dateutil>=2.9.0.post0",
+    "google-auth>=2.48.0",
+    # PDF generation (also needs system libs: cairo, pango, gdk-pixbuf, libffi, shared-mime-info)
+    "weasyprint>=68.1",
+    "cairocffi>=1.7.1",
+    # Production WSGI server
+    "gunicorn>=25.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/MicroPyramid/Django-CRM"
+Repository = "https://github.com/MicroPyramid/Django-CRM"
+Documentation = "https://github.com/MicroPyramid/Django-CRM#readme"
+Issues = "https://github.com/MicroPyramid/Django-CRM/issues"
+Changelog = "https://github.com/MicroPyramid/Django-CRM/releases"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-django>=4.12.0",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "accounts",
+    "cases",
+    "common",
+    "contacts",
+    "crm",
+    "invoices",
+    "leads",
+    "opportunity",
+    "orders",
+    "tasks",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "accounts/",
+    "cases/",
+    "common/",
+    "contacts/",
+    "crm/",
+    "invoices/",
+    "leads/",
+    "opportunity/",
+    "orders/",
+    "tasks/",
+    "static/",
+    "templates/",
+    "manage.py",
+    ".env.example",
+    "pytest.ini",
+    "ruff.toml",
+    "README.md",
+]

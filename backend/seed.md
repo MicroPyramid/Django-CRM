@@ -6,16 +6,15 @@ Management command to generate realistic test data for development and testing.
 
 ```bash
 cd backend
-source venv/bin/activate
 
 # Basic usage (creates 1 org with default counts)
-python manage.py seed_data --email admin@example.com
+uv run python manage.py seed_data --email admin@example.com
 ```
 
 ## Full Options
 
 ```bash
-python manage.py seed_data \
+uv run python manage.py seed_data \
     --email admin@example.com \     # Required: Admin user email
     --orgs 2 \                      # Number of orgs (default: 1)
     --users-per-org 5 \             # Users per org (default: 3)
@@ -37,16 +36,16 @@ python manage.py seed_data \
 
 ```bash
 # Create 2 organizations with lots of data
-python manage.py seed_data --email admin@example.com --orgs 2 --leads 100 --accounts 50
+uv run python manage.py seed_data --email admin@example.com --orgs 2 --leads 100 --accounts 50
 
 # Reproducible seeding (same data every time)
-python manage.py seed_data --email admin@example.com --seed 42
+uv run python manage.py seed_data --email admin@example.com --seed 42
 
 # Clear all CRM data and reseed
-python manage.py seed_data --email admin@example.com --clear --no-input
+uv run python manage.py seed_data --email admin@example.com --clear --no-input
 
 # Minimal data for quick testing
-python manage.py seed_data --email admin@example.com --leads 5 --accounts 3 --contacts 5 --opportunities 3 --cases 2 --tasks 5
+uv run python manage.py seed_data --email admin@example.com --leads 5 --accounts 3 --contacts 5 --opportunities 3 --cases 2 --tasks 5
 ```
 
 ## Features
@@ -81,7 +80,7 @@ This allows you to reseed CRM data without losing user accounts.
 ## Sample Output
 
 ```
-$ python manage.py seed_data --email admin@test.com --orgs 2 --seed 42
+$ uv run python manage.py seed_data --email admin@test.com --orgs 2 --seed 42
 
 Seeding CRM database...
 Using seed: 42
@@ -130,8 +129,4 @@ Total time: 1.22 seconds
 
 ## Dependencies
 
-The script requires the `faker` package (already in requirements.txt):
-
-```bash
-pip install faker
-```
+The script requires the `faker` package, which is already declared in `pyproject.toml` and installed by `uv sync`. No extra step is needed.

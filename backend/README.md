@@ -35,30 +35,37 @@ The backend for BottleCRM, a multi-tenant CRM platform built with Django REST Fr
 
 ## Prerequisites
 
-- **Python 3.8+**
+- **Python 3.10+** (uv installs a matching Python automatically if needed)
 - **PostgreSQL**
 - **Redis** (for Celery)
-- **virtualenv**
+- **[uv](https://docs.astral.sh/uv/)** — Python package & venv manager (replaces pip + virtualenv)
 
 ## Installation
 
-### 1. Create and activate virtual environment
+### 1. Install uv
+
+```bash
+# Linux / macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or via Homebrew
+brew install uv
+```
+
+### 2. Install Python dependencies
+
+`uv sync` reads `pyproject.toml` + `uv.lock`, picks the Python version from `.python-version`, and creates `.venv/` with everything installed.
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv sync
 ```
 
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
+> Run any backend command with `uv run <cmd>` (e.g. `uv run python manage.py migrate`). uv resolves binaries from `.venv/bin/` automatically — no manual `source .venv/bin/activate` needed (though that still works if you prefer it).
 
 ### 3. Install PDF generation system dependencies
 
-Invoice PDF generation uses WeasyPrint (already included in requirements.txt). However, WeasyPrint requires system libraries that must be installed separately:
+Invoice PDF generation uses WeasyPrint (a runtime dep). It requires system libraries that must be installed separately:
 
 **Ubuntu/Debian:**
 ```bash
@@ -129,16 +136,16 @@ ALTER USER postgres WITH PASSWORD 'root';
 \q
 
 # Run migrations
-python manage.py migrate
+uv run python manage.py migrate
 
 # Create superuser (optional)
-python manage.py createsuperuser
+uv run python manage.py createsuperuser
 ```
 
 ### 6. Run the development server
 
 ```bash
-python manage.py runserver
+uv run python manage.py runserver
 ```
 
 The API will be available at `http://localhost:8000`
@@ -148,7 +155,7 @@ The API will be available at `http://localhost:8000`
 For background tasks (emails, notifications), run the Celery worker:
 
 ```bash
-celery -A crm worker --loglevel=INFO
+uv run celery -A crm worker --loglevel=INFO
 ```
 
 ## API Documentation
@@ -321,7 +328,9 @@ GET/POST       /api/<module>/attachment/<pk>/ # Attachments
 ```
 backend/
 ├── manage.py
-├── requirements.txt
+├── pyproject.toml          # Python deps + project metadata (uv-managed)
+├── uv.lock                 # Pinned, reproducible dependency tree
+├── .python-version         # Python version pin (uv reads this on `uv sync`)
 ├── crm/                    # Django project settings
 │   ├── settings.py
 │   ├── urls.py
@@ -355,20 +364,36 @@ backend/
 
 ```bash
 # Format code
-black .
+uv run black .
 
 # Sort imports
-isort .
+uv run isort .
 
 # Run tests
-pytest
+uv run pytest
+```
+
+### Managing Dependencies
+
+```bash
+# Add a runtime dependency (updates pyproject.toml + uv.lock)
+uv add <package>
+
+# Add a dev-only dependency (e.g. test or lint tool)
+uv add --group dev <package>
+
+# Remove a dependency
+uv remove <package>
+
+# Refresh the lockfile
+uv lock --upgrade
 ```
 
 ### Creating a New App
 
 1. Create the app:
    ```bash
-   python manage.py startapp myapp
+   uv run python manage.py startapp myapp
    ```
 
 2. Add to `INSTALLED_APPS` in `crm/settings.py`
@@ -390,8 +415,8 @@ pytest
 
 5. Run migrations:
    ```bash
-   python manage.py makemigrations
-   python manage.py migrate
+   uv run python manage.py makemigrations
+   uv run python manage.py migrate
    ```
 
 ## Environment Variables Reference
@@ -428,10 +453,10 @@ sudo -u postgres psql -l
 
 ```bash
 # Show migration status
-python manage.py showmigrations
+uv run python manage.py showmigrations
 
 # Reset migrations (development only)
-python manage.py migrate --fake <app> zero
+uv run python manage.py migrate --fake <app> zero
 ```
 
 ### Celery Not Processing Tasks
@@ -441,7 +466,7 @@ python manage.py migrate --fake <app> zero
 redis-cli ping
 
 # Check Celery worker logs
-celery -A crm worker --loglevel=DEBUG
+uv run celery -A crm worker --loglevel=DEBUG
 ```
 
 ## License
