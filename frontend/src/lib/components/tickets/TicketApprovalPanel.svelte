@@ -16,17 +16,22 @@
    * The "Request approval to close" affordance auto-resolves the rule
    * server-side; if no rule matches, the API responds 400 and we surface that.
    *
+   * `initialApprovals` is supplied by `+page.server.js` so the panel paints
+   * fully populated on first render — the post-mount fetch is only a fallback
+   * for callers that didn't seed the data.
+   *
    * @type {{
    *   ticketId: string,
    *   currentProfileId?: string,
-   *   isAdmin?: boolean
+   *   isAdmin?: boolean,
+   *   initialApprovals?: Array<any>
    * }}
    */
-  let { ticketId, currentProfileId, isAdmin = false } = $props();
+  let { ticketId, currentProfileId, isAdmin = false, initialApprovals } = $props();
 
   /** @type {Array<any>} */
-  let approvals = $state([]);
-  let loading = $state(true);
+  let approvals = $state(initialApprovals ?? []);
+  let loading = $state(initialApprovals === undefined);
   let pending = $state(false);
   let rejectReason = $state('');
   let rejectingId = $state(/** @type {string | null} */ (null));
@@ -35,8 +40,16 @@
   const latest = $derived(approvals.length > 0 ? approvals[0] : null);
   const hasOpen = $derived(latest && latest.state === 'pending');
   const canActOnLatest = $derived(latestActionable(latest));
+  // After the latest request has been cancelled or rejected, the workflow is
+  // finished but the ticket still needs approval — let the agent fire a fresh
+  // request without leaving the page.
+  const canRerequest = $derived(
+    latest && (latest.state === 'cancelled' || latest.state === 'rejected')
+  );
 
-  onMount(load);
+  onMount(() => {
+    if (initialApprovals === undefined) load();
+  });
 
   async function load() {
     loading = true;
@@ -292,6 +305,29 @@
             Confirm rejection
           </Button>
         {/if}
+      {/if}
+
+      {#if canRerequest}
+        <div class="mt-2 space-y-2 border-t border-[var(--border-default)] pt-2">
+          <p class="text-xs text-[var(--text-secondary)]">
+            Send a new approval request for this ticket.
+          </p>
+          <textarea
+            bind:value={note}
+            rows="2"
+            placeholder="Optional note for the approver"
+            class="w-full rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-xs"
+          ></textarea>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onclick={requestApproval}
+          >
+            {#if pending}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
+            Request approval again
+          </Button>
+        </div>
       {/if}
 
       {#if approvals.length > 1}

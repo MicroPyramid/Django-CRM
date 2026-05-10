@@ -323,4 +323,4 @@
   {/if}
 </section>
 
-<ManualTimeEntryDialog {ticketId} bind:open={manualOpen} />
+<ManualTimeEntryDialog {ticketId} bind:open={manualOpen} onSaved={load} />

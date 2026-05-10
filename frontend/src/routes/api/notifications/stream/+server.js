@@ -32,12 +32,13 @@ export async function GET({ cookies, request }) {
     });
   }
 
+  // Note: `Connection` is a hop-by-hop header — Node refuses to forward it
+  // and HTTP keep-alive is the default in HTTP/1.1 anyway. Don't set it.
   return new Response(upstream.body, {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no'
     }
   });

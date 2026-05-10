@@ -588,6 +588,8 @@ class Activity(BaseModel):
         ("REOPENED", "Reopened"),
         ("MERGED", "Merged"),
         ("MERGE_TARGET", "Merge Target"),
+        ("UNMERGED", "Unmerged"),
+        ("UNMERGE_TARGET", "Unmerge Target"),
         ("LINKED_SOLUTION", "Linked Solution"),
         ("UNLINKED_SOLUTION", "Unlinked Solution"),
         ("WATCHED", "Watched"),

@@ -159,10 +159,26 @@ class SocialLoginSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
+class CommentUserSerializer(serializers.ModelSerializer):
+    """Simplified user serializer for comments"""
+
+    user_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ("id", "user_details")
+
+    def get_user_details(self, obj):
+        if obj.user:
+            return {"email": obj.user.email, "profile_pic": obj.user.profile_pic}
+        return None
+
+
 class CommentSerializer(serializers.ModelSerializer):
     """Serializer for Comment model using ContentType"""
 
     content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
+    commented_by = CommentUserSerializer(read_only=True)
 
     class Meta:
         model = Comment
@@ -205,21 +221,6 @@ class CommentCreateSerializer(serializers.ModelSerializer):
 
         validated_data["content_type"] = content_type
         return super().create(validated_data)
-
-
-class CommentUserSerializer(serializers.ModelSerializer):
-    """Simplified user serializer for comments"""
-
-    user_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Profile
-        fields = ("id", "user_details")
-
-    def get_user_details(self, obj):
-        if obj.user:
-            return {"email": obj.user.email, "profile_pic": obj.user.profile_pic}
-        return None
 
 
 class NotificationSerializer(serializers.ModelSerializer):

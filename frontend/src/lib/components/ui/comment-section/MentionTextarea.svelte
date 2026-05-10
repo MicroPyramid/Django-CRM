@@ -27,8 +27,8 @@
 
   const MENTION_TYPING_RE = /(?:^|[^A-Za-z0-9])@([A-Za-z0-9._-]*)$/;
 
-  /** @type {HTMLTextAreaElement | undefined} */
-  let textareaEl = $state(undefined);
+  /** @type {HTMLTextAreaElement | null} */
+  let textareaEl = $state(null);
   let open = $state(false);
   let query = $state('');
   let startPos = $state(-1);

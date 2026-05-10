@@ -705,6 +705,13 @@ class TimeEntryCreateSerializer(serializers.ModelSerializer):
             "currency",
         )
 
+    def validate_description(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError(
+                "Description is required when logging time manually."
+            )
+        return value.strip()
+
     def validate(self, attrs):
         started = attrs.get("started_at")
         ended = attrs.get("ended_at")
@@ -739,6 +746,15 @@ class TimeEntryUpdateSerializer(serializers.ModelSerializer):
             "hourly_rate",
             "currency",
         )
+
+    def validate_description(self, value):
+        # Only blocks explicit attempts to clear the field; PATCH bodies that
+        # omit `description` (e.g., toggling billable) skip this entirely.
+        if value is not None and not value.strip():
+            raise serializers.ValidationError(
+                "Description cannot be empty."
+            )
+        return value.strip() if value else value
 
     def validate(self, attrs):
         started = attrs.get(

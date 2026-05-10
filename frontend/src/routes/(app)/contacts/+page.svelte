@@ -14,12 +14,12 @@
     Briefcase,
     MapPin,
     FileText,
-    Linkedin,
     PhoneOff,
     Calendar,
     Tag,
     Filter
   } from '@lucide/svelte';
+  import { LinkedinIcon as Linkedin } from '$lib/components/icons';
   import { PageHeader } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';

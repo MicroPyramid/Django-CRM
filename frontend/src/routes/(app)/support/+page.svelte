@@ -1,6 +1,5 @@
 <script>
   import {
-    Github,
     Mail,
     Bug,
     Lightbulb,
@@ -15,6 +14,7 @@
     Code2,
     MessageSquareHeart
   } from '@lucide/svelte';
+  import { GithubIcon as Github } from '$lib/components/icons';
   import { Button } from '$lib/components/ui/button/index.js';
 
   /** @type {{ data: import('./$types').PageData }} */

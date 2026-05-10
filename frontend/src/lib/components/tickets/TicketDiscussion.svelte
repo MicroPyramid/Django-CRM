@@ -120,8 +120,8 @@
         class="space-y-2"
       >
         <input type="hidden" name="is_internal" value="false" />
+        <input type="hidden" name="body" value={replyText} />
         <MentionTextarea
-          name="body"
           bind:value={replyText}
           candidates={mentionCandidates}
           placeholder="Write a public reply… type @ to mention"
@@ -204,6 +204,7 @@
         class="space-y-2 rounded-md border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/40 dark:bg-amber-900/10"
       >
         <input type="hidden" name="is_internal" value="true" />
+        <input type="hidden" name="body" value={internalText} />
         <div
           class="flex items-center gap-2 text-xs font-medium text-amber-900 dark:text-amber-200"
         >
@@ -211,7 +212,6 @@
           Visible to agents only — never shown to customers.
         </div>
         <MentionTextarea
-          name="body"
           bind:value={internalText}
           candidates={mentionCandidates}
           placeholder="Coordinate with your team privately… type @ to mention"

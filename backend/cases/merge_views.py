@@ -58,7 +58,7 @@ class CaseMergeView(APIView):
 
         if pk == into_id:
             return Response(
-                {"error": True, "errors": "Cannot merge a case into itself."},
+                {"error": True, "errors": "Cannot merge a ticket into itself."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -76,7 +76,7 @@ class CaseMergeView(APIView):
 
             if not source or not target:
                 return Response(
-                    {"error": True, "errors": "Case not found."},
+                    {"error": True, "errors": "Ticket not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -86,7 +86,7 @@ class CaseMergeView(APIView):
                         "error": True,
                         "errors": (
                             "You must be an admin, or the creator of both "
-                            "cases, to merge them."
+                            "tickets, to merge them."
                         ),
                     },
                     status=status.HTTP_403_FORBIDDEN,
@@ -98,7 +98,7 @@ class CaseMergeView(APIView):
                     return Response(
                         {
                             "error": False,
-                            "message": "Cases already merged.",
+                            "message": "Tickets already merged.",
                             "already_merged": True,
                             "target_case": CaseSerializer(target).data,
                             "source_case_id": str(source.id),
@@ -109,7 +109,7 @@ class CaseMergeView(APIView):
                 return Response(
                     {
                         "error": True,
-                        "errors": "Source case is already merged into a different case.",
+                        "errors": "Source ticket is already merged into a different ticket.",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -119,37 +119,67 @@ class CaseMergeView(APIView):
                 return Response(
                     {
                         "error": True,
-                        "errors": "Target case has already been merged elsewhere.",
+                        "errors": "Target ticket has already been merged elsewhere.",
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             case_ct = ContentType.objects.get_for_model(Case)
 
+            # Capture the IDs of every row we relocate so unmerge can reverse
+            # them cleanly. Stored on `source.merge_record` below.
+            moved_comment_ids = list(
+                Comment.objects.filter(
+                    content_type=case_ct, object_id=source.id, org=org
+                ).values_list("id", flat=True)
+            )
+            moved_attachment_ids = list(
+                Attachments.objects.filter(
+                    content_type=case_ct, object_id=source.id, org=org
+                ).values_list("id", flat=True)
+            )
+            moved_email_ids = list(
+                EmailMessage.objects.filter(
+                    case=source, org=org
+                ).values_list("id", flat=True)
+            )
+
             comments_moved = Comment.objects.filter(
-                content_type=case_ct, object_id=source.id, org=org
+                id__in=moved_comment_ids
             ).update(object_id=target.id)
             attachments_moved = Attachments.objects.filter(
-                content_type=case_ct, object_id=source.id, org=org
+                id__in=moved_attachment_ids
             ).update(object_id=target.id)
             emails_moved = EmailMessage.objects.filter(
-                case=source, org=org
+                id__in=moved_email_ids
             ).update(case=target)
 
             # Inherit the duplicate's thread keys onto the primary so future
             # inbound emails to the old thread land on the primary.
             target_alts = list(target.alt_thread_ids or [])
             source_alts = list(source.alt_thread_ids or [])
-            inherited = source_alts + (
+            inherited_candidates = source_alts + (
                 [source.external_thread_id] if source.external_thread_id else []
             )
-            for tid in inherited:
+            inherited_added = []
+            for tid in inherited_candidates:
                 if tid and tid not in target_alts:
                     target_alts.append(tid)
+                    inherited_added.append(tid)
             target.alt_thread_ids = target_alts
             target.save(update_fields=["alt_thread_ids", "updated_at"])
 
             now = timezone.now()
+            prior_closed_on = source.closed_on.isoformat() if source.closed_on else None
+            source.merge_record = {
+                "target_id": str(target.id),
+                "moved_comment_ids": [str(i) for i in moved_comment_ids],
+                "moved_attachment_ids": [str(i) for i in moved_attachment_ids],
+                "moved_email_ids": [str(i) for i in moved_email_ids],
+                "inherited_thread_ids": inherited_added,
+                "source_prior_status": source.status,
+                "source_prior_closed_on": prior_closed_on,
+            }
             source.merged_into = target
             source.merged_at = now
             source.merged_by = request.profile
@@ -157,6 +187,7 @@ class CaseMergeView(APIView):
             source.closed_on = now.date()
             source.save(
                 update_fields=[
+                    "merge_record",
                     "merged_into",
                     "merged_at",
                     "merged_by",
@@ -187,7 +218,7 @@ class CaseMergeView(APIView):
         return Response(
             {
                 "error": False,
-                "message": "Cases merged",
+                "message": "Tickets merged",
                 "target_case": CaseSerializer(target).data,
                 "source_case_id": str(source.id),
                 "redirected_url": f"/cases/{target.id}",

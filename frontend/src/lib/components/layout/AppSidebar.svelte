@@ -45,7 +45,8 @@
     RotateCcw,
     Clock,
     MessageSquareQuote,
-    ShieldCheck
+    ShieldCheck,
+    BookOpen
   } from '@lucide/svelte';
 
   /**
@@ -209,6 +210,13 @@
       href: '/tickets/analytics',
       label: 'Tickets analytics',
       icon: BarChart3,
+      type: 'link',
+      preload: 'off'
+    },
+    {
+      href: '/solutions',
+      label: 'Knowledge Base',
+      icon: BookOpen,
       type: 'link',
       preload: 'off'
     },

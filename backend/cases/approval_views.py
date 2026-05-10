@@ -268,7 +268,6 @@ class ApprovalInboxView(APIView):
                 "requested_by__user",
                 "approver__user",
             )
-            .prefetch_related("rule__approvers")
             .order_by("-created_at")
         )
 
@@ -286,8 +285,10 @@ class ApprovalInboxView(APIView):
             "yes",
         )
         if mine:
+            # Only this branch reads `rule.approvers`, so the prefetch is
+            # scoped here instead of paid on every list call.
             profile = request.profile
-            rows = list(qs)
+            rows = list(qs.prefetch_related("rule__approvers"))
             qs = [a for a in rows if a.can_be_acted_on_by(profile)]
             return Response(
                 {"approvals": ApprovalSerializer(qs, many=True).data},

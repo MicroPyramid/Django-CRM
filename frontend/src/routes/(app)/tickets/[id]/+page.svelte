@@ -1,6 +1,7 @@
 <script>
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
@@ -8,7 +9,8 @@
     Clock,
     MessageSquare,
     History,
-    GitMerge
+    GitMerge,
+    Unlink
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -58,6 +60,26 @@
       history.replaceState(null, '', next.pathname + next.search);
     }
   });
+
+  /** @type {import('@sveltejs/kit').SubmitFunction} */
+  function unmergeEnhance({ cancel }) {
+    if (
+      !window.confirm(
+        'Unmerge this ticket? Comments, attachments, and emails moved during the merge will be moved back, and the ticket will be restored to its previous status.'
+      )
+    ) {
+      cancel();
+      return;
+    }
+    return async ({ result, update }) => {
+      await update();
+      if (result.type === 'success' && /** @type {any} */ (result.data)?.success) {
+        toast.success('Ticket unmerged');
+      } else if (result.type === 'failure') {
+        toast.error(/** @type {any} */ (result.data)?.error || 'Failed to unmerge');
+      }
+    };
+  }
 </script>
 
 <svelte:head>
@@ -87,13 +109,21 @@
           <GitMerge class="h-4 w-4" />
           This ticket was merged into another. New replies should land on the primary.
         </span>
-        <Button
-          size="sm"
-          onclick={() => goto(`/tickets/${c.mergedInto}`)}
-          class="gap-1"
-        >
-          Open primary
-        </Button>
+        <div class="flex flex-wrap items-center gap-2">
+          <form method="POST" action="?/unmerge" use:enhance={unmergeEnhance}>
+            <Button type="submit" variant="outline" size="sm" class="gap-1">
+              <Unlink class="h-4 w-4" />
+              Unmerge
+            </Button>
+          </form>
+          <Button
+            size="sm"
+            onclick={() => goto(`/tickets/${c.mergedInto}`)}
+            class="gap-1"
+          >
+            Open primary
+          </Button>
+        </div>
       </div>
     </section>
   {/if}
@@ -146,13 +176,26 @@
           <li class="flex items-center gap-2">
             <a
               href={`/tickets/${m.id}?show_merged=true`}
-              class="min-w-0 truncate text-blue-700 underline hover:text-blue-900 dark:text-blue-200"
+              class="min-w-0 flex-1 truncate text-blue-700 underline hover:text-blue-900 dark:text-blue-200"
             >
               {m.name}
             </a>
             <span class="font-mono text-[10px] text-[var(--text-secondary)]">
               #{shortId(m.id)}
             </span>
+            <form method="POST" action="?/unmerge" use:enhance={unmergeEnhance}>
+              <input type="hidden" name="source_id" value={m.id} />
+              <Button
+                type="submit"
+                variant="ghost"
+                size="sm"
+                class="h-7 gap-1 px-2 text-xs"
+                title="Move this duplicate's content back to its own ticket"
+              >
+                <Unlink class="h-3 w-3" />
+                Unmerge
+              </Button>
+            </form>
           </li>
         {/each}
       </ul>
@@ -188,6 +231,7 @@
         ticketId={c.id}
         currentProfileId={data.currentProfileId}
         isAdmin={!!data.isAdmin}
+        initialApprovals={data.approvals || []}
       />
 
       <TicketSolutionsPanel

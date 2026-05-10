@@ -1,6 +1,5 @@
 <script>
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Network,
@@ -41,10 +40,16 @@
 
   const hasGraph = $derived(parentSummary !== null || childCount > 0);
 
-  onMount(loadTree);
+  // Reload the tree on mount AND whenever the graph signal flips — link/
+  // unlink calls invalidateAll() upstream, which refreshes parentSummary /
+  // childCount; without this effect the tree stays null on a freshly-linked
+  // ticket and the section renders empty under the Unlink button.
+  $effect(() => {
+    if (hasGraph) loadTree();
+    else tree = null;
+  });
 
   async function loadTree() {
-    if (!hasGraph) return;
     loading = true;
     try {
       const res = await fetch(`/api/cases/${ticketId}/tree/`);

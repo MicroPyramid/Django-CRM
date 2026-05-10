@@ -12,10 +12,16 @@
    * @type {{
    *   ticketId: string,
    *   open: boolean,
-   *   onOpenChange?: (v: boolean) => void
+   *   onOpenChange?: (v: boolean) => void,
+   *   onSaved?: () => void | Promise<void>
    * }}
    */
-  let { ticketId, open = $bindable(false), onOpenChange } = $props();
+  let {
+    ticketId,
+    open = $bindable(false),
+    onOpenChange,
+    onSaved
+  } = $props();
 
   const _toLocalInput = (/** @type {Date} */ d) => {
     const pad = (/** @type {number} */ n) => String(n).padStart(2, '0');
@@ -32,6 +38,8 @@
   let hourlyRate = $state('');
   let submitting = $state(false);
 
+  const canSubmit = $derived(description.trim().length > 0 && !submitting);
+
   $effect(() => {
     if (open) {
       startedAt = _toLocalInput(_halfHourAgo());
@@ -43,6 +51,10 @@
   });
 
   async function submit() {
+    if (!description.trim()) {
+      toast.error('Description is required.');
+      return;
+    }
     submitting = true;
     try {
       const body = {
@@ -61,11 +73,12 @@
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        toast.error(e?.error || 'Failed to add time entry');
+        toast.error(e?.error || e?.description?.[0] || 'Failed to add time entry');
         return;
       }
       toast.success('Time entry added.');
       open = false;
+      await onSaved?.();
       await invalidateAll();
     } finally {
       submitting = false;
@@ -103,10 +116,13 @@
       </div>
 
       <label class="space-y-1 text-sm">
-        <span class="font-medium">Description</span>
+        <span class="font-medium">
+          Description <span class="text-red-600">*</span>
+        </span>
         <textarea
           bind:value={description}
           rows="3"
+          required
           placeholder="What did you work on?"
           class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-sm"
         ></textarea>
@@ -138,7 +154,12 @@
         onclick={() => (open = false)}
         disabled={submitting}>Cancel</Button
       >
-      <Button type="button" disabled={submitting} onclick={submit}>
+      <Button
+        type="button"
+        disabled={!canSubmit}
+        onclick={submit}
+        title={!description.trim() ? 'Add a description first' : undefined}
+      >
         {#if submitting}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
         Save entry
       </Button>

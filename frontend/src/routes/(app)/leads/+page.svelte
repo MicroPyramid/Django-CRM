@@ -14,7 +14,6 @@
     Star,
     Globe,
     Briefcase,
-    Linkedin,
     Target,
     DollarSign,
     Percent,
@@ -29,6 +28,7 @@
     Banknote,
     Filter
   } from '@lucide/svelte';
+  import { LinkedinIcon as Linkedin } from '$lib/components/icons';
   import { page } from '$app/stores';
   import {
     FilterBar,

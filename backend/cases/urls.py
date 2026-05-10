@@ -11,6 +11,7 @@ from cases import (
     kb_views,
     merge_views,
     parent_views,
+    unmerge_views,
     routing_views,
     solution_views,
     time_views,
@@ -218,6 +219,11 @@ urlpatterns = [
         "<str:pk>/merge/<str:into_id>/",
         merge_views.CaseMergeView.as_view(),
         name="case_merge",
+    ),
+    path(
+        "<str:pk>/unmerge/",
+        unmerge_views.CaseUnmergeView.as_view(),
+        name="case_unmerge",
     ),
     # Parent/child tree endpoints (must be before <str:pk>/ pattern)
     path(

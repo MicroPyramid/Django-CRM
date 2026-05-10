@@ -31,17 +31,28 @@ export async function load({ params, locals, cookies, url }) {
       teamsRes,
       tagsRes,
       solutionsRes,
-      watchersRes
+      watchersRes,
+      approvalsRes
     ] = await Promise.all([
       apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/users/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/teams/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/tags/', {}, { cookies, org }).catch(() => ({})),
-      apiRequest('/cases/solutions/?is_published=true', {}, { cookies, org }).catch(
-        () => ({})
-      ),
-      apiRequest(`/cases/${params.id}/watchers/`, {}, { cookies, org }).catch(() => ({}))
+      apiRequest(
+        '/cases/solutions/?is_published=true&limit=200',
+        {},
+        { cookies, org }
+      ).catch((e) => {
+        console.warn('Solutions picker fetch failed:', e?.message);
+        return {};
+      }),
+      apiRequest(`/cases/${params.id}/watchers/`, {}, { cookies, org }).catch(() => ({})),
+      apiRequest(
+        `/cases/approvals/?case=${params.id}&state=all`,
+        {},
+        { cookies, org }
+      ).catch(() => ({}))
     ]);
 
     if (!detail || !detail.cases_obj) throw error(404, 'Ticket not found');
@@ -129,6 +140,7 @@ export async function load({ params, locals, cookies, url }) {
       linkedSolutions: detail.solutions || [],
       availableSolutions: solutionsRes.results || solutionsRes.solutions || [],
       watchers: watchersRes.watchers || [],
+      approvals: approvalsRes.approvals || [],
       currentUserId: locals.user?.id || null,
       currentProfileId: /** @type {any} */ (locals).profile?.id || null,
       isAdmin: /** @type {any} */ (locals).profile?.role === 'ADMIN',
@@ -286,6 +298,29 @@ export const actions = {
     } catch (err) {
       const msg = err?.message || 'Failed to merge tickets';
       console.error('Merge ticket error:', err);
+      return fail(err?.status || 500, { error: msg });
+    }
+  },
+
+  unmerge: async ({ request, params, locals, cookies }) => {
+    const form = await request.formData();
+    // The "Unmerge" button shows up in two places:
+    //   - On the source page (the duplicate, accessed with ?show_merged=true).
+    //     The form has no `source_id` because params.id IS the source.
+    //   - On the target page, in the "Merged from" list (one button per row).
+    //     Each row submits its own `source_id` so we know which source to
+    //     unmerge from this target.
+    const sourceId = form.get('source_id')?.toString() || params.id;
+    try {
+      await apiRequest(
+        `/cases/${sourceId}/unmerge/`,
+        { method: 'POST', body: {} },
+        { cookies, org: locals.org }
+      );
+      return { success: true, unmerged: true, sourceId };
+    } catch (err) {
+      const msg = err?.message || 'Failed to unmerge ticket';
+      console.error('Unmerge ticket error:', err);
       return fail(err?.status || 500, { error: msg });
     }
   },

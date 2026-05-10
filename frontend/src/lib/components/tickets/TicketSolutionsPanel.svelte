@@ -40,8 +40,20 @@
         placeholder="Search published solutions..."
         class="mb-2 w-full rounded-md border border-[var(--border-default)] px-2 py-1 text-sm"
       />
-      {#if filteredAvailable.length === 0}
-        <p class="px-1 py-2 text-xs text-[var(--text-secondary)]">No matching solutions.</p>
+      {#if available.length === 0}
+        <div class="px-1 py-2 text-xs text-[var(--text-secondary)]">
+          No published solutions yet.
+          <a href="/solutions" class="text-[var(--text-primary)] underline">
+            Visit Knowledge Base
+          </a>
+          to publish one — only Live articles appear here.
+        </div>
+      {:else if filteredAvailable.length === 0}
+        <p class="px-1 py-2 text-xs text-[var(--text-secondary)]">
+          {linkedIds.size > 0 && search === ''
+            ? 'All published solutions are already linked.'
+            : 'No matching solutions.'}
+        </p>
       {:else}
         <ul class="max-h-48 overflow-y-auto">
           {#each filteredAvailable as sol (sol.id)}

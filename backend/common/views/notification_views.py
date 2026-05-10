@@ -24,6 +24,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -33,7 +34,7 @@ from common.serializer import NotificationSerializer
 
 logger = logging.getLogger(__name__)
 
-KEEPALIVE_SECONDS = 30
+KEEPALIVE_SECONDS = 15
 
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 100
@@ -218,6 +219,43 @@ async def _stream_events(channel: str, recipient_id, *, pubsub=None):
                 pass
 
 
+def _drive_async_gen(agen):
+    """Yield from an async generator using a dedicated event loop.
+
+    DRF's APIView dispatch is sync, so we can't expose an `async def` handler
+    directly (Django would mark the view async via `view_is_async`, then DRF's
+    sync dispatch returns a Response that the async wrapper tries to await).
+    StreamingHttpResponse accepts a sync iterable, so we bridge here.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        while True:
+            try:
+                yield loop.run_until_complete(agen.__anext__())
+            except StopAsyncIteration:
+                return
+    finally:
+        try:
+            loop.run_until_complete(agen.aclose())
+        finally:
+            loop.close()
+
+
+class _EventStreamRenderer(BaseRenderer):
+    """Advertises text/event-stream for DRF content negotiation.
+
+    Never actually invoked — the view returns a StreamingHttpResponse directly.
+    Without this, an EventSource sending `Accept: text/event-stream` is
+    rejected by DRF's content negotiation with HTTP 406 (no matching renderer).
+    """
+
+    media_type = "text/event-stream"
+    format = "sse"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return b""
+
+
 class NotificationStreamView(APIView):
     """GET /api/notifications/stream/
 
@@ -226,21 +264,17 @@ class NotificationStreamView(APIView):
     """
 
     permission_classes = (IsAuthenticated,)
+    renderer_classes = (_EventStreamRenderer,)
 
-    async def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         org_id = request.profile.org_id
         profile_id = request.profile.id
         channel = notif_mod.channel_for(org_id, profile_id)
 
-        async def gen():
-            async for chunk in _stream_events(channel, profile_id):
-                yield chunk
-
         response = StreamingHttpResponse(
-            gen(),
+            _drive_async_gen(_stream_events(channel, profile_id)),
             content_type="text/event-stream",
         )
         response["Cache-Control"] = "no-cache, no-transform"
         response["X-Accel-Buffering"] = "no"  # disable nginx buffering
-        response["Connection"] = "keep-alive"
         return response

@@ -131,6 +131,13 @@ class Case(AssignableMixin, BaseModel):
     # own alt thread ids) is appended here on the primary so that future
     # inbound emails to the duplicate's thread still match the primary.
     alt_thread_ids = models.JSONField(default=list, blank=True)
+    # Merge audit (set on the source/duplicate when merged; cleared on
+    # unmerge). Captures the IDs of items relocated to the target plus the
+    # source's pre-merge status/closed_on so unmerge can reverse cleanly.
+    # Schema: {"target_id": str, "moved_comment_ids": [str], "moved_attachment_ids": [str],
+    # "moved_email_ids": [str], "inherited_thread_ids": [str], "source_prior_status": str,
+    # "source_prior_closed_on": str|null}
+    merge_record = models.JSONField(null=True, blank=True)
 
     # Tier 3 parent/child: ITIL problem→incident linkage. Cycle / depth /
     # self-link guards live in `clean()`; cascade close is a separate
