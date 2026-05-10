@@ -26,14 +26,6 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
-  @override
-  void initState() {
-    super.initState();
-    // Fetch tasks on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tasksProvider.notifier).fetchTasks(refresh: true);
-    });
-  }
 
   // Get task dates for calendar markers
   Set<String> _getTaskDates(List<Task> tasks) {
@@ -57,10 +49,10 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tasksState = ref.watch(tasksProvider);
-    final allTasks = tasksState.tasks;
-    final isLoading = tasksState.isLoading;
-    final error = tasksState.error;
+    final tasksAsync = ref.watch(tasksProvider);
+    final allTasks = tasksAsync.value?.tasks ?? const <Task>[];
+    final isLoading = tasksAsync.isLoading;
+    final error = tasksAsync.error?.toString();
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -132,7 +124,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
                 label: 'Retry',
                 icon: LucideIcons.refreshCw,
                 onPressed: () {
-                  ref.read(tasksProvider.notifier).fetchTasks(refresh: true);
+                  ref.read(tasksProvider.notifier).refresh();
                 },
               ),
             ],

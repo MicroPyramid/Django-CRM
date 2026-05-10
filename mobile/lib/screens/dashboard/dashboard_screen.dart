@@ -20,17 +20,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
-  void initState() {
-    super.initState();
-    // Fetch dashboard data when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dashboardProvider.notifier).fetchDashboard();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final dashboardState = ref.watch(dashboardProvider);
+    final dashboardAsync = ref.watch(dashboardProvider);
     final authState = ref.watch(authProvider);
     final userName = authState.user?.displayName ?? 'User';
     final currencySymbol =
@@ -81,7 +72,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // Content
             SliverToBoxAdapter(
               child: _buildContent(
-                dashboardState,
+                dashboardAsync,
                 currencyFormat,
                 compactCurrencyFormat,
               ),
@@ -94,18 +85,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildContent(
-    DashboardState dashboardState,
+    AsyncValue<DashboardData> dashboardAsync,
     NumberFormat currencyFormat,
     NumberFormat compactCurrencyFormat,
   ) {
-    if (dashboardState.isLoading && dashboardState.data == null) {
+    // Stale-while-loading: keep showing prior data during refresh.
+    final data = dashboardAsync.value;
+
+    if (data == null && dashboardAsync.isLoading) {
       return const SizedBox(
         height: 400,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (dashboardState.error != null && dashboardState.data == null) {
+    if (data == null && dashboardAsync.hasError) {
       return SizedBox(
         height: 400,
         child: Center(
@@ -129,8 +123,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    final data = dashboardState.data ?? const DashboardData();
+    final resolved = data ?? const DashboardData();
+    return _buildBody(resolved, currencyFormat, compactCurrencyFormat);
+  }
 
+  Widget _buildBody(
+    DashboardData data,
+    NumberFormat currencyFormat,
+    NumberFormat compactCurrencyFormat,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

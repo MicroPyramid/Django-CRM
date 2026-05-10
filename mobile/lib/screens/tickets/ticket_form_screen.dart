@@ -38,9 +38,6 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lookupProvider.notifier).fetchAccounts();
-    });
     if (widget.isEditMode) _fetchTicket();
   }
 
@@ -174,7 +171,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
         ),
       );
     }
-    final accounts = ref.watch(lookupProvider).accounts;
+    final accounts = ref.watch(accountsProvider);
 
     return Form(
       key: _formKey,

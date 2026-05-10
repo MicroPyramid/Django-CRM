@@ -3,45 +3,28 @@ import '../config/api_config.dart';
 import '../data/models/deal.dart';
 import '../services/api_service.dart';
 
-/// Deals list state
-class DealsState {
+/// Paginated deals snapshot — wrapped by AsyncValue for loading/error.
+class DealsListData {
   final List<Deal> deals;
-  final bool isLoading;
-  final String? error;
   final int totalCount;
   final bool hasMore;
   final int currentOffset;
 
-  const DealsState({
+  const DealsListData({
     this.deals = const [],
-    this.isLoading = false,
-    this.error,
     this.totalCount = 0,
     this.hasMore = true,
     this.currentOffset = 0,
   });
 
-  const DealsState.initial()
-    : deals = const [],
-      isLoading = false,
-      error = null,
-      totalCount = 0,
-      hasMore = true,
-      currentOffset = 0;
-
-  DealsState copyWith({
+  DealsListData copyWith({
     List<Deal>? deals,
-    bool? isLoading,
-    String? error,
     int? totalCount,
     bool? hasMore,
     int? currentOffset,
-    bool clearError = false,
   }) {
-    return DealsState(
+    return DealsListData(
       deals: deals ?? this.deals,
-      isLoading: isLoading ?? this.isLoading,
-      error: clearError ? null : (error ?? this.error),
       totalCount: totalCount ?? this.totalCount,
       hasMore: hasMore ?? this.hasMore,
       currentOffset: currentOffset ?? this.currentOffset,
@@ -49,121 +32,104 @@ class DealsState {
   }
 }
 
-/// Deals notifier for managing deals state
-class DealsNotifier extends StateNotifier<DealsState> {
-  DealsNotifier() : super(const DealsState.initial());
-
+/// AsyncNotifier driving the deals list + CRUD. The list page is the only
+/// place that watches this; detail/form screens use the notifier directly
+/// for one-shot fetches and mutations.
+class DealsNotifier extends AsyncNotifier<DealsListData> {
   final ApiService _apiService = ApiService();
   static const int _pageSize = 20;
 
-  /// Fetch deals from API
-  Future<void> fetchDeals({
-    String? search,
-    String? stage,
-    bool refresh = false,
-  }) async {
+  @override
+  Future<DealsListData> build() => _fetchPage(offset: 0);
+
+  /// Reload the first page (pull-to-refresh / after CRUD).
+  Future<void> refresh({String? search, String? stage}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => _fetchPage(offset: 0, search: search, stage: stage),
+    );
+  }
+
+  /// Append the next page if there's more and we're not already loading.
+  Future<void> loadMore({String? search, String? stage}) async {
+    final current = state.value;
+    if (current == null || !current.hasMore) return;
     if (state.isLoading) return;
 
-    if (refresh) {
-      state = state.copyWith(currentOffset: 0, hasMore: true, clearError: true);
-    }
-
-    state = state.copyWith(isLoading: true, clearError: true);
-
-    try {
-      // Build query parameters
-      final queryParams = <String, String>{
-        'limit': _pageSize.toString(),
-        'offset': state.currentOffset.toString(),
-      };
-
-      if (search != null && search.isNotEmpty) {
-        queryParams['name'] = search;
-      }
-      if (stage != null && stage.isNotEmpty) {
-        queryParams['stage'] = stage;
-      }
-
-      final url = Uri.parse(
-        ApiConfig.opportunities,
-      ).replace(queryParameters: queryParams).toString();
-      final response = await _apiService.get(url);
-
-      if (response.success && response.data != null) {
-        final data = response.data!;
-
-        // Parse deals - handle different response formats
-        List<dynamic> dealsList = [];
-        int dealsCount = 0;
-
-        if (data['opportunities'] != null) {
-          dealsList = data['opportunities'] as List<dynamic>? ?? [];
-          dealsCount = data['opportunities_count'] as int? ?? dealsList.length;
-        } else if (data['results'] != null) {
-          dealsList = data['results'] as List<dynamic>? ?? [];
-          dealsCount = data['count'] as int? ?? dealsList.length;
-        }
-
-        final newDeals = <Deal>[];
-        for (final item in dealsList) {
-          try {
-            if (item is Map<String, dynamic>) {
-              newDeals.add(Deal.fromJson(item));
-            }
-          } catch (e) {
-            // Skip invalid deals
-          }
-        }
-
-        // Update state
-        final updatedDeals = refresh ? newDeals : [...state.deals, ...newDeals];
-
-        state = state.copyWith(
-          deals: updatedDeals,
-          isLoading: false,
-          totalCount: dealsCount,
-          hasMore: newDeals.length >= _pageSize,
-          currentOffset: state.currentOffset + newDeals.length,
-        );
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: response.message ?? 'Failed to load deals',
-        );
-      }
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to load deals: ${e.toString()}',
+    state = await AsyncValue.guard(() async {
+      final next = await _fetchPage(
+        offset: current.currentOffset,
+        search: search,
+        stage: stage,
       );
+      return current.copyWith(
+        deals: [...current.deals, ...next.deals],
+        totalCount: next.totalCount,
+        hasMore: next.hasMore,
+        currentOffset: next.currentOffset,
+      );
+    });
+  }
+
+  Future<DealsListData> _fetchPage({
+    required int offset,
+    String? search,
+    String? stage,
+  }) async {
+    final queryParams = <String, String>{
+      'limit': _pageSize.toString(),
+      'offset': offset.toString(),
+    };
+    if (search != null && search.isNotEmpty) queryParams['name'] = search;
+    if (stage != null && stage.isNotEmpty) queryParams['stage'] = stage;
+
+    final url = Uri.parse(
+      ApiConfig.opportunities,
+    ).replace(queryParameters: queryParams).toString();
+    final response = await _apiService.get(url);
+
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load deals');
     }
+
+    final data = response.data!;
+    List<dynamic> dealsList = [];
+    int dealsCount = 0;
+
+    if (data['opportunities'] != null) {
+      dealsList = data['opportunities'] as List<dynamic>? ?? [];
+      dealsCount = data['opportunities_count'] as int? ?? dealsList.length;
+    } else if (data['results'] != null) {
+      dealsList = data['results'] as List<dynamic>? ?? [];
+      dealsCount = data['count'] as int? ?? dealsList.length;
+    }
+
+    final newDeals = <Deal>[];
+    for (final item in dealsList) {
+      try {
+        if (item is Map<String, dynamic>) {
+          newDeals.add(Deal.fromJson(item));
+        }
+      } catch (_) {
+        // Skip invalid deals
+      }
+    }
+
+    return DealsListData(
+      deals: newDeals,
+      totalCount: dealsCount,
+      hasMore: newDeals.length >= _pageSize,
+      currentOffset: offset + newDeals.length,
+    );
   }
 
-  /// Refresh deals (reset and fetch first page)
-  Future<void> refresh() async {
-    state = const DealsState.initial();
-    await fetchDeals(refresh: true);
-  }
-
-  /// Load more deals
-  Future<void> loadMore() async {
-    if (!state.hasMore || state.isLoading) return;
-    await fetchDeals();
-  }
-
-  /// Clear deals data
-  void clear() {
-    state = const DealsState.initial();
-  }
-
-  /// Get a single deal by ID
+  /// Fetch a single deal from the API (detail/form screens).
   Future<Deal?> getDeal(String id) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
-        // API returns opportunity wrapped in 'opportunity_obj' key
         final opportunityData =
             response.data!['opportunity_obj'] as Map<String, dynamic>?;
         if (opportunityData != null) {
@@ -176,7 +142,7 @@ class DealsNotifier extends StateNotifier<DealsState> {
     }
   }
 
-  /// Create a new deal
+  /// Create a new deal — list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> createDeal(
     Deal deal,
   ) async {
@@ -187,16 +153,13 @@ class DealsNotifier extends StateNotifier<DealsState> {
       );
 
       if (response.success && response.data != null) {
-        // API returns {"error": false, "message": "..."} on success, not the deal object
         final isError = response.data!['error'] as bool? ?? true;
         if (!isError) {
-          // Refresh the deals list to get the new deal
-          await fetchDeals(refresh: true);
+          await refresh();
           return (success: true, error: null, deal: null);
         }
       }
 
-      // Parse error message
       String errorMsg = response.message ?? 'Failed to create deal';
       if (response.data != null && response.data!['errors'] != null) {
         final errors = response.data!['errors'] as Map<String, dynamic>;
@@ -214,7 +177,7 @@ class DealsNotifier extends StateNotifier<DealsState> {
     }
   }
 
-  /// Update an existing deal
+  /// Update an existing deal — list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> updateDeal(
     String id,
     Deal deal,
@@ -224,16 +187,13 @@ class DealsNotifier extends StateNotifier<DealsState> {
       final response = await _apiService.put(url, deal.toJson());
 
       if (response.success && response.data != null) {
-        // API returns {"error": false, "message": "..."} on success, not the deal object
         final isError = response.data!['error'] as bool? ?? true;
         if (!isError) {
-          // Refresh the deals list to get updated data
-          await fetchDeals(refresh: true);
+          await refresh();
           return (success: true, error: null, deal: null);
         }
       }
 
-      // Parse error message
       String errorMsg = response.message ?? 'Failed to update deal';
       if (response.data != null && response.data!['errors'] != null) {
         final errors = response.data!['errors'] as Map<String, dynamic>;
@@ -251,7 +211,7 @@ class DealsNotifier extends StateNotifier<DealsState> {
     }
   }
 
-  /// Update deal stage (quick action)
+  /// Quick stage change — optimistic local update for snappy UX.
   Future<({bool success, String? error})> updateDealStage(
     String id,
     DealStage stage,
@@ -264,21 +224,22 @@ class DealsNotifier extends StateNotifier<DealsState> {
       });
 
       if (response.success && response.data != null) {
-        // API returns {"error": false, "message": "..."} on success
         final isError = response.data!['error'] as bool? ?? true;
         if (!isError) {
-          // Update the deal stage locally without full refresh for better UX
-          final updatedDeals = state.deals.map((d) {
-            if (d.id == id) {
-              return d.copyWith(
-                stage: stage,
-                probability: stage.defaultProbability,
-                updatedAt: DateTime.now(),
-              );
-            }
-            return d;
-          }).toList();
-          state = state.copyWith(deals: updatedDeals);
+          final current = state.value;
+          if (current != null) {
+            final updatedDeals = current.deals.map((d) {
+              if (d.id == id) {
+                return d.copyWith(
+                  stage: stage,
+                  probability: stage.defaultProbability,
+                  updatedAt: DateTime.now(),
+                );
+              }
+              return d;
+            }).toList();
+            state = AsyncValue.data(current.copyWith(deals: updatedDeals));
+          }
           return (success: true, error: null);
         }
       }
@@ -292,19 +253,22 @@ class DealsNotifier extends StateNotifier<DealsState> {
     }
   }
 
-  /// Delete a deal
+  /// Delete a deal — local state mutation (no full refresh).
   Future<({bool success, String? error})> deleteDeal(String id) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
       final response = await _apiService.delete(url);
 
       if (response.success) {
-        // Remove from the list
-        final updatedDeals = state.deals.where((d) => d.id != id).toList();
-        state = state.copyWith(
-          deals: updatedDeals,
-          totalCount: state.totalCount - 1,
-        );
+        final current = state.value;
+        if (current != null) {
+          state = AsyncValue.data(
+            current.copyWith(
+              deals: current.deals.where((d) => d.id != id).toList(),
+              totalCount: current.totalCount - 1,
+            ),
+          );
+        }
         return (success: true, error: null);
       }
 
@@ -316,25 +280,16 @@ class DealsNotifier extends StateNotifier<DealsState> {
       return (success: false, error: 'Failed to delete deal: ${e.toString()}');
     }
   }
-
-  /// Get deal from current state by ID
-  Deal? getDealFromState(String id) {
-    try {
-      return state.deals.firstWhere((d) => d.id == id);
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
-/// Deals provider
-final dealsProvider = StateNotifierProvider<DealsNotifier, DealsState>((ref) {
-  return DealsNotifier();
-});
+final dealsProvider = AsyncNotifierProvider<DealsNotifier, DealsListData>(
+  DealsNotifier.new,
+);
 
-/// Convenience providers
+/// Convenience providers — read from the AsyncValue so screen code stays the
+/// same shape as before the riverpod 3 migration.
 final dealsListProvider = Provider<List<Deal>>((ref) {
-  return ref.watch(dealsProvider).deals;
+  return ref.watch(dealsProvider).value?.deals ?? const [];
 });
 
 final dealsLoadingProvider = Provider<bool>((ref) {
@@ -342,22 +297,20 @@ final dealsLoadingProvider = Provider<bool>((ref) {
 });
 
 final dealsErrorProvider = Provider<String?>((ref) {
-  return ref.watch(dealsProvider).error;
+  return ref.watch(dealsProvider).error?.toString();
 });
 
-/// Grouped deals by stage providers
+/// Grouped deals by stage — derived.
 final dealsByStageProvider = Provider<Map<DealStage, List<Deal>>>((ref) {
   final deals = ref.watch(dealsListProvider);
   final Map<DealStage, List<Deal>> grouped = {};
-
   for (final stage in DealStage.values) {
     grouped[stage] = deals.where((deal) => deal.stage == stage).toList();
   }
-
   return grouped;
 });
 
-/// Pipeline value (active deals only)
+/// Pipeline value (active deals only).
 final pipelineValueProvider = Provider<double>((ref) {
   final deals = ref.watch(dealsListProvider);
   return deals
@@ -365,7 +318,7 @@ final pipelineValueProvider = Provider<double>((ref) {
       .fold<double>(0, (sum, deal) => sum + deal.value);
 });
 
-/// Active deals count
+/// Active deals count.
 final activeDealsCountProvider = Provider<int>((ref) {
   final deals = ref.watch(dealsListProvider);
   return deals.where((d) => !d.stage.isClosed).length;

@@ -49,11 +49,6 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     super.initState();
     _probabilityController.text = _stage.defaultProbability.toString();
 
-    // Fetch lookup data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lookupProvider.notifier).fetchAll();
-    });
-
     if (widget.initialDeal != null) {
       _populateFromDeal(widget.initialDeal!);
     } else if (widget.isEditMode) {
@@ -185,8 +180,8 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         _stage.defaultProbability;
 
     // Get account name from lookup
-    final lookupState = ref.read(lookupProvider);
-    final account = lookupState.accounts
+    final accounts = ref.read(accountsProvider);
+    final account = accounts
         .where((a) => a.id == _selectedAccountId)
         .firstOrNull;
 
@@ -580,7 +575,15 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   Widget _buildRelationshipFields() {
-    final lookupState = ref.watch(lookupProvider);
+    final accountsAsync = ref.watch(accountsLookupProvider);
+    final contactsAsync = ref.watch(contactsLookupProvider);
+    final usersAsync = ref.watch(usersLookupProvider);
+    final tagsAsync = ref.watch(tagsLookupProvider);
+
+    final accounts = accountsAsync.value ?? const [];
+    final contacts = contactsAsync.value ?? const [];
+    final users = usersAsync.value ?? const [];
+    final tags = tagsAsync.value ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,14 +592,14 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         _buildSingleSelectField(
           label: 'Account',
           value: _selectedAccountId != null
-              ? lookupState.accounts
+              ? accounts
                     .where((a) => a.id == _selectedAccountId)
                     .firstOrNull
                     ?.name
               : null,
           placeholder: 'Select account',
           icon: LucideIcons.building2,
-          isLoading: lookupState.isLoadingAccounts,
+          isLoading: accountsAsync.isLoading,
           onTap: _showAccountPicker,
           onClear: _selectedAccountId != null
               ? () => setState(() => _selectedAccountId = null)
@@ -612,7 +615,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           selectedItems: _selectedContactIds
               .map(
                 (id) =>
-                    lookupState.contacts
+                    contacts
                         .where((c) => c.id == id)
                         .firstOrNull
                         ?.fullName ??
@@ -622,7 +625,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
               .toList(),
           placeholder: 'Select contacts',
           icon: LucideIcons.users,
-          isLoading: lookupState.isLoadingContacts,
+          isLoading: contactsAsync.isLoading,
           onTap: _showContactsPicker,
         ),
 
@@ -635,7 +638,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           selectedItems: _selectedAssignedToIds
               .map(
                 (id) =>
-                    lookupState.users
+                    users
                         .where((u) => u.id == id)
                         .firstOrNull
                         ?.displayName ??
@@ -645,7 +648,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
               .toList(),
           placeholder: 'Select assignees',
           icon: LucideIcons.userCheck,
-          isLoading: lookupState.isLoadingUsers,
+          isLoading: usersAsync.isLoading,
           onTap: _showAssignedToPicker,
         ),
 
@@ -658,7 +661,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           selectedItems: _selectedTagIds
               .map(
                 (id) =>
-                    lookupState.tags
+                    tags
                         .where((t) => t.id == id)
                         .firstOrNull
                         ?.name ??
@@ -668,7 +671,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
               .toList(),
           placeholder: 'Select tags',
           icon: LucideIcons.tag,
-          isLoading: lookupState.isLoadingTags,
+          isLoading: tagsAsync.isLoading,
           onTap: _showTagsPicker,
         ),
       ],
@@ -1132,7 +1135,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showAccountPicker() {
-    final accounts = ref.read(lookupProvider).accounts;
+    final accounts = ref.read(accountsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1168,7 +1171,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showContactsPicker() {
-    final contacts = ref.read(lookupProvider).contacts;
+    final contacts = ref.read(contactsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1207,7 +1210,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showAssignedToPicker() {
-    final users = ref.read(lookupProvider).users;
+    final users = ref.read(usersProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1245,7 +1248,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showTagsPicker() {
-    final tags = ref.read(lookupProvider).tags;
+    final tags = ref.read(tagsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,

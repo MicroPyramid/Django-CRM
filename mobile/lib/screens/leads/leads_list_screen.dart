@@ -30,12 +30,6 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch leads when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(leadsProvider.notifier).fetchLeads(refresh: true);
-    });
-
-    // Setup scroll listener for pagination
     _scrollController.addListener(_onScroll);
   }
 
@@ -124,8 +118,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leadsState = ref.watch(leadsProvider);
-    final filteredLeads = _filterAndSortLeads(leadsState.leads);
+    final leadsAsync = ref.watch(leadsProvider);
+    final data = leadsAsync.value;
+    final filteredLeads = _filterAndSortLeads(data?.leads ?? const []);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -150,23 +145,28 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           _buildFilterBar(),
 
           // Results Count
-          _buildResultsCount(filteredLeads.length, leadsState.totalCount),
+          _buildResultsCount(filteredLeads.length, data?.totalCount ?? 0),
 
           // Leads List
-          Expanded(child: _buildLeadsList(leadsState, filteredLeads)),
+          Expanded(child: _buildLeadsList(leadsAsync, filteredLeads)),
         ],
       ),
     );
   }
 
-  Widget _buildLeadsList(LeadsState state, List<Lead> filteredLeads) {
+  Widget _buildLeadsList(
+    AsyncValue<LeadsListData> async,
+    List<Lead> filteredLeads,
+  ) {
+    final data = async.value;
+
     // Initial loading
-    if (state.isLoading && state.leads.isEmpty) {
+    if (async.isLoading && (data == null || data.leads.isEmpty)) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Error state
-    if (state.error != null && state.leads.isEmpty) {
+    if (async.hasError && (data == null || data.leads.isEmpty)) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -179,7 +179,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              state.error!,
+              async.error.toString(),
               style: AppTypography.caption,
               textAlign: TextAlign.center,
             ),
@@ -198,6 +198,8 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       return _buildEmptyState();
     }
 
+    final hasMore = data?.hasMore ?? false;
+
     // Leads list
     return RefreshIndicator(
       onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
@@ -205,11 +207,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
         itemCount:
-            filteredLeads.length +
-            (state.hasMore && !_hasActiveFilters ? 1 : 0),
+            filteredLeads.length + (hasMore && !_hasActiveFilters ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == filteredLeads.length) {
-            // Loading indicator at bottom
             return const Padding(
               padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),

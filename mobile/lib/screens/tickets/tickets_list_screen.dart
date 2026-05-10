@@ -28,9 +28,6 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(ticketsProvider.notifier).fetchTickets(refresh: true);
-    });
     _scrollController.addListener(_onScroll);
   }
 
@@ -80,8 +77,9 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(ticketsProvider);
-    final filtered = _filterTickets(state.tickets);
+    final ticketsAsync = ref.watch(ticketsProvider);
+    final data = ticketsAsync.value;
+    final filtered = _filterTickets(data?.tickets ?? const []);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -101,18 +99,23 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
         children: [
           _buildSearchBar(),
           _buildFilterBar(),
-          _buildResultsCount(filtered.length, state.totalCount),
-          Expanded(child: _buildList(state, filtered)),
+          _buildResultsCount(filtered.length, data?.totalCount ?? 0),
+          Expanded(child: _buildList(ticketsAsync, filtered)),
         ],
       ),
     );
   }
 
-  Widget _buildList(TicketsState state, List<Ticket> filtered) {
-    if (state.isLoading && state.tickets.isEmpty) {
+  Widget _buildList(
+    AsyncValue<TicketsListData> async,
+    List<Ticket> filtered,
+  ) {
+    final data = async.value;
+
+    if (async.isLoading && (data == null || data.tickets.isEmpty)) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (state.error != null && state.tickets.isEmpty) {
+    if (async.hasError && (data == null || data.tickets.isEmpty)) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -125,7 +128,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              state.error!,
+              async.error.toString(),
               style: AppTypography.caption,
               textAlign: TextAlign.center,
             ),
@@ -140,13 +143,15 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     }
     if (filtered.isEmpty) return _buildEmptyState();
 
+    final hasMore = data?.hasMore ?? false;
+
     return RefreshIndicator(
       onRefresh: () => ref.read(ticketsProvider.notifier).refresh(),
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
         itemCount:
-            filtered.length + (state.hasMore && !_hasActiveFilters ? 1 : 0),
+            filtered.length + (hasMore && !_hasActiveFilters ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == filtered.length) {
             return const Padding(

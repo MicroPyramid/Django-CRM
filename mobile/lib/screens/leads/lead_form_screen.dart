@@ -53,10 +53,6 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch lookup data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lookupProvider.notifier).fetchAll();
-    });
 
     if (widget.initialLead != null) {
       _populateFromLead(widget.initialLead!);
@@ -617,7 +613,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   Widget _buildRelationshipFields() {
-    final lookupState = ref.watch(lookupProvider);
+    final users = ref.watch(usersProvider);
+    final tags = ref.watch(tagsProvider);
 
     return Column(
       children: [
@@ -626,7 +623,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           label: 'Assigned To',
           icon: LucideIcons.users,
           selectedCount: _assignedToIds.length,
-          selectedLabel: _getSelectedUsersLabel(lookupState.users),
+          selectedLabel: _getSelectedUsersLabel(users),
           onTap: () => _showAssignedToPicker(),
         ),
 
@@ -637,7 +634,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           label: 'Tags',
           icon: LucideIcons.tag,
           selectedCount: _tagIds.length,
-          selectedLabel: _getSelectedTagsLabel(lookupState.tags),
+          selectedLabel: _getSelectedTagsLabel(tags),
           onTap: () => _showTagsPicker(),
         ),
       ],
@@ -868,7 +865,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   void _showAssignedToPicker() {
-    final users = ref.read(lookupProvider).users;
+    final users = ref.read(usersProvider);
 
     showModalBottomSheet(
       context: context,
@@ -892,7 +889,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   void _showTagsPicker() {
-    final tags = ref.read(lookupProvider).tags;
+    final tags = ref.read(tagsProvider);
 
     showModalBottomSheet(
       context: context,

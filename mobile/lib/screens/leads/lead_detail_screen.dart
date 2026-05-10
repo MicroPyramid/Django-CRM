@@ -616,7 +616,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                   color: AppColors.textSecondary,
                 ),
               ),
-              if (action != null) action,
+              ?action,
             ],
           ),
           const SizedBox(height: 12),

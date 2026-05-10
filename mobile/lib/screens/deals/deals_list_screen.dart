@@ -39,15 +39,6 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    // Fetch deals on screen load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dealsProvider.notifier).fetchDeals(refresh: true);
-    });
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     _kanbanScrollController.dispose();

@@ -67,10 +67,11 @@ class AuthState {
 }
 
 /// Notifier for authentication state changes
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState.initial());
-
+class AuthNotifier extends Notifier<AuthState> {
   final AuthService _authService = AuthService();
+
+  @override
+  AuthState build() => const AuthState.initial();
 
   /// Check if user is already authenticated (on app launch)
   Future<void> checkAuthStatus() async {
@@ -190,9 +191,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 /// Provider for authentication state
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
-});
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
 
 /// Provider for checking if user is authenticated
 final isAuthenticatedProvider = Provider<bool>((ref) {
