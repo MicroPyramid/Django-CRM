@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import { page } from '$app/stores';
   import { afterNavigate, goto } from '$app/navigation';
   import imgLogo from '$lib/assets/images/logo.png';
@@ -136,16 +137,23 @@
     return name.slice(0, 2).toUpperCase();
   };
 
-  // Auto-open dropdown if a child is active
+  // Auto-open dropdown if a child route is active. Untrack the openDropdowns
+  // read so this effect only re-fires on currentPath changes — otherwise the
+  // user's onOpenChange (closing the panel) would re-trigger the effect and
+  // immediately re-open it, fighting the click.
   $effect(() => {
-    navigationItems.forEach((item) => {
-      if (item.type === 'dropdown' && item.children && item.key) {
-        const hasActiveChild = item.children.some((child) => currentPath === child.href);
-        if (hasActiveChild && !openDropdowns[item.key]) {
-          openDropdowns[item.key] = true;
-        }
+    const path = currentPath;
+    for (const item of navigationItems) {
+      if (item.type !== 'dropdown' || !item.children || !item.key) continue;
+      const active = item.children.some(
+        (child) => path === child.href || path.startsWith(child.href + '/')
+      );
+      if (active) {
+        untrack(() => {
+          if (item.key && !openDropdowns[item.key]) openDropdowns[item.key] = true;
+        });
       }
-    });
+    }
   });
 
   // Close mobile sidebar after navigation
@@ -200,25 +208,16 @@
       preload: 'off'
     },
     {
-      href: '/tickets',
+      key: 'tickets',
       label: 'Tickets',
       icon: Briefcase,
-      type: 'link',
-      preload: 'off'
-    },
-    {
-      href: '/tickets/analytics',
-      label: 'Tickets analytics',
-      icon: BarChart3,
-      type: 'link',
-      preload: 'off'
-    },
-    {
-      href: '/solutions',
-      label: 'Knowledge Base',
-      icon: BookOpen,
-      type: 'link',
-      preload: 'off'
+      type: 'dropdown',
+      children: [
+        { href: '/tickets', label: 'All tickets', icon: Briefcase, preload: 'off' },
+        { href: '/tickets/approvals', label: 'Approvals', icon: ShieldCheck, preload: 'off' },
+        { href: '/tickets/analytics', label: 'Analytics', icon: BarChart3, preload: 'off' },
+        { href: '/solutions', label: 'Knowledge Base', icon: BookOpen, preload: 'off' }
+      ]
     },
     {
       href: '/tasks',
@@ -231,13 +230,6 @@
       href: '/timesheet',
       label: 'Timesheet',
       icon: Clock,
-      type: 'link',
-      preload: 'off'
-    },
-    {
-      href: '/tickets/approvals',
-      label: 'Approvals',
-      icon: ShieldCheck,
       type: 'link',
       preload: 'off'
     }
@@ -336,38 +328,109 @@
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-2">
           {#each crmItems as item}
-            <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                isActive={currentPath === item.href}
-                tooltipContent={item.label}
-                class="nav-item group/item relative h-9 rounded-lg px-2.5 transition-all duration-200
-                  {currentPath === item.href
-                  ? 'nav-item-active bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:bg-[var(--color-primary-default)]/15 dark:shadow-none'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
+            {#if item.type === 'dropdown' && item.children}
+              <Collapsible.Root
+                open={openDropdowns[item.key ?? ''] || false}
+                onOpenChange={(open) => {
+                  if (item.key) openDropdowns[item.key] = open;
+                }}
+                class="group/collapsible"
               >
-                {#snippet child({ props })}
-                  <a
-                    href={item.href}
-                    {...props}
-                    data-sveltekit-preload-data={item.preload || 'hover'}
-                    class="flex items-center gap-2.5"
-                  >
-                    <item.icon
-                      class="size-5 shrink-0 transition-transform duration-200 {currentPath ===
-                      item.href
-                        ? 'scale-105'
-                        : 'group-hover/item:scale-105'}"
-                      strokeWidth={1.75}
-                    />
-                    <span
-                      class="text-[13px] group-data-[collapsible=icon]:hidden {currentPath === item.href
-                        ? 'font-semibold'
-                        : 'font-medium'}">{item.label}</span
+                <Sidebar.MenuItem>
+                  <Collapsible.Trigger>
+                    {#snippet child({ props })}
+                      <Sidebar.MenuButton
+                        {...props}
+                        isActive={hasActiveChild(item.children ?? [])}
+                        tooltipContent={item.label}
+                        class="nav-item group/item h-9 rounded-lg px-2.5 transition-all duration-200
+                          {hasActiveChild(item.children ?? [])
+                          ? 'text-[var(--color-primary-default)]'
+                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
+                      >
+                        {#snippet child({ props: btnProps })}
+                          <button {...btnProps} class="flex w-full items-center gap-2.5">
+                            <item.icon class="size-5 shrink-0" strokeWidth={1.75} />
+                            <span
+                              class="text-[13px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? [])
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
+                            <ChevronDown
+                              class="text-sidebar-foreground/40 ml-auto size-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
+                            />
+                          </button>
+                        {/snippet}
+                      </Sidebar.MenuButton>
+                    {/snippet}
+                  </Collapsible.Trigger>
+                  <Collapsible.Content>
+                    <Sidebar.MenuSub
+                      class="border-sidebar-border/40 mt-1.5 ml-[11px] space-y-0.5 border-l py-1 pl-3"
                     >
-                  </a>
-                {/snippet}
-              </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
+                      {#each item.children as navChild}
+                        <Sidebar.MenuSubItem>
+                          <Sidebar.MenuSubButton
+                            isActive={currentPath === navChild.href}
+                            class="nav-subitem group/subitem relative h-7 rounded-md px-2 transition-all duration-200
+                              {currentPath === navChild.href
+                              ? 'bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15'
+                              : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}"
+                          >
+                            {#snippet child({ props })}
+                              <a href={navChild.href} {...props} class="flex items-center gap-2">
+                                <navChild.icon
+                                  class="size-3.5 transition-colors duration-200"
+                                  strokeWidth={currentPath === navChild.href ? 2.25 : 1.75}
+                                />
+                                <span
+                                  class="text-[12px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
+                              </a>
+                            {/snippet}
+                          </Sidebar.MenuSubButton>
+                        </Sidebar.MenuSubItem>
+                      {/each}
+                    </Sidebar.MenuSub>
+                  </Collapsible.Content>
+                </Sidebar.MenuItem>
+              </Collapsible.Root>
+            {:else}
+              <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                  isActive={currentPath === item.href}
+                  tooltipContent={item.label}
+                  class="nav-item group/item relative h-9 rounded-lg px-2.5 transition-all duration-200
+                    {currentPath === item.href
+                    ? 'nav-item-active bg-[var(--color-primary-default)]/[0.08] text-[var(--color-primary-default)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] dark:bg-[var(--color-primary-default)]/15 dark:shadow-none'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}"
+                >
+                  {#snippet child({ props })}
+                    <a
+                      href={item.href}
+                      {...props}
+                      data-sveltekit-preload-data={item.preload || 'hover'}
+                      class="flex items-center gap-2.5"
+                    >
+                      <item.icon
+                        class="size-5 shrink-0 transition-transform duration-200 {currentPath ===
+                        item.href
+                          ? 'scale-105'
+                          : 'group-hover/item:scale-105'}"
+                        strokeWidth={1.75}
+                      />
+                      <span
+                        class="text-[13px] group-data-[collapsible=icon]:hidden {currentPath === item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
+                    </a>
+                  {/snippet}
+                </Sidebar.MenuButton>
+              </Sidebar.MenuItem>
+            {/if}
           {/each}
         </Sidebar.Menu>
       </Sidebar.GroupContent>

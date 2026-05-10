@@ -264,6 +264,25 @@ pipdeptree
 pip-check -H
 ```
 
+### Dev login (skip the Google OAuth flow)
+
+For local development you can mint a JWT for any user without going through Google sign-in. The command refuses to run unless `DEBUG=True`, and there's no web endpoint — it's only reachable through `manage.py`:
+
+```bash
+cd backend
+
+# Mint tokens for an existing user (no org bound — same as the OAuth flow)
+uv run python manage.py devlogin aswin.1231@gmail.com
+
+# Bind to a specific org so you skip the orgswitch step on first load
+uv run python manage.py devlogin aswin.1231@gmail.com --org "MicroPyramid"
+
+# Create the user on the fly (random password) if they don't exist yet
+uv run python manage.py devlogin newdev@example.com --create
+```
+
+The command prints the access/refresh tokens plus a ready-to-paste `localStorage.setItem(...)` snippet — drop it into the browser devtools console on `http://localhost:5173` and reload to be signed in.
+
 ### Frontend Commands
 
 ```bash

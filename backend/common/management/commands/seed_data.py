@@ -131,12 +131,11 @@ class Command(BaseCommand):
         }
 
     def add_arguments(self, parser):
-        # Required
         parser.add_argument(
             "--email",
             type=str,
-            required=True,
-            help="Admin user email (required)",
+            default="aswin.1231@gmail.com",
+            help="Admin user email (default: aswin.1231@gmail.com)",
         )
 
         # Entity counts
@@ -375,7 +374,7 @@ class Command(BaseCommand):
         """Main seeding orchestration."""
         for i in range(options["orgs"]):
             self.stdout.write(f"\n--- Organization {i + 1}/{options['orgs']} ---")
-            org = self.create_org(options["currency"], options["country"])
+            org = self.create_org(options["currency"], options["country"], i)
             # Set RLS context for this org before creating org-scoped data
             self.set_rls_context(org.id)
             profiles = self.create_profiles(
@@ -445,10 +444,12 @@ class Command(BaseCommand):
                 options["tasks"],
             )
 
-    def create_org(self, currency, country):
-        """Create an organization."""
+    def create_org(self, currency, country, index=0):
+        """Create an organization. The first org is always 'MicroPyramid' so
+        local-dev workflows have a known name to log into via `manage.py devlogin`."""
+        name = "MicroPyramid" if index == 0 else self.fake.company()
         org = Org.objects.create(
-            name=self.fake.company(),
+            name=name,
             default_currency=currency,
             default_country=country,
         )
