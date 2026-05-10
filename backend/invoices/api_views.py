@@ -2094,3 +2094,100 @@ class InvoiceFromOpportunityView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class InvoiceFromTimeEntriesView(APIView):
+    """``POST /api/invoices/from-time-entries/`` — turn billable time entries
+    into a draft invoice (Tier 3 time-tracking).
+
+    Body: ``{"account_id": "<uuid>", "entry_ids": ["<uuid>", ...]}``.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    def post(self, request, *args, **kwargs):
+        from accounts.models import Account
+        from cases.models import TimeEntry
+        from cases.services.billing import (
+            TimeEntryInvoicingError,
+            attach_entries_to_invoice,
+            build_invoice_lines_from_entries,
+        )
+
+        org = request.profile.org
+        account_id = request.data.get("account_id")
+        entry_ids = request.data.get("entry_ids") or []
+
+        if not account_id:
+            return Response(
+                {"error": True, "message": "account_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(entry_ids, list) or not entry_ids:
+            return Response(
+                {"error": True, "message": "entry_ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            account = Account.objects.get(id=account_id, org=org)
+        except (Account.DoesNotExist, ValueError):
+            return Response(
+                {"error": True, "message": "Account not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with transaction.atomic():
+            entries = list(
+                TimeEntry.objects.select_for_update()
+                .select_related("case")
+                .filter(id__in=entry_ids, org=org)
+            )
+            if len(entries) != len(set(str(i) for i in entry_ids)):
+                return Response(
+                    {
+                        "error": True,
+                        "message": "One or more time entries were not found.",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            try:
+                currency, lines = build_invoice_lines_from_entries(entries)
+            except TimeEntryInvoicingError as exc:
+                return Response(
+                    {"error": True, "message": str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            primary_contact = account.contacts.first()
+
+            # Invoice.save() generates invoice_number, public_token, due_date,
+            # and recalculates totals — we just hand it the high-level fields.
+            invoice = Invoice.objects.create(
+                invoice_title=f"Time entries — {timezone.now().date():%Y-%m-%d}",
+                account=account,
+                contact=primary_contact,
+                currency=currency,
+                status="Draft",
+                org=org,
+            )
+            for line in lines:
+                InvoiceLineItem.objects.create(invoice=invoice, org=org, **line)
+
+            attach_entries_to_invoice(entries, invoice)
+            invoice.recalculate_totals()
+            invoice.save()
+
+        return Response(
+            {
+                "error": False,
+                "message": "Draft invoice created from time entries.",
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "currency": currency,
+                "line_count": len(lines),
+                "entry_ids": [str(e.id) for e in entries],
+            },
+            status=status.HTTP_201_CREATED,
+        )

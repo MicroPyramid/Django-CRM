@@ -12,10 +12,7 @@ import '../../widgets/common/common.dart';
 class TaskDetailScreen extends ConsumerStatefulWidget {
   final String taskId;
 
-  const TaskDetailScreen({
-    super.key,
-    required this.taskId,
-  });
+  const TaskDetailScreen({super.key, required this.taskId});
 
   @override
   ConsumerState<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -39,7 +36,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _error = null;
     });
 
-    final task = await ref.read(tasksProvider.notifier).getTaskById(widget.taskId);
+    final task = await ref
+        .read(tasksProvider.notifier)
+        .getTaskById(widget.taskId);
 
     if (mounted) {
       setState(() {
@@ -63,9 +62,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -82,16 +79,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                LucideIcons.fileX,
-                size: 48,
-                color: AppColors.gray400,
-              ),
+              Icon(LucideIcons.fileX, size: 48, color: AppColors.gray400),
               const SizedBox(height: 16),
-              Text(
-                'Task not found',
-                style: AppTypography.h3,
-              ),
+              Text('Task not found', style: AppTypography.h3),
               const SizedBox(height: 8),
               Text(
                 _error ?? 'This task may have been deleted',
@@ -100,10 +90,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: _fetchTask,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: _fetchTask, child: const Text('Retry')),
             ],
           ),
         ),
@@ -149,7 +136,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   ),
                 ),
                 onPressed: () async {
-                  final result = await context.push('/tasks/${widget.taskId}/edit');
+                  final result = await context.push(
+                    '/tasks/${widget.taskId}/edit',
+                  );
                   if (result == true && mounted) {
                     _fetchTask();
                   }
@@ -171,15 +160,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 onPressed: () => _showMoreOptions(),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeader(),
-            ),
+            flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
           ),
 
           // Content
-          SliverToBoxAdapter(
-            child: _buildContent(),
-          ),
+          SliverToBoxAdapter(child: _buildContent()),
         ],
       ),
       bottomNavigationBar: _buildBottomActions(),
@@ -198,10 +183,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            _getHeaderColor(),
-            _getHeaderColor().withValues(alpha: 0.7),
-          ],
+          colors: [_getHeaderColor(), _getHeaderColor().withValues(alpha: 0.7)],
         ),
       ),
       child: SafeArea(
@@ -282,11 +264,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getStatusIcon(_task!.status),
-            size: 14,
-            color: Colors.white,
-          ),
+          Icon(_getStatusIcon(_task!.status), size: 14, color: Colors.white),
           const SizedBox(width: 6),
           Text(
             _task!.status.label,
@@ -388,8 +366,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               ),
             ),
 
-          if (_task!.relatedTo != null)
-            const SizedBox(height: 16),
+          if (_task!.relatedTo != null) const SizedBox(height: 16),
 
           // Assigned To Card
           if (_task!.assignedTo != null && _task!.assignedTo!.isNotEmpty)
@@ -398,15 +375,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               icon: LucideIcons.user,
               child: Row(
                 children: [
-                  UserAvatar(
-                    name: _task!.assignedToName,
-                    size: AvatarSize.md,
-                  ),
+                  UserAvatar(name: _task!.assignedToName, size: AvatarSize.md),
                   const SizedBox(width: 12),
-                  Text(
-                    _task!.assignedToName,
-                    style: AppTypography.label,
-                  ),
+                  Text(_task!.assignedToName, style: AppTypography.label),
                 ],
               ),
             ),
@@ -428,8 +399,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               ),
             ),
 
-          if (_task!.tags.isNotEmpty)
-            const SizedBox(height: 16),
+          if (_task!.tags.isNotEmpty) const SizedBox(height: 16),
 
           // Metadata Card
           _buildCard(
@@ -478,11 +448,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: AppColors.textTertiary,
-              ),
+              Icon(icon, size: 16, color: AppColors.textTertiary),
               const SizedBox(width: 8),
               Text(
                 title.toUpperCase(),
@@ -503,25 +469,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   Widget _buildInfoRow(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppColors.gray400,
-        ),
+        Icon(icon, size: 16, color: AppColors.gray400),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
-            style: AppTypography.body.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
         ),
         Text(
           value,
-          style: AppTypography.label.copyWith(
-            color: AppColors.textPrimary,
-          ),
+          style: AppTypography.label.copyWith(color: AppColors.textPrimary),
         ),
       ],
     );
@@ -532,9 +490,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         child: Row(
@@ -550,18 +506,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       ),
                     )
                   : _task!.completed
-                      ? SecondaryButton(
-                          label: 'Reopen',
-                          icon: LucideIcons.rotateCcw,
-                          onPressed: _toggleTaskStatus,
-                          isFullWidth: true,
-                        )
-                      : PrimaryButton(
-                          label: 'Complete',
-                          icon: LucideIcons.checkCircle2,
-                          onPressed: _toggleTaskStatus,
-                          isFullWidth: true,
-                        ),
+                  ? SecondaryButton(
+                      label: 'Reopen',
+                      icon: LucideIcons.rotateCcw,
+                      onPressed: _toggleTaskStatus,
+                      isFullWidth: true,
+                    )
+                  : PrimaryButton(
+                      label: 'Complete',
+                      icon: LucideIcons.checkCircle2,
+                      onPressed: _toggleTaskStatus,
+                      isFullWidth: true,
+                    ),
             ),
           ],
         ),
@@ -574,7 +530,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
     setState(() => _isUpdating = true);
 
-    final response = await ref.read(tasksProvider.notifier).toggleTaskStatus(_task!);
+    final response = await ref
+        .read(tasksProvider.notifier)
+        .toggleTaskStatus(_task!);
 
     if (mounted) {
       setState(() => _isUpdating = false);
@@ -584,9 +542,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_task!.completed
-                  ? 'Task marked as incomplete'
-                  : 'Task completed'),
+              content: Text(
+                _task!.completed
+                    ? 'Task marked as incomplete'
+                    : 'Task completed',
+              ),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -628,7 +588,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               title: const Text('Edit Task'),
               onTap: () async {
                 Navigator.pop(context);
-                final result = await context.push('/tasks/${widget.taskId}/edit');
+                final result = await context.push(
+                  '/tasks/${widget.taskId}/edit',
+                );
                 if (result == true && mounted) {
                   _fetchTask();
                 }
@@ -636,7 +598,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             ),
             ListTile(
               leading: Icon(
-                _task!.completed ? LucideIcons.rotateCcw : LucideIcons.checkCircle2,
+                _task!.completed
+                    ? LucideIcons.rotateCcw
+                    : LucideIcons.checkCircle2,
               ),
               title: Text(_task!.completed ? 'Reopen Task' : 'Complete Task'),
               onTap: () {
@@ -680,10 +644,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               Navigator.pop(dialogContext);
               await _deleteTask();
             },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger600),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColors.danger600)),
           ),
         ],
       ),
@@ -693,7 +654,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   Future<void> _deleteTask() async {
     setState(() => _isUpdating = true);
 
-    final response = await ref.read(tasksProvider.notifier).deleteTask(widget.taskId);
+    final response = await ref
+        .read(tasksProvider.notifier)
+        .deleteTask(widget.taskId);
 
     if (mounted) {
       setState(() => _isUpdating = false);
@@ -736,8 +699,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       return '$days day${days > 1 ? 's' : ''} overdue';
     } else {
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return 'Due ${months[date.month - 1]} ${date.day}, ${date.year}';
     }
@@ -745,8 +718,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   String _formatDateTime(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }

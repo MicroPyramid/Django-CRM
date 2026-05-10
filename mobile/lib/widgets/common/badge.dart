@@ -16,17 +16,11 @@ class StatusBadge extends StatelessWidget {
   });
 
   factory StatusBadge.fromLeadStatus(LeadStatus status) {
-    return StatusBadge(
-      label: status.label,
-      color: status.color,
-    );
+    return StatusBadge(label: status.label, color: status.color);
   }
 
   factory StatusBadge.fromDealStage(DealStage stage) {
-    return StatusBadge(
-      label: stage.shortLabel,
-      color: stage.color,
-    );
+    return StatusBadge(label: stage.shortLabel, color: stage.color);
   }
 
   @override
@@ -85,11 +79,7 @@ class PriorityBadge extends StatelessWidget {
           color: priority.color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(
-          _icon,
-          size: 12,
-          color: priority.color,
-        ),
+        child: Icon(_icon, size: 12, color: priority.color),
       );
     }
 
@@ -102,11 +92,7 @@ class PriorityBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _icon,
-            size: 12,
-            color: priority.color,
-          ),
+          Icon(_icon, size: 12, color: priority.color),
           if (showLabel) ...[
             const SizedBox(width: 3),
             Text(
@@ -176,11 +162,7 @@ class LabelPill extends StatelessWidget {
                   color: pillColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 10,
-                  color: pillColor,
-                ),
+                child: Icon(Icons.close_rounded, size: 10, color: pillColor),
               ),
             ),
           ],
@@ -236,10 +218,7 @@ class CountBadge extends StatelessWidget {
 class SourceBadge extends StatelessWidget {
   final LeadSource source;
 
-  const SourceBadge({
-    super.key,
-    required this.source,
-  });
+  const SourceBadge({super.key, required this.source});
 
   @override
   Widget build(BuildContext context) {
@@ -252,17 +231,11 @@ class SourceBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            source.icon,
-            size: 12,
-            color: AppColors.gray500,
-          ),
+          Icon(source.icon, size: 12, color: AppColors.gray500),
           const SizedBox(width: 4),
           Text(
             source.label,
-            style: AppTypography.labelSmall.copyWith(
-              color: AppColors.gray600,
-            ),
+            style: AppTypography.labelSmall.copyWith(color: AppColors.gray600),
           ),
         ],
       ),

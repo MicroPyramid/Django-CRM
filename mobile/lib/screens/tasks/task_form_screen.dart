@@ -12,11 +12,7 @@ class TaskFormScreen extends ConsumerStatefulWidget {
   final String? taskId;
   final Task? initialTask;
 
-  const TaskFormScreen({
-    super.key,
-    this.taskId,
-    this.initialTask,
-  });
+  const TaskFormScreen({super.key, this.taskId, this.initialTask});
 
   bool get isEditMode => taskId != null;
 
@@ -60,7 +56,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       _fetchError = null;
     });
 
-    final task = await ref.read(tasksProvider.notifier).getTaskById(widget.taskId!);
+    final task = await ref
+        .read(tasksProvider.notifier)
+        .getTaskById(widget.taskId!);
 
     if (mounted) {
       setState(() {
@@ -156,9 +154,11 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.isEditMode
-                ? 'Task updated successfully'
-                : 'Task created successfully'),
+            content: Text(
+              widget.isEditMode
+                  ? 'Task updated successfully'
+                  : 'Task created successfully',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -214,9 +214,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   Widget _buildBody() {
     if (_isFetchingTask) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_fetchError != null) {
@@ -224,11 +222,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              LucideIcons.alertCircle,
-              size: 48,
-              color: AppColors.danger500,
-            ),
+            Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
             const SizedBox(height: 16),
             Text(
               _fetchError!,
@@ -237,10 +231,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: _fetchTask,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: _fetchTask, child: const Text('Retry')),
           ],
         ),
       );
@@ -360,9 +351,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       children: [
         Text(
           'Status',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 10),
         Container(
@@ -438,9 +427,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       children: [
         Text(
           'Priority',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 10),
         Row(
@@ -490,7 +477,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                 Text(
                   priority.label,
                   style: AppTypography.label.copyWith(
-                    color: isSelected ? priority.color : AppColors.textSecondary,
+                    color: isSelected
+                        ? priority.color
+                        : AppColors.textSecondary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -509,14 +498,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _dueDate != null
-              ? AppColors.primary50
-              : AppColors.gray50,
+          color: _dueDate != null ? AppColors.primary50 : AppColors.gray50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _dueDate != null
-                ? AppColors.primary300
-                : AppColors.border,
+            color: _dueDate != null ? AppColors.primary300 : AppColors.border,
           ),
         ),
         child: Row(
@@ -629,8 +614,18 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       return 'Tomorrow';
     } else {
       final months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     }

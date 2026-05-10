@@ -180,7 +180,11 @@ enum DealStage {
 
   static DealStage fromString(String? value) {
     if (value == null) return DealStage.prospecting;
-    switch (value.toLowerCase().replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '')) {
+    switch (value
+        .toLowerCase()
+        .replaceAll('-', '')
+        .replaceAll('_', '')
+        .replaceAll(' ', '')) {
       case 'prospecting':
         return DealStage.prospecting;
       case 'qualified':
@@ -201,20 +205,20 @@ enum DealStage {
 
   /// Get all active stages (not closed)
   static List<DealStage> get activeStages => [
-        DealStage.prospecting,
-        DealStage.qualified,
-        DealStage.proposal,
-        DealStage.negotiation,
-      ];
+    DealStage.prospecting,
+    DealStage.qualified,
+    DealStage.proposal,
+    DealStage.negotiation,
+  ];
 
   /// Get pipeline stages for kanban view
   static List<DealStage> get pipelineStages => [
-        DealStage.prospecting,
-        DealStage.qualified,
-        DealStage.proposal,
-        DealStage.negotiation,
-        DealStage.closedWon,
-      ];
+    DealStage.prospecting,
+    DealStage.qualified,
+    DealStage.proposal,
+    DealStage.negotiation,
+    DealStage.closedWon,
+  ];
 }
 
 /// Product in a deal
@@ -311,8 +315,10 @@ class Deal {
           final id = item['id']?.toString() ?? '';
           if (id.isNotEmpty) assignedToIds.add(id);
           if (assignedToName == 'Unassigned') {
-            final email = item['user']?['email'] as String? ??
-                          item['user__email'] as String? ?? '';
+            final email =
+                item['user']?['email'] as String? ??
+                item['user__email'] as String? ??
+                '';
             assignedToName = email.split('@').first;
             if (assignedToName.isEmpty) assignedToName = 'Assigned';
           }
@@ -344,35 +350,43 @@ class Deal {
     List<DealProduct> products = [];
     if (json['line_items'] != null) {
       final lineItems = json['line_items'] as List<dynamic>? ?? [];
-      products = lineItems.map((item) {
-        if (item is Map<String, dynamic>) {
-          // Parse quantity - can be num or string
-          int qty = 1;
-          if (item['quantity'] != null) {
-            if (item['quantity'] is num) {
-              qty = (item['quantity'] as num).toInt();
-            } else if (item['quantity'] is String) {
-              qty = int.tryParse(item['quantity'] as String) ?? 1;
+      products = lineItems
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              // Parse quantity - can be num or string
+              int qty = 1;
+              if (item['quantity'] != null) {
+                if (item['quantity'] is num) {
+                  qty = (item['quantity'] as num).toInt();
+                } else if (item['quantity'] is String) {
+                  qty = int.tryParse(item['quantity'] as String) ?? 1;
+                }
+              }
+              // Parse unit_price - can be num or string
+              double price = 0.0;
+              if (item['unit_price'] != null) {
+                if (item['unit_price'] is num) {
+                  price = (item['unit_price'] as num).toDouble();
+                } else if (item['unit_price'] is String) {
+                  price = double.tryParse(item['unit_price'] as String) ?? 0.0;
+                }
+              }
+              return DealProduct(
+                id: item['id']?.toString() ?? '',
+                name: item['name'] as String? ?? '',
+                quantity: qty,
+                unitPrice: price,
+              );
             }
-          }
-          // Parse unit_price - can be num or string
-          double price = 0.0;
-          if (item['unit_price'] != null) {
-            if (item['unit_price'] is num) {
-              price = (item['unit_price'] as num).toDouble();
-            } else if (item['unit_price'] is String) {
-              price = double.tryParse(item['unit_price'] as String) ?? 0.0;
-            }
-          }
-          return DealProduct(
-            id: item['id']?.toString() ?? '',
-            name: item['name'] as String? ?? '',
-            quantity: qty,
-            unitPrice: price,
-          );
-        }
-        return const DealProduct(id: '', name: '', quantity: 0, unitPrice: 0);
-      }).where((p) => p.id.isNotEmpty).toList();
+            return const DealProduct(
+              id: '',
+              name: '',
+              quantity: 0,
+              unitPrice: 0,
+            );
+          })
+          .where((p) => p.id.isNotEmpty)
+          .toList();
     }
 
     // Parse close date
@@ -419,7 +433,9 @@ class Deal {
       tagIds: parsedTagIds,
       contactIds: contactIds,
       notes: json['description'] as String?,
-      opportunityType: OpportunityType.fromString(json['opportunity_type'] as String?),
+      opportunityType: OpportunityType.fromString(
+        json['opportunity_type'] as String?,
+      ),
       leadSource: OpportunitySource.fromString(json['lead_source'] as String?),
       currency: Currency.fromString(json['currency'] as String?),
       createdAt: json['created_at'] != null
@@ -446,7 +462,8 @@ class Deal {
       data['account'] = accountId;
     }
     if (closeDate != null) {
-      data['closed_on'] = '${closeDate!.year}-${closeDate!.month.toString().padLeft(2, '0')}-${closeDate!.day.toString().padLeft(2, '0')}';
+      data['closed_on'] =
+          '${closeDate!.year}-${closeDate!.month.toString().padLeft(2, '0')}-${closeDate!.day.toString().padLeft(2, '0')}';
     }
     if (notes != null && notes!.isNotEmpty) {
       data['description'] = notes;

@@ -18,7 +18,8 @@ class ApiResponse<T> {
   });
 
   @override
-  String toString() => 'ApiResponse(success: $success, statusCode: $statusCode, message: $message)';
+  String toString() =>
+      'ApiResponse(success: $success, statusCode: $statusCode, message: $message)';
 }
 
 /// HTTP client for BottleCRM API
@@ -105,7 +106,9 @@ class ApiService {
           if (messages is List && messages.isNotEmpty) {
             // Capitalize field name
             final fieldLabel = fieldName.replaceAll('_', ' ');
-            errorMessages.add('${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}: ${messages.first}');
+            errorMessages.add(
+              '${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}: ${messages.first}',
+            );
           }
         }
         if (errorMessages.isNotEmpty) {
@@ -137,10 +140,9 @@ class ApiService {
 
       debugPrint('GET $uri');
 
-      final response = await _client.get(
-        uri,
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .get(uri, headers: _buildHeaders(requiresAuth: requiresAuth))
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -148,16 +150,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? data as Map<String, dynamic>? : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('GET error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -174,10 +174,9 @@ class ApiService {
 
       debugPrint('GET (list) $uri');
 
-      final response = await _client.get(
-        uri,
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .get(uri, headers: _buildHeaders(requiresAuth: requiresAuth))
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -185,16 +184,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? (data as List<dynamic>?) : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('GET (list) error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -208,11 +205,13 @@ class ApiService {
       debugPrint('POST $url');
       debugPrint('Body: ${jsonEncode(body)}');
 
-      final response = await _client.post(
-        Uri.parse(url),
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-        body: jsonEncode(body),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .post(
+            Uri.parse(url),
+            headers: _buildHeaders(requiresAuth: requiresAuth),
+            body: jsonEncode(body),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -225,16 +224,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? data as Map<String, dynamic>? : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('POST error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -247,11 +244,13 @@ class ApiService {
     try {
       debugPrint('PUT $url');
 
-      final response = await _client.put(
-        Uri.parse(url),
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-        body: jsonEncode(body),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .put(
+            Uri.parse(url),
+            headers: _buildHeaders(requiresAuth: requiresAuth),
+            body: jsonEncode(body),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -259,16 +258,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? data as Map<String, dynamic>? : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('PUT error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -281,11 +278,13 @@ class ApiService {
     try {
       debugPrint('PATCH $url');
 
-      final response = await _client.patch(
-        Uri.parse(url),
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-        body: jsonEncode(body),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .patch(
+            Uri.parse(url),
+            headers: _buildHeaders(requiresAuth: requiresAuth),
+            body: jsonEncode(body),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -293,16 +292,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? data as Map<String, dynamic>? : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('PATCH error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -314,10 +311,12 @@ class ApiService {
     try {
       debugPrint('DELETE $url');
 
-      final response = await _client.delete(
-        Uri.parse(url),
-        headers: _buildHeaders(requiresAuth: requiresAuth),
-      ).timeout(ApiConfig.connectTimeout);
+      final response = await _client
+          .delete(
+            Uri.parse(url),
+            headers: _buildHeaders(requiresAuth: requiresAuth),
+          )
+          .timeout(ApiConfig.connectTimeout);
 
       final data = _parseResponse(response);
       final success = _isSuccess(response.statusCode);
@@ -325,16 +324,14 @@ class ApiService {
       return ApiResponse(
         success: success,
         data: success ? data as Map<String, dynamic>? : null,
-        message: success ? null : _extractErrorMessage(data, response.statusCode),
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
         statusCode: response.statusCode,
       );
     } catch (e) {
       debugPrint('DELETE error: $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 }

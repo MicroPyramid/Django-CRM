@@ -409,7 +409,7 @@ export const accounts = createCrudApi('accounts');
 export const leads = createCrudApi('leads');
 export const contacts = createCrudApi('contacts');
 export const opportunities = createCrudApi('opportunity');
-export const cases = createCrudApi('cases');
+export const tickets = createCrudApi('cases');
 export const tasks = createCrudApi('tasks');
 export const events = createCrudApi('events');
 export const invoices = createCrudApi('invoices');
@@ -456,7 +456,7 @@ export default {
   leads,
   contacts,
   opportunities,
-  cases,
+  tickets,
   tasks,
   events,
   invoices,

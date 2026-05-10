@@ -6,6 +6,7 @@ export 'user.dart';
 export 'lead.dart';
 export 'deal.dart';
 export 'task.dart';
+export 'ticket.dart';
 export 'activity.dart';
 export 'notification.dart';
 export 'comment.dart';

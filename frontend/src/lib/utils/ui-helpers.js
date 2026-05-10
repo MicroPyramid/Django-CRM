@@ -25,11 +25,11 @@ export function getLeadStatusClass(status) {
 }
 
 /**
- * Case status class mapping
+ * Ticket status class mapping
  * @param {string | null | undefined} status
  * @returns {string} Tailwind CSS classes
  */
-export function getCaseStatusClass(status) {
+export function getTicketStatusClass(status) {
   /** @type {{ [key: string]: string }} */
   const classes = {
     NEW: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -46,11 +46,11 @@ export function getCaseStatusClass(status) {
 }
 
 /**
- * Case type class mapping
- * @param {string | null | undefined} caseType
+ * Ticket type class mapping
+ * @param {string | null | undefined} ticketType
  * @returns {string} Tailwind CSS classes
  */
-export function getCaseTypeClass(caseType) {
+export function getTicketTypeClass(ticketType) {
   /** @type {{ [key: string]: string }} */
   const classes = {
     QUESTION: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -58,7 +58,7 @@ export function getCaseTypeClass(caseType) {
     PROBLEM: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   };
   return (
-    classes[caseType?.toUpperCase() || ''] ||
+    classes[ticketType?.toUpperCase() || ''] ||
     'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
   );
 }

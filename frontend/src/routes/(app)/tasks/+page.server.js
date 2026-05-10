@@ -190,8 +190,8 @@ export async function load({ locals, cookies, url }) {
       // Opportunity (FK) - lookup name from opportunities list if needed
       opportunity: getRelatedName(task.opportunity, opportunities, 'Unknown Opportunity'),
 
-      // Case (FK) - lookup name from cases list if needed
-      case_: getRelatedName(task.case, cases, 'Unknown Case'),
+      // Ticket (FK) - lookup name from tickets list if needed
+      case_: getRelatedName(task.case, cases, 'Unknown Ticket'),
 
       // Lead (FK) - lookup name from leads list if needed
       lead: getRelatedName(task.lead, leads, 'Unknown Lead'),
@@ -286,7 +286,7 @@ export const actions = {
       const dueDate = form.get('dueDate')?.toString() || null;
       const accountId = form.get('accountId')?.toString() || null;
       const opportunityId = form.get('opportunityId')?.toString() || null;
-      const caseId = form.get('caseId')?.toString() || null;
+      const ticketId = form.get('ticketId')?.toString() || null;
       const leadId = form.get('leadId')?.toString() || null;
 
       // Parse array fields (sent as JSON strings)
@@ -317,7 +317,7 @@ export const actions = {
         tags: tags,
         account: accountId || null,
         opportunity: opportunityId || null,
-        case: caseId || null,
+        case: ticketId || null,
         lead: leadId || null
       };
 
@@ -350,7 +350,7 @@ export const actions = {
       const dueDate = form.get('dueDate')?.toString() || null;
       const accountId = form.get('accountId')?.toString() || null;
       const opportunityId = form.get('opportunityId')?.toString() || null;
-      const caseId = form.get('caseId')?.toString() || null;
+      const ticketId = form.get('ticketId')?.toString() || null;
       const leadId = form.get('leadId')?.toString() || null;
 
       // Parse array fields (sent as JSON strings)
@@ -381,7 +381,7 @@ export const actions = {
         tags: tags,
         account: accountId || null,
         opportunity: opportunityId || null,
-        case: caseId || null,
+        case: ticketId || null,
         lead: leadId || null
       };
 

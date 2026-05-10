@@ -74,9 +74,7 @@ class UserAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _backgroundColor,
-        border: showBorder
-            ? Border.all(color: Colors.white, width: 2)
-            : null,
+        border: showBorder ? Border.all(color: Colors.white, width: 2) : null,
         boxShadow: showBorder ? AppLayout.shadowSm : null,
       ),
       child: imageUrl != null && imageUrl!.isNotEmpty
@@ -90,17 +88,11 @@ class UserAvatar extends StatelessWidget {
                 ),
               ),
             )
-          : _InitialsAvatar(
-              initials: _initials,
-              fontSize: size.fontSize,
-            ),
+          : _InitialsAvatar(initials: _initials, fontSize: size.fontSize),
     );
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: avatar,
-      );
+      return GestureDetector(onTap: onTap, child: avatar);
     }
 
     return avatar;
@@ -111,10 +103,7 @@ class _InitialsAvatar extends StatelessWidget {
   final String initials;
   final double fontSize;
 
-  const _InitialsAvatar({
-    required this.initials,
-    required this.fontSize,
-  });
+  const _InitialsAvatar({required this.initials, required this.fontSize});
 
   @override
   Widget build(BuildContext context) {

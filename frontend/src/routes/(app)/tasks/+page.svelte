@@ -108,7 +108,7 @@
     dueDate: '',
     accountId: '',
     opportunityId: '',
-    caseId: '',
+    ticketId: '',
     leadId: '',
     assignedTo: /** @type {string[]} */ ([]),
     contacts: /** @type {string[]} */ ([]),
@@ -136,7 +136,7 @@
       return { name: `Opp: ${row.opportunity.name || 'Opportunity'}` };
     }
     if (row.case_) {
-      return { name: `Case: ${row.case_.subject || row.case_.name || 'Case'}` };
+      return { name: `Ticket: ${row.case_.subject || row.case_.name || 'Ticket'}` };
     }
     if (row.account) {
       return { name: `Account: ${row.account.name || 'Account'}` };
@@ -493,7 +493,7 @@
     accountName: '',
     opportunityId: '',
     opportunityName: '',
-    caseId: '',
+    ticketId: '',
     caseName: '',
     leadId: '',
     leadName: '',
@@ -522,7 +522,7 @@
     formState.dueDate = row.dueDate ? row.dueDate.split('T')[0] : '';
     formState.accountId = row.account?.id || '';
     formState.opportunityId = row.opportunity?.id || '';
-    formState.caseId = row.case_?.id || '';
+    formState.ticketId = row.case_?.id || '';
     formState.leadId = row.lead?.id || '';
     formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
     formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
@@ -590,7 +590,7 @@
       accountName: accountNameFromUrl || '',
       opportunityId: '',
       opportunityName: '',
-      caseId: '',
+      ticketId: '',
       caseName: '',
       leadId: '',
       leadName: '',
@@ -630,7 +630,7 @@
         accountName: task.account?.name || '',
         opportunityId: task.opportunity?.id || '',
         opportunityName: task.opportunity?.name || '',
-        caseId: task.case_?.id || '',
+        ticketId: task.case_?.id || '',
         caseName: task.case_?.name || '',
         leadId: task.lead?.id || '',
         leadName: task.lead?.name || '',
@@ -845,7 +845,7 @@
     ...opportunities.map((/** @type {any} */ o) => ({ value: o.id, label: o.name }))
   ]);
 
-  // Case options for drawer
+  // Ticket options for drawer
   const caseOptions = $derived([
     { value: '', label: 'None' },
     ...cases.map((/** @type {any} */ c) => ({ value: c.id, label: c.name }))
@@ -887,7 +887,7 @@
               { key: 'opportunityName', label: 'Opportunity', type: 'readonly', icon: Target }
             ];
           if (task.case_)
-            return [{ key: 'caseName', label: 'Case', type: 'readonly', icon: Briefcase }];
+            return [{ key: 'caseName', label: 'Ticket', type: 'readonly', icon: Briefcase }];
           return [];
         })()
       : accountFromUrl
@@ -935,7 +935,7 @@
       accountName: formState.accountName,
       opportunityId: formState.opportunityId,
       opportunityName: formState.opportunityName,
-      caseId: formState.caseId,
+      ticketId: formState.ticketId,
       caseName: formState.caseName,
       leadId: formState.leadId,
       leadName: formState.leadName,
@@ -1036,7 +1036,7 @@
       let leadName = '';
       let opportunityId = '';
       let opportunityName = '';
-      let caseId = '';
+      let ticketId = '';
       let caseName = '';
 
       if (relatedEntity) {
@@ -1050,7 +1050,7 @@
           opportunityId = relatedEntity.id;
           opportunityName = relatedEntity.name;
         } else if (relatedEntity.type === 'case') {
-          caseId = relatedEntity.id;
+          ticketId = relatedEntity.id;
           caseName = relatedEntity.name;
         }
       }
@@ -1066,7 +1066,7 @@
         accountName,
         opportunityId,
         opportunityName,
-        caseId,
+        ticketId,
         caseName,
         leadId,
         leadName,
@@ -1594,7 +1594,7 @@
   <input type="hidden" name="dueDate" value={formState.dueDate} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="opportunityId" value={formState.opportunityId} />
-  <input type="hidden" name="caseId" value={formState.caseId} />
+  <input type="hidden" name="ticketId" value={formState.ticketId} />
   <input type="hidden" name="leadId" value={formState.leadId} />
   <input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
   <input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
@@ -1617,7 +1617,7 @@
   <input type="hidden" name="dueDate" value={formState.dueDate} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="opportunityId" value={formState.opportunityId} />
-  <input type="hidden" name="caseId" value={formState.caseId} />
+  <input type="hidden" name="ticketId" value={formState.ticketId} />
   <input type="hidden" name="leadId" value={formState.leadId} />
   <input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
   <input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />

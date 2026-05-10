@@ -89,7 +89,9 @@ class AuthService {
 
       // Check if platform supports authenticate method
       if (!_googleSignIn.supportsAuthenticate()) {
-        debugPrint('AuthService: Platform does not support authenticate method');
+        debugPrint(
+          'AuthService: Platform does not support authenticate method',
+        );
         return false;
       }
 
@@ -111,14 +113,14 @@ class AuthService {
       debugPrint('AuthService: Got ID token, sending to backend...');
 
       // Send Google ID token to backend
-      final response = await _apiService.post(
-        ApiConfig.googleLogin,
-        {'idToken': idToken},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.googleLogin, {
+        'idToken': idToken,
+      }, requiresAuth: false);
 
       if (!response.success || response.data == null) {
-        debugPrint('AuthService: Backend authentication failed: ${response.message}');
+        debugPrint(
+          'AuthService: Backend authentication failed: ${response.message}',
+        );
         return false;
       }
 
@@ -167,7 +169,9 @@ class AuthService {
     await _saveToStorage();
     await _clearSelectedOrganization();
 
-    debugPrint('AuthService: Auth response handled, user: ${_currentUser?.email}');
+    debugPrint(
+      'AuthService: Auth response handled, user: ${_currentUser?.email}',
+    );
     debugPrint('AuthService: Organizations: ${_organizations?.length ?? 0}');
   }
 
@@ -181,11 +185,9 @@ class AuthService {
     try {
       debugPrint('AuthService: Refreshing access token...');
 
-      final response = await _apiService.post(
-        ApiConfig.refreshToken,
-        {'refresh': _refreshToken},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.refreshToken, {
+        'refresh': _refreshToken,
+      }, requiresAuth: false);
 
       if (!response.success || response.data == null) {
         debugPrint('AuthService: Token refresh failed: ${response.message}');
@@ -212,11 +214,9 @@ class AuthService {
       debugPrint('AuthService: Switching to organization: ${org.name}...');
 
       // Call switch-org API to get new tokens with org context
-      final response = await _apiService.post(
-        ApiConfig.switchOrg,
-        {'org_id': org.id},
-        requiresAuth: true,
-      );
+      final response = await _apiService.post(ApiConfig.switchOrg, {
+        'org_id': org.id,
+      }, requiresAuth: true);
 
       if (!response.success || response.data == null) {
         debugPrint('AuthService: Switch org failed: ${response.message}');
@@ -291,11 +291,14 @@ class AuthService {
 
       final selectedOrgJson = prefs.getString(_selectedOrgKey);
       if (selectedOrgJson != null) {
-        _selectedOrganization =
-            Organization.fromJson(jsonDecode(selectedOrgJson) as Map<String, dynamic>);
+        _selectedOrganization = Organization.fromJson(
+          jsonDecode(selectedOrgJson) as Map<String, dynamic>,
+        );
       }
 
-      debugPrint('AuthService: Loaded from storage, user: ${_currentUser?.email}');
+      debugPrint(
+        'AuthService: Loaded from storage, user: ${_currentUser?.email}',
+      );
     } catch (e) {
       debugPrint('AuthService: Load from storage error: $e');
     }
@@ -313,12 +316,15 @@ class AuthService {
         await prefs.setString(_refreshTokenKey, _refreshToken!);
       }
       if (_currentUser != null) {
-        await prefs.setString(_userKey, jsonEncode({
-          'id': _currentUser!.id,
-          'email': _currentUser!.email,
-          'name': _currentUser!.name,
-          'profileImage': _currentUser!.profilePic,
-        }));
+        await prefs.setString(
+          _userKey,
+          jsonEncode({
+            'id': _currentUser!.id,
+            'email': _currentUser!.email,
+            'name': _currentUser!.name,
+            'profileImage': _currentUser!.profilePic,
+          }),
+        );
       }
       if (_organizations != null) {
         await prefs.setString(
@@ -337,7 +343,10 @@ class AuthService {
   Future<void> _saveSelectedOrganization() async {
     if (_selectedOrganization != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_selectedOrgKey, jsonEncode(_selectedOrganization!.toJson()));
+      await prefs.setString(
+        _selectedOrgKey,
+        jsonEncode(_selectedOrganization!.toJson()),
+      );
     }
   }
 

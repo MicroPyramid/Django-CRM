@@ -13,10 +13,7 @@ import '../../widgets/common/common.dart';
 class LeadDetailScreen extends ConsumerStatefulWidget {
   final String leadId;
 
-  const LeadDetailScreen({
-    super.key,
-    required this.leadId,
-  });
+  const LeadDetailScreen({super.key, required this.leadId});
 
   @override
   ConsumerState<LeadDetailScreen> createState() => _LeadDetailScreenState();
@@ -52,7 +49,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       _error = null;
     });
 
-    final lead = await ref.read(leadsProvider.notifier).getLeadById(widget.leadId);
+    final lead = await ref
+        .read(leadsProvider.notifier)
+        .getLeadById(widget.leadId);
 
     if (mounted) {
       setState(() {
@@ -76,9 +75,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -95,16 +92,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                LucideIcons.userX,
-                size: 48,
-                color: AppColors.gray400,
-              ),
+              Icon(LucideIcons.userX, size: 48, color: AppColors.gray400),
               const SizedBox(height: 16),
-              Text(
-                'Lead not found',
-                style: AppTypography.h3,
-              ),
+              Text('Lead not found', style: AppTypography.h3),
               const SizedBox(height: 8),
               Text(
                 _error ?? 'This lead may have been deleted',
@@ -113,10 +103,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: _fetchLead,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: _fetchLead, child: const Text('Retry')),
             ],
           ),
         ),
@@ -165,7 +152,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                   ),
                 ),
                 onPressed: () async {
-                  final result = await context.push('/leads/${widget.leadId}/edit');
+                  final result = await context.push(
+                    '/leads/${widget.leadId}/edit',
+                  );
                   if (result == true && mounted) {
                     _fetchLead(); // Refresh after edit
                   }
@@ -187,9 +176,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                 onPressed: () => _showMoreOptions(),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeader(),
-            ),
+            flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
               child: Container(
@@ -244,74 +231,71 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-              // Avatar
-              UserAvatar(
-                name: _lead!.name,
-                size: AvatarSize.xl,
-              ),
+                // Avatar
+                UserAvatar(name: _lead!.name, size: AvatarSize.xl),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Name
-              Text(
-                _lead!.name,
-                style: AppTypography.h1.copyWith(
-                  color: AppColors.textPrimary,
+                // Name
+                Text(
+                  _lead!.name,
+                  style: AppTypography.h1.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
 
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-              // Company
-              Text(
-                _lead!.company,
-                style: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
+                // Company
+                Text(
+                  _lead!.company,
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Status & Priority Badges
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  StatusBadge.fromLeadStatus(_lead!.status),
-                  if (_lead!.priority == Priority.high) ...[
-                    const SizedBox(width: 8),
-                    PriorityBadge(priority: _lead!.priority),
+                // Status & Priority Badges
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    StatusBadge.fromLeadStatus(_lead!.status),
+                    if (_lead!.priority == Priority.high) ...[
+                      const SizedBox(width: 8),
+                      PriorityBadge(priority: _lead!.priority),
+                    ],
                   ],
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Quick Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _QuickActionButton(
-                    icon: LucideIcons.phone,
-                    label: 'Call',
-                    onTap: () => _launchPhone(_lead!.phone),
-                  ),
-                  const SizedBox(width: 24),
-                  _QuickActionButton(
-                    icon: LucideIcons.mail,
-                    label: 'Email',
-                    onTap: () => _launchEmail(_lead!.email),
-                  ),
-                  const SizedBox(width: 24),
-                  _QuickActionButton(
-                    icon: LucideIcons.messageSquare,
-                    label: 'Message',
-                    onTap: () => _launchSms(_lead!.phone),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                // Quick Actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _QuickActionButton(
+                      icon: LucideIcons.phone,
+                      label: 'Call',
+                      onTap: () => _launchPhone(_lead!.phone),
+                    ),
+                    const SizedBox(width: 24),
+                    _QuickActionButton(
+                      icon: LucideIcons.mail,
+                      label: 'Email',
+                      onTap: () => _launchEmail(_lead!.email),
+                    ),
+                    const SizedBox(width: 24),
+                    _QuickActionButton(
+                      icon: LucideIcons.messageSquare,
+                      label: 'Message',
+                      onTap: () => _launchSms(_lead!.phone),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -367,19 +351,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
             title: 'Assigned To',
             child: Row(
               children: [
-                UserAvatar(
-                  name: _lead!.assignedToName,
-                  size: AvatarSize.md,
-                ),
+                UserAvatar(name: _lead!.assignedToName, size: AvatarSize.md),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _lead!.assignedToName,
-                        style: AppTypography.label,
-                      ),
+                      Text(_lead!.assignedToName, style: AppTypography.label),
                     ],
                   ),
                 ),
@@ -440,22 +418,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            LucideIcons.clock,
-            size: 48,
-            color: AppColors.gray400,
-          ),
+          Icon(LucideIcons.clock, size: 48, color: AppColors.gray400),
           const SizedBox(height: 16),
-          Text(
-            'No activity yet',
-            style: AppTypography.h3,
-          ),
+          Text('No activity yet', style: AppTypography.h3),
           const SizedBox(height: 8),
           Text(
             'Activity timeline will appear here',
-            style: AppTypography.body.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -494,9 +463,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            border: Border(
-              top: BorderSide(color: AppColors.border),
-            ),
+            border: Border(top: BorderSide(color: AppColors.border)),
           ),
           child: SafeArea(
             child: Row(
@@ -742,51 +709,57 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
               padding: const EdgeInsets.all(16),
               child: Text('Change Status', style: AppTypography.h3),
             ),
-            ...LeadStatus.values.map((status) => ListTile(
-                  leading: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      shape: BoxShape.circle,
-                    ),
+            ...LeadStatus.values.map(
+              (status) => ListTile(
+                leading: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status),
+                    shape: BoxShape.circle,
                   ),
-                  title: Text(status.displayName),
-                  trailing: _lead!.status == status
-                      ? Icon(LucideIcons.check, color: AppColors.primary600)
-                      : null,
-                  onTap: () async {
-                    Navigator.pop(context);
-                    if (_lead!.status == status) return;
+                ),
+                title: Text(status.displayName),
+                trailing: _lead!.status == status
+                    ? Icon(LucideIcons.check, color: AppColors.primary600)
+                    : null,
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (_lead!.status == status) return;
 
-                    final messenger = ScaffoldMessenger.of(context);
-                    final response = await ref
-                        .read(leadsProvider.notifier)
-                        .updateLeadStatus(_lead!.id, status);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final response = await ref
+                      .read(leadsProvider.notifier)
+                      .updateLeadStatus(_lead!.id, status);
 
-                    if (mounted) {
-                      if (response.success) {
-                        setState(() {
-                          _lead = _lead!.copyWith(status: status);
-                        });
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text('Status changed to ${status.displayName}'),
-                            behavior: SnackBarBehavior.floating,
+                  if (mounted) {
+                    if (response.success) {
+                      setState(() {
+                        _lead = _lead!.copyWith(status: status);
+                      });
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Status changed to ${status.displayName}',
                           ),
-                        );
-                      } else {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(response.message ?? 'Failed to update status'),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: AppColors.danger600,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            response.message ?? 'Failed to update status',
                           ),
-                        );
-                      }
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: AppColors.danger600,
+                        ),
+                      );
                     }
-                  },
-                )),
+                  }
+                },
+              ),
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -812,10 +785,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
               Navigator.pop(dialogContext);
               await _deleteLead();
             },
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger600),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColors.danger600)),
           ),
         ],
       ),
@@ -823,7 +793,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
   }
 
   Future<void> _deleteLead() async {
-    final response = await ref.read(leadsProvider.notifier).deleteLead(widget.leadId);
+    final response = await ref
+        .read(leadsProvider.notifier)
+        .deleteLead(widget.leadId);
 
     if (mounted) {
       if (response.success) {
@@ -853,8 +825,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -908,11 +890,7 @@ class _QuickActionButton extends StatelessWidget {
               color: AppColors.primary100,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary600,
-              size: 22,
-            ),
+            child: Icon(icon, color: AppColors.primary600, size: 22),
           ),
           const SizedBox(height: 6),
           Text(
@@ -947,11 +925,7 @@ class _InfoRow extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: AppColors.gray400,
-          ),
+          Icon(icon, size: 20, color: AppColors.gray400),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1055,10 +1029,7 @@ class _NoteCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger600),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColors.danger600)),
           ),
         ],
       ),
@@ -1093,10 +1064,7 @@ class _NoteCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                UserAvatar(
-                  name: author,
-                  size: AvatarSize.xs,
-                ),
+                UserAvatar(name: author, size: AvatarSize.xs),
                 const SizedBox(width: 8),
                 Text(
                   author,

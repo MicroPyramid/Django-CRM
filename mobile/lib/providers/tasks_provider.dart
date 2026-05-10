@@ -26,12 +26,12 @@ class TasksState {
   });
 
   const TasksState.initial()
-      : tasks = const [],
-        isLoading = false,
-        error = null,
-        totalCount = 0,
-        hasMore = true,
-        currentOffset = 0;
+    : tasks = const [],
+      isLoading = false,
+      error = null,
+      totalCount = 0,
+      hasMore = true,
+      currentOffset = 0;
 
   TasksState copyWith({
     List<Task>? tasks,
@@ -70,14 +70,12 @@ class TasksNotifier extends StateNotifier<TasksState> {
     if (state.isLoading) return;
 
     if (refresh) {
-      state = state.copyWith(
-        currentOffset: 0,
-        hasMore: true,
-        clearError: true,
-      );
+      state = state.copyWith(currentOffset: 0, hasMore: true, clearError: true);
     }
 
-    debugPrint('TasksNotifier: Fetching tasks (offset: ${state.currentOffset})...');
+    debugPrint(
+      'TasksNotifier: Fetching tasks (offset: ${state.currentOffset})...',
+    );
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -97,7 +95,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
         queryParams['priority'] = priority;
       }
 
-      final url = Uri.parse(ApiConfig.tasks).replace(queryParameters: queryParams).toString();
+      final url = Uri.parse(
+        ApiConfig.tasks,
+      ).replace(queryParameters: queryParams).toString();
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
@@ -118,7 +118,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
           tasksCount = data['count'] as int? ?? tasksList.length;
         }
 
-        debugPrint('TasksNotifier: Found ${tasksList.length} tasks in response');
+        debugPrint(
+          'TasksNotifier: Found ${tasksList.length} tasks in response',
+        );
 
         final newTasks = <Task>[];
         for (final item in tasksList) {
@@ -126,7 +128,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
             if (item is Map<String, dynamic>) {
               newTasks.add(Task.fromJson(item));
             } else {
-              debugPrint('TasksNotifier: Skipping non-map item: ${item.runtimeType}');
+              debugPrint(
+                'TasksNotifier: Skipping non-map item: ${item.runtimeType}',
+              );
             }
           } catch (e) {
             debugPrint('TasksNotifier: Error parsing task: $e');
@@ -145,7 +149,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
           currentOffset: state.currentOffset + newTasks.length,
         );
 
-        debugPrint('TasksNotifier: Loaded ${newTasks.length} tasks (total: ${updatedTasks.length})');
+        debugPrint(
+          'TasksNotifier: Loaded ${newTasks.length} tasks (total: ${updatedTasks.length})',
+        );
       } else {
         state = state.copyWith(
           isLoading: false,
@@ -191,7 +197,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
         // API returns { "task_obj": {...}, "attachments": [...], ... }
         final taskData = response.data!['task_obj'] as Map<String, dynamic>?;
         if (taskData != null) {
-          debugPrint('TasksNotifier: Task data keys: ${taskData.keys.toList()}');
+          debugPrint(
+            'TasksNotifier: Task data keys: ${taskData.keys.toList()}',
+          );
           return Task.fromJson(taskData);
         }
         debugPrint('TasksNotifier: task_obj not found in response');
@@ -207,7 +215,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   /// Create a new task
-  Future<ApiResponse<Map<String, dynamic>>> createTask(Map<String, dynamic> data) async {
+  Future<ApiResponse<Map<String, dynamic>>> createTask(
+    Map<String, dynamic> data,
+  ) async {
     try {
       debugPrint('TasksNotifier: Creating task');
       final response = await _apiService.post(ApiConfig.tasks, data);
@@ -220,16 +230,15 @@ class TasksNotifier extends StateNotifier<TasksState> {
       return response;
     } catch (e) {
       debugPrint('TasksNotifier: Exception creating task - $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
   /// Update an existing task
-  Future<ApiResponse<Map<String, dynamic>>> updateTask(String taskId, Map<String, dynamic> data) async {
+  Future<ApiResponse<Map<String, dynamic>>> updateTask(
+    String taskId,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final url = '${ApiConfig.tasks}$taskId/';
       debugPrint('TasksNotifier: Updating task $taskId');
@@ -245,11 +254,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
       return response;
     } catch (e) {
       debugPrint('TasksNotifier: Exception updating task - $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -273,11 +278,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
       return response;
     } catch (e) {
       debugPrint('TasksNotifier: Exception deleting task - $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -288,7 +289,10 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 
   /// Partially update a task (PATCH)
-  Future<ApiResponse<Map<String, dynamic>>> patchTask(String taskId, Map<String, dynamic> data) async {
+  Future<ApiResponse<Map<String, dynamic>>> patchTask(
+    String taskId,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final url = '${ApiConfig.tasks}$taskId/';
       debugPrint('TasksNotifier: Patching task $taskId with $data');
@@ -296,7 +300,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
       final response = await _apiService.patch(url, data);
 
       if (response.success) {
-        debugPrint('TasksNotifier: Patch successful, updating local state optimistically');
+        debugPrint(
+          'TasksNotifier: Patch successful, updating local state optimistically',
+        );
         // Update local state optimistically based on the patch data
         state = state.copyWith(
           tasks: state.tasks.map((t) {
@@ -321,11 +327,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
       return response;
     } catch (e) {
       debugPrint('TasksNotifier: Exception patching task - $e');
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 }
@@ -351,12 +353,11 @@ final tasksErrorProvider = Provider<String?>((ref) {
 /// Grouped tasks providers
 final overdueTasksProvider = Provider<List<Task>>((ref) {
   final tasks = ref.watch(tasksListProvider);
-  return tasks.where((t) => t.isOverdue).toList()
-    ..sort((a, b) {
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
-      return a.dueDate!.compareTo(b.dueDate!);
-    });
+  return tasks.where((t) => t.isOverdue).toList()..sort((a, b) {
+    if (a.dueDate == null) return 1;
+    if (b.dueDate == null) return -1;
+    return a.dueDate!.compareTo(b.dueDate!);
+  });
 });
 
 final todayTasksProvider = Provider<List<Task>>((ref) {
@@ -371,12 +372,11 @@ final todayTasksProvider = Provider<List<Task>>((ref) {
 
 final upcomingTasksProvider = Provider<List<Task>>((ref) {
   final tasks = ref.watch(tasksListProvider);
-  return tasks.where((t) => t.isUpcoming).toList()
-    ..sort((a, b) {
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
-      return a.dueDate!.compareTo(b.dueDate!);
-    });
+  return tasks.where((t) => t.isUpcoming).toList()..sort((a, b) {
+    if (a.dueDate == null) return 1;
+    if (b.dueDate == null) return -1;
+    return a.dueDate!.compareTo(b.dueDate!);
+  });
 });
 
 final completedTasksProvider = Provider<List<Task>>((ref) {

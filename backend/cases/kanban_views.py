@@ -85,12 +85,17 @@ class CaseKanbanView(APIView):
         org = request.profile.org
         pipeline_id = request.query_params.get("pipeline_id")
 
-        # Base queryset with filters
+        # Base queryset with filters. Merged duplicates are hidden by default
+        # (matches the cases-list behavior); admins can pass show_merged=true.
         queryset = (
             Case.objects.filter(org=org, is_active=True)
             .select_related("created_by", "stage", "account")
             .prefetch_related("assigned_to", "tags", "contacts")
         )
+        if request.query_params.get("show_merged") != "true":
+            queryset = queryset.filter(merged_into__isnull=True).exclude(
+                status="Duplicate"
+            )
 
         # Apply permission filtering
         if request.profile.role != "ADMIN" and not request.user.is_superuser:

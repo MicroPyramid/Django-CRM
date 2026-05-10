@@ -6,11 +6,7 @@ class LoadingDots extends StatefulWidget {
   final Color? color;
   final double size;
 
-  const LoadingDots({
-    super.key,
-    this.color,
-    this.size = 8,
-  });
+  const LoadingDots({super.key, this.color, this.size = 8});
 
   @override
   State<LoadingDots> createState() => _LoadingDotsState();
@@ -110,10 +106,7 @@ class LoadingSpinner extends StatelessWidget {
 class LoadingOverlay extends StatelessWidget {
   final String? message;
 
-  const LoadingOverlay({
-    super.key,
-    this.message,
-  });
+  const LoadingOverlay({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -177,9 +170,10 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    _animation = Tween<double>(begin: -1, end: 2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: -1,
+      end: 2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -251,11 +245,7 @@ class EmptyState extends StatelessWidget {
                 color: AppColors.gray100,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 36,
-                color: AppColors.gray400,
-              ),
+              child: Icon(icon, size: 36, color: AppColors.gray400),
             ),
             const SizedBox(height: 16),
             Text(
@@ -275,10 +265,7 @@ class EmptyState extends StatelessWidget {
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),

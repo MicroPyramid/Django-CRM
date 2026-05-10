@@ -79,9 +79,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             duration: AppDurations.slow,
             switchInCurve: Curves.easeOut,
             switchOutCurve: Curves.easeIn,
-            child: _submitted
-                ? _buildSuccessState()
-                : _buildFormState(),
+            child: _submitted ? _buildSuccessState() : _buildFormState(),
           ),
         ),
       ),
@@ -114,10 +112,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           const SizedBox(height: 24),
 
           // Title
-          Text(
-            'Reset Password',
-            style: AppTypography.h1,
-          ),
+          Text('Reset Password', style: AppTypography.h1),
 
           const SizedBox(height: 8),
 
@@ -197,10 +192,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       duration: AppDurations.slow,
       curve: Curves.elasticOut,
       builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: child,
-        );
+        return Transform.scale(scale: scale, child: child);
       },
       child: Column(
         children: [
@@ -288,9 +280,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             onTap: _handleTryAgain,
             child: Text(
               'try again',
-              style: AppTypography.label.copyWith(
-                color: AppColors.primary600,
-              ),
+              style: AppTypography.label.copyWith(color: AppColors.primary600),
             ),
           ),
         ],

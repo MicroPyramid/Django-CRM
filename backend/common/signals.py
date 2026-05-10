@@ -110,16 +110,8 @@ def opportunity_post_delete(sender, instance, **kwargs):
     create_activity(instance, "DELETE", "Opportunity")
 
 
-# Case signals
-@receiver(post_save, sender="cases.Case")
-def case_post_save(sender, instance, created, **kwargs):
-    action = "CREATE" if created else "UPDATE"
-    create_activity(instance, action, "Case")
-
-
-@receiver(post_delete, sender="cases.Case")
-def case_post_delete(sender, instance, **kwargs):
-    create_activity(instance, "DELETE", "Case")
+# Cases use a richer signal handler module — see cases/signals.py for
+# STATUS_CHANGED / PRIORITY_CHANGED / ASSIGN / COMMENT / LINKED_SOLUTION etc.
 
 
 # Task signals

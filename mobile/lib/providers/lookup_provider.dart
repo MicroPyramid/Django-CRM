@@ -28,15 +28,15 @@ class LookupState {
   });
 
   const LookupState.initial()
-      : accounts = const [],
-        contacts = const [],
-        users = const [],
-        tags = const [],
-        isLoadingAccounts = false,
-        isLoadingContacts = false,
-        isLoadingUsers = false,
-        isLoadingTags = false,
-        error = null;
+    : accounts = const [],
+      contacts = const [],
+      users = const [],
+      tags = const [],
+      isLoadingAccounts = false,
+      isLoadingContacts = false,
+      isLoadingUsers = false,
+      isLoadingTags = false,
+      error = null;
 
   bool get isLoading =>
       isLoadingAccounts || isLoadingContacts || isLoadingUsers || isLoadingTags;
@@ -110,10 +110,7 @@ class LookupNotifier extends StateNotifier<LookupState> {
           }
         }
 
-        state = state.copyWith(
-          accounts: accounts,
-          isLoadingAccounts: false,
-        );
+        state = state.copyWith(accounts: accounts, isLoadingAccounts: false);
       } else {
         state = state.copyWith(
           isLoadingAccounts: false,
@@ -155,10 +152,7 @@ class LookupNotifier extends StateNotifier<LookupState> {
           }
         }
 
-        state = state.copyWith(
-          contacts: contacts,
-          isLoadingContacts: false,
-        );
+        state = state.copyWith(contacts: contacts, isLoadingContacts: false);
       } else {
         state = state.copyWith(
           isLoadingContacts: false,
@@ -202,10 +196,7 @@ class LookupNotifier extends StateNotifier<LookupState> {
           }
         }
 
-        state = state.copyWith(
-          users: users,
-          isLoadingUsers: false,
-        );
+        state = state.copyWith(users: users, isLoadingUsers: false);
       } else {
         state = state.copyWith(
           isLoadingUsers: false,
@@ -247,10 +238,7 @@ class LookupNotifier extends StateNotifier<LookupState> {
           }
         }
 
-        state = state.copyWith(
-          tags: tags,
-          isLoadingTags: false,
-        );
+        state = state.copyWith(tags: tags, isLoadingTags: false);
       } else {
         state = state.copyWith(
           isLoadingTags: false,
@@ -327,7 +315,9 @@ class LookupNotifier extends StateNotifier<LookupState> {
 }
 
 /// Main lookup provider
-final lookupProvider = StateNotifierProvider<LookupNotifier, LookupState>((ref) {
+final lookupProvider = StateNotifierProvider<LookupNotifier, LookupState>((
+  ref,
+) {
   return LookupNotifier();
 });
 

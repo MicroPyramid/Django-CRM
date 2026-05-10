@@ -66,6 +66,7 @@ dependencies = [
     "cairocffi>=1.7.1",
     # Production WSGI server
     "gunicorn>=25.1.0",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.urls]

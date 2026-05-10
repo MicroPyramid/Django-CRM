@@ -29,11 +29,7 @@ class TaskRow extends StatelessWidget {
         color: AppColors.danger500,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(
-          LucideIcons.trash2,
-          color: Colors.white,
-          size: 22,
-        ),
+        child: const Icon(LucideIcons.trash2, color: Colors.white, size: 22),
       ),
       confirmDismiss: (direction) async {
         onDelete?.call();
@@ -45,9 +41,7 @@ class TaskRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            border: Border(
-              bottom: BorderSide(color: AppColors.gray100),
-            ),
+            border: Border(bottom: BorderSide(color: AppColors.gray100)),
           ),
           child: Row(
             children: [
@@ -89,8 +83,9 @@ class TaskRow extends StatelessWidget {
                     Text(
                       task.title,
                       style: AppTypography.label.copyWith(
-                        decoration:
-                            task.completed ? TextDecoration.lineThrough : null,
+                        decoration: task.completed
+                            ? TextDecoration.lineThrough
+                            : null,
                         color: task.completed
                             ? AppColors.textTertiary
                             : AppColors.textPrimary,
@@ -152,10 +147,7 @@ class TaskRow extends StatelessWidget {
               const SizedBox(width: 10),
 
               // Assignee Avatar
-              UserAvatar(
-                name: task.assignedToName,
-                size: AvatarSize.xs,
-              ),
+              UserAvatar(name: task.assignedToName, size: AvatarSize.xs),
             ],
           ),
         ),
@@ -215,8 +207,18 @@ class TaskRow extends StatelessWidget {
 
   String _formatDateShort(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}';
   }
@@ -238,8 +240,8 @@ class TaskRow extends StatelessWidget {
         return 'Account: $title';
       case RelatedEntityType.opportunity:
         return 'Opportunity: $title';
-      case RelatedEntityType.case_:
-        return 'Case: $title';
+      case RelatedEntityType.ticket_:
+        return 'Ticket: $title';
       case RelatedEntityType.contact:
         return 'Contact: $title';
     }
@@ -365,8 +367,9 @@ class _TaskGroupState extends State<TaskGroup> {
             }).toList(),
           ),
           secondChild: const SizedBox.shrink(),
-          crossFadeState:
-              _expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+          crossFadeState: _expanded
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
           duration: AppDurations.normal,
         ),
       ],

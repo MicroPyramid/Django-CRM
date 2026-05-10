@@ -22,12 +22,12 @@ class DealsState {
   });
 
   const DealsState.initial()
-      : deals = const [],
-        isLoading = false,
-        error = null,
-        totalCount = 0,
-        hasMore = true,
-        currentOffset = 0;
+    : deals = const [],
+      isLoading = false,
+      error = null,
+      totalCount = 0,
+      hasMore = true,
+      currentOffset = 0;
 
   DealsState copyWith({
     List<Deal>? deals,
@@ -65,11 +65,7 @@ class DealsNotifier extends StateNotifier<DealsState> {
     if (state.isLoading) return;
 
     if (refresh) {
-      state = state.copyWith(
-        currentOffset: 0,
-        hasMore: true,
-        clearError: true,
-      );
+      state = state.copyWith(currentOffset: 0, hasMore: true, clearError: true);
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -88,7 +84,9 @@ class DealsNotifier extends StateNotifier<DealsState> {
         queryParams['stage'] = stage;
       }
 
-      final url = Uri.parse(ApiConfig.opportunities).replace(queryParameters: queryParams).toString();
+      final url = Uri.parse(
+        ApiConfig.opportunities,
+      ).replace(queryParameters: queryParams).toString();
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
@@ -166,7 +164,8 @@ class DealsNotifier extends StateNotifier<DealsState> {
 
       if (response.success && response.data != null) {
         // API returns opportunity wrapped in 'opportunity_obj' key
-        final opportunityData = response.data!['opportunity_obj'] as Map<String, dynamic>?;
+        final opportunityData =
+            response.data!['opportunity_obj'] as Map<String, dynamic>?;
         if (opportunityData != null) {
           return Deal.fromJson(opportunityData);
         }
@@ -178,7 +177,9 @@ class DealsNotifier extends StateNotifier<DealsState> {
   }
 
   /// Create a new deal
-  Future<({bool success, String? error, Deal? deal})> createDeal(Deal deal) async {
+  Future<({bool success, String? error, Deal? deal})> createDeal(
+    Deal deal,
+  ) async {
     try {
       final response = await _apiService.post(
         ApiConfig.opportunities,
@@ -199,22 +200,28 @@ class DealsNotifier extends StateNotifier<DealsState> {
       String errorMsg = response.message ?? 'Failed to create deal';
       if (response.data != null && response.data!['errors'] != null) {
         final errors = response.data!['errors'] as Map<String, dynamic>;
-        errorMsg = errors.values.map((v) => v is List ? v.join(', ') : v.toString()).join('; ');
+        errorMsg = errors.values
+            .map((v) => v is List ? v.join(', ') : v.toString())
+            .join('; ');
       }
       return (success: false, error: errorMsg, deal: null);
     } catch (e) {
-      return (success: false, error: 'Failed to create deal: ${e.toString()}', deal: null);
+      return (
+        success: false,
+        error: 'Failed to create deal: ${e.toString()}',
+        deal: null,
+      );
     }
   }
 
   /// Update an existing deal
-  Future<({bool success, String? error, Deal? deal})> updateDeal(String id, Deal deal) async {
+  Future<({bool success, String? error, Deal? deal})> updateDeal(
+    String id,
+    Deal deal,
+  ) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
-      final response = await _apiService.put(
-        url,
-        deal.toJson(),
-      );
+      final response = await _apiService.put(url, deal.toJson());
 
       if (response.success && response.data != null) {
         // API returns {"error": false, "message": "..."} on success, not the deal object
@@ -230,25 +237,31 @@ class DealsNotifier extends StateNotifier<DealsState> {
       String errorMsg = response.message ?? 'Failed to update deal';
       if (response.data != null && response.data!['errors'] != null) {
         final errors = response.data!['errors'] as Map<String, dynamic>;
-        errorMsg = errors.values.map((v) => v is List ? v.join(', ') : v.toString()).join('; ');
+        errorMsg = errors.values
+            .map((v) => v is List ? v.join(', ') : v.toString())
+            .join('; ');
       }
       return (success: false, error: errorMsg, deal: null);
     } catch (e) {
-      return (success: false, error: 'Failed to update deal: ${e.toString()}', deal: null);
+      return (
+        success: false,
+        error: 'Failed to update deal: ${e.toString()}',
+        deal: null,
+      );
     }
   }
 
   /// Update deal stage (quick action)
-  Future<({bool success, String? error})> updateDealStage(String id, DealStage stage) async {
+  Future<({bool success, String? error})> updateDealStage(
+    String id,
+    DealStage stage,
+  ) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
-      final response = await _apiService.patch(
-        url,
-        {
-          'stage': stage.value,
-          'probability': stage.defaultProbability,
-        },
-      );
+      final response = await _apiService.patch(url, {
+        'stage': stage.value,
+        'probability': stage.defaultProbability,
+      });
 
       if (response.success && response.data != null) {
         // API returns {"error": false, "message": "..."} on success
@@ -270,7 +283,10 @@ class DealsNotifier extends StateNotifier<DealsState> {
         }
       }
 
-      return (success: false, error: response.message ?? 'Failed to update stage');
+      return (
+        success: false,
+        error: response.message ?? 'Failed to update stage',
+      );
     } catch (e) {
       return (success: false, error: 'Failed to update stage: ${e.toString()}');
     }
@@ -292,7 +308,10 @@ class DealsNotifier extends StateNotifier<DealsState> {
         return (success: true, error: null);
       }
 
-      return (success: false, error: response.message ?? 'Failed to delete deal');
+      return (
+        success: false,
+        error: response.message ?? 'Failed to delete deal',
+      );
     } catch (e) {
       return (success: false, error: 'Failed to delete deal: ${e.toString()}');
     }

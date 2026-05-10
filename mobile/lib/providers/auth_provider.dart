@@ -23,12 +23,12 @@ class AuthState {
 
   /// Initial state
   const AuthState.initial()
-      : user = null,
-        organizations = null,
-        selectedOrganization = null,
-        isLoading = false,
-        isAuthenticated = false,
-        error = null;
+    : user = null,
+      organizations = null,
+      selectedOrganization = null,
+      isLoading = false,
+      isAuthenticated = false,
+      error = null;
 
   /// Check if user needs to select an organization
   bool get needsOrgSelection =>
@@ -89,7 +89,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       selectedOrganization: _authService.selectedOrganization,
     );
 
-    debugPrint('AuthNotifier: Auth status checked, isAuthenticated: ${state.isAuthenticated}');
+    debugPrint(
+      'AuthNotifier: Auth status checked, isAuthenticated: ${state.isAuthenticated}',
+    );
   }
 
   /// Sign in with Google
@@ -144,10 +146,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final success = await _authService.selectOrganization(org);
 
       if (success) {
-        state = state.copyWith(
-          isLoading: false,
-          selectedOrganization: org,
-        );
+        state = state.copyWith(isLoading: false, selectedOrganization: org);
 
         debugPrint('AuthNotifier: Organization switched to ${org.name}');
         return true;

@@ -27,6 +27,10 @@
     LogOut,
     ChevronsUpDown,
     Settings,
+    Sliders,
+    Megaphone,
+    Mail,
+    Route,
     FileText,
     FileEdit,
     Package,
@@ -37,7 +41,11 @@
     Sparkles,
     Home,
     Trophy,
-    Cloud
+    Cloud,
+    RotateCcw,
+    Clock,
+    MessageSquareQuote,
+    ShieldCheck
   } from '@lucide/svelte';
 
   /**
@@ -191,9 +199,16 @@
       preload: 'off'
     },
     {
-      href: '/cases',
+      href: '/tickets',
       label: 'Tickets',
       icon: Briefcase,
+      type: 'link',
+      preload: 'off'
+    },
+    {
+      href: '/tickets/analytics',
+      label: 'Tickets analytics',
+      icon: BarChart3,
       type: 'link',
       preload: 'off'
     },
@@ -201,6 +216,20 @@
       href: '/tasks',
       label: 'Tasks',
       icon: CheckSquare,
+      type: 'link',
+      preload: 'off'
+    },
+    {
+      href: '/timesheet',
+      label: 'Timesheet',
+      icon: Clock,
+      type: 'link',
+      preload: 'off'
+    },
+    {
+      href: '/tickets/approvals',
+      label: 'Approvals',
+      icon: ShieldCheck,
       type: 'link',
       preload: 'off'
     }
@@ -585,6 +614,70 @@
               >
                 <Tag class="size-4" />
                 <span>Tags</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/reopen')}
+                class="gap-2.5"
+              >
+                <RotateCcw class="size-4" />
+                <span>Reopen Policy</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/custom-fields')}
+                class="gap-2.5"
+              >
+                <Sliders class="size-4" />
+                <span>Custom Fields</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/routing')}
+                class="gap-2.5"
+              >
+                <Route class="size-4" />
+                <span>Auto-Routing</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/escalation')}
+                class="gap-2.5"
+              >
+                <Megaphone class="size-4" />
+                <span>Escalation</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/ticket-approvals')}
+                class="gap-2.5"
+              >
+                <ShieldCheck class="size-4" />
+                <span>Approval Rules</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/inbound-email')}
+                class="gap-2.5"
+              >
+                <Mail class="size-4" />
+                <span>Inbound Email</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/business-hours')}
+                class="gap-2.5"
+              >
+                <Clock class="size-4" />
+                <span>Business Hours</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                inset={false}
+                onclick={() => navigateTo('/settings/macros')}
+                class="gap-2.5"
+              >
+                <MessageSquareQuote class="size-4" />
+                <span>Macros</span>
               </DropdownMenu.Item>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />

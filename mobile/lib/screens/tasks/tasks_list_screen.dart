@@ -101,9 +101,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   Widget _buildBody(List<Task> allTasks, bool isLoading, String? error) {
     // Show loading spinner for initial load
     if (isLoading && allTasks.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     // Show error state
@@ -120,10 +118,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
                 color: AppColors.danger500,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Failed to load tasks',
-                style: AppTypography.h3,
-              ),
+              Text('Failed to load tasks', style: AppTypography.h3),
               const SizedBox(height: 8),
               Text(
                 error,
@@ -245,10 +240,17 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
               markerBuilder: (context, date, events) {
                 if (taskDates.contains(_formatDateKey(date))) {
                   final tasksOnDate = allTasks
-                      .where((t) => t.dueDate != null && _isSameDay(t.dueDate!, date))
+                      .where(
+                        (t) =>
+                            t.dueDate != null && _isSameDay(t.dueDate!, date),
+                      )
                       .toList();
-                  final hasOverdue = tasksOnDate.any((t) =>
-                      !t.completed && t.dueDate != null && t.dueDate!.isBefore(DateTime.now()));
+                  final hasOverdue = tasksOnDate.any(
+                    (t) =>
+                        !t.completed &&
+                        t.dueDate != null &&
+                        t.dueDate!.isBefore(DateTime.now()),
+                  );
 
                   return Positioned(
                     bottom: 4,
@@ -328,7 +330,8 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
     final completedTasks = ref.watch(completedTasksProvider);
     final noDueDateTasks = ref.watch(noDueDateTasksProvider);
 
-    final hasAnyTasks = overdueTasks.isNotEmpty ||
+    final hasAnyTasks =
+        overdueTasks.isNotEmpty ||
         todayTasks.isNotEmpty ||
         upcomingTasks.isNotEmpty ||
         noDueDateTasks.isNotEmpty;
@@ -405,9 +408,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             if (isLoading && allTasks.isNotEmpty)
               const Padding(
                 padding: EdgeInsets.all(16),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                child: Center(child: CircularProgressIndicator()),
               ),
           ],
         ),
@@ -481,9 +482,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             const SizedBox(height: 20),
             Text(
               'All caught up!',
-              style: AppTypography.h2.copyWith(
-                color: AppColors.textPrimary,
-              ),
+              style: AppTypography.h2.copyWith(color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
@@ -512,12 +511,25 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
       return 'Today';
     } else if (_isSameDay(_selectedDay, now.add(const Duration(days: 1)))) {
       return 'Tomorrow';
-    } else if (_isSameDay(_selectedDay, now.subtract(const Duration(days: 1)))) {
+    } else if (_isSameDay(
+      _selectedDay,
+      now.subtract(const Duration(days: 1)),
+    )) {
       return 'Yesterday';
     } else {
       final months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
       return '${months[_selectedDay.month - 1]} ${_selectedDay.day}';
     }
@@ -532,16 +544,16 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   }
 
   Future<void> _toggleTask(Task task) async {
-    final response = await ref.read(tasksProvider.notifier).toggleTaskStatus(task);
+    final response = await ref
+        .read(tasksProvider.notifier)
+        .toggleTaskStatus(task);
 
     if (mounted) {
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              task.completed
-                  ? 'Task marked as incomplete'
-                  : 'Task completed',
+              task.completed ? 'Task marked as incomplete' : 'Task completed',
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -576,17 +588,16 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger600),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColors.danger600)),
           ),
         ],
       ),
     );
 
     if (confirmed == true && mounted) {
-      final response = await ref.read(tasksProvider.notifier).deleteTask(task.id);
+      final response = await ref
+          .read(tasksProvider.notifier)
+          .deleteTask(task.id);
 
       if (mounted) {
         if (response.success) {

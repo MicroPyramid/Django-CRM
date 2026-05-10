@@ -8,8 +8,11 @@
   import { Pagination } from '$lib/components/ui/pagination';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { InvoiceFromTimeEntriesDialog } from '$lib/components/invoices';
   import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
-  import { Plus, Filter, Columns3 } from '@lucide/svelte';
+  import { Plus, Filter, Columns3, Clock } from '@lucide/svelte';
+
+  let fromTimeEntriesOpen = $state(false);
 
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
@@ -373,6 +376,15 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
+        <Button
+          variant="outline"
+          onclick={() => (fromTimeEntriesOpen = true)}
+          class="gap-2"
+        >
+          <Clock class="size-4" />
+          From time entries
+        </Button>
+
         <!-- New Invoice -->
         <Button onclick={createNewInvoice} class="gap-2">
           <Plus class="size-4" />
@@ -381,6 +393,8 @@
       </div>
     {/snippet}
   </PageHeader>
+
+  <InvoiceFromTimeEntriesDialog bind:open={fromTimeEntriesOpen} />
 
   <!-- Filter Bar -->
   <FilterBar

@@ -14,10 +14,7 @@ import '../../widgets/misc/stage_stepper.dart';
 class DealDetailScreen extends ConsumerStatefulWidget {
   final String dealId;
 
-  const DealDetailScreen({
-    super.key,
-    required this.dealId,
-  });
+  const DealDetailScreen({super.key, required this.dealId});
 
   @override
   ConsumerState<DealDetailScreen> createState() => _DealDetailScreenState();
@@ -82,9 +79,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -106,10 +101,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 description: 'This deal may have been deleted',
               ),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: _fetchDeal,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: _fetchDeal, child: const Text('Retry')),
             ],
           ),
         ),
@@ -172,9 +164,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 onPressed: () => _showMoreOptions(),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeader(),
-            ),
+            flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
           ),
 
           // Content
@@ -239,9 +229,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               // Deal Title
               Text(
                 _deal!.title,
-                style: AppTypography.h2.copyWith(
-                  color: AppColors.textPrimary,
-                ),
+                style: AppTypography.h2.copyWith(color: AppColors.textPrimary),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -274,7 +262,10 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                 children: [
                   // Stage badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _deal!.stage.color.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -289,10 +280,14 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   // Tags
-                  ..._deal!.labels.take(2).map((label) => Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: LabelPill(label: label),
-                      )),
+                  ..._deal!.labels
+                      .take(2)
+                      .map(
+                        (label) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: LabelPill(label: label),
+                        ),
+                      ),
                 ],
               ),
             ],
@@ -389,11 +384,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
             // Assigned User
             Row(
               children: [
-                Icon(
-                  LucideIcons.user,
-                  size: 16,
-                  color: AppColors.gray400,
-                ),
+                Icon(LucideIcons.user, size: 16, color: AppColors.gray400),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,10 +404,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
                           size: AvatarSize.xs,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          _deal!.assignedTo,
-                          style: AppTypography.body,
-                        ),
+                        Text(_deal!.assignedTo, style: AppTypography.body),
                       ],
                     ),
                   ],
@@ -485,8 +473,10 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   }
 
   Widget _buildProductsCard() {
-    final totalProductValue = _deal!.products
-        .fold<double>(0, (sum, p) => sum + (p.unitPrice * p.quantity));
+    final totalProductValue = _deal!.products.fold<double>(
+      0,
+      (sum, p) => sum + (p.unitPrice * p.quantity),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -524,50 +514,49 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            ..._deal!.products.map((product) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          LucideIcons.package,
-                          size: 18,
-                          color: AppColors.primary600,
-                        ),
+            ..._deal!.products.map(
+              (product) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary100,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              style: AppTypography.label,
+                      child: Icon(
+                        LucideIcons.package,
+                        size: 18,
+                        color: AppColors.primary600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(product.name, style: AppTypography.label),
+                          Text(
+                            'Qty: ${product.quantity}',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
                             ),
-                            Text(
-                              'Qty: ${product.quantity}',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        _formatCurrency(product.unitPrice * product.quantity),
-                        style: AppTypography.label.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    Text(
+                      _formatCurrency(product.unitPrice * product.quantity),
+                      style: AppTypography.label.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -615,9 +604,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         child: Column(
@@ -625,10 +612,14 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
           children: [
             if (!isClosed && nextStage != null)
               PrimaryButton(
-                label: _isUpdatingStage ? 'Updating...' : 'Move to ${nextStage!.displayName}',
+                label: _isUpdatingStage
+                    ? 'Updating...'
+                    : 'Move to ${nextStage!.displayName}',
                 icon: LucideIcons.arrowRight,
                 iconRight: true,
-                onPressed: _isUpdatingStage ? null : () => _handleStageChange(nextStage!),
+                onPressed: _isUpdatingStage
+                    ? null
+                    : () => _handleStageChange(nextStage!),
               ),
 
             if (isWon)
@@ -714,9 +705,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Move to ${newStage.displayName}?'),
-        content: const Text(
-          'This will update the deal stage and probability.',
-        ),
+        content: const Text('This will update the deal stage and probability.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -734,10 +723,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
     setState(() => _isUpdatingStage = true);
 
-    final result = await ref.read(dealsProvider.notifier).updateDealStage(
-      widget.dealId,
-      newStage,
-    );
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .updateDealStage(widget.dealId, newStage);
 
     if (mounted) {
       setState(() => _isUpdatingStage = false);
@@ -767,9 +755,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Mark as Lost?'),
-        content: const Text(
-          'Are you sure you want to mark this deal as lost?',
-        ),
+        content: const Text('Are you sure you want to mark this deal as lost?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -790,10 +776,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
     setState(() => _isUpdatingStage = true);
 
-    final result = await ref.read(dealsProvider.notifier).updateDealStage(
-      widget.dealId,
-      DealStage.closedLost,
-    );
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .updateDealStage(widget.dealId, DealStage.closedLost);
 
     if (mounted) {
       setState(() => _isUpdatingStage = false);
@@ -861,9 +846,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Deal?'),
-        content: const Text(
-          'This action cannot be undone.',
-        ),
+        content: const Text('This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -871,10 +854,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger600),
-            ),
+            child: Text('Delete', style: TextStyle(color: AppColors.danger600)),
           ),
         ],
       ),
@@ -882,7 +862,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
     if (confirmed != true) return;
 
-    final result = await ref.read(dealsProvider.notifier).deleteDeal(widget.dealId);
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .deleteDeal(widget.dealId);
 
     if (mounted) {
       if (result.success) {
@@ -920,7 +902,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
   }
 
   String _formatCurrency(double value) {
-    final symbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
+    final symbol =
+        ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
     if (value >= 1000000) {
       return '$symbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
@@ -932,8 +915,18 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -955,11 +948,7 @@ class _InfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppColors.gray400,
-        ),
+        Icon(icon, size: 16, color: AppColors.gray400),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -973,10 +962,7 @@ class _InfoItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                value,
-                style: AppTypography.body,
-              ),
+              Text(value, style: AppTypography.body),
             ],
           ),
         ),

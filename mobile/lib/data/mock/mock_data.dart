@@ -74,7 +74,8 @@ class MockData {
       source: LeadSource.email,
       rating: LeadRating.hot,
       tags: ['Enterprise', 'Software'],
-      description: 'Very interested in our enterprise solution. Follow up scheduled for next week.',
+      description:
+          'Very interested in our enterprise solution. Follow up scheduled for next week.',
       createdAt: DateTime.now().subtract(const Duration(days: 5)),
       updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
     ),
@@ -200,8 +201,18 @@ class MockData {
       leadId: 'lead-1',
       companyName: 'TechCorp Industries',
       products: [
-        const DealProduct(id: 'prod-1', name: 'Enterprise License', quantity: 1, unitPrice: 50000),
-        const DealProduct(id: 'prod-2', name: 'Premium Support', quantity: 1, unitPrice: 25000),
+        const DealProduct(
+          id: 'prod-1',
+          name: 'Enterprise License',
+          quantity: 1,
+          unitPrice: 50000,
+        ),
+        const DealProduct(
+          id: 'prod-2',
+          name: 'Premium Support',
+          quantity: 1,
+          unitPrice: 25000,
+        ),
       ],
       assignedTo: 'user-1',
       priority: Priority.high,
@@ -219,8 +230,18 @@ class MockData {
       leadId: 'lead-2',
       companyName: 'Global Solutions Ltd',
       products: [
-        const DealProduct(id: 'prod-3', name: 'Business License', quantity: 5, unitPrice: 8000),
-        const DealProduct(id: 'prod-4', name: 'Training Package', quantity: 1, unitPrice: 5000),
+        const DealProduct(
+          id: 'prod-3',
+          name: 'Business License',
+          quantity: 5,
+          unitPrice: 8000,
+        ),
+        const DealProduct(
+          id: 'prod-4',
+          name: 'Training Package',
+          quantity: 1,
+          unitPrice: 5000,
+        ),
       ],
       assignedTo: 'user-2',
       priority: Priority.medium,
@@ -238,8 +259,18 @@ class MockData {
       leadId: 'lead-4',
       companyName: 'Metro Financial',
       products: [
-        const DealProduct(id: 'prod-5', name: 'Enterprise Suite', quantity: 1, unitPrice: 100000),
-        const DealProduct(id: 'prod-6', name: 'Data Migration', quantity: 1, unitPrice: 20000),
+        const DealProduct(
+          id: 'prod-5',
+          name: 'Enterprise Suite',
+          quantity: 1,
+          unitPrice: 100000,
+        ),
+        const DealProduct(
+          id: 'prod-6',
+          name: 'Data Migration',
+          quantity: 1,
+          unitPrice: 20000,
+        ),
       ],
       assignedTo: 'user-3',
       priority: Priority.high,
@@ -257,7 +288,12 @@ class MockData {
       leadId: 'lead-5',
       companyName: 'Retail Plus',
       products: [
-        const DealProduct(id: 'prod-7', name: 'Starter License', quantity: 3, unitPrice: 5000),
+        const DealProduct(
+          id: 'prod-7',
+          name: 'Starter License',
+          quantity: 3,
+          unitPrice: 5000,
+        ),
       ],
       assignedTo: 'user-2',
       priority: Priority.low,
@@ -275,8 +311,18 @@ class MockData {
       leadId: 'lead-6',
       companyName: 'HealthFirst',
       products: [
-        const DealProduct(id: 'prod-8', name: 'Healthcare Module', quantity: 1, unitPrice: 60000),
-        const DealProduct(id: 'prod-9', name: 'API Integration', quantity: 1, unitPrice: 25000),
+        const DealProduct(
+          id: 'prod-8',
+          name: 'Healthcare Module',
+          quantity: 1,
+          unitPrice: 60000,
+        ),
+        const DealProduct(
+          id: 'prod-9',
+          name: 'API Integration',
+          quantity: 1,
+          unitPrice: 25000,
+        ),
       ],
       assignedTo: 'user-4',
       priority: Priority.high,
@@ -294,7 +340,12 @@ class MockData {
       leadId: 'lead-8',
       companyName: 'Creative Agency Co',
       products: [
-        const DealProduct(id: 'prod-10', name: 'Team License', quantity: 12, unitPrice: 2000),
+        const DealProduct(
+          id: 'prod-10',
+          name: 'Team License',
+          quantity: 12,
+          unitPrice: 2000,
+        ),
       ],
       assignedTo: 'user-3',
       priority: Priority.medium,
@@ -312,7 +363,12 @@ class MockData {
       leadId: 'lead-3',
       companyName: 'Innovate Labs',
       products: [
-        const DealProduct(id: 'prod-11', name: 'Pilot Program', quantity: 1, unitPrice: 35000),
+        const DealProduct(
+          id: 'prod-11',
+          name: 'Pilot Program',
+          quantity: 1,
+          unitPrice: 35000,
+        ),
       ],
       assignedTo: 'user-1',
       priority: Priority.high,
@@ -330,7 +386,12 @@ class MockData {
       leadId: 'lead-7',
       companyName: 'EduTech Solutions',
       products: [
-        const DealProduct(id: 'prod-12', name: 'Education License', quantity: 1, unitPrice: 28000),
+        const DealProduct(
+          id: 'prod-12',
+          name: 'Education License',
+          quantity: 1,
+          unitPrice: 28000,
+        ),
       ],
       assignedTo: 'user-1',
       priority: Priority.medium,
@@ -353,7 +414,11 @@ class MockData {
       dueDate: DateTime.now().add(const Duration(hours: 2)),
       status: TaskStatus.inProgress,
       priority: Priority.high,
-      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(
+        id: 'deal-1',
+        type: RelatedEntityType.opportunity,
+        title: 'Enterprise Software Package',
+      ),
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       updatedAt: DateTime.now(),
     ),
@@ -364,7 +429,11 @@ class MockData {
       dueDate: DateTime.now(),
       status: TaskStatus.newTask,
       priority: Priority.high,
-      relatedTo: RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
+      relatedTo: RelatedEntity(
+        id: 'lead-6',
+        type: RelatedEntityType.lead,
+        title: 'Jennifer Lee',
+      ),
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
       updatedAt: DateTime.now(),
     ),
@@ -386,7 +455,11 @@ class MockData {
       dueDate: DateTime.now(),
       status: TaskStatus.completed,
       priority: Priority.medium,
-      relatedTo: RelatedEntity(id: 'lead-2', type: RelatedEntityType.lead, title: 'Emma Wilson'),
+      relatedTo: RelatedEntity(
+        id: 'lead-2',
+        type: RelatedEntityType.lead,
+        title: 'Emma Wilson',
+      ),
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
       updatedAt: DateTime.now().subtract(const Duration(hours: 4)),
     ),
@@ -397,7 +470,11 @@ class MockData {
       dueDate: DateTime.now().add(const Duration(days: 1)),
       status: TaskStatus.newTask,
       priority: Priority.high,
-      relatedTo: RelatedEntity(id: 'deal-7', type: RelatedEntityType.opportunity, title: 'Innovate Labs Pilot'),
+      relatedTo: RelatedEntity(
+        id: 'deal-7',
+        type: RelatedEntityType.opportunity,
+        title: 'Innovate Labs Pilot',
+      ),
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       updatedAt: DateTime.now(),
     ),
@@ -408,7 +485,11 @@ class MockData {
       dueDate: DateTime.now().add(const Duration(days: 3)),
       status: TaskStatus.newTask,
       priority: Priority.low,
-      relatedTo: RelatedEntity(id: 'lead-5', type: RelatedEntityType.lead, title: 'David Thompson'),
+      relatedTo: RelatedEntity(
+        id: 'lead-5',
+        type: RelatedEntityType.lead,
+        title: 'David Thompson',
+      ),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     ),
@@ -419,7 +500,11 @@ class MockData {
       dueDate: DateTime.now().add(const Duration(days: 2)),
       status: TaskStatus.inProgress,
       priority: Priority.medium,
-      relatedTo: RelatedEntity(id: 'deal-3', type: RelatedEntityType.opportunity, title: 'Metro Financial CRM Upgrade'),
+      relatedTo: RelatedEntity(
+        id: 'deal-3',
+        type: RelatedEntityType.opportunity,
+        title: 'Metro Financial CRM Upgrade',
+      ),
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
       updatedAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
@@ -449,7 +534,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(
+        id: 'deal-1',
+        type: RelatedEntityType.opportunity,
+        title: 'Enterprise Software Package',
+      ),
     ),
     Activity(
       id: 'activity-2',
@@ -459,7 +548,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 5)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: RelatedEntity(id: 'lead-1', type: RelatedEntityType.lead, title: 'John Smith'),
+      relatedTo: RelatedEntity(
+        id: 'lead-1',
+        type: RelatedEntityType.lead,
+        title: 'John Smith',
+      ),
     ),
     Activity(
       id: 'activity-3',
@@ -469,7 +562,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 8)),
       userId: 'user-2',
       userName: 'Sarah Williams',
-      relatedTo: RelatedEntity(id: 'deal-2', type: RelatedEntityType.opportunity, title: 'Global Solutions Implementation'),
+      relatedTo: RelatedEntity(
+        id: 'deal-2',
+        type: RelatedEntityType.opportunity,
+        title: 'Global Solutions Implementation',
+      ),
     ),
     Activity(
       id: 'activity-4',
@@ -479,7 +576,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 12)),
       userId: 'user-4',
       userName: 'Emily Davis',
-      relatedTo: RelatedEntity(id: 'lead-6', type: RelatedEntityType.lead, title: 'Jennifer Lee'),
+      relatedTo: RelatedEntity(
+        id: 'lead-6',
+        type: RelatedEntityType.lead,
+        title: 'Jennifer Lee',
+      ),
     ),
     Activity(
       id: 'activity-5',
@@ -489,7 +590,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
+      relatedTo: RelatedEntity(
+        id: 'lead-3',
+        type: RelatedEntityType.lead,
+        title: 'Robert Martinez',
+      ),
     ),
     Activity(
       id: 'activity-6',
@@ -499,7 +604,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
       userId: 'user-3',
       userName: 'Michael Chen',
-      relatedTo: RelatedEntity(id: 'lead-4', type: RelatedEntityType.lead, title: 'Lisa Anderson'),
+      relatedTo: RelatedEntity(
+        id: 'lead-4',
+        type: RelatedEntityType.lead,
+        title: 'Lisa Anderson',
+      ),
     ),
     Activity(
       id: 'activity-7',
@@ -519,7 +628,11 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 2, hours: 6)),
       userId: 'user-1',
       userName: 'Alex Johnson',
-      relatedTo: RelatedEntity(id: 'deal-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(
+        id: 'deal-1',
+        type: RelatedEntityType.opportunity,
+        title: 'Enterprise Software Package',
+      ),
     ),
   ];
 
@@ -535,7 +648,11 @@ class MockData {
       title: 'Task Due Soon',
       message: 'Follow up with TechCorp is due in 2 hours',
       read: false,
-      relatedTo: RelatedEntity(id: 'task-1', type: RelatedEntityType.opportunity, title: 'Enterprise Software Package'),
+      relatedTo: RelatedEntity(
+        id: 'task-1',
+        type: RelatedEntityType.opportunity,
+        title: 'Enterprise Software Package',
+      ),
       timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
     ),
     AppNotification(
@@ -545,7 +662,11 @@ class MockData {
       title: 'Deal Updated',
       message: 'Innovate Labs Pilot moved to negotiation',
       read: false,
-      relatedTo: RelatedEntity(id: 'deal-7', type: RelatedEntityType.opportunity, title: 'Innovate Labs Pilot'),
+      relatedTo: RelatedEntity(
+        id: 'deal-7',
+        type: RelatedEntityType.opportunity,
+        title: 'Innovate Labs Pilot',
+      ),
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     ),
     AppNotification(
@@ -555,7 +676,11 @@ class MockData {
       title: 'New Lead Assigned',
       message: 'Robert Martinez from Innovate Labs has been assigned to you',
       read: true,
-      relatedTo: RelatedEntity(id: 'lead-3', type: RelatedEntityType.lead, title: 'Robert Martinez'),
+      relatedTo: RelatedEntity(
+        id: 'lead-3',
+        type: RelatedEntityType.lead,
+        title: 'Robert Martinez',
+      ),
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
     ),
     AppNotification(
@@ -609,18 +734,23 @@ class MockData {
   }
 
   static List<Deal> get dealsClosingSoon {
-    return deals
-        .where((d) => !d.stage.isClosed && d.isClosingSoon)
-        .toList()
-      ..sort((a, b) => (a.closeDate ?? DateTime.now())
-          .compareTo(b.closeDate ?? DateTime.now()));
+    return deals.where((d) => !d.stage.isClosed && d.isClosingSoon).toList()
+      ..sort(
+        (a, b) => (a.closeDate ?? DateTime.now()).compareTo(
+          b.closeDate ?? DateTime.now(),
+        ),
+      );
   }
 
   static List<Task> get todaysTasks {
     return tasks
         .where((t) => !t.completed && (t.isDueToday || t.isOverdue))
         .toList()
-      ..sort((a, b) => (a.dueDate ?? DateTime.now()).compareTo(b.dueDate ?? DateTime.now()));
+      ..sort(
+        (a, b) => (a.dueDate ?? DateTime.now()).compareTo(
+          b.dueDate ?? DateTime.now(),
+        ),
+      );
   }
 
   static List<Activity> get recentActivities {
@@ -701,18 +831,22 @@ class MockData {
 
   static List<Activity> getActivitiesForLead(String leadId) {
     return activities
-        .where((a) =>
-            a.relatedTo?.type == RelatedEntityType.lead &&
-            a.relatedTo?.id == leadId)
+        .where(
+          (a) =>
+              a.relatedTo?.type == RelatedEntityType.lead &&
+              a.relatedTo?.id == leadId,
+        )
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   static List<Activity> getActivitiesForDeal(String dealId) {
     return activities
-        .where((a) =>
-            a.relatedTo?.type == RelatedEntityType.opportunity &&
-            a.relatedTo?.id == dealId)
+        .where(
+          (a) =>
+              a.relatedTo?.type == RelatedEntityType.opportunity &&
+              a.relatedTo?.id == dealId,
+        )
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }

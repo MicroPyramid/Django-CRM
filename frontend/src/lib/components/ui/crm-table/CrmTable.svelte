@@ -30,7 +30,11 @@
    *   onRowChange?: (row: any, field: string, value: any) => void,
    *   onRowClick?: (row: any) => void,
    *   emptyState?: import('svelte').Snippet,
-   *   cellContent?: import('svelte').Snippet<[any, ColumnDef]>
+   *   cellContent?: import('svelte').Snippet<[any, ColumnDef]>,
+   *   cellSuffix?: import('svelte').Snippet<[any, ColumnDef]>,
+   *   selectable?: boolean,
+   *   selectedIds?: string[],
+   *   rowIdKey?: string
    * }}
    */
   let {
@@ -40,7 +44,11 @@
     onRowChange,
     onRowClick,
     emptyState,
-    cellContent
+    cellContent,
+    cellSuffix,
+    selectable = false,
+    selectedIds = $bindable(/** @type {string[]} */ ([])),
+    rowIdKey = 'id'
   } = $props();
 
   // Initialize visibleColumns from columns if not provided
@@ -207,6 +215,20 @@
     <table class="w-full border-collapse">
       <thead>
         <tr class="border-b border-gray-100/60 dark:border-gray-800/60">
+          {#if selectable}
+            <th class="w-10 px-3 py-2">
+              <input
+                type="checkbox"
+                aria-label="Select all rows"
+                checked={data.length > 0 && selectedIds.length === data.length}
+                indeterminate={selectedIds.length > 0 && selectedIds.length < data.length}
+                onchange={(e) => {
+                  const checked = /** @type {HTMLInputElement} */ (e.currentTarget).checked;
+                  selectedIds = checked ? data.map((r) => r[rowIdKey]) : [];
+                }}
+              />
+            </th>
+          {/if}
           {#if onRowClick}
             <th class="w-8 px-1"></th>
           {/if}
@@ -243,6 +265,22 @@
               onRowClick(row);
             }}
           >
+            {#if selectable}
+              <td class="w-10 px-3 py-3" onclick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  aria-label="Select row"
+                  checked={selectedIds.includes(row[rowIdKey])}
+                  onchange={(e) => {
+                    const id = row[rowIdKey];
+                    const checked = /** @type {HTMLInputElement} */ (e.currentTarget).checked;
+                    selectedIds = checked
+                      ? [...selectedIds, id]
+                      : selectedIds.filter((x) => x !== id);
+                  }}
+                />
+              </td>
+            {/if}
             {#if onRowClick}
               <td class="w-8 px-1 py-3">
                 <button type="button" onclick={() => onRowClick(row)} class={expandButtonClasses}>
@@ -415,6 +453,9 @@
                       <span class="text-gray-400">-</span>
                     {/if}
                   </button>
+                {/if}
+                {#if cellSuffix}
+                  {@render cellSuffix(row, column)}
                 {/if}
               </td>
             {/each}

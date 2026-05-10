@@ -11,9 +11,17 @@ enum ActivityType {
   stageChange('Stage Change', Icons.trending_up_outlined, AppColors.primary600),
   dealWon('Deal Won', Icons.emoji_events_outlined, AppColors.success500),
   dealLost('Deal Lost', Icons.cancel_outlined, AppColors.danger500),
-  taskCompleted('Task Completed', Icons.check_circle_outline, AppColors.success500),
+  taskCompleted(
+    'Task Completed',
+    Icons.check_circle_outline,
+    AppColors.success500,
+  ),
   leadCreated('Lead Created', Icons.person_add_outlined, AppColors.primary500),
-  dealCreated('Deal Created', Icons.add_business_outlined, AppColors.primary500);
+  dealCreated(
+    'Deal Created',
+    Icons.add_business_outlined,
+    AppColors.primary500,
+  );
 
   final String label;
   final IconData icon;

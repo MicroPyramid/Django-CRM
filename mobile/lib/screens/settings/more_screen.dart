@@ -218,17 +218,11 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              LucideIcons.logOut,
-              size: 20,
-              color: AppColors.danger600,
-            ),
+            Icon(LucideIcons.logOut, size: 20, color: AppColors.danger600),
             const SizedBox(width: 10),
             Text(
               'Sign Out',
-              style: AppTypography.button.copyWith(
-                color: AppColors.danger600,
-              ),
+              style: AppTypography.button.copyWith(color: AppColors.danger600),
             ),
           ],
         ),
@@ -368,18 +362,12 @@ class _MenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          border: Border(
-            bottom: BorderSide(color: AppColors.gray100),
-          ),
+          border: Border(bottom: BorderSide(color: AppColors.gray100)),
         ),
         child: Row(
           children: [
             // Icon
-            Icon(
-              icon,
-              size: 22,
-              color: AppColors.textSecondary,
-            ),
+            Icon(icon, size: 22, color: AppColors.textSecondary),
 
             const SizedBox(width: 14),
 
@@ -451,18 +439,12 @@ class _ToggleMenuItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(color: AppColors.gray100),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.gray100)),
       ),
       child: Row(
         children: [
           // Icon
-          Icon(
-            icon,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
+          Icon(icon, size: 22, color: AppColors.textSecondary),
 
           const SizedBox(width: 14),
 
@@ -470,9 +452,7 @@ class _ToggleMenuItem extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: AppTypography.body.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
             ),
           ),
 
@@ -514,21 +494,17 @@ class _LanguageOption extends StatelessWidget {
                 label,
                 style: AppTypography.body.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color:
-                      isSelected ? AppColors.primary600 : AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.primary600
+                      : AppColors.textPrimary,
                 ),
               ),
             ),
             if (isSelected)
-              Icon(
-                LucideIcons.check,
-                size: 20,
-                color: AppColors.primary600,
-              ),
+              Icon(LucideIcons.check, size: 20, color: AppColors.primary600),
           ],
         ),
       ),
     );
   }
 }
-

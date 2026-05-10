@@ -72,8 +72,9 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   Map<DealStage, List<Deal>> get _dealsByStage {
     final Map<DealStage, List<Deal>> grouped = {};
     for (final stage in _kanbanStages) {
-      grouped[stage] =
-          _filteredDeals.where((deal) => deal.stage == stage).toList();
+      grouped[stage] = _filteredDeals
+          .where((deal) => deal.stage == stage)
+          .toList();
     }
     return grouped;
   }
@@ -84,10 +85,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
       SnackBar(
         content: Text('Moved "${deal.title}" to ${newStage.displayName}'),
         behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {},
-        ),
+        action: SnackBarAction(label: 'Undo', onPressed: () {}),
       ),
     );
   }
@@ -188,9 +186,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
           hintText: 'Search deals...',
-          hintStyle: AppTypography.body.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          hintStyle: AppTypography.body.copyWith(color: AppColors.textTertiary),
           prefixIcon: Icon(
             LucideIcons.search,
             color: AppColors.textTertiary,
@@ -268,7 +264,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           children: [
             Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
             const SizedBox(height: 16),
-            Text(error, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+            Text(
+              error,
+              style: AppTypography.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(dealsProvider.notifier).refresh(),
@@ -296,7 +297,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: _kanbanStages.map((stage) {
-                  final currencySymbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
+                  final currencySymbol =
+                      ref
+                          .read(authProvider)
+                          .selectedOrganization
+                          ?.currencySymbol ??
+                      '\$';
                   return KanbanColumn(
                     stage: stage,
                     deals: _dealsByStage[stage] ?? [],
@@ -331,7 +337,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           children: [
             Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
             const SizedBox(height: 16),
-            Text(error, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
+            Text(
+              error,
+              style: AppTypography.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.read(dealsProvider.notifier).refresh(),
@@ -385,7 +396,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
 
               // Stage Deals
               ...stageDeals.map((deal) {
-                final currencySymbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
+                final currencySymbol =
+                    ref
+                        .read(authProvider)
+                        .selectedOrganization
+                        ?.currencySymbol ??
+                    '\$';
                 return DealCard(
                   deal: deal,
                   onTap: () => context.push('/deals/${deal.id}'),
@@ -424,9 +440,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           const SizedBox(width: 10),
           Text(
             stage.displayName,
-            style: AppTypography.label.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 8),
           Container(
@@ -474,7 +488,8 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   }
 
   String _formatCurrency(double value) {
-    final symbol = ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
+    final symbol =
+        ref.read(authProvider).selectedOrganization?.currencySymbol ?? '\$';
     if (value >= 1000000) {
       return '$symbol${(value / 1000000).toStringAsFixed(1)}M';
     } else if (value >= 1000) {
@@ -509,11 +524,7 @@ class _SummaryChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: AppColors.primary600,
-          ),
+          Icon(icon, size: 18, color: AppColors.primary600),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

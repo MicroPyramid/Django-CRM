@@ -24,7 +24,9 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
     });
 
     try {
-      final success = await ref.read(authProvider.notifier).switchOrganization(org);
+      final success = await ref
+          .read(authProvider.notifier)
+          .switchOrganization(org);
 
       if (success && mounted) {
         context.go(AppRoutes.dashboard);
@@ -94,18 +96,12 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
         ),
         title: Text(
           org.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         subtitle: org.role != null
             ? Text(
                 org.role!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               )
             : null,
         trailing: _isSelecting
@@ -127,11 +123,7 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.business_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.business_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No Organizations',
@@ -145,10 +137,7 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
             Text(
               'You don\'t have access to any organizations yet. Contact your administrator or create a new organization.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -216,10 +205,7 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
                       ),
                       Text(
                         user?.email ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),

@@ -17,17 +17,35 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from cases import swagger_params
-from cases.models import Case
+from cases.models import Case, ReopenPolicy, Solution
+from cases.models import EmailMessage as _EmailMessageModel  # noqa: F401  (used below)
+from cases.serializer import EmailMessageSerializer
 from cases.serializer import (
     CaseCommentEditSwaggerSerializer,
     CaseCreateSerializer,
     CaseCreateSwaggerSerializer,
     CaseDetailEditSwaggerSerializer,
     CaseSerializer,
+    ReopenPolicySerializer,
 )
+from cases.solution_serializers import SolutionSerializer
 from cases.tasks import send_email_to_assigned_user
-from common.models import Attachments, Comment, Profile, Tags, Teams
-from common.serializer import AttachmentsSerializer, CommentSerializer
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import (
+    Activity,
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
+from common.serializer import (
+    ActivitySerializer,
+    AttachmentsSerializer,
+    CommentSerializer,
+    CustomFieldDefinitionSerializer,
+)
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -42,13 +60,33 @@ class CaseListView(APIView, LimitOffsetPagination):
         queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
             "-id"
         )
+        # COORDINATION_DECISIONS.md D4: hide soft-deleted cases by default; admins may opt in.
+        include_deleted = (
+            params.get("include_deleted") == "true"
+            and (
+                self.request.profile.role == "ADMIN"
+                or self.request.profile.is_admin
+            )
+        )
+        if not include_deleted:
+            queryset = queryset.filter(is_active=True)
+        # Hide merged duplicates by default. Agents can opt in with
+        # `?show_merged=true` to audit prior merges.
+        if params.get("show_merged") != "true":
+            queryset = queryset.filter(merged_into__isnull=True).exclude(
+                status="Duplicate"
+            )
         accounts = Account.objects.filter(org=self.request.profile.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.profile.org).order_by("-id")
         profiles = Profile.objects.filter(is_active=True, org=self.request.profile.org)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+            # Watcher allowance: a non-admin who is a watcher must still be
+            # able to see the case even when un-assigned. See
+            # docs/cases/tier2/watchers-mentions.md "Watcher who loses access".
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
+                | Q(watchers=self.request.profile)
             ).distinct()
             accounts = accounts.filter(
                 Q(created_by=self.request.profile.user)
@@ -89,6 +127,14 @@ class CaseListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     created_at__lte=params.get("created_at__lte")
                 )
+            # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
 
         context = {}
 
@@ -160,11 +206,26 @@ class CaseListView(APIView, LimitOffsetPagination):
         params = request.data
         serializer = CaseCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
+            cf_payload = params.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Case", cf_payload or {}, request.profile.org
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             cases_obj = serializer.save(
                 created_by=request.profile.user,
                 org=request.profile.org,
                 closed_on=params.get("closed_on"),
                 case_type=params.get("case_type"),
+                custom_fields=cleaned_cf,
             )
 
             if params.get("contacts"):
@@ -305,8 +366,27 @@ class CaseDetailView(APIView):
         )
 
         if serializer.is_valid():
+            cf_payload = params.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Case",
+                cf_payload or {},
+                request.profile.org,
+                existing=cases_object.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             cases_object = serializer.save(
-                closed_on=params.get("closed_on"), case_type=params.get("case_type")
+                closed_on=params.get("closed_on"),
+                case_type=params.get("case_type"),
+                custom_fields=cleaned_cf,
             )
             previous_assigned_to_users = list(
                 cases_object.assigned_to.all().values_list("id", flat=True)
@@ -464,6 +544,23 @@ class CaseDetailView(APIView):
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        # Merged duplicate → tell the client to redirect. JSON form (200) keeps
+        # the SvelteKit route's error handling simple. The query param
+        # `?show_merged=true` lets agents view the duplicate directly via
+        # bookmark / list-view escape hatch.
+        if (
+            self.cases.merged_into_id
+            and request.query_params.get("show_merged") != "true"
+        ):
+            return Response(
+                {
+                    "redirect_to": str(self.cases.merged_into_id),
+                    "merged_into": str(self.cases.merged_into_id),
+                    "source_case_id": str(self.cases.id),
+                    "source_case_name": self.cases.name,
+                },
+                status=status.HTTP_200_OK,
+            )
         context = {}
         context["cases_obj"] = CaseSerializer(self.cases).data
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
@@ -508,18 +605,58 @@ class CaseDetailView(APIView):
             object_id=self.cases.id,
             org=self.request.profile.org,
         ).order_by("-id")
-        comments = Comment.objects.filter(
+        comments_qs = Comment.objects.filter(
             content_type=case_content_type,
             object_id=self.cases.id,
             org=self.request.profile.org,
         ).order_by("-id")
+        public_comments = comments_qs.filter(is_internal=False)
+        internal_notes = comments_qs.filter(is_internal=True)
+
+        linked_solutions = self.cases.solutions.filter(
+            org=self.request.profile.org
+        )
+
+        recent_activities = Activity.objects.filter(
+            entity_type="Case",
+            entity_id=self.cases.id,
+            org=self.request.profile.org,
+        ).select_related("user__user")[:20]
+
+        custom_field_defs = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Case",
+            is_active=True,
+        ).order_by("display_order", "label")
+
+        # Inbound emails associated with this case (most recent first), so the
+        # discussion tab can render them with an "Email" badge.
+        email_messages = _EmailMessageModel.objects.filter(
+            case=self.cases, drop_reason=""
+        ).order_by("-received_at")[:50]
+
+        merged_from = list(
+            self.cases.merged_from_cases.filter(org=self.request.profile.org)
+            .order_by("-merged_at")
+            .values("id", "name", "merged_at")
+        )
 
         context.update(
             {
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
-                "comments": CommentSerializer(comments, many=True).data,
+                "comments": CommentSerializer(public_comments, many=True).data,
+                "internal_notes": CommentSerializer(internal_notes, many=True).data,
                 "contacts": ContactSerializer(
                     self.cases.contacts.all(), many=True
+                ).data,
+                "solutions": SolutionSerializer(linked_solutions, many=True).data,
+                "activities": ActivitySerializer(recent_activities, many=True).data,
+                "email_messages": EmailMessageSerializer(
+                    email_messages, many=True
+                ).data,
+                "merged_from_cases": merged_from,
+                "custom_field_definitions": CustomFieldDefinitionSerializer(
+                    custom_field_defs, many=True
                 ).data,
                 "status": STATUS_CHOICE,
                 "priority": PRIORITY_CHOICE,
@@ -555,7 +692,6 @@ class CaseDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         context = {}
-        comment_serializer = CommentSerializer(data=params)
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
                 (self.request.profile.user == self.cases_obj.created_by)
@@ -568,12 +704,21 @@ class CaseDetailView(APIView):
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
-        if comment_serializer.is_valid():
-            if params.get("comment"):
-                comment_serializer.save(
-                    case_id=self.cases_obj.id,
-                    commented_by_id=self.request.profile.id,
-                )
+        comment_text = params.get("comment")
+        if comment_text:
+            is_internal_raw = params.get("is_internal", False)
+            if isinstance(is_internal_raw, str):
+                is_internal = is_internal_raw.lower() in ("true", "1", "yes")
+            else:
+                is_internal = bool(is_internal_raw)
+            Comment.objects.create(
+                comment=comment_text,
+                content_type=ContentType.objects.get_for_model(Case),
+                object_id=self.cases_obj.id,
+                commented_by=self.request.profile,
+                is_internal=is_internal,
+                org=self.request.profile.org,
+            )
 
         if self.request.FILES.get("case_attachment"):
             attachment = Attachments()
@@ -590,7 +735,7 @@ class CaseDetailView(APIView):
             object_id=self.cases_obj.id,
             org=request.profile.org,
         ).order_by("-id")
-        comments = Comment.objects.filter(
+        comments_qs = Comment.objects.filter(
             content_type=case_content_type,
             object_id=self.cases_obj.id,
             org=request.profile.org,
@@ -600,7 +745,12 @@ class CaseDetailView(APIView):
             {
                 "cases_obj": CaseSerializer(self.cases_obj).data,
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
-                "comments": CommentSerializer(comments, many=True).data,
+                "comments": CommentSerializer(
+                    comments_qs.filter(is_internal=False), many=True
+                ).data,
+                "internal_notes": CommentSerializer(
+                    comments_qs.filter(is_internal=True), many=True
+                ).data,
             }
         )
         return Response(context)
@@ -653,14 +803,34 @@ class CaseDetailView(APIView):
         )
 
         if serializer.is_valid():
-            cases_object = serializer.save(
-                closed_on=params.get("closed_on")
+            save_kwargs = {
+                "closed_on": params.get("closed_on")
                 if "closed_on" in params
                 else cases_object.closed_on,
-                case_type=params.get("case_type")
+                "case_type": params.get("case_type")
                 if "case_type" in params
                 else cases_object.case_type,
-            )
+            }
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Case",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=cases_object.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            cases_object = serializer.save(**save_kwargs)
 
             # Handle M2M fields if present in request
             if "contacts" in params:
@@ -899,3 +1069,180 @@ class CaseAttachmentView(APIView):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
+
+
+class CaseSolutionLinkView(APIView):
+    """Link or unlink Solutions (Knowledge Base articles) to a Case."""
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    def _get_case(self, pk, org):
+        return Case.objects.filter(pk=pk, org=org).first()
+
+    def _get_solution(self, pk, org):
+        return Solution.objects.filter(pk=pk, org=org).first()
+
+    @extend_schema(
+        tags=["Cases"],
+        request=inline_serializer(
+            name="CaseSolutionLinkRequest",
+            fields={"solution_id": serializers.CharField()},
+        ),
+    )
+    def post(self, request, pk):
+        case = self._get_case(pk, request.profile.org)
+        if not case:
+            return Response(
+                {"error": True, "errors": "Case not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        solution_id = request.data.get("solution_id")
+        if not solution_id:
+            return Response(
+                {"error": True, "errors": "solution_id required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sol = self._get_solution(solution_id, request.profile.org)
+        if not sol:
+            return Response(
+                {"error": True, "errors": "Solution not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        already_linked = case.solutions.filter(pk=sol.pk).exists()
+        if not already_linked:
+            case.solutions.add(sol)
+        return Response(
+            {"error": False, "solution": SolutionSerializer(sol).data},
+            status=(
+                status.HTTP_200_OK if already_linked else status.HTTP_201_CREATED
+            ),
+        )
+
+    @extend_schema(tags=["Cases"])
+    def delete(self, request, pk, solution_pk):
+        case = self._get_case(pk, request.profile.org)
+        if not case:
+            return Response(
+                {"error": True, "errors": "Case not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        sol = self._get_solution(solution_pk, request.profile.org)
+        if not sol:
+            return Response(
+                {"error": True, "errors": "Solution not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        case.solutions.remove(sol)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CaseActivityListView(APIView, LimitOffsetPagination):
+    """Paginated audit-log feed for a single Case (newest-first)."""
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="CaseActivityListResponse",
+                fields={
+                    "activities": ActivitySerializer(many=True),
+                    "count": serializers.IntegerField(),
+                    "offset": serializers.IntegerField(allow_null=True),
+                },
+            )
+        },
+    )
+    def get(self, request, pk):
+        case = Case.objects.filter(pk=pk, org=request.profile.org).first()
+        if not case:
+            return Response(
+                {"error": True, "errors": "Case not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if request.profile.role != "ADMIN" and not request.profile.is_admin:
+            if not (
+                request.profile.user == case.created_by
+                or request.profile in case.assigned_to.all()
+            ):
+                return Response(
+                    {
+                        "error": True,
+                        "errors": "You don't have Permission to perform this action",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        queryset = Activity.objects.filter(
+            entity_type="Case",
+            entity_id=case.id,
+            org=request.profile.org,
+        ).select_related("user__user")
+
+        page = self.paginate_queryset(queryset, request, view=self)
+        data = ActivitySerializer(page, many=True).data
+        if page:
+            offset = queryset.filter(id__gte=page[-1].id).count()
+            if offset == queryset.count():
+                offset = None
+        else:
+            offset = 0
+        return Response(
+            {"activities": data, "count": self.count, "offset": offset}
+        )
+
+
+class ReopenPolicyView(APIView):
+    """Per-org reopen policy. Admin-only. Auto-creates the singleton on first read."""
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    def _is_admin(self, request):
+        return request.profile.role == "ADMIN" or request.profile.is_admin
+
+    def _get_or_create_policy(self, org):
+        policy = ReopenPolicy.objects.filter(org=org).first()
+        if policy is None:
+            policy = ReopenPolicy.objects.create(org=org)
+        return policy
+
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        responses={200: ReopenPolicySerializer},
+    )
+    def get(self, request, format=None):
+        if not self._is_admin(request):
+            return Response(
+                {"error": True, "errors": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        policy = self._get_or_create_policy(request.profile.org)
+        return Response(ReopenPolicySerializer(policy).data)
+
+    @extend_schema(
+        tags=["Cases"],
+        parameters=swagger_params.organization_params,
+        request=ReopenPolicySerializer,
+        responses={200: ReopenPolicySerializer},
+    )
+    def put(self, request, format=None):
+        if not self._is_admin(request):
+            return Response(
+                {"error": True, "errors": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        policy = self._get_or_create_policy(request.profile.org)
+        serializer = ReopenPolicySerializer(policy, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer.save()
+        return Response(serializer.data)

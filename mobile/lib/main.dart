@@ -27,11 +27,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(
-    const ProviderScope(
-      child: BottleCRMApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: BottleCRMApp()));
 }
 
 /// BottleCRM - Main Application Widget

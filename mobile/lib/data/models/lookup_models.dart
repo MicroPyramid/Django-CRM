@@ -106,7 +106,9 @@ class UserLookup {
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
+    return name.length >= 2
+        ? name.substring(0, 2).toUpperCase()
+        : name.toUpperCase();
   }
 
   factory UserLookup.fromJson(Map<String, dynamic> json) {
@@ -116,7 +118,9 @@ class UserLookup {
     return UserLookup(
       id: json['id']?.toString() ?? '',
       email: userDetails?['email'] as String? ?? json['email'] as String? ?? '',
-      profilePic: userDetails?['profile_pic'] as String? ?? json['profile_pic'] as String?,
+      profilePic:
+          userDetails?['profile_pic'] as String? ??
+          json['profile_pic'] as String?,
       role: json['role'] as String? ?? 'USER',
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -125,9 +129,7 @@ class UserLookup {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserLookup &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is UserLookup && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -159,9 +161,7 @@ class TagLookup {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TagLookup &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is TagLookup && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

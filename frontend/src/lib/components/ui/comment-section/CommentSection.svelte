@@ -7,6 +7,7 @@
   import { Separator } from '$lib/components/ui/separator/index.js';
   import { formatRelativeDate, getInitials } from '$lib/utils/formatting.js';
   import * as api from '$lib/api.js';
+  import MentionBody from './MentionBody.svelte';
 
   /**
    * @type {{
@@ -24,7 +25,8 @@
    *   currentUserEmail?: string,
    *   isAdmin?: boolean,
    *   initialDisplayCount?: number,
-   *   showAddComment?: boolean
+   *   showAddComment?: boolean,
+   *   mentionCandidates?: Array<{ username: string, id?: string, email?: string, name?: string }>
    * }}
    */
   let {
@@ -34,7 +36,8 @@
     currentUserEmail = '',
     isAdmin = false,
     initialDisplayCount = 5,
-    showAddComment = true
+    showAddComment = true,
+    mentionCandidates = []
   } = $props();
 
   // State
@@ -65,7 +68,7 @@
       accounts: api.accounts,
       contacts: api.contacts,
       opportunity: api.opportunities,
-      cases: api.cases,
+      cases: api.tickets,
       tasks: api.tasks
     };
     return modules[entityType];
@@ -186,8 +189,98 @@
     }
   }
 
-  // Handle keyboard submit
+  // --- @mention typeahead ----------------------------------------------------
+  // Detects an in-progress `@partial` token at the cursor and surfaces a
+  // dropdown of matching candidates. No network calls — caller passes the
+  // resolved candidate list via the `mentionCandidates` prop.
+
+  const MENTION_TYPING_RE = /(?:^|[^A-Za-z0-9])@([A-Za-z0-9._-]*)$/;
+
+  /** @type {HTMLTextAreaElement | undefined} */
+  let textareaEl = $state(undefined);
+  let mentionOpen = $state(false);
+  let mentionQuery = $state('');
+  let mentionStart = $state(-1);
+  let mentionIndex = $state(0);
+
+  const mentionMatches = $derived(() => {
+    if (!mentionOpen) return [];
+    const q = mentionQuery.toLowerCase();
+    const list = mentionCandidates || [];
+    if (!q) return list.slice(0, 6);
+    return list.filter((c) => c.username.toLowerCase().startsWith(q)).slice(0, 6);
+  });
+
+  function _findMentionStart() {
+    if (!textareaEl) return;
+    const caret = textareaEl.selectionStart ?? newComment.length;
+    const before = newComment.slice(0, caret);
+    const m = before.match(MENTION_TYPING_RE);
+    if (!m) {
+      mentionOpen = false;
+      mentionStart = -1;
+      mentionQuery = '';
+      return;
+    }
+    // Position of the `@` character inside `before`.
+    mentionStart = m.index + (m[0].length - m[1].length - 1);
+    mentionQuery = m[1];
+    mentionOpen = true;
+    mentionIndex = 0;
+  }
+
+  function handleInput() {
+    _findMentionStart();
+  }
+
+  /** @param {{ username: string }} cand */
+  function applyMention(cand) {
+    if (!textareaEl || mentionStart < 0) {
+      mentionOpen = false;
+      return;
+    }
+    const caret = textareaEl.selectionStart ?? newComment.length;
+    const before = newComment.slice(0, mentionStart);
+    const after = newComment.slice(caret);
+    const insert = `@${cand.username} `;
+    newComment = before + insert + after;
+    mentionOpen = false;
+    mentionStart = -1;
+    mentionQuery = '';
+    // Restore caret right after the inserted mention.
+    queueMicrotask(() => {
+      if (!textareaEl) return;
+      const pos = before.length + insert.length;
+      textareaEl.selectionStart = textareaEl.selectionEnd = pos;
+      textareaEl.focus();
+    });
+  }
+
+  // Handle keyboard submit + mention navigation
   function handleKeyDown(event) {
+    if (mentionOpen && mentionMatches().length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        mentionIndex = (mentionIndex + 1) % mentionMatches().length;
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        mentionIndex =
+          (mentionIndex - 1 + mentionMatches().length) % mentionMatches().length;
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        applyMention(mentionMatches()[mentionIndex]);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        mentionOpen = false;
+        return;
+      }
+    }
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       handleAddComment();
@@ -216,12 +309,41 @@
     <div class="space-y-3">
       <div class="relative">
         <Textarea
+          bind:ref={textareaEl}
           bind:value={newComment}
-          placeholder="Write a comment..."
+          placeholder={mentionCandidates.length
+            ? 'Write a comment… type @ to mention'
+            : 'Write a comment...'}
           onkeydown={handleKeyDown}
+          oninput={handleInput}
           class="min-h-[80px] resize-none pr-4 pb-8"
           disabled={isSubmitting}
         />
+        {#if mentionOpen && mentionMatches().length > 0}
+          <ul
+            class="absolute left-2 right-2 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] shadow-md"
+          >
+            {#each mentionMatches() as cand, i (cand.username)}
+              <li>
+                <button
+                  type="button"
+                  onmousedown={(ev) => {
+                    ev.preventDefault();
+                    applyMention(cand);
+                  }}
+                  class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--surface-muted)] {i === mentionIndex
+                    ? 'bg-[var(--surface-muted)]'
+                    : ''}"
+                >
+                  <span class="font-medium">@{cand.username}</span>
+                  {#if cand.email && cand.email !== cand.username}
+                    <span class="truncate text-xs text-[var(--text-secondary)]">{cand.email}</span>
+                  {/if}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
         <div class="absolute right-3 bottom-2 left-3 flex items-center justify-between">
           <span class="text-[10px] text-gray-400 dark:text-gray-500">
             {#if newComment.trim()}
@@ -292,8 +414,8 @@
                 </span>
               </div>
 
-              <p class="mt-1 text-sm whitespace-pre-wrap text-gray-600 dark:text-gray-400">
-                {comment.comment}
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                <MentionBody body={comment.comment} candidates={mentionCandidates} />
               </p>
             </div>
 

@@ -23,12 +23,12 @@ class LeadsState {
   });
 
   const LeadsState.initial()
-      : leads = const [],
-        isLoading = false,
-        error = null,
-        totalCount = 0,
-        hasMore = true,
-        currentOffset = 0;
+    : leads = const [],
+      isLoading = false,
+      error = null,
+      totalCount = 0,
+      hasMore = true,
+      currentOffset = 0;
 
   LeadsState copyWith({
     List<Lead>? leads,
@@ -87,7 +87,9 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
   }
 
   /// Create a new lead
-  Future<ApiResponse<Map<String, dynamic>>> createLead(Map<String, dynamic> leadData) async {
+  Future<ApiResponse<Map<String, dynamic>>> createLead(
+    Map<String, dynamic> leadData,
+  ) async {
     try {
       final response = await _apiService.post(ApiConfig.leads, leadData);
       if (response.success) {
@@ -95,16 +97,15 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
       }
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
   /// Update an existing lead
-  Future<ApiResponse<Map<String, dynamic>>> updateLead(String id, Map<String, dynamic> leadData) async {
+  Future<ApiResponse<Map<String, dynamic>>> updateLead(
+    String id,
+    Map<String, dynamic> leadData,
+  ) async {
     try {
       final url = '${ApiConfig.leads}$id/';
       final response = await _apiService.put(url, leadData);
@@ -113,16 +114,15 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
       }
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
   /// Update lead status (quick action)
-  Future<ApiResponse<Map<String, dynamic>>> updateLeadStatus(String id, LeadStatus status) async {
+  Future<ApiResponse<Map<String, dynamic>>> updateLeadStatus(
+    String id,
+    LeadStatus status,
+  ) async {
     try {
       final url = '${ApiConfig.leads}$id/';
       final response = await _apiService.patch(url, {'status': status.value});
@@ -140,11 +140,7 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
 
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -161,41 +157,34 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
       }
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
   /// Add a comment to a lead
-  Future<ApiResponse<Map<String, dynamic>>> addComment(String leadId, String comment) async {
+  Future<ApiResponse<Map<String, dynamic>>> addComment(
+    String leadId,
+    String comment,
+  ) async {
     try {
       final url = '${ApiConfig.leads}$leadId/';
       final response = await _apiService.post(url, {'comment': comment});
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
   /// Delete a comment from a lead
-  Future<ApiResponse<Map<String, dynamic>>> deleteComment(String commentId) async {
+  Future<ApiResponse<Map<String, dynamic>>> deleteComment(
+    String commentId,
+  ) async {
     try {
       final url = ApiConfig.leadComment(commentId);
       final response = await _apiService.delete(url);
       return response;
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: e.toString(),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
   }
 
@@ -209,11 +198,7 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
     if (state.isLoading) return;
 
     if (refresh) {
-      state = state.copyWith(
-        currentOffset: 0,
-        hasMore: true,
-        clearError: true,
-      );
+      state = state.copyWith(currentOffset: 0, hasMore: true, clearError: true);
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -235,7 +220,9 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
         queryParams['source'] = source;
       }
 
-      final url = Uri.parse(ApiConfig.leads).replace(queryParameters: queryParams).toString();
+      final url = Uri.parse(
+        ApiConfig.leads,
+      ).replace(queryParameters: queryParams).toString();
       final response = await _apiService.get(url);
 
       if (response.success && response.data != null) {
@@ -243,12 +230,14 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
 
         // Parse open leads
         final openLeadsData = data['open_leads'] as Map<String, dynamic>?;
-        final openLeadsList = openLeadsData?['open_leads'] as List<dynamic>? ?? [];
+        final openLeadsList =
+            openLeadsData?['open_leads'] as List<dynamic>? ?? [];
         final openLeadsCount = openLeadsData?['leads_count'] as int? ?? 0;
 
         // Parse close leads
         final closeLeadsData = data['close_leads'] as Map<String, dynamic>?;
-        final closeLeadsList = closeLeadsData?['close_leads'] as List<dynamic>? ?? [];
+        final closeLeadsList =
+            closeLeadsData?['close_leads'] as List<dynamic>? ?? [];
 
         // Combine all leads
         final allLeadsList = [...openLeadsList, ...closeLeadsList];
@@ -258,7 +247,8 @@ class LeadsNotifier extends StateNotifier<LeadsState> {
 
         // Update state
         final updatedLeads = refresh ? newLeads : [...state.leads, ...newLeads];
-        final totalCount = openLeadsCount + (closeLeadsData?['leads_count'] as int? ?? 0);
+        final totalCount =
+            openLeadsCount + (closeLeadsData?['leads_count'] as int? ?? 0);
 
         state = state.copyWith(
           leads: updatedLeads,

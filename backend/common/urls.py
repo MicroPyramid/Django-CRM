@@ -9,7 +9,18 @@ from common.views.auth_views import (
     OrgAwareTokenRefreshView,
     OrgSwitchView,
 )
+from common.views.custom_field_views import (
+    CustomFieldDefinitionDetailView,
+    CustomFieldDefinitionListCreateView,
+)
 from common.views.dashboard_views import ActivityListView, ApiHomeView
+from common.views.notification_views import (
+    NotificationDetailView,
+    NotificationListView,
+    NotificationReadAllView,
+    NotificationReadView,
+    NotificationStreamView,
+)
 from common.views.document_views import DocumentDetailView, DocumentListView
 from common.views.organization_views import (
     OrgProfileCreateView,
@@ -74,4 +85,37 @@ urlpatterns = [
     path("tags/", TagsListView.as_view()),
     path("tags/<str:pk>/", TagsDetailView.as_view()),
     path("tags/<str:pk>/restore/", TagsRestoreView.as_view()),
+    # Custom fields (per-org schema extension; cross-entity)
+    path(
+        "custom-fields/",
+        CustomFieldDefinitionListCreateView.as_view(),
+        name="custom_fields_list_create",
+    ),
+    path(
+        "custom-fields/<str:pk>/",
+        CustomFieldDefinitionDetailView.as_view(),
+        name="custom_field_detail",
+    ),
+    # In-app notifications (per-recipient feed)
+    path("notifications/", NotificationListView.as_view(), name="notifications_list"),
+    path(
+        "notifications/stream/",
+        NotificationStreamView.as_view(),
+        name="notifications_stream",
+    ),
+    path(
+        "notifications/read-all/",
+        NotificationReadAllView.as_view(),
+        name="notifications_read_all",
+    ),
+    path(
+        "notifications/<str:pk>/read/",
+        NotificationReadView.as_view(),
+        name="notifications_read",
+    ),
+    path(
+        "notifications/<str:pk>/",
+        NotificationDetailView.as_view(),
+        name="notifications_detail",
+    ),
 ]

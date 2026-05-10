@@ -8,10 +8,7 @@ import '../../core/theme/theme.dart';
 class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
-  const AppShell({
-    super.key,
-    required this.navigationShell,
-  });
+  const AppShell({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +30,7 @@ class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const _BottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _BottomNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -77,16 +71,22 @@ class _BottomNav extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: LucideIcons.checkSquare,
-                label: 'Tasks',
+                icon: LucideIcons.ticket,
+                label: 'Tickets',
                 isSelected: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
               _NavItem(
-                icon: LucideIcons.moreHorizontal,
-                label: 'More',
+                icon: LucideIcons.checkSquare,
+                label: 'Tasks',
                 isSelected: currentIndex == 4,
                 onTap: () => onTap(4),
+              ),
+              _NavItem(
+                icon: LucideIcons.moreHorizontal,
+                label: 'More',
+                isSelected: currentIndex == 5,
+                onTap: () => onTap(5),
               ),
             ],
           ),
@@ -128,29 +128,21 @@ class _NavItem extends StatelessWidget {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary100
-                      : Colors.transparent,
+                  color: isSelected ? AppColors.primary100 : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: isSelected
-                      ? AppColors.primary600
-                      : AppColors.gray400,
+                  color: isSelected ? AppColors.primary600 : AppColors.gray400,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: AppTypography.labelSmall.copyWith(
-                  color: isSelected
-                      ? AppColors.primary600
-                      : AppColors.gray500,
-                  fontWeight: isSelected
-                      ? FontWeight.w600
-                      : FontWeight.w400,
+                  color: isSelected ? AppColors.primary600 : AppColors.gray500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ],

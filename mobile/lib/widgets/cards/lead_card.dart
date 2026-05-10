@@ -11,12 +11,7 @@ class LeadCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  const LeadCard({
-    super.key,
-    required this.lead,
-    this.onTap,
-    this.onLongPress,
-  });
+  const LeadCard({super.key, required this.lead, this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -68,10 +63,7 @@ class LeadCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Avatar
-        UserAvatar(
-          name: lead.name,
-          size: AvatarSize.sm,
-        ),
+        UserAvatar(name: lead.name, size: AvatarSize.sm),
 
         const SizedBox(width: 10),
 
@@ -152,10 +144,12 @@ class LeadCard extends StatelessWidget {
 
     return Row(
       children: [
-        ...displayTags.map((tag) => Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: LabelPill(label: tag),
-            )),
+        ...displayTags.map(
+          (tag) => Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: LabelPill(label: tag),
+          ),
+        ),
         if (remainingCount > 0)
           Text(
             '+$remainingCount',
@@ -232,11 +226,7 @@ class LeadCardCompact extends StatelessWidget {
   final Lead lead;
   final VoidCallback? onTap;
 
-  const LeadCardCompact({
-    super.key,
-    required this.lead,
-    this.onTap,
-  });
+  const LeadCardCompact({super.key, required this.lead, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -255,10 +245,7 @@ class LeadCardCompact extends StatelessWidget {
           children: [
             Row(
               children: [
-                UserAvatar(
-                  name: lead.name,
-                  size: AvatarSize.sm,
-                ),
+                UserAvatar(name: lead.name, size: AvatarSize.sm),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(

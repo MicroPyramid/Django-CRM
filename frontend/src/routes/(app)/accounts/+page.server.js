@@ -93,7 +93,7 @@ export async function load({ locals, url, cookies }) {
       const opportunityCount = account.opportunities?.length || 0;
       const contactCount = account.contacts?.length || 0;
       const taskCount = account.tasks?.length || 0;
-      const caseCount = account.cases?.length || 0;
+      const ticketCount = account.cases?.length || 0;
 
       const openOpportunities =
         account.opportunities?.filter((opp) => !['CLOSED_WON', 'CLOSED_LOST'].includes(opp.stage))
@@ -148,7 +148,7 @@ export async function load({ locals, url, cookies }) {
         opportunityCount,
         contactCount,
         taskCount,
-        caseCount,
+        ticketCount,
         openOpportunities,
         totalOpportunityValue,
 

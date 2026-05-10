@@ -156,7 +156,8 @@ class DashboardTask {
           : null,
       accountName: json['account']?['name'] as String?,
       leadName: json['lead'] != null
-          ? '${json['lead']['first_name'] ?? ''} ${json['lead']['last_name'] ?? ''}'.trim()
+          ? '${json['lead']['first_name'] ?? ''} ${json['lead']['last_name'] ?? ''}'
+                .trim()
           : null,
     );
   }
@@ -240,19 +241,31 @@ class DashboardData {
 
     // Parse pipeline by stage
     debugPrint('DashboardData.fromJson: Parsing pipeline_by_stage...');
-    final pipelineMap = json['pipeline_by_stage'] as Map<String, dynamic>? ?? {};
+    final pipelineMap =
+        json['pipeline_by_stage'] as Map<String, dynamic>? ?? {};
     final pipelineStages = pipelineMap.entries
-        .map((e) => PipelineStage.fromJson(e.key, e.value as Map<String, dynamic>))
+        .map(
+          (e) => PipelineStage.fromJson(e.key, e.value as Map<String, dynamic>),
+        )
         .toList();
 
     // Sort pipeline stages in order
-    final stageOrder = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSED_WON', 'CLOSED_LOST'];
+    final stageOrder = [
+      'PROSPECTING',
+      'QUALIFICATION',
+      'PROPOSAL',
+      'NEGOTIATION',
+      'CLOSED_WON',
+      'CLOSED_LOST',
+    ];
     pipelineStages.sort((a, b) {
       final aIndex = stageOrder.indexOf(a.code);
       final bIndex = stageOrder.indexOf(b.code);
       return aIndex.compareTo(bIndex);
     });
-    debugPrint('DashboardData.fromJson: Pipeline stages parsed: ${pipelineStages.length}');
+    debugPrint(
+      'DashboardData.fromJson: Pipeline stages parsed: ${pipelineStages.length}',
+    );
 
     // Parse urgent counts
     debugPrint('DashboardData.fromJson: Parsing urgent_counts...');
@@ -264,7 +277,9 @@ class DashboardData {
     // Parse revenue metrics
     debugPrint('DashboardData.fromJson: Parsing revenue_metrics...');
     final revenueMetrics = json['revenue_metrics'] != null
-        ? RevenueMetrics.fromJson(json['revenue_metrics'] as Map<String, dynamic>)
+        ? RevenueMetrics.fromJson(
+            json['revenue_metrics'] as Map<String, dynamic>,
+          )
         : const RevenueMetrics();
     debugPrint('DashboardData.fromJson: Revenue metrics parsed');
 
@@ -281,7 +296,9 @@ class DashboardData {
         }
       }
     }
-    debugPrint('DashboardData.fromJson: Hot leads parsed: ${hotLeadsList.length}');
+    debugPrint(
+      'DashboardData.fromJson: Hot leads parsed: ${hotLeadsList.length}',
+    );
 
     // Parse tasks
     debugPrint('DashboardData.fromJson: Parsing tasks...');
@@ -304,14 +321,18 @@ class DashboardData {
     if (json['activities'] != null) {
       for (final item in json['activities'] as List<dynamic>) {
         try {
-          activitiesList.add(DashboardActivity.fromJson(item as Map<String, dynamic>));
+          activitiesList.add(
+            DashboardActivity.fromJson(item as Map<String, dynamic>),
+          );
         } catch (e) {
           debugPrint('DashboardData.fromJson: Error parsing activity: $e');
           debugPrint('DashboardData.fromJson: Activity data: $item');
         }
       }
     }
-    debugPrint('DashboardData.fromJson: Activities parsed: ${activitiesList.length}');
+    debugPrint(
+      'DashboardData.fromJson: Activities parsed: ${activitiesList.length}',
+    );
 
     debugPrint('DashboardData.fromJson: All parsing complete!');
 

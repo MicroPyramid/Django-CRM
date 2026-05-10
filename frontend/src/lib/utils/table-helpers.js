@@ -236,8 +236,8 @@ export const taskStatusOptions = [
   }
 ];
 
-// Case status options - using design system tokens
-export const caseStatusOptions = [
+// Ticket status options - using design system tokens
+export const ticketStatusOptions = [
   {
     value: 'New',
     label: 'New',
@@ -273,8 +273,8 @@ export const caseStatusOptions = [
   }
 ];
 
-// Case type options - using design system tokens
-export const caseTypeOptions = [
+// Ticket type options - using design system tokens
+export const ticketTypeOptions = [
   {
     value: 'Question',
     label: 'Question',
@@ -294,8 +294,8 @@ export const caseTypeOptions = [
   }
 ];
 
-// Case priority options - using design system tokens
-export const casePriorityOptions = [
+// Ticket priority options - using design system tokens
+export const ticketPriorityOptions = [
   {
     value: 'Low',
     label: 'Low',

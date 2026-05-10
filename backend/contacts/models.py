@@ -59,6 +59,11 @@ class Contact(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
+    auto_created = models.BooleanField(
+        default=False,
+        help_text="True when the contact was created by an inbound channel "
+        "(e.g. email-to-ticket) rather than a human; flagged for admin review.",
+    )
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="contacts")
 
     # Account relationship (optional - contact can exist without an account)

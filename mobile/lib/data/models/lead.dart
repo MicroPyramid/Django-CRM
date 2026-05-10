@@ -36,7 +36,11 @@ enum LeadSource {
   existingCustomer('existing customer', 'Existing Customer', Icons.people),
   partner('partner', 'Partner', Icons.handshake),
   publicRelations('public relations', 'Public Relations', Icons.newspaper),
-  campaign('compaign', 'Campaign', Icons.campaign), // Note: backend has typo "compaign"
+  campaign(
+    'compaign',
+    'Campaign',
+    Icons.campaign,
+  ), // Note: backend has typo "compaign"
   other('other', 'Other', Icons.more_horiz);
 
   final String value;
@@ -225,7 +229,9 @@ class Lead {
     if (firstName.isNotEmpty && lastName.isNotEmpty) {
       return '${firstName[0]}${lastName[0]}'.toUpperCase();
     } else if (firstName.isNotEmpty) {
-      return firstName.substring(0, firstName.length >= 2 ? 2 : 1).toUpperCase();
+      return firstName
+          .substring(0, firstName.length >= 2 ? 2 : 1)
+          .toUpperCase();
     } else if (lastName.isNotEmpty) {
       return lastName.substring(0, lastName.length >= 2 ? 2 : 1).toUpperCase();
     }

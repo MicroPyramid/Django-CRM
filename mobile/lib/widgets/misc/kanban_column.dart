@@ -118,12 +118,7 @@ class KanbanColumn extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,10 +149,7 @@ class KanbanColumn extends StatelessWidget {
 
               // Count badge
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.gray200,
                   borderRadius: BorderRadius.circular(12),
@@ -194,11 +186,7 @@ class KanbanColumn extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 32,
-              color: AppColors.gray300,
-            ),
+            Icon(Icons.inbox_outlined, size: 32, color: AppColors.gray300),
             const SizedBox(height: 8),
             Text(
               'No deals',

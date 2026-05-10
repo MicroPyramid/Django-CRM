@@ -19,10 +19,10 @@ class DashboardState {
   });
 
   const DashboardState.initial()
-      : data = null,
-        isLoading = false,
-        error = null,
-        lastUpdated = null;
+    : data = null,
+      isLoading = false,
+      error = null,
+      lastUpdated = null;
 
   DashboardState copyWith({
     DashboardData? data,
@@ -55,7 +55,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     if (!forceRefresh && state.data != null && state.lastUpdated != null) {
       final age = DateTime.now().difference(state.lastUpdated!);
       if (age.inMinutes < 1) {
-        debugPrint('DashboardNotifier: Using cached data (${age.inSeconds}s old)');
+        debugPrint(
+          'DashboardNotifier: Using cached data (${age.inSeconds}s old)',
+        );
         return;
       }
     }
@@ -70,8 +72,12 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       debugPrint('DashboardNotifier: Response success: ${response.success}');
 
       if (response.success && response.data != null) {
-        debugPrint('DashboardNotifier: Response keys: ${response.data!.keys.toList()}');
-        debugPrint('DashboardNotifier: tasks data type: ${response.data!['tasks']?.runtimeType}');
+        debugPrint(
+          'DashboardNotifier: Response keys: ${response.data!.keys.toList()}',
+        );
+        debugPrint(
+          'DashboardNotifier: tasks data type: ${response.data!['tasks']?.runtimeType}',
+        );
         if (response.data!['tasks'] != null) {
           final tasksList = response.data!['tasks'] as List<dynamic>;
           debugPrint('DashboardNotifier: tasks count: ${tasksList.length}');
@@ -89,7 +95,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         debugPrint('DashboardNotifier: Dashboard data loaded successfully');
         debugPrint('  - Leads: ${dashboardData.leadsCount}');
         debugPrint('  - Opportunities: ${dashboardData.opportunitiesCount}');
-        debugPrint('  - Pipeline stages: ${dashboardData.pipelineByStage.length}');
+        debugPrint(
+          '  - Pipeline stages: ${dashboardData.pipelineByStage.length}',
+        );
         debugPrint('  - Tasks: ${dashboardData.tasks.length}');
       } else {
         state = state.copyWith(
@@ -123,8 +131,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 /// Dashboard provider
 final dashboardProvider =
     StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
-  return DashboardNotifier();
-});
+      return DashboardNotifier();
+    });
 
 /// Convenience providers for specific dashboard data
 final dashboardDataProvider = Provider<DashboardData?>((ref) {

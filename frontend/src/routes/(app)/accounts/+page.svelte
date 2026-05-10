@@ -716,11 +716,11 @@
   }
 
   /**
-   * Navigate to add case
+   * Navigate to add ticket
    */
-  function handleAddCase() {
+  function handleAddTicket() {
     if (selectedAccount) {
-      goto(`/cases?action=create&accountId=${selectedAccount.id}`);
+      goto(`/tickets?action=create&accountId=${selectedAccount.id}`);
     }
   }
 
@@ -1060,9 +1060,9 @@
               <AlertTriangle class="size-3.5" />
             </div>
             <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
-              {selectedAccount.caseCount || 0}
+              {selectedAccount.ticketCount || 0}
             </p>
-            <p class="text-[10px] text-[var(--text-secondary)]">Cases</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Tickets</p>
           </div>
           <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
             <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
@@ -1093,9 +1093,9 @@
             </Button>
           </div>
           <div class="mt-2 flex gap-2">
-            <Button variant="outline" size="sm" onclick={handleAddCase} class="flex-1">
+            <Button variant="outline" size="sm" onclick={handleAddTicket} class="flex-1">
               <AlertTriangle class="mr-1.5 h-3.5 w-3.5" />
-              Add Case
+              Add Ticket
             </Button>
             <Button variant="outline" size="sm" onclick={handleAddTask} class="flex-1">
               <CheckSquare class="mr-1.5 h-3.5 w-3.5" />
