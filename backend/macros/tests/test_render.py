@@ -2,11 +2,41 @@
 
 from types import SimpleNamespace
 
-from macros.render import render_macro
+from macros.render import find_unknown_placeholders, render_macro
 
 
 def _macro(body: str):
     return SimpleNamespace(body=body)
+
+
+class TestFindUnknownPlaceholders:
+    def test_empty_body_returns_empty_list(self):
+        assert find_unknown_placeholders("") == []
+        assert find_unknown_placeholders(None) == []
+
+    def test_no_placeholders_returns_empty_list(self):
+        assert find_unknown_placeholders("Plain text, no tokens.") == []
+
+    def test_only_supported_returns_empty_list(self):
+        body = "Hi %customer_name%, I'm %agent_name% from %org_name%."
+        assert find_unknown_placeholders(body) == []
+
+    def test_typo_is_flagged(self):
+        # The bug we're guarding against: missing 'o' in 'customer'.
+        body = "Hi %custmer_name%, how can we help?"
+        assert find_unknown_placeholders(body) == ["%custmer_name%"]
+
+    def test_mixed_known_and_unknown(self):
+        body = "Hi %customer_name%, your priority %priority% case %case_id%."
+        assert find_unknown_placeholders(body) == ["%priority%"]
+
+    def test_dedupes_repeated_unknown(self):
+        body = "%foo% then %foo% again"
+        assert find_unknown_placeholders(body) == ["%foo%"]
+
+    def test_preserves_first_seen_order(self):
+        body = "%bar% comes after %foo%, then %baz%."
+        assert find_unknown_placeholders(body) == ["%bar%", "%foo%", "%baz%"]
 
 
 class TestRenderPlaceholders:

@@ -93,6 +93,28 @@ SUPPORTED_TOKENS: Iterable[str] = frozenset(
 )
 
 
+def find_unknown_placeholders(body: str | None) -> list[str]:
+    """Return the `%token%` placeholders in `body` that aren't supported.
+
+    Order-preserving and de-duplicated so callers can render them in the
+    order they appear. Tokens are returned with their `%...%` wrapping so
+    the UI / API consumer can show them verbatim. The result is non-empty
+    only when the macro author has typoed (`%custmer_name%`) or used a
+    token we don't expand server-side — same set as `render_macro`.
+    """
+    if not body:
+        return []
+    seen: list[str] = []
+    seen_set: set[str] = set()
+    for match in _PLACEHOLDER_RE.finditer(body):
+        token = match.group(1)
+        if token in SUPPORTED_TOKENS or token in seen_set:
+            continue
+        seen.append(f"%{token}%")
+        seen_set.add(token)
+    return seen
+
+
 def render_macro(macro, case, profile) -> str:
     """Substitute supported `%token%` placeholders in `macro.body`.
 

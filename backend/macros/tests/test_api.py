@@ -288,3 +288,76 @@ class TestRender:
             format="json",
         )
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# unknown_placeholders serializer field
+# ---------------------------------------------------------------------------
+
+
+class TestUnknownPlaceholders:
+    """Backend-authoritative warning surface for typoed/unsupported tokens.
+
+    The web UI does its own client-side check for live feedback, but mobile
+    and API consumers rely on this field — and the workspace rule says
+    every UX constraint must also exist server-side.
+    """
+
+    def test_clean_body_returns_empty_list(self, user_client, org_macro):
+        resp = user_client.get(LIST_URL)
+        rows = {row["id"]: row for row in resp.json()["results"]}
+        assert rows[str(org_macro.id)]["unknown_placeholders"] == []
+
+    def test_typo_surfaced_on_create(self, admin_client):
+        resp = admin_client.post(
+            LIST_URL,
+            {
+                "title": "Greeting",
+                "body": "Hi %custmer_name%, this is %agent_name%.",
+                "scope": "org",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.json()["unknown_placeholders"] == ["%custmer_name%"]
+
+    def test_typo_surfaced_on_list_and_detail(self, user_client, org_a):
+        macro = Macro.objects.create(
+            org=org_a,
+            title="Bad",
+            body="Hi %custmer_name%, priority %priority%.",
+            scope=Macro.SCOPE_ORG,
+        )
+        list_resp = user_client.get(LIST_URL)
+        row = next(r for r in list_resp.json()["results"] if r["id"] == str(macro.id))
+        assert row["unknown_placeholders"] == ["%custmer_name%", "%priority%"]
+
+        detail_resp = user_client.get(_detail_url(macro.id))
+        assert detail_resp.json()["unknown_placeholders"] == [
+            "%custmer_name%",
+            "%priority%",
+        ]
+
+    def test_field_updates_after_patch(self, admin_client, org_macro):
+        # Sanity: editing the body re-derives the field from the new text.
+        resp = admin_client.patch(
+            _detail_url(org_macro.id),
+            {"body": "Now with %typo%"},
+            format="json",
+        )
+        assert resp.status_code == 200
+        assert resp.json()["unknown_placeholders"] == ["%typo%"]
+
+    def test_creation_is_not_blocked_by_unknown_placeholder(self, admin_client):
+        # Soft warning, not a save-blocker — matches `render_macro`'s
+        # leave-literal stance for unknown tokens.
+        resp = admin_client.post(
+            LIST_URL,
+            {
+                "title": "Future",
+                "body": "Priority is %priority%",
+                "scope": "org",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201

@@ -8,7 +8,8 @@
     Plus,
     Trash2,
     Pencil,
-    Power
+    Power,
+    AlertTriangle
   } from '@lucide/svelte';
   import { PageHeader } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -66,6 +67,34 @@
     '%agent_email%',
     '%org_name%'
   ];
+
+  // Mirror of backend SUPPORTED_TOKENS in macros/render.py — unknown tokens
+  // render literally on the ticket, so we surface them at edit-time before
+  // they ship in a customer-facing reply.
+  const SUPPORTED_TOKENS = new Set([
+    'customer_name',
+    'customer_email',
+    'case_id',
+    'case_subject',
+    'agent_name',
+    'agent_email',
+    'org_name'
+  ]);
+
+  /** @param {string | undefined | null} body */
+  function findUnknownPlaceholders(body) {
+    if (!body) return [];
+    const re = /%([a-zA-Z_][a-zA-Z0-9_]*)%/g;
+    /** @type {Set<string>} */
+    const found = new Set();
+    for (const m of body.matchAll(re)) {
+      if (!SUPPORTED_TOKENS.has(m[1])) found.add(`%${m[1]}%`);
+    }
+    return Array.from(found);
+  }
+
+  const unknownInNew = $derived(findUnknownPlaceholders(newBody));
+  const unknownInEdit = $derived(findUnknownPlaceholders(editBody));
 </script>
 
 <svelte:head>
@@ -162,6 +191,24 @@
             required
             placeholder="Hi %customer_name%, this is %agent_name%..."
           />
+          {#if unknownInNew.length > 0}
+            <div
+              class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-200"
+              role="alert"
+            >
+              <AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                Unknown placeholder{unknownInNew.length > 1 ? 's' : ''}:
+                {#each unknownInNew as token, i (token)}
+                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40"
+                    >{token}</code
+                  >{i < unknownInNew.length - 1 ? ', ' : ''}
+                {/each}
+                — these will render literally on the ticket. Check spelling
+                against the supported list above.
+              </span>
+            </div>
+          {/if}
         </div>
         <div class="flex justify-end">
           <Button type="submit" disabled={creating} class="gap-2">
@@ -202,6 +249,7 @@
           class="divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]"
         >
           {#each orgMacros as m (m.id)}
+            {@const unknown = findUnknownPlaceholders(m.body)}
             <li class="flex items-start justify-between gap-3 px-3 py-2 text-sm">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
@@ -211,6 +259,15 @@
                       class="rounded bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]"
                     >
                       Inactive
+                    </span>
+                  {/if}
+                  {#if unknown.length > 0}
+                    <span
+                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                      title={`Unknown placeholder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`}
+                    >
+                      <AlertTriangle class="h-3 w-3" />
+                      Unknown placeholder{unknown.length > 1 ? 's' : ''}
                     </span>
                   {/if}
                 </div>
@@ -284,10 +341,20 @@
           class="divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]"
         >
           {#each personalMacros as m (m.id)}
+            {@const unknown = findUnknownPlaceholders(m.body)}
             <li class="flex items-start justify-between gap-3 px-3 py-2 text-sm">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{m.title}</span>
+                  {#if unknown.length > 0}
+                    <span
+                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                      title={`Unknown placeholder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`}
+                    >
+                      <AlertTriangle class="h-3 w-3" />
+                      Unknown placeholder{unknown.length > 1 ? 's' : ''}
+                    </span>
+                  {/if}
                 </div>
                 <p
                   class="mt-0.5 line-clamp-2 whitespace-pre-wrap text-xs text-[var(--text-secondary)]"
@@ -390,6 +457,23 @@
             bind:value={editBody}
             required
           />
+          {#if unknownInEdit.length > 0}
+            <div
+              class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-200"
+              role="alert"
+            >
+              <AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                Unknown placeholder{unknownInEdit.length > 1 ? 's' : ''}:
+                {#each unknownInEdit as token, i (token)}
+                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40"
+                    >{token}</code
+                  >{i < unknownInEdit.length - 1 ? ', ' : ''}
+                {/each}
+                — these will render literally on the ticket.
+              </span>
+            </div>
+          {/if}
         </div>
         {#if editing.scope === 'org'}
           <div class="flex items-center gap-2">
