@@ -2,8 +2,9 @@
   import { goto } from '$app/navigation';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
-  import { ChevronLeft, BookOpen, Loader2 } from '@lucide/svelte';
+  import { Loader2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -30,25 +31,12 @@
   <title>New Solution - BottleCRM</title>
 </svelte:head>
 
+<PageHeader
+  title="New solution"
+  breadcrumb={[{ label: 'Knowledge Base', href: '/solutions' }, { label: 'New solution' }]}
+/>
+
 <div class="mx-auto flex max-w-2xl flex-col gap-4 p-4">
-  <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-    <button
-      type="button"
-      onclick={() => goto('/solutions')}
-      class="inline-flex items-center gap-1 hover:text-[var(--text-primary)]"
-    >
-      <ChevronLeft class="h-4 w-4" />
-      Knowledge Base
-    </button>
-    <span>/</span>
-    <span class="font-medium text-[var(--text-primary)]">New solution</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <BookOpen class="h-5 w-5 text-[var(--text-secondary)]" />
-    <h1 class="text-lg font-semibold">New solution</h1>
-  </div>
-
   <form method="POST" use:enhance={handleSubmit} class="flex flex-col gap-4 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">Title <span class="text-red-600">*</span></span>

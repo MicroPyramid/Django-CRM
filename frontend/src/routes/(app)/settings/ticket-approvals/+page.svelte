@@ -2,6 +2,7 @@
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { ShieldCheck, Loader2, Plus, Trash2, Edit3 } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   /** @type {{ data: any }} */
@@ -142,19 +143,20 @@
   <title>Approval rules - Settings - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-  <header class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <ShieldCheck class="h-5 w-5 text-[var(--text-secondary)]" />
-      <h1 class="text-xl font-semibold">Approval rules</h1>
-    </div>
+<PageHeader title="Approval rules">
+  {#snippet titleIcon()}
+    <ShieldCheck class="size-4" />
+  {/snippet}
+  {#snippet actions()}
     {#if !creating && editingId === null}
       <Button onclick={startCreate} disabled={pending}>
         <Plus class="mr-1 h-4 w-4" /> New rule
       </Button>
     {/if}
-  </header>
+  {/snippet}
+</PageHeader>
 
+<div class="flex flex-col gap-4 p-4">
   <p class="text-sm text-[var(--text-secondary)]">
     Active rules block the close transition until an approval is recorded.
     Filters combine — a rule with priority=Urgent + case_type=Incident matches

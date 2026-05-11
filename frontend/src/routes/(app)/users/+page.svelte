@@ -15,7 +15,7 @@
     AlertCircle,
     UserCheck
   } from '@lucide/svelte';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import { PageHeader, ViewTabs, StatusBar } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
@@ -223,7 +223,11 @@
   <title>Users & Teams - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Users & Teams" subtitle="Manage users and teams in your organization" />
+<PageHeader title="Users & Teams" subtitle="Manage users and teams in your organization">
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: users.length }]} active="all" />
+  {/snippet}
+</PageHeader>
 
 <div class="flex-1 space-y-6 p-4 md:p-6">
   <!-- Error Message -->
@@ -537,6 +541,8 @@
     </div>
   {/if}
 </div>
+
+<StatusBar status="{users.length} user{users.length !== 1 ? 's' : ''}" />
 
 <!-- Team Form Dialog -->
 <TeamFormDialog

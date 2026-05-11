@@ -13,6 +13,7 @@
     Pencil,
     CheckCircle2
   } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   /** @type {{ data: any }} */
@@ -117,21 +118,24 @@
   <title>Knowledge Base - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <BookOpen class="h-5 w-5 text-[var(--text-secondary)]" />
-      <h1 class="text-lg font-semibold">Knowledge Base</h1>
-      <span class="text-xs text-[var(--text-secondary)]">
-        {total} {total === 1 ? 'article' : 'articles'}
-      </span>
-    </div>
+<PageHeader title="Knowledge Base">
+  {#snippet titleIcon()}
+    <BookOpen class="size-4" />
+  {/snippet}
+  {#snippet meta()}
+    <span class="text-xs text-[var(--text-secondary)]">
+      {total} {total === 1 ? 'article' : 'articles'}
+    </span>
+  {/snippet}
+  {#snippet actions()}
     <Button onclick={() => goto('/solutions/new')} size="sm" class="gap-1">
       <Plus class="h-4 w-4" />
       New solution
     </Button>
-  </div>
+  {/snippet}
+</PageHeader>
 
+<div class="flex flex-col gap-4 p-4">
   <section
     class="flex flex-wrap items-end gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3"
   >

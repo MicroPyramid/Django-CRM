@@ -3,25 +3,53 @@
   import { tv } from 'tailwind-variants';
 
   export const buttonVariants = tv({
-    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+    base: [
+      'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap',
+      "rounded-[var(--r-md)] text-[13px] font-medium leading-none tracking-[-0.01em]",
+      'outline-none transition-[background-color,color,border-color,box-shadow] duration-150',
+      'disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
+      "[&_svg:not([class*='size-'])]:size-[14px] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:stroke-[1.7]",
+      'focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]',
+      'aria-invalid:border-[color:var(--red)] aria-invalid:shadow-[0_0_0_3px_var(--red-soft)]'
+    ].join(' '),
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
-        destructive:
-          'bg-destructive shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white',
-        outline:
-          'bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border',
-        secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-        link: 'text-primary underline-offset-4 hover:underline'
+        default: [
+          'bg-[color:var(--cta-bg)] text-[color:var(--cta-text)] border border-transparent',
+          'hover:bg-[color:var(--cta-bg-hover,var(--cta-bg))]'
+        ].join(' '),
+        ghost: [
+          'bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]',
+          'border border-[color:var(--border-faint)]',
+          'hover:border-[color:var(--border)] hover:text-[color:var(--text)]'
+        ].join(' '),
+        outline: [
+          'bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]',
+          'border border-[color:var(--border-faint)]',
+          'hover:border-[color:var(--border)] hover:text-[color:var(--text)]'
+        ].join(' '),
+        secondary: [
+          'bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]',
+          'border border-[color:var(--border-faint)]',
+          'hover:border-[color:var(--border)] hover:text-[color:var(--text)]'
+        ].join(' '),
+        destructive: [
+          'bg-[color:var(--bg-elevated)] text-[color:var(--red)]',
+          'border border-[color:var(--border-faint)]',
+          'hover:border-[color:var(--red)]'
+        ].join(' '),
+        link: [
+          'bg-transparent text-[color:var(--text)] border border-transparent px-0',
+          'underline-offset-4 hover:underline'
+        ].join(' ')
       },
       size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5',
-        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
-        icon: 'size-9',
-        'icon-sm': 'size-8',
-        'icon-lg': 'size-10'
+        default: 'h-8 px-3 has-[>svg]:px-2.5',
+        sm: 'h-7 gap-1.5 px-2.5 has-[>svg]:px-2 text-[12.5px]',
+        lg: 'h-9 px-4 has-[>svg]:px-3.5',
+        icon: 'size-8',
+        'icon-sm': 'size-7',
+        'icon-lg': 'size-9'
       }
     },
     defaultVariants: {

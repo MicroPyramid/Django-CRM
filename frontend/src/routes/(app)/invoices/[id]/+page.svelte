@@ -5,6 +5,7 @@
   import { toast } from 'svelte-sonner';
 
   import { Button } from '$lib/components/ui/button';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
@@ -18,7 +19,6 @@
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import { orgSettings } from '$lib/stores/org.js';
   import {
-    ArrowLeft,
     Plus,
     Trash2,
     Ban,
@@ -239,10 +239,6 @@
     a.remove();
   }
 
-  // Go back
-  function goBack() {
-    goto('/invoices');
-  }
 
   // Change invoice status
   async function handleStatusChange(newStatus) {
@@ -358,110 +354,112 @@
   }}
 ></form>
 
-<div class="bg-muted/30 min-h-screen print:bg-white">
-  <!-- Header (hidden when printing) -->
-  <div class="bg-background sticky top-0 z-10 border-b print:hidden">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onclick={goBack}>
-          <ArrowLeft class="size-5" />
+<div class="print:hidden">
+  <PageHeader
+    title={invoice.invoiceNumber || 'Invoice'}
+    subtitle={invoice.clientName || 'No client name'}
+    breadcrumb={[
+      { label: 'Invoices', href: '/invoices' },
+      { label: invoice.invoiceNumber || 'Invoice' }
+    ]}
+  >
+    {#snippet meta()}
+      <Select.Root type="single" value={invoice.status} onValueChange={handleStatusChange}>
+        <Select.Trigger
+          class="h-7 w-auto gap-1 border-0 px-2 text-xs font-medium {STATUS_COLORS[
+            invoice.status
+          ] || STATUS_COLORS.Draft}"
+        >
+          {(invoice.status || 'Draft').replace('_', ' ')}
+        </Select.Trigger>
+        <Select.Content>
+          {#each INVOICE_STATUS_OPTIONS as option}
+            <Select.Item value={option.value}>
+              <span class="flex items-center gap-2">
+                <span class="size-2 rounded-full {STATUS_COLORS[option.value]?.split(' ')[0]}"
+                ></span>
+                {option.label}
+              </span>
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+    {/snippet}
+    {#snippet amount()}
+      <span class="text-lg font-semibold text-[color:var(--text-primary)]">
+        {formatCurrency(Number(invoice.total || total), invoice.currency)}
+      </span>
+    {/snippet}
+    {#snippet actions()}
+      {#if isEditing}
+        <Button variant="outline" onclick={cancelEdit} disabled={isSaving}>Cancel</Button>
+        <Button onclick={saveChanges} disabled={isSaving}>
+          <Save class="mr-2 size-4" />
+          Save Changes
         </Button>
-        <div>
-          <div class="flex items-center gap-3">
-            <h1 class="text-xl font-semibold">{invoice.invoiceNumber || 'Invoice'}</h1>
-            <Select.Root type="single" value={invoice.status} onValueChange={handleStatusChange}>
-              <Select.Trigger
-                class="h-7 w-auto gap-1 border-0 px-2 text-xs font-medium {STATUS_COLORS[
-                  invoice.status
-                ] || STATUS_COLORS.Draft}"
-              >
-                {(invoice.status || 'Draft').replace('_', ' ')}
-              </Select.Trigger>
-              <Select.Content>
-                {#each INVOICE_STATUS_OPTIONS as option}
-                  <Select.Item value={option.value}>
-                    <span class="flex items-center gap-2">
-                      <span class="size-2 rounded-full {STATUS_COLORS[option.value]?.split(' ')[0]}"
-                      ></span>
-                      {option.label}
-                    </span>
-                  </Select.Item>
-                {/each}
-              </Select.Content>
-            </Select.Root>
-          </div>
-          <p class="text-muted-foreground text-sm">{invoice.clientName || 'No client name'}</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        {#if isEditing}
-          <Button variant="outline" onclick={cancelEdit} disabled={isSaving}>Cancel</Button>
-          <Button onclick={saveChanges} disabled={isSaving}>
-            <Save class="mr-2 size-4" />
-            Save Changes
+      {:else}
+        <Button variant="outline" onclick={printInvoice}>
+          <Printer class="mr-2 size-4" />
+          Print
+        </Button>
+        <Button variant="outline" onclick={downloadPDF} disabled={isDownloadingPdf}>
+          <Download class="mr-2 size-4" />
+          {isDownloadingPdf ? 'Downloading...' : 'PDF'}
+        </Button>
+        {#if invoice.status === 'Draft'}
+          <Button variant="outline" onclick={handleSend} disabled={isSaving}>
+            <Send class="mr-2 size-4" />
+            Send
           </Button>
-        {:else}
-          <Button variant="outline" onclick={printInvoice}>
-            <Printer class="mr-2 size-4" />
-            Print
-          </Button>
-          <Button variant="outline" onclick={downloadPDF} disabled={isDownloadingPdf}>
-            <Download class="mr-2 size-4" />
-            {isDownloadingPdf ? 'Downloading...' : 'PDF'}
-          </Button>
-          {#if invoice.status === 'Draft'}
-            <Button variant="outline" onclick={handleSend} disabled={isSaving}>
-              <Send class="mr-2 size-4" />
-              Send
-            </Button>
-          {/if}
-          <Button onclick={() => (currentTab = 'edit')}>
-            <Pencil class="mr-2 size-4" />
-            Edit
-          </Button>
-          {#if invoice.status !== 'Cancelled' && invoice.status !== 'Paid'}
-            <AlertDialog.Root bind:open={cancelDialogOpen}>
-              <AlertDialog.Trigger>
-                {#snippet child({ props })}
-                  <Button
-                    {...props}
-                    variant="outline"
-                    size="icon"
-                    class="text-destructive"
-                    title="Cancel Invoice"
-                  >
-                    <Ban class="size-4" />
-                  </Button>
-                {/snippet}
-              </AlertDialog.Trigger>
-              <AlertDialog.Content>
-                <AlertDialog.Header>
-                  <AlertDialog.Title>Cancel Invoice?</AlertDialog.Title>
-                  <AlertDialog.Description>
-                    This will cancel invoice {invoice.invoiceNumber}. Cancelled invoices cannot be
-                    sent or edited.
-                  </AlertDialog.Description>
-                </AlertDialog.Header>
-                <AlertDialog.Footer>
-                  <AlertDialog.Cancel>Keep Invoice</AlertDialog.Cancel>
-                  <Button
-                    variant="destructive"
-                    onclick={() => {
-                      cancelDialogOpen = false;
-                      cancelForm.requestSubmit();
-                    }}
-                  >
-                    Cancel Invoice
-                  </Button>
-                </AlertDialog.Footer>
-              </AlertDialog.Content>
-            </AlertDialog.Root>
-          {/if}
         {/if}
-      </div>
-    </div>
-  </div>
+        <Button onclick={() => (currentTab = 'edit')}>
+          <Pencil class="mr-2 size-4" />
+          Edit
+        </Button>
+        {#if invoice.status !== 'Cancelled' && invoice.status !== 'Paid'}
+          <AlertDialog.Root bind:open={cancelDialogOpen}>
+            <AlertDialog.Trigger>
+              {#snippet child({ props })}
+                <Button
+                  {...props}
+                  variant="outline"
+                  size="icon"
+                  class="text-destructive"
+                  title="Cancel Invoice"
+                >
+                  <Ban class="size-4" />
+                </Button>
+              {/snippet}
+            </AlertDialog.Trigger>
+            <AlertDialog.Content>
+              <AlertDialog.Header>
+                <AlertDialog.Title>Cancel Invoice?</AlertDialog.Title>
+                <AlertDialog.Description>
+                  This will cancel invoice {invoice.invoiceNumber}. Cancelled invoices cannot be
+                  sent or edited.
+                </AlertDialog.Description>
+              </AlertDialog.Header>
+              <AlertDialog.Footer>
+                <AlertDialog.Cancel>Keep Invoice</AlertDialog.Cancel>
+                <Button
+                  variant="destructive"
+                  onclick={() => {
+                    cancelDialogOpen = false;
+                    cancelForm.requestSubmit();
+                  }}
+                >
+                  Cancel Invoice
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Content>
+          </AlertDialog.Root>
+        {/if}
+      {/if}
+    {/snippet}
+  </PageHeader>
+</div>
 
+<div class="bg-muted/30 min-h-screen print:bg-white">
   <!-- Invoice Content -->
   <div class="mx-auto max-w-6xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
     {#if currentTab === 'view'}

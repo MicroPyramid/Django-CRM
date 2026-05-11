@@ -24,13 +24,12 @@
   } from '@lucide/svelte';
   import { TicketKanban } from '$lib/components/ui/ticket-kanban';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { BulkActionBar } from '$lib/components/ui/bulk-action-bar';
   import { TicketStatusChips, TicketListActions } from '$lib/components/tickets';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -489,9 +488,6 @@
   /** @type {string[]} */
   let selectedIds = $state([]);
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   // Filtered tickets - server already applies main filters, just apply status chip
   const filteredTickets = $derived.by(() => {
     let filtered = ticketsData;
@@ -502,6 +498,10 @@
     }
     return filtered;
   });
+
+  // Active row (highlighted in the table) — null until the user clicks a row.
+  /** @type {string | null} */
+  let activeRowId = $state(null);
 
   // Form references for server actions
   /** @type {HTMLFormElement} */
@@ -706,6 +706,7 @@
   <title>Tickets - BottleCRM</title>
 </svelte:head>
 
+<div class="flex flex-col">
 <PageHeader title="Tickets" subtitle="{filteredTickets.length} of {ticketsData.length} tickets">
   {#snippet actions()}
     <div class="flex items-center gap-2">
@@ -747,30 +748,26 @@
       <div class="bg-border mx-1 h-6 w-px"></div>
       <TicketListActions
         {viewMode}
-        {filtersExpanded}
+        filtersExpanded={false}
         {activeFiltersCount}
         {columns}
         visibleCount={columnCounts.visible}
         totalCount={columnCounts.total}
         {isColumnVisible}
         onViewMode={updateViewMode}
-        onToggleFilters={() => (filtersExpanded = !filtersExpanded)}
+        onToggleFilters={() => {}}
         onToggleColumn={toggleColumn}
         onCreate={drawer.openCreate}
       />
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       onchange={(value) => updateFilters({ ...filters, search: value })}
@@ -800,7 +797,13 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredTickets.length} of {pagination.total} tickets</span>
+    {/snippet}
+  </FilterStrip>
 
   {#if viewMode === 'list'}
     <CrmTable
@@ -808,6 +811,7 @@
       {columns}
       bind:visibleColumns
       bind:selectedIds
+      bind:activeRowId
       selectable={true}
       onRowChange={handleRowChange}
       onRowClick={(row) => goto(`/tickets/${row.id}`)}
@@ -867,6 +871,9 @@
       onCardClick={handleKanbanCardClick}
     />
   {/if}
+</div>
+
+<StatusBar status="{filteredTickets.length} of {pagination.total} tickets" />
 </div>
 
 <BulkActionBar

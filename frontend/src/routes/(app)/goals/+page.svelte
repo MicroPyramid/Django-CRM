@@ -4,6 +4,7 @@
   import { page } from '$app/stores';
   import { toast } from 'svelte-sonner';
   import { Plus, Trophy, Target, User, Users, Trash2, X } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { SearchInput } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
@@ -322,31 +323,24 @@
   <title>Sales Goals - BottleCRM</title>
 </svelte:head>
 
-<div class="space-y-6 p-6 md:p-8">
-  <!-- Header -->
-  <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-    <div class="flex items-center gap-3">
-      <div
-        class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg"
-      >
-        <Trophy class="size-5 text-white" />
-      </div>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Sales Goals</h1>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Track targets and measure team performance
-        </p>
-      </div>
-    </div>
-
+<PageHeader
+  title="Sales Goals"
+  subtitle="Track targets and measure team performance"
+>
+  {#snippet titleIcon()}
+    <Trophy class="size-4" />
+  {/snippet}
+  {#snippet actions()}
     {#if isAdmin}
       <Button onclick={openCreateDrawer} class="gap-2">
         <Plus class="size-4" />
         New Goal
       </Button>
     {/if}
-  </div>
+  {/snippet}
+</PageHeader>
 
+<div class="space-y-6 p-6 md:p-8">
   <!-- Filter Chips -->
   <div class="flex items-center gap-2">
     {#each [

@@ -1,10 +1,8 @@
 <script>
-  import { goto, invalidateAll } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import {
-    ChevronLeft,
-    BookOpen,
     Eye,
     EyeOff,
     Trash2,
@@ -13,6 +11,7 @@
     Briefcase
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -121,68 +120,55 @@
   <title>{sol.title} - Knowledge Base - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-  <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-    <button
-      type="button"
-      onclick={() => goto('/solutions')}
-      class="inline-flex items-center gap-1 hover:text-[var(--text-primary)]"
-    >
-      <ChevronLeft class="h-4 w-4" />
-      Knowledge Base
-    </button>
-    <span>/</span>
-    <span class="truncate font-medium text-[var(--text-primary)]">{sol.title}</span>
-  </div>
-
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <BookOpen class="h-5 w-5 text-[var(--text-secondary)]" />
-      <h1 class="text-lg font-semibold">{sol.title}</h1>
-      <span class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}>
-        {sol.status}
+<PageHeader
+  title={sol.title}
+  breadcrumb={[{ label: 'Knowledge Base', href: '/solutions' }, { label: sol.title }]}
+>
+  {#snippet meta()}
+    <span class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}>
+      {sol.status}
+    </span>
+    {#if sol.is_published}
+      <span class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-900 dark:bg-green-900/30 dark:text-green-200">
+        <CheckCircle2 class="h-3 w-3" />
+        Live
       </span>
-      {#if sol.is_published}
-        <span class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-900 dark:bg-green-900/30 dark:text-green-200">
-          <CheckCircle2 class="h-3 w-3" />
-          Live
-        </span>
-      {/if}
-    </div>
-
-    <div class="flex items-center gap-2">
-      {#if sol.is_published}
-        <form method="POST" action="?/unpublish" use:enhance={handleUnpublish}>
-          <Button type="submit" variant="outline" size="sm" class="gap-1">
-            <EyeOff class="h-4 w-4" />
-            Unpublish
-          </Button>
-        </form>
-      {:else}
-        <form method="POST" action="?/publish" use:enhance={handlePublish}>
-          <Button
-            type="submit"
-            size="sm"
-            class="gap-1"
-            disabled={sol.status !== 'approved'}
-            title={sol.status !== 'approved'
-              ? 'Set status to Approved first'
-              : 'Publish to the knowledge base'}
-          >
-            <Eye class="h-4 w-4" />
-            Publish
-          </Button>
-        </form>
-      {/if}
-      <form method="POST" action="?/delete" use:enhance={handleDelete}>
-        <Button type="submit" variant="ghost" size="sm" class="gap-1">
-          <Trash2 class="h-4 w-4 text-red-600" />
-          Delete
+    {/if}
+  {/snippet}
+  {#snippet actions()}
+    {#if sol.is_published}
+      <form method="POST" action="?/unpublish" use:enhance={handleUnpublish}>
+        <Button type="submit" variant="outline" size="sm" class="gap-1">
+          <EyeOff class="h-4 w-4" />
+          Unpublish
         </Button>
       </form>
-    </div>
-  </div>
+    {:else}
+      <form method="POST" action="?/publish" use:enhance={handlePublish}>
+        <Button
+          type="submit"
+          size="sm"
+          class="gap-1"
+          disabled={sol.status !== 'approved'}
+          title={sol.status !== 'approved'
+            ? 'Set status to Approved first'
+            : 'Publish to the knowledge base'}
+        >
+          <Eye class="h-4 w-4" />
+          Publish
+        </Button>
+      </form>
+    {/if}
+    <form method="POST" action="?/delete" use:enhance={handleDelete}>
+      <Button type="submit" variant="ghost" size="sm" class="gap-1">
+        <Trash2 class="h-4 w-4 text-red-600" />
+        Delete
+      </Button>
+    </form>
+  {/snippet}
+</PageHeader>
 
+<div class="flex flex-col gap-4 p-4">
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
     <form
       method="POST"

@@ -26,12 +26,12 @@
     Loader2,
     ArrowRightCircle,
     Banknote,
-    Filter
+    AlertTriangle,
+    RotateCw
   } from '@lucide/svelte';
   import { LinkedinIcon as Linkedin } from '$lib/components/icons';
   import { page } from '$app/stores';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -39,11 +39,11 @@
   } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
   import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { formatRelativeDate, formatDate, getNameInitials } from '$lib/utils/formatting.js';
+  import { formatRelativeDate, formatDate, getNameInitials, getInitials } from '$lib/utils/formatting.js';
   import {
     leadStatusOptions,
     leadRatingOptions,
@@ -76,6 +76,7 @@
       type: 'text',
       width: 'w-[200px]',
       canHide: false,
+      editable: false,
       emptyText: 'Untitled'
     },
     {
@@ -102,6 +103,7 @@
       label: 'Email',
       type: 'email',
       width: 'w-52',
+      editable: false,
       emptyText: ''
     },
     {
@@ -132,6 +134,7 @@
       type: 'text',
       width: 'w-36',
       canHide: true,
+      editable: false,
       emptyText: ''
     },
     {
@@ -140,6 +143,7 @@
       type: 'text',
       width: 'w-36',
       canHide: true,
+      editable: false,
       emptyText: ''
     },
     {
@@ -579,6 +583,7 @@
   );
   let formOptionsLoaded = $state(false);
   let formOptionsLoading = $state(false);
+  let formOptionsError = $state('');
 
   /**
    * Load form options for drawer - uses pre-loaded server data
@@ -587,6 +592,7 @@
     if (formOptionsLoaded || formOptionsLoading) return;
 
     formOptionsLoading = true;
+    formOptionsError = '';
     try {
       // Use pre-loaded data from server (avoids client-side auth issues)
       const serverFormOptions = data.formOptions || { users: [], teams: [], contacts: [] };
@@ -616,17 +622,46 @@
       formOptionsLoaded = true;
     } catch (err) {
       console.error('Failed to load form options:', err);
+      formOptionsError = 'Couldn’t load options';
     } finally {
       formOptionsLoading = false;
     }
   }
 
+  function retryLoadFormOptions() {
+    formOptionsLoaded = false;
+    formOptionsLoading = false;
+    formOptionsError = '';
+    loadFormOptions();
+  }
+
+  // Read the URL synchronously at init so deep links (?view=ID / ?action=create)
+  // prime the drawer state on the first frame instead of waiting for a $effect tick.
+  const initialUrlParams = $page.url.searchParams;
+  const initialViewId = initialUrlParams.get('view');
+  const initialAction = initialUrlParams.get('action');
+  const initialLead = initialViewId
+    ? (data.leads || []).find((/** @type {any} */ l) => l.id === initialViewId) || null
+    : null;
+
+  /** @type {string | null} */
+  let activeRowId = $state(initialViewId || null);
+
   // Drawer state (NotionDrawer for view/create)
-  let drawerOpen = $state(false);
+  let drawerOpen = $state(initialAction === 'create' || !!initialLead);
   /** @type {'view' | 'create'} */
-  let drawerMode = $state(/** @type {'view' | 'create'} */ ('view'));
+  let drawerMode = $state(initialAction === 'create' ? 'create' : 'view');
+  let drawerLoadError = $state('');
   /** @type {any} */
-  let drawerData = $state(null);
+  let drawerLoadErrorLead = $state(null);
+  /** @type {any} */
+  let drawerData = $state(initialLead);
+
+  // If we're opening the drawer from a deep link, kick off the form-option load
+  // up front so multi-selects have data when the drawer mounts.
+  if (drawerOpen) {
+    loadFormOptions();
+  }
   let drawerLoading = $state(false);
   let isSaving = $state(false);
   let currentUser = $state(null);
@@ -672,10 +707,19 @@
   // Drawer columns with dynamic options for multi-selects
   const drawerColumnsWithOptions = $derived(
     drawerColumns.map((col) => {
-      if (col.key === 'assignedTo') return { ...col, options: formOptions.users || [] };
-      if (col.key === 'teams') return { ...col, options: formOptions.teamsList || [] };
-      if (col.key === 'contacts') return { ...col, options: formOptions.contactsList || [] };
-      if (col.key === 'tags') return { ...col, options: formOptions.tagsList || [] };
+      const multiselectExtras = {
+        loading: formOptionsLoading,
+        loadingError: formOptionsError,
+        onRetry: retryLoadFormOptions
+      };
+      if (col.key === 'assignedTo')
+        return { ...col, options: formOptions.users || [], ...multiselectExtras };
+      if (col.key === 'teams')
+        return { ...col, options: formOptions.teamsList || [], ...multiselectExtras };
+      if (col.key === 'contacts')
+        return { ...col, options: formOptions.contactsList || [], ...multiselectExtras };
+      if (col.key === 'tags')
+        return { ...col, options: formOptions.tagsList || [], ...multiselectExtras };
       return col;
     })
   );
@@ -791,6 +835,8 @@
   async function openLead(lead, fromKanban = false) {
     drawerMode = 'view';
     drawerOpen = true;
+    drawerLoadError = '';
+    drawerLoadErrorLead = null;
     updateUrl(lead.id, null);
     // Load form options (uses pre-loaded server data)
     loadFormOptions();
@@ -829,7 +875,8 @@
       } catch (err) {
         console.error('Failed to fetch lead details:', err);
         toast.error('Failed to load lead details');
-        // Fall back to what we have (minimal kanban data transformed)
+        // Fall back to what we have (minimal kanban data transformed) and
+        // surface a banner so the user knows fields below are incomplete
         drawerData = {
           id: lead.id,
           title: lead.title || lead.full_name,
@@ -840,6 +887,8 @@
           currency: lead.currency,
           status: lead.status ? lead.status.toUpperCase().replace(/ /g, '_') : 'ASSIGNED'
         };
+        drawerLoadError = 'Couldn’t load full details. Showing limited data.';
+        drawerLoadErrorLead = lead;
       } finally {
         drawerLoading = false;
       }
@@ -1175,9 +1224,6 @@
   // Status chip filter state (quick filter from UI)
   let statusChipFilter = $state('ALL');
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   // Leads are already filtered server-side, just apply chip filter if active
   const filteredLeads = $derived.by(() => {
     let filtered = leads;
@@ -1439,7 +1485,8 @@
   <title>Leads - BottleCRM</title>
 </svelte:head>
 
-<PageHeader
+<div class="flex flex-col">
+  <PageHeader
   title="Leads"
   subtitle="{viewMode === 'kanban'
     ? totalLeadCount
@@ -1509,24 +1556,6 @@
 
       <div class="mx-1 h-6 w-px bg-[var(--border-default)]"></div>
 
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
-          >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
       <!-- Column Visibility (only for table view) -->
       {#if viewMode === 'table'}
         <DropdownMenu.Root>
@@ -1568,17 +1597,13 @@
       </Button>
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: totalLeadCount }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       placeholder="Search leads..."
@@ -1613,7 +1638,13 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredLeads.length} of {pagination.total} leads</span>
+    {/snippet}
+  </FilterStrip>
 
   <!-- Content: Table or Kanban -->
   {#if viewMode === 'kanban'}
@@ -1642,6 +1673,7 @@
           data={filteredLeads}
           {columns}
           bind:visibleColumns
+          bind:activeRowId
           onRowChange={handleRowChange}
           onRowClick={(row) => openLead(row)}
         >
@@ -1729,6 +1761,9 @@
   {/if}
 </div>
 
+<StatusBar status="{filteredLeads.length} of {pagination.total} leads" />
+</div>
+
 <!-- Lead Drawer -->
 <CrmDrawer
   bind:open={drawerOpen}
@@ -1740,10 +1775,67 @@
   headerLabel={drawerMode === 'create' ? 'New Lead' : 'Lead'}
   mode={drawerMode}
   loading={drawerLoading}
+  fullPageHref={drawerMode !== 'create' && drawerData?.id ? `/leads/${drawerData.id}` : ''}
   onFieldChange={handleDrawerFieldChange}
   onDelete={drawerMode !== 'create' ? handleDrawerDelete : undefined}
   onClose={closeDrawer}
 >
+  {#snippet banner()}
+    {#if drawerLoadError}
+      <div
+        role="alert"
+        class="mx-4 mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+      >
+        <AlertTriangle class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        <div class="flex-1">
+          <p class="font-medium">{drawerLoadError}</p>
+          {#if drawerLoadErrorLead}
+            <button
+              type="button"
+              onclick={() => drawerLoadErrorLead && openLead(drawerLoadErrorLead, true)}
+              class="mt-1 inline-flex items-center gap-1 text-[11.5px] font-semibold underline-offset-2 hover:underline"
+            >
+              <RotateCw class="size-3" aria-hidden="true" />
+              Retry
+            </button>
+          {/if}
+        </div>
+      </div>
+    {/if}
+  {/snippet}
+
+  {#snippet metaSection()}
+    {#if drawerData}
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[color:var(--text-muted)]">
+        {#if drawerData.owner}
+          <div class="flex items-center gap-1.5">
+            <span
+              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[10px] font-semibold text-[color:var(--color-primary-default)]"
+              aria-hidden="true"
+            >
+              {getInitials(drawerData.owner.name || drawerData.owner.email) || '?'}
+            </span>
+            <span class="text-[color:var(--text)] font-medium">
+              {drawerData.owner.name || drawerData.owner.email}
+            </span>
+          </div>
+        {/if}
+        {#if drawerData.createdAt}
+          <span aria-hidden="true">·</span>
+          <span title={new Date(drawerData.createdAt).toLocaleString()}>
+            Created {formatDate(drawerData.createdAt)}
+          </span>
+        {/if}
+        {#if drawerData.updatedAt && drawerData.updatedAt !== drawerData.createdAt}
+          <span aria-hidden="true">·</span>
+          <span title={new Date(drawerData.updatedAt).toLocaleString()}>
+            Updated {formatRelativeDate(drawerData.updatedAt)}
+          </span>
+        {/if}
+      </div>
+    {/if}
+  {/snippet}
+
   {#snippet activitySection()}
     {#if drawerMode !== 'create' && drawerData}
       <CommentSection

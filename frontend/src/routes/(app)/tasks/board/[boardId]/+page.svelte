@@ -1,6 +1,7 @@
 <script>
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
   export let data;
 
@@ -100,15 +101,13 @@
   }
 </script>
 
-<div class="board-container">
-  <header class="board-header">
-    <a href="/tasks" class="back-link">Back to Boards</a>
-    <h1>{data.board.name}</h1>
-    {#if data.board.description}
-      <p class="board-description">{data.board.description}</p>
-    {/if}
-  </header>
+<PageHeader
+  title={data.board.name}
+  subtitle={data.board.description || ''}
+  breadcrumb={[{ label: 'Tasks', href: '/tasks' }, { label: data.board.name }]}
+/>
 
+<div class="board-container">
   <div class="kanban-board">
     {#each data.columns as column (column.id)}
       <div
@@ -267,35 +266,6 @@
     display: flex;
     flex-direction: column;
     background: #f4f5f7;
-  }
-
-  .board-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .back-link {
-    color: #5e6c84;
-    text-decoration: none;
-    font-size: 0.9rem;
-    display: inline-block;
-    margin-bottom: 0.5rem;
-  }
-
-  .back-link:hover {
-    color: #0079bf;
-  }
-
-  .board-header h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #172b4d;
-    margin: 0;
-  }
-
-  .board-description {
-    color: #5e6c84;
-    margin-top: 0.5rem;
-    font-size: 0.95rem;
   }
 
   .kanban-board {

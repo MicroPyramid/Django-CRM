@@ -66,6 +66,7 @@ class LeadSerializer(serializers.ModelSerializer):
             # System
             "created_by",
             "created_at",
+            "updated_at",
             "is_active",
             "company_name",
             # Kanban

@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import { ShieldCheck, Loader2, Check, X, Ban } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   /** @type {{ data: any }} */
@@ -113,12 +114,13 @@
   <title>Approvals - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-  <header class="flex items-center gap-2">
-    <ShieldCheck class="h-5 w-5 text-[var(--text-secondary)]" />
-    <h1 class="text-xl font-semibold">Approvals</h1>
-  </header>
+<PageHeader title="Approvals">
+  {#snippet titleIcon()}
+    <ShieldCheck class="size-4" />
+  {/snippet}
+</PageHeader>
 
+<div class="flex flex-col gap-4 p-4">
   <div class="flex flex-wrap items-center gap-3 text-sm">
     <div class="inline-flex rounded-md border border-[var(--border-default)] p-0.5">
       <button

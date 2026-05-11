@@ -1,5 +1,5 @@
 <script>
-  import { ChevronDown, Check, X, CircleDot } from '@lucide/svelte';
+  import { ChevronDown, Check, X } from '@lucide/svelte';
   import { cn } from '$lib/utils.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
 
@@ -28,7 +28,7 @@
     value = $bindable(''),
     multiple = false,
     placeholder = 'Select...',
-    label = '',
+    label: _label = '',
     allLabel = 'All',
     class: className,
     onchange
@@ -85,90 +85,45 @@
   const hasValue = $derived(multiple ? selectedValues.length > 0 : value && value !== 'ALL');
 </script>
 
-<div class={cn('flex flex-col gap-1.5', className)}>
-  {#if label}
-    <span class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase">
-      {label}
-    </span>
-  {/if}
-  <Popover.Root bind:open>
+<Popover.Root bind:open>
     <Popover.Trigger asChild class="">
       {#snippet child({ props })}
         <button
           type="button"
-          class={cn(
-            'select-filter-trigger group',
-            'relative flex h-9 w-full items-center justify-between gap-2',
-            'rounded-lg border px-3 py-2',
-            'bg-background/60 backdrop-blur-sm',
-            'text-sm transition-all duration-200',
-            'outline-none',
-            // Default state
-            'border-input/60',
-            'hover:border-input hover:bg-background/80',
-            // Focus state
-            'focus:border-primary/50 focus:bg-background',
-            'focus:ring-primary/20 focus:ring-2',
-            // Dark mode
-            'dark:border-white/[0.08] dark:bg-white/[0.03]',
-            'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
-            'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
-            // Active state
-            hasValue &&
-              'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
-            // Open state
-            open && 'ring-primary/20 dark:ring-primary/30 ring-2'
-          )}
           {...props}
+          class={cn(
+            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[11.5px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
+            hasValue
+              ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
+              : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
+            className
+          )}
         >
-          <span
-            class={cn(
-              'truncate transition-colors duration-150',
-              hasValue ? 'text-foreground font-medium' : 'text-muted-foreground'
-            )}
-          >
-            {displayText}
-          </span>
-
-          <div class="flex shrink-0 items-center gap-1">
-            {#if hasValue}
-              <!-- Active indicator dot -->
-              <div
-                class="bg-primary animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full duration-200"
-              ></div>
-              <!-- Clear button -->
-              <span
-                role="button"
-                tabindex="0"
-                onclick={(e) => {
+          <span class="truncate">{displayText}</span>
+          {#if hasValue}
+            <span
+              role="button"
+              tabindex="0"
+              onclick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleClear();
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
                   e.preventDefault();
                   handleClear();
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleClear();
-                  }
-                }}
-                class={cn(
-                  'flex h-5 w-5 items-center justify-center rounded-md',
-                  'text-muted-foreground/60 transition-all duration-150',
-                  'hover:bg-muted hover:text-foreground',
-                  'active:scale-90'
-                )}
-              >
-                <X class="h-3 w-3" />
-              </span>
-            {/if}
-            <ChevronDown
-              class={cn(
-                'text-muted-foreground/50 h-4 w-4 transition-transform duration-200',
-                open && 'rotate-180'
-              )}
-            />
-          </div>
+                }
+              }}
+              class="-mr-1 ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm hover:bg-[color:var(--violet)]/15"
+              aria-label="Clear filter"
+            >
+              <X class="size-3" />
+            </span>
+          {:else}
+            <ChevronDown class="size-3.5 shrink-0 opacity-60" />
+          {/if}
         </button>
       {/snippet}
     </Popover.Trigger>
@@ -176,15 +131,7 @@
     <Popover.Content
       align="start"
       sideOffset={4}
-      class={cn(
-        'select-filter-content',
-        'w-[220px] overflow-hidden rounded-xl p-1',
-        'border-border/60 bg-popover/95 border backdrop-blur-md',
-        'shadow-lg shadow-black/5',
-        'dark:bg-popover/90 dark:border-white/[0.08]',
-        'dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]',
-        'animate-in fade-in-0 zoom-in-95 duration-150'
-      )}
+      class="w-[220px] overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-1 shadow-lg shadow-black/5"
     >
       <!-- All option -->
       {#if !multiple}
@@ -263,77 +210,3 @@
       </div>
     </Popover.Content>
   </Popover.Root>
-</div>
-
-<!-- Multi-select badges (outside dropdown) -->
-{#if multiple && selectedValues.length > 0}
-  <div class="mt-2 flex flex-wrap gap-1.5">
-    {#each selectedValues as val, i}
-      {@const opt = options.find((o) => o.value === val)}
-      <span
-        class={cn(
-          'inline-flex items-center gap-1 rounded-full',
-          'bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium',
-          'dark:bg-primary/20',
-          'animate-in fade-in zoom-in duration-200'
-        )}
-        style="animation-delay: {i * 50}ms"
-      >
-        {opt?.label || val}
-        <button
-          type="button"
-          onclick={() => handleSelect(val)}
-          class={cn(
-            'flex h-4 w-4 items-center justify-center rounded-full',
-            'transition-all duration-150',
-            'hover:bg-primary/20 dark:hover:bg-primary/30',
-            'active:scale-90'
-          )}
-        >
-          <X class="h-2.5 w-2.5" />
-        </button>
-      </span>
-    {/each}
-  </div>
-{/if}
-
-<style>
-  .select-filter-trigger {
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-  }
-
-  :global(.dark) .select-filter-trigger {
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  .select-filter-trigger:focus {
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.02),
-      0 0 0 3px var(--ring);
-  }
-
-  :global(.dark) .select-filter-trigger:focus {
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.1),
-      0 0 0 3px var(--ring),
-      0 0 20px -4px var(--primary);
-  }
-
-  .select-option {
-    position: relative;
-  }
-
-  .select-option::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    opacity: 0;
-    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
-    transition: opacity 0.3s ease;
-  }
-
-  :global(.dark) .select-option:hover::before {
-    opacity: 0.03;
-  }
-</style>

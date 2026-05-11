@@ -65,14 +65,17 @@
   --chart-5: #fed7aa;
 
   /* Sidebar */
-  --sidebar: oklch(0.995 0 0);
-  --sidebar-foreground: oklch(0.25 0.02 60);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.18 0 0);
   --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.97 0.01 60);
-  --sidebar-accent-foreground: oklch(0.2 0.02 60);
-  --sidebar-border: oklch(0.94 0.005 60);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: #ea580c;
+  --sidebar-active-fill: oklch(0.94 0 0);
+  --sidebar-muted: oklch(0.55 0 0);
+  --sidebar-subtle: oklch(0.65 0 0);
 
   /* ─────────────────────────────────────────────────────────────────────────
      PRIMARY COLOR SCALE
@@ -349,9 +352,9 @@
   /* ─────────────────────────────────────────────────────────────────────────
      LAYOUT DIMENSIONS
      ───────────────────────────────────────────────────────────────────────── */
-  --sidebar-width: 260px;
+  --sidebar-width: 248px;
   --sidebar-width-collapsed: 72px;
-  --sidebar-width-icon: 3rem;
+  --sidebar-width-icon: 56px;
   --drawer-width: 520px;
   --header-height: 60px;
   --content-padding: 28px;
@@ -409,6 +412,63 @@
   --status-danger-bg: #fdeaea;
   --status-info: #17a2b8;
   --status-info-bg: #e3f2fd;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TOKENS (2026-05-10 spec) — Phase 1
+     New design system, additive. Existing tokens above are kept for
+     back-compat until Phase 2+ migrates components onto these.
+     Spec: docs/superpowers/specs/2026-05-10-app-redesign-design.md
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Surface */
+  --bg: #ffffff;
+  --bg-page: #fafafa;
+  --bg-card: #ffffff;
+  --bg-elevated: #fafafa;
+  --bg-hover: #f5f5f4;
+  --bg-active: #f0efed;
+  --bg-input: #ffffff;
+
+  /* Border (NOTE: --border, --border-strong, --focus-ring redefined — see Phase 1 plan §Task 3) */
+  --border-faint: #f0f0f0;
+  --border: #e5e5e5;
+  --border-strong: #c4c4c4;
+  --focus-ring: rgba(17, 17, 17, 0.10);
+
+  /* Text */
+  --text: #111111;
+  --text-muted: #525252;
+  --text-subtle: #999999;
+
+  /* Accents — semantic */
+  --green: #10b981;
+  --green-soft: rgba(16, 185, 129, 0.12);
+  --green-soft-text: #047857;
+  --violet: #7c3aed;
+  --violet-soft: rgba(124, 58, 237, 0.10);
+  --violet-soft-text: #6d28d9;
+  --amber-soft: rgba(217, 119, 6, 0.10);
+  --amber-soft-text: #92400e;
+  --red: #dc2626;
+  --red-soft: rgba(220, 38, 38, 0.08);
+  --orange: #ea580c;
+
+  /* CTA */
+  --cta-bg: #111111;
+  --cta-text: #ffffff;
+  --cta-bg-hover: #000000;
+
+  /* Radii */
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+  --r-xl: 12px;
+  --r-full: 9999px;
+
+  /* Fonts (override existing aliases at lines ~379–381) */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -457,14 +517,17 @@
   --chart-5: #fff7ed;
 
   /* Sidebar */
-  --sidebar: oklch(0.16 0.01 30);
-  --sidebar-foreground: oklch(0.92 0.005 60);
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
   --sidebar-primary: #fb923c;
   --sidebar-primary-foreground: oklch(0.12 0.01 30);
-  --sidebar-accent: oklch(0.22 0.015 30);
-  --sidebar-accent-foreground: oklch(0.92 0.005 60);
-  --sidebar-border: oklch(0.28 0.01 30);
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #fb923c;
+  --sidebar-active-fill: rgba(255, 255, 255, 0.10);
+  --sidebar-muted: rgba(255, 255, 255, 0.65);
+  --sidebar-subtle: rgba(255, 255, 255, 0.45);
 
   /* Primary color scale - Dark mode */
   --color-primary-default: #fb923c;
@@ -572,6 +635,50 @@
   --glass-bg: rgba(18, 19, 24, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 16px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TOKENS (2026-05-10 spec) — Phase 1, dark theme overrides
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Surface */
+  --bg: #000000;
+  --bg-page: #000000;
+  --bg-card: #0a0a0b;
+  --bg-elevated: #131316;
+  --bg-hover: #18181c;
+  --bg-active: #1f1f23;
+  --bg-input: #131316;
+
+  /* Border */
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --focus-ring: rgba(237, 242, 245, 0.14);
+
+  /* Text */
+  --text: #edf2f5;
+  --text-muted: #828282;
+  --text-subtle: #555555;
+
+  /* Accents — semantic */
+  --green: #10b981;
+  --green-soft: rgba(16, 185, 129, 0.14);
+  --green-soft-text: #6ee7b7;
+  --violet: #7c7cff;
+  --violet-soft: rgba(124, 124, 255, 0.14);
+  --violet-soft-text: #c4c4ff;
+  --amber-soft: rgba(217, 119, 6, 0.18);
+  --amber-soft-text: #fcd34d;
+  --red: #f87171;
+  --red-soft: rgba(248, 113, 113, 0.10);
+  --orange: #ea580c;
+
+  /* CTA (inverted) */
+  --cta-bg: #ffffff;
+  --cta-text: #18181b;
+  --cta-bg-hover: #ededed;
+
+  /* Radii + fonts inherit from :root — no override needed */
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1013,55 +1120,14 @@ select {
     transform 0.2s ease;
 }
 
-/* Menu button refinements */
-[data-slot='sidebar-menu-button'] {
-  letter-spacing: -0.01em;
-}
-
-/* Active state with left accent bar */
+/* Required for the dot-indicator absolute positioning */
 [data-slot='sidebar-menu-button'][data-active='true'] {
   position: relative;
-}
-
-/* Smooth hover transitions */
-[data-slot='sidebar-menu-button']:hover {
-  transform: translateX(1px);
-}
-
-[data-slot='sidebar-menu-button'][data-active='true']:hover {
-  transform: none;
-}
-
-/* Group label styling - uppercase sections */
-[data-slot='sidebar-group-label'] {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--sidebar-foreground);
-  opacity: 0.4;
-  padding: 0 12px;
-  margin-bottom: 4px;
-}
-
-/* Submenu refinements */
-[data-slot='sidebar-menu-sub'] {
-  margin-top: 4px;
-}
-
-/* Rail hover effect - Orange accent */
-[data-slot='sidebar-rail']:hover {
-  background: linear-gradient(90deg, transparent, rgba(234, 88, 12, 0.1));
 }
 
 /* Collapsed state icon centering */
 [data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
   justify-content: center;
-}
-
-/* Footer divider */
-[data-slot='sidebar-footer'] {
-  background: linear-gradient(180deg, transparent, var(--sidebar) 8px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1115,4 +1181,91 @@ select {
 .data-table-row-selected {
   background: var(--color-primary-light);
   border-left: 3px solid var(--color-primary-default);
+}
+
+@layer utilities {
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TYPOGRAPHY UTILITIES (2026-05-10 spec) — Phase 1
+     See spec §5 for usage. Tabular numerics applied where data-heavy.
+     ───────────────────────────────────────────────────────────────────────── */
+
+  .h-display {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    color: var(--text);
+  }
+
+  .h-page {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .h-section {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .t-body {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .t-body-sm {
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .t-meta {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text-subtle);
+  }
+
+  .label-section {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+  }
+
+  .label-tiny {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+  }
+
+  .kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-faint);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+
+  /* Apply tabular numerics globally on a helper class — useful for tables, KPI cards */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Inter variant features (cv11 = sharper digits, ss01 = alternate single-storey 'a').
+   Applied at root so all descendants inherit.
+   NOTE: This intentionally overrides the @layer base html { ... } rule earlier in this file.
+   Geist-specific features (cv02/cv03/cv04) are dropped since we're using Inter, not Geist.
+   When components fully migrate off Geist in Phase 2+, the older @layer base rule can be removed. */
+html {
+  font-feature-settings: 'cv11', 'ss01';
 }

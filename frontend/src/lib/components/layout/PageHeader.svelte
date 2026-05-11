@@ -1,60 +1,107 @@
 <script>
+  import { ChevronRight } from '@lucide/svelte';
+
+  /**
+   * @typedef {Object} BreadcrumbItem
+   * @property {string} label
+   * @property {string} [href]
+   */
+
   /**
    * @typedef {Object} Props
-   * @property {string} title - Page title
-   * @property {string} [subtitle] - Optional subtitle
-   * @property {import('svelte').Snippet} [actions] - Optional actions snippet
+   * @property {string} title
+   * @property {string} [subtitle]
+   * @property {'page' | 'display'} [size]
+   * @property {string} [eyebrow]
+   * @property {BreadcrumbItem[]} [breadcrumb]
+   * @property {import('svelte').Snippet} [titleIcon]
+   * @property {import('svelte').Snippet} [meta]
+   * @property {import('svelte').Snippet} [amount]
+   * @property {import('svelte').Snippet} [actions]
+   * @property {import('svelte').Snippet} [tabs]
    */
 
   /** @type {Props} */
-  let { title, subtitle = '', actions } = $props();
+  let {
+    title,
+    subtitle = '',
+    size = 'page',
+    eyebrow = '',
+    breadcrumb = [],
+    titleIcon,
+    meta,
+    amount,
+    actions,
+    tabs,
+  } = $props();
 </script>
 
 <header
-  class="border-border/40 from-background via-background to-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 border-b bg-gradient-to-r backdrop-blur-2xl"
+  class="sticky top-0 z-10 flex flex-col gap-3 bg-[color:var(--bg)] px-7 pt-6 md:px-8 {tabs ? 'pb-0' : 'pb-4'}"
 >
-  <!-- Ambient glow effect for dark mode -->
-  <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-    <div
-      class="bg-primary/5 dark:bg-primary/10 absolute -top-24 left-1/4 h-48 w-96 rounded-full blur-3xl"
-    ></div>
-    <div
-      class="bg-accent/5 absolute -top-24 right-1/4 h-48 w-64 rounded-full blur-3xl dark:bg-cyan-500/8"
-    ></div>
-  </div>
+  {#if breadcrumb.length > 0}
+    <nav
+      aria-label="Breadcrumb"
+      class="flex items-center gap-1 text-[12px] leading-none text-[color:var(--text-subtle)]"
+    >
+      {#each breadcrumb as crumb, i (i)}
+        {#if i > 0}
+          <ChevronRight class="size-[14px] shrink-0 stroke-[1.6]" aria-hidden="true" />
+        {/if}
+        {#if crumb.href && i < breadcrumb.length - 1}
+          <a
+            href={crumb.href}
+            class="rounded-sm transition-colors hover:text-[color:var(--text-muted)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ring)]"
+          >{crumb.label}</a>
+        {:else}
+          <span class={i === breadcrumb.length - 1 ? 'text-[color:var(--text-muted)]' : ''}>{crumb.label}</span>
+        {/if}
+      {/each}
+    </nav>
+  {/if}
 
-  <div class="relative flex min-h-[4.5rem] items-center justify-between gap-6 px-6 py-4 md:px-8">
-    <!-- Title Section -->
-    <div class="flex flex-col gap-1">
-      <div class="flex items-baseline gap-3">
-        <h1
-          class="text-foreground text-2xl font-bold tracking-tight md:text-[1.75rem]"
-          style="letter-spacing: -0.025em;"
-        >
-          {title}
-        </h1>
+  <div class="flex min-h-[44px] items-start justify-between gap-6">
+    <div class="flex min-w-0 flex-1 items-start gap-3">
+      {#if titleIcon}
+        <div class="flex size-7 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]">
+          {@render titleIcon()}
+        </div>
+      {/if}
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        {#if eyebrow}
+          <p class="label-tiny">{eyebrow}</p>
+        {/if}
+        <h1 class={size === 'display' ? 'h-display truncate' : 'h-page truncate'}>{title}</h1>
         {#if subtitle}
-          <span class="hidden items-center gap-2 sm:flex">
-            <span class="bg-muted-foreground/30 h-1 w-1 rounded-full"></span>
-            <p class="text-muted-foreground/80 text-sm font-medium">{subtitle}</p>
-          </span>
+          <p class="t-meta truncate">{subtitle}</p>
         {/if}
       </div>
-      {#if subtitle}
-        <p class="text-muted-foreground/80 text-sm font-medium sm:hidden">{subtitle}</p>
-      {/if}
     </div>
-
-    <!-- Actions Section -->
-    {#if actions}
-      <div class="flex items-center gap-2 md:gap-3">
-        {@render actions()}
+    {#if amount || actions}
+      <div class="flex shrink-0 items-center gap-3">
+        {#if amount}
+          <div class="flex flex-col items-end gap-0.5">
+            {@render amount()}
+          </div>
+        {/if}
+        {#if actions}
+          <div class="flex items-center gap-2">
+            {@render actions()}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
 
-  <!-- Bottom accent line -->
-  <div
-    class="via-border/60 absolute right-0 bottom-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
-  ></div>
+  {#if meta}
+    <div class="flex flex-wrap items-center gap-2 text-[color:var(--text-muted)]">
+      {@render meta()}
+    </div>
+  {/if}
+
+  {#if tabs}
+    <div class="-mx-7 mt-1 border-t border-[color:var(--border-faint)] px-7 md:-mx-8 md:px-8">
+      {@render tabs()}
+    </div>
+  {/if}
 </header>

@@ -157,26 +157,20 @@
   <title>Tags - BottleCRM</title>
 </svelte:head>
 
-<!-- HubSpot-style header -->
-<div class="border-border bg-card border-b">
-  <div class="px-6 py-5">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-foreground text-2xl font-semibold tracking-tight">Tags</h1>
-        <p class="text-muted-foreground mt-1 text-sm">
-          Create and manage tags to organize contacts, companies, deals, and tickets.
-        </p>
-      </div>
-      <Button
-        onclick={openCreate}
-        class="border-0 bg-[var(--color-primary-default)] text-white hover:bg-[var(--color-primary-dark)]"
-      >
-        <Plus class="mr-2 h-4 w-4" />
-        Create tag
-      </Button>
-    </div>
-  </div>
-</div>
+<PageHeader
+  title="Tags"
+  subtitle="Create and manage tags to organize contacts, companies, deals, and tickets."
+>
+  {#snippet actions()}
+    <Button
+      onclick={openCreate}
+      class="border-0 bg-[var(--color-primary-default)] text-white hover:bg-[var(--color-primary-dark)]"
+    >
+      <Plus class="mr-2 h-4 w-4" />
+      Create tag
+    </Button>
+  {/snippet}
+</PageHeader>
 
 <div class="bg-background flex-1">
   <!-- Search and filter bar -->

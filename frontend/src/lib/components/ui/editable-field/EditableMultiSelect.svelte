@@ -1,7 +1,8 @@
 <script>
-  import { ChevronDown, X } from '@lucide/svelte';
+  import { ChevronDown, X, Search, AlertCircle, RotateCw } from '@lucide/svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
+  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
   import { cn } from '$lib/utils.js';
 
   /**
@@ -20,9 +21,13 @@
    *   placeholder?: string,
    *   emptyText?: string,
    *   disabled?: boolean,
+   *   loading?: boolean,
+   *   error?: string,
+   *   onRetry?: () => void,
    *   onchange?: (value: string[]) => void,
    *   class?: string,
    *   maxDisplay?: number,
+   *   searchThreshold?: number,
    * }}
    */
   let {
@@ -31,12 +36,22 @@
     placeholder = 'Select...',
     emptyText = 'None selected',
     disabled = false,
+    loading = false,
+    error = '',
+    onRetry,
     onchange,
     class: className,
-    maxDisplay = 3
+    maxDisplay = 3,
+    searchThreshold = 6
   } = $props();
 
   let isOpen = $state(false);
+  let query = $state('');
+
+  // Reset the search query whenever the dropdown closes
+  $effect(() => {
+    if (!isOpen) query = '';
+  });
 
   /**
    * Toggle an option
@@ -78,6 +93,19 @@
       .filter(Boolean)
   );
 
+  // Show the search input once there are enough options to make it useful
+  const showSearch = $derived(!loading && !error && normalizedOptions.length >= searchThreshold);
+
+  const filteredOptions = $derived.by(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return normalizedOptions;
+    return normalizedOptions.filter((opt) => {
+      const name = (opt.name || '').toLowerCase();
+      const email = (opt.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  });
+
   /**
    * Get selected options
    */
@@ -117,10 +145,11 @@
                 {#if !disabled}
                   <button
                     type="button"
+                    aria-label="Remove {opt.name}"
                     class="hover:bg-muted rounded-sm p-0.5"
                     onclick={(e) => removeOption(e, opt.id)}
                   >
-                    <X class="h-3 w-3" />
+                    <X class="h-3 w-3" aria-hidden="true" />
                   </button>
                 {/if}
               </Badge>
@@ -131,6 +160,7 @@
           {/if}
         </div>
         <ChevronDown
+          aria-hidden="true"
           class={cn(
             'text-muted-foreground h-4 w-4 shrink-0 transition-transform',
             isOpen && 'rotate-180'
@@ -138,27 +168,83 @@
         />
       </button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="max-h-64 w-64 overflow-y-auto" align="start">
-      {#if normalizedOptions.length === 0}
-        <div class="text-muted-foreground px-2 py-4 text-center text-sm">No options available</div>
-      {:else}
-        <DropdownMenu.CheckboxGroup value={value}>
-          {#each normalizedOptions as opt (opt.id)}
-            <DropdownMenu.CheckboxItem
-              checked={value.includes(opt.id)}
-              onCheckedChange={() => toggleOption(opt.id)}
-              class=""
-            >
-              <div class="flex flex-col">
-                <span>{opt.name}</span>
-                {#if opt.email}
-                  <span class="text-muted-foreground text-xs">{opt.email}</span>
-                {/if}
-              </div>
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.CheckboxGroup>
+    <DropdownMenu.Content class="max-h-72 w-64 overflow-hidden p-0" align="start">
+      {#if showSearch}
+        <div class="border-border/40 bg-background sticky top-0 z-10 border-b p-1.5">
+          <div class="relative">
+            <Search
+              aria-hidden="true"
+              class="text-muted-foreground/60 pointer-events-none absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2"
+            />
+            <input
+              type="search"
+              bind:value={query}
+              placeholder="Search…"
+              aria-label="Search options"
+              class="focus:ring-primary/30 placeholder:text-muted-foreground/50 w-full rounded-md border-0 bg-transparent py-1.5 pr-2 pl-7 text-xs outline-none focus:ring-1"
+            />
+          </div>
+        </div>
       {/if}
+
+      <div class="max-h-56 overflow-y-auto p-1">
+        {#if loading}
+          <div class="space-y-1.5 px-1 py-1.5" aria-busy="true" aria-live="polite">
+            {#each { length: 3 } as _, i (i)}
+              <div class="flex items-center gap-2 px-1.5 py-1">
+                <Skeleton class="h-3.5 w-3.5 rounded" />
+                <Skeleton class="h-3.5 flex-1 rounded" />
+              </div>
+            {/each}
+          </div>
+        {:else if error}
+          <div class="flex items-start gap-2 px-2 py-3 text-xs" role="alert">
+            <AlertCircle
+              class="text-destructive mt-0.5 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
+            <div class="flex-1 space-y-1.5">
+              <p class="text-destructive font-medium">{error}</p>
+              {#if onRetry}
+                <button
+                  type="button"
+                  onclick={onRetry}
+                  class="text-primary hover:bg-primary/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-medium"
+                >
+                  <RotateCw class="h-3 w-3" aria-hidden="true" />
+                  Retry
+                </button>
+              {/if}
+            </div>
+          </div>
+        {:else if normalizedOptions.length === 0}
+          <div class="text-muted-foreground px-2 py-4 text-center text-sm">
+            No options available
+          </div>
+        {:else if filteredOptions.length === 0}
+          <div class="text-muted-foreground px-2 py-4 text-center text-xs">
+            No matches for "{query}"
+          </div>
+        {:else}
+          <DropdownMenu.CheckboxGroup value={value}>
+            {#each filteredOptions as opt (opt.id)}
+              <DropdownMenu.CheckboxItem
+                checked={value.includes(opt.id)}
+                onCheckedChange={() => toggleOption(opt.id)}
+                closeOnSelect={false}
+                class=""
+              >
+                <div class="flex flex-col">
+                  <span>{opt.name}</span>
+                  {#if opt.email && opt.email !== opt.name}
+                    <span class="text-muted-foreground text-xs">{opt.email}</span>
+                  {/if}
+                </div>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </DropdownMenu.CheckboxGroup>
+        {/if}
+      </div>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 </div>

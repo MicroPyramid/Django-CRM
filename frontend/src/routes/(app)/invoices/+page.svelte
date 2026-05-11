@@ -2,15 +2,15 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
 
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
   import { CrmTable } from '$lib/components/ui/crm-table';
-  import { FilterBar, SearchInput, DateRangeFilter, SelectFilter } from '$lib/components/ui/filter';
+  import { SearchInput, DateRangeFilter, SelectFilter } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { InvoiceFromTimeEntriesDialog } from '$lib/components/invoices';
   import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
-  import { Plus, Filter, Columns3, Clock } from '@lucide/svelte';
+  import { Plus, Columns3, Clock } from '@lucide/svelte';
 
   let fromTimeEntriesOpen = $state(false);
 
@@ -154,7 +154,6 @@
   ];
 
   // State
-  let filtersExpanded = $state(false);
   let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
   let statusChipFilter = $state('ALL');
 
@@ -334,24 +333,6 @@
 
         <div class="bg-border mx-1 h-6 w-px"></div>
 
-        <!-- Filters Toggle -->
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => (filtersExpanded = !filtersExpanded)}
-          class="gap-2"
-        >
-          <Filter class="size-4" />
-          Filters
-          {#if activeFiltersCount > 0}
-            <span
-              class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs text-[var(--color-primary-default)]"
-            >
-              {activeFiltersCount}
-            </span>
-          {/if}
-        </Button>
-
         <!-- Column Visibility -->
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -392,17 +373,15 @@
         </Button>
       </div>
     {/snippet}
+    {#snippet tabs()}
+      <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+    {/snippet}
   </PageHeader>
 
   <InvoiceFromTimeEntriesDialog bind:open={fromTimeEntriesOpen} />
 
-  <!-- Filter Bar -->
-  <FilterBar
-    minimal
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-  >
+  <!-- Filter Strip -->
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       placeholder="Search invoices..."
@@ -431,7 +410,13 @@
       onchange={(start, end) =>
         updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{invoices.length} of {pagination.total} invoices</span>
+    {/snippet}
+  </FilterStrip>
 
   <!-- Invoice Table -->
   <CrmTable data={invoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
@@ -491,3 +476,5 @@
     />
   {/if}
 </div>
+
+<StatusBar status="{invoices.length} of {pagination.total} invoices" />

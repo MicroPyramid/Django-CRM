@@ -15,6 +15,7 @@
   } from '@lucide/svelte';
   import Sparkline from '$lib/components/tickets/analytics/Sparkline.svelte';
   import HBarChart from '$lib/components/tickets/analytics/HBarChart.svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
@@ -68,22 +69,21 @@
   }
 </script>
 
-<div class="space-y-6 p-6">
-  <header class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <BarChart3 class="size-5 text-[var(--color-primary-default)]" />
-      <h1 class="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
-        Tickets Analytics
-      </h1>
-    </div>
+<PageHeader title="Tickets Analytics">
+  {#snippet titleIcon()}
+    <BarChart3 class="size-4" />
+  {/snippet}
+  {#snippet actions()}
     <a
       href="/tickets"
       class="text-xs font-medium text-[var(--text-secondary)] hover:underline"
     >
       ← Back to tickets
     </a>
-  </header>
+  {/snippet}
+</PageHeader>
 
+<div class="space-y-6 p-6">
   <!-- Filter bar -->
   <section
     class="flex flex-wrap items-end gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"

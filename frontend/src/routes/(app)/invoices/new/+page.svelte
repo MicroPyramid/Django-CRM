@@ -5,6 +5,7 @@
   import { toast } from 'svelte-sonner';
 
   import { Button } from '$lib/components/ui/button';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
@@ -15,7 +16,6 @@
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import { orgSettings } from '$lib/stores/org.js';
   import {
-    ArrowLeft,
     Plus,
     Trash2,
     Send,
@@ -227,10 +227,6 @@
     createForm.requestSubmit();
   }
 
-  // Go back to list
-  function goBack() {
-    goto('/invoices');
-  }
 </script>
 
 <svelte:head>
@@ -287,32 +283,24 @@
   />
 </form>
 
-<div class="bg-muted/30 min-h-screen">
-  <!-- Header -->
-  <div class="bg-background sticky top-0 z-10 border-b">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onclick={goBack}>
-          <ArrowLeft class="size-5" />
-        </Button>
-        <div>
-          <h1 class="text-xl font-semibold">New Invoice</h1>
-          <p class="text-muted-foreground text-sm">Create a new invoice for your client</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <Button variant="outline" onclick={saveDraft} disabled={isSaving}>
-          <Save class="mr-2 size-4" />
-          Save Draft
-        </Button>
-        <Button onclick={sendInvoice} disabled={isSaving}>
-          <Send class="mr-2 size-4" />
-          Create Invoice
-        </Button>
-      </div>
-    </div>
-  </div>
+<PageHeader
+  title="New Invoice"
+  subtitle="Create a new invoice for your client"
+  breadcrumb={[{ label: 'Invoices', href: '/invoices' }, { label: 'New Invoice' }]}
+>
+  {#snippet actions()}
+    <Button variant="outline" onclick={saveDraft} disabled={isSaving}>
+      <Save class="mr-2 size-4" />
+      Save Draft
+    </Button>
+    <Button onclick={sendInvoice} disabled={isSaving}>
+      <Send class="mr-2 size-4" />
+      Create Invoice
+    </Button>
+  {/snippet}
+</PageHeader>
 
+<div class="bg-muted/30 min-h-screen">
   <!-- Invoice Editor -->
   <div class="mx-auto max-w-6xl px-6 py-8">
     <div class="bg-background rounded-lg border shadow-sm">

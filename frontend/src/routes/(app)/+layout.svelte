@@ -1,7 +1,6 @@
 <script>
   import '../../app.css';
   import { AppShell } from '$lib/components/layout/index.js';
-  import { Bell } from '$lib/components/notifications/index.js';
   import { Toaster } from '$lib/components/ui/sonner/index.js';
   import { initOrgSettings } from '$lib/stores/org.js';
 
@@ -15,13 +14,8 @@
   });
 </script>
 
-<AppShell user={data.user} org_name={data.org_name}>
-  <main class="relative flex-1 pr-16">
-    <div class="pointer-events-none absolute top-3 right-4 z-30">
-      <div class="pointer-events-auto">
-        <Bell />
-      </div>
-    </div>
+<AppShell user={data.user} org_name={data.org_name} org_settings={data.org_settings}>
+  <main class="relative flex-1">
     {@render children()}
   </main>
 </AppShell>

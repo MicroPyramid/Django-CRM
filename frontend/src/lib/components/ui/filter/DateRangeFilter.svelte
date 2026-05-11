@@ -19,7 +19,7 @@
   let {
     startDate = $bindable(''),
     endDate = $bindable(''),
-    label = '',
+    label: _label = '',
     placeholder = 'Select dates',
     class: className,
     onchange
@@ -167,13 +167,7 @@
   const hasValue = $derived(!!startDate || !!endDate);
 </script>
 
-<div class={cn('flex flex-col gap-1.5', className)}>
-  {#if label}
-    <span class="text-muted-foreground/70 text-[11px] font-semibold tracking-wider uppercase">
-      {label}
-    </span>
-  {/if}
-  <Popover.Root
+<Popover.Root
     bind:open
     onOpenChange={(o) => {
       if (!o) selectingEnd = false;
@@ -183,87 +177,31 @@
       {#snippet child({ props })}
         <button
           type="button"
-          class={cn(
-            'date-filter-trigger group',
-            'relative flex h-9 w-full items-center justify-between gap-2',
-            'rounded-lg border px-3 py-2',
-            'bg-background/60 backdrop-blur-sm',
-            'text-sm transition-all duration-200',
-            'outline-none',
-            // Default state
-            'border-input/60',
-            'hover:border-input hover:bg-background/80',
-            // Focus state
-            'focus:border-primary/50 focus:bg-background',
-            'focus:ring-primary/20 focus:ring-2',
-            // Dark mode
-            'dark:border-white/[0.08] dark:bg-white/[0.03]',
-            'dark:hover:border-white/[0.12] dark:hover:bg-white/[0.05]',
-            'dark:focus:border-primary/40 dark:focus:bg-white/[0.06]',
-            // Active state
-            hasValue &&
-              'border-primary/40 bg-primary/[0.03] dark:border-primary/30 dark:bg-primary/[0.08]',
-            // Open state
-            open && 'ring-primary/20 dark:ring-primary/30 ring-2'
-          )}
           {...props}
+          class={cn(
+            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[11.5px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
+            hasValue
+              ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
+              : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
+            className
+          )}
         >
-          <div class="flex items-center gap-2">
-            <CalendarDays
-              class={cn(
-                'h-4 w-4 transition-colors duration-200',
-                hasValue ? 'text-primary' : 'text-muted-foreground'
-              )}
-            />
+          <CalendarDays class="size-3.5 shrink-0" />
+          <span class="truncate">{displayText}</span>
+          {#if hasValue}
             <span
-              class={cn(
-                'truncate transition-colors duration-150',
-                hasValue ? 'text-foreground font-medium' : 'text-muted-foreground'
-              )}
+              role="button"
+              tabindex="0"
+              onclick={(e) => { e.stopPropagation(); e.preventDefault(); handleClear(); }}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); handleClear(); } }}
+              class="-mr-1 ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm hover:bg-[color:var(--violet)]/15"
+              aria-label="Clear filter"
             >
-              {displayText}
+              <X class="size-3" />
             </span>
-          </div>
-
-          <div class="flex shrink-0 items-center gap-1">
-            {#if hasValue}
-              <!-- Active indicator -->
-              <div
-                class="bg-primary animate-in fade-in zoom-in h-1.5 w-1.5 rounded-full duration-200"
-              ></div>
-              <!-- Clear button -->
-              <span
-                role="button"
-                tabindex="0"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  handleClear();
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleClear();
-                  }
-                }}
-                class={cn(
-                  'flex h-5 w-5 items-center justify-center rounded-md',
-                  'text-muted-foreground/60 transition-all duration-150',
-                  'hover:bg-muted hover:text-foreground',
-                  'active:scale-90'
-                )}
-              >
-                <X class="h-3 w-3" />
-              </span>
-            {/if}
-            <ChevronDown
-              class={cn(
-                'text-muted-foreground/50 h-4 w-4 transition-transform duration-200',
-                open && 'rotate-180'
-              )}
-            />
-          </div>
+          {:else}
+            <ChevronDown class="size-3.5 shrink-0 opacity-60" />
+          {/if}
         </button>
       {/snippet}
     </Popover.Trigger>
@@ -271,15 +209,7 @@
     <Popover.Content
       align="start"
       sideOffset={4}
-      class={cn(
-        'date-filter-content',
-        'w-auto overflow-hidden rounded-xl p-0',
-        'border-border/60 bg-popover/95 border backdrop-blur-md',
-        'shadow-lg shadow-black/5',
-        'dark:bg-popover/90 dark:border-white/[0.08]',
-        'dark:shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]',
-        'animate-in fade-in-0 zoom-in-95 duration-150'
-      )}
+      class="overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-0 shadow-lg shadow-black/5"
     >
       <div class="flex">
         <!-- Presets sidebar -->
@@ -379,57 +309,3 @@
       </div>
     </Popover.Content>
   </Popover.Root>
-</div>
-
-<style>
-  .date-filter-trigger {
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-  }
-
-  :global(.dark) .date-filter-trigger {
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  .date-filter-trigger:focus {
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.02),
-      0 0 0 3px var(--ring);
-  }
-
-  :global(.dark) .date-filter-trigger:focus {
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.1),
-      0 0 0 3px var(--ring),
-      0 0 20px -4px var(--primary);
-  }
-
-  /* Calendar wrapper refinements */
-  .date-calendar-wrapper :global([data-calendar-root]) {
-    --calendar-cell-size: 32px;
-  }
-
-  .date-calendar-wrapper :global(button[data-today]) {
-    position: relative;
-  }
-
-  .date-calendar-wrapper :global(button[data-today])::after {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--primary);
-  }
-
-  .date-calendar-wrapper :global(button[data-selected]) {
-    background: var(--primary) !important;
-    color: var(--primary-foreground) !important;
-  }
-
-  :global(.dark) .date-calendar-wrapper :global(button[data-selected]) {
-    box-shadow: 0 0 12px -2px var(--primary);
-  }
-</style>

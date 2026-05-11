@@ -18,7 +18,17 @@
   {value}
   data-slot="select-item"
   class={cn(
-    "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 ps-2 pe-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+    [
+      'relative flex w-full cursor-default select-none items-center gap-2',
+      'py-1.5 ps-2 pe-8 text-[13.5px] text-[color:var(--text-muted)]',
+      'rounded-[var(--r-sm)] outline-hidden',
+      'data-[highlighted]:bg-[color:var(--bg-elevated)] data-[highlighted]:text-[color:var(--text)]',
+      'data-[state=checked]:text-[color:var(--text)]',
+      'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      "[&_svg:not([class*='text-'])]:text-[color:var(--text-subtle)]",
+      "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[14px]",
+      '*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2'
+    ].join(' '),
     className
   )}
   {...restProps}
@@ -26,7 +36,7 @@
   {#snippet children({ selected, highlighted })}
     <span class="absolute end-2 flex size-3.5 items-center justify-center">
       {#if selected}
-        <CheckIcon class="size-4" />
+        <CheckIcon class="size-[14px]" />
       {/if}
     </span>
     {#if childrenProp}

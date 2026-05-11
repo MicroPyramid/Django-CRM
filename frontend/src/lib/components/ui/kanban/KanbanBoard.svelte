@@ -49,11 +49,13 @@
     emptyMessage = 'No data available'
   } = $props();
 
-  // Local mutable copy of columns for optimistic updates
+  // Local mutable copy of columns for optimistic updates.
+  // Initialize synchronously from props so SSR renders the actual kanban
+  // instead of flashing the empty state before $effect runs on hydration.
   /** @type {Column[]} */
-  let localColumns = $state([]);
+  let localColumns = $state(data?.columns ? structuredClone(data.columns) : []);
 
-  // Sync local columns when data changes from server
+  // Sync local columns when data changes from server (filter/refresh/navigation)
   $effect(() => {
     if (data?.columns) {
       localColumns = structuredClone(data.columns);

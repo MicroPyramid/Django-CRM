@@ -27,11 +27,10 @@
     Tag,
     Contact,
     Link2,
-    Filter,
     Columns
   } from '@lucide/svelte';
   import { TaskKanban } from '$lib/components/ui/task-kanban';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Card from '$lib/components/ui/card/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -39,7 +38,6 @@
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -418,9 +416,6 @@
   // Status chip filter state (client-side quick filter on top of server filters)
   let statusChipFilter = $state('ALL');
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   // Filtered tasks - server already applies main filters, just apply status chip
   const filteredTasks = $derived.by(() => {
     let filtered = tasks;
@@ -438,6 +433,10 @@
   $effect(() => {
     localTasks = [...filteredTasks];
   });
+
+  // Active row (highlighted in the table) — null until the user clicks a row.
+  /** @type {string | null} */
+  let activeRowId = $state(null);
 
   // Row detail sheet state
   let sheetOpen = $state(false);
@@ -1084,6 +1083,7 @@
   <title>Tasks - BottleCRM</title>
 </svelte:head>
 
+<div class="flex flex-col">
 <PageHeader title="Tasks" subtitle="{filteredTasks.length} of {tasks.length} tasks">
   {#snippet actions()}
     <div class="flex items-center gap-2">
@@ -1175,24 +1175,6 @@
         </Button>
       </div>
 
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-          >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
       {#if viewMode === 'list'}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -1233,17 +1215,13 @@
       </Button>
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       onchange={(value) => updateFilters({ ...filters, search: value })}
@@ -1267,12 +1245,19 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredTasks.length} of {pagination.total} tasks</span>
+    {/snippet}
+  </FilterStrip>
   {#if viewMode === 'list'}
     <CrmTable
       data={localTasks}
       columns={taskColumns}
       bind:visibleColumns
+      bind:activeRowId
       onRowChange={handleRowChange}
       onRowClick={handleRowClick}
     >
@@ -1509,6 +1494,11 @@
     onPageChange={handlePageChange}
     onLimitChange={handleLimitChange}
   />
+</div>
+
+{#if viewMode === 'list'}
+  <StatusBar status="{filteredTasks.length} of {pagination.total} tasks" />
+{/if}
 </div>
 
 <!-- Task Detail Drawer -->

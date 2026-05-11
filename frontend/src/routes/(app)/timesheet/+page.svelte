@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { ChevronLeft, ChevronRight, Clock } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
   /** @type {{ data: any }} */
@@ -50,24 +51,24 @@
   <title>Timesheet - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="flex items-center gap-2 text-xl font-semibold">
-      <Clock class="h-5 w-5" /> Timesheet
-    </h1>
-    <div class="flex items-center gap-2">
-      <Button variant="outline" size="sm" onclick={() => shiftWeek(-7)} class="gap-1">
-        <ChevronLeft class="h-3.5 w-3.5" /> Prev
-      </Button>
-      <span class="font-mono text-sm text-[var(--text-secondary)]">
-        {data.start} → {data.end}
-      </span>
-      <Button variant="outline" size="sm" onclick={() => shiftWeek(7)} class="gap-1">
-        Next <ChevronRight class="h-3.5 w-3.5" />
-      </Button>
-    </div>
-  </div>
+<PageHeader title="Timesheet">
+  {#snippet titleIcon()}
+    <Clock class="size-4" />
+  {/snippet}
+  {#snippet actions()}
+    <Button variant="outline" size="sm" onclick={() => shiftWeek(-7)} class="gap-1">
+      <ChevronLeft class="h-3.5 w-3.5" /> Prev
+    </Button>
+    <span class="font-mono text-sm text-[var(--text-secondary)]">
+      {data.start} → {data.end}
+    </span>
+    <Button variant="outline" size="sm" onclick={() => shiftWeek(7)} class="gap-1">
+      Next <ChevronRight class="h-3.5 w-3.5" />
+    </Button>
+  {/snippet}
+</PageHeader>
 
+<div class="flex flex-col gap-4 p-4">
   <div class="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
     <span><span class="text-[var(--text-secondary)]">Total:</span> <strong>{formatMinutes(totalMinutes)}</strong></span>
     <span><span class="text-[var(--text-secondary)]">Billable:</span> <strong>{formatMinutes(billableMinutes)}</strong></span>
