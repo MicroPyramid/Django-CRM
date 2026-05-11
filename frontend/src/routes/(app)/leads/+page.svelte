@@ -1485,7 +1485,11 @@
   <title>Leads - BottleCRM</title>
 </svelte:head>
 
-<div class="flex flex-col">
+<div
+  class="flex flex-col"
+  class:h-svh={viewMode === 'kanban'}
+  class:overflow-hidden={viewMode === 'kanban'}
+>
   <PageHeader
   title="Leads"
   subtitle="{viewMode === 'kanban'
@@ -1602,7 +1606,10 @@
   {/snippet}
 </PageHeader>
 
-<div class="flex-1">
+<div
+  class="flex flex-1 flex-col"
+  class:min-h-0={viewMode === 'kanban'}
+>
   <FilterStrip>
     <SearchInput
       value={filters.search}
@@ -1649,11 +1656,13 @@
   <!-- Content: Table or Kanban -->
   {#if viewMode === 'kanban'}
     <!-- Kanban View -->
-    <LeadKanban
-      data={kanbanData}
-      onStatusChange={handleKanbanStatusChange}
-      onCardClick={(lead) => openLead(lead, true)}
-    />
+    <div class="flex min-h-0 flex-1 flex-col">
+      <LeadKanban
+        data={kanbanData}
+        onStatusChange={handleKanbanStatusChange}
+        onCardClick={(lead) => openLead(lead, true)}
+      />
+    </div>
   {:else}
     <!-- Table View -->
     {#if filteredLeads.length === 0}

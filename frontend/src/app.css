@@ -66,16 +66,16 @@
 
   /* Sidebar */
   --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.18 0 0);
+  --sidebar-foreground: #111827;
   --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: oklch(0.995 0 0);
   --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-accent-foreground: #111827;
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: #ea580c;
   --sidebar-active-fill: oklch(0.94 0 0);
-  --sidebar-muted: oklch(0.55 0 0);
-  --sidebar-subtle: oklch(0.65 0 0);
+  --sidebar-muted: #4b5563;
+  --sidebar-subtle: #9ca3af;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PRIMARY COLOR SCALE
@@ -134,9 +134,9 @@
   /* ─────────────────────────────────────────────────────────────────────────
      TEXT COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --text-primary: #212121;
-  --text-secondary: #616161;
-  --text-tertiary: #9e9e9e;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
   --text-disabled: #bdbdbd;
   --text-inverse: #ffffff;
   --text-link: #ea580c;
@@ -436,9 +436,9 @@
   --focus-ring: rgba(17, 17, 17, 0.10);
 
   /* Text */
-  --text: #111111;
-  --text-muted: #525252;
-  --text-subtle: #999999;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --text-subtle: #9ca3af;
 
   /* Accents — semantic */
   --green: #10b981;
@@ -518,16 +518,16 @@
 
   /* Sidebar */
   --sidebar: oklch(0.14 0 0);
-  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-foreground: rgba(255, 255, 255, 0.95);
   --sidebar-primary: #fb923c;
   --sidebar-primary-foreground: oklch(0.12 0.01 30);
   --sidebar-accent: rgba(255, 255, 255, 0.06);
-  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #fb923c;
   --sidebar-active-fill: rgba(255, 255, 255, 0.10);
-  --sidebar-muted: rgba(255, 255, 255, 0.65);
-  --sidebar-subtle: rgba(255, 255, 255, 0.45);
+  --sidebar-muted: #9ca3af;
+  --sidebar-subtle: #6b7280;
 
   /* Primary color scale - Dark mode */
   --color-primary-default: #fb923c;
@@ -543,9 +543,9 @@
   --surface-overlay: #2d2d2d;
 
   /* Text Colors - Dark mode */
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --text-tertiary: #757575;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
   --text-disabled: #525252;
   --text-inverse: #212121;
   --text-link: #fb923c;
@@ -656,9 +656,9 @@
   --focus-ring: rgba(237, 242, 245, 0.14);
 
   /* Text */
-  --text: #edf2f5;
-  --text-muted: #828282;
-  --text-subtle: #555555;
+  --text: rgba(255, 255, 255, 0.95);
+  --text-muted: #9ca3af;
+  --text-subtle: #6b7280;
 
   /* Accents — semantic */
   --green: #10b981;
@@ -1204,32 +1204,32 @@ select {
   }
 
   .h-section {
-    font-size: 16px;
+    font-size: 14.4px;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.025em;
     color: var(--text);
   }
 
   .t-body {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 400;
     color: var(--text);
   }
 
   .t-body-sm {
-    font-size: 12.5px;
+    font-size: 13.5px;
     font-weight: 400;
     color: var(--text-muted);
   }
 
   .t-meta {
-    font-size: 11.5px;
+    font-size: 11.2px;
     font-weight: 400;
     color: var(--text-subtle);
   }
 
   .label-section {
-    font-size: 11px;
+    font-size: 10.4px;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1237,7 +1237,7 @@ select {
   }
 
   .label-tiny {
-    font-size: 10px;
+    font-size: 10.4px;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;

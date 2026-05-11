@@ -82,7 +82,7 @@
     onblur={handleBlur}
     onkeydown={handleKeydown}
     {placeholder}
-    class="h-7 w-full rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] py-0 pl-8 pr-7 text-[11.5px] text-[color:var(--text)] placeholder:text-[color:var(--text-subtle)] outline-none transition-colors focus:border-[color:var(--violet)]/50 focus:ring-1 focus:ring-[color:var(--violet)]/30"
+    class="h-7 w-full rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] py-0 pl-8 pr-7 text-[13.5px] text-[color:var(--text)] placeholder:text-[color:var(--text-subtle)] outline-none transition-colors focus:border-[color:var(--violet)]/50 focus:ring-1 focus:ring-[color:var(--violet)]/30"
   />
   {#if inputValue}
     <button

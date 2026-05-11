@@ -14,7 +14,7 @@
     {@render children?.()}
   </div>
   {#if meta}
-    <div class="ml-auto flex items-center gap-2 text-[11.5px] text-[color:var(--text-subtle)]">
+    <div class="ml-auto flex items-center gap-2 text-[13.5px] text-[color:var(--text-subtle)]">
       {@render meta()}
     </div>
   {/if}

@@ -179,7 +179,7 @@
           type="button"
           {...props}
           class={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[11.5px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
+            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[13.5px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
             hasValue
               ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
               : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
@@ -209,7 +209,7 @@
     <Popover.Content
       align="start"
       sideOffset={4}
-      class="overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-0 shadow-lg shadow-black/5"
+      class="w-auto overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-0 shadow-lg shadow-black/5"
     >
       <div class="flex">
         <!-- Presets sidebar -->
