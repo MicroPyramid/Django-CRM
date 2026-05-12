@@ -10,7 +10,7 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ cookies, request, url }) {
-  const accessToken = cookies.get('jwt_access') || cookies.get('access_token');
+  const accessToken = cookies.get('jwt_access');
   if (!accessToken) return new Response('Unauthorized', { status: 401 });
 
   const qs = url.searchParams.toString();

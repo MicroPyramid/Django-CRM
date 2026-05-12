@@ -20,7 +20,7 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
  * apiRequest only handles JSON, so file uploads need a direct fetch.
  */
 async function forwardMultipart(endpoint, file, cookies) {
-  const accessToken = cookies?.get?.('jwt_access') || cookies?.get?.('access_token');
+  const accessToken = cookies?.get?.('jwt_access');
   const fd = new FormData();
   fd.append('file', file, file.name || 'upload.csv');
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

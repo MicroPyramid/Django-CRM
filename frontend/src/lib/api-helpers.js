@@ -34,8 +34,7 @@ export async function apiRequest(endpoint, options = {}, locals) {
   const cookies = /** @type {Cookies | undefined} */ (
     /** @type {{ cookies?: Cookies }} */ (locals).cookies || locals
   );
-  // Support both naming conventions (jwt_access from login, access_token from legacy)
-  const accessToken = cookies?.get?.('jwt_access') || cookies?.get?.('access_token');
+  const accessToken = cookies?.get?.('jwt_access');
 
   // Build request headers
   /** @type {Record<string, string>} */
