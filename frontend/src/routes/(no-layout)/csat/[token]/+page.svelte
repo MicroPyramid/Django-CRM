@@ -1,5 +1,6 @@
 <script>
   import { enhance } from '$app/forms';
+  import { untrack } from 'svelte';
   import { Star, CheckCircle2 } from '@lucide/svelte';
 
   /** @type {{ data: import('./$types').PageData, form: import('./$types').ActionData }} */
@@ -7,8 +8,8 @@
 
   // Local rating state, seeded from the loader if the customer already
   // submitted within the edit window.
-  let rating = $state(data.survey?.rating ?? 0);
-  let comment = $state(data.survey?.comment ?? '');
+  let rating = $state(untrack(() => data.survey?.rating ?? 0));
+  let comment = $state(untrack(() => data.survey?.comment ?? ''));
   let hover = $state(0);
   let submitting = $state(false);
 </script>

@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
-  import { tick, onMount } from 'svelte';
+  import { tick, onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Plus,
@@ -294,7 +294,12 @@
   const initialAction = initialUrlParams.get('action');
   const initialAccountId = initialUrlParams.get('accountId');
   const initialContact = initialViewId
-    ? (data.contacts || []).find((/** @type {any} */ c) => c.id === initialViewId) || null
+    ? untrack(
+        () =>
+          (data.contacts || []).find(
+            (/** @type {any} */ c) => c.id === initialViewId
+          ) || null
+      )
     : null;
 
   // If we're entering create mode pre-filled from an account, mirror what the
@@ -303,7 +308,11 @@
   if (initialAction === 'create' && initialAccountId) {
     accountId = initialAccountId;
     accountFromUrl = true;
-    const acct = (data.accounts || []).find((/** @type {any} */ a) => a.id === initialAccountId);
+    const acct = untrack(() =>
+      (data.accounts || []).find(
+        (/** @type {any} */ a) => a.id === initialAccountId
+      )
+    );
     accountName = acct ? acct.name : 'Unknown Account';
   }
 

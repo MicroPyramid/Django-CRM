@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { tick, onMount } from 'svelte';
+  import { tick, onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Plus,
@@ -303,7 +303,12 @@
   const initialViewId = initialUrlParams.get('view');
   const initialAction = initialUrlParams.get('action');
   const initialAccount = initialViewId
-    ? (data.accounts || []).find((/** @type {any} */ a) => a.id === initialViewId) || null
+    ? untrack(
+        () =>
+          (data.accounts || []).find(
+            (/** @type {any} */ a) => a.id === initialViewId
+          ) || null
+      )
     : null;
 
   // Drawer state - simplified for unified drawer

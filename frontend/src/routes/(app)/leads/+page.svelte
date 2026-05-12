@@ -1,7 +1,7 @@
 <script>
   import { enhance, deserialize } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
-  import { tick, onMount } from 'svelte';
+  import { tick, onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Plus,
@@ -641,7 +641,12 @@
   const initialViewId = initialUrlParams.get('view');
   const initialAction = initialUrlParams.get('action');
   const initialLead = initialViewId
-    ? (data.leads || []).find((/** @type {any} */ l) => l.id === initialViewId) || null
+    ? untrack(
+        () =>
+          (data.leads || []).find(
+            (/** @type {any} */ l) => l.id === initialViewId
+          ) || null
+      )
     : null;
 
   /** @type {string | null} */
@@ -659,7 +664,7 @@
 
   // If we're opening the drawer from a deep link, kick off the form-option load
   // up front so multi-selects have data when the drawer mounts.
-  if (drawerOpen) {
+  if (untrack(() => drawerOpen)) {
     loadFormOptions();
   }
   let drawerLoading = $state(false);

@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import KanbanColumn from './KanbanColumn.svelte';
   import { Loader2, TrendingUp, Users, Flame, Zap } from '@lucide/svelte';
@@ -53,7 +54,9 @@
   // Initialize synchronously from props so SSR renders the actual kanban
   // instead of flashing the empty state before $effect runs on hydration.
   /** @type {Column[]} */
-  let localColumns = $state(data?.columns ? structuredClone(data.columns) : []);
+  let localColumns = $state(
+    untrack(() => (data?.columns ? structuredClone(data.columns) : []))
+  );
 
   // Sync local columns when data changes from server (filter/refresh/navigation)
   $effect(() => {

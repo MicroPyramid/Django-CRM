@@ -28,7 +28,7 @@
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { BulkActionBar } from '$lib/components/ui/bulk-action-bar';
-  import { TicketStatusChips, TicketListActions } from '$lib/components/tickets';
+  import { TicketStatusChips, TicketListActions, TicketImportDrawer } from '$lib/components/tickets';
   import {
     SearchInput,
     SelectFilter,
@@ -232,6 +232,10 @@
 
   // Drawer state using hook
   const drawer = useDrawerState();
+
+  // CSV import drawer — independent of useDrawerState because the import flow
+  // doesn't share state with create/edit (no row, no form fields).
+  let importOpen = $state(false);
 
   // URL sync for accountId and action params (quick action from account page)
   $effect(() => {
@@ -767,6 +771,7 @@
         onToggleFilters={() => {}}
         onToggleColumn={toggleColumn}
         onCreate={drawer.openCreate}
+        onImport={() => (importOpen = true)}
       />
     </div>
   {/snippet}
@@ -958,6 +963,8 @@
     </Button>
   {/snippet}
 </CrmDrawer>
+
+<TicketImportDrawer bind:open={importOpen} />
 
 <!-- Hidden forms for server actions -->
 <form

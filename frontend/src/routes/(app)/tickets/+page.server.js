@@ -10,7 +10,37 @@
  */
 
 import { fail, redirect, error } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
 import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
+
+const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
+
+/**
+ * Forward a multipart upload to Django, preserving the auth cookie.
+ * apiRequest only handles JSON, so file uploads need a direct fetch.
+ */
+async function forwardMultipart(endpoint, file, cookies) {
+  const accessToken = cookies?.get?.('jwt_access') || cookies?.get?.('access_token');
+  const fd = new FormData();
+  fd.append('file', file, file.name || 'upload.csv');
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: fd
+  });
+  const raw = await response.text();
+  let body;
+  try {
+    body = raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error(
+      `forwardMultipart: non-JSON response from ${endpoint} (status ${response.status}):`,
+      raw.slice(0, 500)
+    );
+    body = {};
+  }
+  return { status: response.status, body };
+}
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ url, locals, cookies }) {
@@ -481,5 +511,34 @@ export const actions = {
       console.error('Bulk delete error:', err);
       return fail(500, { error: 'Bulk delete failed' });
     }
+  },
+
+  importPreview: async ({ request, cookies }) => {
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return fail(400, { importError: 'Please choose a CSV file.' });
+    }
+    const { status, body } = await forwardMultipart('/cases/import/preview/', file, cookies);
+    if (status !== 200) {
+      return fail(status, { importError: body?.message || 'Preview failed' });
+    }
+    return { importPreview: body };
+  },
+
+  importCommit: async ({ request, cookies }) => {
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return fail(400, { importError: 'Please choose a CSV file.' });
+    }
+    const { status, body } = await forwardMultipart('/cases/import/commit/', file, cookies);
+    if (status !== 200) {
+      return fail(status, {
+        importError: body?.message || body?.header_error || 'Import failed',
+        importErrors: body?.errors || []
+      });
+    }
+    return { importCommit: body };
   }
 };

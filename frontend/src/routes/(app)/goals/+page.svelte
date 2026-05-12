@@ -2,6 +2,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
   import { page } from '$app/stores';
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { Plus, Trophy, Target, User, Users, Trash2, X } from '@lucide/svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
@@ -90,9 +91,9 @@
 
   // Filter state — initialized from URL on every navigation so reloads,
   // shared links, and browser back/forward all restore the right chip.
-  let activeFilter = $state(data.filters?.status || 'all');
+  let activeFilter = $state(untrack(() => data.filters?.status || 'all'));
   let searchValue = $state('');
-  let leaderboardPeriod = $state(data.leaderboardPeriod || 'MONTHLY');
+  let leaderboardPeriod = $state(untrack(() => data.leaderboardPeriod || 'MONTHLY'));
 
   $effect(() => {
     activeFilter = data.filters?.status || 'all';

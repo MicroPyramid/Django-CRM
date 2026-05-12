@@ -1,5 +1,5 @@
 <script>
-  import { Plus, Eye, Filter, List, Columns } from '@lucide/svelte';
+  import { Plus, Eye, Filter, List, Columns, Upload } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 
@@ -14,7 +14,8 @@
    *   onViewMode: (m: 'list' | 'kanban') => void,
    *   onToggleFilters: () => void,
    *   onToggleColumn: (key: string) => void,
-   *   onCreate: () => void
+   *   onCreate: () => void,
+   *   onImport?: () => void
    * }} */
   let {
     viewMode,
@@ -27,7 +28,8 @@
     onViewMode,
     onToggleFilters,
     onToggleColumn,
-    onCreate
+    onCreate,
+    onImport
   } = $props();
 </script>
 
@@ -97,6 +99,12 @@
       {/each}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
+
+  {#if onImport}
+    <Button variant="outline" size="sm" class="gap-2" onclick={onImport}>
+      <Upload class="h-4 w-4" />Import CSV
+    </Button>
+  {/if}
 
   <Button onclick={onCreate}>
     <Plus class="mr-2 h-4 w-4" />New Ticket

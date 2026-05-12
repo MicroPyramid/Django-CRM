@@ -1,6 +1,7 @@
 <script>
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { untrack } from 'svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
@@ -20,7 +21,7 @@
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
 
-  let filters = $state({ ...data.filters });
+  let filters = $state(untrack(() => ({ ...data.filters })));
   $effect(() => {
     filters = { ...data.filters };
   });

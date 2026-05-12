@@ -12,3 +12,4 @@ export { default as TicketTimePanel } from './TicketTimePanel.svelte';
 export { default as ManualTimeEntryDialog } from './ManualTimeEntryDialog.svelte';
 export { default as TicketApprovalPanel } from './TicketApprovalPanel.svelte';
 export { default as WatchToggle } from './WatchToggle.svelte';
+export { default as TicketImportDrawer } from './TicketImportDrawer.svelte';

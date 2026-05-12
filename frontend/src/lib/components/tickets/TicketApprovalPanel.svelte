@@ -1,6 +1,6 @@
 <script>
   import { invalidateAll } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { ShieldCheck, Loader2, X, Check, Ban } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -30,8 +30,8 @@
   let { ticketId, currentProfileId, isAdmin = false, initialApprovals } = $props();
 
   /** @type {Array<any>} */
-  let approvals = $state(initialApprovals ?? []);
-  let loading = $state(initialApprovals === undefined);
+  let approvals = $state(untrack(() => initialApprovals ?? []));
+  let loading = $state(untrack(() => initialApprovals === undefined));
   let pending = $state(false);
   let rejectReason = $state('');
   let rejectingId = $state(/** @type {string | null} */ (null));

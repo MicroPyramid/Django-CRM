@@ -6,6 +6,7 @@ from cases import (
     bulk_views,
     csat_views,
     escalation_views,
+    import_views,
     inbound_views,
     kanban_views,
     kb_views,
@@ -179,6 +180,17 @@ urlpatterns = [
         "bulk/delete/",
         bulk_views.BulkDeleteCasesView.as_view(),
         name="cases_bulk_delete",
+    ),
+    # CSV import (must be before <str:pk>/ patterns)
+    path(
+        "import/preview/",
+        import_views.CaseImportPreviewView.as_view(),
+        name="cases_import_preview",
+    ),
+    path(
+        "import/commit/",
+        import_views.CaseImportCommitView.as_view(),
+        name="cases_import_commit",
     ),
     # Case ↔ Solution linking (M2M endpoints — must be before <str:pk>/ patterns)
     path(

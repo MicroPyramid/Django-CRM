@@ -1,7 +1,7 @@
 <script>
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { ChevronLeft, ChevronRight, Clock, User } from '@lucide/svelte';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -18,9 +18,9 @@
   const runningCount = $derived(timesheet.running_count || 0);
 
   // Local form state so typing in date inputs doesn't fire a navigation per keystroke.
-  let startInput = $state(data.start);
-  let endInput = $state(data.end);
-  let profileInput = $state(data.profileFilter);
+  let startInput = $state(untrack(() => data.start));
+  let endInput = $state(untrack(() => data.end));
+  let profileInput = $state(untrack(() => data.profileFilter));
   $effect(() => {
     startInput = data.start;
     endInput = data.end;

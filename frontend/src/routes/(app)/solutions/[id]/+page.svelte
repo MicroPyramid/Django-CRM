@@ -1,6 +1,7 @@
 <script>
   import { invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Eye,
@@ -18,9 +19,9 @@
 
   const sol = $derived(data.solution);
 
-  let title = $state(sol.title);
-  let description = $state(sol.description || '');
-  let statusVal = $state(sol.status);
+  let title = $state(untrack(() => sol.title));
+  let description = $state(untrack(() => sol.description || ''));
+  let statusVal = $state(untrack(() => sol.status));
   let saving = $state(false);
 
   // Re-seed local form state if the server-loaded solution changes (after a

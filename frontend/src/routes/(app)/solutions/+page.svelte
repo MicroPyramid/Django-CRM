@@ -2,6 +2,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     BookOpen,
@@ -25,9 +26,9 @@
   const pageSize = $derived(data.pageSize || 20);
   const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
 
-  let search = $state(data.filters?.search || '');
-  let statusFilter = $state(data.filters?.status || '');
-  let publishedFilter = $state(data.filters?.published || '');
+  let search = $state(untrack(() => data.filters?.search || ''));
+  let statusFilter = $state(untrack(() => data.filters?.status || ''));
+  let publishedFilter = $state(untrack(() => data.filters?.published || ''));
 
   /** @param {Record<string, string | null | undefined>} updates */
   function pushQuery(updates) {
