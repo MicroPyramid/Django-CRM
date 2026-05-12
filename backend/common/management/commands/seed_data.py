@@ -44,12 +44,12 @@ class Command(BaseCommand):
         "closed": 5,
     }
     OPP_STAGE_WEIGHTS = {
-        "PROSPECTING": 20,
-        "QUALIFICATION": 20,
-        "PROPOSAL": 20,
-        "NEGOTIATION": 20,
-        "CLOSED_WON": 10,
-        "CLOSED_LOST": 10,
+        "PROSPECTING": 15,
+        "QUALIFICATION": 15,
+        "PROPOSAL": 15,
+        "NEGOTIATION": 15,
+        "CLOSED_WON": 25,
+        "CLOSED_LOST": 15,
     }
     CASE_STATUS_WEIGHTS = {
         "New": 40,
@@ -128,6 +128,7 @@ class Command(BaseCommand):
             "opportunities": 0,
             "cases": 0,
             "tasks": 0,
+            "goals": 0,
         }
 
     def add_arguments(self, parser):
@@ -186,6 +187,12 @@ class Command(BaseCommand):
             type=int,
             default=10,
             help="Tasks per organization (default: 10)",
+        )
+        parser.add_argument(
+            "--goals",
+            type=int,
+            default=8,
+            help="Sales goals per organization (default: 8)",
         )
         parser.add_argument(
             "--teams",
@@ -334,7 +341,7 @@ class Command(BaseCommand):
         from cases.models import Case
         from contacts.models import Contact
         from leads.models import Lead
-        from opportunity.models import Opportunity
+        from opportunity.models import Opportunity, SalesGoal
         from tasks.models import Task
 
         # Clear invoice data first (depends on accounts/contacts)
@@ -343,6 +350,7 @@ class Command(BaseCommand):
         # Delete in reverse dependency order
         Task.objects.all().delete()
         Case.objects.all().delete()
+        SalesGoal.objects.all().delete()
         Opportunity.objects.all().delete()
         Lead.objects.all().delete()
         Account.objects.all().delete()
@@ -351,7 +359,7 @@ class Command(BaseCommand):
         Tags.objects.all().delete()
 
         self.stdout.write(
-            "  Cleared: Tasks, Cases, Opportunities, Leads, Accounts, Contacts, Teams, Tags"
+            "  Cleared: Tasks, Cases, Sales Goals, Opportunities, Leads, Accounts, Contacts, Teams, Tags"
         )
 
     def get_or_create_admin(self, email, password):
@@ -431,6 +439,7 @@ class Command(BaseCommand):
             cases = self.create_cases(
                 org, profiles, teams, tags, contacts, accounts, options["cases"]
             )
+            self.create_sales_goals(org, profiles, teams, options["goals"])
             self.create_tasks(
                 org,
                 profiles,
@@ -445,18 +454,30 @@ class Command(BaseCommand):
             )
 
     def create_org(self, currency, country, index=0):
-        """Create an organization. The first org is always 'MicroPyramid' so
-        local-dev workflows have a known name to log into via `manage.py devlogin`."""
+        """Get or create an organization. The first org is always 'MicroPyramid' so
+        local-dev workflows have a known name to log into via `manage.py devlogin`.
+
+        Uses get_or_create on name so repeated seed runs reuse the same org rather
+        than piling up duplicates — duplicate names break `devlogin --org NAME`
+        because it can't disambiguate.
+        """
         name = "MicroPyramid" if index == 0 else self.fake.company()
-        org = Org.objects.create(
+        org, created = Org.objects.get_or_create(
             name=name,
-            default_currency=currency,
-            default_country=country,
+            defaults={
+                "default_currency": currency,
+                "default_country": country,
+            },
         )
-        self.stats["orgs"] += 1
-        self.stdout.write(
-            f"  Created org: {org.name} ({org.default_currency}, {org.default_country})"
-        )
+        if created:
+            self.stats["orgs"] += 1
+            self.stdout.write(
+                f"  Created org: {org.name} ({org.default_currency}, {org.default_country})"
+            )
+        else:
+            self.stdout.write(
+                f"  Reusing existing org: {org.name} ({org.default_currency}, {org.default_country})"
+            )
         return org
 
     def create_profiles(self, org, user_count, password):
@@ -491,17 +512,20 @@ class Command(BaseCommand):
                 user.save()
                 self.stats["users"] += 1
 
-            profile = Profile.objects.create(
+            profile, profile_created = Profile.objects.get_or_create(
                 user=user,
                 org=org,
-                role="USER",
-                has_sales_access=random.choice([True, False]),
-                has_marketing_access=random.choice([True, False]),
-                is_active=True,
-                phone=self.fake.phone_number()[:20],
+                defaults={
+                    "role": "USER",
+                    "has_sales_access": random.choice([True, False]),
+                    "has_marketing_access": random.choice([True, False]),
+                    "is_active": True,
+                    "phone": self.fake.phone_number()[:20],
+                },
             )
             profiles.append(profile)
-            self.stats["profiles"] += 1
+            if profile_created:
+                self.stats["profiles"] += 1
 
         self.stdout.write(
             f"  Created {len(profiles)} profiles (1 admin, {user_count} users)"
@@ -777,6 +801,107 @@ class Command(BaseCommand):
         self.stdout.write(f"  Created {len(cases)} cases")
         return cases
 
+    def create_sales_goals(self, org, profiles, teams, count):
+        """Create sales goals/quotas across monthly, quarterly, and yearly periods.
+
+        Period dates anchor to the calendar boundaries containing today so that
+        SalesGoal.compute_progress() picks up the seeded CLOSED_WON opportunities
+        (whose closed_on lands in the trailing 30 days). Targets vary widely so
+        the resulting status mix spans behind / at_risk / on_track / completed.
+        Assignment is split ~60% to a profile, ~30% to a team, ~10% org-wide.
+        """
+        import calendar
+        from datetime import date
+
+        from opportunity.models import SalesGoal
+
+        today = date.today()
+        year, month = today.year, today.month
+        month_names = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December",
+        ]
+        quarter = (month - 1) // 3 + 1
+        q_first_month = (quarter - 1) * 3 + 1
+
+        month_last = calendar.monthrange(year, month)[1]
+        q_last = calendar.monthrange(year, q_first_month + 2)[1]
+
+        # (period_type, start, end, label-for-name)
+        period_specs = [
+            ("MONTHLY", date(year, month, 1), date(year, month, month_last),
+             f"{month_names[month - 1]} {year}"),
+            ("QUARTERLY", date(year, q_first_month, 1),
+             date(year, q_first_month + 2, q_last), f"Q{quarter} {year}"),
+            ("YEARLY", date(year, 1, 1), date(year, 12, 31), f"{year} Annual"),
+        ]
+        revenue_name_tpl = {
+            "MONTHLY": "{period} Revenue Push",
+            "QUARTERLY": "{period} Revenue Quota",
+            "YEARLY": "{period} Revenue Target",
+        }
+        deals_name_tpl = {
+            "MONTHLY": "{period} New Logo Drive",
+            "QUARTERLY": "{period} Deals Target",
+            "YEARLY": "{period} Logos Goal",
+        }
+        revenue_range = {
+            "MONTHLY": (25_000, 250_000),
+            "QUARTERLY": (100_000, 1_000_000),
+            "YEARLY": (500_000, 5_000_000),
+        }
+        deals_range = {
+            "MONTHLY": (3, 20),
+            "QUARTERLY": (10, 60),
+            "YEARLY": (50, 200),
+        }
+
+        goals = []
+        for _ in range(count):
+            period_type, p_start, p_end, p_label = random.choices(
+                period_specs, weights=[5, 3, 1], k=1
+            )[0]
+            goal_type = random.choices(
+                ["REVENUE", "DEALS_CLOSED"], weights=[6, 4], k=1
+            )[0]
+
+            if goal_type == "REVENUE":
+                low, high = revenue_range[period_type]
+                # Round to the nearest $1,000 so seeded targets look intentional.
+                target = Decimal(str(random.randint(low // 1000, high // 1000) * 1000))
+                name = revenue_name_tpl[period_type].format(period=p_label)
+            else:
+                low, high = deals_range[period_type]
+                target = Decimal(str(random.randint(low, high)))
+                name = deals_name_tpl[period_type].format(period=p_label)
+
+            roll = random.random()
+            assigned_to = None
+            team = None
+            if roll < 0.6 and profiles:
+                assigned_to = random.choice(profiles)
+            elif roll < 0.9 and teams:
+                team = random.choice(teams)
+            # else: ~10% org-wide (no profile, no team)
+
+            goal = SalesGoal.objects.create(
+                name=name,
+                goal_type=goal_type,
+                target_value=target,
+                period_type=period_type,
+                period_start=p_start,
+                period_end=p_end,
+                assigned_to=assigned_to,
+                team=team,
+                is_active=random.random() > 0.05,
+                org=org,
+            )
+            goals.append(goal)
+            self.stats["goals"] += 1
+
+        self.stdout.write(f"  Created {len(goals)} sales goals")
+        return goals
+
     def create_tasks(
         self,
         org,
@@ -904,5 +1029,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Recurring Invoices: {self.stats['recurring_invoices']}")
         self.stdout.write(f"  Cases: {self.stats['cases']}")
         self.stdout.write(f"  Tasks: {self.stats['tasks']}")
+        self.stdout.write(f"  Sales Goals: {self.stats['goals']}")
         self.stdout.write("")
         self.stdout.write(f"Total time: {elapsed_seconds:.2f} seconds")

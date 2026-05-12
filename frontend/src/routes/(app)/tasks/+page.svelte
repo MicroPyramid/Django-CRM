@@ -30,9 +30,9 @@
     Columns
   } from '@lucide/svelte';
   import { TaskKanban } from '$lib/components/ui/task-kanban';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
@@ -116,7 +116,7 @@
 
   /**
    * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
-   * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
+   * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, editable?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
    */
 
   /**
@@ -144,16 +144,24 @@
 
   /** @type {TaskColumn[]} */
   const taskColumns = [
-    { key: 'subject', label: 'Task', type: 'text', width: 'w-64', canHide: false },
+    {
+      key: 'subject',
+      label: 'Task',
+      type: 'text',
+      width: 'w-64',
+      canHide: false,
+      editable: false
+    },
     {
       key: 'relatedTo',
       label: 'Related To',
       type: 'relation',
       width: 'w-48',
       relationIcon: 'link',
+      editable: false,
       getValue: getRelatedEntity
     },
-    { key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
+    { key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36', editable: false },
     { key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
     { key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-36' },
     {
@@ -162,6 +170,7 @@
       type: 'relation',
       width: 'w-36',
       relationIcon: 'user',
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const assigned = row.assignedTo || [];
         if (assigned.length === 0) return null;
@@ -177,6 +186,7 @@
       width: 'w-40',
       relationIcon: 'building',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => row.account
     },
     {
@@ -186,6 +196,7 @@
       width: 'w-36',
       relationIcon: 'contact',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const contacts = row.contacts || [];
         if (contacts.length === 0) return null;
@@ -200,6 +211,7 @@
       width: 'w-36',
       relationIcon: 'users',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const teams = row.teams || [];
         if (teams.length === 0) return null;
@@ -214,6 +226,7 @@
       width: 'w-32',
       relationIcon: 'tag',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const tags = row.tags || [];
         if (tags.length === 0) return null;
@@ -1287,10 +1300,10 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Calendar Section -->
       <div class="lg:col-span-2">
-        <Card.Root>
-          <!-- Calendar Header -->
-          <Card.Header
-            class="bg-primary flex flex-row items-center justify-between space-y-0 rounded-t-lg p-4"
+        <SectionCard padded={false} class="overflow-hidden">
+          <!-- Calendar Header (domain-specific colored strip) -->
+          <div
+            class="bg-primary flex flex-row items-center justify-between space-y-0 p-4"
           >
             <div class="flex items-center gap-4">
               <Button
@@ -1322,9 +1335,7 @@
             >
               Today
             </Button>
-          </Card.Header>
-
-          <Card.Content class="p-0">
+          </div>
             <!-- Days of Week -->
             <div class="bg-muted/50 grid grid-cols-7 border-b">
               {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
@@ -1383,27 +1394,26 @@
                 {/if}
               {/each}
             </div>
-          </Card.Content>
-        </Card.Root>
+        </SectionCard>
       </div>
 
       <!-- Tasks for Selected Date -->
       <div class="lg:col-span-1">
-        <Card.Root class="h-fit">
-          <Card.Header class="border-b pb-4">
-            <Card.Title class="text-base">
-              Tasks for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </Card.Title>
-            <p class="text-muted-foreground text-sm">
-              {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
-            </p>
-          </Card.Header>
-
-          <Card.Content class="p-4">
+        <SectionCard class="h-fit">
+          {#snippet title()}
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                Tasks for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </h3>
+              <p class="text-[12px] text-[color:var(--text-muted)]">
+                {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          {/snippet}
             {#if selectedTasks.length > 0}
               <div class="space-y-3">
                 {#each selectedTasks as task}
@@ -1463,15 +1473,11 @@
                 </Button>
               </div>
             {/if}
-          </Card.Content>
-        </Card.Root>
+        </SectionCard>
 
         <!-- Monthly Stats -->
-        <Card.Root class="mt-4">
-          <Card.Header class="pb-2">
-            <Card.Title class="text-base">This Month</Card.Title>
-          </Card.Header>
-          <Card.Content class="space-y-2">
+        <SectionCard title="This Month" class="mt-4">
+          <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-muted-foreground text-sm">Total Tasks</span>
               <span class="text-foreground font-medium">{totalMonthlyTasks}</span>
@@ -1480,8 +1486,8 @@
               <span class="text-muted-foreground text-sm">Days with Tasks</span>
               <span class="text-foreground font-medium">{monthlyTaskDates.length}</span>
             </div>
-          </Card.Content>
-        </Card.Root>
+          </div>
+        </SectionCard>
       </div>
     </div>
   {/if}
@@ -1495,10 +1501,6 @@
     onLimitChange={handleLimitChange}
   />
 </div>
-
-{#if viewMode === 'list'}
-  <StatusBar status="{filteredTasks.length} of {pagination.total} tasks" />
-{/if}
 </div>
 
 <!-- Task Detail Drawer -->

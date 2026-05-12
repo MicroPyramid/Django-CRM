@@ -15,7 +15,7 @@
   let { label, active = false, value = '', icon, onclick, onclear, dashed = false, class: className = '' } = $props();
 
   const base =
-    'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] px-[9px] text-[13.5px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ring)]';
+    'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] px-[9px] text-[13px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ring)]';
   const neutral =
     'border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]';
   const activeCls =

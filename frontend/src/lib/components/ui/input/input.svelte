@@ -25,7 +25,7 @@
   const baseClass = [
     'flex h-9 w-full min-w-0 px-3',
     'rounded-[var(--r-md)] border border-[color:var(--border)]',
-    'bg-[color:var(--bg-input)] text-[13.5px] text-[color:var(--text)]',
+    'bg-[color:var(--bg-input)] text-[13px] text-[color:var(--text)]',
     'leading-none outline-none',
     'placeholder:text-[color:var(--text-subtle)]',
     'transition-[border-color,box-shadow] duration-150',

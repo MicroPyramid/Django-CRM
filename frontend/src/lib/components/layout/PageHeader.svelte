@@ -42,7 +42,7 @@
   {#if breadcrumb.length > 0}
     <nav
       aria-label="Breadcrumb"
-      class="flex items-center gap-1 text-[13.5px] leading-none text-[color:var(--text-subtle)]"
+      class="flex items-center gap-1 text-[13px] leading-none text-[color:var(--text-subtle)]"
     >
       {#each breadcrumb as crumb, i (i)}
         {#if i > 0}

@@ -232,7 +232,7 @@
           {/if}
           {#each visibleColumnDefs as column, colIndex (column.key)}
             <th
-              class="px-[14px] py-[9px] text-left text-[10.5px] font-medium uppercase tracking-[0.06em] text-[color:var(--text-subtle)] {colIndex === 0 ? 'pl-7 md:pl-8' : ''} {column.width || ''}"
+              class="px-[14px] py-[9px] text-left text-[10px] font-medium uppercase tracking-[0.06em] text-[color:var(--text-subtle)] {colIndex === 0 ? 'pl-7 md:pl-8' : ''} {column.width || ''}"
             >
               {column.label}
             </th>
@@ -280,7 +280,7 @@
               {@const value = getCellValue(row, column)}
               {@const formattedValue = formatValue(value, column, row)}
               <td
-                class="h-[37px] px-[14px] text-[12.5px] {colIndex === 0 ? 'pl-7 md:pl-8 font-medium text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'} {colIndex === 0 && activeRowId === row[rowIdKey] ? 'shadow-[inset_2.5px_0_0_var(--text)]' : ''} {column.width || ''}"
+                class="h-[37px] px-[14px] text-[12px] {colIndex === 0 ? 'pl-7 md:pl-8 font-medium text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'} {colIndex === 0 && activeRowId === row[rowIdKey] ? 'shadow-[inset_2.5px_0_0_var(--text)]' : ''} {column.width || ''}"
               >
                 {#if cellContent}
                   {@render cellContent(row, column)}

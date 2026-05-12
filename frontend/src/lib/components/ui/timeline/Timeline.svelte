@@ -13,7 +13,7 @@
 </script>
 
 {#if isEmpty}
-  <div class={cn('px-4 py-6 text-center text-[12.5px] text-[color:var(--text-subtle)]', className)}>
+  <div class={cn('px-4 py-6 text-center text-[12px] text-[color:var(--text-subtle)]', className)}>
     {#if empty}
       {@render empty()}
     {:else}

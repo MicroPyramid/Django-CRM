@@ -1,5 +1,5 @@
 <script>
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
   import { page } from '$app/stores';
   import { toast } from 'svelte-sonner';
@@ -88,9 +88,45 @@
   let selectedGoal = $state(null);
   let isCreating = $state(false);
 
-  // Filter state
-  let activeFilter = $state('all');
+  // Filter state — initialized from URL on every navigation so reloads,
+  // shared links, and browser back/forward all restore the right chip.
+  let activeFilter = $state(data.filters?.status || 'all');
   let searchValue = $state('');
+  let leaderboardPeriod = $state(data.leaderboardPeriod || 'MONTHLY');
+
+  $effect(() => {
+    activeFilter = data.filters?.status || 'all';
+    leaderboardPeriod = data.leaderboardPeriod || 'MONTHLY';
+  });
+
+  /**
+   * Update one URL search param while preserving the others, then navigate.
+   * Empty string / null removes the key. Resets pagination to page 1 so the
+   * user doesn't land on an out-of-range page after narrowing the result set.
+   * @param {Record<string, string | null>} updates
+   */
+  function updateUrl(updates) {
+    const params = new URLSearchParams($page.url.searchParams);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === '') params.delete(key);
+      else params.set(key, value);
+    }
+    if (Object.keys(updates).some((k) => k !== 'page')) params.delete('page');
+    const qs = params.toString();
+    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+  }
+
+  /** @param {string} key */
+  function setActiveFilter(key) {
+    activeFilter = key;
+    updateUrl({ status: key === 'all' ? null : key });
+  }
+
+  /** @param {string} period */
+  function setLeaderboardPeriod(period) {
+    leaderboardPeriod = period;
+    updateUrl({ leaderboard_period: period === 'MONTHLY' ? null : period });
+  }
 
   // Delete confirmation
   let deleteDialogOpen = $state(false);
@@ -354,7 +390,7 @@
         filter.key
           ? 'bg-[var(--color-primary-default)] text-white'
           : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        onclick={() => (activeFilter = filter.key)}
+        onclick={() => setActiveFilter(filter.key)}
       >
         {filter.label}
       </button>
@@ -486,8 +522,9 @@
     />
   {/if}
 
-  <!-- Leaderboard Section -->
-  {#if data.leaderboard && data.leaderboard.length > 0}
+  <!-- Leaderboard Section: always rendered so the period switcher remains
+       accessible even when the current period has no qualifying goals. -->
+  {#if data.goals && data.goals.length > 0}
     <div
       class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6"
     >
@@ -497,13 +534,36 @@
         >
           <Trophy class="size-5 text-amber-500" />
         </div>
-        <div>
+        <div class="flex-1">
           <h2 class="text-base font-semibold text-[var(--text-primary)]">Leaderboard</h2>
           <p class="text-xs text-[var(--text-tertiary)]">Current period top performers</p>
+        </div>
+        <div class="flex rounded-[var(--radius-md)] bg-[var(--surface-sunken)] p-0.5">
+          {#each [
+            { value: 'MONTHLY', label: 'Month' },
+            { value: 'QUARTERLY', label: 'Quarter' },
+            { value: 'YEARLY', label: 'Year' }
+          ] as opt}
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors {leaderboardPeriod ===
+              opt.value
+                ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
+              onclick={() => setLeaderboardPeriod(opt.value)}
+            >
+              {opt.label}
+            </button>
+          {/each}
         </div>
       </div>
 
       <div class="space-y-3">
+        {#if data.leaderboard.length === 0}
+          <p class="py-6 text-center text-sm text-[var(--text-tertiary)]">
+            No active goals for this period.
+          </p>
+        {/if}
         {#each data.leaderboard as entry (entry.goalId)}
           <div
             class="flex items-center gap-4 rounded-[var(--radius-md)] border border-[var(--border-default)] p-3"

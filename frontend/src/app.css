@@ -435,10 +435,12 @@
   --border-strong: #c4c4c4;
   --focus-ring: rgba(17, 17, 17, 0.10);
 
-  /* Text */
-  --text: #111827;
-  --text-muted: #4b5563;
-  --text-subtle: #9ca3af;
+  /* Text — aliases of canonical --text-primary/secondary/tertiary (defined above).
+     Keep both names so the typography utilities (.t-body / .t-meta / etc.) can reference
+     short names while pages that grew up using --text-primary keep working. */
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-subtle: var(--text-tertiary);
 
   /* Accents — semantic */
   --green: #10b981;
@@ -655,10 +657,10 @@
   --border-strong: rgba(255, 255, 255, 0.20);
   --focus-ring: rgba(237, 242, 245, 0.14);
 
-  /* Text */
-  --text: rgba(255, 255, 255, 0.95);
-  --text-muted: #9ca3af;
-  --text-subtle: #6b7280;
+  /* Text — aliases of canonical --text-primary/secondary/tertiary (dark theme defined above). */
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-subtle: var(--text-tertiary);
 
   /* Accents — semantic */
   --green: #10b981;
@@ -1204,7 +1206,7 @@ select {
   }
 
   .h-section {
-    font-size: 14.4px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: -0.025em;
     color: var(--text);
@@ -1217,19 +1219,34 @@ select {
   }
 
   .t-body-sm {
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 400;
     color: var(--text-muted);
   }
 
+  /* Crisp cell/value text — primary color + medium weight (use for table cells, dl values). */
+  .t-data {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* KPI number — used in stat cards. */
+  .t-kpi {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
   .t-meta {
-    font-size: 11.2px;
+    font-size: 11px;
     font-weight: 400;
     color: var(--text-subtle);
   }
 
   .label-section {
-    font-size: 10.4px;
+    font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1237,7 +1254,7 @@ select {
   }
 
   .label-tiny {
-    font-size: 10.4px;
+    font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;

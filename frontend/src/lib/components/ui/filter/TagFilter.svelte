@@ -94,7 +94,7 @@
           type="button"
           {...props}
           class={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[13.5px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
+            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[13px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
             hasSelection
               ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
               : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
@@ -105,7 +105,7 @@
           <span class="truncate">{displayText}</span>
           {#if hasSelection}
             <span
-              class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--violet-soft-text)] opacity-90"
+              class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--violet-soft-text)] opacity-90"
             >
               {selectedIds.length}
             </span>

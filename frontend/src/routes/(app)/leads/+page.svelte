@@ -39,7 +39,7 @@
   } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { INDUSTRIES, COUNTRIES } from '$lib/constants/lead-choices.js';
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -1770,7 +1770,6 @@
   {/if}
 </div>
 
-<StatusBar status="{filteredLeads.length} of {pagination.total} leads" />
 </div>
 
 <!-- Lead Drawer -->
@@ -1802,7 +1801,7 @@
             <button
               type="button"
               onclick={() => drawerLoadErrorLead && openLead(drawerLoadErrorLead, true)}
-              class="mt-1 inline-flex items-center gap-1 text-[11.5px] font-semibold underline-offset-2 hover:underline"
+              class="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold underline-offset-2 hover:underline"
             >
               <RotateCw class="size-3" aria-hidden="true" />
               Retry

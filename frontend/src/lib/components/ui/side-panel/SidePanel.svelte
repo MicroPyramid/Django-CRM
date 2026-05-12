@@ -66,7 +66,7 @@
       {:else if empty}
         {@render empty()}
       {:else}
-        <p class="text-[12.5px] text-[color:var(--text-subtle)]">Click a row to peek.</p>
+        <p class="text-[12px] text-[color:var(--text-subtle)]">Click a row to peek.</p>
       {/if}
     </div>
   </aside>

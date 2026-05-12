@@ -19,7 +19,7 @@
     Tag
   } from '@lucide/svelte';
   import { LinkedinIcon as Linkedin } from '$lib/components/icons';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
@@ -864,7 +864,6 @@
   />
 </div>
 
-<StatusBar status="{filteredContacts.length} of {pagination.total} contacts" />
 </div>
 
 <!-- Contact Drawer -->

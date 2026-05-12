@@ -23,7 +23,7 @@
     >
       <span>{v.label}</span>
       {#if v.count != null}
-        <span class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-1.5 text-[11.2px] tabular-nums text-[color:var(--text-muted)]">
+        <span class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-1.5 text-[11px] tabular-nums text-[color:var(--text-muted)]">
           {v.count}
         </span>
       {/if}

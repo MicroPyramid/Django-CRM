@@ -31,11 +31,33 @@ export async function load({ url, locals, cookies }) {
   const qs = new URLSearchParams({ start, end });
   if (profile) qs.set('profile', profile);
 
+  const isAdmin = /** @type {any} */ (locals).profile?.role === 'ADMIN';
+
+  // Only admins can view others' timesheets, so only fetch the user list for them.
+  const usersPromise = isAdmin
+    ? apiRequest('/users/', {}, { cookies, org: locals.org }).catch(() => ({}))
+    : Promise.resolve({});
+
   try {
-    const data = await apiRequest(
-      `/time-entries/timesheet/?${qs.toString()}`,
-      {},
-      { cookies, org: locals.org }
+    const [data, usersRes] = await Promise.all([
+      apiRequest(
+        `/time-entries/timesheet/?${qs.toString()}`,
+        {},
+        { cookies, org: locals.org }
+      ),
+      usersPromise
+    ]);
+    const users = (
+      /** @type {any} */ (usersRes).active_users?.active_users || []
+    ).map(
+      /** @param {any} p */ (p) => ({
+        id: p.id,
+        email: p.user_details?.email || p.email || 'Unknown',
+        name:
+          p.user_details?.first_name || p.user_details?.last_name
+            ? `${p.user_details?.first_name || ''} ${p.user_details?.last_name || ''}`.trim()
+            : ''
+      })
     );
     return {
       timesheet: data,
@@ -43,18 +65,26 @@ export async function load({ url, locals, cookies }) {
       end,
       profileFilter: profile,
       currentUserId: locals.user?.id || null,
-      isAdmin: /** @type {any} */ (locals).profile?.role === 'ADMIN'
+      isAdmin,
+      users
     };
   } catch (err) {
     console.error('Timesheet load failed:', err);
     return {
-      timesheet: { days: [], total_minutes: 0, billable_minutes: 0 },
+      timesheet: {
+        days: [],
+        total_minutes: 0,
+        billable_minutes: 0,
+        running_count: 0,
+        server_now: new Date().toISOString()
+      },
       start,
       end,
       profileFilter: profile,
       currentUserId: locals.user?.id || null,
-      isAdmin: /** @type {any} */ (locals).profile?.role === 'ADMIN',
-      loadError: err?.message || 'Could not load timesheet'
+      isAdmin,
+      users: [],
+      loadError: /** @type {any} */ (err)?.message || 'Could not load timesheet'
     };
   }
 }

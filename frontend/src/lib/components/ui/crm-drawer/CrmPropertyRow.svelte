@@ -466,7 +466,7 @@
   {#if error}
     <p
       id={errorId}
-      class="text-destructive ml-32 px-2.5 pt-0.5 pb-1 text-[11.5px] font-medium"
+      class="text-destructive ml-32 px-2.5 pt-0.5 pb-1 text-[11px] font-medium"
       role="alert"
     >
       {error}

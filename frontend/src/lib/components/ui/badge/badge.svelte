@@ -4,7 +4,7 @@
   export const badgeVariants = tv({
     base: [
       'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap',
-      'rounded-full border text-[10.5px] font-medium leading-none',
+      'rounded-full border text-[10px] font-medium leading-none',
       'transition-[color,background-color,border-color] duration-150',
       'focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]',
       '[&>svg]:pointer-events-none [&>svg]:size-3'

@@ -28,7 +28,7 @@
     Banknote,
     CheckSquare
   } from '@lucide/svelte';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
@@ -989,7 +989,6 @@
   />
 </div>
 
-<StatusBar status="{filteredAccounts.length} of {pagination.total} accounts" />
 </div>
 
 <!-- Account Drawer -->
@@ -1003,6 +1002,7 @@
   headerLabel="Account"
   mode={drawerMode}
   loading={drawerLoading || isSubmitting}
+  fullPageHref={drawerMode !== 'create' && /** @type {any} */ (drawerFormData)?.id ? `/accounts/${/** @type {any} */ (drawerFormData).id}` : ''}
   onFieldChange={handleDrawerFieldChange}
   onDelete={handleDelete}
   onClose={closeDrawer}

@@ -12,7 +12,7 @@
   import { PageHeader } from '$lib/components/layout';
   import { StageStepper } from '$lib/components/ui/stage-stepper';
   import { Timeline, TimelineItem } from '$lib/components/ui/timeline';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
@@ -139,25 +139,16 @@
       <!-- Main column -->
       <div class="flex flex-col gap-6">
         <!-- About card -->
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>About</Card.Title>
-          </Card.Header>
-          <Card.Content>
+        <SectionCard title="About">
             {#if opp?.description}
               <p class="text-[13px] leading-[1.6] text-[color:var(--text-muted)]">{opp.description}</p>
             {:else}
-              <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No description.</p>
+              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
             {/if}
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
         <!-- Activity timeline card -->
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>Activity</Card.Title>
-          </Card.Header>
-          <Card.Content class="px-4 py-2">
+        <SectionCard title="Activity" class="px-4 py-2">
             <Timeline isEmpty={timelineItems.length === 0}>
               {#each timelineItems as item (item.id)}
                 {#if item.kind === 'comment'}
@@ -194,16 +185,13 @@
                 {/if}
               {/each}
             </Timeline>
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
       </div>
 
       <!-- Right rail -->
       <div class="flex flex-col gap-6">
-        <Card.Root>
-          <Card.Header><Card.Title>Details</Card.Title></Card.Header>
-          <Card.Content>
-            <dl class="grid grid-cols-1 gap-y-3 text-[12.5px]">
+        <SectionCard title="Details">
+            <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
               <div class="flex items-baseline justify-between gap-3">
                 <dt class="text-[color:var(--text-subtle)]">Account</dt>
                 <dd class="truncate text-right font-medium text-[color:var(--text)]">{opp?.account?.name || '—'}</dd>
@@ -227,18 +215,15 @@
                 <dd class="truncate text-right text-[color:var(--text-muted)]">{opp?.lead_source || '—'}</dd>
               </div>
             </dl>
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
-        <Card.Root>
-          <Card.Header><Card.Title>Contacts</Card.Title></Card.Header>
-          <Card.Content>
+        <SectionCard title="Contacts">
             {#if contacts.length === 0}
-              <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No contacts linked.</p>
+              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No contacts linked.</p>
             {:else}
               <ul class="flex flex-col gap-2">
                 {#each contacts as ct (ct.id)}
-                  <li class="flex items-center gap-2 text-[12.5px]">
+                  <li class="flex items-center gap-2 text-[12px]">
                     <span class="flex size-6 items-center justify-center rounded-full bg-[color:var(--bg-elevated)] text-[10px] font-medium text-[color:var(--text-muted)]">
                       {getNameInitials(ct.first_name || ct.email || '?', ct.last_name || '')}
                     </span>
@@ -247,14 +232,11 @@
                 {/each}
               </ul>
             {/if}
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
-        <Card.Root>
-          <Card.Header><Card.Title>Tags</Card.Title></Card.Header>
-          <Card.Content>
+        <SectionCard title="Tags">
             {#if (opp?.tags || []).length === 0}
-              <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No tags.</p>
+              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No tags.</p>
             {:else}
               <div class="flex flex-wrap gap-1.5">
                 {#each opp.tags as tag, i (tag.id ?? tag.slug ?? tag.name ?? i)}
@@ -264,17 +246,14 @@
                 {/each}
               </div>
             {/if}
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
       </div>
     </div>
   </Tabs.Content>
 
   <Tabs.Content class="" value="activity">
     <div class="pt-4 pb-8">
-      <Card.Root>
-        <Card.Header><Card.Title>All activity</Card.Title></Card.Header>
-        <Card.Content class="px-4 py-2">
+      <SectionCard title="All activity" class="px-4 py-2">
           <Timeline isEmpty={timelineItems.length === 0}>
             {#each timelineItems as item (item.id)}
               {#if item.kind === 'comment'}
@@ -295,22 +274,19 @@
               {/if}
             {/each}
           </Timeline>
-        </Card.Content>
-      </Card.Root>
+        </SectionCard>
     </div>
   </Tabs.Content>
 
   <Tabs.Content class="" value="files">
     <div class="pt-4 pb-8">
-      <Card.Root>
-        <Card.Header><Card.Title>Files</Card.Title></Card.Header>
-        <Card.Content>
+      <SectionCard title="Files">
           {#if attachments.length === 0}
-            <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
+            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
           {:else}
             <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
               {#each attachments as a (a.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12.5px]">
+                <li class="flex items-center gap-3 py-2.5 text-[12px]">
                   <Paperclip class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
                   <span class="flex-1 truncate text-[color:var(--text)]">{a.file_name || 'File'}</span>
                   <span class="text-[11px] text-[color:var(--text-subtle)]">{a.created_on ? formatRelativeDate(a.created_on) : ''}</span>
@@ -318,8 +294,7 @@
               {/each}
             </ul>
           {/if}
-        </Card.Content>
-      </Card.Root>
+        </SectionCard>
     </div>
   </Tabs.Content>
 </Tabs.Root>

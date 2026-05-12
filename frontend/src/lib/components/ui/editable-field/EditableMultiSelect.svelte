@@ -209,7 +209,7 @@
                 <button
                   type="button"
                   onclick={onRetry}
-                  class="text-primary hover:bg-primary/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-medium"
+                  class="text-primary hover:bg-primary/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium"
                 >
                   <RotateCw class="h-3 w-3" aria-hidden="true" />
                   Retry

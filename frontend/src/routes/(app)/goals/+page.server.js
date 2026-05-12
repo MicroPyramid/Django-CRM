@@ -33,8 +33,17 @@ export async function load({ locals, cookies, url }) {
     current: url.searchParams.get('current') || '',
     assigned_to: url.searchParams.get('assigned_to') || '',
     team: url.searchParams.get('team') || '',
-    period_type: url.searchParams.get('period_type') || ''
+    period_type: url.searchParams.get('period_type') || '',
+    // 'status' is a UI-side chip (all|active|completed|behind); persisted in
+    // the URL so a reload doesn't reset it. Status is a computed property on
+    // the backend, so the actual narrowing still happens client-side.
+    status: url.searchParams.get('status') || 'all'
   };
+
+  // Leaderboard period: MONTHLY (default) | QUARTERLY | YEARLY. The backend
+  // endpoint accepts period_type; the URL key is leaderboard_period to keep
+  // it distinct from the (currently unused) goals-list period_type filter.
+  const leaderboardPeriod = url.searchParams.get('leaderboard_period') || 'MONTHLY';
 
   try {
     const queryParams = buildQueryParams({});
@@ -48,11 +57,18 @@ export async function load({ locals, cookies, url }) {
     if (filters.team) queryParams.append('team', filters.team);
     if (filters.period_type) queryParams.append('period_type', filters.period_type);
 
+    // 'active' and 'completed' chips both imply is_active=true. Push that down
+    // so we don't paginate over inactive goals just to drop them client-side.
+    if (filters.status === 'active' || filters.status === 'completed') {
+      queryParams.set('active', 'true');
+    }
+
     const queryString = queryParams.toString();
+    const leaderboardQs = new URLSearchParams({ period_type: leaderboardPeriod }).toString();
 
     const [goalsResponse, leaderboardResponse, teamsUsersResponse] = await Promise.all([
       apiRequest(`/opportunities/goals/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
-      apiRequest('/opportunities/goals/leaderboard/', {}, { cookies, org }).catch(() => ({
+      apiRequest(`/opportunities/goals/leaderboard/?${leaderboardQs}`, {}, { cookies, org }).catch(() => ({
         leaderboard: []
       })),
       apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch(() => ({
@@ -123,7 +139,8 @@ export async function load({ locals, cookies, url }) {
         totalPages: Math.ceil(total / limit) || 1
       },
       options: { users, teams },
-      filters
+      filters,
+      leaderboardPeriod
     };
   } catch (err) {
     console.error('Error loading goals from API:', err);

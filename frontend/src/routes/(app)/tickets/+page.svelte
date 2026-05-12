@@ -24,7 +24,7 @@
   } from '@lucide/svelte';
   import { TicketKanban } from '$lib/components/ui/ticket-kanban';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { BulkActionBar } from '$lib/components/ui/bulk-action-bar';
@@ -64,13 +64,21 @@
   // NotionTable column configuration - reordered for scanning priority
   /** @type {ColumnDef[]} */
   const columns = [
-    { key: 'subject', label: 'Ticket', type: 'text', width: 'w-[250px]', canHide: false },
+    {
+      key: 'subject',
+      label: 'Ticket',
+      type: 'text',
+      width: 'w-[250px]',
+      canHide: false,
+      editable: false
+    },
     {
       key: 'account',
       label: 'Account',
       type: 'relation',
       relationIcon: 'building',
       width: 'w-40',
+      editable: false,
       getValue: (/** @type {any} */ row) => row.account
     },
     {
@@ -88,6 +96,7 @@
       type: 'relation',
       relationIcon: 'user',
       width: 'w-36',
+      editable: false,
       getValue: (/** @type {any} */ row) => row.owner
     },
     { key: 'createdAt', label: 'Created', type: 'date', width: 'w-32', editable: false }
@@ -873,7 +882,6 @@
   {/if}
 </div>
 
-<StatusBar status="{filteredTickets.length} of {pagination.total} tickets" />
 </div>
 
 <BulkActionBar

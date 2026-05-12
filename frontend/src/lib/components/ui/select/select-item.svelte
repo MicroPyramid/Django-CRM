@@ -20,7 +20,7 @@
   class={cn(
     [
       'relative flex w-full cursor-default select-none items-center gap-2',
-      'py-1.5 ps-2 pe-8 text-[13.5px] text-[color:var(--text-muted)]',
+      'py-1.5 ps-2 pe-8 text-[13px] text-[color:var(--text-muted)]',
       'rounded-[var(--r-sm)] outline-hidden',
       'data-[highlighted]:bg-[color:var(--bg-elevated)] data-[highlighted]:text-[color:var(--text)]',
       'data-[state=checked]:text-[color:var(--text)]',

@@ -27,7 +27,7 @@
     Clock,
     ArrowUpRight
   } from '@lucide/svelte';
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -132,6 +132,7 @@
       type: 'text',
       width: 'w-48',
       canHide: false,
+      editable: false,
       emptyText: 'Untitled'
     },
     {
@@ -149,10 +150,11 @@
       label: 'Amount',
       type: 'number',
       width: 'w-32',
+      editable: false,
       format: (value, row) => formatAmount(value, row?.currency)
     },
     { key: 'stage', label: 'Stage', type: 'select', options: stageOptions, width: 'w-32' },
-    { key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36' },
+    { key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36', editable: false },
     {
       key: 'assignedTo',
       label: 'Assigned To',
@@ -175,6 +177,7 @@
       type: 'number',
       width: 'w-28',
       canHide: true,
+      editable: false,
       format: (value) => (value != null ? `${value}%` : '-')
     },
     {
@@ -1337,7 +1340,6 @@
   />
 </div>
 
-<StatusBar status="{filteredOpportunities.length} of {pagination.total} opportunities" />
 </div>
 
 <!-- Opportunity Drawer -->
@@ -1360,7 +1362,7 @@
     {#if drawerMode !== 'create' && selectedRow}
       <a
         href={`/opportunities/${selectedRow.id}`}
-        class="mb-4 inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-2.5 py-1 text-[11.5px] font-medium text-[color:var(--text-muted)] transition-colors hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text)]"
+        class="mb-4 inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[color:var(--text-muted)] transition-colors hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text)]"
       >
         Open full detail
         <ArrowUpRight class="size-3.5" />

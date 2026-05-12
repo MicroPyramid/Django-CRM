@@ -5,4 +5,3 @@ export { default as PageHeader } from './PageHeader.svelte';
 export { default as FilterPill } from './FilterPill.svelte';
 export { default as FilterStrip } from './FilterStrip.svelte';
 export { default as ViewTabs } from './ViewTabs.svelte';
-export { default as StatusBar } from './StatusBar.svelte';

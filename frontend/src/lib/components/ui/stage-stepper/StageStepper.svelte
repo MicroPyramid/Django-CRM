@@ -55,7 +55,7 @@
     >
       <span
         class={cn(
-          'truncate text-[10.5px] font-semibold uppercase tracking-[0.04em] leading-none',
+          'truncate text-[10px] font-semibold uppercase tracking-[0.04em] leading-none',
           state === 'current' ? '' : state === 'done' ? 'text-[color:var(--text-muted)]' : 'text-[color:var(--text-subtle)]'
         )}
       >

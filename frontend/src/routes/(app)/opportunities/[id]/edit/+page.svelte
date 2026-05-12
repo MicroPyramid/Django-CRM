@@ -70,7 +70,7 @@
       <div class="flex flex-col gap-1.5">
         <Label for="opp-stage">Stage</Label>
         <select id="opp-stage" name="stage"
-                class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
           {#each stageChoices as opt (opt.value)}
             <option value={opt.value} selected={opt.value === fv('stage', opp?.stage)}>{opt.label}</option>
           {/each}
@@ -90,7 +90,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="opp-currency">Currency</Label>
           <select id="opp-currency" name="currency"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             {#each currencyChoices as c (c.value)}
               <option value={c.value} selected={c.value === fv('currency', opp?.currency || 'USD')}>{c.value}</option>
             {/each}
@@ -103,7 +103,7 @@
           <Label for="opp-probability">Probability</Label>
           <Input id="opp-probability" name="probability" type="number" min="0" max="100" step="1"
                  value={fv('probability', opp?.probability)} placeholder="0–100" />
-          <span class="text-[11.5px] text-[color:var(--text-subtle)]">Percent likelihood of closing.</span>
+          <span class="text-[11px] text-[color:var(--text-subtle)]">Percent likelihood of closing.</span>
         </div>
         <div class="flex flex-col gap-1.5">
           <Label for="opp-close-date">Close date</Label>
@@ -118,7 +118,7 @@
       <div class="flex flex-col gap-1.5">
         <Label for="opp-source">Lead source</Label>
         <select id="opp-source" name="leadSource"
-                class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
           <option value="" selected={!fv('leadSource', opp?.lead_source)}>Not specified</option>
           {#each sourceChoices as opt (opt.value)}
             <option value={opt.value} selected={opt.value === fv('leadSource', opp?.lead_source)}>{opt.label}</option>
@@ -130,7 +130,7 @@
         <Label for="opp-description">Description</Label>
         <textarea id="opp-description" name="description" rows="5"
                   placeholder="Notes about the deal, context for the team..."
-                  class="flex w-full resize-y rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 py-2 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">{fv('description', opp?.description)}</textarea>
+                  class="flex w-full resize-y rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">{fv('description', opp?.description)}</textarea>
       </div>
     </section>
   {/snippet}

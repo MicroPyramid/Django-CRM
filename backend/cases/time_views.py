@@ -306,11 +306,12 @@ class TimesheetView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Include running timers (ended_at IS NULL) so the timesheet shows
+        # work-in-progress; the live duration is computed below.
         qs = (
             TimeEntry.objects.filter(
                 org=request.profile.org,
                 profile_id=target_profile_id,
-                ended_at__isnull=False,
                 started_at__date__gte=start,
                 started_at__date__lte=end,
             )
@@ -327,6 +328,9 @@ class TimesheetView(APIView):
                 "billable_minutes": 0,
             }
             cursor += timedelta(days=1)
+
+        now = timezone.now()
+        running_count = 0
         for entry in qs:
             day_key = entry.started_at.date().isoformat()
             bucket = days.get(day_key)
@@ -334,10 +338,23 @@ class TimesheetView(APIView):
                 # Entry's local date may fall outside the window when timezone
                 # math straddles midnight; skip silently.
                 continue
-            bucket["entries"].append(TimeEntrySerializer(entry).data)
-            bucket["total_minutes"] += entry.duration_minutes or 0
-            if entry.billable:
-                bucket["billable_minutes"] += entry.duration_minutes or 0
+            data = TimeEntrySerializer(entry).data
+            if entry.ended_at is None:
+                # Surface a server-side live duration so non-JS clients still
+                # see the right number; the frontend re-ticks it locally.
+                live = max(int((now - entry.started_at).total_seconds() // 60), 0)
+                data["is_running"] = True
+                data["live_duration_minutes"] = live
+                bucket["total_minutes"] += live
+                if entry.billable:
+                    bucket["billable_minutes"] += live
+                running_count += 1
+            else:
+                data["is_running"] = False
+                bucket["total_minutes"] += entry.duration_minutes or 0
+                if entry.billable:
+                    bucket["billable_minutes"] += entry.duration_minutes or 0
+            bucket["entries"].append(data)
 
         week_total = sum(d["total_minutes"] for d in days.values())
         billable_total = sum(d["billable_minutes"] for d in days.values())
@@ -349,6 +366,8 @@ class TimesheetView(APIView):
                 "days": list(days.values()),
                 "total_minutes": week_total,
                 "billable_minutes": billable_total,
+                "running_count": running_count,
+                "server_now": now.isoformat(),
             }
         )
 

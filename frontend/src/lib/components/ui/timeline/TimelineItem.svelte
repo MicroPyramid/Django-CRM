@@ -43,7 +43,7 @@
     </div>
     {#if quote}
       <blockquote
-        class="mt-2 rounded-[var(--r-md)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-3 py-2 text-[12.5px] leading-[1.5] text-[color:var(--text)]"
+        class="mt-2 rounded-[var(--r-md)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-3 py-2 text-[12px] leading-[1.5] text-[color:var(--text)]"
       >
         {quote}
       </blockquote>

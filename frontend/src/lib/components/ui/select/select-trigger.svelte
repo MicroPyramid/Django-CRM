@@ -20,7 +20,7 @@
     [
       'flex w-fit items-center justify-between gap-2 px-3 pr-2.5',
       'rounded-[var(--r-md)] border border-[color:var(--border)]',
-      'bg-[color:var(--bg-input)] text-[13.5px] text-[color:var(--text)]',
+      'bg-[color:var(--bg-input)] text-[13px] text-[color:var(--text)]',
       'whitespace-nowrap outline-none select-none leading-none',
       'transition-[border-color,box-shadow] duration-150',
       'hover:border-[color:var(--border-strong)]',

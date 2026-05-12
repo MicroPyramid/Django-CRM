@@ -25,7 +25,7 @@
   import { PageHeader } from '$lib/components/layout';
   import { StageStepper } from '$lib/components/ui/stage-stepper';
   import { Timeline, TimelineItem } from '$lib/components/ui/timeline';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
@@ -257,27 +257,20 @@
       <!-- Main column -->
       <div class="flex flex-col gap-6">
         <!-- About card -->
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>About</Card.Title>
-          </Card.Header>
-          <Card.Content>
+        <SectionCard title="About">
             {#if lead?.description}
               <p class="text-[13px] leading-[1.6] whitespace-pre-wrap text-[color:var(--text-muted)]">
                 {lead.description}
               </p>
             {:else}
-              <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No description.</p>
+              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
             {/if}
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
         <!-- Deal card -->
         {#if hasDeal}
-          <Card.Root>
-            <Card.Header><Card.Title>Deal</Card.Title></Card.Header>
-            <Card.Content>
-              <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-[12.5px] sm:grid-cols-3">
+          <SectionCard title="Deal">
+              <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-[12px] sm:grid-cols-3">
                 <div class="flex flex-col gap-1">
                   <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
                     <DollarSign class="size-3" /> Deal Value
@@ -319,16 +312,13 @@
                   </dd>
                 </div>
               </dl>
-            </Card.Content>
-          </Card.Root>
+            </SectionCard>
         {/if}
 
         <!-- Contact info card -->
         {#if hasContactLinks}
-          <Card.Root>
-            <Card.Header><Card.Title>Contact</Card.Title></Card.Header>
-            <Card.Content>
-              <dl class="grid grid-cols-1 gap-y-3 text-[12.5px] sm:grid-cols-2">
+          <SectionCard title="Contact">
+              <dl class="grid grid-cols-1 gap-y-3 text-[12px] sm:grid-cols-2">
                 {#if lead?.email}
                   <div class="flex items-start gap-2">
                     <Mail
@@ -424,16 +414,13 @@
                   </div>
                 {/if}
               </dl>
-            </Card.Content>
-          </Card.Root>
+            </SectionCard>
         {/if}
 
         <!-- Address card -->
         {#if hasAddress}
-          <Card.Root>
-            <Card.Header><Card.Title>Address</Card.Title></Card.Header>
-            <Card.Content>
-              <div class="flex items-start gap-2 text-[12.5px]">
+          <SectionCard title="Address">
+              <div class="flex items-start gap-2 text-[12px]">
                 <MapPin
                   class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
                   aria-hidden="true"
@@ -444,16 +431,11 @@
                   {/each}
                 </address>
               </div>
-            </Card.Content>
-          </Card.Root>
+            </SectionCard>
         {/if}
 
         <!-- Activity timeline card -->
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>Activity</Card.Title>
-          </Card.Header>
-          <Card.Content class="px-4 py-2">
+        <SectionCard title="Activity" class="px-4 py-2">
             <Timeline isEmpty={timelineItems.length === 0}>
               {#each timelineItems as item (item.id)}
                 {#if item.kind === 'comment'}
@@ -486,16 +468,13 @@
                 {/if}
               {/each}
             </Timeline>
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
       </div>
 
       <!-- Right rail -->
       <div class="flex flex-col gap-6">
-        <Card.Root>
-          <Card.Header><Card.Title>Details</Card.Title></Card.Header>
-          <Card.Content>
-            <dl class="grid grid-cols-1 gap-y-3 text-[12.5px]">
+        <SectionCard title="Details">
+            <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
               <div class="flex items-baseline justify-between gap-3">
                 <dt class="text-[color:var(--text-subtle)]">Status</dt>
                 <dd>
@@ -558,14 +537,11 @@
                 </dd>
               </div>
             </dl>
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
         <!-- People -->
-        <Card.Root>
-          <Card.Header><Card.Title>People</Card.Title></Card.Header>
-          <Card.Content>
-            <div class="flex flex-col gap-3 text-[12.5px]">
+        <SectionCard title="People">
+            <div class="flex flex-col gap-3 text-[12px]">
               <div>
                 <div class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
                   <UserCheck class="size-3" /> Assigned to
@@ -577,7 +553,7 @@
                     {#each assignedUsers as user (user.id)}
                       <li class="flex items-center gap-2">
                         <span
-                          class="flex size-5 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[9.5px] font-semibold text-[color:var(--color-primary-default)]"
+                          class="flex size-5 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[9px] font-semibold text-[color:var(--color-primary-default)]"
                         >
                           {getNameInitials(user.email, '')}
                         </span>
@@ -607,15 +583,12 @@
                 </div>
               {/if}
             </div>
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
 
         <!-- Dates -->
         {#if lead?.last_contacted || lead?.next_follow_up}
-          <Card.Root>
-            <Card.Header><Card.Title>Dates</Card.Title></Card.Header>
-            <Card.Content>
-              <dl class="grid grid-cols-1 gap-y-3 text-[12.5px]">
+          <SectionCard title="Dates">
+              <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
                 {#if lead?.last_contacted}
                   <div class="flex items-baseline justify-between gap-3">
                     <dt class="text-[color:var(--text-subtle)]">Last contact</dt>
@@ -639,15 +612,12 @@
                   </div>
                 {/if}
               </dl>
-            </Card.Content>
-          </Card.Root>
+            </SectionCard>
         {/if}
 
-        <Card.Root>
-          <Card.Header><Card.Title>Tags</Card.Title></Card.Header>
-          <Card.Content>
+        <SectionCard title="Tags">
             {#if tags.length === 0}
-              <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No tags.</p>
+              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No tags.</p>
             {:else}
               <div class="flex flex-wrap gap-1.5">
                 {#each tags as tag, i (tag.id ?? tag.slug ?? tag.name ?? i)}
@@ -660,17 +630,14 @@
                 {/each}
               </div>
             {/if}
-          </Card.Content>
-        </Card.Root>
+          </SectionCard>
       </div>
     </div>
   </Tabs.Content>
 
   <Tabs.Content class="" value="activity">
     <div class="pt-4 pb-8">
-      <Card.Root>
-        <Card.Header><Card.Title>All activity</Card.Title></Card.Header>
-        <Card.Content class="px-4 py-2">
+      <SectionCard title="All activity" class="px-4 py-2">
           <Timeline isEmpty={timelineItems.length === 0}>
             {#each timelineItems as item (item.id)}
               {#if item.kind === 'comment'}
@@ -698,22 +665,19 @@
               {/if}
             {/each}
           </Timeline>
-        </Card.Content>
-      </Card.Root>
+        </SectionCard>
     </div>
   </Tabs.Content>
 
   <Tabs.Content class="" value="files">
     <div class="pt-4 pb-8">
-      <Card.Root>
-        <Card.Header><Card.Title>Files</Card.Title></Card.Header>
-        <Card.Content>
+      <SectionCard title="Files">
           {#if attachments.length === 0}
-            <p class="text-[12.5px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
+            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
           {:else}
             <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
               {#each attachments as a (a.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12.5px]">
+                <li class="flex items-center gap-3 py-2.5 text-[12px]">
                   <Paperclip class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
                   <span class="flex-1 truncate text-[color:var(--text)]">
                     {a.file_name || 'File'}
@@ -725,8 +689,7 @@
               {/each}
             </ul>
           {/if}
-        </Card.Content>
-      </Card.Root>
+        </SectionCard>
     </div>
   </Tabs.Content>
 </Tabs.Root>

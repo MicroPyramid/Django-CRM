@@ -25,7 +25,7 @@
       [
         'relative z-50 min-w-[8rem] overflow-hidden overflow-x-hidden overflow-y-auto',
         'rounded-[var(--r-md)] border border-[color:var(--border-faint)]',
-        'bg-[color:var(--bg-card)] text-[13.5px] text-[color:var(--text)]',
+        'bg-[color:var(--bg-card)] text-[13px] text-[color:var(--text)]',
         'shadow-[0_8px_24px_-12px_rgba(0,0,0,0.16)]',
         'max-h-(--bits-select-content-available-height) origin-(--bits-select-content-transform-origin)',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',

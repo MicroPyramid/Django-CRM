@@ -264,7 +264,7 @@
         class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--sidebar-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sidebar-ring)]"
       >
         <Avatar class="size-[26px] shrink-0 rounded-md">
-          <AvatarFallback workspace class="rounded-md text-[13.5px] font-semibold">
+          <AvatarFallback workspace class="rounded-md text-[13px] font-semibold">
             {orgInitial}
           </AvatarFallback>
         </Avatar>
@@ -275,13 +275,13 @@
             </span>
             {#if tier}
               <span
-                class="inline-flex shrink-0 items-center rounded-[4px] border border-[color:var(--sidebar-border)] px-1 py-px text-[10.4px] font-semibold uppercase tracking-wide text-[color:var(--sidebar-subtle)]"
+                class="inline-flex shrink-0 items-center rounded-[4px] border border-[color:var(--sidebar-border)] px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-[color:var(--sidebar-subtle)]"
               >
                 {tier}
               </span>
             {/if}
           </div>
-          <span class="mt-0.5 truncate text-[11.2px] text-[color:var(--sidebar-subtle)]">
+          <span class="mt-0.5 truncate text-[11px] text-[color:var(--sidebar-subtle)]">
             {user.email ?? ''}
           </span>
         </div>
@@ -296,7 +296,7 @@
     <!-- Workspace Section -->
     <Sidebar.Group>
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10.4px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
       >
         Workspace
       </Sidebar.GroupLabel>
@@ -341,7 +341,7 @@
                             >{item.label}</span>
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                               >{item.count}</span>
                             {/if}
                             <ChevronDown
@@ -374,11 +374,11 @@
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13.5px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
                                 >{navChild.label}</span>
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
                                   >{navChild.count}</span>
                                 {/if}
                               </a>
@@ -423,7 +423,7 @@
                       >{item.label}</span>
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                         >{item.count}</span>
                       {/if}
                     </a>
@@ -439,7 +439,7 @@
     <!-- Records Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10.4px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
       >
         Records
       </Sidebar.GroupLabel>
@@ -484,7 +484,7 @@
                             >{item.label}</span>
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                               >{item.count}</span>
                             {/if}
                             <ChevronDown
@@ -517,11 +517,11 @@
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13.5px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
                                 >{navChild.label}</span>
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
                                   >{navChild.count}</span>
                                 {/if}
                               </a>
@@ -566,7 +566,7 @@
                       >{item.label}</span>
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                         >{item.count}</span>
                       {/if}
                     </a>
@@ -582,7 +582,7 @@
     <!-- Work Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10.4px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
       >
         Work
       </Sidebar.GroupLabel>
@@ -627,7 +627,7 @@
                             >{item.label}</span>
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                               >{item.count}</span>
                             {/if}
                             <ChevronDown
@@ -660,11 +660,11 @@
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13.5px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
                                 >{navChild.label}</span>
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
                                   >{navChild.count}</span>
                                 {/if}
                               </a>
@@ -709,7 +709,7 @@
                       >{item.label}</span>
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                         >{item.count}</span>
                       {/if}
                     </a>
@@ -725,7 +725,7 @@
     <!-- Revenue Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10.4px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
       >
         Revenue
       </Sidebar.GroupLabel>
@@ -770,7 +770,7 @@
                             >{item.label}</span>
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                               >{item.count}</span>
                             {/if}
                             <ChevronDown
@@ -803,11 +803,11 @@
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13.5px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
                                 >{navChild.label}</span>
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
                                   >{navChild.count}</span>
                                 {/if}
                               </a>
@@ -852,7 +852,7 @@
                       >{item.label}</span>
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                         >{item.count}</span>
                       {/if}
                     </a>
@@ -868,7 +868,7 @@
     <!-- Support Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10.4px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
       >
         Support
       </Sidebar.GroupLabel>
@@ -913,7 +913,7 @@
                             >{item.label}</span>
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                               >{item.count}</span>
                             {/if}
                             <ChevronDown
@@ -946,11 +946,11 @@
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13.5px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
                                 >{navChild.label}</span>
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
                                   >{navChild.count}</span>
                                 {/if}
                               </a>
@@ -995,7 +995,7 @@
                       >{item.label}</span>
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11.2px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
                         >{item.count}</span>
                       {/if}
                     </a>
@@ -1036,7 +1036,7 @@
                   <span class="relative inline-flex size-1.5 rounded-full bg-emerald-500"></span>
                 </span>
               </span>
-              <span class="flex-1 text-[13.5px] font-medium group-data-[collapsible=icon]:hidden">
+              <span class="flex-1 text-[13px] font-medium group-data-[collapsible=icon]:hidden">
                 Download app
               </span>
             </a>
@@ -1059,7 +1059,7 @@
               {:else}
                 <PanelLeftClose class="size-[15px] shrink-0 text-[color:var(--sidebar-subtle)]" strokeWidth={1.6} />
               {/if}
-              <span class="flex-1 text-[13.5px] font-medium group-data-[collapsible=icon]:hidden">
+              <span class="flex-1 text-[13px] font-medium group-data-[collapsible=icon]:hidden">
                 Collapse
               </span>
             </button>
@@ -1087,14 +1087,14 @@
                   />
                 {:else}
                   <Avatar class="size-6 shrink-0 rounded-full">
-                    <AvatarFallback gradientSeed={user.email ?? user.name ?? 'user'} class="rounded-full text-[10.4px] font-semibold">
+                    <AvatarFallback gradientSeed={user.email ?? user.name ?? 'user'} class="rounded-full text-[10px] font-semibold">
                       {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
                 {/if}
                 <div class="flex min-w-0 flex-1 flex-col leading-tight group-data-[collapsible=icon]:hidden">
                   <span class="truncate text-[14px] font-semibold text-[color:var(--sidebar-foreground)]">{user.name}</span>
-                  <span class="truncate text-[11.2px] text-[color:var(--sidebar-subtle)]">{user.email}</span>
+                  <span class="truncate text-[11px] text-[color:var(--sidebar-subtle)]">{user.email}</span>
                 </div>
                 <ChevronsUpDown class="ml-auto size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden" strokeWidth={1.6} />
               </Sidebar.MenuButton>
@@ -1106,7 +1106,7 @@
             class="w-[--bits-dropdown-menu-anchor-width] min-w-56"
           >
             <DropdownMenu.Label
-              class="text-muted-foreground text-[10.4px] font-bold tracking-wider uppercase"
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
             >
               My Account
             </DropdownMenu.Label>
@@ -1219,7 +1219,7 @@
             </DropdownMenu.Group>
             <DropdownMenu.Separator />
             <DropdownMenu.Label
-              class="text-muted-foreground text-[10.4px] font-bold tracking-wider uppercase"
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
             >
               Theme
             </DropdownMenu.Label>
@@ -1232,7 +1232,7 @@
                   : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Sun class="size-4" />
-                <span class="text-[10.4px] font-medium">Light</span>
+                <span class="text-[10px] font-medium">Light</span>
               </button>
               <button
                 onclick={() => setTheme('dark')}
@@ -1242,7 +1242,7 @@
                   : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Moon class="size-4" />
-                <span class="text-[10.4px] font-medium">Dark</span>
+                <span class="text-[10px] font-medium">Dark</span>
               </button>
               <button
                 onclick={() => setTheme('system')}
@@ -1252,7 +1252,7 @@
                   : 'hover:bg-sidebar-accent text-muted-foreground hover:text-foreground'}"
               >
                 <Monitor class="size-4" />
-                <span class="text-[10.4px] font-medium">System</span>
+                <span class="text-[10px] font-medium">System</span>
               </button>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />

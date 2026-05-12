@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import { Button } from '$lib/components/ui/button/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
@@ -57,28 +57,31 @@
     <!-- ============================================================ -->
     <!-- CONNECTED -->
     <!-- ============================================================ -->
-    <Card.Root>
-      <Card.Header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950"
-            >
-              <Cloud class="size-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <Card.Title>Salesforce Connection</Card.Title>
-              <Card.Description>Your Salesforce org is connected</Card.Description>
-            </div>
-          </div>
-          <Badge
-            class="border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
+    <SectionCard>
+      {#snippet title()}
+        <div class="flex items-center gap-3">
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950"
           >
-            Connected
-          </Badge>
+            <Cloud class="size-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+              Salesforce Connection
+            </h3>
+            <p class="text-[12px] text-[color:var(--text-muted)]">
+              Your Salesforce org is connected
+            </p>
+          </div>
         </div>
-      </Card.Header>
-      <Card.Content>
+      {/snippet}
+      {#snippet actions()}
+        <Badge
+          class="border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
+        >
+          Connected
+        </Badge>
+      {/snippet}
         <div class="space-y-4">
           <div class="bg-muted/50 rounded-lg p-4">
             <dl class="grid gap-3 sm:grid-cols-2">
@@ -131,25 +134,27 @@
             </Button>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {:else}
     <!-- ============================================================ -->
     <!-- NOT CONNECTED - Setup + Credential Form -->
     <!-- ============================================================ -->
-    <Card.Root>
-      <Card.Header class="text-center">
-        <div
-          class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950"
-        >
-          <Key class="size-8 text-blue-600 dark:text-blue-400" />
+    <SectionCard>
+      {#snippet title()}
+        <div class="flex w-full flex-col items-center text-center">
+          <div
+            class="mb-4 flex size-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950"
+          >
+            <Key class="size-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="text-xl font-medium leading-[1.3] text-[color:var(--text-primary)]">
+            Connect to Salesforce
+          </h3>
+          <p class="mx-auto mt-1 max-w-md text-[13px] text-[color:var(--text-muted)]">
+            Create a Connected App in your Salesforce org and enter the credentials below to connect.
+          </p>
         </div>
-        <Card.Title class="text-xl">Connect to Salesforce</Card.Title>
-        <Card.Description class="mx-auto max-w-md">
-          Create a Connected App in your Salesforce org and enter the credentials below to connect.
-        </Card.Description>
-      </Card.Header>
-      <Card.Content>
+      {/snippet}
         <div class="space-y-6">
           <!-- Setup instructions -->
           <div class="bg-muted/50 rounded-lg p-4">
@@ -244,14 +249,9 @@
             </div>
           </form>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
 
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-base">What gets imported?</Card.Title>
-      </Card.Header>
-      <Card.Content>
+    <SectionCard title="What gets imported?">
         <ul class="text-muted-foreground space-y-2 text-sm">
           <li class="flex items-start gap-2">
             <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-blue-500"></span>
@@ -285,8 +285,7 @@
             >
           </li>
         </ul>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {/if}
 </div>
 

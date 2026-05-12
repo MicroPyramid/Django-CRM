@@ -45,7 +45,7 @@
       },
       size: {
         default: 'h-8 px-3 has-[>svg]:px-2.5',
-        sm: 'h-7 gap-1.5 px-2.5 has-[>svg]:px-2 text-[12.5px]',
+        sm: 'h-7 gap-1.5 px-2.5 has-[>svg]:px-2 text-[12px]',
         lg: 'h-9 px-4 has-[>svg]:px-3.5',
         icon: 'size-8',
         'icon-sm': 'size-7',

@@ -90,7 +90,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="lead-salutation">Salutation</Label>
           <select id="lead-salutation" name="salutation"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             <option value="" selected={!fv('salutation', lead?.salutation)}></option>
             {#each ['Mr.', 'Mrs.', 'Ms.', 'Dr.'] as sal (sal)}
               <option value={sal} selected={sal === fv('salutation', lead?.salutation)}>{sal}</option>
@@ -172,7 +172,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="lead-status">Status</Label>
           <select id="lead-status" name="status"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             {#each statusChoices as opt (opt.value)}
               <option value={opt.value} selected={opt.value === normalizeStatus(fv('status', lead?.status))}>{opt.label}</option>
             {/each}
@@ -181,7 +181,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="lead-source">Source</Label>
           <select id="lead-source" name="source"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             <option value="">—</option>
             {#each sourceChoices as opt (opt.value)}
               <option value={opt.value} selected={opt.value === fv('source', lead?.source)}>{opt.label}</option>
@@ -191,7 +191,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="lead-rating">Rating</Label>
           <select id="lead-rating" name="rating"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             <option value="">—</option>
             {#each ratingChoices as opt (opt.value)}
               <option value={opt.value} selected={opt.value === normalizeRating(fv('rating', lead?.rating))}>{opt.label}</option>
@@ -214,7 +214,7 @@
         <div class="flex flex-col gap-1.5">
           <Label for="lead-currency">Currency</Label>
           <select id="lead-currency" name="currency"
-                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
+                  class="flex h-9 w-full rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">
             {#each currencyChoices as c (c.value)}
               <option value={c.value} selected={c.value === fv('currency', lead?.currency || 'USD')}>{c.value}</option>
             {/each}
@@ -291,7 +291,7 @@
       <div class="flex flex-col gap-1.5">
         <Label for="lead-description">Description</Label>
         <textarea id="lead-description" name="description" rows="5"
-                  class="flex w-full resize-y rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 py-2 text-[13.5px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">{fv('description', lead?.description)}</textarea>
+                  class="flex w-full resize-y rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-input)] px-3 py-2 text-[13px] text-[color:var(--text)] outline-none hover:border-[color:var(--border-strong)] focus-visible:border-[color:var(--text)] focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]">{fv('description', lead?.description)}</textarea>
       </div>
     </section>
   {/snippet}

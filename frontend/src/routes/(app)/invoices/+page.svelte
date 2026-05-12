@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
 
-  import { PageHeader, FilterStrip, ViewTabs, StatusBar, FilterPill } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { SearchInput, DateRangeFilter, SelectFilter } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
@@ -305,7 +305,7 @@
 <!-- Page Content -->
 <div class="flex flex-col">
   <!-- Header -->
-  <PageHeader title="Invoices">
+  <PageHeader title="Invoices" subtitle="{invoices.length} of {pagination.total} invoices">
     {#snippet actions()}
       <div class="flex items-center gap-2">
         <!-- Status Filter Chips -->
@@ -477,4 +477,3 @@
   {/if}
 </div>
 
-<StatusBar status="{invoices.length} of {pagination.total} invoices" />

@@ -14,7 +14,7 @@
 
 <section class={cn('flex flex-col gap-2', className)}>
   <h4
-    class="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-subtle)]"
+    class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-subtle)]"
   >
     {label}
   </h4>
