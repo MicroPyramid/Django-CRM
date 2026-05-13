@@ -117,6 +117,15 @@ class Org(BaseModel):
         max_length=2, choices=COUNTRIES, blank=True, null=True
     )
 
+    # CSAT (Tier 2 csat). Org-level kill switch — when False, the
+    # post-close signal short-circuits before any survey email is sent.
+    csat_enabled = models.BooleanField(default=True)
+
+    # Tier 3 parent/child: when True, closing a parent case offers to
+    # cascade-close any open descendants. The endpoint still requires an
+    # explicit confirmation; this flag only controls the default state.
+    auto_close_children_on_parent_close = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = "Organization"
         verbose_name_plural = "Organizations"
@@ -239,6 +248,7 @@ class Comment(BaseModel):
     commented_by = models.ForeignKey(
         Profile, on_delete=models.CASCADE, blank=True, null=True
     )
+    is_internal = models.BooleanField(default=False, db_index=True)
     org = models.ForeignKey(
         "Org",
         on_delete=models.CASCADE,
@@ -253,6 +263,7 @@ class Comment(BaseModel):
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
             models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["content_type", "object_id", "is_internal"]),
         ]
 
     def __str__(self):
@@ -569,6 +580,32 @@ class Activity(BaseModel):
         ("VIEW", "Viewed"),
         ("COMMENT", "Commented"),
         ("ASSIGN", "Assigned"),
+        # Cases roadmap verb registry — see docs/cases/COORDINATION_DECISIONS.md D1.
+        ("STATUS_CHANGED", "Status Changed"),
+        ("PRIORITY_CHANGED", "Priority Changed"),
+        ("ROUTED", "Routed"),
+        ("ESCALATED", "Escalated"),
+        ("REOPENED", "Reopened"),
+        ("MERGED", "Merged"),
+        ("MERGE_TARGET", "Merge Target"),
+        ("UNMERGED", "Unmerged"),
+        ("UNMERGE_TARGET", "Unmerge Target"),
+        ("LINKED_SOLUTION", "Linked Solution"),
+        ("UNLINKED_SOLUTION", "Unlinked Solution"),
+        ("WATCHED", "Watched"),
+        ("UNWATCHED", "Unwatched"),
+        ("MENTIONED", "Mentioned"),
+        ("APPROVAL_REQUESTED", "Approval Requested"),
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+        ("APPROVAL_CANCELLED", "Approval Cancelled"),
+        ("LINKED_ASSET", "Linked Asset"),
+        ("UNLINKED_ASSET", "Unlinked Asset"),
+        ("LINKED_JIRA", "Linked Jira"),
+        ("LINKED_PARENT", "Linked Parent"),
+        ("UNLINKED_PARENT", "Unlinked Parent"),
+        ("PARENT_CLOSED_CASCADE", "Parent Closed Cascade"),
+        ("TIME_LOGGED", "Time Logged"),
     )
 
     ENTITY_TYPE_CHOICES = (
@@ -591,11 +628,12 @@ class Activity(BaseModel):
         blank=True,
         related_name="activities",
     )
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    action = models.CharField(max_length=32, choices=ACTION_CHOICES)
     entity_type = models.CharField(max_length=50, choices=ENTITY_TYPE_CHOICES)
     entity_id = models.UUIDField()
     entity_name = models.CharField(max_length=255, blank=True, default="")
     description = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="activities")
 
     class Meta:
@@ -606,6 +644,11 @@ class Activity(BaseModel):
         indexes = [
             models.Index(fields=["org", "-created_at"]),
             models.Index(fields=["entity_type", "entity_id"]),
+            # Analytics window scans: "all Case CREATE/UPDATE rows in window".
+            models.Index(
+                fields=["org", "entity_type", "action", "created_at"],
+                name="activity_analytics_idx",
+            ),
         ]
 
     def __str__(self):
@@ -614,6 +657,51 @@ class Activity(BaseModel):
     @property
     def created_on_arrow(self):
         return timesince(self.created_at) + " ago"
+
+
+class Notification(BaseModel):
+    """In-app notification delivered to a single recipient.
+
+    Per `docs/cases/COORDINATION_DECISIONS.md` D2 we inherit BaseModel and
+    declare our own `org` FK rather than using BaseOrgModel — RLS still
+    applies via the migration in 0018.
+    """
+
+    recipient = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    verb = models.CharField(max_length=64)
+    actor = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dispatched_notifications",
+    )
+    entity_type = models.CharField(max_length=50, blank=True, default="")
+    entity_id = models.UUIDField(null=True, blank=True)
+    entity_name = models.CharField(max_length=255, blank=True, default="")
+    data = models.JSONField(default=dict, blank=True)
+    link = models.CharField(max_length=500, blank=True, default="")
+    read_at = models.DateTimeField(null=True, blank=True)
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="notifications"
+    )
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        db_table = "notification"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "recipient", "-created_at"]),
+            models.Index(fields=["recipient", "read_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.verb} -> {self.recipient_id}"
 
 
 class Teams(BaseModel):
@@ -694,6 +782,74 @@ class ContactFormSubmission(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.email} ({self.reason})"
+
+
+class CustomFieldDefinition(BaseModel):
+    """Per-org schema extension for any supported entity (Case, Lead, ...).
+
+    Each row defines a single field on a single target model. Values are stored
+    on the entity itself in a `custom_fields` JSONField; this row is the
+    metadata that the validator uses to coerce types, enforce required fields,
+    and validate dropdown membership.
+
+    See docs/cases/tier1/custom-fields.md.
+    """
+
+    TARGET_MODEL_CHOICES = [
+        ("Account", "Account"),
+        ("Case", "Case"),
+        ("Contact", "Contact"),
+        ("Estimate", "Estimate"),
+        ("Invoice", "Invoice"),
+        ("Lead", "Lead"),
+        ("Opportunity", "Opportunity"),
+        ("RecurringInvoice", "Recurring Invoice"),
+        ("Task", "Task"),
+    ]
+
+    FIELD_TYPE_CHOICES = [
+        ("text", "Text"),
+        ("textarea", "Textarea"),
+        ("number", "Number"),
+        ("dropdown", "Dropdown"),
+        ("date", "Date"),
+        ("checkbox", "Checkbox"),
+    ]
+
+    org = models.ForeignKey(
+        Org, on_delete=models.CASCADE, related_name="custom_field_definitions"
+    )
+    target_model = models.CharField(max_length=32, choices=TARGET_MODEL_CHOICES)
+    key = models.SlugField(max_length=64)
+    label = models.CharField(max_length=128)
+    field_type = models.CharField(max_length=16, choices=FIELD_TYPE_CHOICES)
+    options = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="List of {value, label} pairs for dropdown fields.",
+    )
+    is_required = models.BooleanField(default=False)
+    is_filterable = models.BooleanField(default=False)
+    display_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Custom Field Definition"
+        verbose_name_plural = "Custom Field Definitions"
+        db_table = "custom_field_definition"
+        ordering = ("target_model", "display_order", "label")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "target_model", "key"],
+                name="uniq_custom_field_per_org_target",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["org", "target_model", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.target_model}.{self.key} ({self.label})"
 
 
 # Import SecurityAuditLog so Django discovers it for migrations

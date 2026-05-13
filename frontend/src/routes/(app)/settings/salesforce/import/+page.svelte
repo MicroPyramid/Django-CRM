@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Button } from '$lib/components/ui/button/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Separator } from '$lib/components/ui/separator/index.js';
   import * as Table from '$lib/components/ui/table/index.js';
@@ -181,17 +181,20 @@
 <div class="mx-auto max-w-4xl space-y-6 p-6 md:p-8">
   <!-- Active Import Progress -->
   {#if activeJob && isImportActive}
-    <Card.Root class="border-blue-200 dark:border-blue-800">
-      <Card.Header>
+    <SectionCard class="border-blue-200 dark:border-blue-800">
+      {#snippet title()}
         <div class="flex items-center gap-3">
           <Loader2 class="size-5 animate-spin text-blue-600 dark:text-blue-400" />
           <div>
-            <Card.Title>Import In Progress</Card.Title>
-            <Card.Description>Your Salesforce data is being imported...</Card.Description>
+            <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+              Import In Progress
+            </h3>
+            <p class="text-[12px] text-[color:var(--text-muted)]">
+              Your Salesforce data is being imported...
+            </p>
           </div>
         </div>
-      </Card.Header>
-      <Card.Content>
+      {/snippet}
         <div class="space-y-4">
           <div>
             <div class="mb-2 flex items-center justify-between text-sm">
@@ -263,14 +266,13 @@
             <span class="text-muted-foreground ml-2 text-xs">Already-imported data will be kept.</span>
           </form>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {/if}
 
   <!-- Completion Summary -->
   {#if activeJob && !isImportActive}
-    <Card.Root class={activeJob.status === 'COMPLETED' ? 'border-emerald-200 dark:border-emerald-800' : activeJob.status === 'CANCELLED' ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800'}>
-      <Card.Header>
+    <SectionCard class={activeJob.status === 'COMPLETED' ? 'border-emerald-200 dark:border-emerald-800' : activeJob.status === 'CANCELLED' ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800'}>
+      {#snippet title()}
         <div class="flex items-center gap-3">
           {#if activeJob.status === 'COMPLETED'}
             <CheckCircle class="size-5 text-emerald-600 dark:text-emerald-400" />
@@ -280,8 +282,10 @@
             <XCircle class="size-5 text-red-600 dark:text-red-400" />
           {/if}
           <div>
-            <Card.Title>Import {activeJob.status === 'COMPLETED' ? 'Completed' : activeJob.status === 'CANCELLED' ? 'Cancelled' : 'Failed'}</Card.Title>
-            <Card.Description>
+            <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+              Import {activeJob.status === 'COMPLETED' ? 'Completed' : activeJob.status === 'CANCELLED' ? 'Cancelled' : 'Failed'}
+            </h3>
+            <p class="text-[12px] text-[color:var(--text-muted)]">
               {#if activeJob.status === 'COMPLETED'}
                 Your Salesforce data has been imported successfully.
               {:else if activeJob.status === 'CANCELLED'}
@@ -289,11 +293,10 @@
               {:else}
                 The import encountered errors. Check the details below.
               {/if}
-            </Card.Description>
+            </p>
           </div>
         </div>
-      </Card.Header>
-      <Card.Content>
+      {/snippet}
         <div class="flex items-center justify-between text-sm">
           <span class="text-foreground font-medium">Total</span>
           <div class="flex gap-4 text-xs">
@@ -302,18 +305,22 @@
             <span class="text-red-600 dark:text-red-400">{activeJob.error_count || 0} errors</span>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {/if}
 
   <!-- Object Type Selection -->
   {#if !isImportActive}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Select Data to Import</Card.Title>
-        <Card.Description>Choose which Salesforce objects you want to import. Dependencies will be resolved automatically.</Card.Description>
-      </Card.Header>
-      <Card.Content>
+    <SectionCard>
+      {#snippet title()}
+        <div class="flex min-w-0 flex-col gap-0.5">
+          <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+            Select Data to Import
+          </h3>
+          <p class="text-[12px] text-[color:var(--text-muted)]">
+            Choose which Salesforce objects you want to import. Dependencies will be resolved automatically.
+          </p>
+        </div>
+      {/snippet}
         <div class="space-y-3">
           {#each OBJECT_TYPES as objType}
             <button
@@ -367,18 +374,18 @@
             </Button>
           </form>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {/if}
 
   <!-- Import History -->
   {#if importHistory.length > 0}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Import History</Card.Title>
-        <Card.Description>Click a row to see details</Card.Description>
-      </Card.Header>
-      <Card.Content class="p-0">
+    <SectionCard padded={false} class="overflow-hidden">
+      <div class="px-5 pt-4 pb-3">
+        <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+          Import History
+        </h3>
+        <p class="text-[12px] text-[color:var(--text-muted)]">Click a row to see details</p>
+      </div>
         <Table.Root>
           <Table.Header>
             <Table.Row>
@@ -478,7 +485,6 @@
             {/each}
           </Table.Body>
         </Table.Root>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
   {/if}
 </div>

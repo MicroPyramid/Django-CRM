@@ -22,12 +22,7 @@ class AuthUser {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'name': name,
-      'profile_pic': profilePic,
-    };
+    return {'id': id, 'email': email, 'name': name, 'profile_pic': profilePic};
   }
 
   /// Get display name (email if name not available)
@@ -39,7 +34,9 @@ class AuthUser {
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return displayName.substring(0, displayName.length >= 2 ? 2 : 1).toUpperCase();
+    return displayName
+        .substring(0, displayName.length >= 2 ? 2 : 1)
+        .toUpperCase();
   }
 
   @override
@@ -145,7 +142,8 @@ class LoginResponse {
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String,
       user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
-      organizations: (json['user']['organizations'] as List<dynamic>?)
+      organizations:
+          (json['user']['organizations'] as List<dynamic>?)
               ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
               .toList() ??
           [],
@@ -156,5 +154,6 @@ class LoginResponse {
   }
 
   @override
-  String toString() => 'LoginResponse(user: ${user.email}, orgs: ${organizations.length})';
+  String toString() =>
+      'LoginResponse(user: ${user.email}, orgs: ${organizations.length})';
 }

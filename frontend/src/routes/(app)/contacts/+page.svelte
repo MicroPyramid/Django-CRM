@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
-  import { tick, onMount } from 'svelte';
+  import { tick, onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Plus,
@@ -14,24 +14,24 @@
     Briefcase,
     MapPin,
     FileText,
-    Linkedin,
     PhoneOff,
     Calendar,
-    Tag,
-    Filter
+    Tag
   } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
+  import { LinkedinIcon as Linkedin } from '$lib/components/icons';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CustomFieldsPanel } from '$lib/components/custom-fields';
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
-  import { FilterBar, SearchInput, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
+  import { SearchInput, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { formatRelativeDate, formatPhone, getNameInitials } from '$lib/utils/formatting.js';
   import { goto } from '$app/navigation';
-  import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+  import { COUNTRIES } from '$lib/constants/countries.js';
   import { browser } from '$app/environment';
 
   // Column visibility configuration
@@ -288,8 +288,37 @@
   const pagination = $derived(data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
   const owners = $derived(loadedOwners);
 
+  // Read the URL synchronously at init so deep links (?view=ID / ?action=create)
+  // prime the drawer state on the first frame instead of waiting for a $effect tick.
+  const initialUrlParams = $page.url.searchParams;
+  const initialViewId = initialUrlParams.get('view');
+  const initialAction = initialUrlParams.get('action');
+  const initialAccountId = initialUrlParams.get('accountId');
+  const initialContact = initialViewId
+    ? untrack(
+        () =>
+          (data.contacts || []).find(
+            (/** @type {any} */ c) => c.id === initialViewId
+          ) || null
+      )
+    : null;
+
+  // If we're entering create mode pre-filled from an account, mirror what the
+  // $effect URL sync would normally do — but synchronously, so the first paint
+  // already shows the read-only Account row.
+  if (initialAction === 'create' && initialAccountId) {
+    accountId = initialAccountId;
+    accountFromUrl = true;
+    const acct = untrack(() =>
+      (data.accounts || []).find(
+        (/** @type {any} */ a) => a.id === initialAccountId
+      )
+    );
+    accountName = acct ? acct.name : 'Unknown Account';
+  }
+
   // Drawer state (simplified - single drawer)
-  let drawerOpen = $state(false);
+  let drawerOpen = $state(initialAction === 'create' || !!initialContact);
 
   // Load dropdown options when drawer opens (lazy load)
   $effect(() => {
@@ -298,9 +327,9 @@
     }
   });
   /** @type {'view' | 'create'} */
-  let drawerMode = $state('view');
+  let drawerMode = $state(initialAction === 'create' ? 'create' : 'view');
   /** @type {any} */
-  let selectedContact = $state(null);
+  let selectedContact = $state(initialContact);
   let drawerLoading = $state(false);
   let isSubmitting = $state(false);
 
@@ -347,7 +376,8 @@
     `${drawerFormData.firstName || ''} ${drawerFormData.lastName || ''}`.trim() || ''
   );
 
-  // URL sync
+  // URL sync — handles client-side navigation changes after first paint.
+  // Initial deep links are seeded synchronously above.
   $effect(() => {
     const viewId = $page.url.searchParams.get('view');
     const action = $page.url.searchParams.get('action');
@@ -364,7 +394,7 @@
       selectedContact = null;
       drawerMode = 'create';
       drawerOpen = true;
-    } else if (viewId && contacts.length > 0) {
+    } else if (viewId && contacts.length > 0 && !drawerOpen) {
       const contact = contacts.find((c) => c.id === viewId);
       if (contact) {
         selectedContact = contact;
@@ -510,8 +540,10 @@
   // Contacts are already filtered server-side
   const filteredContacts = $derived(contacts);
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
+  // Active row (highlighted in the table) — seeded from ?view= so the deep-linked
+  // row is highlighted immediately on first paint.
+  /** @type {string | null} */
+  let activeRowId = $state(initialViewId || null);
 
   // Form references for server actions
   /** @type {HTMLFormElement} */
@@ -724,82 +756,60 @@
   <title>Contacts - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
+<div class="flex flex-col">
+<PageHeader
+  title="Contacts"
+  subtitle="{filteredContacts.length} of {contacts.length} contacts"
+>
   {#snippet actions()}
-    <div class="flex items-center gap-2">
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} variant="outline" size="sm" class="gap-2">
+            <Eye class="h-4 w-4" />
+            Columns
+            {#if visibleColumns.length < columns.length}
+              <span
+                class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
+              >
+                {visibleColumns.length}/{columns.length}
+              </span>
+            {/if}
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="end" class="w-48">
+        <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+        <DropdownMenu.Separator />
+        {#each columns as column (column.key)}
+          <DropdownMenu.CheckboxItem
+            class=""
+            checked={visibleColumns.includes(column.key)}
+            onCheckedChange={() => toggleColumn(column.key)}
+            disabled={column.canHide === false}
           >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
-      <!-- Column Visibility Dropdown -->
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} variant="outline" size="sm" class="gap-2">
-              <Eye class="h-4 w-4" />
-              Columns
-              {#if visibleColumns.length < columns.length}
-                <span
-                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
-                >
-                  {visibleColumns.length}/{columns.length}
-                </span>
-              {/if}
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-48">
-          <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-          <DropdownMenu.Separator />
-          {#each columns as column (column.key)}
-            <DropdownMenu.CheckboxItem
-              class=""
-              checked={visibleColumns.includes(column.key)}
-              onCheckedChange={() => toggleColumn(column.key)}
-              disabled={column.canHide === false}
-            >
-              {column.label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <Button onclick={openCreate}>
-        <Plus class="mr-2 h-4 w-4" />
-        New Contact
-      </Button>
-    </div>
+            {column.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+    <Button onclick={openCreate}>
+      <Plus class="mr-2 h-4 w-4" />
+      New Contact
+    </Button>
+  {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
   {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       placeholder="Search contacts..."
       onchange={(value) => updateFilters({ ...filters, search: value })}
-      class="w-64"
+      class="w-56"
     />
     <DateRangeFilter
       label="Created"
@@ -807,14 +817,19 @@
       endDate={filters.created_at_lte}
       onchange={(start, end) =>
         updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-      class="w-56"
     />
     <TagFilter
       tags={data.allTags || []}
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredContacts.length} of {contacts.length} contacts</span>
+    {/snippet}
+  </FilterStrip>
 
   <!-- Table -->
   {#if filteredContacts.length === 0}
@@ -832,6 +847,7 @@
       data={filteredContacts}
       {columns}
       bind:visibleColumns
+      bind:activeRowId
       onRowChange={handleRowChange}
       onRowClick={(row) => openContact(row)}
     >
@@ -856,6 +872,8 @@
     onPageChange={handlePageChange}
     onLimitChange={handleLimitChange}
   />
+</div>
+
 </div>
 
 <!-- Contact Drawer -->
@@ -896,6 +914,19 @@
           </div>
         </div>
       </div>
+
+      <!-- Custom fields -->
+      {#if (data.customFieldDefinitions || []).length > 0}
+        <div class="mt-6 border-t border-[var(--border-default)] pt-4">
+          <CustomFieldsPanel
+            target="Contact"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedContact.customFields || {}}
+            formAction={`?/updateCustomFields&id=${selectedContact.id}`}
+            title="Custom Fields"
+          />
+        </div>
+      {/if}
 
       <!-- Comments Section -->
       <div class="mt-6 border-t border-[var(--border-default)] pt-4">

@@ -50,6 +50,13 @@ ORG_SCOPED_TABLES = [
     "tags",
     "address",
     "solution",
+    "reopen_policy",
+    "custom_field_definition",
+    "escalation_policy",
+    "inbound_mailbox",
+    "email_message",
+    "routing_rule",
+    "routing_rule_state",
     # Boards (Kanban)
     "board",
     "board_column",
@@ -75,6 +82,24 @@ ORG_SCOPED_TABLES = [
     "order_line_item",
     # Security & Audit
     "security_audit_log",
+    # Notifications
+    "notification",
+    # Case watchers (Tier 2 watchers-mentions)
+    "case_watcher",
+    # Business hours (Tier 2 business-hours-sla)
+    "business_calendar",
+    "business_holiday",
+    # Macros / canned responses (Tier 2 macros) — RLS is enabled by the
+    # migration; this entry registers the table with the central status
+    # tooling (manage_rls --status, audit verifications).
+    "macro",
+    # CSAT surveys (Tier 2 csat).
+    "csat_survey",
+    # Time tracking (Tier 3 time-tracking).
+    "time_entry",
+    # Approval workflows (Tier 3 approvals).
+    "approval_rule",
+    "approval",
 ]
 
 # Centralized RLS configuration

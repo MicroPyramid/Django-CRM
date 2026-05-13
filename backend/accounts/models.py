@@ -70,6 +70,12 @@ class Account(AssignableMixin, BaseModel):
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     # System Fields
     is_active = models.BooleanField(default=True)
     org = models.ForeignKey(
@@ -97,7 +103,7 @@ class Account(AssignableMixin, BaseModel):
             ),
             # Annual revenue must be non-negative
             models.CheckConstraint(
-                check=Q(annual_revenue__gte=0) | Q(annual_revenue__isnull=True),
+                condition=Q(annual_revenue__gte=0) | Q(annual_revenue__isnull=True),
                 name="account_revenue_non_negative",
             ),
         ]

@@ -117,6 +117,9 @@ class RequireOrgContext:
         "/admin/",
         "/swagger-ui/",
         "/api/schema/",
+        # Public CSAT survey link (Tier 2 csat) — anonymous, sets RLS
+        # context manually inside the view from the survey's own org_id.
+        "/api/public/csat/",
     ]
 
     def __init__(self, get_response):

@@ -13,11 +13,13 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerializer
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
+    CustomFieldDefinitionSerializer,
     ProfileSerializer,
 )
 from common.utils import CURRENCY_CODES, SOURCES, STAGES
@@ -95,6 +97,14 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(amount__gte=params.get("amount__gte"))
             if params.get("amount__lte"):
                 queryset = queryset.filter(amount__lte=params.get("amount__lte"))
+            # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
 
             if params.get("rotten") == "true":
                 # Filter for rotten deals at DB level using stage-specific thresholds
@@ -204,10 +214,25 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         params = request.data
         serializer = OpportunityCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
+            cf_payload = params.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Opportunity", cf_payload or {}, request.profile.org
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             opportunity_obj = serializer.save(
                 created_by=request.profile.user,
                 closed_on=params.get("closed_on"),
                 org=request.profile.org,
+                custom_fields=cleaned_cf,
             )
 
             if params.get("contacts"):
@@ -355,7 +380,27 @@ class OpportunityDetailView(APIView):
         )
 
         if serializer.is_valid():
-            opportunity_object = serializer.save(closed_on=params.get("closed_on"))
+            save_kwargs = {"closed_on": params.get("closed_on")}
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Opportunity",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=opportunity_object.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            opportunity_object = serializer.save(**save_kwargs)
             previous_assigned_to_users = list(
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
@@ -595,6 +640,15 @@ class OpportunityDetailView(APIView):
                 "users_mention": users_mention,
             }
         )
+
+        custom_field_defs = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Opportunity",
+            is_active=True,
+        ).order_by("display_order", "label")
+        context["custom_field_definitions"] = CustomFieldDefinitionSerializer(
+            custom_field_defs, many=True
+        ).data
         return Response(context)
 
     @extend_schema(
@@ -726,11 +780,31 @@ class OpportunityDetailView(APIView):
         )
 
         if serializer.is_valid():
-            opportunity_object = serializer.save(
-                closed_on=params.get("closed_on")
+            save_kwargs = {
+                "closed_on": params.get("closed_on")
                 if "closed_on" in params
                 else opportunity_object.closed_on
-            )
+            }
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Opportunity",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=opportunity_object.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            opportunity_object = serializer.save(**save_kwargs)
 
             # Handle M2M fields if present in request
             if "contacts" in params:

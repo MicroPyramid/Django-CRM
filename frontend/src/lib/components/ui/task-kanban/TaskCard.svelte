@@ -66,7 +66,7 @@
     account: 'Account',
     lead: 'Lead',
     opportunity: 'Opportunity',
-    case: 'Case'
+    case: 'Ticket'
   };
 
   // Computed values

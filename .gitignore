@@ -27,6 +27,12 @@ venv/
 .venv/
 ENV/
 
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+
 # IDE
 .idea/
 .vscode/
@@ -38,6 +44,10 @@ ENV/
 .pytest_cache/
 htmlcov/
 coverage.xml
+
+# Linter / type checker caches
+.ruff_cache/
+.mypy_cache/
 coverage-badge.svg
 
 # Documentation
@@ -67,3 +77,4 @@ openapi.json
 CLAUDE.md
 TODO.md
 .playwright-mcp
+.superpowers/

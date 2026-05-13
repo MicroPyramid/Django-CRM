@@ -12,7 +12,6 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import connection
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
@@ -30,46 +29,6 @@ def _detail_url(pk):
     return f"/api/cases/{pk}/"
 
 
-def _set_rls(org):
-    """Set PostgreSQL RLS context so direct ORM writes are allowed.
-    No-op on SQLite (used in tests).
-    """
-    if connection.vendor != "postgresql":
-        return
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
-
-
-@pytest.fixture
-def case_a(admin_user, org_a):
-    """A case belonging to org_a, created by admin_user."""
-    _set_rls(org_a)
-    return Case.objects.create(
-        name="Bug in login page",
-        status="New",
-        priority="High",
-        case_type="Bug",
-        description="Login page crashes on submit.",
-        created_by=admin_user,
-        org=org_a,
-    )
-
-
-@pytest.fixture
-def case_b(user_b, org_b):
-    """A case belonging to org_b, created by user_b."""
-    _set_rls(org_b)
-    return Case.objects.create(
-        name="Feature request from Org B",
-        status="New",
-        priority="Low",
-        created_by=user_b,
-        org=org_b,
-    )
-
-
 @pytest.mark.django_db
 class TestCaseListView:
     """Tests for GET /api/cases/ and POST /api/cases/"""
@@ -79,6 +38,24 @@ class TestCaseListView:
         assert response.status_code == status.HTTP_200_OK
         assert "cases" in response.data
         assert response.data["cases_count"] >= 1
+
+    def test_list_excludes_soft_deleted_by_default(self, admin_client, case_a):
+        case_a.is_active = False
+        case_a.save()
+        response = admin_client.get(CASES_LIST_URL)
+        assert response.status_code == status.HTTP_200_OK
+        ids = [c["id"] for c in response.json().get("cases", [])]
+        assert str(case_a.id) not in ids
+
+    def test_list_includes_soft_deleted_when_admin_passes_flag(
+        self, admin_client, case_a
+    ):
+        case_a.is_active = False
+        case_a.save()
+        response = admin_client.get(CASES_LIST_URL + "?include_deleted=true")
+        assert response.status_code == status.HTTP_200_OK
+        ids = [c["id"] for c in response.json().get("cases", [])]
+        assert str(case_a.id) in ids
 
     @patch("cases.views.send_email_to_assigned_user")
     def test_create_case(self, mock_email, admin_client):
@@ -1424,13 +1401,13 @@ class TestCaseModelMethods:
         # Should not raise
         case.clean()
 
-    def test_save_keeps_default_sla_values(self, admin_user, org_a):
-        """New case keeps default SLA values (4h first response, 24h resolution).
+    def test_save_applies_priority_specific_sla_defaults(self, admin_user, org_a):
+        """New case picks up the priority-specific SLA defaults via save().
 
-        Note: The Case.save() method has a bug - it checks `not self.pk` to detect
-        new cases, but since the pk is a UUIDField with default=uuid4, self.pk is
-        always set. So the priority-based SLA logic never executes. Cases always
-        get the field defaults (4h first response, 24h resolution).
+        See cases/workflow.py — Urgent gets 1h first-response / 4h resolution.
+        Previously this logic was guarded by `not self.pk`, which never fired
+        because BaseModel populates pk via uuid4 default; we now use
+        _state.adding so the auto-set actually applies.
         """
         case = Case.objects.create(
             name="Urgent SLA Case",
@@ -1439,9 +1416,8 @@ class TestCaseModelMethods:
             org=org_a,
             created_by=admin_user,
         )
-        # Due to the UUID pk bug, defaults are always used
-        assert case.sla_first_response_hours == 4
-        assert case.sla_resolution_hours == 24
+        assert case.sla_first_response_hours == 1
+        assert case.sla_resolution_hours == 4
 
     def test_save_preserves_custom_sla(self, admin_user, org_a):
         """Custom SLA values (non-default) are preserved on save."""

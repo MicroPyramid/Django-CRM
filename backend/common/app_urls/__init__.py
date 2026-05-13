@@ -1,5 +1,6 @@
 from django.urls import include, path
 
+from cases.csat_views import PublicCsatView
 from tasks.urls import board_urlpatterns
 
 app_name = "common_urls"
@@ -12,8 +13,23 @@ urlpatterns = [
     # Teams URLs are now in common app at /api/teams/
     path("tasks/", include("tasks.urls", namespace="api_tasks")),
     path("cases/", include("cases.urls", namespace="api_cases")),
+    path(
+        "time-entries/",
+        include("cases.time_entry_urls", namespace="api_time_entries"),
+    ),
     path("invoices/", include("invoices.api_urls", namespace="api_invoices")),
     path(
         "boards/", include((board_urlpatterns, "api_boards"))
     ),  # Kanban Boards (merged into tasks app)
+    path(
+        "business-hours/",
+        include("business_hours.urls", namespace="api_business_hours"),
+    ),
+    path("macros/", include("macros.urls", namespace="api_macros")),
+    # Public CSAT (Tier 2 csat) — anonymous, token-scoped. Lives outside
+    # any app namespace because the customer reaches it from an emailed
+    # link with no auth context.
+    path(
+        "public/csat/<str:token>/", PublicCsatView.as_view(), name="public_csat"
+    ),
 ]

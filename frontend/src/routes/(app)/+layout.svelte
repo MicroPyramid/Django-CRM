@@ -14,8 +14,8 @@
   });
 </script>
 
-<AppShell user={data.user} org_name={data.org_name}>
-  <main class="flex-1">
+<AppShell user={data.user} org_name={data.org_name} org_settings={data.org_settings}>
+  <main class="relative flex-1">
     {@render children()}
   </main>
 </AppShell>

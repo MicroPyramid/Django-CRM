@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { tick, onMount } from 'svelte';
+  import { tick, onMount, untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import {
     Plus,
@@ -26,10 +26,9 @@
     UserPlus,
     Contact,
     Banknote,
-    Filter,
     CheckSquare
   } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
@@ -37,7 +36,6 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -45,7 +43,7 @@
   } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
-  import { COUNTRIES, getCountryName } from '$lib/constants/countries.js';
+  import { COUNTRIES } from '$lib/constants/countries.js';
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import { orgSettings } from '$lib/stores/org.js';
 
@@ -299,12 +297,26 @@
     }
   ]);
 
+  // Read the URL synchronously at init so deep links (?view=ID / ?action=create)
+  // prime the drawer state on the first frame instead of waiting for a $effect tick.
+  const initialUrlParams = $page.url.searchParams;
+  const initialViewId = initialUrlParams.get('view');
+  const initialAction = initialUrlParams.get('action');
+  const initialAccount = initialViewId
+    ? untrack(
+        () =>
+          (data.accounts || []).find(
+            (/** @type {any} */ a) => a.id === initialViewId
+          ) || null
+      )
+    : null;
+
   // Drawer state - simplified for unified drawer
-  let drawerOpen = $state(false);
+  let drawerOpen = $state(initialAction === 'create' || !!initialAccount);
   /** @type {'view' | 'create'} */
-  let drawerMode = $state('view');
+  let drawerMode = $state(initialAction === 'create' ? 'create' : 'view');
   /** @type {any} */
-  let selectedAccount = $state(null);
+  let selectedAccount = $state(initialAccount);
   let drawerLoading = $state(false);
   let isSubmitting = $state(false);
 
@@ -349,16 +361,17 @@
   // Check if account is closed (inactive)
   const isClosed = $derived(selectedAccount?.isActive === false);
 
-  // URL sync for drawer state
+  // URL sync for drawer state — handles client-side navigation changes after first paint.
+  // The initial deep link is already handled synchronously above.
   $effect(() => {
     const viewId = $page.url.searchParams.get('view');
     const action = $page.url.searchParams.get('action');
 
-    if (action === 'create') {
+    if (action === 'create' && !drawerOpen) {
       selectedAccount = null;
       drawerMode = 'create';
       drawerOpen = true;
-    } else if (viewId && accounts.length > 0) {
+    } else if (viewId && accounts.length > 0 && !drawerOpen) {
       const account = accounts.find((a) => a.id === viewId);
       if (account) {
         selectedAccount = account;
@@ -508,9 +521,6 @@
   // Accounts are already filtered server-side, apply chip filter for active/closed
   let statusChipFilter = $state('ALL');
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   const filteredAccounts = $derived.by(() => {
     if (statusChipFilter === 'active') {
       return accounts.filter((a) => a.isActive !== false);
@@ -519,6 +529,11 @@
     }
     return accounts;
   });
+
+  // Active row (highlighted in the table) — seeded from ?view= so the deep-linked row
+  // is highlighted immediately on first paint.
+  /** @type {string | null} */
+  let activeRowId = $state(initialViewId || null);
 
   // Visible column count for the toggle button
   const visibleColumnCount = $derived(visibleColumns.length);
@@ -716,11 +731,11 @@
   }
 
   /**
-   * Navigate to add case
+   * Navigate to add ticket
    */
-  function handleAddCase() {
+  function handleAddTicket() {
     if (selectedAccount) {
-      goto(`/cases?action=create&accountId=${selectedAccount.id}`);
+      goto(`/tickets?action=create&accountId=${selectedAccount.id}`);
     }
   }
 
@@ -738,6 +753,7 @@
   <title>Accounts - BottleCRM</title>
 </svelte:head>
 
+<div class="flex flex-col">
 <PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
   {#snippet actions()}
     <div class="flex items-center gap-2">
@@ -796,26 +812,6 @@
         </button>
       </div>
 
-      <div class="bg-border mx-1 h-6 w-px"></div>
-
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-          >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
       <!-- Column Visibility Dropdown -->
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
@@ -854,17 +850,13 @@
       </Button>
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       onchange={(value) => updateFilters({ ...filters, search: value })}
@@ -888,7 +880,13 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredAccounts.length} of {pagination.total} accounts</span>
+    {/snippet}
+  </FilterStrip>
   <!-- Accounts Table -->
   {#if filteredAccounts.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -909,6 +907,7 @@
         data={filteredAccounts}
         {columns}
         bind:visibleColumns
+        bind:activeRowId
         onRowClick={(row) => openAccount(row)}
       >
         {#snippet emptyState()}
@@ -995,6 +994,8 @@
   />
 </div>
 
+</div>
+
 <!-- Account Drawer -->
 <CrmDrawer
   bind:open={drawerOpen}
@@ -1006,6 +1007,7 @@
   headerLabel="Account"
   mode={drawerMode}
   loading={drawerLoading || isSubmitting}
+  fullPageHref={drawerMode !== 'create' && /** @type {any} */ (drawerFormData)?.id ? `/accounts/${/** @type {any} */ (drawerFormData).id}` : ''}
   onFieldChange={handleDrawerFieldChange}
   onDelete={handleDelete}
   onClose={closeDrawer}
@@ -1060,9 +1062,9 @@
               <AlertTriangle class="size-3.5" />
             </div>
             <p class="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">
-              {selectedAccount.caseCount || 0}
+              {selectedAccount.ticketCount || 0}
             </p>
-            <p class="text-[10px] text-[var(--text-secondary)]">Cases</p>
+            <p class="text-[10px] text-[var(--text-secondary)]">Tickets</p>
           </div>
           <div class="rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] p-2 text-center">
             <div class="flex items-center justify-center gap-1 text-[var(--text-tertiary)]">
@@ -1093,9 +1095,9 @@
             </Button>
           </div>
           <div class="mt-2 flex gap-2">
-            <Button variant="outline" size="sm" onclick={handleAddCase} class="flex-1">
+            <Button variant="outline" size="sm" onclick={handleAddTicket} class="flex-1">
               <AlertTriangle class="mr-1.5 h-3.5 w-3.5" />
-              Add Case
+              Add Ticket
             </Button>
             <Button variant="outline" size="sm" onclick={handleAddTask} class="flex-1">
               <CheckSquare class="mr-1.5 h-3.5 w-3.5" />

@@ -1,8 +1,7 @@
 <script>
   import { tick } from 'svelte';
-  import { Check, ChevronDown, Expand, Building2, User } from '@lucide/svelte';
+  import { Check, ChevronDown, Building2, User } from '@lucide/svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { expandButtonClasses } from '$lib/utils/drag-drop.js';
   import { getOptionStyle, getOptionLabel, getOptionBgColor } from '$lib/utils/table-helpers.js';
   import { formatCurrency } from '$lib/utils/formatting.js';
 
@@ -30,7 +29,12 @@
    *   onRowChange?: (row: any, field: string, value: any) => void,
    *   onRowClick?: (row: any) => void,
    *   emptyState?: import('svelte').Snippet,
-   *   cellContent?: import('svelte').Snippet<[any, ColumnDef]>
+   *   cellContent?: import('svelte').Snippet<[any, ColumnDef]>,
+   *   cellSuffix?: import('svelte').Snippet<[any, ColumnDef]>,
+   *   selectable?: boolean,
+   *   selectedIds?: string[],
+   *   rowIdKey?: string,
+   *   activeRowId?: string | null
    * }}
    */
   let {
@@ -40,7 +44,12 @@
     onRowChange,
     onRowClick,
     emptyState,
-    cellContent
+    cellContent,
+    cellSuffix,
+    selectable = false,
+    selectedIds = $bindable(/** @type {string[]} */ ([])),
+    rowIdKey = 'id',
+    activeRowId = $bindable(/** @type {string | null} */ (null))
   } = $props();
 
   // Initialize visibleColumns from columns if not provided
@@ -205,17 +214,25 @@
     {/if}
   {:else}
     <table class="w-full border-collapse">
-      <thead>
-        <tr class="border-b border-gray-100/60 dark:border-gray-800/60">
-          {#if onRowClick}
-            <th class="w-8 px-1"></th>
+      <thead class="sticky top-0 z-[1] bg-[color:var(--bg)]">
+        <tr class="border-b border-[color:var(--border-faint)]">
+          {#if selectable}
+            <th class="w-10 px-3 py-2.5">
+              <input
+                type="checkbox"
+                aria-label="Select all rows"
+                checked={data.length > 0 && selectedIds.length === data.length}
+                indeterminate={selectedIds.length > 0 && selectedIds.length < data.length}
+                onchange={(e) => {
+                  const checked = /** @type {HTMLInputElement} */ (e.currentTarget).checked;
+                  selectedIds = checked ? data.map((r) => r[rowIdKey]) : [];
+                }}
+              />
+            </th>
           {/if}
           {#each visibleColumnDefs as column, colIndex (column.key)}
             <th
-              class="py-3 pr-4 text-left text-[13px] font-normal text-gray-400 dark:text-gray-500 {colIndex ===
-              0
-                ? 'pl-0'
-                : 'pl-4'} {column.width || ''}"
+              class="px-[14px] py-[9px] text-left text-[10px] font-medium uppercase tracking-[0.06em] text-[color:var(--text-subtle)] {colIndex === 0 ? 'pl-7 md:pl-8' : ''} {column.width || ''}"
             >
               {column.label}
             </th>
@@ -225,12 +242,11 @@
       <tbody>
         {#each data as row (row.id)}
           <tr
-            class="group transition-all duration-100 ease-out hover:bg-gray-50/30 dark:hover:bg-gray-900/30 {onRowClick
-              ? 'cursor-pointer'
-              : ''}"
+            class="border-b border-[color:var(--border-faint)] transition-colors {onRowClick ? 'cursor-pointer' : ''} {activeRowId === row[rowIdKey]
+  ? 'bg-[color:var(--bg-active)]'
+  : onRowClick ? 'hover:bg-[color:var(--bg-hover)]' : ''}"
             onclick={(e) => {
               if (!onRowClick) return;
-              // Don't trigger row click if clicking on interactive elements
               const target = /** @type {HTMLElement} */ (e.target);
               if (
                 target.closest('button') ||
@@ -240,21 +256,32 @@
               ) {
                 return;
               }
+              activeRowId = row[rowIdKey];
               onRowClick(row);
             }}
           >
-            {#if onRowClick}
-              <td class="w-8 px-1 py-3">
-                <button type="button" onclick={() => onRowClick(row)} class={expandButtonClasses}>
-                  <Expand class="h-3.5 w-3.5 text-gray-500" />
-                </button>
+            {#if selectable}
+              <td class="w-10 px-3 py-3" onclick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  aria-label="Select row"
+                  checked={selectedIds.includes(row[rowIdKey])}
+                  onchange={(e) => {
+                    const id = row[rowIdKey];
+                    const checked = /** @type {HTMLInputElement} */ (e.currentTarget).checked;
+                    selectedIds = checked
+                      ? [...selectedIds, id]
+                      : selectedIds.filter((x) => x !== id);
+                  }}
+                />
               </td>
             {/if}
-
             {#each visibleColumnDefs as column, colIndex (column.key)}
               {@const value = getCellValue(row, column)}
               {@const formattedValue = formatValue(value, column, row)}
-              <td class="py-3 pr-4 {colIndex === 0 ? 'pl-0' : 'pl-4'} {column.width || ''}">
+              <td
+                class="h-[37px] px-[14px] text-[12px] {colIndex === 0 ? 'pl-7 md:pl-8 font-medium text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'} {colIndex === 0 && activeRowId === row[rowIdKey] ? 'shadow-[inset_2.5px_0_0_var(--text)]' : ''} {column.width || ''}"
+              >
                 {#if cellContent}
                   {@render cellContent(row, column)}
                 {:else if column.type === 'text' || column.type === 'email' || column.type === 'number' || !column.type}
@@ -275,20 +302,20 @@
                     <button
                       type="button"
                       onclick={() => startEditing(row.id, column.key)}
-                      class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50 dark:text-gray-100 dark:hover:bg-gray-800/50"
+                      class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-[color:var(--bg-elevated)]"
                     >
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
                       {/if}
                     </button>
                   {:else}
-                    <span class="text-sm {column.cellClass ? column.cellClass(row) : 'text-gray-900 dark:text-gray-100'}">
+                    <span class="text-sm {column.cellClass ? column.cellClass(row) : ''}">
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
                       {/if}
                     </span>
                   {/if}
@@ -306,20 +333,20 @@
                     <button
                       type="button"
                       onclick={() => startEditing(row.id, column.key)}
-                      class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50 dark:text-gray-100 dark:hover:bg-gray-800/50"
+                      class="-mx-2 -my-1.5 w-full cursor-text rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-[color:var(--bg-elevated)]"
                     >
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
                       {/if}
                     </button>
                   {:else}
-                    <span class="text-sm {column.cellClass ? column.cellClass(row) : 'text-gray-900 dark:text-gray-100'}">
+                    <span class="text-sm {column.cellClass ? column.cellClass(row) : ''}">
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-gray-400">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
                       {/if}
                     </span>
                   {/if}
@@ -397,24 +424,27 @@
                 {:else if column.type === 'relation'}
                   <button
                     type="button"
-                    onclick={() => onRowClick?.(row)}
-                    class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm text-gray-900 transition-colors duration-75 hover:bg-gray-100/50 dark:text-gray-100 dark:hover:bg-gray-800/50"
+                    onclick={() => { activeRowId = row[rowIdKey]; onRowClick?.(row); }}
+                    class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-[color:var(--bg-elevated)]"
                   >
                     {#if value}
                       <div class="flex items-center gap-1.5">
                         {#if column.relationIcon === 'user'}
-                          <User class="h-3.5 w-3.5 text-gray-400" />
+                          <User class="h-3.5 w-3.5 text-[color:var(--text-subtle)]" />
                         {:else}
-                          <Building2 class="h-3.5 w-3.5 text-gray-400" />
+                          <Building2 class="h-3.5 w-3.5 text-[color:var(--text-subtle)]" />
                         {/if}
                         <span class="truncate"
                           >{typeof value === 'object' ? value.name || value.email : value}</span
                         >
                       </div>
                     {:else}
-                      <span class="text-gray-400">-</span>
+                      <span class="text-[color:var(--text-subtle)]">-</span>
                     {/if}
                   </button>
+                {/if}
+                {#if cellSuffix}
+                  {@render cellSuffix(row, column)}
                 {/if}
               </td>
             {/each}

@@ -96,10 +96,11 @@ class StageStepper extends StatelessWidget {
                       color: isCurrent
                           ? AppColors.primary600
                           : isCompleted
-                              ? AppColors.textSecondary
-                              : AppColors.textTertiary,
-                      fontWeight:
-                          isCurrent ? FontWeight.w600 : FontWeight.normal,
+                          ? AppColors.textSecondary
+                          : AppColors.textTertiary,
+                      fontWeight: isCurrent
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 );
@@ -158,10 +159,7 @@ class StageStepper extends StatelessWidget {
 class StageMiniIndicator extends StatelessWidget {
   final DealStage stage;
 
-  const StageMiniIndicator({
-    super.key,
-    required this.stage,
-  });
+  const StageMiniIndicator({super.key, required this.stage});
 
   @override
   Widget build(BuildContext context) {
@@ -170,9 +168,7 @@ class StageMiniIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: _getStageColor().withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: _getStageColor().withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: _getStageColor().withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

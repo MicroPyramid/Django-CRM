@@ -54,4 +54,19 @@ app.conf.beat_schedule = {
         "task": "opportunity.tasks.check_goal_milestones",
         "schedule": crontab(hour=9, minute=15),
     },
+    # Scan cases for SLA breach and fire configured escalations - every 5 minutes
+    "scan-for-breached-cases": {
+        "task": "cases.tasks.scan_for_breached_cases",
+        "schedule": crontab(minute="*/5"),
+    },
+    # Purge already-read in-app notifications older than 90 days - daily at 3 AM
+    "purge-read-notifications": {
+        "task": "common.tasks.purge_read_notifications",
+        "schedule": crontab(hour=3, minute=0),
+    },
+    # Stop forgotten time-tracking timers older than 12 hours - every 30 minutes
+    "auto-stop-stale-timers": {
+        "task": "cases.tasks.auto_stop_stale_timers",
+        "schedule": crontab(minute="*/30"),
+    },
 }

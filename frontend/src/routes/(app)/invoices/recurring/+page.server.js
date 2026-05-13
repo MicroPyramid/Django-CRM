@@ -43,10 +43,13 @@ export async function load({ url, locals, cookies }) {
     if (filters.frequency) queryParams.append('frequency', filters.frequency);
     if (filters.account) queryParams.append('account', filters.account);
 
-    // Fetch recurring invoices and accounts in parallel
-    const [recurringResponse, accountsRes] = await Promise.all([
+    // Fetch recurring invoices, accounts, and custom field defs in parallel
+    const [recurringResponse, accountsRes, cfResponse] = await Promise.all([
       apiRequest(`/invoices/recurring/?${queryParams.toString()}`, {}, { cookies, org }),
-      apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({}))
+      apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+      apiRequest('/custom-fields/?target_model=RecurringInvoice', {}, { cookies, org }).catch(
+        () => ({ definitions: [] })
+      )
     ]);
 
     // Handle Django response format
@@ -133,7 +136,9 @@ export async function load({ url, locals, cookies }) {
           taxRate: item.tax_rate || '0.00',
           total: item.total || '0.00',
           order: item.order || 0
-        })) || []
+        })) || [],
+      // Custom fields
+      customFields: recurring.custom_fields || {}
     }));
 
     // Transform accounts for dropdown
@@ -156,7 +161,8 @@ export async function load({ url, locals, cookies }) {
         totalPages: Math.ceil(totalCount / limit) || 1
       },
       filters,
-      accounts
+      accounts,
+      customFieldDefinitions: cfResponse.definitions || []
     };
   } catch (err) {
     console.error('Error loading recurring invoices from API:', err);
@@ -336,6 +342,39 @@ export const actions = {
     } catch (err) {
       console.error('Error toggling recurring invoice:', err);
       return fail(400, { error: err.message || 'Failed to toggle status' });
+    }
+  },
+
+  updateCustomFields: async ({ request, locals, cookies }) => {
+    try {
+      const form = await request.formData();
+      const recurringId = form.get('recurringId')?.toString();
+      if (!recurringId) {
+        return fail(400, { error: 'Recurring invoice ID is required' });
+      }
+
+      const raw = form.get('custom_fields')?.toString() || '{}';
+      /** @type {Record<string, unknown>} */
+      let parsed = {};
+      try {
+        const candidate = JSON.parse(raw);
+        if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+          parsed = /** @type {Record<string, unknown>} */ (candidate);
+        }
+      } catch {
+        return fail(400, { error: 'Invalid custom fields payload' });
+      }
+
+      await apiRequest(
+        `/invoices/recurring/${recurringId}/`,
+        { method: 'PUT', body: { custom_fields: parsed } },
+        { cookies, org: locals.org }
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating recurring custom fields:', err);
+      return fail(400, { error: err?.message || 'Failed to update custom fields' });
     }
   }
 };

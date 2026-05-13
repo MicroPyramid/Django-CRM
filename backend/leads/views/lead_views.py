@@ -11,10 +11,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment, Profile, Tags, Teams, User
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+    User,
+)
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
+    CustomFieldDefinitionSerializer,
     LeadCommentSerializer,
     ProfileSerializer,
     TeamsSerializer,
@@ -104,6 +114,14 @@ class LeadListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     close_date__lte=params.get("close_date__lte")
                 )
+            # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
         context = {}
         queryset_open = queryset.exclude(status="closed")
         results_leads_open = self.paginate_queryset(
@@ -216,9 +234,25 @@ class LeadListView(APIView, LimitOffsetPagination):
         data = request.data
         serializer = LeadCreateSerializer(data=data, request_obj=request)
         if serializer.is_valid():
+            cf_payload = data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Lead", cf_payload or {}, request.profile.org
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
                 lead_obj = serializer.save(
-                    created_by=request.profile.user, org=request.profile.org
+                    created_by=request.profile.user,
+                    org=request.profile.org,
+                    custom_fields=cleaned_cf,
                 )
             except IntegrityError as e:
                 if "email" in str(e).lower():
@@ -441,6 +475,15 @@ class LeadDetailView(APIView):
         ).data
         context["countries"] = COUNTRIES
 
+        custom_field_defs = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Lead",
+            is_active=True,
+        ).order_by("display_order", "label")
+        context["custom_field_definitions"] = CustomFieldDefinitionSerializer(
+            custom_field_defs, many=True
+        ).data
+
         return context
 
     @extend_schema(
@@ -594,7 +637,27 @@ class LeadDetailView(APIView):
             request_obj=request,
         )
         if serializer.is_valid():
-            lead_obj = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Lead",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=self.lead_obj.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            lead_obj = serializer.save(**save_kwargs)
             lead_obj.tags.clear()
             if params.get("tags"):
                 tags = params.get("tags")
@@ -756,6 +819,30 @@ class LeadDetailView(APIView):
 
         # Handle conversion if status is being set to converted
         if params.get("status") == "converted" or params.get("is_converted"):
+            # Persist any custom_fields supplied alongside the conversion before
+            # the converter runs — otherwise they'd be silently dropped because
+            # this branch returns before the regular partial-update flow.
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Lead",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=self.lead_obj.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                self.lead_obj.custom_fields = cleaned_cf
+                self.lead_obj.save(update_fields=["custom_fields"])
+
             from leads.services import convert_lead_to_account
 
             account, contact, opportunity = convert_lead_to_account(
@@ -795,7 +882,27 @@ class LeadDetailView(APIView):
             partial=True,
         )
         if serializer.is_valid():
-            lead_obj = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Lead",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=self.lead_obj.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            lead_obj = serializer.save(**save_kwargs)
 
             # Handle M2M fields if present in request
             if "tags" in params:

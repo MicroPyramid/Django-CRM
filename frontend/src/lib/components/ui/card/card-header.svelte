@@ -7,7 +7,9 @@
   bind:this={ref}
   data-slot="card-header"
   class={cn(
-    '@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6',
+    '@container/card-header flex items-center justify-between gap-2',
+    'px-4 py-3 border-b border-[color:var(--border-faint)]',
+    'has-data-[slot=card-action]:grid-cols-[1fr_auto]',
     className
   )}
   {...restProps}

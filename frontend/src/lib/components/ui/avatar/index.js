@@ -11,3 +11,4 @@ export {
   Image as AvatarImage,
   Fallback as AvatarFallback
 };
+export { gradientFor, AVATAR_GRADIENTS, WORKSPACE_GRADIENT } from './avatar-gradients.js';

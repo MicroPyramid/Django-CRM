@@ -9,12 +9,12 @@ class AppSpacing {
   // ============================================
   // SPACING SCALE (4px base unit) - CRM Dense
   // ============================================
-  static const double xs = 2.0;    // 2px - Micro spacing
-  static const double sm = 4.0;    // 4px - Tight spacing
-  static const double md = 8.0;    // 8px - Small spacing
-  static const double lg = 12.0;   // 12px - Default spacing
-  static const double xl = 16.0;   // 16px - Medium spacing
-  static const double xxl = 20.0;  // 20px - Large spacing
+  static const double xs = 2.0; // 2px - Micro spacing
+  static const double sm = 4.0; // 4px - Tight spacing
+  static const double md = 8.0; // 8px - Small spacing
+  static const double lg = 12.0; // 12px - Default spacing
+  static const double xl = 16.0; // 16px - Medium spacing
+  static const double xxl = 20.0; // 20px - Large spacing
   static const double xxxl = 24.0; // 24px - Section spacing
 
   // ============================================
@@ -145,7 +145,9 @@ class AppLayout {
   static final BorderRadius borderRadiusLg = BorderRadius.circular(radiusLg);
   static final BorderRadius borderRadiusXl = BorderRadius.circular(radiusXl);
   static final BorderRadius borderRadiusXxl = BorderRadius.circular(radiusXxl);
-  static final BorderRadius borderRadiusFull = BorderRadius.circular(radiusFull);
+  static final BorderRadius borderRadiusFull = BorderRadius.circular(
+    radiusFull,
+  );
 
   // ============================================
   // ICON SIZES
@@ -171,36 +173,36 @@ class AppLayout {
   // SHADOWS
   // ============================================
   static List<BoxShadow> get shadowSm => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   static List<BoxShadow> get shadowMd => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.06),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   static List<BoxShadow> get shadowLg => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   static List<BoxShadow> get shadowXl => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.12),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.12),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
 }
 
 /// BottleCRM Animation Constants

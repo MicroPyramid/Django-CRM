@@ -48,11 +48,14 @@ export async function load({ url, locals, cookies }) {
     if (filters.created_at_gte) queryParams.append('created_at__gte', filters.created_at_gte);
     if (filters.created_at_lte) queryParams.append('created_at__lte', filters.created_at_lte);
 
-    // Fetch contacts, accounts, and tags in parallel
-    const [contactsResponse, accountsRes, tagsResponse] = await Promise.all([
+    // Fetch contacts, accounts, tags, and custom field definitions in parallel
+    const [contactsResponse, accountsRes, tagsResponse, customFieldsRes] = await Promise.all([
       apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
       apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
-      apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] }))
+      apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] })),
+      apiRequest('/custom-fields/?target_model=Contact&active_only=true', {}, { cookies, org }).catch(
+        () => ({ definitions: [] })
+      )
     ]);
 
     // Handle Django response format
@@ -145,7 +148,10 @@ export async function load({ url, locals, cookies }) {
         events: contact.event_count || 0,
         opportunities: contact.opportunity_count || 0,
         cases: contact.case_count || 0
-      }
+      },
+
+      // Per-org custom fields (validated server-side against CustomFieldDefinition)
+      customFields: contact.custom_fields || {}
     }));
 
     // Transform accounts for dropdown/lookup
@@ -179,7 +185,9 @@ export async function load({ url, locals, cookies }) {
       owners: [],
       allTags,
       // Accounts for quick action prefill lookup
-      accounts
+      accounts,
+      // Per-org custom field definitions for Contacts (rendered in the drawer)
+      customFieldDefinitions: customFieldsRes?.definitions || []
     };
   } catch (err) {
     console.error('Error loading contacts from API:', err);
@@ -324,6 +332,34 @@ export const actions = {
       // Extract the actual error message from the API response
       const errorMessage = err.message || 'Failed to update contact';
       return fail(400, { error: errorMessage });
+    }
+  },
+
+  updateCustomFields: async ({ request, url, locals, cookies }) => {
+    const contactId = url.searchParams.get('id');
+    if (!contactId) {
+      return fail(400, { error: 'Contact ID is required' });
+    }
+    const form = await request.formData();
+    const raw = form.get('custom_fields')?.toString() || '{}';
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return fail(400, { error: 'Malformed custom_fields payload' });
+    }
+    try {
+      await apiRequest(
+        `/contacts/${contactId}/`,
+        { method: 'PATCH', body: { custom_fields: parsed } },
+        { cookies, org: locals.org }
+      );
+      return { success: true };
+    } catch (err) {
+      console.error('Update contact custom fields error:', err);
+      return fail(400, {
+        error: /** @type {any} */ (err)?.message || 'Failed to save custom fields'
+      });
     }
   },
 

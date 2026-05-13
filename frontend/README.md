@@ -24,9 +24,9 @@ BottleCRM is a free, open-source Customer Relationship Management solution desig
 
 ### Customer Support
 
-- **Case Management**: Handle customer support cases and track resolution
+- **Ticket Management**: Handle customer support tickets and track resolution
 - **Solution Knowledge Base**: Maintain searchable solutions for common issues
-- **Multi-Channel Support**: Handle cases from various origins (email, web, phone)
+- **Multi-Channel Support**: Handle tickets from various origins (email, web, phone)
 
 ### Productivity & Collaboration
 

@@ -27,19 +27,18 @@
     Tag,
     Contact,
     Link2,
-    Filter,
     Columns
   } from '@lucide/svelte';
   import { TaskKanban } from '$lib/components/ui/task-kanban';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import { getCurrentUser } from '$lib/api.js';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -108,7 +107,7 @@
     dueDate: '',
     accountId: '',
     opportunityId: '',
-    caseId: '',
+    ticketId: '',
     leadId: '',
     assignedTo: /** @type {string[]} */ ([]),
     contacts: /** @type {string[]} */ ([]),
@@ -118,7 +117,7 @@
 
   /**
    * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
-   * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
+   * @typedef {{ key: string, label: string, type: ColumnType, width?: string, canHide?: boolean, editable?: boolean, relationIcon?: string, getValue?: (row: any) => any, options?: { value: string, label: string, color: string }[] }} TaskColumn
    */
 
   /**
@@ -136,7 +135,7 @@
       return { name: `Opp: ${row.opportunity.name || 'Opportunity'}` };
     }
     if (row.case_) {
-      return { name: `Case: ${row.case_.subject || row.case_.name || 'Case'}` };
+      return { name: `Ticket: ${row.case_.subject || row.case_.name || 'Ticket'}` };
     }
     if (row.account) {
       return { name: `Account: ${row.account.name || 'Account'}` };
@@ -146,16 +145,24 @@
 
   /** @type {TaskColumn[]} */
   const taskColumns = [
-    { key: 'subject', label: 'Task', type: 'text', width: 'w-64', canHide: false },
+    {
+      key: 'subject',
+      label: 'Task',
+      type: 'text',
+      width: 'w-64',
+      canHide: false,
+      editable: false
+    },
     {
       key: 'relatedTo',
       label: 'Related To',
       type: 'relation',
       width: 'w-48',
       relationIcon: 'link',
+      editable: false,
       getValue: getRelatedEntity
     },
-    { key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36' },
+    { key: 'dueDate', label: 'Due Date', type: 'date', width: 'w-36', editable: false },
     { key: 'priority', label: 'Priority', type: 'select', options: priorityOptions, width: 'w-28' },
     { key: 'status', label: 'Status', type: 'select', options: statusOptions, width: 'w-36' },
     {
@@ -164,6 +171,7 @@
       type: 'relation',
       width: 'w-36',
       relationIcon: 'user',
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const assigned = row.assignedTo || [];
         if (assigned.length === 0) return null;
@@ -179,6 +187,7 @@
       width: 'w-40',
       relationIcon: 'building',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => row.account
     },
     {
@@ -188,6 +197,7 @@
       width: 'w-36',
       relationIcon: 'contact',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const contacts = row.contacts || [];
         if (contacts.length === 0) return null;
@@ -202,6 +212,7 @@
       width: 'w-36',
       relationIcon: 'users',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const teams = row.teams || [];
         if (teams.length === 0) return null;
@@ -216,6 +227,7 @@
       width: 'w-32',
       relationIcon: 'tag',
       canHide: true,
+      editable: false,
       getValue: (/** @type {any} */ row) => {
         const tags = row.tags || [];
         if (tags.length === 0) return null;
@@ -418,9 +430,6 @@
   // Status chip filter state (client-side quick filter on top of server filters)
   let statusChipFilter = $state('ALL');
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   // Filtered tasks - server already applies main filters, just apply status chip
   const filteredTasks = $derived.by(() => {
     let filtered = tasks;
@@ -438,6 +447,10 @@
   $effect(() => {
     localTasks = [...filteredTasks];
   });
+
+  // Active row (highlighted in the table) — null until the user clicks a row.
+  /** @type {string | null} */
+  let activeRowId = $state(null);
 
   // Row detail sheet state
   let sheetOpen = $state(false);
@@ -493,7 +506,7 @@
     accountName: '',
     opportunityId: '',
     opportunityName: '',
-    caseId: '',
+    ticketId: '',
     caseName: '',
     leadId: '',
     leadName: '',
@@ -522,7 +535,7 @@
     formState.dueDate = row.dueDate ? row.dueDate.split('T')[0] : '';
     formState.accountId = row.account?.id || '';
     formState.opportunityId = row.opportunity?.id || '';
-    formState.caseId = row.case_?.id || '';
+    formState.ticketId = row.case_?.id || '';
     formState.leadId = row.lead?.id || '';
     formState.assignedTo = (row.assignedTo || []).map((/** @type {any} */ a) => a.id);
     formState.contacts = (row.contacts || []).map((/** @type {any} */ c) => c.id);
@@ -590,7 +603,7 @@
       accountName: accountNameFromUrl || '',
       opportunityId: '',
       opportunityName: '',
-      caseId: '',
+      ticketId: '',
       caseName: '',
       leadId: '',
       leadName: '',
@@ -630,7 +643,7 @@
         accountName: task.account?.name || '',
         opportunityId: task.opportunity?.id || '',
         opportunityName: task.opportunity?.name || '',
-        caseId: task.case_?.id || '',
+        ticketId: task.case_?.id || '',
         caseName: task.case_?.name || '',
         leadId: task.lead?.id || '',
         leadName: task.lead?.name || '',
@@ -845,7 +858,7 @@
     ...opportunities.map((/** @type {any} */ o) => ({ value: o.id, label: o.name }))
   ]);
 
-  // Case options for drawer
+  // Ticket options for drawer
   const caseOptions = $derived([
     { value: '', label: 'None' },
     ...cases.map((/** @type {any} */ c) => ({ value: c.id, label: c.name }))
@@ -887,7 +900,7 @@
               { key: 'opportunityName', label: 'Opportunity', type: 'readonly', icon: Target }
             ];
           if (task.case_)
-            return [{ key: 'caseName', label: 'Case', type: 'readonly', icon: Briefcase }];
+            return [{ key: 'caseName', label: 'Ticket', type: 'readonly', icon: Briefcase }];
           return [];
         })()
       : accountFromUrl
@@ -935,7 +948,7 @@
       accountName: formState.accountName,
       opportunityId: formState.opportunityId,
       opportunityName: formState.opportunityName,
-      caseId: formState.caseId,
+      ticketId: formState.ticketId,
       caseName: formState.caseName,
       leadId: formState.leadId,
       leadName: formState.leadName,
@@ -1036,7 +1049,7 @@
       let leadName = '';
       let opportunityId = '';
       let opportunityName = '';
-      let caseId = '';
+      let ticketId = '';
       let caseName = '';
 
       if (relatedEntity) {
@@ -1050,7 +1063,7 @@
           opportunityId = relatedEntity.id;
           opportunityName = relatedEntity.name;
         } else if (relatedEntity.type === 'case') {
-          caseId = relatedEntity.id;
+          ticketId = relatedEntity.id;
           caseName = relatedEntity.name;
         }
       }
@@ -1066,7 +1079,7 @@
         accountName,
         opportunityId,
         opportunityName,
-        caseId,
+        ticketId,
         caseName,
         leadId,
         leadName,
@@ -1084,6 +1097,7 @@
   <title>Tasks - BottleCRM</title>
 </svelte:head>
 
+<div class="flex flex-col">
 <PageHeader title="Tasks" subtitle="{filteredTasks.length} of {tasks.length} tasks">
   {#snippet actions()}
     <div class="flex items-center gap-2">
@@ -1175,24 +1189,6 @@
         </Button>
       </div>
 
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-          >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
       {#if viewMode === 'list'}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -1233,17 +1229,13 @@
       </Button>
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       onchange={(value) => updateFilters({ ...filters, search: value })}
@@ -1267,12 +1259,19 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredTasks.length} of {pagination.total} tasks</span>
+    {/snippet}
+  </FilterStrip>
   {#if viewMode === 'list'}
     <CrmTable
       data={localTasks}
       columns={taskColumns}
       bind:visibleColumns
+      bind:activeRowId
       onRowChange={handleRowChange}
       onRowClick={handleRowClick}
     >
@@ -1302,10 +1301,10 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Calendar Section -->
       <div class="lg:col-span-2">
-        <Card.Root>
-          <!-- Calendar Header -->
-          <Card.Header
-            class="bg-primary flex flex-row items-center justify-between space-y-0 rounded-t-lg p-4"
+        <SectionCard padded={false} class="overflow-hidden">
+          <!-- Calendar Header (domain-specific colored strip) -->
+          <div
+            class="bg-primary flex flex-row items-center justify-between space-y-0 p-4"
           >
             <div class="flex items-center gap-4">
               <Button
@@ -1337,9 +1336,7 @@
             >
               Today
             </Button>
-          </Card.Header>
-
-          <Card.Content class="p-0">
+          </div>
             <!-- Days of Week -->
             <div class="bg-muted/50 grid grid-cols-7 border-b">
               {#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
@@ -1398,27 +1395,26 @@
                 {/if}
               {/each}
             </div>
-          </Card.Content>
-        </Card.Root>
+        </SectionCard>
       </div>
 
       <!-- Tasks for Selected Date -->
       <div class="lg:col-span-1">
-        <Card.Root class="h-fit">
-          <Card.Header class="border-b pb-4">
-            <Card.Title class="text-base">
-              Tasks for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </Card.Title>
-            <p class="text-muted-foreground text-sm">
-              {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
-            </p>
-          </Card.Header>
-
-          <Card.Content class="p-4">
+        <SectionCard class="h-fit">
+          {#snippet title()}
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                Tasks for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </h3>
+              <p class="text-[12px] text-[color:var(--text-muted)]">
+                {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          {/snippet}
             {#if selectedTasks.length > 0}
               <div class="space-y-3">
                 {#each selectedTasks as task}
@@ -1478,15 +1474,11 @@
                 </Button>
               </div>
             {/if}
-          </Card.Content>
-        </Card.Root>
+        </SectionCard>
 
         <!-- Monthly Stats -->
-        <Card.Root class="mt-4">
-          <Card.Header class="pb-2">
-            <Card.Title class="text-base">This Month</Card.Title>
-          </Card.Header>
-          <Card.Content class="space-y-2">
+        <SectionCard title="This Month" class="mt-4">
+          <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-muted-foreground text-sm">Total Tasks</span>
               <span class="text-foreground font-medium">{totalMonthlyTasks}</span>
@@ -1495,8 +1487,8 @@
               <span class="text-muted-foreground text-sm">Days with Tasks</span>
               <span class="text-foreground font-medium">{monthlyTaskDates.length}</span>
             </div>
-          </Card.Content>
-        </Card.Root>
+          </div>
+        </SectionCard>
       </div>
     </div>
   {/if}
@@ -1509,6 +1501,7 @@
     onPageChange={handlePageChange}
     onLimitChange={handleLimitChange}
   />
+</div>
 </div>
 
 <!-- Task Detail Drawer -->
@@ -1543,6 +1536,19 @@
           </div>
         {/if}
       </div>
+
+      {#if (data.customFieldDefinitions || []).length > 0}
+        <div class="mt-6 border-t border-[var(--border-default)] pt-4">
+          <CustomFieldsPanel
+            target="Task"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedTask.customFields || {}}
+            title="Custom Fields"
+            formAction="?/updateTaskCustomFields"
+            extraFields={{ taskId: String(selectedTask.id) }}
+          />
+        </div>
+      {/if}
 
       <!-- Comments Section -->
       <div class="mt-6 border-t border-[var(--border-default)] pt-4">
@@ -1594,7 +1600,7 @@
   <input type="hidden" name="dueDate" value={formState.dueDate} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="opportunityId" value={formState.opportunityId} />
-  <input type="hidden" name="caseId" value={formState.caseId} />
+  <input type="hidden" name="ticketId" value={formState.ticketId} />
   <input type="hidden" name="leadId" value={formState.leadId} />
   <input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
   <input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />
@@ -1617,7 +1623,7 @@
   <input type="hidden" name="dueDate" value={formState.dueDate} />
   <input type="hidden" name="accountId" value={formState.accountId} />
   <input type="hidden" name="opportunityId" value={formState.opportunityId} />
-  <input type="hidden" name="caseId" value={formState.caseId} />
+  <input type="hidden" name="ticketId" value={formState.ticketId} />
   <input type="hidden" name="leadId" value={formState.leadId} />
   <input type="hidden" name="assignedTo" value={JSON.stringify(formState.assignedTo)} />
   <input type="hidden" name="contacts" value={JSON.stringify(formState.contacts)} />

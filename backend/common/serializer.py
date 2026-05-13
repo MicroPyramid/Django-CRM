@@ -7,13 +7,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from disposable_email_domains import blocklist as disposable_domains
 
 from common.utils import CURRENCY_SYMBOLS
+from common.custom_fields import (
+    is_supported_target,
+    validate_definition_options,
+)
 from common.models import (
     Activity,
     Address,
     APISettings,
     Attachments,
     Comment,
+    CustomFieldDefinition,
     Document,
+    Notification,
     Org,
     Profile,
     Tags,
@@ -153,10 +159,26 @@ class SocialLoginSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
+class CommentUserSerializer(serializers.ModelSerializer):
+    """Simplified user serializer for comments"""
+
+    user_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ("id", "user_details")
+
+    def get_user_details(self, obj):
+        if obj.user:
+            return {"email": obj.user.email, "profile_pic": obj.user.profile_pic}
+        return None
+
+
 class CommentSerializer(serializers.ModelSerializer):
     """Serializer for Comment model using ContentType"""
 
     content_type = serializers.SlugRelatedField(slug_field="model", read_only=True)
+    commented_by = CommentUserSerializer(read_only=True)
 
     class Meta:
         model = Comment
@@ -168,6 +190,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "content_type",
             "object_id",
             "org",
+            "is_internal",
         )
 
 
@@ -200,19 +223,26 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class CommentUserSerializer(serializers.ModelSerializer):
-    """Simplified user serializer for comments"""
+class NotificationSerializer(serializers.ModelSerializer):
+    """In-app notification — list/feed shape returned by GET and SSE."""
 
-    user_details = serializers.SerializerMethodField()
+    actor = CommentUserSerializer(read_only=True)
 
     class Meta:
-        model = Profile
-        fields = ("id", "user_details")
-
-    def get_user_details(self, obj):
-        if obj.user:
-            return {"email": obj.user.email, "profile_pic": obj.user.profile_pic}
-        return None
+        model = Notification
+        fields = (
+            "id",
+            "verb",
+            "actor",
+            "entity_type",
+            "entity_id",
+            "entity_name",
+            "data",
+            "link",
+            "read_at",
+            "created_at",
+        )
+        read_only_fields = fields
 
 
 class LeadCommentSerializer(serializers.ModelSerializer):
@@ -227,6 +257,97 @@ class LeadCommentSerializer(serializers.ModelSerializer):
             "comment",
             "commented_on",
             "commented_by",
+        )
+
+
+class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
+    """Per-org custom-field definition. key/target_model/field_type are immutable
+    after creation — admins must create a new definition to change shape."""
+
+    class Meta:
+        model = CustomFieldDefinition
+        fields = (
+            "id",
+            "target_model",
+            "key",
+            "label",
+            "field_type",
+            "options",
+            "is_required",
+            "is_filterable",
+            "display_order",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_target_model(self, value):
+        if not is_supported_target(value):
+            raise serializers.ValidationError(
+                f"target_model {value!r} is not yet wired for custom fields"
+            )
+        return value
+
+    def validate_key(self, value):
+        if not value:
+            raise serializers.ValidationError("key is required")
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", value):
+            raise serializers.ValidationError(
+                "key must be a lowercase slug starting with a letter (a-z, 0-9, _)"
+            )
+        return value
+
+    def validate(self, attrs):
+        if self.instance is not None:
+            for frozen in ("key", "target_model", "field_type"):
+                if frozen in attrs and getattr(self.instance, frozen) != attrs[frozen]:
+                    raise serializers.ValidationError(
+                        {frozen: f"{frozen} cannot be changed after creation"}
+                    )
+            field_type = attrs.get("field_type", self.instance.field_type)
+        else:
+            field_type = attrs.get("field_type")
+
+        options = attrs.get("options", getattr(self.instance, "options", None))
+        validate_definition_options(field_type, options)
+
+        org = self.context.get("org")
+        target_model = attrs.get(
+            "target_model", getattr(self.instance, "target_model", None)
+        )
+        key = attrs.get("key", getattr(self.instance, "key", None))
+        if org is not None and target_model and key:
+            qs = CustomFieldDefinition.objects.filter(
+                org=org, target_model=target_model, key=key
+            )
+            if self.instance is not None:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {"key": f"a {target_model} field with key {key!r} already exists"}
+                )
+
+        return attrs
+
+
+class ActivitySerializer(serializers.ModelSerializer):
+    """Activity timeline row, used by audit-log feeds (Cases first)."""
+
+    user = CommentUserSerializer(read_only=True)
+
+    class Meta:
+        model = Activity
+        fields = (
+            "id",
+            "action",
+            "user",
+            "entity_type",
+            "entity_id",
+            "entity_name",
+            "description",
+            "metadata",
+            "created_at",
         )
 
 

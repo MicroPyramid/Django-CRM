@@ -411,6 +411,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             # Additional Metadata
             "billing_period",
             "po_number",
+            "custom_fields",
             # Related
             "line_items",
             "payments",

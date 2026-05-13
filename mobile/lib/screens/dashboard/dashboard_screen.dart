@@ -20,22 +20,20 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
-  void initState() {
-    super.initState();
-    // Fetch dashboard data when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dashboardProvider.notifier).fetchDashboard();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final dashboardState = ref.watch(dashboardProvider);
+    final dashboardAsync = ref.watch(dashboardProvider);
     final authState = ref.watch(authProvider);
     final userName = authState.user?.displayName ?? 'User';
-    final currencySymbol = authState.selectedOrganization?.currencySymbol ?? '\$';
-    final currencyFormat = NumberFormat.currency(symbol: currencySymbol, decimalDigits: 0);
-    final compactCurrencyFormat = NumberFormat.compactCurrency(symbol: currencySymbol, decimalDigits: 1);
+    final currencySymbol =
+        authState.selectedOrganization?.currencySymbol ?? '\$';
+    final currencyFormat = NumberFormat.currency(
+      symbol: currencySymbol,
+      decimalDigits: 0,
+    );
+    final compactCurrencyFormat = NumberFormat.compactCurrency(
+      symbol: currencySymbol,
+      decimalDigits: 1,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -73,7 +71,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             // Content
             SliverToBoxAdapter(
-              child: _buildContent(dashboardState, currencyFormat, compactCurrencyFormat),
+              child: _buildContent(
+                dashboardAsync,
+                currencyFormat,
+                compactCurrencyFormat,
+              ),
             ),
           ],
         ),
@@ -82,15 +84,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildContent(DashboardState dashboardState, NumberFormat currencyFormat, NumberFormat compactCurrencyFormat) {
-    if (dashboardState.isLoading && dashboardState.data == null) {
+  Widget _buildContent(
+    AsyncValue<DashboardData> dashboardAsync,
+    NumberFormat currencyFormat,
+    NumberFormat compactCurrencyFormat,
+  ) {
+    // Stale-while-loading: keep showing prior data during refresh.
+    final data = dashboardAsync.value;
+
+    if (data == null && dashboardAsync.isLoading) {
       return const SizedBox(
         height: 400,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (dashboardState.error != null && dashboardState.data == null) {
+    if (data == null && dashboardAsync.hasError) {
       return SizedBox(
         height: 400,
         child: Center(
@@ -114,8 +123,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    final data = dashboardState.data ?? const DashboardData();
+    final resolved = data ?? const DashboardData();
+    return _buildBody(resolved, currencyFormat, compactCurrencyFormat);
+  }
 
+  Widget _buildBody(
+    DashboardData data,
+    NumberFormat currencyFormat,
+    NumberFormat compactCurrencyFormat,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -220,11 +236,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(LucideIcons.alertTriangle, size: 16, color: AppColors.warning600),
+                Icon(
+                  LucideIcons.alertTriangle,
+                  size: 16,
+                  color: AppColors.warning600,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Needs Attention',
-                  style: AppTypography.labelSmall.copyWith(color: AppColors.warning700),
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.warning700,
+                  ),
                 ),
               ],
             ),
@@ -265,16 +287,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPipelineSection(List<PipelineStage> stages, NumberFormat currencyFormat) {
+  Widget _buildPipelineSection(
+    List<PipelineStage> stages,
+    NumberFormat currencyFormat,
+  ) {
     // Only show active pipeline stages (not closed)
-    final activeStages = stages.where((s) =>
-        !s.code.contains('CLOSED') && s.value > 0).toList();
+    final activeStages = stages
+        .where((s) => !s.code.contains('CLOSED') && s.value > 0)
+        .toList();
 
     if (activeStages.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final maxValue = activeStages.map((s) => s.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = activeStages
+        .map((s) => s.value)
+        .reduce((a, b) => a > b ? a : b);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -424,7 +452,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.danger100,
                               borderRadius: BorderRadius.circular(3),
@@ -511,7 +542,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: Center(
                       child: Column(
                         children: [
-                          Icon(LucideIcons.checkCircle, size: 24, color: Colors.grey[300]),
+                          Icon(
+                            LucideIcons.checkCircle,
+                            size: 24,
+                            color: Colors.grey[300],
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             'No upcoming tasks',
@@ -722,13 +757,7 @@ class _UrgentBadge extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: color,
-                ),
-              ),
+              Text(label, style: TextStyle(fontSize: 10, color: color)),
             ],
           ),
         ),
@@ -743,11 +772,7 @@ class _TaskItem extends StatelessWidget {
   final bool showDivider;
   final VoidCallback? onTap;
 
-  const _TaskItem({
-    required this.task,
-    this.showDivider = true,
-    this.onTap,
-  });
+  const _TaskItem({required this.task, this.showDivider = true, this.onTap});
 
   Color _getPriorityColor() {
     switch (task.priority.toLowerCase()) {
@@ -809,7 +834,13 @@ class _TaskItem extends StatelessWidget {
                                 ),
                               ),
                             if (task.relatedTo != null && task.dueDate != null)
-                              Text(' • ', style: TextStyle(color: AppColors.gray300, fontSize: 12)),
+                              Text(
+                                ' • ',
+                                style: TextStyle(
+                                  color: AppColors.gray300,
+                                  fontSize: 12,
+                                ),
+                              ),
                             if (task.dueDate != null)
                               Text(
                                 DateFormat.MMMd().format(task.dueDate!),
@@ -823,7 +854,10 @@ class _TaskItem extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: _getPriorityColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -846,4 +880,3 @@ class _TaskItem extends StatelessWidget {
     );
   }
 }
-

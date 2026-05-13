@@ -66,11 +66,14 @@ class LeadSerializer(serializers.ModelSerializer):
             # System
             "created_by",
             "created_at",
+            "updated_at",
             "is_active",
             "company_name",
             # Kanban
             "stage",
             "kanban_order",
+            # Per-org custom fields (validated via common.custom_fields)
+            "custom_fields",
         )
 
 

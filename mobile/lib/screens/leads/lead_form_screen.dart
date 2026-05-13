@@ -13,11 +13,7 @@ class LeadFormScreen extends ConsumerStatefulWidget {
   final String? leadId;
   final Lead? initialLead;
 
-  const LeadFormScreen({
-    super.key,
-    this.leadId,
-    this.initialLead,
-  });
+  const LeadFormScreen({super.key, this.leadId, this.initialLead});
 
   bool get isEditMode => leadId != null;
 
@@ -57,10 +53,6 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch lookup data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lookupProvider.notifier).fetchAll();
-    });
 
     if (widget.initialLead != null) {
       _populateFromLead(widget.initialLead!);
@@ -90,7 +82,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       _fetchError = null;
     });
 
-    final lead = await ref.read(leadsProvider.notifier).getLeadById(widget.leadId!);
+    final lead = await ref
+        .read(leadsProvider.notifier)
+        .getLeadById(widget.leadId!);
 
     if (mounted) {
       setState(() {
@@ -260,7 +254,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         ? await notifier.updateLead(widget.leadId!, payload)
         : await notifier.createLead(payload);
 
-    debugPrint('Response: success=${response.success}, message=${response.message}, statusCode=${response.statusCode}');
+    debugPrint(
+      'Response: success=${response.success}, message=${response.message}, statusCode=${response.statusCode}',
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -268,7 +264,11 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.isEditMode ? 'Lead updated successfully' : 'Lead created successfully'),
+            content: Text(
+              widget.isEditMode
+                  ? 'Lead updated successfully'
+                  : 'Lead created successfully',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -324,9 +324,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
 
   Widget _buildBody() {
     if (_isFetchingLead) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_fetchError != null) {
@@ -334,11 +332,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              LucideIcons.alertCircle,
-              size: 48,
-              color: AppColors.danger500,
-            ),
+            Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
             const SizedBox(height: 16),
             Text(
               _fetchError!,
@@ -347,10 +341,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: _fetchLead,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: _fetchLead, child: const Text('Retry')),
           ],
         ),
       );
@@ -613,9 +604,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         // Rating Selector
         Text(
           'Rating',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         _buildRatingSelector(),
@@ -624,7 +613,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   Widget _buildRelationshipFields() {
-    final lookupState = ref.watch(lookupProvider);
+    final users = ref.watch(usersProvider);
+    final tags = ref.watch(tagsProvider);
 
     return Column(
       children: [
@@ -633,7 +623,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           label: 'Assigned To',
           icon: LucideIcons.users,
           selectedCount: _assignedToIds.length,
-          selectedLabel: _getSelectedUsersLabel(lookupState.users),
+          selectedLabel: _getSelectedUsersLabel(users),
           onTap: () => _showAssignedToPicker(),
         ),
 
@@ -644,7 +634,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           label: 'Tags',
           icon: LucideIcons.tag,
           selectedCount: _tagIds.length,
-          selectedLabel: _getSelectedTagsLabel(lookupState.tags),
+          selectedLabel: _getSelectedTagsLabel(tags),
           onTap: () => _showTagsPicker(),
         ),
       ],
@@ -653,7 +643,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
 
   String _getSelectedUsersLabel(List<UserLookup> users) {
     if (_assignedToIds.isEmpty) return 'Select users';
-    final selectedUsers = users.where((u) => _assignedToIds.contains(u.id)).toList();
+    final selectedUsers = users
+        .where((u) => _assignedToIds.contains(u.id))
+        .toList();
     if (selectedUsers.isEmpty) return '${_assignedToIds.length} selected';
     if (selectedUsers.length == 1) return selectedUsers.first.displayName;
     return '${selectedUsers.length} users selected';
@@ -679,9 +671,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -696,11 +686,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
+                Icon(icon, size: 20, color: AppColors.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -714,7 +700,10 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                 ),
                 if (selectedCount > 0) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary100,
                       borderRadius: BorderRadius.circular(12),
@@ -752,9 +741,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -770,10 +757,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  value,
-                  style: AppTypography.body,
-                ),
+                Text(value, style: AppTypography.body),
                 Icon(
                   LucideIcons.chevronDown,
                   size: 20,
@@ -838,15 +822,17 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Status',
         options: LeadStatus.values
-            .map((status) => _PickerOption(
-                  label: status.displayName,
-                  isSelected: _status == status,
-                  color: status.color,
-                  onTap: () {
-                    setState(() => _status = status);
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (status) => _PickerOption(
+                label: status.displayName,
+                isSelected: _status == status,
+                color: status.color,
+                onTap: () {
+                  setState(() => _status = status);
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
@@ -862,22 +848,24 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Source',
         options: LeadSource.values
-            .map((source) => _PickerOption(
-                  label: source.displayName,
-                  isSelected: _source == source,
-                  icon: source.icon,
-                  onTap: () {
-                    setState(() => _source = source);
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (source) => _PickerOption(
+                label: source.displayName,
+                isSelected: _source == source,
+                icon: source.icon,
+                onTap: () {
+                  setState(() => _source = source);
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
   }
 
   void _showAssignedToPicker() {
-    final users = ref.read(lookupProvider).users;
+    final users = ref.read(usersProvider);
 
     showModalBottomSheet(
       context: context,
@@ -901,7 +889,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   void _showTagsPicker() {
-    final tags = ref.read(lookupProvider).tags;
+    final tags = ref.read(tagsProvider);
 
     showModalBottomSheet(
       context: context,
@@ -951,10 +939,7 @@ class _PickerBottomSheet extends StatelessWidget {
   final String title;
   final List<_PickerOption> options;
 
-  const _PickerBottomSheet({
-    required this.title,
-    required this.options,
-  });
+  const _PickerBottomSheet({required this.title, required this.options});
 
   @override
   Widget build(BuildContext context) {
@@ -1011,19 +996,12 @@ class _PickerOption extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 12),
             ],
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
+              Icon(icon, size: 20, color: AppColors.textSecondary),
               const SizedBox(width: 12),
             ],
             Expanded(
@@ -1038,11 +1016,7 @@ class _PickerOption extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              Icon(
-                LucideIcons.check,
-                size: 20,
-                color: AppColors.primary600,
-              ),
+              Icon(LucideIcons.check, size: 20, color: AppColors.primary600),
           ],
         ),
       ),

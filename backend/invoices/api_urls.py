@@ -165,4 +165,12 @@ urlpatterns = [
         api_views.InvoiceFromOpportunityView.as_view(),
         name="invoice_from_opportunity",
     ),
+    # ==========================================================================
+    # INVOICE FROM TIME ENTRIES (Tier 3 time-tracking)
+    # ==========================================================================
+    path(
+        "from-time-entries/",
+        api_views.InvoiceFromTimeEntriesView.as_view(),
+        name="invoice_from_time_entries",
+    ),
 ]

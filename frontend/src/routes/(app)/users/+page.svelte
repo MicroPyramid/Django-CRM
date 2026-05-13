@@ -15,12 +15,12 @@
     AlertCircle,
     UserCheck
   } from '@lucide/svelte';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import { PageHeader, ViewTabs } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as Table from '$lib/components/ui/table/index.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -223,13 +223,20 @@
   <title>Users & Teams - BottleCRM</title>
 </svelte:head>
 
-<PageHeader title="Users & Teams" subtitle="Manage users and teams in your organization" />
+<PageHeader title="Users & Teams" subtitle="Manage users and teams in your organization">
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: users.length }]} active="all" />
+  {/snippet}
+</PageHeader>
 
 <div class="flex-1 space-y-6 p-4 md:p-6">
   <!-- Error Message -->
   {#if data.error}
-    <Card.Root class="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
-      <Card.Content class="flex items-center gap-3 p-4">
+    <SectionCard
+      padded={false}
+      class="border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
+    >
+      <div class="flex items-center gap-3">
         <div
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-800"
         >
@@ -238,8 +245,8 @@
         <p class="text-sm font-medium text-red-800 dark:text-red-200">
           {data.error.name}
         </p>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </SectionCard>
   {:else}
     <div class="mx-auto max-w-5xl">
       <Tabs.Root value="users" class="w-full">
@@ -257,8 +264,8 @@
         <!-- Users Tab -->
         <Tabs.Content value="users" class="space-y-6">
           <!-- Add User Form -->
-          <Card.Root>
-            <Card.Header class="pb-4">
+          <SectionCard>
+            {#snippet title()}
               <div class="flex items-center gap-3">
                 <div
                   class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/15"
@@ -266,14 +273,15 @@
                   <Plus class="h-5 w-5 text-[var(--color-success-default)]" />
                 </div>
                 <div>
-                  <Card.Title class="">Add New Member</Card.Title>
-                  <Card.Description class=""
-                    >Invite a user to join your organization</Card.Description
-                  >
+                  <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                    Add New Member
+                  </h3>
+                  <p class="text-[12px] text-[color:var(--text-muted)]">
+                    Invite a user to join your organization
+                  </p>
                 </div>
               </div>
-            </Card.Header>
-            <Card.Content>
+            {/snippet}
               <form
                 method="POST"
                 action="?/add_user"
@@ -306,12 +314,11 @@
                   Add Member
                 </Button>
               </form>
-            </Card.Content>
-          </Card.Root>
+          </SectionCard>
 
           <!-- Users Table -->
-          <Card.Root>
-            <Card.Header class="pb-4">
+          <SectionCard>
+            {#snippet title()}
               <div class="flex items-center gap-3">
                 <div
                   class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
@@ -319,14 +326,15 @@
                   <Users class="h-5 w-5 text-[var(--color-primary-default)]" />
                 </div>
                 <div>
-                  <Card.Title class="">Team Members</Card.Title>
-                  <Card.Description class=""
-                    >{users.length} member{users.length !== 1 ? 's' : ''} in your organization</Card.Description
-                  >
+                  <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                    Team Members
+                  </h3>
+                  <p class="text-[12px] text-[color:var(--text-muted)]">
+                    {users.length} member{users.length !== 1 ? 's' : ''} in your organization
+                  </p>
                 </div>
               </div>
-            </Card.Header>
-            <Card.Content>
+            {/snippet}
               <div class="rounded-lg border">
                 <Table.Root>
                   <Table.Header>
@@ -484,8 +492,7 @@
                   </Table.Body>
                 </Table.Root>
               </div>
-            </Card.Content>
-          </Card.Root>
+          </SectionCard>
         </Tabs.Content>
 
         <!-- Teams Tab -->
@@ -513,30 +520,29 @@
             </div>
           {:else}
             <!-- Empty State -->
-            <Card.Root class="py-12">
-              <Card.Content class="text-center">
-                <div
-                  class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
-                >
-                  <UsersRound class="h-8 w-8 text-[var(--color-primary-default)]" />
-                </div>
-                <h3 class="mb-2 text-lg font-semibold">No teams yet</h3>
-                <p class="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                  Teams help you organize users and manage access to records. Create your first team
-                  to get started.
-                </p>
-                <Button onclick={openCreateTeamDialog}>
-                  <Plus class="mr-2 h-4 w-4" />
-                  Create Your First Team
-                </Button>
-              </Card.Content>
-            </Card.Root>
+            <SectionCard padded={false} class="py-12 text-center">
+              <div
+                class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
+              >
+                <UsersRound class="h-8 w-8 text-[var(--color-primary-default)]" />
+              </div>
+              <h3 class="mb-2 text-lg font-semibold">No teams yet</h3>
+              <p class="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
+                Teams help you organize users and manage access to records. Create your first team
+                to get started.
+              </p>
+              <Button onclick={openCreateTeamDialog}>
+                <Plus class="mr-2 h-4 w-4" />
+                Create Your First Team
+              </Button>
+            </SectionCard>
           {/if}
         </Tabs.Content>
       </Tabs.Root>
     </div>
   {/if}
 </div>
+
 
 <!-- Team Form Dialog -->
 <TeamFormDialog

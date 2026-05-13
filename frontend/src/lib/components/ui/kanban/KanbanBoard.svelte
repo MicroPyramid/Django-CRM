@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import KanbanColumn from './KanbanColumn.svelte';
   import { Loader2, TrendingUp, Users, Flame, Zap } from '@lucide/svelte';
@@ -49,11 +50,15 @@
     emptyMessage = 'No data available'
   } = $props();
 
-  // Local mutable copy of columns for optimistic updates
+  // Local mutable copy of columns for optimistic updates.
+  // Initialize synchronously from props so SSR renders the actual kanban
+  // instead of flashing the empty state before $effect runs on hydration.
   /** @type {Column[]} */
-  let localColumns = $state([]);
+  let localColumns = $state(
+    untrack(() => (data?.columns ? structuredClone(data.columns) : []))
+  );
 
-  // Sync local columns when data changes from server
+  // Sync local columns when data changes from server (filter/refresh/navigation)
   $effect(() => {
     if (data?.columns) {
       localColumns = structuredClone(data.columns);
@@ -269,8 +274,9 @@
     </div>
   </div>
 {:else}
+  <div class="flex h-full flex-col">
   <!-- Desktop: Horizontal scroll container with all columns -->
-  <div class="kanban-board hidden md:block">
+  <div class="kanban-board hidden md:flex md:flex-1 md:flex-col md:min-h-0">
     <!-- Pipeline Stats Bar -->
     {#if pipelineStats().totalValue > 0}
       <div
@@ -337,9 +343,9 @@
     {/if}
 
     <!-- Kanban Columns -->
-    <div class="columns-container flex gap-4 overflow-x-auto pb-4" style="min-height: 400px">
+    <div class="columns-container flex min-h-0 flex-1 gap-4 overflow-x-auto pb-4">
       {#each sortedColumns as column, index (column.id)}
-        <div class="column-animate" style="animation-delay: {index * 80}ms">
+        <div class="column-animate flex" style="animation-delay: {index * 80}ms">
           <KanbanColumn
             {column}
             {itemName}
@@ -358,7 +364,7 @@
   </div>
 
   <!-- Mobile: Tab-based single column view -->
-  <div class="md:hidden">
+  <div class="flex min-h-0 flex-1 flex-col md:hidden">
     <!-- Column selector - Pill style -->
     <div class="mb-4 overflow-x-auto">
       <div class="flex gap-2 pb-2">
@@ -426,6 +432,7 @@
     <div
       class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10"
     ></div>
+  </div>
   </div>
 {/if}
 

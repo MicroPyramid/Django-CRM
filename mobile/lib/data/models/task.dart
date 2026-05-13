@@ -7,7 +7,7 @@ enum RelatedEntityType {
   lead('lead', 'Lead', Icons.person_outline),
   account('account', 'Account', Icons.business),
   opportunity('opportunity', 'Opportunity', Icons.trending_up),
-  case_('case', 'Case', Icons.support_agent),
+  ticket_('case', 'Ticket', Icons.support_agent),
   contact('contact', 'Contact', Icons.contacts);
 
   final String value;
@@ -39,7 +39,10 @@ class RelatedEntity {
 
   String get displayLabel => '${type.label}: $title';
 
-  factory RelatedEntity.fromJson(Map<String, dynamic> json, RelatedEntityType type) {
+  factory RelatedEntity.fromJson(
+    Map<String, dynamic> json,
+    RelatedEntityType type,
+  ) {
     String title = '';
     if (type == RelatedEntityType.lead) {
       final firstName = json['first_name'] as String? ?? '';
@@ -174,12 +177,15 @@ class Task {
     List<String> parsedTags = [];
     if (json['tags'] != null) {
       final tagsList = json['tags'] as List<dynamic>;
-      parsedTags = tagsList.map((t) {
-        if (t is Map<String, dynamic>) {
-          return t['name'] as String? ?? '';
-        }
-        return t.toString();
-      }).where((t) => t.isNotEmpty).toList();
+      parsedTags = tagsList
+          .map((t) {
+            if (t is Map<String, dynamic>) {
+              return t['name'] as String? ?? '';
+            }
+            return t.toString();
+          })
+          .where((t) => t.isNotEmpty)
+          .toList();
     }
 
     // Parse assigned_to
@@ -191,7 +197,7 @@ class Task {
           .toList();
     }
 
-    // Parse related entity (account, lead, opportunity, case)
+    // Parse related entity (account, lead, opportunity, ticket)
     // Handle both full objects and ID references
     RelatedEntity? relatedEntity;
     if (json['account'] != null && json['account'] is Map<String, dynamic>) {
@@ -204,7 +210,8 @@ class Task {
         json['lead'] as Map<String, dynamic>,
         RelatedEntityType.lead,
       );
-    } else if (json['opportunity'] != null && json['opportunity'] is Map<String, dynamic>) {
+    } else if (json['opportunity'] != null &&
+        json['opportunity'] is Map<String, dynamic>) {
       relatedEntity = RelatedEntity.fromJson(
         json['opportunity'] as Map<String, dynamic>,
         RelatedEntityType.opportunity,
@@ -212,7 +219,7 @@ class Task {
     } else if (json['case'] != null && json['case'] is Map<String, dynamic>) {
       relatedEntity = RelatedEntity.fromJson(
         json['case'] as Map<String, dynamic>,
-        RelatedEntityType.case_,
+        RelatedEntityType.ticket_,
       );
     }
 

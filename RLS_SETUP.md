@@ -100,8 +100,7 @@ Migrations automatically enable RLS on all protected tables:
 
 ```bash
 cd backend
-source venv/bin/activate
-python manage.py migrate
+uv run python manage.py migrate
 ```
 
 ---

@@ -340,6 +340,12 @@ class Invoice(AssignableMixin, BaseModel):
     )
     po_number = models.CharField(_("PO Number"), max_length=100, blank=True, null=True)
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     # Assignment
     assigned_to = models.ManyToManyField(Profile, related_name="invoice_assigned_to")
     teams = models.ManyToManyField(Teams, related_name="invoices_teams")
@@ -779,6 +785,12 @@ class Estimate(AssignableMixin, BaseModel):
     notes = models.TextField(_("Notes"), blank=True)
     terms = models.TextField(_("Terms & Conditions"), blank=True)
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     # Assignment
     assigned_to = models.ManyToManyField(Profile, related_name="estimate_assigned_to")
     teams = models.ManyToManyField(Teams, related_name="estimate_teams")
@@ -1036,6 +1048,12 @@ class RecurringInvoice(AssignableMixin, BaseModel):
     # Notes
     notes = models.TextField(_("Notes"), blank=True)
     terms = models.TextField(_("Terms & Conditions"), blank=True)
+
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
 
     # Statistics
     invoices_generated = models.PositiveIntegerField(_("Invoices Generated"), default=0)

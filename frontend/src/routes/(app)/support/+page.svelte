@@ -1,6 +1,5 @@
 <script>
   import {
-    Github,
     Mail,
     Bug,
     Lightbulb,
@@ -9,13 +8,14 @@
     Heart,
     Users,
     ExternalLink,
-    Sparkles,
     ArrowRight,
     Zap,
     Code2,
     MessageSquareHeart
   } from '@lucide/svelte';
+  import { GithubIcon as Github } from '$lib/components/icons';
   import { Button } from '$lib/components/ui/button/index.js';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
@@ -25,25 +25,13 @@
   <title>Support - BottleCRM</title>
 </svelte:head>
 
-<div class="support-page">
-  <!-- Hero Section with Gradient Mesh -->
-  <header class="hero noise-overlay">
-    <div class="hero-glow"></div>
-    <div class="hero-content">
-      <div class="hero-badge animate-in-up">
-        <Sparkles class="h-3.5 w-3.5" />
-        <span>Open Source • Forever Free</span>
-      </div>
-      <h1 class="hero-title animate-in-up stagger-1">
-        Help & <span class="text-gradient">Support</span>
-      </h1>
-      <p class="hero-description animate-in-up stagger-2">
-        Join thousands of businesses using BottleCRM to manage customer relationships without the
-        enterprise price tag.
-      </p>
-    </div>
-  </header>
+<PageHeader
+  title="Help & Support"
+  subtitle="Join thousands of businesses using BottleCRM to manage customer relationships without the enterprise price tag."
+  size="display"
+/>
 
+<div class="support-page">
   <!-- Mission Card - Featured -->
   <section class="content-area">
     <div class="mission-card glass-card animate-in-up stagger-3">
@@ -238,85 +226,6 @@
   .support-page {
     min-height: 100vh;
     background: var(--background);
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     HERO SECTION
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .hero {
-    position: relative;
-    padding: 3rem 1.5rem 2.5rem;
-    overflow: hidden;
-    background:
-      radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-primary-subtle), transparent),
-      radial-gradient(ellipse 60% 40% at 80% 0%, var(--accent-secondary-subtle), transparent),
-      var(--background);
-  }
-
-  :global(.dark) .hero {
-    background:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.08), transparent),
-      radial-gradient(ellipse 60% 40% at 80% 0%, rgba(251, 191, 36, 0.05), transparent),
-      var(--background);
-  }
-
-  .hero-glow {
-    position: absolute;
-    top: -50%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 400px;
-    background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
-    opacity: 0.04;
-    filter: blur(60px);
-    pointer-events: none;
-  }
-
-  :global(.dark) .hero-glow {
-    opacity: 0.08;
-  }
-
-  .hero-content {
-    position: relative;
-    max-width: 680px;
-    margin: 0 auto;
-    text-align: center;
-  }
-
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem 0.875rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--accent-primary);
-    background: var(--accent-primary-subtle);
-    border: 1px solid color-mix(in oklch, var(--accent-primary) 20%, transparent);
-    border-radius: var(--radius-full);
-    margin-bottom: 1rem;
-  }
-
-  .hero-title {
-    font-family: var(--font-sans);
-    font-size: clamp(2rem, 5vw, 2.75rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    color: var(--text-primary);
-    margin-bottom: 0.75rem;
-  }
-
-  .hero-description {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--text-secondary);
-    max-width: 520px;
-    margin: 0 auto;
   }
 
   /* ─────────────────────────────────────────────────────────────────────────

@@ -17,11 +17,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python dependencies (layer cached)
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv (fast Python package manager).
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
+
+# Install Python dependencies into /app/.venv (layer cached on lockfile changes)
+COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
+RUN uv sync --frozen --no-install-project
 
 # Copy backend source
 COPY backend/ .
+
+# Put the venv's binaries on PATH so `python`, `gunicorn`, `celery` etc. resolve.
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000

@@ -21,13 +21,13 @@
     Banknote,
     Contact,
     Tags,
-    Filter,
     Package,
     Trash2,
     Receipt,
-    Clock
+    Clock,
+    ArrowUpRight
   } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
+  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
@@ -35,7 +35,6 @@
   import { getCurrentUser } from '$lib/api.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import {
-    FilterBar,
     SearchInput,
     SelectFilter,
     DateRangeFilter,
@@ -133,6 +132,7 @@
       type: 'text',
       width: 'w-48',
       canHide: false,
+      editable: false,
       emptyText: 'Untitled'
     },
     {
@@ -150,10 +150,11 @@
       label: 'Amount',
       type: 'number',
       width: 'w-32',
+      editable: false,
       format: (value, row) => formatAmount(value, row?.currency)
     },
     { key: 'stage', label: 'Stage', type: 'select', options: stageOptions, width: 'w-32' },
-    { key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36' },
+    { key: 'closedOn', label: 'Close Date', type: 'date', width: 'w-36', editable: false },
     {
       key: 'assignedTo',
       label: 'Assigned To',
@@ -176,6 +177,7 @@
       type: 'number',
       width: 'w-28',
       canHide: true,
+      editable: false,
       format: (value) => (value != null ? `${value}%` : '-')
     },
     {
@@ -554,9 +556,6 @@
   // Status chip filter for quick filtering (client-side on top of server filters)
   let statusChipFilter = $state($page.url.searchParams.get('rotten') === 'true' ? 'stale' : 'ALL');
 
-  // Filter panel expansion state
-  let filtersExpanded = $state(false);
-
   // Status stages for filtering
   const openStages = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
 
@@ -576,6 +575,10 @@
       return true;
     });
   });
+
+  // Active row (highlighted in the table) — null until the user clicks a row.
+  /** @type {string | null} */
+  let activeRowId = $state(null);
 
   // Status counts for filter chips
   const openCount = $derived(
@@ -1116,6 +1119,7 @@
   <title>Opportunities - BottleCRM</title>
 </svelte:head>
 
+<div class="flex flex-col">
 <PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
   {#snippet actions()}
     <div class="flex items-center gap-2">
@@ -1213,24 +1217,6 @@
 
       <div class="bg-border mx-1 h-6 w-px"></div>
 
-      <!-- Filter Toggle Button -->
-      <Button
-        variant={filtersExpanded ? 'secondary' : 'outline'}
-        size="sm"
-        class="gap-2"
-        onclick={() => (filtersExpanded = !filtersExpanded)}
-      >
-        <Filter class="h-4 w-4" />
-        Filters
-        {#if activeFiltersCount > 0}
-          <span
-            class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-          >
-            {activeFiltersCount}
-          </span>
-        {/if}
-      </Button>
-
       <!-- Column Visibility Dropdown -->
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
@@ -1270,17 +1256,14 @@
       </Button>
     </div>
   {/snippet}
+  {#snippet tabs()}
+    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+  {/snippet}
 </PageHeader>
 
 <div class="flex-1">
-  <!-- Collapsible Filter Bar -->
-  <FilterBar
-    minimal={true}
-    expanded={filtersExpanded}
-    activeCount={activeFiltersCount}
-    onClear={clearFilters}
-    class="pb-4"
-  >
+  <!-- Filter Strip -->
+  <FilterStrip>
     <SearchInput
       value={filters.search}
       onchange={(value) => updateFilters({ ...filters, search: value })}
@@ -1305,7 +1288,13 @@
       value={filters.tags}
       onchange={(ids) => updateFilters({ ...filters, tags: ids })}
     />
-  </FilterBar>
+    {#if activeFiltersCount > 0}
+      <FilterPill label="Clear all" dashed onclick={clearFilters} />
+    {/if}
+    {#snippet meta()}
+      <span>{filteredOpportunities.length} of {pagination.total} opportunities</span>
+    {/snippet}
+  </FilterStrip>
   <!-- Table View -->
   {#if filteredOpportunities.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -1324,6 +1313,7 @@
       data={filteredOpportunities}
       {columns}
       bind:visibleColumns
+      bind:activeRowId
       onRowChange={handleRowChange}
       onRowClick={(row) => openDrawer(row.id)}
     >
@@ -1350,6 +1340,8 @@
   />
 </div>
 
+</div>
+
 <!-- Opportunity Drawer -->
 <CrmDrawer
   bind:open={drawerOpen}
@@ -1368,6 +1360,13 @@
   {#snippet activitySection()}
     <!-- Account and Owner info (view mode only) -->
     {#if drawerMode !== 'create' && selectedRow}
+      <a
+        href={`/opportunities/${selectedRow.id}`}
+        class="mb-4 inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[color:var(--text-muted)] transition-colors hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text)]"
+      >
+        Open full detail
+        <ArrowUpRight class="size-3.5" />
+      </a>
       <div class="mb-4">
         <p class="mb-2 text-xs font-medium tracking-wider text-[var(--text-tertiary)] uppercase">
           Details

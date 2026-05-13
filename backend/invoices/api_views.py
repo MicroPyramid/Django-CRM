@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
@@ -16,9 +17,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import Attachments, Comment, CustomFieldDefinition
 from common.permissions import HasOrgContext
-from common.serializer import AttachmentsSerializer, CommentSerializer
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    CustomFieldDefinitionSerializer,
+)
 from invoices.models import (
     Estimate,
     Invoice,
@@ -139,6 +145,13 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         if params.get("due_date_lte"):
             queryset = queryset.filter(due_date__lte=params.get("due_date_lte"))
 
+        # Filter by custom_fields (cf_<key>=value)
+        for raw_key, raw_value in params.items():
+            if raw_key.startswith("cf_") and raw_value:
+                cf_key = raw_key[3:]
+                if cf_key:
+                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+
         # Sorting
         sort = params.get("sort", "-created_at")
         if sort.lstrip("-") in [
@@ -169,12 +182,27 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_create")
     def post(self, request, *args, **kwargs):
+        cf_payload = request.data.get("custom_fields")
+        if isinstance(cf_payload, str):
+            try:
+                cf_payload = json.loads(cf_payload)
+            except (TypeError, ValueError):
+                cf_payload = None
+        cleaned_cf, cf_errors = validate_custom_fields_payload(
+            "Invoice", cf_payload or {}, request.profile.org
+        )
+        if cf_errors:
+            return Response(
+                {"error": True, "errors": {"custom_fields": cf_errors}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = InvoiceCreateSerializer(
             data=request.data, request_obj=request, context={"request": request}
         )
 
         if serializer.is_valid():
-            invoice = serializer.save()
+            invoice = serializer.save(custom_fields=cleaned_cf)
 
             # Create history entry
             create_invoice_history.delay(
@@ -258,6 +286,12 @@ class InvoiceDetailView(APIView):
             org=request.profile.org,
         ).order_by("-id")
 
+        cf_definitions = CustomFieldDefinition.objects.filter(
+            org=request.profile.org,
+            target_model="Invoice",
+            is_active=True,
+        ).order_by("display_order", "label")
+
         return Response(
             {
                 "invoice": InvoiceSerializer(invoice).data,
@@ -265,6 +299,9 @@ class InvoiceDetailView(APIView):
                 "comments": CommentSerializer(comments, many=True).data,
                 "history": InvoiceHistorySerializer(
                     invoice.invoice_history.all(), many=True
+                ).data,
+                "custom_field_definitions": CustomFieldDefinitionSerializer(
+                    cf_definitions, many=True
                 ).data,
             }
         )
@@ -284,6 +321,27 @@ class InvoiceDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        save_kwargs = {}
+        if "custom_fields" in request.data:
+            cf_payload = request.data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Invoice",
+                cf_payload or {},
+                request.profile.org,
+                existing=invoice.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            save_kwargs["custom_fields"] = cleaned_cf
+
         serializer = InvoiceCreateSerializer(
             invoice,
             data=request.data,
@@ -293,7 +351,7 @@ class InvoiceDetailView(APIView):
         )
 
         if serializer.is_valid():
-            invoice = serializer.save()
+            invoice = serializer.save(**save_kwargs)
 
             # Create history entry
             create_invoice_history.delay(
@@ -954,6 +1012,13 @@ class EstimateListView(APIView, LimitOffsetPagination):
                 | Q(client_name__icontains=search)
             )
 
+        # Filter by custom_fields (cf_<key>=value)
+        for raw_key, raw_value in params.items():
+            if raw_key.startswith("cf_") and raw_value:
+                cf_key = raw_key[3:]
+                if cf_key:
+                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+
         results = self.paginate_queryset(
             queryset.order_by("-created_at"), request, view=self
         )
@@ -968,11 +1033,26 @@ class EstimateListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_create")
     def post(self, request):
+        cf_payload = request.data.get("custom_fields")
+        if isinstance(cf_payload, str):
+            try:
+                cf_payload = json.loads(cf_payload)
+            except (TypeError, ValueError):
+                cf_payload = None
+        cleaned_cf, cf_errors = validate_custom_fields_payload(
+            "Estimate", cf_payload or {}, request.profile.org
+        )
+        if cf_errors:
+            return Response(
+                {"error": True, "errors": {"custom_fields": cf_errors}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = EstimateCreateSerializer(
             data=request.data, request_obj=request, context={"request": request}
         )
         if serializer.is_valid():
-            estimate = serializer.save()
+            estimate = serializer.save(custom_fields=cleaned_cf)
             return Response(
                 {
                     "error": False,
@@ -1004,7 +1084,19 @@ class EstimateDetailView(APIView):
                 {"error": True, "message": "Estimate not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response({"estimate": EstimateSerializer(estimate).data})
+        cf_definitions = CustomFieldDefinition.objects.filter(
+            org=request.profile.org,
+            target_model="Estimate",
+            is_active=True,
+        ).order_by("display_order", "label")
+        return Response(
+            {
+                "estimate": EstimateSerializer(estimate).data,
+                "custom_field_definitions": CustomFieldDefinitionSerializer(
+                    cf_definitions, many=True
+                ).data,
+            }
+        )
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_update")
     def put(self, request, pk):
@@ -1015,6 +1107,27 @@ class EstimateDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        save_kwargs = {}
+        if "custom_fields" in request.data:
+            cf_payload = request.data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Estimate",
+                cf_payload or {},
+                request.profile.org,
+                existing=estimate.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            save_kwargs["custom_fields"] = cleaned_cf
+
         serializer = EstimateCreateSerializer(
             estimate,
             data=request.data,
@@ -1023,7 +1136,7 @@ class EstimateDetailView(APIView):
             partial=True,
         )
         if serializer.is_valid():
-            estimate = serializer.save()
+            estimate = serializer.save(**save_kwargs)
             return Response(
                 {
                     "error": False,
@@ -1230,9 +1343,17 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
         )
 
         # Apply filters
-        if request.query_params.get("is_active"):
-            is_active = request.query_params.get("is_active").lower() == "true"
+        params = request.query_params
+        if params.get("is_active"):
+            is_active = params.get("is_active").lower() == "true"
             queryset = queryset.filter(is_active=is_active)
+
+        # Filter by custom_fields (cf_<key>=value)
+        for raw_key, raw_value in params.items():
+            if raw_key.startswith("cf_") and raw_value:
+                cf_key = raw_key[3:]
+                if cf_key:
+                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
 
         results = self.paginate_queryset(queryset, request, view=self)
         return Response(
@@ -1246,11 +1367,26 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_create")
     def post(self, request):
+        cf_payload = request.data.get("custom_fields")
+        if isinstance(cf_payload, str):
+            try:
+                cf_payload = json.loads(cf_payload)
+            except (TypeError, ValueError):
+                cf_payload = None
+        cleaned_cf, cf_errors = validate_custom_fields_payload(
+            "RecurringInvoice", cf_payload or {}, request.profile.org
+        )
+        if cf_errors:
+            return Response(
+                {"error": True, "errors": {"custom_fields": cf_errors}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = RecurringInvoiceCreateSerializer(
             data=request.data, request_obj=request, context={"request": request}
         )
         if serializer.is_valid():
-            recurring = serializer.save()
+            recurring = serializer.save(custom_fields=cleaned_cf)
             return Response(
                 {
                     "error": False,
@@ -1284,7 +1420,19 @@ class RecurringInvoiceDetailView(APIView):
                 {"error": True, "message": "Recurring invoice not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response(RecurringInvoiceSerializer(recurring).data)
+        cf_definitions = CustomFieldDefinition.objects.filter(
+            org=request.profile.org,
+            target_model="RecurringInvoice",
+            is_active=True,
+        ).order_by("display_order", "label")
+        return Response(
+            {
+                "recurring_invoice": RecurringInvoiceSerializer(recurring).data,
+                "custom_field_definitions": CustomFieldDefinitionSerializer(
+                    cf_definitions, many=True
+                ).data,
+            }
+        )
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_update")
     def put(self, request, pk):
@@ -1295,6 +1443,27 @@ class RecurringInvoiceDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        save_kwargs = {}
+        if "custom_fields" in request.data:
+            cf_payload = request.data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "RecurringInvoice",
+                cf_payload or {},
+                request.profile.org,
+                existing=recurring.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            save_kwargs["custom_fields"] = cleaned_cf
+
         serializer = RecurringInvoiceCreateSerializer(
             recurring,
             data=request.data,
@@ -1303,7 +1472,7 @@ class RecurringInvoiceDetailView(APIView):
             partial=True,
         )
         if serializer.is_valid():
-            recurring = serializer.save()
+            recurring = serializer.save(**save_kwargs)
             return Response(
                 {
                     "error": False,
@@ -2091,6 +2260,103 @@ class InvoiceFromOpportunityView(APIView):
                 "error": False,
                 "message": "Invoice created successfully from opportunity",
                 "invoice": InvoiceSerializer(invoice).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class InvoiceFromTimeEntriesView(APIView):
+    """``POST /api/invoices/from-time-entries/`` — turn billable time entries
+    into a draft invoice (Tier 3 time-tracking).
+
+    Body: ``{"account_id": "<uuid>", "entry_ids": ["<uuid>", ...]}``.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    def post(self, request, *args, **kwargs):
+        from accounts.models import Account
+        from cases.models import TimeEntry
+        from cases.services.billing import (
+            TimeEntryInvoicingError,
+            attach_entries_to_invoice,
+            build_invoice_lines_from_entries,
+        )
+
+        org = request.profile.org
+        account_id = request.data.get("account_id")
+        entry_ids = request.data.get("entry_ids") or []
+
+        if not account_id:
+            return Response(
+                {"error": True, "message": "account_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(entry_ids, list) or not entry_ids:
+            return Response(
+                {"error": True, "message": "entry_ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            account = Account.objects.get(id=account_id, org=org)
+        except (Account.DoesNotExist, ValueError):
+            return Response(
+                {"error": True, "message": "Account not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with transaction.atomic():
+            entries = list(
+                TimeEntry.objects.select_for_update()
+                .select_related("case")
+                .filter(id__in=entry_ids, org=org)
+            )
+            if len(entries) != len(set(str(i) for i in entry_ids)):
+                return Response(
+                    {
+                        "error": True,
+                        "message": "One or more time entries were not found.",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            try:
+                currency, lines = build_invoice_lines_from_entries(entries)
+            except TimeEntryInvoicingError as exc:
+                return Response(
+                    {"error": True, "message": str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            primary_contact = account.contacts.first()
+
+            # Invoice.save() generates invoice_number, public_token, due_date,
+            # and recalculates totals — we just hand it the high-level fields.
+            invoice = Invoice.objects.create(
+                invoice_title=f"Time entries — {timezone.now().date():%Y-%m-%d}",
+                account=account,
+                contact=primary_contact,
+                currency=currency,
+                status="Draft",
+                org=org,
+            )
+            for line in lines:
+                InvoiceLineItem.objects.create(invoice=invoice, org=org, **line)
+
+            attach_entries_to_invoice(entries, invoice)
+            invoice.recalculate_totals()
+            invoice.save()
+
+        return Response(
+            {
+                "error": False,
+                "message": "Draft invoice created from time entries.",
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "currency": currency,
+                "line_count": len(lines),
+                "entry_ids": [str(e.id) for e in entries],
             },
             status=status.HTTP_201_CREATED,
         )

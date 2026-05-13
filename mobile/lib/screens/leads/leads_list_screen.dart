@@ -30,12 +30,6 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch leads when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(leadsProvider.notifier).fetchLeads(refresh: true);
-    });
-
-    // Setup scroll listener for pagination
     _scrollController.addListener(_onScroll);
   }
 
@@ -117,13 +111,16 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   }
 
   bool get _hasActiveFilters {
-    return _statusFilter != null || _sourceFilter != null || _sortBy != 'newest';
+    return _statusFilter != null ||
+        _sourceFilter != null ||
+        _sortBy != 'newest';
   }
 
   @override
   Widget build(BuildContext context) {
-    final leadsState = ref.watch(leadsProvider);
-    final filteredLeads = _filterAndSortLeads(leadsState.leads);
+    final leadsAsync = ref.watch(leadsProvider);
+    final data = leadsAsync.value;
+    final filteredLeads = _filterAndSortLeads(data?.leads ?? const []);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -148,25 +145,28 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           _buildFilterBar(),
 
           // Results Count
-          _buildResultsCount(filteredLeads.length, leadsState.totalCount),
+          _buildResultsCount(filteredLeads.length, data?.totalCount ?? 0),
 
           // Leads List
-          Expanded(
-            child: _buildLeadsList(leadsState, filteredLeads),
-          ),
+          Expanded(child: _buildLeadsList(leadsAsync, filteredLeads)),
         ],
       ),
     );
   }
 
-  Widget _buildLeadsList(LeadsState state, List<Lead> filteredLeads) {
+  Widget _buildLeadsList(
+    AsyncValue<LeadsListData> async,
+    List<Lead> filteredLeads,
+  ) {
+    final data = async.value;
+
     // Initial loading
-    if (state.isLoading && state.leads.isEmpty) {
+    if (async.isLoading && (data == null || data.leads.isEmpty)) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Error state
-    if (state.error != null && state.leads.isEmpty) {
+    if (async.hasError && (data == null || data.leads.isEmpty)) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -179,7 +179,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              state.error!,
+              async.error.toString(),
               style: AppTypography.caption,
               textAlign: TextAlign.center,
             ),
@@ -198,16 +198,18 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       return _buildEmptyState();
     }
 
+    final hasMore = data?.hasMore ?? false;
+
     // Leads list
     return RefreshIndicator(
       onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-        itemCount: filteredLeads.length + (state.hasMore && !_hasActiveFilters ? 1 : 0),
+        itemCount:
+            filteredLeads.length + (hasMore && !_hasActiveFilters ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == filteredLeads.length) {
-            // Loading indicator at bottom
             return const Padding(
               padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),
@@ -234,9 +236,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
         style: AppTypography.body,
         decoration: InputDecoration(
           hintText: 'Search leads...',
-          hintStyle: AppTypography.body.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          hintStyle: AppTypography.body.copyWith(color: AppColors.textTertiary),
           prefixIcon: Icon(
             LucideIcons.search,
             color: AppColors.textTertiary,
@@ -328,11 +328,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        LucideIcons.x,
-                        size: 12,
-                        color: AppColors.danger600,
-                      ),
+                      Icon(LucideIcons.x, size: 12, color: AppColors.danger600),
                       const SizedBox(width: 3),
                       Text(
                         'Clear',
@@ -359,9 +355,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Text(
         '$filteredCount lead${filteredCount == 1 ? '' : 's'}${_hasActiveFilters || _searchQuery.isNotEmpty ? ' (filtered)' : ''}',
-        style: AppTypography.caption.copyWith(
-          color: AppColors.textSecondary,
-        ),
+        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
       ),
     );
   }
@@ -417,15 +411,17 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               Navigator.pop(context);
             },
           ),
-          ...LeadStatus.values.map((status) => _FilterOption(
-                label: status.displayName,
-                isSelected: _statusFilter == status,
-                color: status.color,
-                onTap: () {
-                  setState(() => _statusFilter = status);
-                  Navigator.pop(context);
-                },
-              )),
+          ...LeadStatus.values.map(
+            (status) => _FilterOption(
+              label: status.displayName,
+              isSelected: _statusFilter == status,
+              color: status.color,
+              onTap: () {
+                setState(() => _statusFilter = status);
+                Navigator.pop(context);
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -449,14 +445,18 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               Navigator.pop(context);
             },
           ),
-          ...LeadSource.values.where((s) => s != LeadSource.none).map((source) => _FilterOption(
-                label: source.displayName,
-                isSelected: _sourceFilter == source,
-                onTap: () {
-                  setState(() => _sourceFilter = source);
-                  Navigator.pop(context);
-                },
-              )),
+          ...LeadSource.values
+              .where((s) => s != LeadSource.none)
+              .map(
+                (source) => _FilterOption(
+                  label: source.displayName,
+                  isSelected: _sourceFilter == source,
+                  onTap: () {
+                    setState(() => _sourceFilter = source);
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
         ],
       ),
     );
@@ -584,10 +584,7 @@ class _FilterBottomSheet extends StatelessWidget {
   final String title;
   final List<_FilterOption> options;
 
-  const _FilterBottomSheet({
-    required this.title,
-    required this.options,
-  });
+  const _FilterBottomSheet({required this.title, required this.options});
 
   @override
   Widget build(BuildContext context) {
@@ -609,10 +606,7 @@ class _FilterBottomSheet extends StatelessWidget {
           // Title
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(
-              title,
-              style: AppTypography.label,
-            ),
+            child: Text(title, style: AppTypography.label),
           ),
 
           // Options
@@ -655,19 +649,12 @@ class _FilterOption extends StatelessWidget {
               Container(
                 width: 10,
                 height: 10,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 10),
             ],
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: 16,
-                color: iconColor ?? AppColors.textSecondary,
-              ),
+              Icon(icon, size: 16, color: iconColor ?? AppColors.textSecondary),
               const SizedBox(width: 10),
             ],
             Expanded(
@@ -675,16 +662,14 @@ class _FilterOption extends StatelessWidget {
                 label,
                 style: AppTypography.body.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? AppColors.primary600 : AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.primary600
+                      : AppColors.textPrimary,
                 ),
               ),
             ),
             if (isSelected)
-              Icon(
-                LucideIcons.check,
-                size: 18,
-                color: AppColors.primary600,
-              ),
+              Icon(LucideIcons.check, size: 18, color: AppColors.primary600),
           ],
         ),
       ),

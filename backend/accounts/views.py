@@ -9,6 +9,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
@@ -27,10 +28,11 @@ from accounts.serializer import (
 from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
+    CustomFieldDefinitionSerializer,
     ProfileSerializer,
     TeamsSerializer,
 )
@@ -91,6 +93,14 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     created_at__lte=params.get("created_at__lte")
                 )
+            # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
 
         context = {}
 
@@ -186,7 +196,23 @@ class AccountsListView(APIView, LimitOffsetPagination):
         )
         # Save Account
         if serializer.is_valid():
-            account_object = serializer.save(org=request.profile.org)
+            cf_payload = data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Account", cf_payload or {}, request.profile.org
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            account_object = serializer.save(
+                org=request.profile.org, custom_fields=cleaned_cf
+            )
 
             # Handle M2M relationships using utilities
             handle_m2m_assignment(
@@ -278,7 +304,27 @@ class AccountDetailView(APIView):
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
-            account_object = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in data:
+                cf_payload = data.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Account",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=account_object.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            account_object = serializer.save(**save_kwargs)
             previous_assigned_to_users = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
@@ -504,6 +550,15 @@ class AccountDetailView(APIView):
                 "status": ["open", "close"],
             }
         )
+
+        custom_field_defs = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Account",
+            is_active=True,
+        ).order_by("display_order", "label")
+        context["custom_field_definitions"] = CustomFieldDefinitionSerializer(
+            custom_field_defs, many=True
+        ).data
         return Response(context)
 
     @extend_schema(
@@ -613,7 +668,27 @@ class AccountDetailView(APIView):
         )
 
         if serializer.is_valid():
-            account_object = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in data:
+                cf_payload = data.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Account",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=account_object.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            account_object = serializer.save(**save_kwargs)
 
             # Handle M2M fields if present in request
             if "contacts" in data:

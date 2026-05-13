@@ -24,8 +24,9 @@ export async function load({ params, locals, cookies }) {
       apiRequest('/invoices/templates/', {}, { cookies, org }).catch(() => ({}))
     ]);
 
-    // API returns { invoice: {...}, attachments: [...], comments: [...], history: [...] }
+    // API returns { invoice: {...}, attachments, comments, history, custom_field_definitions }
     const invoiceData = invoiceRes.invoice || invoiceRes;
+    const customFieldDefinitions = invoiceRes.custom_field_definitions || [];
 
     // Transform invoice
     const invoice = {
@@ -82,7 +83,8 @@ export async function load({ params, locals, cookies }) {
       })),
       // Meta
       createdAt: invoiceData.created_at,
-      createdBy: invoiceData.created_by
+      createdBy: invoiceData.created_by,
+      customFields: invoiceData.custom_fields || {}
     };
 
     // Transform accounts
@@ -159,7 +161,8 @@ export async function load({ params, locals, cookies }) {
       accounts,
       contacts,
       company,
-      template
+      template,
+      customFieldDefinitions
     };
   } catch (err) {
     console.error('Error loading invoice:', err);
@@ -310,6 +313,36 @@ export const actions = {
     } catch (err) {
       console.error('Error marking paid:', err);
       return fail(400, { error: err.message || 'Failed to record payment' });
+    }
+  },
+
+  updateCustomFields: async ({ params, request, locals, cookies }) => {
+    try {
+      const form = await request.formData();
+      const raw = form.get('custom_fields')?.toString() || '{}';
+      /** @type {Record<string, unknown>} */
+      let parsed = {};
+      try {
+        const candidate = JSON.parse(raw);
+        if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+          parsed = /** @type {Record<string, unknown>} */ (candidate);
+        }
+      } catch {
+        return fail(400, { error: 'Invalid custom fields payload' });
+      }
+
+      await apiRequest(
+        `/invoices/${params.id}/`,
+        { method: 'PUT', body: { custom_fields: parsed } },
+        { cookies, org: locals.org }
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating invoice custom fields:', err);
+      return fail(400, {
+        error: err?.message || 'Failed to update custom fields'
+      });
     }
   },
 

@@ -109,7 +109,7 @@
 </script>
 
 <div
-  class="kanban-column group flex w-[280px] shrink-0 flex-col rounded-2xl transition-all duration-300"
+  class="kanban-column group flex h-full max-h-full w-[280px] shrink-0 flex-col rounded-2xl transition-all duration-300"
   class:drag-over={isDragOver}
   class:wip-exceeded={isAtWipLimit}
   ondragover={handleDragOver}
@@ -171,11 +171,10 @@
 
   <!-- Column Content - Cards container -->
   <div
-    class="column-content flex-1 space-y-2.5 overflow-y-auto border-x border-white/20
+    class="column-content min-h-0 flex-1 space-y-2.5 overflow-y-auto border-x border-white/20
       bg-gradient-to-b from-gray-50/80 to-gray-100/50
       px-2 py-3
       dark:border-white/[0.04] dark:from-white/[0.02] dark:to-white/[0.01]"
-    style="max-height: calc(100vh - 280px)"
   >
     {#each column.items as item, index (item.id)}
       <div class="card-wrapper animate-in" style="animation-delay: {Math.min(index * 40, 300)}ms">
@@ -283,29 +282,12 @@
     }
   }
 
-  /* Scrollbar styling */
+  /* Hide column scrollbars while keeping scroll behavior (mouse wheel / trackpad). */
+  .column-content {
+    scrollbar-width: none;
+  }
+
   .column-content::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .column-content::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .column-content::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 100px;
-  }
-
-  :global(.dark) .column-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .column-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  :global(.dark) .column-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    display: none;
   }
 </style>

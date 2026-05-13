@@ -65,20 +65,24 @@
   --chart-5: #fed7aa;
 
   /* Sidebar */
-  --sidebar: oklch(0.995 0 0);
-  --sidebar-foreground: oklch(0.25 0.02 60);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: #111827;
   --sidebar-primary: #ea580c;
   --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.97 0.01 60);
-  --sidebar-accent-foreground: oklch(0.2 0.02 60);
-  --sidebar-border: oklch(0.94 0.005 60);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: #ea580c;
+  --sidebar-active-fill: oklch(0.94 0 0);
+  --sidebar-muted: #4b5563;
+  --sidebar-subtle: #9ca3af;
 
   /* ─────────────────────────────────────────────────────────────────────────
      PRIMARY COLOR SCALE
      ───────────────────────────────────────────────────────────────────────── */
   --color-primary-default: #ea580c;
   --color-primary-hover: #c2410c;
+  --color-primary-dark: #c2410c;
   --color-primary-active: #9a3412;
   --color-primary-light: #fff7ed;
 
@@ -98,6 +102,7 @@
 
   /* Success */
   --color-success-default: #28a745;
+  --color-success-dark: #1e7e34;
   --color-success-light: #e8f5e9;
 
   /* Info */
@@ -129,9 +134,9 @@
   /* ─────────────────────────────────────────────────────────────────────────
      TEXT COLORS
      ───────────────────────────────────────────────────────────────────────── */
-  --text-primary: #212121;
-  --text-secondary: #616161;
-  --text-tertiary: #9e9e9e;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
   --text-disabled: #bdbdbd;
   --text-inverse: #ffffff;
   --text-link: #ea580c;
@@ -141,6 +146,7 @@
      BORDER COLORS
      ───────────────────────────────────────────────────────────────────────── */
   --border-default: #e0e0e0;
+  --border-subtle: #eeeeee;
   --border-strong: #bdbdbd;
   --border-focus: #ea580c;
   --border-error: #dc3545;
@@ -191,9 +197,13 @@
      PRIORITY LEVELS
      ───────────────────────────────────────────────────────────────────────── */
   --priority-urgent: #dc2626;
+  --priority-urgent-bg: #fee2e2;
   --priority-high: #f97316;
+  --priority-high-bg: #ffedd5;
   --priority-medium: #fbbf24;
+  --priority-medium-bg: #fef3c7;
   --priority-low: #22c55e;
+  --priority-low-bg: #dcfce7;
   --priority-none: #9ca3af;
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -342,8 +352,9 @@
   /* ─────────────────────────────────────────────────────────────────────────
      LAYOUT DIMENSIONS
      ───────────────────────────────────────────────────────────────────────── */
-  --sidebar-width: 260px;
+  --sidebar-width: 248px;
   --sidebar-width-collapsed: 72px;
+  --sidebar-width-icon: 56px;
   --drawer-width: 520px;
   --header-height: 60px;
   --content-padding: 28px;
@@ -401,6 +412,65 @@
   --status-danger-bg: #fdeaea;
   --status-info: #17a2b8;
   --status-info-bg: #e3f2fd;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TOKENS (2026-05-10 spec) — Phase 1
+     New design system, additive. Existing tokens above are kept for
+     back-compat until Phase 2+ migrates components onto these.
+     Spec: docs/superpowers/specs/2026-05-10-app-redesign-design.md
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Surface */
+  --bg: #ffffff;
+  --bg-page: #fafafa;
+  --bg-card: #ffffff;
+  --bg-elevated: #fafafa;
+  --bg-hover: #f5f5f4;
+  --bg-active: #f0efed;
+  --bg-input: #ffffff;
+
+  /* Border (NOTE: --border, --border-strong, --focus-ring redefined — see Phase 1 plan §Task 3) */
+  --border-faint: #f0f0f0;
+  --border: #e5e5e5;
+  --border-strong: #c4c4c4;
+  --focus-ring: rgba(17, 17, 17, 0.10);
+
+  /* Text — aliases of canonical --text-primary/secondary/tertiary (defined above).
+     Keep both names so the typography utilities (.t-body / .t-meta / etc.) can reference
+     short names while pages that grew up using --text-primary keep working. */
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-subtle: var(--text-tertiary);
+
+  /* Accents — semantic */
+  --green: #10b981;
+  --green-soft: rgba(16, 185, 129, 0.12);
+  --green-soft-text: #047857;
+  --violet: #7c3aed;
+  --violet-soft: rgba(124, 58, 237, 0.10);
+  --violet-soft-text: #6d28d9;
+  --amber-soft: rgba(217, 119, 6, 0.10);
+  --amber-soft-text: #92400e;
+  --red: #dc2626;
+  --red-soft: rgba(220, 38, 38, 0.08);
+  --orange: #ea580c;
+
+  /* CTA */
+  --cta-bg: #111111;
+  --cta-text: #ffffff;
+  --cta-bg-hover: #000000;
+
+  /* Radii */
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+  --r-xl: 12px;
+  --r-full: 9999px;
+
+  /* Fonts (override existing aliases at lines ~379–381) */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -449,18 +519,22 @@
   --chart-5: #fff7ed;
 
   /* Sidebar */
-  --sidebar: oklch(0.16 0.01 30);
-  --sidebar-foreground: oklch(0.92 0.005 60);
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: rgba(255, 255, 255, 0.95);
   --sidebar-primary: #fb923c;
   --sidebar-primary-foreground: oklch(0.12 0.01 30);
-  --sidebar-accent: oklch(0.22 0.015 30);
-  --sidebar-accent-foreground: oklch(0.92 0.005 60);
-  --sidebar-border: oklch(0.28 0.01 30);
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #fb923c;
+  --sidebar-active-fill: rgba(255, 255, 255, 0.10);
+  --sidebar-muted: #9ca3af;
+  --sidebar-subtle: #6b7280;
 
   /* Primary color scale - Dark mode */
   --color-primary-default: #fb923c;
   --color-primary-hover: #fdba74;
+  --color-primary-dark: #f97316;
   --color-primary-active: #f97316;
   --color-primary-light: #431407;
 
@@ -471,9 +545,9 @@
   --surface-overlay: #2d2d2d;
 
   /* Text Colors - Dark mode */
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --text-tertiary: #757575;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
   --text-disabled: #525252;
   --text-inverse: #212121;
   --text-link: #fb923c;
@@ -481,6 +555,7 @@
 
   /* Border Colors - Dark mode */
   --border-default: #3d3d3d;
+  --border-subtle: #2a2a2a;
   --border-strong: #525252;
   --border-focus: #fb923c;
   --border-error: #f87171;
@@ -517,6 +592,7 @@
   --color-warning-dark: #fcd34d;
   --color-warning-light: rgba(251, 191, 36, 0.15);
   --color-success-default: #34d399;
+  --color-success-dark: #10b981;
   --color-success-light: rgba(52, 211, 153, 0.15);
   --color-info-default: #38bdf8;
   --color-info-light: rgba(56, 189, 248, 0.15);
@@ -561,6 +637,50 @@
   --glass-bg: rgba(18, 19, 24, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 16px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TOKENS (2026-05-10 spec) — Phase 1, dark theme overrides
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Surface */
+  --bg: #000000;
+  --bg-page: #000000;
+  --bg-card: #0a0a0b;
+  --bg-elevated: #131316;
+  --bg-hover: #18181c;
+  --bg-active: #1f1f23;
+  --bg-input: #131316;
+
+  /* Border */
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --focus-ring: rgba(237, 242, 245, 0.14);
+
+  /* Text — aliases of canonical --text-primary/secondary/tertiary (dark theme defined above). */
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-subtle: var(--text-tertiary);
+
+  /* Accents — semantic */
+  --green: #10b981;
+  --green-soft: rgba(16, 185, 129, 0.14);
+  --green-soft-text: #6ee7b7;
+  --violet: #7c7cff;
+  --violet-soft: rgba(124, 124, 255, 0.14);
+  --violet-soft-text: #c4c4ff;
+  --amber-soft: rgba(217, 119, 6, 0.18);
+  --amber-soft-text: #fcd34d;
+  --red: #f87171;
+  --red-soft: rgba(248, 113, 113, 0.10);
+  --orange: #ea580c;
+
+  /* CTA (inverted) */
+  --cta-bg: #ffffff;
+  --cta-text: #18181b;
+  --cta-bg-hover: #ededed;
+
+  /* Radii + fonts inherit from :root — no override needed */
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1002,55 +1122,14 @@ select {
     transform 0.2s ease;
 }
 
-/* Menu button refinements */
-[data-slot='sidebar-menu-button'] {
-  letter-spacing: -0.01em;
-}
-
-/* Active state with left accent bar */
+/* Required for the dot-indicator absolute positioning */
 [data-slot='sidebar-menu-button'][data-active='true'] {
   position: relative;
-}
-
-/* Smooth hover transitions */
-[data-slot='sidebar-menu-button']:hover {
-  transform: translateX(1px);
-}
-
-[data-slot='sidebar-menu-button'][data-active='true']:hover {
-  transform: none;
-}
-
-/* Group label styling - uppercase sections */
-[data-slot='sidebar-group-label'] {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--sidebar-foreground);
-  opacity: 0.4;
-  padding: 0 12px;
-  margin-bottom: 4px;
-}
-
-/* Submenu refinements */
-[data-slot='sidebar-menu-sub'] {
-  margin-top: 4px;
-}
-
-/* Rail hover effect - Orange accent */
-[data-slot='sidebar-rail']:hover {
-  background: linear-gradient(90deg, transparent, rgba(234, 88, 12, 0.1));
 }
 
 /* Collapsed state icon centering */
 [data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
   justify-content: center;
-}
-
-/* Footer divider */
-[data-slot='sidebar-footer'] {
-  background: linear-gradient(180deg, transparent, var(--sidebar) 8px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1104,4 +1183,106 @@ select {
 .data-table-row-selected {
   background: var(--color-primary-light);
   border-left: 3px solid var(--color-primary-default);
+}
+
+@layer utilities {
+  /* ─────────────────────────────────────────────────────────────────────────
+     REDESIGN TYPOGRAPHY UTILITIES (2026-05-10 spec) — Phase 1
+     See spec §5 for usage. Tabular numerics applied where data-heavy.
+     ───────────────────────────────────────────────────────────────────────── */
+
+  .h-display {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    color: var(--text);
+  }
+
+  .h-page {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .h-section {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--text);
+  }
+
+  .t-body {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .t-body-sm {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  /* Crisp cell/value text — primary color + medium weight (use for table cells, dl values). */
+  .t-data {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* KPI number — used in stat cards. */
+  .t-kpi {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .t-meta {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-subtle);
+  }
+
+  .label-section {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+  }
+
+  .label-tiny {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+  }
+
+  .kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-faint);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+
+  /* Apply tabular numerics globally on a helper class — useful for tables, KPI cards */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Inter variant features (cv11 = sharper digits, ss01 = alternate single-storey 'a').
+   Applied at root so all descendants inherit.
+   NOTE: This intentionally overrides the @layer base html { ... } rule earlier in this file.
+   Geist-specific features (cv02/cv03/cv04) are dropped since we're using Inter, not Geist.
+   When components fully migrate off Geist in Phase 2+, the older @layer base rule can be removed. */
+html {
+  font-feature-settings: 'cv11', 'ss01';
 }

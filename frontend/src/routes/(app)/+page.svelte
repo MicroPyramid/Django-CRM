@@ -1,5 +1,5 @@
 <script>
-  import { DollarSign, TrendingUp, Target, Percent, AlertCircle, Sparkles } from '@lucide/svelte';
+  import { DollarSign, TrendingUp, Target, Percent, AlertCircle } from '@lucide/svelte';
   import {
     KPICard,
     FocusBar,
@@ -13,6 +13,12 @@
   } from '$lib/components/dashboard';
   import { formatCurrency } from '$lib/utils/formatting.js';
   import { orgSettings } from '$lib/stores/org.js';
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -34,51 +40,18 @@
       : `${orgCurrency} only`
   );
 
-  // Get current time of day for greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
 </script>
 
 <svelte:head>
   <title>Dashboard - BottleCRM</title>
 </svelte:head>
 
-<div class="relative min-h-screen">
-  <!-- Subtle gradient mesh background with orange tint -->
-  <div
-    class="gradient-mesh noise-overlay pointer-events-none fixed inset-0 -z-10 opacity-50 dark:opacity-30"
-  ></div>
+<div class="min-h-screen">
+  <div class="px-7 pt-6 md:px-8">
+    <p class="label-tiny">Today · {today}</p>
+  </div>
 
   <div class="space-y-8 p-6 md:p-8">
-    <!-- Header Section with orange gradient accent -->
-    <header>
-      <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <div class="space-y-2">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--color-primary-default)] to-[var(--stage-contacted)] shadow-lg dark:shadow-[var(--color-primary-default)]/20"
-            >
-              <Sparkles class="size-5 text-white" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-[var(--text-secondary)]">{getGreeting()}</p>
-              <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)] md:text-3xl">
-                Dashboard
-              </h1>
-            </div>
-          </div>
-          <p class="max-w-md text-sm text-[var(--text-secondary)]">
-            Here's what's happening with your CRM today. Stay on top of your pipeline and close more
-            deals.
-          </p>
-        </div>
-      </div>
-    </header>
-
     {#if data.error}
       <div
         class="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"

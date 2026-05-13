@@ -1,5 +1,5 @@
 <script>
-  import { X, Trash2, ChevronDown, ChevronUp } from '@lucide/svelte';
+  import { X, Trash2, Maximize2 } from '@lucide/svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Skeleton } from '$lib/components/ui/skeleton/index.js';
@@ -22,8 +22,10 @@
    *   onClose?: () => void,
    *   loading?: boolean,
    *   mode?: 'view' | 'create',
-   *   enableProgressiveDisclosure?: boolean,
+   *   fullPageHref?: string,
    *   class?: string,
+   *   metaSection?: import('svelte').Snippet,
+   *   banner?: import('svelte').Snippet,
    *   activitySection?: import('svelte').Snippet,
    *   footerActions?: import('svelte').Snippet,
    * }}
@@ -42,8 +44,10 @@
     onClose,
     loading = false,
     mode = 'view',
-    enableProgressiveDisclosure = true,
+    fullPageHref = '',
     class: className,
+    metaSection,
+    banner,
     activitySection,
     footerActions
   } = $props();
@@ -97,77 +101,25 @@
   // Get title value
   const titleValue = $derived(data?.[titleKey] || '');
 
-  // Progressive disclosure state
-  let showAllFields = $state(false);
+  // Stable id for ARIA labelling — Sheet.Content references this so screen readers
+  // announce the lead title when the dialog opens.
+  const titleId = $derived(`crm-drawer-title-${data?.id ?? 'new'}`);
 
-  /**
-   * Check if a field has a value
-   * @param {any} col
-   */
-  function fieldHasValue(col) {
-    if (!data) return false;
-    const value = getFieldValue(col);
-    if (value === null || value === undefined || value === '') return false;
-    if (Array.isArray(value) && value.length === 0) return false;
-    return true;
-  }
-
-  /**
-   * Check if field should be visible based on progressive disclosure rules
-   * @param {any} col
-   */
-  function shouldShowField(col) {
-    if (!enableProgressiveDisclosure) return true;
-    if (col.essential === true) return true;
-    if (mode === 'create') return showAllFields;
-    // In view/edit mode, show fields that have values OR if "show all" is toggled
-    return fieldHasValue(col) || showAllFields;
-  }
-
-  // Filter out columns hidden in create mode
-  const availableColumns = $derived(
-    mode === 'create' ? columns.filter((col) => !col.hideOnCreate) : columns
+  // All non-title fields to render. In create mode, hide fields marked hideOnCreate
+  // (typically read-only system fields like created/closed dates).
+  const visibleColumns = $derived(
+    columns.filter((col) => {
+      if (col.key === titleKey) return false;
+      if (mode === 'create' && col.hideOnCreate) return false;
+      return true;
+    })
   );
-
-  // Split columns into essential and additional
-  const essentialColumns = $derived(
-    availableColumns.filter((col) => col.key !== titleKey && col.essential === true)
-  );
-
-  const additionalColumns = $derived(
-    availableColumns.filter((col) => col.key !== titleKey && col.essential !== true)
-  );
-
-  // Get visible additional columns based on mode
-  const visibleAdditionalColumns = $derived(
-    additionalColumns.filter((col) => shouldShowField(col))
-  );
-
-  // Count of hidden additional fields
-  const hiddenFieldsCount = $derived(
-    mode === 'create'
-      ? showAllFields
-        ? 0
-        : additionalColumns.length
-      : additionalColumns.filter((col) => !fieldHasValue(col) && !showAllFields).length
-  );
-
-  // Toggle show all fields
-  function toggleShowAllFields() {
-    showAllFields = !showAllFields;
-  }
-
-  // Reset show all fields when drawer closes
-  $effect(() => {
-    if (!open) {
-      showAllFields = false;
-    }
-  });
 </script>
 
 <Sheet.Root bind:open onOpenChange={(value) => onOpenChange?.(value)}>
   <Sheet.Content
     side="right"
+    aria-labelledby={titleId}
     class={cn(
       'border-border/50 bg-background/95 w-[480px] overflow-hidden border-l p-0 backdrop-blur-xl sm:max-w-[480px]',
       className
@@ -224,127 +176,86 @@
                 <span class="text-muted-foreground text-xs">New</span>
               {/if}
             </div>
-            <button
-              onclick={closeDrawer}
-              class="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"
-            >
-              <X class="h-4 w-4" />
-            </button>
+            <div class="flex items-center gap-1">
+              {#if fullPageHref && mode !== 'create'}
+                <a
+                  href={fullPageHref}
+                  aria-label="Open full page"
+                  title="Open full page"
+                  class="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"
+                >
+                  <Maximize2 class="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              {/if}
+              <button
+                type="button"
+                onclick={closeDrawer}
+                aria-label="Close"
+                class="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"
+              >
+                <X class="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Scrollable content -->
         <div class="flex-1 overflow-x-hidden overflow-y-auto">
+          {#if banner}
+            {@render banner()}
+          {/if}
+
           <!-- Title section with elegant styling -->
           <div class="px-6 pt-8 pb-6">
             {#if titleEditable}
               <input
+                id={titleId}
                 type="text"
                 value={titleValue}
                 oninput={handleTitleChange}
                 placeholder={titlePlaceholder}
-                class="text-foreground placeholder:text-muted-foreground/30 w-full border-0 bg-transparent text-2xl font-bold tracking-tight outline-none"
+                aria-label="{headerLabel} title"
+                class="text-foreground placeholder:text-muted-foreground/30 hover:bg-muted/40 focus:bg-muted/40 focus:ring-primary/20 -mx-2 w-[calc(100%+1rem)] rounded-md border-0 bg-transparent px-2 py-1 text-2xl font-bold tracking-tight transition-colors outline-none focus:ring-1"
                 style="letter-spacing: -0.025em;"
               />
             {:else}
               <h2
+                id={titleId}
                 class="text-foreground text-2xl font-bold tracking-tight"
                 style="letter-spacing: -0.025em;"
               >
                 {titleValue || titlePlaceholder}
               </h2>
             {/if}
+            {#if metaSection && mode !== 'create'}
+              <div class="mt-3">
+                {@render metaSection()}
+              </div>
+            {/if}
           </div>
 
           <!-- Properties section with refined spacing -->
           <div class="px-6 pb-8">
-            {#if enableProgressiveDisclosure && essentialColumns.length > 0}
-              <!-- Essential fields section -->
-              <div class="space-y-1">
-                {#each essentialColumns as col (col.key)}
-                  <CrmPropertyRow
-                    label={col.label}
-                    value={getFieldValue(col)}
-                    type={col.type || 'text'}
-                    icon={col.icon}
-                    options={col.options}
-                    placeholder={col.placeholder}
-                    emptyText={col.emptyText}
-                    editable={col.editable !== false}
-                    prefix={col.prefix}
-                    onchange={(value) => handleFieldChange(col.key, value)}
-                  />
-                {/each}
-              </div>
-
-              <!-- Progressive disclosure toggle with refined styling -->
-              {#if hiddenFieldsCount > 0 || showAllFields}
-                <button
-                  type="button"
-                  onclick={toggleShowAllFields}
-                  class="group text-muted-foreground hover:bg-muted/40 hover:text-foreground -mx-3 my-4 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150"
-                >
-                  <div
-                    class="bg-muted/50 group-hover:bg-muted flex h-6 w-6 items-center justify-center rounded-md transition-colors"
-                  >
-                    {#if showAllFields}
-                      <ChevronUp class="h-3.5 w-3.5" />
-                    {:else}
-                      <ChevronDown class="h-3.5 w-3.5" />
-                    {/if}
-                  </div>
-                  {#if showAllFields}
-                    <span>Hide additional fields</span>
-                  {:else}
-                    <span
-                      >Show {hiddenFieldsCount} more {hiddenFieldsCount === 1
-                        ? 'field'
-                        : 'fields'}</span
-                    >
-                  {/if}
-                </button>
-              {/if}
-
-              <!-- Additional fields -->
-              {#if visibleAdditionalColumns.length > 0}
-                <div class="space-y-1">
-                  {#each visibleAdditionalColumns as col (col.key)}
-                    <CrmPropertyRow
-                      label={col.label}
-                      value={getFieldValue(col)}
-                      type={col.type || 'text'}
-                      icon={col.icon}
-                      options={col.options}
-                      placeholder={col.placeholder}
-                      emptyText={col.emptyText}
-                      editable={col.editable !== false}
-                      prefix={col.prefix}
-                      onchange={(value) => handleFieldChange(col.key, value)}
-                    />
-                  {/each}
-                </div>
-              {/if}
-            {:else}
-              <!-- Original behavior: show all fields when no essential fields defined -->
-              <div class="space-y-1">
-                {#each columns as col (col.key)}
-                  {#if col.key !== titleKey}
-                    <CrmPropertyRow
-                      label={col.label}
-                      value={getFieldValue(col)}
-                      type={col.type || 'text'}
-                      icon={col.icon}
-                      options={col.options}
-                      placeholder={col.placeholder}
-                      emptyText={col.emptyText}
-                      editable={col.editable !== false}
-                      prefix={col.prefix}
-                      onchange={(value) => handleFieldChange(col.key, value)}
-                    />
-                  {/if}
-                {/each}
-              </div>
-            {/if}
+            <div class="space-y-1">
+              {#each visibleColumns as col (col.key)}
+                <CrmPropertyRow
+                  label={col.label}
+                  value={getFieldValue(col)}
+                  type={col.type || 'text'}
+                  icon={col.icon}
+                  options={col.options}
+                  placeholder={col.placeholder}
+                  emptyText={col.emptyText}
+                  editable={col.editable !== false}
+                  required={col.required === true}
+                  prefix={col.prefix}
+                  loading={col.loading === true}
+                  loadingError={col.loadingError || ''}
+                  onRetry={col.onRetry}
+                  onchange={(value) => handleFieldChange(col.key, value)}
+                />
+              {/each}
+            </div>
           </div>
 
           <!-- Activity section with refined styling -->

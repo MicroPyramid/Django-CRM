@@ -5,11 +5,19 @@ import 'task.dart';
 /// Notification type enumeration
 enum NotificationType {
   taskDue('Task Due', Icons.access_time, AppColors.warning500),
-  taskAssigned('Task Assigned', Icons.assignment_outlined, AppColors.primary500),
+  taskAssigned(
+    'Task Assigned',
+    Icons.assignment_outlined,
+    AppColors.primary500,
+  ),
   dealWon('Deal Won', Icons.emoji_events_outlined, AppColors.success500),
   dealLost('Deal Lost', Icons.cancel_outlined, AppColors.danger500),
   dealStageChanged('Stage Changed', Icons.trending_up, AppColors.primary600),
-  leadAssigned('Lead Assigned', Icons.person_add_outlined, AppColors.primary500),
+  leadAssigned(
+    'Lead Assigned',
+    Icons.person_add_outlined,
+    AppColors.primary500,
+  ),
   mention('Mention', Icons.alternate_email, AppColors.purple500),
   reminder('Reminder', Icons.notifications_outlined, AppColors.warning500),
   system('System', Icons.info_outlined, AppColors.gray500);

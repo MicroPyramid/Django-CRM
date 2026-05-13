@@ -43,10 +43,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           decoration: BoxDecoration(
             gradient: widget.onPressed != null && !widget.isLoading
                 ? const LinearGradient(
-                    colors: [
-                      AppColors.primary600,
-                      AppColors.primary700,
-                    ],
+                    colors: [AppColors.primary600, AppColors.primary700],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   )
@@ -73,8 +70,9 @@ class _PrimaryButtonState extends State<PrimaryButton> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
-                  mainAxisSize:
-                      widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+                  mainAxisSize: widget.isFullWidth
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (widget.isLoading)
@@ -83,30 +81,20 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     else ...[
                       if (widget.icon != null && !widget.iconRight) ...[
-                        Icon(
-                          widget.icon,
-                          size: 20,
-                          color: Colors.white,
-                        ),
+                        Icon(widget.icon, size: 20, color: Colors.white),
                         const SizedBox(width: 8),
                       ],
-                      Text(
-                        widget.label,
-                        style: AppTypography.buttonLarge,
-                      ),
+                      Text(widget.label, style: AppTypography.buttonLarge),
                       if (widget.icon != null && widget.iconRight) ...[
                         const SizedBox(width: 8),
-                        Icon(
-                          widget.icon,
-                          size: 20,
-                          color: Colors.white,
-                        ),
+                        Icon(widget.icon, size: 20, color: Colors.white),
                       ],
                     ],
                   ],
@@ -151,9 +139,7 @@ class SecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: buttonColor,
           side: BorderSide(color: buttonColor.withValues(alpha: 0.3)),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppLayout.borderRadiusMd,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppLayout.borderRadiusMd),
         ),
         child: isLoading
             ? SizedBox(
@@ -165,8 +151,7 @@ class SecondaryButton extends StatelessWidget {
                 ),
               )
             : Row(
-                mainAxisSize:
-                    isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
@@ -205,20 +190,12 @@ class GhostButton extends StatelessWidget {
 
     return TextButton(
       onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: buttonColor,
-      ),
+      style: TextButton.styleFrom(foregroundColor: buttonColor),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 18),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            label,
-            style: AppTypography.label.copyWith(color: buttonColor),
-          ),
+          if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 6)],
+          Text(label, style: AppTypography.label.copyWith(color: buttonColor)),
         ],
       ),
     );
@@ -270,10 +247,7 @@ class AppIconButton extends StatelessWidget {
     );
 
     if (tooltip != null) {
-      return Tooltip(
-        message: tooltip!,
-        child: button,
-      );
+      return Tooltip(message: tooltip!, child: button);
     }
 
     return button;
@@ -346,17 +320,11 @@ class QuickActionButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 24,
-                color: buttonColor,
-              ),
+              Icon(icon, size: 24, color: buttonColor),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: AppTypography.labelSmall.copyWith(
-                  color: buttonColor,
-                ),
+                style: AppTypography.labelSmall.copyWith(color: buttonColor),
               ),
             ],
           ),

@@ -30,11 +30,7 @@ class TimelineItem extends StatelessWidget {
               children: [
                 // Top connecting line
                 if (!isFirst)
-                  Container(
-                    width: 2,
-                    height: 8,
-                    color: AppColors.gray200,
-                  ),
+                  Container(width: 2, height: 8, color: AppColors.gray200),
 
                 // Icon circle
                 Container(
@@ -51,20 +47,13 @@ class TimelineItem extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    _getIcon(),
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                  child: Icon(_getIcon(), size: 16, color: Colors.white),
                 ),
 
                 // Bottom connecting line
                 if (!isLast)
                   Expanded(
-                    child: Container(
-                      width: 2,
-                      color: AppColors.gray200,
-                    ),
+                    child: Container(width: 2, color: AppColors.gray200),
                   ),
               ],
             ),
@@ -260,16 +249,12 @@ class TimelineEmpty extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No activity yet',
-              style: AppTypography.h3.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: AppTypography.h3.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               'Start by making a call or sending an email',
-              style: AppTypography.body.copyWith(
-                color: AppColors.textTertiary,
-              ),
+              style: AppTypography.body.copyWith(color: AppColors.textTertiary),
               textAlign: TextAlign.center,
             ),
           ],

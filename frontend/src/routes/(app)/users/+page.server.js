@@ -53,7 +53,7 @@ function collectErrorMessages(value) {
  */
 async function apiRequest(endpoint, options = {}, context) {
   const { cookies, org } = context;
-  const accessToken = cookies.get('jwt_access') || cookies.get('access_token');
+  const accessToken = cookies.get('jwt_access');
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,

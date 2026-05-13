@@ -19,6 +19,10 @@ import '../screens/leads/lead_form_screen.dart';
 import '../screens/deals/deals_list_screen.dart';
 import '../screens/deals/deal_detail_screen.dart';
 import '../screens/deals/deal_form_screen.dart';
+import '../screens/tickets/tickets_list_screen.dart';
+import '../screens/tickets/ticket_detail_screen.dart';
+import '../screens/tickets/ticket_create_screen.dart';
+import '../screens/tickets/ticket_form_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
@@ -46,6 +50,10 @@ class AppRoutes {
   static const String deals = '/deals';
   static const String dealDetail = '/deals/:id';
   static const String dealCreate = '/deals/create';
+  static const String tickets = '/tickets';
+  static const String ticketDetail = '/tickets/:id';
+  static const String ticketCreate = '/tickets/create';
+  static const String ticketEdit = '/tickets/:id/edit';
   static const String tasks = '/tasks';
   static const String taskDetail = '/tasks/:id';
   static const String taskCreate = '/tasks/create';
@@ -67,9 +75,7 @@ const _publicRoutes = [
 ];
 
 /// Routes that require authentication but not org selection
-const _authOnlyRoutes = [
-  AppRoutes.orgSelection,
-];
+const _authOnlyRoutes = [AppRoutes.orgSelection];
 
 /// Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -246,6 +252,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
+          // Tickets Branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.tickets,
+                name: 'tickets',
+                builder: (context, state) => const TicketsListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: 'ticketCreate',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const TicketCreateScreen(),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    name: 'ticketDetail',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return TicketDetailScreen(ticketId: id);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        name: 'ticketEdit',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return TicketFormScreen(ticketId: id);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+
           // Tasks Branch
           StatefulShellBranch(
             routes: [
@@ -305,11 +350,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'Page not found',
@@ -318,9 +359,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             const SizedBox(height: 8),
             Text(
               state.uri.toString(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton(

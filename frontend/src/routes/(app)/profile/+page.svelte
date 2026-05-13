@@ -9,7 +9,7 @@
   import { Label } from '$lib/components/ui/label/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Separator } from '$lib/components/ui/separator/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
+  import { SectionCard } from '$lib/components/ui/section-card/index.js';
   import * as Avatar from '$lib/components/ui/avatar/index.js';
 
   /** @type {{ data: import('./$types').PageData, form: import('./$types').ActionData }} */
@@ -110,8 +110,11 @@
 <div class="flex-1 space-y-6 p-4 md:p-6">
   <!-- Success/Error Messages -->
   {#if form?.success}
-    <Card.Root class="border-[var(--color-success-default)]/20 bg-[var(--color-success-light)]">
-      <Card.Content class="flex items-center gap-3 p-4">
+    <SectionCard
+      padded={false}
+      class="border-[var(--color-success-default)]/20 bg-[var(--color-success-light)] p-4"
+    >
+      <div class="flex items-center gap-3">
         <div
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/20"
         >
@@ -120,13 +123,16 @@
         <p class="text-sm font-medium text-[var(--color-success-default)]">
           {form.message}
         </p>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </SectionCard>
   {/if}
 
   {#if form?.error}
-    <Card.Root class="border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)]">
-      <Card.Content class="flex items-center gap-3 p-4">
+    <SectionCard
+      padded={false}
+      class="border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-4"
+    >
+      <div class="flex items-center gap-3">
         <div
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20"
         >
@@ -135,15 +141,14 @@
         <p class="text-sm font-medium text-[var(--color-negative-default)]">
           {form.error}
         </p>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </SectionCard>
   {/if}
 
   <div class="mx-auto max-w-3xl space-y-6">
     <!-- Profile Header Card -->
-    <Card.Root>
-      <Card.Content class="p-6">
-        <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+    <SectionCard padded={false} class="p-6">
+      <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           <!-- Avatar -->
           <Avatar.Root class="h-20 w-20 text-xl">
             {#if data.user.profilePhoto}
@@ -171,20 +176,22 @@
             </div>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
 
     <!-- Profile Information Card -->
-    <Card.Root>
-      <Card.Header class="">
-        <Card.Title class="">Profile Information</Card.Title>
-        <Card.Description class="">
-          {isEditing
-            ? 'Update your personal details below'
-            : 'Your personal details and account information'}
-        </Card.Description>
-      </Card.Header>
-      <Card.Content>
+    <SectionCard>
+      {#snippet title()}
+        <div class="flex min-w-0 flex-col gap-0.5">
+          <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+            Profile Information
+          </h3>
+          <p class="text-[12px] text-[color:var(--text-muted)]">
+            {isEditing
+              ? 'Update your personal details below'
+              : 'Your personal details and account information'}
+          </p>
+        </div>
+      {/snippet}
         {#if isEditing}
           <!-- Edit Form -->
           <form method="POST" action="?/updateProfile" use:enhance={handleSubmit} class="space-y-6">
@@ -308,17 +315,22 @@
             </div>
           </div>
         {/if}
-      </Card.Content>
-    </Card.Root>
+    </SectionCard>
 
     <!-- Organizations Card -->
     {#if data.user.organizations && data.user.organizations.length > 0}
-      <Card.Root>
-        <Card.Header class="">
-          <Card.Title class="">Organizations</Card.Title>
-          <Card.Description class="">Organizations you are a member of</Card.Description>
-        </Card.Header>
-        <Card.Content class="space-y-4">
+      <SectionCard>
+        {#snippet title()}
+          <div class="flex min-w-0 flex-col gap-0.5">
+            <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+              Organizations
+            </h3>
+            <p class="text-[12px] text-[color:var(--text-muted)]">
+              Organizations you are a member of
+            </p>
+          </div>
+        {/snippet}
+        <div class="space-y-4">
           {#each data.user.organizations as userOrg}
             <div class="bg-muted/30 flex items-center justify-between rounded-lg border p-4">
               <div class="flex items-center gap-3">
@@ -341,8 +353,8 @@
               </Badge>
             </div>
           {/each}
-        </Card.Content>
-      </Card.Root>
+        </div>
+      </SectionCard>
     {/if}
   </div>
 </div>

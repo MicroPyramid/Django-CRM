@@ -58,6 +58,8 @@ class ContactSerializer(serializers.ModelSerializer):
             "org",
             "account",
             "contact_attachment",
+            # Per-org custom fields (validated via common.custom_fields)
+            "custom_fields",
         )
 
 

@@ -13,11 +13,7 @@ class DealFormScreen extends ConsumerStatefulWidget {
   final String? dealId;
   final Deal? initialDeal;
 
-  const DealFormScreen({
-    super.key,
-    this.dealId,
-    this.initialDeal,
-  });
+  const DealFormScreen({super.key, this.dealId, this.initialDeal});
 
   bool get isEditMode => dealId != null;
 
@@ -52,11 +48,6 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   void initState() {
     super.initState();
     _probabilityController.text = _stage.defaultProbability.toString();
-
-    // Fetch lookup data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lookupProvider.notifier).fetchAll();
-    });
 
     if (widget.initialDeal != null) {
       _populateFromDeal(widget.initialDeal!);
@@ -98,7 +89,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   void _populateFromDeal(Deal deal) {
     _existingDeal = deal;
     _nameController.text = deal.title;
-    _amountController.text = deal.value > 0 ? deal.value.toStringAsFixed(2) : '';
+    _amountController.text = deal.value > 0
+        ? deal.value.toStringAsFixed(2)
+        : '';
     _probabilityController.text = deal.probability.toString();
     _notesController.text = deal.notes ?? '';
     _stage = deal.stage;
@@ -115,8 +108,12 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   bool get _hasUnsavedChanges {
     if (_existingDeal != null) {
       return _nameController.text != _existingDeal!.title ||
-          _amountController.text != (_existingDeal!.value > 0 ? _existingDeal!.value.toStringAsFixed(2) : '') ||
-          _probabilityController.text != _existingDeal!.probability.toString() ||
+          _amountController.text !=
+              (_existingDeal!.value > 0
+                  ? _existingDeal!.value.toStringAsFixed(2)
+                  : '') ||
+          _probabilityController.text !=
+              _existingDeal!.probability.toString() ||
           _notesController.text != (_existingDeal!.notes ?? '') ||
           _stage != _existingDeal!.stage ||
           _opportunityType != _existingDeal!.opportunityType ||
@@ -178,11 +175,15 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
   Deal _buildDeal() {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-    final probability = int.tryParse(_probabilityController.text.trim()) ?? _stage.defaultProbability;
+    final probability =
+        int.tryParse(_probabilityController.text.trim()) ??
+        _stage.defaultProbability;
 
     // Get account name from lookup
-    final lookupState = ref.read(lookupProvider);
-    final account = lookupState.accounts.where((a) => a.id == _selectedAccountId).firstOrNull;
+    final accounts = ref.read(accountsProvider);
+    final account = accounts
+        .where((a) => a.id == _selectedAccountId)
+        .firstOrNull;
 
     return Deal(
       id: widget.dealId ?? '',
@@ -199,7 +200,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       labels: _existingDeal?.labels ?? [],
       tagIds: _selectedTagIds,
       contactIds: _selectedContactIds,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
       opportunityType: _opportunityType,
       leadSource: _leadSource,
       currency: _currency,
@@ -212,7 +215,8 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     // Validate closed_on for closed stages
-    if ((_stage == DealStage.closedWon || _stage == DealStage.closedLost) && _closeDate == null) {
+    if ((_stage == DealStage.closedWon || _stage == DealStage.closedLost) &&
+        _closeDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Close date is required for ${_stage.label} stage'),
@@ -238,7 +242,11 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.isEditMode ? 'Deal updated successfully' : 'Deal created successfully'),
+            content: Text(
+              widget.isEditMode
+                  ? 'Deal updated successfully'
+                  : 'Deal created successfully',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -294,9 +302,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
   Widget _buildBody() {
     if (_isFetchingDeal) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_fetchError != null) {
@@ -304,11 +310,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              LucideIcons.alertCircle,
-              size: 48,
-              color: AppColors.danger500,
-            ),
+            Icon(LucideIcons.alertCircle, size: 48, color: AppColors.danger500),
             const SizedBox(height: 16),
             Text(
               _fetchError!,
@@ -317,10 +319,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: _fetchDeal,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: _fetchDeal, child: const Text('Retry')),
           ],
         ),
       );
@@ -448,7 +447,10 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             GestureDetector(
               onTap: _showCurrencyPicker,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.gray50,
                   borderRadius: const BorderRadius.only(
@@ -479,7 +481,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             Expanded(
               child: TextFormField(
                 controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
                   hintText: '0.00',
@@ -507,9 +511,15 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                       topRight: Radius.circular(12),
                       bottomRight: Radius.circular(12),
                     ),
-                    borderSide: BorderSide(color: AppColors.primary500, width: 2),
+                    borderSide: BorderSide(
+                      color: AppColors.primary500,
+                      width: 2,
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                 ),
               ),
             ),
@@ -565,7 +575,15 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   Widget _buildRelationshipFields() {
-    final lookupState = ref.watch(lookupProvider);
+    final accountsAsync = ref.watch(accountsLookupProvider);
+    final contactsAsync = ref.watch(contactsLookupProvider);
+    final usersAsync = ref.watch(usersLookupProvider);
+    final tagsAsync = ref.watch(tagsLookupProvider);
+
+    final accounts = accountsAsync.value ?? const [];
+    final contacts = contactsAsync.value ?? const [];
+    final users = usersAsync.value ?? const [];
+    final tags = tagsAsync.value ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,13 +592,18 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         _buildSingleSelectField(
           label: 'Account',
           value: _selectedAccountId != null
-              ? lookupState.accounts.where((a) => a.id == _selectedAccountId).firstOrNull?.name
+              ? accounts
+                    .where((a) => a.id == _selectedAccountId)
+                    .firstOrNull
+                    ?.name
               : null,
           placeholder: 'Select account',
           icon: LucideIcons.building2,
-          isLoading: lookupState.isLoadingAccounts,
+          isLoading: accountsAsync.isLoading,
           onTap: _showAccountPicker,
-          onClear: _selectedAccountId != null ? () => setState(() => _selectedAccountId = null) : null,
+          onClear: _selectedAccountId != null
+              ? () => setState(() => _selectedAccountId = null)
+              : null,
         ),
 
         const SizedBox(height: 16),
@@ -590,12 +613,19 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           label: 'Contacts',
           selectedCount: _selectedContactIds.length,
           selectedItems: _selectedContactIds
-              .map((id) => lookupState.contacts.where((c) => c.id == id).firstOrNull?.fullName ?? '')
+              .map(
+                (id) =>
+                    contacts
+                        .where((c) => c.id == id)
+                        .firstOrNull
+                        ?.fullName ??
+                    '',
+              )
               .where((name) => name.isNotEmpty)
               .toList(),
           placeholder: 'Select contacts',
           icon: LucideIcons.users,
-          isLoading: lookupState.isLoadingContacts,
+          isLoading: contactsAsync.isLoading,
           onTap: _showContactsPicker,
         ),
 
@@ -606,12 +636,19 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           label: 'Assigned To',
           selectedCount: _selectedAssignedToIds.length,
           selectedItems: _selectedAssignedToIds
-              .map((id) => lookupState.users.where((u) => u.id == id).firstOrNull?.displayName ?? '')
+              .map(
+                (id) =>
+                    users
+                        .where((u) => u.id == id)
+                        .firstOrNull
+                        ?.displayName ??
+                    '',
+              )
               .where((name) => name.isNotEmpty)
               .toList(),
           placeholder: 'Select assignees',
           icon: LucideIcons.userCheck,
-          isLoading: lookupState.isLoadingUsers,
+          isLoading: usersAsync.isLoading,
           onTap: _showAssignedToPicker,
         ),
 
@@ -622,12 +659,19 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           label: 'Tags',
           selectedCount: _selectedTagIds.length,
           selectedItems: _selectedTagIds
-              .map((id) => lookupState.tags.where((t) => t.id == id).firstOrNull?.name ?? '')
+              .map(
+                (id) =>
+                    tags
+                        .where((t) => t.id == id)
+                        .firstOrNull
+                        ?.name ??
+                    '',
+              )
               .where((name) => name.isNotEmpty)
               .toList(),
           placeholder: 'Select tags',
           icon: LucideIcons.tag,
-          isLoading: lookupState.isLoadingTags,
+          isLoading: tagsAsync.isLoading,
           onTap: _showTagsPicker,
         ),
       ],
@@ -668,9 +712,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -696,12 +738,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                   ),
                   const SizedBox(width: 12),
                 ],
-                Expanded(
-                  child: Text(
-                    value,
-                    style: AppTypography.body,
-                  ),
-                ),
+                Expanded(child: Text(value, style: AppTypography.body)),
                 Icon(
                   LucideIcons.chevronDown,
                   size: 20,
@@ -729,9 +766,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -746,11 +781,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
+                Icon(icon, size: 20, color: AppColors.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: isLoading
@@ -776,7 +807,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                       : Text(
                           value ?? placeholder,
                           style: AppTypography.body.copyWith(
-                            color: value != null ? AppColors.textPrimary : AppColors.gray400,
+                            color: value != null
+                                ? AppColors.textPrimary
+                                : AppColors.gray400,
                           ),
                         ),
                 ),
@@ -818,9 +851,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -835,11 +866,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
+                Icon(icon, size: 20, color: AppColors.textSecondary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: isLoading
@@ -863,21 +890,26 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                           ],
                         )
                       : selectedCount > 0
-                          ? Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: [
-                                ...selectedItems.take(2).map((item) => _buildChip(item)),
-                                if (selectedCount > 2)
-                                  _buildChip('+${selectedCount - 2} more', isMore: true),
-                              ],
-                            )
-                          : Text(
-                              placeholder,
-                              style: AppTypography.body.copyWith(
-                                color: AppColors.gray400,
+                      ? Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            ...selectedItems
+                                .take(2)
+                                .map((item) => _buildChip(item)),
+                            if (selectedCount > 2)
+                              _buildChip(
+                                '+${selectedCount - 2} more',
+                                isMore: true,
                               ),
-                            ),
+                          ],
+                        )
+                      : Text(
+                          placeholder,
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.gray400,
+                          ),
+                        ),
                 ),
                 Icon(
                   LucideIcons.chevronDown,
@@ -919,9 +951,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -945,7 +975,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                 Text(
                   value != null ? _formatDate(value) : 'Select date',
                   style: AppTypography.body.copyWith(
-                    color: value != null ? AppColors.textPrimary : AppColors.gray400,
+                    color: value != null
+                        ? AppColors.textPrimary
+                        : AppColors.gray400,
                   ),
                 ),
                 const Spacer(),
@@ -968,8 +1000,18 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -996,19 +1038,22 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Stage',
         options: DealStage.values
-            .map((stage) => _PickerOption(
-                  label: stage.label,
-                  isSelected: _stage == stage,
-                  color: stage.color,
-                  onTap: () {
-                    setState(() {
-                      _stage = stage;
-                      // Auto-update probability based on stage
-                      _probabilityController.text = stage.defaultProbability.toString();
-                    });
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (stage) => _PickerOption(
+                label: stage.label,
+                isSelected: _stage == stage,
+                color: stage.color,
+                onTap: () {
+                  setState(() {
+                    _stage = stage;
+                    // Auto-update probability based on stage
+                    _probabilityController.text = stage.defaultProbability
+                        .toString();
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
@@ -1024,14 +1069,16 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Opportunity Type',
         options: OpportunityType.values
-            .map((type) => _PickerOption(
-                  label: type.label,
-                  isSelected: _opportunityType == type,
-                  onTap: () {
-                    setState(() => _opportunityType = type);
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (type) => _PickerOption(
+                label: type.label,
+                isSelected: _opportunityType == type,
+                onTap: () {
+                  setState(() => _opportunityType = type);
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
@@ -1047,14 +1094,16 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Lead Source',
         options: OpportunitySource.values
-            .map((source) => _PickerOption(
-                  label: source.label,
-                  isSelected: _leadSource == source,
-                  onTap: () {
-                    setState(() => _leadSource = source);
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (source) => _PickerOption(
+                label: source.label,
+                isSelected: _leadSource == source,
+                onTap: () {
+                  setState(() => _leadSource = source);
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
@@ -1070,21 +1119,23 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       builder: (context) => _PickerBottomSheet(
         title: 'Select Currency',
         options: Currency.values
-            .map((curr) => _PickerOption(
-                  label: '${curr.symbol} - ${curr.label}',
-                  isSelected: _currency == curr,
-                  onTap: () {
-                    setState(() => _currency = curr);
-                    Navigator.pop(context);
-                  },
-                ))
+            .map(
+              (curr) => _PickerOption(
+                label: '${curr.symbol} - ${curr.label}',
+                isSelected: _currency == curr,
+                onTap: () {
+                  setState(() => _currency = curr);
+                  Navigator.pop(context);
+                },
+              ),
+            )
             .toList(),
       ),
     );
   }
 
   void _showAccountPicker() {
-    final accounts = ref.read(lookupProvider).accounts;
+    final accounts = ref.read(accountsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1120,7 +1171,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showContactsPicker() {
-    final contacts = ref.read(lookupProvider).contacts;
+    final contacts = ref.read(contactsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1133,29 +1184,33 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (context, scrollController) => _MultiSelectPickerSheet<ContactLookup>(
-          title: 'Select Contacts',
-          searchHint: 'Search contacts...',
-          items: contacts,
-          selectedIds: _selectedContactIds,
-          getId: (c) => c.id,
-          getLabel: (c) => c.fullName,
-          getSubtitle: (c) => c.email,
-          searchMatcher: (contact, query) =>
-              contact.fullName.toLowerCase().contains(query.toLowerCase()) ||
-              (contact.email?.toLowerCase().contains(query.toLowerCase()) ?? false),
-          scrollController: scrollController,
-          emptyMessage: 'No contacts found',
-          onDone: (selectedIds) {
-            setState(() => _selectedContactIds = selectedIds);
-          },
-        ),
+        builder: (context, scrollController) =>
+            _MultiSelectPickerSheet<ContactLookup>(
+              title: 'Select Contacts',
+              searchHint: 'Search contacts...',
+              items: contacts,
+              selectedIds: _selectedContactIds,
+              getId: (c) => c.id,
+              getLabel: (c) => c.fullName,
+              getSubtitle: (c) => c.email,
+              searchMatcher: (contact, query) =>
+                  contact.fullName.toLowerCase().contains(
+                    query.toLowerCase(),
+                  ) ||
+                  (contact.email?.toLowerCase().contains(query.toLowerCase()) ??
+                      false),
+              scrollController: scrollController,
+              emptyMessage: 'No contacts found',
+              onDone: (selectedIds) {
+                setState(() => _selectedContactIds = selectedIds);
+              },
+            ),
       ),
     );
   }
 
   void _showAssignedToPicker() {
-    final users = ref.read(lookupProvider).users;
+    final users = ref.read(usersProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1168,29 +1223,32 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (context, scrollController) => _MultiSelectPickerSheet<UserLookup>(
-          title: 'Assign To',
-          searchHint: 'Search users...',
-          items: users,
-          selectedIds: _selectedAssignedToIds,
-          getId: (u) => u.id,
-          getLabel: (u) => u.displayName,
-          getSubtitle: (u) => u.email,
-          searchMatcher: (user, query) =>
-              user.displayName.toLowerCase().contains(query.toLowerCase()) ||
-              user.email.toLowerCase().contains(query.toLowerCase()),
-          scrollController: scrollController,
-          emptyMessage: 'No users found',
-          onDone: (selectedIds) {
-            setState(() => _selectedAssignedToIds = selectedIds);
-          },
-        ),
+        builder: (context, scrollController) =>
+            _MultiSelectPickerSheet<UserLookup>(
+              title: 'Assign To',
+              searchHint: 'Search users...',
+              items: users,
+              selectedIds: _selectedAssignedToIds,
+              getId: (u) => u.id,
+              getLabel: (u) => u.displayName,
+              getSubtitle: (u) => u.email,
+              searchMatcher: (user, query) =>
+                  user.displayName.toLowerCase().contains(
+                    query.toLowerCase(),
+                  ) ||
+                  user.email.toLowerCase().contains(query.toLowerCase()),
+              scrollController: scrollController,
+              emptyMessage: 'No users found',
+              onDone: (selectedIds) {
+                setState(() => _selectedAssignedToIds = selectedIds);
+              },
+            ),
       ),
     );
   }
 
   void _showTagsPicker() {
-    final tags = ref.read(lookupProvider).tags;
+    final tags = ref.read(tagsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1203,23 +1261,24 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (context, scrollController) => _MultiSelectPickerSheet<TagLookup>(
-          title: 'Select Tags',
-          searchHint: 'Search tags...',
-          items: tags,
-          selectedIds: _selectedTagIds,
-          getId: (t) => t.id,
-          getLabel: (t) => t.name,
-          getSubtitle: null,
-          searchMatcher: (tag, query) =>
-              tag.name.toLowerCase().contains(query.toLowerCase()),
-          scrollController: scrollController,
-          emptyMessage: 'No tags found',
-          onDone: (selectedIds) {
-            setState(() => _selectedTagIds = selectedIds);
-          },
-          tagColors: {for (var t in tags) t.id: t.color},
-        ),
+        builder: (context, scrollController) =>
+            _MultiSelectPickerSheet<TagLookup>(
+              title: 'Select Tags',
+              searchHint: 'Search tags...',
+              items: tags,
+              selectedIds: _selectedTagIds,
+              getId: (t) => t.id,
+              getLabel: (t) => t.name,
+              getSubtitle: null,
+              searchMatcher: (tag, query) =>
+                  tag.name.toLowerCase().contains(query.toLowerCase()),
+              scrollController: scrollController,
+              emptyMessage: 'No tags found',
+              onDone: (selectedIds) {
+                setState(() => _selectedTagIds = selectedIds);
+              },
+              tagColors: {for (var t in tags) t.id: t.color},
+            ),
       ),
     );
   }
@@ -1230,10 +1289,7 @@ class _PickerBottomSheet extends StatelessWidget {
   final String title;
   final List<_PickerOption> options;
 
-  const _PickerBottomSheet({
-    required this.title,
-    required this.options,
-  });
+  const _PickerBottomSheet({required this.title, required this.options});
 
   @override
   Widget build(BuildContext context) {
@@ -1256,10 +1312,7 @@ class _PickerBottomSheet extends StatelessWidget {
           ),
           Flexible(
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: options,
-              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: options),
             ),
           ),
           const SizedBox(height: 16),
@@ -1297,10 +1350,7 @@ class _PickerOption extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 12),
             ],
@@ -1311,7 +1361,9 @@ class _PickerOption extends StatelessWidget {
                   Text(
                     label,
                     style: AppTypography.body.copyWith(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                       color: isSelected
                           ? AppColors.primary600
                           : AppColors.textPrimary,
@@ -1328,11 +1380,7 @@ class _PickerOption extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              Icon(
-                LucideIcons.check,
-                size: 20,
-                color: AppColors.primary600,
-              ),
+              Icon(LucideIcons.check, size: 20, color: AppColors.primary600),
           ],
         ),
       ),
@@ -1361,7 +1409,8 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
   });
 
   @override
-  State<_SearchablePickerSheet<T>> createState() => _SearchablePickerSheetState<T>();
+  State<_SearchablePickerSheet<T>> createState() =>
+      _SearchablePickerSheetState<T>();
 }
 
 class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
@@ -1425,7 +1474,10 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         ),
@@ -1483,10 +1535,12 @@ class _MultiSelectPickerSheet<T> extends StatefulWidget {
   });
 
   @override
-  State<_MultiSelectPickerSheet<T>> createState() => _MultiSelectPickerSheetState<T>();
+  State<_MultiSelectPickerSheet<T>> createState() =>
+      _MultiSelectPickerSheetState<T>();
 }
 
-class _MultiSelectPickerSheetState<T> extends State<_MultiSelectPickerSheet<T>> {
+class _MultiSelectPickerSheetState<T>
+    extends State<_MultiSelectPickerSheet<T>> {
   final _searchController = TextEditingController();
   List<T> _filteredItems = [];
   late List<String> _selectedIds;
@@ -1601,7 +1655,10 @@ class _MultiSelectPickerSheetState<T> extends State<_MultiSelectPickerSheet<T>> 
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         ),
@@ -1629,7 +1686,10 @@ class _MultiSelectPickerSheetState<T> extends State<_MultiSelectPickerSheet<T>> 
                     return InkWell(
                       onTap: () => _toggleSelection(id),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Container(

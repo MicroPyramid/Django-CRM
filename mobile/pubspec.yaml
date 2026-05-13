@@ -15,31 +15,31 @@ dependencies:
 
   http: ^1.1.0
   google_sign_in: ^7.1.1
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.5
   jwt_decoder: ^2.0.1
-  package_info_plus: ^8.0.2
+  package_info_plus: ^10.1.0
   # Icons
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.9
   lucide_icons: ^0.257.0
 
   # Navigation
-  go_router: ^14.6.0
+  go_router: ^17.2.3
 
   # State Management
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^3.3.1
 
   # Charts
-  fl_chart: ^0.69.0
+  fl_chart: ^1.2.0
 
   # Calendar
-  table_calendar: ^3.1.2
+  table_calendar: ^3.2.0
 
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   url_launcher: ^6.3.1
 
   # Google Fonts for distinctive typography
-  google_fonts: ^6.2.1
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
@@ -67,4 +67,3 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icon/
-    - assets/images/

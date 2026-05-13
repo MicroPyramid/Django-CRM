@@ -37,12 +37,15 @@ class Comment {
     final commentedBy = json['commented_by'];
     if (commentedBy is Map<String, dynamic>) {
       commentedById = commentedBy['id']?.toString();
-      commentedByEmail = commentedBy['user__email'] as String? ??
+      commentedByEmail =
+          commentedBy['user__email'] as String? ??
           commentedBy['email'] as String?;
-      commentedByName = commentedBy['user__first_name'] as String? ??
+      commentedByName =
+          commentedBy['user__first_name'] as String? ??
           commentedBy['first_name'] as String?;
       if (commentedByName != null) {
-        final lastName = commentedBy['user__last_name'] as String? ??
+        final lastName =
+            commentedBy['user__last_name'] as String? ??
             commentedBy['last_name'] as String?;
         if (lastName != null && lastName.isNotEmpty) {
           commentedByName = '$commentedByName $lastName';

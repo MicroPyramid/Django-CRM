@@ -190,6 +190,8 @@ class OpportunitySerializer(serializers.ModelSerializer):
             "stage_changed_at",
             "days_in_stage",
             "aging_status",
+            # Per-org custom fields (validated via common.custom_fields)
+            "custom_fields",
         )
 
 

@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from botocore.exceptions import ClientError
 from celery import shared_task
@@ -10,7 +11,7 @@ from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from common.models import Comment, MagicLinkToken, Profile, Teams, User
+from common.models import Comment, MagicLinkToken, Notification, Profile, Teams, User
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,9 @@ def set_rls_context(org_id):
     Args:
         org_id: Organization UUID (string or UUID object)
     """
+    # SQLite (test backend) has no set_config() — RLS is a Postgres feature.
+    if connection.vendor != "postgresql":
+        return
     if org_id:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -348,3 +352,27 @@ def update_team_users(team_id, org_id=None):
             for team_member in teams_members:
                 if team_member not in invoice_assigned_to_users:
                     invoice.assigned_to.add(team_member)
+
+
+# Default cutoff for purging read notifications. Per
+# `docs/cases/tier2/in-app-notifications.md` "Storage growth".
+NOTIFICATION_PURGE_DAYS = 90
+
+
+@shared_task
+def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
+    """Delete already-read notifications older than ``days`` days.
+
+    Schedule via celery-beat (recommended cadence: nightly). Runs once across
+    all orgs — RLS does not need a per-org context here because the query
+    targets `read_at`, which is intrinsic to the row, not org-scoped logic.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    deleted, _ = Notification.objects.filter(
+        read_at__isnull=False, read_at__lt=cutoff
+    ).delete()
+    if deleted:
+        logger.info(
+            "Purged %s read notifications older than %s days", deleted, days
+        )
+    return deleted

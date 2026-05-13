@@ -1520,7 +1520,7 @@ class TestRecurringInvoiceDetailView:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["title"] == "Monthly Hosting"
+        assert data["recurring_invoice"]["title"] == "Monthly Hosting"
 
     def test_get_nonexistent_recurring(self, admin_client):
         fake_id = uuid.uuid4()

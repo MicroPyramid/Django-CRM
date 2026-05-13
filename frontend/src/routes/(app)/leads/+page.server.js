@@ -229,11 +229,10 @@ export async function load({ url, cookies, locals }) {
       },
       // Pre-loaded form options for drawer (avoids client-side auth issues)
       formOptions: {
-        users: users.map((/** @type {any} */ u) => ({
-          id: u.id,
-          email: u.user?.email || u.email,
-          name: u.user?.email || u.email
-        })),
+        users: users.map((/** @type {any} */ u) => {
+          const email = u.user_details?.email || u.user?.email || u.email;
+          return { id: u.id, email, name: email };
+        }),
         teams: teams.map((/** @type {any} */ t) => ({
           id: t.id,
           name: t.name

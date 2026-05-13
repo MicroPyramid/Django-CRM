@@ -46,12 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
 
     _animController.forward();
   }
@@ -208,7 +203,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                             // Forgot Password
                             GestureDetector(
-                              onTap: () => context.push(AppRoutes.forgotPassword),
+                              onTap: () =>
+                                  context.push(AppRoutes.forgotPassword),
                               child: Text(
                                 'Forgot Password?',
                                 style: AppTypography.label.copyWith(
@@ -272,19 +268,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         const SizedBox(height: 24),
 
         // Title
-        Text(
-          'Welcome back',
-          style: AppTypography.h1,
-        ),
+        Text('Welcome back', style: AppTypography.h1),
 
         const SizedBox(height: 8),
 
         // Subtitle
         Text(
           'Sign in to continue to BottleCRM',
-          style: AppTypography.body.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.body.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -293,25 +284,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: AppColors.border,
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: AppColors.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'or continue with',
-            style: AppTypography.caption,
-          ),
+          child: Text('or continue with', style: AppTypography.caption),
         ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: AppColors.border,
-          ),
-        ),
+        Expanded(child: Container(height: 1, color: AppColors.border)),
       ],
     );
   }
@@ -342,15 +320,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         label: Text(
           'Continue with Google',
-          style: AppTypography.button.copyWith(
-            color: AppColors.textPrimary,
-          ),
+          style: AppTypography.button.copyWith(color: AppColors.textPrimary),
         ),
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.border),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppLayout.borderRadiusMd,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppLayout.borderRadiusMd),
         ),
       ),
     );
@@ -362,9 +336,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       children: [
         Text(
           "Don't have an account? ",
-          style: AppTypography.body.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTypography.body.copyWith(color: AppColors.textSecondary),
         ),
         GestureDetector(
           onTap: () {
@@ -378,9 +350,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           },
           child: Text(
             'Sign Up',
-            style: AppTypography.label.copyWith(
-              color: AppColors.primary600,
-            ),
+            style: AppTypography.label.copyWith(color: AppColors.primary600),
           ),
         ),
       ],

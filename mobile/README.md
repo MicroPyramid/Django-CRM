@@ -37,7 +37,7 @@ BottleCRM Mobile is designed to streamline your sales and customer management pr
 - **Opportunities**: Sales pipeline management with stages
 - **Tasks**: Task assignment, tracking, and deadline management
 - **Accounts**: Customer account profiles and relationship history
-- **Cases**: Customer support ticket management
+- **Tickets**: Customer support ticket management
 - **Events**: Calendar integration and meeting scheduling
 - **Documents**: File management with cloud storage
 - **Teams**: Collaboration tools and team management

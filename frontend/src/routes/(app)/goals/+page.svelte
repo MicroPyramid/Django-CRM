@@ -1,9 +1,11 @@
 <script>
-  import { invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
   import { page } from '$app/stores';
+  import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { Plus, Trophy, Target, User, Users, Trash2, X } from '@lucide/svelte';
+  import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { SearchInput } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
@@ -87,9 +89,45 @@
   let selectedGoal = $state(null);
   let isCreating = $state(false);
 
-  // Filter state
-  let activeFilter = $state('all');
+  // Filter state — initialized from URL on every navigation so reloads,
+  // shared links, and browser back/forward all restore the right chip.
+  let activeFilter = $state(untrack(() => data.filters?.status || 'all'));
   let searchValue = $state('');
+  let leaderboardPeriod = $state(untrack(() => data.leaderboardPeriod || 'MONTHLY'));
+
+  $effect(() => {
+    activeFilter = data.filters?.status || 'all';
+    leaderboardPeriod = data.leaderboardPeriod || 'MONTHLY';
+  });
+
+  /**
+   * Update one URL search param while preserving the others, then navigate.
+   * Empty string / null removes the key. Resets pagination to page 1 so the
+   * user doesn't land on an out-of-range page after narrowing the result set.
+   * @param {Record<string, string | null>} updates
+   */
+  function updateUrl(updates) {
+    const params = new URLSearchParams($page.url.searchParams);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === '') params.delete(key);
+      else params.set(key, value);
+    }
+    if (Object.keys(updates).some((k) => k !== 'page')) params.delete('page');
+    const qs = params.toString();
+    goto(qs ? `?${qs}` : '?', { keepFocus: true, noScroll: true });
+  }
+
+  /** @param {string} key */
+  function setActiveFilter(key) {
+    activeFilter = key;
+    updateUrl({ status: key === 'all' ? null : key });
+  }
+
+  /** @param {string} period */
+  function setLeaderboardPeriod(period) {
+    leaderboardPeriod = period;
+    updateUrl({ leaderboard_period: period === 'MONTHLY' ? null : period });
+  }
 
   // Delete confirmation
   let deleteDialogOpen = $state(false);
@@ -322,31 +360,24 @@
   <title>Sales Goals - BottleCRM</title>
 </svelte:head>
 
-<div class="space-y-6 p-6 md:p-8">
-  <!-- Header -->
-  <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-    <div class="flex items-center gap-3">
-      <div
-        class="flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg"
-      >
-        <Trophy class="size-5 text-white" />
-      </div>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Sales Goals</h1>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Track targets and measure team performance
-        </p>
-      </div>
-    </div>
-
+<PageHeader
+  title="Sales Goals"
+  subtitle="Track targets and measure team performance"
+>
+  {#snippet titleIcon()}
+    <Trophy class="size-4" />
+  {/snippet}
+  {#snippet actions()}
     {#if isAdmin}
       <Button onclick={openCreateDrawer} class="gap-2">
         <Plus class="size-4" />
         New Goal
       </Button>
     {/if}
-  </div>
+  {/snippet}
+</PageHeader>
 
+<div class="space-y-6 p-6 md:p-8">
   <!-- Filter Chips -->
   <div class="flex items-center gap-2">
     {#each [
@@ -360,7 +391,7 @@
         filter.key
           ? 'bg-[var(--color-primary-default)] text-white'
           : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        onclick={() => (activeFilter = filter.key)}
+        onclick={() => setActiveFilter(filter.key)}
       >
         {filter.label}
       </button>
@@ -492,8 +523,9 @@
     />
   {/if}
 
-  <!-- Leaderboard Section -->
-  {#if data.leaderboard && data.leaderboard.length > 0}
+  <!-- Leaderboard Section: always rendered so the period switcher remains
+       accessible even when the current period has no qualifying goals. -->
+  {#if data.goals && data.goals.length > 0}
     <div
       class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6"
     >
@@ -503,13 +535,36 @@
         >
           <Trophy class="size-5 text-amber-500" />
         </div>
-        <div>
+        <div class="flex-1">
           <h2 class="text-base font-semibold text-[var(--text-primary)]">Leaderboard</h2>
           <p class="text-xs text-[var(--text-tertiary)]">Current period top performers</p>
+        </div>
+        <div class="flex rounded-[var(--radius-md)] bg-[var(--surface-sunken)] p-0.5">
+          {#each [
+            { value: 'MONTHLY', label: 'Month' },
+            { value: 'QUARTERLY', label: 'Quarter' },
+            { value: 'YEARLY', label: 'Year' }
+          ] as opt}
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors {leaderboardPeriod ===
+              opt.value
+                ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
+              onclick={() => setLeaderboardPeriod(opt.value)}
+            >
+              {opt.label}
+            </button>
+          {/each}
         </div>
       </div>
 
       <div class="space-y-3">
+        {#if data.leaderboard.length === 0}
+          <p class="py-6 text-center text-sm text-[var(--text-tertiary)]">
+            No active goals for this period.
+          </p>
+        {/if}
         {#each data.leaderboard as entry (entry.goalId)}
           <div
             class="flex items-center gap-4 rounded-[var(--radius-md)] border border-[var(--border-default)] p-3"

@@ -55,7 +55,8 @@ class ApiConfig {
   static String get leads => '$apiBaseUrl/leads/';
 
   /// Lead comment (for update/delete)
-  static String leadComment(String commentId) => '$apiBaseUrl/leads/comment/$commentId/';
+  static String leadComment(String commentId) =>
+      '$apiBaseUrl/leads/comment/$commentId/';
 
   /// Contacts management
   static String get contacts => '$apiBaseUrl/contacts/';
@@ -69,8 +70,15 @@ class ApiConfig {
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
 
-  /// Cases (support tickets) management
-  static String get cases => '$apiBaseUrl/cases/';
+  /// Tickets (support tickets) management
+  static String get tickets => '$apiBaseUrl/cases/';
+
+  /// Ticket detail (retrieve / update / delete / add comment)
+  static String ticketDetail(String id) => '$apiBaseUrl/cases/$id/';
+
+  /// Ticket comment (single — for delete or status checks)
+  static String ticketComment(String commentId) =>
+      '$apiBaseUrl/cases/comment/$commentId/';
 
   /// Invoices management
   static String get invoices => '$apiBaseUrl/invoices/';
@@ -97,8 +105,7 @@ class ApiConfig {
 
   /// Default request headers
   static Map<String, String> get defaultHeaders => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
-
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 }
