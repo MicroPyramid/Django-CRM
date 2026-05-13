@@ -37,7 +37,14 @@ class Comment {
     final commentedBy = json['commented_by'];
     if (commentedBy is Map<String, dynamic>) {
       commentedById = commentedBy['id']?.toString();
-      commentedByEmail =
+      // The case-app CommentSerializer wraps the email under user_details.
+      // Older serializers expose user__email / first_name / last_name at the
+      // top level — keep both paths for compatibility across entities.
+      final userDetails = commentedBy['user_details'];
+      if (userDetails is Map<String, dynamic>) {
+        commentedByEmail = userDetails['email'] as String?;
+      }
+      commentedByEmail ??=
           commentedBy['user__email'] as String? ??
           commentedBy['email'] as String?;
       commentedByName =

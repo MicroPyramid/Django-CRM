@@ -96,23 +96,28 @@ class ApiService {
         return data['message'].toString();
       }
 
-      // Handle field-specific errors (Django REST format)
-      if (data.containsKey('errors') && data['errors'] is Map) {
-        final errors = data['errors'] as Map<String, dynamic>;
-        final errorMessages = <String>[];
-        for (final entry in errors.entries) {
-          final fieldName = entry.key;
-          final messages = entry.value;
-          if (messages is List && messages.isNotEmpty) {
-            // Capitalize field name
+      // Handle backend-shaped errors. The Django views use two flavors:
+      //   {"errors": "plain string"}  — top-level error message
+      //   {"errors": {"field": ["msg", ...]}}  — DRF field-level errors
+      if (data.containsKey('errors')) {
+        final errors = data['errors'];
+        if (errors is String && errors.isNotEmpty) return errors;
+        if (errors is Map) {
+          final errorMessages = <String>[];
+          for (final entry in errors.entries) {
+            final fieldName = entry.key.toString();
+            final messages = entry.value;
             final fieldLabel = fieldName.replaceAll('_', ' ');
-            errorMessages.add(
-              '${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}: ${messages.first}',
-            );
+            final cap = fieldLabel.isEmpty
+                ? fieldLabel
+                : '${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}';
+            if (messages is List && messages.isNotEmpty) {
+              errorMessages.add('$cap: ${messages.first}');
+            } else if (messages is String && messages.isNotEmpty) {
+              errorMessages.add('$cap: $messages');
+            }
           }
-        }
-        if (errorMessages.isNotEmpty) {
-          return errorMessages.join('\n');
+          if (errorMessages.isNotEmpty) return errorMessages.join('\n');
         }
       }
 
@@ -223,7 +228,11 @@ class ApiService {
 
       return ApiResponse(
         success: success,
-        data: success ? data as Map<String, dynamic>? : null,
+        // Preserve the parsed body on failure too so callers can read
+        // structured error fields (e.g. validation `errors` map, 409 conflict
+        // payloads like {running_case_id}). Callers must still check
+        // `success` before treating the data as a happy-path payload.
+        data: data is Map<String, dynamic> ? data : null,
         message: success
             ? null
             : _extractErrorMessage(data, response.statusCode),
@@ -257,7 +266,8 @@ class ApiService {
 
       return ApiResponse(
         success: success,
-        data: success ? data as Map<String, dynamic>? : null,
+        // Preserve the parsed body on failure too — see POST for rationale.
+        data: data is Map<String, dynamic> ? data : null,
         message: success
             ? null
             : _extractErrorMessage(data, response.statusCode),

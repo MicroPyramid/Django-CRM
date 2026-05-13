@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/models/lookup_models.dart';
+import '../data/models/custom_field_definition.dart';
 import '../services/api_service.dart';
 
 /// Lookup providers — one AsyncNotifier per resource so the four fetches
@@ -161,3 +162,34 @@ final usersProvider = Provider<List<UserLookup>>((ref) {
 final tagsProvider = Provider<List<TagLookup>>((ref) {
   return ref.watch(tagsLookupProvider).value ?? const [];
 });
+
+/// Custom field definitions, keyed by target_model (Case, Lead, ...).
+///
+/// Each form watches the family for its entity; results are cached per-target
+/// for the lifetime of the provider scope so reopening the same form is cheap.
+final customFieldDefinitionsProvider =
+    FutureProvider.family<List<CustomFieldDefinition>, String>((
+      ref,
+      targetModel,
+    ) async {
+      final url = Uri.parse(ApiConfig.customFieldDefinitions).replace(
+        queryParameters: {
+          'target_model': targetModel,
+          'active_only': 'true',
+        },
+      ).toString();
+      final response = await _apiService.get(url);
+      if (!response.success || response.data == null) {
+        throw Exception(response.message ?? 'Failed to load custom fields');
+      }
+      final defs = response.data!['definitions'] as List<dynamic>? ?? [];
+      final parsed = defs
+          .whereType<Map<String, dynamic>>()
+          .map(CustomFieldDefinition.fromJson)
+          .toList();
+      parsed.sort((a, b) {
+        final byOrder = a.displayOrder.compareTo(b.displayOrder);
+        return byOrder != 0 ? byOrder : a.label.compareTo(b.label);
+      });
+      return parsed;
+    });

@@ -142,7 +142,7 @@ class TaskRow extends StatelessWidget {
               const SizedBox(width: 10),
 
               // Priority Badge
-              PriorityBadge(priority: task.priority, compact: true),
+              PriorityBadge.fromPriority(task.priority, compact: true),
 
               const SizedBox(width: 10),
 

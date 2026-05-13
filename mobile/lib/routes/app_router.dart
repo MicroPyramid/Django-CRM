@@ -28,6 +28,10 @@ import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
 import '../screens/settings/more_screen.dart';
+import '../screens/solutions/solutions_list_screen.dart';
+import '../screens/solutions/solution_detail_screen.dart';
+import '../screens/tickets/approvals_inbox_screen.dart';
+import '../screens/tickets/ticket_analytics_screen.dart';
 
 // Shell
 import '../widgets/common/app_shell.dart';
@@ -64,6 +68,17 @@ class AppRoutes {
   static const String profile = '/more/profile';
   static const String notifications = '/more/notifications';
   static const String team = '/more/team';
+
+  // Knowledge base
+  static const String solutions = '/solutions';
+  static const String solutionNew = '/solutions/new';
+  static const String solutionDetail = '/solutions/:id';
+
+  // Approvals
+  static const String approvalsInbox = '/tickets/approvals';
+
+  // Analytics
+  static const String ticketAnalytics = '/tickets/analytics';
 }
 
 /// Navigation shell key for bottom navigation
@@ -153,6 +168,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final email = state.uri.queryParameters['email'] ?? '';
           return MagicLinkCodeScreen(email: email);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.solutions,
+        name: 'solutions',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SolutionsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.solutionNew,
+        name: 'solutionNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SolutionDetailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.solutionDetail,
+        name: 'solutionDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SolutionDetailScreen(solutionId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.approvalsInbox,
+        name: 'approvalsInbox',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApprovalsInboxScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.ticketAnalytics,
+        name: 'ticketAnalytics',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TicketAnalyticsScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgSelection,

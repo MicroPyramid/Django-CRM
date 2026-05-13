@@ -8,6 +8,8 @@ import '../../data/models/lookup_models.dart';
 import '../../providers/tickets_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/custom_fields_form.dart';
+import '../../widgets/forms/multi_select_sheet.dart';
 
 /// Shared create / edit form for tickets.
 class TicketFormScreen extends ConsumerStatefulWidget {
@@ -30,6 +32,10 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
   TicketPriority _priority = TicketPriority.normal;
   TicketType _ticketType = TicketType.question;
   String? _accountId;
+  List<String> _assigneeIds = [];
+  List<String> _tagIds = [];
+  Map<String, dynamic> _customFields = {};
+  DateTime? _closedOn;
 
   bool _isLoading = false;
   bool _isFetching = false;
@@ -66,6 +72,10 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
         _priority = c.priority;
         _ticketType = c.ticketType;
         _accountId = c.accountId;
+        _assigneeIds = List<String>.from(c.assignedToIds);
+        _tagIds = List<String>.from(c.tagIds);
+        _customFields = Map<String, dynamic>.from(c.customFields);
+        _closedOn = c.closedOn;
       } else {
         _fetchError = 'Failed to load ticket';
       }
@@ -78,20 +88,31 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
       'status': _status.value,
       'priority': _priority.value,
       'case_type': _ticketType.value,
+      'assigned_to': _assigneeIds,
+      'tags': _tagIds,
+      'custom_fields': _customFields,
     };
     final desc = _descriptionController.text.trim();
     if (desc.isNotEmpty || widget.isEditMode) {
       payload['description'] = desc.isEmpty ? null : desc;
     }
-    if (_accountId != null && _accountId!.isNotEmpty) {
+    // Account is read-only on edit (backend enforces). Send only on create.
+    if (!widget.isEditMode && _accountId != null && _accountId!.isNotEmpty) {
       payload['account'] = _accountId;
+    }
+    if (_status == TicketStatus.closed && _closedOn != null) {
+      payload['closed_on'] =
+          '${_closedOn!.year.toString().padLeft(4, '0')}-'
+          '${_closedOn!.month.toString().padLeft(2, '0')}-'
+          '${_closedOn!.day.toString().padLeft(2, '0')}';
     }
     return payload;
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_accountId == null || _accountId!.isEmpty) {
+    if (!widget.isEditMode &&
+        (_accountId == null || _accountId!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select an account.'),
@@ -101,6 +122,17 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
       );
       return;
     }
+    if (_status == TicketStatus.closed && _closedOn == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please set a closed-on date for closed tickets.'),
+          backgroundColor: AppColors.danger600,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     final notifier = ref.read(ticketsProvider.notifier);
     final payload = _buildPayload();
@@ -172,6 +204,8 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
       );
     }
     final accounts = ref.watch(accountsProvider);
+    final users = ref.watch(usersProvider);
+    final tags = ref.watch(tagsProvider);
 
     return Form(
       key: _formKey,
@@ -217,6 +251,43 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
               value: _ticketType.label,
               onTap: () => _pickType(),
             ),
+            if (_status == TicketStatus.closed) ...[
+              const SizedBox(height: 16),
+              _dropdown(
+                label: 'Closed on',
+                value: _closedOn == null
+                    ? 'Select date'
+                    : '${_closedOn!.year.toString().padLeft(4, '0')}-'
+                          '${_closedOn!.month.toString().padLeft(2, '0')}-'
+                          '${_closedOn!.day.toString().padLeft(2, '0')}',
+                onTap: _pickClosedOn,
+                icon: LucideIcons.calendar,
+              ),
+            ],
+            const SizedBox(height: 32),
+            _section('People'),
+            const SizedBox(height: 16),
+            _multiSelectField(
+              label: 'Assigned to',
+              icon: LucideIcons.users,
+              placeholder: 'No one assigned',
+              selectedLabels: users
+                  .where((u) => _assigneeIds.contains(u.id))
+                  .map((u) => u.displayName)
+                  .toList(),
+              onTap: () => _pickAssignees(users),
+            ),
+            const SizedBox(height: 16),
+            _multiSelectField(
+              label: 'Tags',
+              icon: LucideIcons.tag,
+              placeholder: 'No tags',
+              selectedLabels: tags
+                  .where((t) => _tagIds.contains(t.id))
+                  .map((t) => t.name)
+                  .toList(),
+              onTap: () => _pickTags(tags),
+            ),
             const SizedBox(height: 32),
             _section('Description'),
             const SizedBox(height: 16),
@@ -226,6 +297,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
               controller: _descriptionController,
               maxLines: 5,
             ),
+            _customFieldsSection(),
             const SizedBox(height: 32),
             PrimaryButton(
               label: widget.isEditMode ? 'Update Ticket' : 'Create Ticket',
@@ -251,6 +323,32 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
     );
   }
 
+  Widget _customFieldsSection() {
+    // Renders nothing if the org has no Case custom fields.
+    return Consumer(
+      builder: (context, ref, _) {
+        final asyncDefs = ref.watch(
+          customFieldDefinitionsProvider('Case'),
+        );
+        final defs = asyncDefs.value ?? const [];
+        if (defs.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 32),
+            _section('Custom Fields'),
+            const SizedBox(height: 16),
+            CustomFieldsForm(
+              targetModel: 'Case',
+              values: _customFields,
+              onChanged: (v) => setState(() => _customFields = v),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _section(String title) {
     return Text(
       title.toUpperCase(),
@@ -263,21 +361,22 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
 
   Widget _accountField(List<AccountLookup> accounts) {
     final selected = accounts.where((a) => a.id == _accountId).firstOrNull;
+    final readOnly = widget.isEditMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Account',
+          readOnly ? 'Account (cannot change)' : 'Account',
           style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () => _pickAccount(accounts),
+          onTap: readOnly ? null : () => _pickAccount(accounts),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.gray50,
+              color: readOnly ? AppColors.gray100 : AppColors.gray50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
@@ -299,11 +398,12 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
                     ),
                   ),
                 ),
-                Icon(
-                  LucideIcons.chevronDown,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
+                if (!readOnly)
+                  Icon(
+                    LucideIcons.chevronDown,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
               ],
             ),
           ),
@@ -316,6 +416,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
     required String label,
     required String value,
     required VoidCallback onTap,
+    IconData? icon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,9 +437,71 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(value, style: AppTypography.body),
+                if (icon != null) ...[
+                  Icon(icon, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(child: Text(value, style: AppTypography.body)),
+                Icon(
+                  LucideIcons.chevronDown,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _multiSelectField({
+    required String label,
+    required IconData icon,
+    required String placeholder,
+    required List<String> selectedLabels,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.gray50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: AppColors.textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: selectedLabels.isEmpty
+                      ? Text(
+                          placeholder,
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            for (final l in selectedLabels)
+                              LabelPill(label: l),
+                          ],
+                        ),
+                ),
                 Icon(
                   LucideIcons.chevronDown,
                   size: 20,
@@ -428,6 +591,49 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
             .toList(),
       ),
     );
+  }
+
+  Future<void> _pickClosedOn() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _closedOn ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _closedOn = picked);
+  }
+
+  Future<void> _pickAssignees(List<UserLookup> users) async {
+    final initial = users.where((u) => _assigneeIds.contains(u.id)).toList();
+    final result = await MultiSelectSheet.show<UserLookup>(
+      context: context,
+      title: 'Assigned to',
+      items: users,
+      initialSelection: initial,
+      labelOf: (u) => u.displayName,
+      searchText: (u) => '${u.email} ${u.displayName}',
+      leadingOf: (u) => UserAvatar(name: u.displayName, size: AvatarSize.xs),
+      emptyMessage: 'No users found',
+    );
+    if (result != null) {
+      setState(() => _assigneeIds = result.map((u) => u.id).toList());
+    }
+  }
+
+  Future<void> _pickTags(List<TagLookup> tags) async {
+    final initial = tags.where((t) => _tagIds.contains(t.id)).toList();
+    final result = await MultiSelectSheet.show<TagLookup>(
+      context: context,
+      title: 'Tags',
+      items: tags,
+      initialSelection: initial,
+      labelOf: (t) => t.name,
+      searchText: (t) => t.name,
+      emptyMessage: 'No tags found',
+    );
+    if (result != null) {
+      setState(() => _tagIds = result.map((t) => t.id).toList());
+    }
   }
 
   void _pickAccount(List<AccountLookup> accounts) {

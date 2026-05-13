@@ -264,7 +264,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                     StatusBadge.fromLeadStatus(_lead!.status),
                     if (_lead!.priority == Priority.high) ...[
                       const SizedBox(width: 8),
-                      PriorityBadge(priority: _lead!.priority),
+                      PriorityBadge.fromPriority(_lead!.priority),
                     ],
                   ],
                 ),
