@@ -53,13 +53,17 @@ export async function load({ url, locals, cookies }) {
     if (filters.expiry_date_gte) queryParams.append('expiry_date_gte', filters.expiry_date_gte);
     if (filters.expiry_date_lte) queryParams.append('expiry_date_lte', filters.expiry_date_lte);
 
-    // Fetch estimates, accounts, contacts, and templates in parallel
-    const [estimatesResponse, accountsRes, contactsRes, templatesRes] = await Promise.all([
-      apiRequest(`/invoices/estimates/?${queryParams.toString()}`, {}, { cookies, org }),
-      apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
-      apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
-      apiRequest('/invoices/templates/', {}, { cookies, org }).catch(() => ({}))
-    ]);
+    // Fetch estimates, accounts, contacts, templates, and custom field defs in parallel
+    const [estimatesResponse, accountsRes, contactsRes, templatesRes, cfResponse] =
+      await Promise.all([
+        apiRequest(`/invoices/estimates/?${queryParams.toString()}`, {}, { cookies, org }),
+        apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
+        apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
+        apiRequest('/invoices/templates/', {}, { cookies, org }).catch(() => ({})),
+        apiRequest('/custom-fields/?target_model=Estimate', {}, { cookies, org }).catch(() => ({
+          definitions: []
+        }))
+      ]);
 
     // Handle Django response format
     let estimates = [];
@@ -172,7 +176,9 @@ export async function load({ url, locals, cookies }) {
           subtotal: item.subtotal || '0.00',
           total: item.total || '0.00',
           order: item.order || 0
-        })) || []
+        })) || [],
+      // Custom fields
+      customFields: estimate.custom_fields || {}
     }));
 
     // Transform accounts for dropdown
@@ -229,7 +235,8 @@ export async function load({ url, locals, cookies }) {
       accounts,
       contacts,
       owners: [],
-      template
+      template,
+      customFieldDefinitions: cfResponse.definitions || []
     };
   } catch (err) {
     console.error('Error loading estimates from API:', err);
@@ -493,6 +500,39 @@ export const actions = {
     } catch (err) {
       console.error('Error declining estimate:', err);
       return fail(400, { error: err.message || 'Failed to decline estimate' });
+    }
+  },
+
+  updateCustomFields: async ({ request, locals, cookies }) => {
+    try {
+      const form = await request.formData();
+      const estimateId = form.get('estimateId')?.toString();
+      if (!estimateId) {
+        return fail(400, { error: 'Estimate ID is required' });
+      }
+
+      const raw = form.get('custom_fields')?.toString() || '{}';
+      /** @type {Record<string, unknown>} */
+      let parsed = {};
+      try {
+        const candidate = JSON.parse(raw);
+        if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+          parsed = /** @type {Record<string, unknown>} */ (candidate);
+        }
+      } catch {
+        return fail(400, { error: 'Invalid custom fields payload' });
+      }
+
+      await apiRequest(
+        `/invoices/estimates/${estimateId}/`,
+        { method: 'PUT', body: { custom_fields: parsed } },
+        { cookies, org: locals.org }
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating estimate custom fields:', err);
+      return fail(400, { error: err?.message || 'Failed to update custom fields' });
     }
   }
 };

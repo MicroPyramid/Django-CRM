@@ -12,11 +12,13 @@ from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
+    CustomFieldDefinitionSerializer,
     ProfileSerializer,
     TeamsSerializer,
 )
@@ -99,6 +101,13 @@ class TaskListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(case_id=params.get("case"))
             if params.get("lead"):
                 queryset = queryset.filter(lead_id=params.get("lead"))
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
         context = {}
         results_tasks = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
@@ -165,10 +174,25 @@ class TaskListView(APIView, LimitOffsetPagination):
         params = request.data
         serializer = TaskCreateSerializer(data=params, request_obj=request)
         if serializer.is_valid():
+            cf_payload = params.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Task", cf_payload or {}, request.profile.org
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             task_obj = serializer.save(
                 created_by=request.profile.user,
                 due_date=params.get("due_date"),
                 org=request.profile.org,
+                custom_fields=cleaned_cf,
             )
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
@@ -331,6 +355,11 @@ class TaskDetailView(APIView):
         all_user_ids = users.values_list("id", flat=True)
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
         users_excluding_team = Profile.objects.filter(id__in=users_excluding_team_id)
+        cf_definitions = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Task",
+            is_active=True,
+        ).order_by("display_order", "label")
         context.update(
             {
                 "task_obj": TaskSerializer(self.task_obj).data,
@@ -338,6 +367,9 @@ class TaskDetailView(APIView):
                 "comments": CommentSerializer(comments, many=True).data,
                 "users_mention": users_mention,
                 "assigned_data": assigned_data,
+                "custom_field_definitions": CustomFieldDefinitionSerializer(
+                    cf_definitions, many=True
+                ).data,
             }
         )
         context["users"] = ProfileSerializer(users, many=True).data
@@ -467,7 +499,27 @@ class TaskDetailView(APIView):
             request_obj=request,
         )
         if serializer.is_valid():
-            task_obj = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Task",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=self.task_obj.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            task_obj = serializer.save(**save_kwargs)
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
@@ -601,7 +653,27 @@ class TaskDetailView(APIView):
             partial=True,
         )
         if serializer.is_valid():
-            task_obj = serializer.save()
+            save_kwargs = {}
+            if "custom_fields" in params:
+                cf_payload = params.get("custom_fields")
+                if isinstance(cf_payload, str):
+                    try:
+                        cf_payload = json.loads(cf_payload)
+                    except (TypeError, ValueError):
+                        cf_payload = None
+                cleaned_cf, cf_errors = validate_custom_fields_payload(
+                    "Task",
+                    cf_payload or {},
+                    request.profile.org,
+                    existing=self.task_obj.custom_fields or {},
+                )
+                if cf_errors:
+                    return Response(
+                        {"error": True, "errors": {"custom_fields": cf_errors}},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                save_kwargs["custom_fields"] = cleaned_cf
+            task_obj = serializer.save(**save_kwargs)
 
             # Handle M2M fields if present in request
             if "contacts" in params:

@@ -113,7 +113,7 @@
 
 <PageHeader
   title="Custom Fields"
-  subtitle="Per-org schema extensions for tickets (and, soon, leads/contacts/tasks/opportunities)"
+  subtitle="Per-org schema extensions for tickets, leads, contacts, accounts, opportunities, tasks, invoices, estimates, and recurring invoices"
 >
   {#snippet actions()}
     <Button onclick={openCreate} class="gap-2">

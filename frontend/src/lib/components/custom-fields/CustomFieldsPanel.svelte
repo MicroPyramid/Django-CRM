@@ -24,6 +24,7 @@
    *   values: Record<string, unknown>,
    *   formAction?: string,
    *   title?: string,
+   *   extraFields?: Record<string, string>,
    * }} Props
    */
 
@@ -33,7 +34,8 @@
     definitions,
     values = {},
     formAction = '?/updateCustomFields',
-    title = 'Details'
+    title = 'Details',
+    extraFields = /** @type {Record<string, string>} */ ({})
   } = $props();
 
   // Local editable copy of values, keyed by definition key.
@@ -105,6 +107,9 @@
         name="custom_fields"
         value={JSON.stringify(draft || {})}
       />
+      {#each Object.entries(extraFields) as [extraKey, extraValue] (extraKey)}
+        <input type="hidden" name={extraKey} value={extraValue} />
+      {/each}
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {#each activeDefs as defn (defn.id)}

@@ -76,6 +76,12 @@ class Contact(AssignableMixin, BaseModel):
         help_text="Primary account this contact belongs to",
     )
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     class Meta:
         verbose_name = "Contact"
         verbose_name_plural = "Contacts"

@@ -140,6 +140,12 @@ class Lead(AssignableMixin, BaseModel):
         help_text="Order within the kanban column for drag-drop",
     )
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     class Meta:
         verbose_name = "Lead"
         verbose_name_plural = "Leads"

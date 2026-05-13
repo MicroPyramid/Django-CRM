@@ -7,7 +7,7 @@
  * (see backend/leads/views/lead_views.py LeadDetailView.get_context_data)
  */
 
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -33,7 +33,9 @@ export async function load({ params, locals, cookies }) {
       attachments: response.attachments || [],
       tags: response.tags || lead?.tags || [],
       users: response.users || [],
-      commentPermission: response.comment_permission || false
+      commentPermission: response.comment_permission || false,
+      customFieldDefinitions: response.custom_field_definitions || [],
+      customFieldValues: lead?.custom_fields || {}
     };
   } catch (err) {
     if (/** @type {any} */ (err)?.status) throw err;
@@ -41,3 +43,30 @@ export async function load({ params, locals, cookies }) {
     throw error(500, 'Failed to load lead');
   }
 }
+
+/** @type {import('./$types').Actions} */
+export const actions = {
+  updateCustomFields: async ({ request, params, locals, cookies }) => {
+    const form = await request.formData();
+    const raw = form.get('custom_fields')?.toString() || '{}';
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return fail(400, { error: 'Malformed custom_fields payload' });
+    }
+    try {
+      await apiRequest(
+        `/leads/${params.id}/`,
+        { method: 'PATCH', body: { custom_fields: parsed } },
+        { cookies, org: locals.org }
+      );
+      return { success: true };
+    } catch (err) {
+      console.error('Update lead custom fields error:', err);
+      return fail(400, {
+        error: /** @type {any} */ (err)?.message || 'Failed to save custom fields'
+      });
+    }
+  }
+};

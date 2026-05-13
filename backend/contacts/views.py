@@ -15,8 +15,20 @@ from rest_framework.response import Response
 from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
-from common.models import Attachments, Comment, Profile, Tags, Teams
-from common.serializer import AttachmentsSerializer, CommentSerializer
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    CustomFieldDefinitionSerializer,
+)
 from common.utils import COUNTRIES
 from contacts import swagger_params
 from contacts.models import Contact
@@ -78,6 +90,14 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     created_at__lte=params.get("created_at__lte")
                 )
+            # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
+            for raw_key, raw_value in params.items():
+                if raw_key.startswith("cf_") and raw_value:
+                    cf_key = raw_key[3:]
+                    if cf_key:
+                        queryset = queryset.filter(
+                            custom_fields__contains={cf_key: raw_value}
+                        )
 
         context = {}
         results_contact = self.paginate_queryset(
@@ -155,8 +175,24 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 {"error": True, "errors": contact_serializer.errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        cf_payload = params.get("custom_fields")
+        if isinstance(cf_payload, str):
+            try:
+                cf_payload = json.loads(cf_payload)
+            except (TypeError, ValueError):
+                cf_payload = None
+        cleaned_cf, cf_errors = validate_custom_fields_payload(
+            "Contact", cf_payload or {}, request.profile.org
+        )
+        if cf_errors:
+            return Response(
+                {"error": True, "errors": {"custom_fields": cf_errors}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         # Contact model uses flat address fields, no separate Address object needed
-        contact_obj = contact_serializer.save(org=request.profile.org)
+        contact_obj = contact_serializer.save(
+            org=request.profile.org, custom_fields=cleaned_cf
+        )
 
         if params.get("teams"):
             teams_list = params.get("teams")
@@ -249,14 +285,6 @@ class ContactDetailView(APIView):
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        contact_serializer = CreateContactSerializer(
-            data=data, instance=contact_obj, request_obj=request
-        )
-        if not contact_serializer.is_valid():
-            return Response(
-                {"error": True, "errors": contact_serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             if not (
@@ -271,7 +299,37 @@ class ContactDetailView(APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-        contact_obj = contact_serializer.save()
+        contact_serializer = CreateContactSerializer(
+            data=data, instance=contact_obj, request_obj=request
+        )
+        if not contact_serializer.is_valid():
+            return Response(
+                {"error": True, "errors": contact_serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        save_kwargs = {}
+        if "custom_fields" in data:
+            cf_payload = data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Contact",
+                cf_payload or {},
+                request.profile.org,
+                existing=contact_obj.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            save_kwargs["custom_fields"] = cleaned_cf
+
+        contact_obj = contact_serializer.save(**save_kwargs)
         contact_obj.teams.clear()
         if data.get("teams"):
             teams_list = data.get("teams")
@@ -438,6 +496,16 @@ class ContactDetailView(APIView):
                 "users_mention": users_mention,
             }
         )
+
+        custom_field_defs = CustomFieldDefinition.objects.filter(
+            org=self.request.profile.org,
+            target_model="Contact",
+            is_active=True,
+        ).order_by("display_order", "label")
+        context["custom_field_definitions"] = CustomFieldDefinitionSerializer(
+            custom_field_defs, many=True
+        ).data
+
         return Response(context)
 
     @extend_schema(
@@ -598,7 +666,28 @@ class ContactDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        contact_obj = contact_serializer.save()
+        save_kwargs = {}
+        if "custom_fields" in data:
+            cf_payload = data.get("custom_fields")
+            if isinstance(cf_payload, str):
+                try:
+                    cf_payload = json.loads(cf_payload)
+                except (TypeError, ValueError):
+                    cf_payload = None
+            cleaned_cf, cf_errors = validate_custom_fields_payload(
+                "Contact",
+                cf_payload or {},
+                request.profile.org,
+                existing=contact_obj.custom_fields or {},
+            )
+            if cf_errors:
+                return Response(
+                    {"error": True, "errors": {"custom_fields": cf_errors}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            save_kwargs["custom_fields"] = cleaned_cf
+
+        contact_obj = contact_serializer.save(**save_kwargs)
 
         # Handle M2M fields if present in request
         if "teams" in data:

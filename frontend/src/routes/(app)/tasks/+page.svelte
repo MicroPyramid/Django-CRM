@@ -36,6 +36,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
   import { CommentSection } from '$lib/components/ui/comment-section';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import { getCurrentUser } from '$lib/api.js';
   import {
     SearchInput,
@@ -1535,6 +1536,19 @@
           </div>
         {/if}
       </div>
+
+      {#if (data.customFieldDefinitions || []).length > 0}
+        <div class="mt-6 border-t border-[var(--border-default)] pt-4">
+          <CustomFieldsPanel
+            target="Task"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedTask.customFields || {}}
+            title="Custom Fields"
+            formAction="?/updateTaskCustomFields"
+            extraFields={{ taskId: String(selectedTask.id) }}
+          />
+        </div>
+      {/if}
 
       <!-- Comments Section -->
       <div class="mt-6 border-t border-[var(--border-default)] pt-4">

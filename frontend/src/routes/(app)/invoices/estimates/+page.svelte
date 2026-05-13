@@ -14,6 +14,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
 
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
@@ -1273,6 +1274,19 @@
               </div>
             {/if}
           </div>
+        </div>
+      {/if}
+
+      {#if selectedEstimate && (data.customFieldDefinitions || []).length > 0}
+        <div class="border-t pt-4">
+          <CustomFieldsPanel
+            target="Estimate"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedEstimate.customFields || {}}
+            title="Custom Fields"
+            formAction="?/updateCustomFields"
+            extraFields={{ estimateId: String(selectedEstimate.id) }}
+          />
         </div>
       {/if}
     </div>

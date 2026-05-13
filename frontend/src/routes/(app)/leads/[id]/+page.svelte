@@ -29,6 +29,7 @@
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import {
     formatRelativeDate,
     formatDate,
@@ -44,13 +45,15 @@
   import { INDUSTRIES } from '$lib/constants/lead-choices.js';
   import { getCountryName } from '$lib/constants/countries.js';
 
-  /** @type {{ data: { lead: any, comments: any[], attachments: any[], tags: any[], users: any[], commentPermission: boolean } }} */
+  /** @type {{ data: { lead: any, comments: any[], attachments: any[], tags: any[], users: any[], commentPermission: boolean, customFieldDefinitions: any[], customFieldValues: Record<string, unknown> } }} */
   let { data } = $props();
 
   const lead = $derived(data.lead || {});
   const comments = $derived(data.comments || []);
   const attachments = $derived(data.attachments || []);
   const tags = $derived(data.tags || []);
+  const customFieldDefinitions = $derived(data.customFieldDefinitions || []);
+  const customFieldValues = $derived(data.customFieldValues || {});
 
   let tab = $state('overview');
 
@@ -266,6 +269,16 @@
               <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
             {/if}
           </SectionCard>
+
+        <!-- Custom fields -->
+        {#if customFieldDefinitions.length > 0}
+          <CustomFieldsPanel
+            target="Lead"
+            definitions={customFieldDefinitions}
+            values={customFieldValues}
+            title="Custom Fields"
+          />
+        {/if}
 
         <!-- Deal card -->
         {#if hasDeal}

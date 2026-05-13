@@ -99,6 +99,8 @@ class AccountSerializer(serializers.ModelSerializer):
             "created_at",
             "is_active",
             "org",
+            # Per-org custom fields (validated via common.custom_fields)
+            "custom_fields",
         )
 
 

@@ -306,6 +306,11 @@ class Task(AssignableMixin, BaseModel):
     priority = models.CharField(_("priority"), max_length=50, choices=PRIORITY_CHOICES)
     due_date = models.DateField(blank=True, null=True)
     description = models.TextField(_("Notes"), blank=True, null=True)
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
     account = models.ForeignKey(
         Account,
         related_name="accounts_tasks",

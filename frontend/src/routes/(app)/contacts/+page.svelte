@@ -21,6 +21,7 @@
   import { LinkedinIcon as Linkedin } from '$lib/components/icons';
   import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
   import { CrmDrawer } from '$lib/components/ui/crm-drawer';
+  import { CustomFieldsPanel } from '$lib/components/custom-fields';
   import { CommentSection } from '$lib/components/ui/comment-section';
   import { getCurrentUser } from '$lib/api.js';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -913,6 +914,19 @@
           </div>
         </div>
       </div>
+
+      <!-- Custom fields -->
+      {#if (data.customFieldDefinitions || []).length > 0}
+        <div class="mt-6 border-t border-[var(--border-default)] pt-4">
+          <CustomFieldsPanel
+            target="Contact"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedContact.customFields || {}}
+            formAction={`?/updateCustomFields&id=${selectedContact.id}`}
+            title="Custom Fields"
+          />
+        </div>
+      {/if}
 
       <!-- Comments Section -->
       <div class="mt-6 border-t border-[var(--border-default)] pt-4">

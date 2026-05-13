@@ -176,6 +176,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "tags",
             "task_attachment",
             "task_comments",
+            "custom_fields",
         )
 
 

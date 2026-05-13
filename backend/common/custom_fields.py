@@ -19,7 +19,17 @@ logger = logging.getLogger(__name__)
 
 # Targets whose entity model has a `custom_fields` JSONField column. Adding a
 # new entity? Drop a column on it (one migration), then add it here.
-SUPPORTED_TARGETS: set[str] = {"Case"}
+SUPPORTED_TARGETS: set[str] = {
+    "Account",
+    "Case",
+    "Contact",
+    "Estimate",
+    "Invoice",
+    "Lead",
+    "Opportunity",
+    "RecurringInvoice",
+    "Task",
+}
 
 
 def is_supported_target(target_model: str) -> bool:
@@ -121,6 +131,10 @@ def validate_payload(
     Unknown keys are dropped silently and logged. `existing` is the value
     currently stored on the entity — required fields already set on the entity
     are preserved across PATCHes that omit them.
+
+    Values tied to soft-deleted (is_active=False) definitions are carried
+    forward on save so admins can soft-delete a field without losing history,
+    but new writes against an inactive key are rejected as unknown.
     """
     from common.models import CustomFieldDefinition  # avoid import cycle
 
@@ -131,23 +145,24 @@ def validate_payload(
 
     existing = existing or {}
 
-    definitions = list(
-        CustomFieldDefinition.objects.filter(
-            org=org, target_model=target_model, is_active=True
-        )
+    all_definitions = list(
+        CustomFieldDefinition.objects.filter(org=org, target_model=target_model)
     )
-    by_key = {d.key: d for d in definitions}
+    all_keys = {d.key for d in all_definitions}
+    active_by_key = {d.key: d for d in all_definitions if d.is_active}
 
     cleaned: dict = {}
     errors: dict = {}
 
-    # Carry forward existing recognized values that the caller didn't touch.
+    # Carry forward existing recognized values (active OR soft-deleted) that
+    # the caller didn't touch. Values whose definition was hard-deleted are
+    # dropped — the schema is gone.
     for key, value in existing.items():
-        if key in by_key and key not in value_dict:
+        if key in all_keys and key not in value_dict:
             cleaned[key] = value
 
     for key, raw in value_dict.items():
-        defn = by_key.get(key)
+        defn = active_by_key.get(key)
         if defn is None:
             logger.info(
                 "custom_fields: dropping unknown key %r on %s for org %s",
@@ -171,7 +186,7 @@ def validate_payload(
         cleaned[key] = coerced
 
     # Required fields: error if neither a new value nor an existing one is set.
-    for defn in definitions:
+    for defn in active_by_key.values():
         if not defn.is_required:
             continue
         present = cleaned.get(defn.key) not in (None, "")

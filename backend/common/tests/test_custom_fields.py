@@ -122,6 +122,16 @@ class TestValidatePayload:
         assert cleaned == {}
         assert errors == {}
 
+    def test_inactive_definition_preserves_existing_value(self, org_a):
+        """Soft-deleting a definition must NOT wipe historical values on
+        the next save — admins can deactivate a field without data loss."""
+        self._defn(org_a, is_active=False)
+        cleaned, errors = validate_payload(
+            "Case", {}, org_a, existing={"severity": "S1"}
+        )
+        assert errors == {}
+        assert cleaned == {"severity": "S1"}
+
     def test_empty_value_clears_field(self, org_a):
         self._defn(org_a)
         cleaned, errors = validate_payload(
@@ -255,7 +265,7 @@ class TestCustomFieldDefinitionAPI:
     def test_unsupported_target_rejected(self, admin_client):
         response = admin_client.post(
             self.URL,
-            self._payload(target_model="Lead"),
+            self._payload(target_model="Comment"),
             format="json",
         )
         assert response.status_code == 400

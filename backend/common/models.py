@@ -796,11 +796,15 @@ class CustomFieldDefinition(BaseModel):
     """
 
     TARGET_MODEL_CHOICES = [
+        ("Account", "Account"),
         ("Case", "Case"),
-        ("Lead", "Lead"),
         ("Contact", "Contact"),
-        ("Task", "Task"),
+        ("Estimate", "Estimate"),
+        ("Invoice", "Invoice"),
+        ("Lead", "Lead"),
         ("Opportunity", "Opportunity"),
+        ("RecurringInvoice", "Recurring Invoice"),
+        ("Task", "Task"),
     ]
 
     FIELD_TYPE_CHOICES = [

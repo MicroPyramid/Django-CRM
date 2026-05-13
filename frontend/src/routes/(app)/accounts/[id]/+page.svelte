@@ -29,6 +29,7 @@
   import { PageHeader } from '$lib/components/layout';
   import { Timeline, TimelineItem } from '$lib/components/ui/timeline';
   import { SectionCard } from '$lib/components/ui/section-card/index.js';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
@@ -59,7 +60,9 @@
    *   tags: any[],
    *   teams: any[],
    *   assignedTo: any[],
-   *   commentPermission: boolean
+   *   commentPermission: boolean,
+   *   customFieldDefinitions: any[],
+   *   customFieldValues: Record<string, any>
    * } }} */
   let { data } = $props();
 
@@ -75,6 +78,8 @@
   const tags = $derived(data.tags || []);
   const teams = $derived(data.teams || []);
   const assignedRaw = $derived(data.assignedTo || []);
+  const customFieldDefinitions = $derived(data.customFieldDefinitions || []);
+  const customFieldValues = $derived(data.customFieldValues || {});
 
   let tab = $state('overview');
 
@@ -378,6 +383,16 @@
             <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
           {/if}
         </SectionCard>
+
+        <!-- Custom fields -->
+        {#if customFieldDefinitions.length > 0}
+          <CustomFieldsPanel
+            target="Account"
+            definitions={customFieldDefinitions}
+            values={customFieldValues}
+            title="Custom Fields"
+          />
+        {/if}
 
         <!-- Business info card -->
         {#if hasBusinessInfo}

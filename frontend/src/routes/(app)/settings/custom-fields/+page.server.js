@@ -3,10 +3,14 @@ import { apiRequest } from '$lib/api-helpers.js';
 
 const SUPPORTED_TARGETS = [
   { value: 'Case', label: 'Tickets', enabled: true },
-  { value: 'Lead', label: 'Leads', enabled: false },
-  { value: 'Contact', label: 'Contacts', enabled: false },
-  { value: 'Task', label: 'Tasks', enabled: false },
-  { value: 'Opportunity', label: 'Opportunities', enabled: false }
+  { value: 'Lead', label: 'Leads', enabled: true },
+  { value: 'Contact', label: 'Contacts', enabled: true },
+  { value: 'Account', label: 'Accounts', enabled: true },
+  { value: 'Opportunity', label: 'Opportunities', enabled: true },
+  { value: 'Task', label: 'Tasks', enabled: true },
+  { value: 'Invoice', label: 'Invoices', enabled: true },
+  { value: 'Estimate', label: 'Estimates', enabled: true },
+  { value: 'RecurringInvoice', label: 'Recurring Invoices', enabled: true }
 ];
 
 /** @type {import('./$types').PageServerLoad} */

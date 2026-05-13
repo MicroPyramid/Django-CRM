@@ -72,6 +72,8 @@ class LeadSerializer(serializers.ModelSerializer):
             # Kanban
             "stage",
             "kanban_order",
+            # Per-org custom fields (validated via common.custom_fields)
+            "custom_fields",
         )
 
 

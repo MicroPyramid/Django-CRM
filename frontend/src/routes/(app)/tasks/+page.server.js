@@ -10,7 +10,7 @@
  * - created_by, created_at, updated_at
  */
 
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { apiRequest, buildQueryParams } from '$lib/api-helpers.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -97,6 +97,13 @@ export async function load({ locals, cookies, url }) {
       apiRequest('/leads/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/tags/', {}, { cookies, org }).catch(() => ({}))
     ]);
+
+    const cfResponse = await apiRequest(
+      '/custom-fields/?target_model=Task',
+      {},
+      { cookies, org }
+    ).catch(() => ({ definitions: [] }));
+    const customFieldDefinitions = cfResponse.definitions || [];
 
     // Handle Django response structure
     // Django TaskListView returns { tasks: [...], tasks_count: ..., ... }
@@ -202,7 +209,10 @@ export async function load({ locals, cookies, url }) {
             id: task.created_by.id,
             name: task.created_by.email
           }
-        : null
+        : null,
+
+      // Custom fields stored on this task (per-org schema extension)
+      customFields: task.custom_fields || {}
     }));
 
     // Get total count from response
@@ -264,7 +274,8 @@ export async function load({ locals, cookies, url }) {
         cases,
         leads,
         tags
-      }
+      },
+      customFieldDefinitions
     };
   } catch (err) {
     console.error('Error loading tasks from API:', err);
@@ -516,6 +527,33 @@ export const actions = {
     } catch (err) {
       console.error('Error moving task:', err);
       return { success: false, error: 'Failed to move task' };
+    }
+  },
+
+  updateTaskCustomFields: async ({ request, locals, cookies }) => {
+    const org = locals.org;
+    const form = await request.formData();
+    const taskId = form.get('taskId')?.toString();
+    if (!taskId) return fail(400, { error: 'Missing task id' });
+    const raw = form.get('custom_fields')?.toString() || '{}';
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return fail(400, { error: 'Malformed custom_fields payload' });
+    }
+    try {
+      await apiRequest(
+        `/tasks/${taskId}/`,
+        { method: 'PATCH', body: { custom_fields: parsed } },
+        { cookies, org }
+      );
+      return { success: true };
+    } catch (err) {
+      console.error('Update task custom fields error:', err);
+      return fail(400, {
+        error: /** @type {any} */ (err)?.message || 'Failed to save custom fields'
+      });
     }
   }
 };

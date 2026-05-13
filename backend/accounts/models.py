@@ -70,6 +70,12 @@ class Account(AssignableMixin, BaseModel):
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     # System Fields
     is_active = models.BooleanField(default=True)
     org = models.ForeignKey(

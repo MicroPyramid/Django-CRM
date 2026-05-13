@@ -103,6 +103,12 @@ class Opportunity(AssignableMixin, BaseModel):
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
 
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
+    )
+
     # Deal Aging
     stage_changed_at = models.DateTimeField(
         _("Stage Changed At"), null=True, blank=True

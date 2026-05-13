@@ -15,6 +15,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { Badge } from '$lib/components/ui/badge';
   import { InvoiceViewPage } from '$lib/components/invoices';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import { orgSettings } from '$lib/stores/org.js';
@@ -807,6 +808,17 @@
             <Textarea bind:value={invoice.terms} placeholder="Payment terms..." rows={4} />
           </div>
         </div>
+
+        {#if (data.customFieldDefinitions || []).length > 0}
+          <div class="border-t p-6">
+            <CustomFieldsPanel
+              target="Invoice"
+              definitions={data.customFieldDefinitions || []}
+              values={data.invoice.customFields || {}}
+              title="Custom Fields"
+            />
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

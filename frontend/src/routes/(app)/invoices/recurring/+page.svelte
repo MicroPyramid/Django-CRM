@@ -14,6 +14,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
 
   /** @type {{ data: import('./$types').PageData }} */
   let { data } = $props();
@@ -1014,6 +1015,19 @@
               <span class="font-medium">{selectedRecurring.invoicesGenerated}</span>
             </div>
           </div>
+        </div>
+      {/if}
+
+      {#if selectedRecurring && (data.customFieldDefinitions || []).length > 0}
+        <div class="border-t pt-4">
+          <CustomFieldsPanel
+            target="RecurringInvoice"
+            definitions={data.customFieldDefinitions || []}
+            values={selectedRecurring.customFields || {}}
+            title="Custom Fields"
+            formAction="?/updateCustomFields"
+            extraFields={{ recurringId: String(selectedRecurring.id) }}
+          />
         </div>
       {/if}
     </div>

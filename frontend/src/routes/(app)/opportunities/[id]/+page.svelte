@@ -13,19 +13,22 @@
   import { StageStepper } from '$lib/components/ui/stage-stepper';
   import { Timeline, TimelineItem } from '$lib/components/ui/timeline';
   import { SectionCard } from '$lib/components/ui/section-card/index.js';
+  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { formatCurrency, formatDate, formatRelativeDate, getNameInitials } from '$lib/utils/formatting.js';
   import { OPPORTUNITY_STAGES } from '$lib/constants/filters.js';
 
-  /** @type {{ data: { opportunity: any, comments: any[], attachments: any[], contacts: any[], users: any[], commentPermission: boolean } }} */
+  /** @type {{ data: { opportunity: any, comments: any[], attachments: any[], contacts: any[], users: any[], commentPermission: boolean, customFieldDefinitions: any[], customFieldValues: Record<string, any> } }} */
   let { data } = $props();
 
   const opp = $derived(data.opportunity || {});
   const comments = $derived(data.comments || []);
   const attachments = $derived(data.attachments || []);
   const contacts = $derived(data.contacts || []);
+  const customFieldDefinitions = $derived(data.customFieldDefinitions || []);
+  const customFieldValues = $derived(data.customFieldValues || {});
 
   let tab = $state('overview');
 
@@ -146,6 +149,15 @@
               <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
             {/if}
           </SectionCard>
+
+        {#if customFieldDefinitions.length > 0}
+          <CustomFieldsPanel
+            target="Opportunity"
+            definitions={customFieldDefinitions}
+            values={customFieldValues}
+            title="Custom Fields"
+          />
+        {/if}
 
         <!-- Activity timeline card -->
         <SectionCard title="Activity" class="px-4 py-2">
