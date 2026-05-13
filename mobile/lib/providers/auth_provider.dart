@@ -137,6 +137,49 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Request a 6-digit sign-in code by email (mobile OTP flow).
+  Future<bool> requestMagicCode(String email) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    final ok = await _authService.requestMagicCode(email);
+    state = state.copyWith(
+      isLoading: false,
+      error: ok ? null : 'Could not send code. Check your connection and try again.',
+    );
+    return ok;
+  }
+
+  /// Verify a 6-digit OTP code and sign in.
+  Future<bool> signInWithMagicCode({
+    required String email,
+    required String code,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final ok = await _authService.signInWithMagicCode(email: email, code: code);
+      if (!ok) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Invalid or expired code. Please try again.',
+        );
+        return false;
+      }
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+        user: _authService.currentUser,
+        organizations: _authService.organizations,
+        selectedOrganization: _authService.selectedOrganization,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Sign-in failed: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
   /// Switch to a different organization
   Future<bool> switchOrganization(Organization org) async {
     debugPrint('AuthNotifier: Switching organization to ${org.name}...');

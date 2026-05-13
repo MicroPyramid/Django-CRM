@@ -7,7 +7,8 @@ import '../providers/auth_provider.dart';
 // Auth Screens
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/magic_link_email_screen.dart';
+import '../screens/auth/magic_link_code_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -38,7 +39,8 @@ class AppRoutes {
   // Auth routes
   static const String splash = '/splash';
   static const String login = '/login';
-  static const String forgotPassword = '/forgot-password';
+  static const String magicLinkEmail = '/magic-link/email';
+  static const String magicLinkCode = '/magic-link/code';
   static const String orgSelection = '/org-selection';
 
   // Main routes
@@ -71,7 +73,8 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 const _publicRoutes = [
   AppRoutes.splash,
   AppRoutes.login,
-  AppRoutes.forgotPassword,
+  AppRoutes.magicLinkEmail,
+  AppRoutes.magicLinkCode,
 ];
 
 /// Routes that require authentication but not org selection
@@ -139,9 +142,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: AppRoutes.forgotPassword,
-        name: 'forgotPassword',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        path: AppRoutes.magicLinkEmail,
+        name: 'magicLinkEmail',
+        builder: (context, state) => const MagicLinkEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.magicLinkCode,
+        name: 'magicLinkCode',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return MagicLinkCodeScreen(email: email);
+        },
       ),
       GoRoute(
         path: AppRoutes.orgSelection,

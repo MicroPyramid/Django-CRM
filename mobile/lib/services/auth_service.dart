@@ -61,9 +61,15 @@ class AuthService {
   Future<void> initialize() async {
     debugPrint('AuthService: Initializing...');
 
-    // Initialize Google Sign-In (required in v7.1.1)
+    // Initialize Google Sign-In (required in v7.1.1).
+    // serverClientId is the Web OAuth client (client_type: 3 in google-services.json)
+    // — this is the audience the Django backend's GOOGLE_CLIENT_ID verifies against,
+    // and it's what makes Android return a usable ID token.
     try {
-      await _googleSignIn.initialize();
+      await _googleSignIn.initialize(
+        serverClientId:
+            '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
+      );
       debugPrint('AuthService: Google Sign-In initialized successfully');
     } catch (e) {
       debugPrint('AuthService: Google Sign-In initialization failed: $e');
@@ -132,6 +138,99 @@ class AuthService {
       return true;
     } catch (e, stack) {
       debugPrint('AuthService: Google Sign-In error: $e');
+      debugPrint('Stack: $stack');
+      return false;
+    }
+  }
+
+  /// Request a 6-digit sign-in code by email (mobile OTP flow).
+  ///
+  /// Backend always returns 200 to prevent email enumeration, so a `true`
+  /// return value means "the request was accepted," not "an email was sent."
+  Future<bool> requestMagicCode(String email) async {
+    try {
+      debugPrint('AuthService: Requesting magic code for $email...');
+      final response = await _apiService.post(
+        ApiConfig.magicLinkRequest,
+        {'email': email, 'delivery': 'code'},
+        requiresAuth: false,
+      );
+      return response.success;
+    } catch (e) {
+      debugPrint('AuthService: requestMagicCode error: $e');
+      return false;
+    }
+  }
+
+  /// Verify a 6-digit OTP code and exchange it for JWT tokens.
+  ///
+  /// Response shape matches `UserDetailSerializer` (see backend
+  /// `MagicLinkVerifyCodeView`), which is different from the Google sign-in
+  /// shape — hence the separate parser instead of `_handleAuthResponse`.
+  Future<bool> signInWithMagicCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      debugPrint('AuthService: Verifying magic code for $email...');
+      final response = await _apiService.post(
+        ApiConfig.magicLinkVerifyCode,
+        {'email': email, 'code': code},
+        requiresAuth: false,
+      );
+
+      if (!response.success || response.data == null) {
+        debugPrint(
+          'AuthService: Magic code verify failed: ${response.message}',
+        );
+        return false;
+      }
+
+      final data = response.data!;
+      _accessToken = data['access_token'] as String?;
+      _refreshToken = data['refresh_token'] as String?;
+
+      final userData = data['user'] as Map<String, dynamic>?;
+      if (userData != null) {
+        _currentUser = AuthUser(
+          id: userData['id'] as String,
+          email: userData['email'] as String,
+          name: userData['name'] as String?,
+          profilePic: userData['profile_pic'] as String?,
+        );
+        final orgsList = userData['organizations'] as List<dynamic>?;
+        _organizations = orgsList
+            ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
+            .toList();
+      }
+
+      // Backend returns `current_org` only when the user already belongs to an
+      // org and its claim is baked into the JWT. Pre-select it so the user
+      // skips org selection.
+      final currentOrgData = data['current_org'] as Map<String, dynamic>?;
+      if (currentOrgData != null && _organizations != null) {
+        _selectedOrganization = _organizations!.firstWhere(
+          (o) => o.id == currentOrgData['id'],
+          orElse: () => Organization.fromJson(currentOrgData),
+        );
+      } else {
+        _selectedOrganization = null;
+      }
+
+      _apiService.setAccessToken(_accessToken);
+      _apiService.setOrganizationId(_selectedOrganization?.id);
+
+      await _saveToStorage();
+      if (_selectedOrganization != null) {
+        await _saveSelectedOrganization();
+      } else {
+        await _clearSelectedOrganization();
+      }
+
+      debugPrint('AuthService: Magic code sign-in successful');
+      return true;
+    } catch (e, stack) {
+      debugPrint('AuthService: signInWithMagicCode error: $e');
       debugPrint('Stack: $stack');
       return false;
     }

@@ -68,8 +68,13 @@ def send_welcome_email(user_id):
 
 
 @shared_task
-def send_magic_link_email(token_id):
-    """Send magic link email for passwordless authentication."""
+def send_magic_link_email(token_id, raw_code=None):
+    """Send a magic-link or OTP-code email for passwordless authentication.
+
+    For `delivery == "code"` rows, the caller passes `raw_code` (the plaintext
+    OTP) — only the hash is stored on the token row, so the plaintext can't be
+    recovered from the DB by this task.
+    """
     magic_token = MagicLinkToken.objects.filter(id=token_id).first()
     if not magic_token:
         return
@@ -81,14 +86,28 @@ def send_magic_link_email(token_id):
         logger.warning("Magic link skipped: invalid email format for token %s", token_id)
         return
 
-    magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+    if magic_token.delivery == "code":
+        if not raw_code:
+            logger.warning(
+                "Magic link skipped: raw_code missing for code-delivery token %s",
+                token_id,
+            )
+            return
+        subject = f"Your BottleCRM sign-in code: {raw_code}"
+        html_content = render_to_string(
+            "magic_link_code_email.html",
+            {"code": raw_code},
+        )
+    else:
+        magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+        subject = "Your BottleCRM sign-in link"
+        html_content = render_to_string(
+            "magic_link_email.html",
+            {"magic_link_url": magic_link_url},
+        )
 
-    html_content = render_to_string(
-        "magic_link_email.html",
-        {"magic_link_url": magic_link_url},
-    )
     msg = EmailMessage(
-        "Your BottleCRM sign-in link",
+        subject,
         html_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[email],

@@ -545,11 +545,30 @@ class SessionToken(BaseModel):
 
 
 class MagicLinkToken(models.Model):
-    """One-time magic link tokens for passwordless authentication."""
+    """One-time magic link tokens for passwordless authentication.
+
+    Supports two delivery modes (`delivery`):
+      - "link": classic email-link flow, the user clicks a URL containing `token`.
+      - "code": short 6-digit OTP flow for mobile clients. `code_hash` stores the
+        hashed code; `attempts` tracks failed verify attempts so we can lock the
+        row after too many guesses (codes are short, brute-force matters).
+    """
+
+    DELIVERY_LINK = "link"
+    DELIVERY_CODE = "code"
+    DELIVERY_CHOICES = (
+        (DELIVERY_LINK, "Link"),
+        (DELIVERY_CODE, "Code"),
+    )
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     email = models.EmailField(db_index=True)
     token = models.CharField(max_length=64, unique=True, db_index=True)
+    delivery = models.CharField(
+        max_length=8, choices=DELIVERY_CHOICES, default=DELIVERY_LINK
+    )
+    code_hash = models.CharField(max_length=256, blank=True, default="")
+    attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_used = models.BooleanField(default=False)
@@ -564,7 +583,7 @@ class MagicLinkToken(models.Model):
         ]
 
     def __str__(self):
-        return f"MagicLink({self.email}, used={self.is_used})"
+        return f"MagicLink({self.email}, delivery={self.delivery}, used={self.is_used})"
 
 
 # Activity Tracking for Recent Activities Dashboard
