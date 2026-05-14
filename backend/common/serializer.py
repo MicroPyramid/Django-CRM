@@ -717,8 +717,11 @@ class UserUpdateStatusSwaggerSerializer(serializers.Serializer):
 
 
 class MagicLinkRequestSerializer(serializers.Serializer):
-    """Serializer for requesting a magic link."""
+    """Serializer for requesting a magic link or OTP code."""
     email = serializers.EmailField(required=True)
+    delivery = serializers.ChoiceField(
+        choices=("link", "code"), required=False, default="link"
+    )
 
     def validate_email(self, value):
         domain = value.rsplit("@", 1)[-1].lower()
@@ -732,6 +735,12 @@ class MagicLinkRequestSerializer(serializers.Serializer):
 class MagicLinkVerifySerializer(serializers.Serializer):
     """Serializer for verifying a magic link token."""
     token = serializers.CharField(required=True, max_length=64)
+
+
+class MagicLinkVerifyCodeSerializer(serializers.Serializer):
+    """Serializer for verifying an OTP code (mobile flow)."""
+    email = serializers.EmailField(required=True)
+    code = serializers.RegexField(r"^\d{6}$", required=True, max_length=6)
 
 
 class UserDetailSerializer(serializers.ModelSerializer):

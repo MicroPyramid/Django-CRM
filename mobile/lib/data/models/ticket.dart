@@ -97,6 +97,16 @@ class Ticket {
   final bool isFirstResponseSlaBreachedFromApi;
   final bool isResolutionSlaBreachedFromApi;
   final List<Comment> comments;
+  final List<String> tagIds;
+  final Map<String, dynamic> customFields;
+  final DateTime? firstResponseSlaDeadline;
+  final DateTime? resolutionSlaDeadline;
+  final DateTime? slaPausedAt;
+  final int escalationCount;
+  final DateTime? lastEscalationFiredAt;
+  final TicketParentSummary? parentSummary;
+  final int childCount;
+  final bool isProblem;
 
   const Ticket({
     required this.id,
@@ -110,6 +120,16 @@ class Ticket {
     this.assignedTo = const [],
     this.assignedToIds = const [],
     this.tags = const [],
+    this.tagIds = const [],
+    this.customFields = const {},
+    this.firstResponseSlaDeadline,
+    this.resolutionSlaDeadline,
+    this.slaPausedAt,
+    this.escalationCount = 0,
+    this.lastEscalationFiredAt,
+    this.parentSummary,
+    this.childCount = 0,
+    this.isProblem = false,
     required this.createdAt,
     this.closedOn,
     this.slaFirstResponseHours,
@@ -171,15 +191,26 @@ class Ticket {
     }
 
     final List<String> parsedTags = [];
+    final List<String> parsedTagIds = [];
     if (json['tags'] is List) {
       for (final t in (json['tags'] as List)) {
         if (t is Map<String, dynamic>) {
           final n = t['name'] as String?;
           if (n != null && n.isNotEmpty) parsedTags.add(n);
+          final tid = t['id']?.toString();
+          if (tid != null && tid.isNotEmpty) parsedTagIds.add(tid);
         } else if (t is String) {
           parsedTags.add(t);
         }
       }
+    }
+
+    final Map<String, dynamic> parsedCustomFields = {};
+    final cfRaw = json['custom_fields'];
+    if (cfRaw is Map) {
+      cfRaw.forEach((k, v) {
+        if (k is String) parsedCustomFields[k] = v;
+      });
     }
 
     return Ticket(
@@ -194,6 +225,8 @@ class Ticket {
       assignedTo: parsedAssignedTo,
       assignedToIds: parsedAssignedToIds,
       tags: parsedTags,
+      tagIds: parsedTagIds,
+      customFields: parsedCustomFields,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -212,6 +245,26 @@ class Ticket {
           json['is_sla_first_response_breached'] as bool? ?? false,
       isResolutionSlaBreachedFromApi:
           json['is_sla_resolution_breached'] as bool? ?? false,
+      firstResponseSlaDeadline: json['first_response_sla_deadline'] != null
+          ? DateTime.tryParse(json['first_response_sla_deadline'] as String)
+          : null,
+      resolutionSlaDeadline: json['resolution_sla_deadline'] != null
+          ? DateTime.tryParse(json['resolution_sla_deadline'] as String)
+          : null,
+      slaPausedAt: json['sla_paused_at'] != null
+          ? DateTime.tryParse(json['sla_paused_at'] as String)
+          : null,
+      escalationCount: json['escalation_count'] as int? ?? 0,
+      lastEscalationFiredAt: json['last_escalation_fired_at'] != null
+          ? DateTime.tryParse(json['last_escalation_fired_at'] as String)
+          : null,
+      parentSummary: json['parent_summary'] is Map<String, dynamic>
+          ? TicketParentSummary.fromJson(
+              json['parent_summary'] as Map<String, dynamic>,
+            )
+          : null,
+      childCount: json['child_count'] as int? ?? 0,
+      isProblem: json['is_problem'] as bool? ?? false,
     );
   }
 
@@ -224,6 +277,14 @@ class Ticket {
       'case_type': ticketType.value,
       'description': description,
       'account': accountId,
+      'assigned_to': assignedToIds,
+      'tags': tagIds,
+      'custom_fields': customFields,
+      if (closedOn != null)
+        'closed_on':
+            '${closedOn!.year.toString().padLeft(4, '0')}-'
+            '${closedOn!.month.toString().padLeft(2, '0')}-'
+            '${closedOn!.day.toString().padLeft(2, '0')}',
     };
   }
 
@@ -239,6 +300,16 @@ class Ticket {
     List<Map<String, dynamic>>? assignedTo,
     List<String>? assignedToIds,
     List<String>? tags,
+    List<String>? tagIds,
+    Map<String, dynamic>? customFields,
+    DateTime? firstResponseSlaDeadline,
+    DateTime? resolutionSlaDeadline,
+    DateTime? slaPausedAt,
+    int? escalationCount,
+    DateTime? lastEscalationFiredAt,
+    TicketParentSummary? parentSummary,
+    int? childCount,
+    bool? isProblem,
     DateTime? createdAt,
     DateTime? closedOn,
     int? slaFirstResponseHours,
@@ -261,6 +332,19 @@ class Ticket {
       assignedTo: assignedTo ?? this.assignedTo,
       assignedToIds: assignedToIds ?? this.assignedToIds,
       tags: tags ?? this.tags,
+      tagIds: tagIds ?? this.tagIds,
+      customFields: customFields ?? this.customFields,
+      firstResponseSlaDeadline:
+          firstResponseSlaDeadline ?? this.firstResponseSlaDeadline,
+      resolutionSlaDeadline:
+          resolutionSlaDeadline ?? this.resolutionSlaDeadline,
+      slaPausedAt: slaPausedAt ?? this.slaPausedAt,
+      escalationCount: escalationCount ?? this.escalationCount,
+      lastEscalationFiredAt:
+          lastEscalationFiredAt ?? this.lastEscalationFiredAt,
+      parentSummary: parentSummary ?? this.parentSummary,
+      childCount: childCount ?? this.childCount,
+      isProblem: isProblem ?? this.isProblem,
       createdAt: createdAt ?? this.createdAt,
       closedOn: closedOn ?? this.closedOn,
       slaFirstResponseHours:
@@ -284,4 +368,25 @@ class Ticket {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+/// Lightweight ref to a parent ticket — used to render the "linked to" tile.
+class TicketParentSummary {
+  final String id;
+  final String name;
+  final String? status;
+
+  const TicketParentSummary({
+    required this.id,
+    required this.name,
+    this.status,
+  });
+
+  factory TicketParentSummary.fromJson(Map<String, dynamic> json) {
+    return TicketParentSummary(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      status: json['status'] as String?,
+    );
+  }
 }

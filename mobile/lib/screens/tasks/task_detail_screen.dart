@@ -200,7 +200,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 children: [
                   _buildStatusChip(),
                   const SizedBox(width: 8),
-                  PriorityBadge(priority: _task!.priority),
+                  PriorityBadge.fromPriority(_task!.priority),
                 ],
               ),
 

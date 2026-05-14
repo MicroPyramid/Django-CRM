@@ -23,6 +23,14 @@ class StatusBadge extends StatelessWidget {
     return StatusBadge(label: stage.shortLabel, color: stage.color);
   }
 
+  factory StatusBadge.fromTicketStatus(TicketStatus status) {
+    return StatusBadge(label: status.label, color: status.color);
+  }
+
+  factory StatusBadge.fromTicketType(TicketType type) {
+    return StatusBadge(label: type.label, color: AppColors.gray500);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -45,19 +53,52 @@ class StatusBadge extends StatelessWidget {
 
 /// Priority Badge - Shows priority level
 class PriorityBadge extends StatelessWidget {
-  final Priority priority;
+  final String label;
+  final Color color;
+  final IconData icon;
   final bool showLabel;
   final bool compact;
 
   const PriorityBadge({
     super.key,
-    required this.priority,
+    required this.label,
+    required this.color,
+    required this.icon,
     this.showLabel = true,
     this.compact = false,
   });
 
-  IconData get _icon {
-    switch (priority) {
+  /// Backward-compat constructor; existing callers pass `priority:` directly.
+  factory PriorityBadge.fromPriority(
+    Priority priority, {
+    bool showLabel = true,
+    bool compact = false,
+  }) {
+    return PriorityBadge(
+      label: priority.label,
+      color: priority.color,
+      icon: _priorityIcon(priority),
+      showLabel: showLabel,
+      compact: compact,
+    );
+  }
+
+  factory PriorityBadge.fromTicketPriority(
+    TicketPriority priority, {
+    bool showLabel = true,
+    bool compact = false,
+  }) {
+    return PriorityBadge(
+      label: priority.label,
+      color: priority.color,
+      icon: _ticketPriorityIcon(priority),
+      showLabel: showLabel,
+      compact: compact,
+    );
+  }
+
+  static IconData _priorityIcon(Priority p) {
+    switch (p) {
       case Priority.urgent:
         return Icons.priority_high_rounded;
       case Priority.high:
@@ -69,6 +110,19 @@ class PriorityBadge extends StatelessWidget {
     }
   }
 
+  static IconData _ticketPriorityIcon(TicketPriority p) {
+    switch (p) {
+      case TicketPriority.urgent:
+        return Icons.priority_high_rounded;
+      case TicketPriority.high:
+        return Icons.arrow_upward_rounded;
+      case TicketPriority.normal:
+        return Icons.remove_rounded;
+      case TicketPriority.low:
+        return Icons.arrow_downward_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (compact) {
@@ -76,29 +130,29 @@ class PriorityBadge extends StatelessWidget {
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          color: priority.color.withValues(alpha: 0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(_icon, size: 12, color: priority.color),
+        child: Icon(icon, size: 12, color: color),
       );
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: priority.color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_icon, size: 12, color: priority.color),
+          Icon(icon, size: 12, color: color),
           if (showLabel) ...[
             const SizedBox(width: 3),
             Text(
-              priority.label,
+              label,
               style: AppTypography.caption.copyWith(
-                color: priority.color,
+                color: color,
                 fontWeight: FontWeight.w600,
               ),
             ),

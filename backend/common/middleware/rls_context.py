@@ -113,6 +113,7 @@ class RequireOrgContext:
         "/api/auth/google/",
         "/api/auth/magic-link/request/",
         "/api/auth/magic-link/verify/",
+        "/api/auth/magic-link/verify-code/",
         "/api/org/",
         "/admin/",
         "/swagger-ui/",

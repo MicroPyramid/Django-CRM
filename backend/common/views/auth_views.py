@@ -493,6 +493,7 @@ class MagicLinkRequestView(APIView):
             return generic_response
 
         email = serializer_obj.validated_data["email"].lower()
+        delivery = serializer_obj.validated_data.get("delivery", "link")
 
         # Rate limit: max 5 tokens per email per hour
         one_hour_ago = timezone.now() - timedelta(hours=1)
@@ -505,16 +506,27 @@ class MagicLinkRequestView(APIView):
         # Invalidate any existing unused tokens for this email
         MagicLinkToken.objects.filter(email=email, is_used=False).update(is_used=True)
 
+        # For code delivery, generate a 6-digit OTP. Plaintext stays in memory
+        # only long enough to ship to the Celery task; the row stores only the
+        # PBKDF2 hash.
+        raw_code = None
+        code_hash = ""
+        if delivery == "code":
+            raw_code = f"{secrets.randbelow(10**6):06d}"
+            code_hash = make_password(raw_code)
+
         # Create new token
         token_obj = MagicLinkToken.objects.create(
             email=email,
             token=secrets.token_hex(32),
+            delivery=delivery,
+            code_hash=code_hash,
             expires_at=timezone.now() + timedelta(minutes=10),
             ip_address=request.META.get("REMOTE_ADDR"),
         )
 
-        # Send email via Celery
-        send_magic_link_email.delay(str(token_obj.id))
+        # Send email via Celery — pass raw_code only when delivery is "code".
+        send_magic_link_email.delay(str(token_obj.id), raw_code=raw_code)
 
         return Response(
             {"message": "If this email is valid, you will receive a sign-in link."},
@@ -609,16 +621,13 @@ class MagicLinkVerifyView(APIView):
             profile = profiles.first()
             default_org = profile.org
 
-        # Generate JWT tokens (same as LoginView)
         if default_org:
             token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
         else:
             token = OrgAwareRefreshToken.for_user_and_org(user, None)
 
-        # Audit log
         audit_log.login_success(user, default_org, request)
 
-        # Build response (same shape as LoginView)
         user_serializer = serializer.UserDetailSerializer(user)
         response_data = {
             "access_token": str(token.access_token),
@@ -632,4 +641,132 @@ class MagicLinkVerifyView(APIView):
                 "name": default_org.name,
             }
 
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class MagicLinkVerifyCodeView(APIView):
+    """
+    Verify a 6-digit OTP code (mobile flow) and return JWT tokens.
+    Creates a new user if the email doesn't exist.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    MAX_ATTEMPTS = 5
+
+    @extend_schema(
+        tags=["auth"],
+        request=serializer.MagicLinkVerifyCodeSerializer,
+        responses={
+            200: inline_serializer(
+                name="MagicLinkVerifyCodeResponse",
+                fields={
+                    "access_token": serializers.CharField(),
+                    "refresh_token": serializers.CharField(),
+                    "user": serializers.DictField(),
+                },
+            )
+        },
+    )
+    def post(self, request):
+        from django.contrib.auth.hashers import check_password
+        from django.db import transaction
+
+        from common.audit_log import audit_log
+        from common.models import MagicLinkToken
+
+        serializer_obj = serializer.MagicLinkVerifyCodeSerializer(data=request.data)
+        if not serializer_obj.is_valid():
+            return Response(
+                {"error": "Invalid request"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = serializer_obj.validated_data["email"].lower()
+        code = serializer_obj.validated_data["code"]
+
+        # Opportunistic cleanup of expired rows.
+        MagicLinkToken.objects.filter(expires_at__lt=timezone.now()).delete()
+
+        # Lock the most-recent unused code-delivery token for this email and
+        # check the OTP. select_for_update protects against two concurrent
+        # verify requests both observing the same `attempts` value.
+        invalid = Response(
+            {"error": "Invalid or expired code"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+        with transaction.atomic():
+            token_obj = (
+                MagicLinkToken.objects.select_for_update()
+                .filter(
+                    email=email,
+                    delivery="code",
+                    is_used=False,
+                    expires_at__gt=timezone.now(),
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if not token_obj:
+                return invalid
+
+            if not check_password(code, token_obj.code_hash):
+                token_obj.attempts = (token_obj.attempts or 0) + 1
+                if token_obj.attempts >= self.MAX_ATTEMPTS:
+                    token_obj.is_used = True
+                    token_obj.used_at = timezone.now()
+                token_obj.save(update_fields=["attempts", "is_used", "used_at"])
+                return invalid
+
+            token_obj.is_used = True
+            token_obj.used_at = timezone.now()
+            token_obj.save(update_fields=["is_used", "used_at"])
+
+        # Get or create user
+        created = False
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = User.objects.create(
+                email=email,
+                password=make_password(secrets.token_urlsafe(32)),
+                is_active=True,
+            )
+            created = True
+
+        if created:
+            from common.tasks import send_welcome_email
+
+            send_welcome_email.delay(str(user.id))
+
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+
+        profiles = Profile.objects.filter(user=user, is_active=True)
+        default_org = None
+        profile = None
+        if profiles.exists():
+            profile = profiles.first()
+            default_org = profile.org
+
+        if default_org:
+            token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
+        else:
+            token = OrgAwareRefreshToken.for_user_and_org(user, None)
+
+        audit_log.login_success(user, default_org, request)
+
+        user_serializer = serializer.UserDetailSerializer(user)
+        response_data = {
+            "access_token": str(token.access_token),
+            "refresh_token": str(token),
+            "user": user_serializer.data,
+        }
+        if default_org:
+            response_data["current_org"] = {
+                "id": str(default_org.id),
+                "name": default_org.name,
+            }
         return Response(response_data, status=status.HTTP_200_OK)

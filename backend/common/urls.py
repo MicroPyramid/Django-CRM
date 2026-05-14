@@ -4,6 +4,7 @@ from common.views.auth_views import (
     GoogleIdTokenView,
     GoogleOAuthCallbackView,
     MagicLinkRequestView,
+    MagicLinkVerifyCodeView,
     MagicLinkVerifyView,
     MeView,
     OrgAwareTokenRefreshView,
@@ -60,6 +61,7 @@ urlpatterns = [
     # Magic link (passwordless) authentication
     path("auth/magic-link/request/", MagicLinkRequestView.as_view(), name="magic_link_request"),
     path("auth/magic-link/verify/", MagicLinkVerifyView.as_view(), name="magic_link_verify"),
+    path("auth/magic-link/verify-code/", MagicLinkVerifyCodeView.as_view(), name="magic_link_verify_code"),
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),

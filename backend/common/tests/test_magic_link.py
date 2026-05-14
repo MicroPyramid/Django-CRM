@@ -24,7 +24,7 @@ class TestMagicLinkRequest:
     def test_request_returns_200_for_valid_email(self, unauthenticated_client):
         """Should always return 200 regardless of whether email exists."""
         with patch("common.tasks.send_magic_link_email") as mock_task:
-            mock_task.delay = lambda *a: None
+            mock_task.delay = lambda *a, **kw: None
             response = unauthenticated_client.post(
                 self.url, {"email": "anyone@example.com"}, format="json"
             )
@@ -34,7 +34,7 @@ class TestMagicLinkRequest:
     def test_request_creates_token(self, unauthenticated_client):
         """Should create a MagicLinkToken record."""
         with patch("common.tasks.send_magic_link_email") as mock_task:
-            mock_task.delay = lambda *a: None
+            mock_task.delay = lambda *a, **kw: None
             unauthenticated_client.post(
                 self.url, {"email": "test@example.com"}, format="json"
             )
@@ -48,7 +48,7 @@ class TestMagicLinkRequest:
             expires_at=timezone.now() + timedelta(minutes=10),
         )
         with patch("common.tasks.send_magic_link_email") as mock_task:
-            mock_task.delay = lambda *a: None
+            mock_task.delay = lambda *a, **kw: None
             unauthenticated_client.post(
                 self.url, {"email": "test@example.com"}, format="json"
             )
@@ -65,7 +65,7 @@ class TestMagicLinkRequest:
                 expires_at=timezone.now() + timedelta(minutes=10),
             )
         with patch("common.tasks.send_magic_link_email") as mock_task:
-            mock_task.delay = lambda *a: None
+            mock_task.delay = lambda *a, **kw: None
             unauthenticated_client.post(
                 self.url, {"email": email}, format="json"
             )
@@ -203,3 +203,222 @@ class TestMagicLinkVerify:
             self.url, {"token": token_obj.token}, format="json"
         )
         assert response2.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestMagicLinkRequestCode:
+    """Tests for POST /api/auth/magic-link/request/ with delivery=code (mobile OTP flow)."""
+
+    url = "/api/auth/magic-link/request/"
+
+    def test_request_code_creates_code_hash(self, unauthenticated_client):
+        """delivery=code should populate code_hash and set delivery."""
+        captured = {}
+
+        def fake_delay(token_id, *args, **kwargs):
+            captured["token_id"] = token_id
+            captured["raw_code"] = kwargs.get("raw_code")
+
+        with patch("common.tasks.send_magic_link_email") as mock_task:
+            mock_task.delay = fake_delay
+            response = unauthenticated_client.post(
+                self.url,
+                {"email": "otp@example.com", "delivery": "code"},
+                format="json",
+            )
+        assert response.status_code == status.HTTP_200_OK
+        token = MagicLinkToken.objects.get(email="otp@example.com")
+        assert token.delivery == "code"
+        assert token.code_hash != ""
+        # raw_code is 6 digits and was handed off to the Celery task; not on the row.
+        assert captured["raw_code"] is not None
+        assert len(captured["raw_code"]) == 6
+        assert captured["raw_code"].isdigit()
+
+    def test_request_link_default_delivery(self, unauthenticated_client):
+        """Omitting delivery should default to link (no code_hash)."""
+        with patch("common.tasks.send_magic_link_email") as mock_task:
+            mock_task.delay = lambda *a, **kw: None
+            unauthenticated_client.post(
+                self.url, {"email": "linkdefault@example.com"}, format="json"
+            )
+        token = MagicLinkToken.objects.get(email="linkdefault@example.com")
+        assert token.delivery == "link"
+        assert token.code_hash == ""
+
+
+@pytest.mark.django_db
+class TestMagicLinkVerifyCode:
+    """Tests for POST /api/auth/magic-link/verify-code/ (mobile OTP flow)."""
+
+    url = "/api/auth/magic-link/verify-code/"
+
+    def _create_code_token(self, email="otp@example.com", code="123456", **kwargs):
+        from django.contrib.auth.hashers import make_password
+
+        return MagicLinkToken.objects.create(
+            email=email,
+            token=secrets.token_hex(32),
+            delivery="code",
+            code_hash=make_password(code),
+            expires_at=timezone.now() + timedelta(minutes=10),
+            **kwargs,
+        )
+
+    def test_verify_code_valid_new_user(self, unauthenticated_client):
+        """Valid code for a new email mints tokens and creates the user."""
+        self._create_code_token(email="newotp@example.com", code="654321")
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "newotp@example.com", "code": "654321"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert "access_token" in response.data
+        assert "refresh_token" in response.data
+        assert User.objects.filter(email="newotp@example.com").exists()
+
+    def test_verify_code_valid_existing_user(
+        self, unauthenticated_client, admin_user, admin_profile
+    ):
+        """Valid code for an existing user returns current_org."""
+        self._create_code_token(email=admin_user.email, code="111111")
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": admin_user.email, "code": "111111"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert "current_org" in response.data
+
+    def test_verify_code_marks_used(self, unauthenticated_client):
+        """Successful verification marks the row used (replay protection)."""
+        token = self._create_code_token(email="markused@example.com", code="222222")
+        unauthenticated_client.post(
+            self.url,
+            {"email": "markused@example.com", "code": "222222"},
+            format="json",
+        )
+        token.refresh_from_db()
+        assert token.is_used is True
+        assert token.used_at is not None
+
+    def test_verify_code_wrong_increments_attempts(self, unauthenticated_client):
+        """Wrong code increments attempts and returns 400."""
+        token = self._create_code_token(email="wrong@example.com", code="333333")
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "wrong@example.com", "code": "000000"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        token.refresh_from_db()
+        assert token.attempts == 1
+        assert token.is_used is False
+
+    def test_verify_code_lockout_after_max_attempts(self, unauthenticated_client):
+        """After 5 wrong attempts the row is locked (is_used=True)."""
+        token = self._create_code_token(email="lockout@example.com", code="444444")
+        for _ in range(5):
+            unauthenticated_client.post(
+                self.url,
+                {"email": "lockout@example.com", "code": "000000"},
+                format="json",
+            )
+        token.refresh_from_db()
+        assert token.attempts == 5
+        assert token.is_used is True
+        # The right code now also fails, because the row is locked.
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "lockout@example.com", "code": "444444"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_expired(self, unauthenticated_client):
+        """Expired token returns 400."""
+        from django.contrib.auth.hashers import make_password
+
+        MagicLinkToken.objects.create(
+            email="expired-otp@example.com",
+            token=secrets.token_hex(32),
+            delivery="code",
+            code_hash=make_password("555555"),
+            expires_at=timezone.now() - timedelta(minutes=1),
+        )
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "expired-otp@example.com", "code": "555555"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_replay_rejected(self, unauthenticated_client):
+        """Second use of the same code is rejected."""
+        self._create_code_token(email="replay@example.com", code="666666")
+        first = unauthenticated_client.post(
+            self.url,
+            {"email": "replay@example.com", "code": "666666"},
+            format="json",
+        )
+        assert first.status_code == status.HTTP_200_OK
+        second = unauthenticated_client.post(
+            self.url,
+            {"email": "replay@example.com", "code": "666666"},
+            format="json",
+        )
+        assert second.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_email_mismatch(self, unauthenticated_client):
+        """Right code on a different email is rejected (no cross-account use)."""
+        self._create_code_token(email="alice@example.com", code="777777")
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "bob@example.com", "code": "777777"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_missing_fields(self, unauthenticated_client):
+        """Missing email or code returns 400."""
+        r1 = unauthenticated_client.post(
+            self.url, {"email": "x@example.com"}, format="json"
+        )
+        assert r1.status_code == status.HTTP_400_BAD_REQUEST
+        r2 = unauthenticated_client.post(self.url, {"code": "123456"}, format="json")
+        assert r2.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_non_numeric(self, unauthenticated_client):
+        """Non-numeric code is rejected at serializer level."""
+        self._create_code_token(email="numeric@example.com", code="888888")
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "numeric@example.com", "code": "abcdef"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_verify_code_ignores_link_tokens(self, unauthenticated_client):
+        """A delivery=link token must not satisfy verify-code, even with same email."""
+        from django.contrib.auth.hashers import make_password
+
+        # Link-style token (no code_hash, delivery=link by default)
+        MagicLinkToken.objects.create(
+            email="linktok@example.com",
+            token=secrets.token_hex(32),
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        # Concurrently, attacker tries the verify-code endpoint with a guessed code
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": "linktok@example.com", "code": "999999"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        # Also confirm that even a code that hashes to *something* on a link
+        # token can't be used — there's no code_hash on a link row.
+        # (Defensive: ensure the lookup filters by delivery="code".)
+        assert not MagicLinkToken.objects.filter(
+            email="linktok@example.com", is_used=True
+        ).exists()

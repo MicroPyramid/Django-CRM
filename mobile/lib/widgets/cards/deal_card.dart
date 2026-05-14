@@ -85,7 +85,7 @@ class DealCard extends StatelessWidget {
                         ),
                         if (deal.priority == Priority.high) ...[
                           const SizedBox(width: 8),
-                          PriorityBadge(priority: deal.priority),
+                          PriorityBadge.fromPriority(deal.priority),
                         ],
                       ],
                     ),

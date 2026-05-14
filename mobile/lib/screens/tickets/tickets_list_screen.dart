@@ -1,15 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/theme/theme.dart';
+import '../../data/models/lookup_models.dart';
 import '../../data/models/ticket.dart';
+import '../../providers/lookup_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/cards/ticket_card.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/multi_select_sheet.dart';
 
-/// Tickets List Screen
+/// Tickets List Screen — paginated list with server- and client-side filters.
 class TicketsListScreen extends ConsumerStatefulWidget {
   const TicketsListScreen({super.key});
 
@@ -21,9 +26,8 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  String _searchQuery = '';
-  TicketStatus? _statusFilter;
-  TicketPriority? _priorityFilter;
+  TicketListFilters _filters = const TicketListFilters();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -31,55 +35,43 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      ref.read(ticketsProvider.notifier).loadMore();
-    }
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
-  List<Ticket> _filterTickets(List<Ticket> tickets) {
-    var result = List<Ticket>.from(tickets);
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      result = result.where((c) {
-        return c.name.toLowerCase().contains(q) ||
-            (c.accountName?.toLowerCase().contains(q) ?? false);
-      }).toList();
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(ticketsProvider.notifier).loadMore(filters: _filters);
     }
-    if (_statusFilter != null) {
-      result = result.where((c) => c.status == _statusFilter).toList();
-    }
-    if (_priorityFilter != null) {
-      result = result.where((c) => c.priority == _priorityFilter).toList();
-    }
-    return result;
   }
 
-  void _clearFilters() {
-    setState(() {
-      _searchQuery = '';
-      _searchController.clear();
-      _statusFilter = null;
-      _priorityFilter = null;
+  void _applyFilters(TicketListFilters next) {
+    setState(() => _filters = next);
+    ref.read(ticketsProvider.notifier).refresh(filters: next);
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _applyFilters(_filters.copyWith(search: value.trim()));
     });
   }
 
-  bool get _hasActiveFilters =>
-      _statusFilter != null || _priorityFilter != null;
+  void _clearFilters() {
+    _searchController.clear();
+    _applyFilters(const TicketListFilters());
+  }
 
   @override
   Widget build(BuildContext context) {
     final ticketsAsync = ref.watch(ticketsProvider);
     final data = ticketsAsync.value;
-    final filtered = _filterTickets(data?.tickets ?? const []);
+    final tickets = data?.tickets ?? const <Ticket>[];
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -90,6 +82,22 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
         scrolledUnderElevation: 1,
         actions: [
           IconButton(
+            tooltip: 'Analytics',
+            icon: const Icon(LucideIcons.barChart3),
+            onPressed: () => context.push(AppRoutes.ticketAnalytics),
+          ),
+          IconButton(
+            tooltip: 'Approvals',
+            icon: const Icon(LucideIcons.shieldCheck),
+            onPressed: () => context.push(AppRoutes.approvalsInbox),
+          ),
+          IconButton(
+            tooltip: 'Knowledge base',
+            icon: const Icon(LucideIcons.bookOpen),
+            onPressed: () => context.push(AppRoutes.solutions),
+          ),
+          IconButton(
+            tooltip: 'New ticket',
             icon: const Icon(LucideIcons.plus),
             onPressed: () => context.push(AppRoutes.ticketCreate),
           ),
@@ -99,17 +107,14 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
         children: [
           _buildSearchBar(),
           _buildFilterBar(),
-          _buildResultsCount(filtered.length, data?.totalCount ?? 0),
-          Expanded(child: _buildList(ticketsAsync, filtered)),
+          _buildResultsCount(tickets.length, data?.totalCount ?? 0),
+          Expanded(child: _buildList(ticketsAsync, tickets)),
         ],
       ),
     );
   }
 
-  Widget _buildList(
-    AsyncValue<TicketsListData> async,
-    List<Ticket> filtered,
-  ) {
+  Widget _buildList(AsyncValue<TicketsListData> async, List<Ticket> tickets) {
     final data = async.value;
 
     if (async.isLoading && (data == null || data.tickets.isEmpty)) {
@@ -134,32 +139,33 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => ref.read(ticketsProvider.notifier).refresh(),
+              onPressed: () =>
+                  ref.read(ticketsProvider.notifier).refresh(filters: _filters),
               child: const Text('Retry'),
             ),
           ],
         ),
       );
     }
-    if (filtered.isEmpty) return _buildEmptyState();
+    if (tickets.isEmpty) return _buildEmptyState();
 
     final hasMore = data?.hasMore ?? false;
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(ticketsProvider.notifier).refresh(),
+      onRefresh: () =>
+          ref.read(ticketsProvider.notifier).refresh(filters: _filters),
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-        itemCount:
-            filtered.length + (hasMore && !_hasActiveFilters ? 1 : 0),
+        itemCount: tickets.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index == filtered.length) {
+          if (index == tickets.length) {
             return const Padding(
               padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          final ticketItem = filtered[index];
+          final ticketItem = tickets[index];
           return TicketCard(
             ticketItem: ticketItem,
             onTap: () => context.push('/tickets/${ticketItem.id}'),
@@ -175,7 +181,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       child: TextField(
         controller: _searchController,
-        onChanged: (value) => setState(() => _searchQuery = value),
+        onChanged: _onSearchChanged,
         style: AppTypography.body,
         decoration: InputDecoration(
           hintText: 'Search tickets...',
@@ -185,7 +191,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
             color: AppColors.textTertiary,
             size: 18,
           ),
-          suffixIcon: _searchQuery.isNotEmpty
+          suffixIcon: _filters.search.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     LucideIcons.x,
@@ -194,7 +200,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
                   ),
                   onPressed: () {
                     _searchController.clear();
-                    setState(() => _searchQuery = '');
+                    _applyFilters(_filters.copyWith(search: ''));
                   },
                 )
               : null,
@@ -222,6 +228,21 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   }
 
   Widget _buildFilterBar() {
+    final accounts = ref.watch(accountsProvider);
+    final users = ref.watch(usersProvider);
+    final tags = ref.watch(tagsProvider);
+
+    final selectedAccount =
+        accounts.where((a) => a.id == _filters.accountId).firstOrNull;
+    final assigneeLabels = users
+        .where((u) => _filters.assigneeIds.contains(u.id))
+        .map((u) => u.displayName)
+        .toList();
+    final tagLabels = tags
+        .where((t) => _filters.tagIds.contains(t.id))
+        .map((t) => t.name)
+        .toList();
+
     return Container(
       color: AppColors.surface,
       child: SingleChildScrollView(
@@ -230,17 +251,57 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
         child: Row(
           children: [
             _FilterChip(
-              label: _statusFilter?.displayName ?? 'Status',
-              isActive: _statusFilter != null,
-              onTap: _showStatusFilter,
+              label: _filters.status != null
+                  ? TicketStatus.fromString(_filters.status).label
+                  : 'Status',
+              isActive: _filters.status != null,
+              onTap: _pickStatus,
             ),
             const SizedBox(width: 6),
             _FilterChip(
-              label: _priorityFilter?.displayName ?? 'Priority',
-              isActive: _priorityFilter != null,
-              onTap: _showPriorityFilter,
+              label: _filters.priority != null
+                  ? TicketPriority.fromString(_filters.priority).label
+                  : 'Priority',
+              isActive: _filters.priority != null,
+              onTap: _pickPriority,
             ),
-            if (_hasActiveFilters) ...[
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: selectedAccount?.name ?? 'Account',
+              isActive: _filters.accountId != null,
+              onTap: () => _pickAccount(accounts),
+            ),
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: assigneeLabels.isEmpty
+                  ? 'Assignees'
+                  : 'Assignees · ${assigneeLabels.length}',
+              isActive: assigneeLabels.isNotEmpty,
+              onTap: () => _pickAssignees(users),
+            ),
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: tagLabels.isEmpty ? 'Tags' : 'Tags · ${tagLabels.length}',
+              isActive: tagLabels.isNotEmpty,
+              onTap: () => _pickTags(tags),
+            ),
+            const SizedBox(width: 6),
+            _FilterChip(
+              label: _formatDateRange(),
+              isActive: _filters.createdAfter != null ||
+                  _filters.createdBefore != null,
+              onTap: _pickDateRange,
+            ),
+            const SizedBox(width: 6),
+            _ToggleChip(
+              label: 'Watching',
+              icon: LucideIcons.eye,
+              isActive: _filters.watchingOnly,
+              onTap: () => _applyFilters(
+                _filters.copyWith(watchingOnly: !_filters.watchingOnly),
+              ),
+            ),
+            if (_filters.hasAny) ...[
               const SizedBox(width: 6),
               GestureDetector(
                 onTap: _clearFilters,
@@ -276,6 +337,17 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     );
   }
 
+  String _formatDateRange() {
+    final after = _filters.createdAfter;
+    final before = _filters.createdBefore;
+    if (after == null && before == null) return 'Date';
+    String fmt(DateTime d) =>
+        '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+    if (after != null && before != null) return '${fmt(after)} → ${fmt(before)}';
+    if (after != null) return 'After ${fmt(after)}';
+    return 'Before ${fmt(before!)}';
+  }
+
   Widget _buildResultsCount(int filteredCount, int totalCount) {
     return Container(
       width: double.infinity,
@@ -283,53 +355,52 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Text(
         '$filteredCount ticket${filteredCount == 1 ? '' : 's'}'
-        '${_hasActiveFilters || _searchQuery.isNotEmpty ? ' (filtered)' : ''}',
+        '${_filters.hasAny ? ' (filtered)' : ''}',
         style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    final hasFilters = _searchQuery.isNotEmpty || _hasActiveFilters;
     return EmptyState(
-      icon: hasFilters ? LucideIcons.search : LucideIcons.ticket,
-      title: hasFilters ? 'No results found' : 'No tickets yet',
-      description: hasFilters
-          ? 'Try adjusting your search or filters'
+      icon: _filters.hasAny ? LucideIcons.search : LucideIcons.ticket,
+      title: _filters.hasAny ? 'No results found' : 'No tickets yet',
+      description: _filters.hasAny
+          ? 'Try adjusting your filters'
           : 'Customer-reported issues will appear here',
-      actionLabel: hasFilters ? 'Clear filters' : 'Create ticket',
-      onAction: hasFilters
+      actionLabel: _filters.hasAny ? 'Clear filters' : 'Create ticket',
+      onAction: _filters.hasAny
           ? _clearFilters
           : () => context.push(AppRoutes.ticketCreate),
     );
   }
 
-  void _showStatusFilter() {
+  void _pickStatus() {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _SimpleFilterSheet(
+      builder: (_) => _SimpleFilterSheet(
         title: 'Filter by Status',
         rows: [
           _FilterRow(
             label: 'All Statuses',
-            isSelected: _statusFilter == null,
+            isSelected: _filters.status == null,
             onTap: () {
-              setState(() => _statusFilter = null);
               Navigator.pop(context);
+              _applyFilters(_filters.copyWith(clearStatus: true));
             },
           ),
           ...TicketStatus.values.map(
             (s) => _FilterRow(
               label: s.label,
-              isSelected: _statusFilter == s,
+              isSelected: _filters.status == s.value,
               color: s.color,
               onTap: () {
-                setState(() => _statusFilter = s);
                 Navigator.pop(context);
+                _applyFilters(_filters.copyWith(status: s.value));
               },
             ),
           ),
@@ -338,38 +409,157 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     );
   }
 
-  void _showPriorityFilter() {
+  void _pickPriority() {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _SimpleFilterSheet(
+      builder: (_) => _SimpleFilterSheet(
         title: 'Filter by Priority',
         rows: [
           _FilterRow(
             label: 'All Priorities',
-            isSelected: _priorityFilter == null,
+            isSelected: _filters.priority == null,
             onTap: () {
-              setState(() => _priorityFilter = null);
               Navigator.pop(context);
+              _applyFilters(_filters.copyWith(clearPriority: true));
             },
           ),
           ...TicketPriority.values.map(
             (p) => _FilterRow(
               label: p.label,
-              isSelected: _priorityFilter == p,
+              isSelected: _filters.priority == p.value,
               color: p.color,
               onTap: () {
-                setState(() => _priorityFilter = p);
                 Navigator.pop(context);
+                _applyFilters(_filters.copyWith(priority: p.value));
               },
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _pickAccount(List<AccountLookup> accounts) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (ctx, controller) => Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.gray300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Filter by Account', style: AppTypography.h3),
+            ),
+            _FilterRow(
+              label: 'All Accounts',
+              isSelected: _filters.accountId == null,
+              onTap: () {
+                Navigator.pop(context);
+                _applyFilters(_filters.copyWith(clearAccountId: true));
+              },
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: controller,
+                itemCount: accounts.length,
+                itemBuilder: (_, i) {
+                  final a = accounts[i];
+                  return _FilterRow(
+                    label: a.name,
+                    isSelected: _filters.accountId == a.id,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _applyFilters(_filters.copyWith(accountId: a.id));
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAssignees(List<UserLookup> users) async {
+    final initial =
+        users.where((u) => _filters.assigneeIds.contains(u.id)).toList();
+    final result = await MultiSelectSheet.show<UserLookup>(
+      context: context,
+      title: 'Filter by Assignee',
+      items: users,
+      initialSelection: initial,
+      labelOf: (u) => u.displayName,
+      searchText: (u) => '${u.email} ${u.displayName}',
+      leadingOf: (u) => UserAvatar(name: u.displayName, size: AvatarSize.xs),
+    );
+    if (result != null) {
+      _applyFilters(
+        _filters.copyWith(assigneeIds: result.map((u) => u.id).toList()),
+      );
+    }
+  }
+
+  Future<void> _pickTags(List<TagLookup> tags) async {
+    final initial = tags.where((t) => _filters.tagIds.contains(t.id)).toList();
+    final result = await MultiSelectSheet.show<TagLookup>(
+      context: context,
+      title: 'Filter by Tag',
+      items: tags,
+      initialSelection: initial,
+      labelOf: (t) => t.name,
+      searchText: (t) => t.name,
+    );
+    if (result != null) {
+      _applyFilters(_filters.copyWith(tagIds: result.map((t) => t.id).toList()));
+    }
+  }
+
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final initial = (_filters.createdAfter != null ||
+            _filters.createdBefore != null)
+        ? DateTimeRange(
+            start: _filters.createdAfter ??
+                now.subtract(const Duration(days: 30)),
+            end: _filters.createdBefore ?? now,
+          )
+        : null;
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: now.add(const Duration(days: 1)),
+      initialDateRange: initial,
+    );
+    if (picked != null) {
+      _applyFilters(
+        _filters.copyWith(
+          createdAfter: picked.start,
+          createdBefore: picked.end,
+        ),
+      );
+    }
   }
 }
 
@@ -413,6 +603,56 @@ class _FilterChip extends StatelessWidget {
               LucideIcons.chevronDown,
               size: 12,
               color: isActive ? AppColors.primary700 : AppColors.gray600,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _ToggleChip({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary100 : AppColors.gray100,
+          borderRadius: BorderRadius.circular(4),
+          border: isActive
+              ? Border.all(color: AppColors.primary300, width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 12,
+              color: isActive ? AppColors.primary700 : AppColors.gray600,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: isActive ? AppColors.primary700 : AppColors.gray700,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              ),
             ),
           ],
         ),

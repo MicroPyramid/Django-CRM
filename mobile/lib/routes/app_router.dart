@@ -7,7 +7,8 @@ import '../providers/auth_provider.dart';
 // Auth Screens
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/magic_link_email_screen.dart';
+import '../screens/auth/magic_link_code_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -27,6 +28,10 @@ import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
 import '../screens/settings/more_screen.dart';
+import '../screens/solutions/solutions_list_screen.dart';
+import '../screens/solutions/solution_detail_screen.dart';
+import '../screens/tickets/approvals_inbox_screen.dart';
+import '../screens/tickets/ticket_analytics_screen.dart';
 
 // Shell
 import '../widgets/common/app_shell.dart';
@@ -38,7 +43,8 @@ class AppRoutes {
   // Auth routes
   static const String splash = '/splash';
   static const String login = '/login';
-  static const String forgotPassword = '/forgot-password';
+  static const String magicLinkEmail = '/magic-link/email';
+  static const String magicLinkCode = '/magic-link/code';
   static const String orgSelection = '/org-selection';
 
   // Main routes
@@ -62,6 +68,17 @@ class AppRoutes {
   static const String profile = '/more/profile';
   static const String notifications = '/more/notifications';
   static const String team = '/more/team';
+
+  // Knowledge base
+  static const String solutions = '/solutions';
+  static const String solutionNew = '/solutions/new';
+  static const String solutionDetail = '/solutions/:id';
+
+  // Approvals
+  static const String approvalsInbox = '/tickets/approvals';
+
+  // Analytics
+  static const String ticketAnalytics = '/tickets/analytics';
 }
 
 /// Navigation shell key for bottom navigation
@@ -71,7 +88,8 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 const _publicRoutes = [
   AppRoutes.splash,
   AppRoutes.login,
-  AppRoutes.forgotPassword,
+  AppRoutes.magicLinkEmail,
+  AppRoutes.magicLinkCode,
 ];
 
 /// Routes that require authentication but not org selection
@@ -139,9 +157,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: AppRoutes.forgotPassword,
-        name: 'forgotPassword',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        path: AppRoutes.magicLinkEmail,
+        name: 'magicLinkEmail',
+        builder: (context, state) => const MagicLinkEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.magicLinkCode,
+        name: 'magicLinkCode',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return MagicLinkCodeScreen(email: email);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.solutions,
+        name: 'solutions',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SolutionsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.solutionNew,
+        name: 'solutionNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SolutionDetailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.solutionDetail,
+        name: 'solutionDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SolutionDetailScreen(solutionId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.approvalsInbox,
+        name: 'approvalsInbox',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApprovalsInboxScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.ticketAnalytics,
+        name: 'ticketAnalytics',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TicketAnalyticsScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgSelection,
