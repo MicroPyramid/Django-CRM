@@ -2,8 +2,12 @@
 
 Single call site used by every producer (watchers, mentions, escalations,
 future apps). Writes a `Notification` row, then best-effort publishes the
-new row's id on a Redis pub/sub channel so the SSE consumer can fan it out
-to any open browser tabs for that recipient.
+*fully serialized* row on a Redis pub/sub channel so the SSE consumer can
+fan it out to any open browser tabs for that recipient without touching
+Postgres again. The published frame is a JSON envelope
+``{"recipient": "<profile_id>", "notification": {...serialized...}}`` — the
+``recipient`` lets the stream drop any misrouted frame as defense-in-depth
+without a DB lookup (per-recipient channels already scope delivery).
 
 Channel naming: ``notif:<org_id>:<profile_id>`` — see
 ``docs/cases/tier2/in-app-notifications.md`` "Cross-org leak".
@@ -11,6 +15,7 @@ Channel naming: ``notif:<org_id>:<profile_id>`` — see
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 from typing import Any, Optional
@@ -45,7 +50,9 @@ def _get_redis():
             return None
         url = getattr(settings, "CELERY_BROKER_URL", None) or "redis://localhost:6379/0"
         try:
-            client = redis.Redis.from_url(url, socket_timeout=1, socket_connect_timeout=1)
+            client = redis.Redis.from_url(
+                url, socket_timeout=1, socket_connect_timeout=1
+            )
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("Could not build redis client for notifications: %s", exc)
             return None
@@ -110,5 +117,18 @@ def create(
         link=link,
         data=data or {},
     )
-    _publish(channel_for(recipient.org_id, recipient.id), str(notif.id))
+    # Serialize once, here, in this (sync) producer request. The SSE consumer
+    # then never re-reads Postgres per event — the stream holds zero DB
+    # connections, so PG usage tracks real request throughput, not the number
+    # of open browser tabs. Imported locally to avoid an import cycle at app
+    # load (common.serializer imports common.models, as does this module).
+    from common.serializer import NotificationSerializer
+
+    payload = json.dumps(
+        {
+            "recipient": str(recipient.id),
+            "notification": NotificationSerializer(notif).data,
+        }
+    )
+    _publish(channel_for(recipient.org_id, recipient.id), payload)
     return notif

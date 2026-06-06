@@ -10,10 +10,11 @@ Covers:
 import asyncio
 import json
 
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from rest_framework.test import APIClient
 
 from common.models import Notification, Org, Profile, User
+from common.serializer import NotificationSerializer
 from common.views import notification_views
 from common.views.notification_views import (
     _format_keepalive,
@@ -22,14 +23,26 @@ from common.views.notification_views import (
 )
 
 
+def _envelope(notif, recipient_id):
+    """Build the JSON pub/sub frame the producer publishes (see
+    ``common.notifications.create``): a serialized notification addressed to a
+    recipient. The stream forwards it without reading Postgres."""
+    return json.dumps(
+        {
+            "recipient": str(recipient_id),
+            "notification": NotificationSerializer(notif).data,
+        }
+    ).encode("utf-8")
+
+
 class TestFormatHelpers:
     def test_format_sse_event_shape(self):
         out = _format_sse("notification", {"id": "abc", "verb": "v"})
         assert out.startswith(b"event: notification\n")
         assert b"data: " in out
         assert out.endswith(b"\n\n")
-        data_line = [l for l in out.split(b"\n") if l.startswith(b"data: ")][0]
-        payload = json.loads(data_line[len(b"data: "):])
+        data_line = [line for line in out.split(b"\n") if line.startswith(b"data: ")][0]
+        payload = json.loads(data_line[len(b"data: ") :])
         assert payload == {"id": "abc", "verb": "v"}
 
     def test_format_keepalive_is_comment(self):
@@ -64,10 +77,10 @@ class _StubPubSub:
         return None
 
 
-class TestStreamEvents(TransactionTestCase):
-    """Uses TransactionTestCase because the SSE generator's `sync_to_async`
-    DB hit opens a separate SQLite connection — incompatible with the
-    transaction-wrapped TestCase isolation."""
+class TestStreamEvents(TestCase):
+    """Plain TestCase: the SSE generator no longer reads Postgres (events
+    arrive pre-serialized over Redis), so there is no cross-connection DB hit
+    requiring TransactionTestCase isolation."""
 
     def setUp(self):
         self.org = Org.objects.create(name="O")
@@ -83,7 +96,9 @@ class TestStreamEvents(TransactionTestCase):
     def test_first_frame_is_keepalive(self):
         async def runner():
             pubsub = _StubPubSub()
-            gen = _stream_events("notif:o:p", recipient_id=self.profile.id, pubsub=pubsub)
+            gen = _stream_events(
+                "notif:o:p", recipient_id=self.profile.id, pubsub=pubsub
+            )
             first = await asyncio.wait_for(gen.__anext__(), timeout=1)
             await gen.aclose()
             return first
@@ -101,7 +116,7 @@ class TestStreamEvents(TransactionTestCase):
         )
 
         async def runner():
-            pubsub = _StubPubSub([{"data": str(notif.id).encode("utf-8")}])
+            pubsub = _StubPubSub([{"data": _envelope(notif, self.profile.id)}])
             gen = _stream_events(
                 "notif:o:p", recipient_id=self.profile.id, pubsub=pubsub
             )
@@ -113,8 +128,8 @@ class TestStreamEvents(TransactionTestCase):
         first, second = asyncio.run(runner())
         assert first == b": keepalive\n\n"
         assert second.startswith(b"event: notification\n")
-        data_line = [l for l in second.split(b"\n") if l.startswith(b"data: ")][0]
-        payload = json.loads(data_line[len(b"data: "):])
+        data_line = [line for line in second.split(b"\n") if line.startswith(b"data: ")][0]
+        payload = json.loads(data_line[len(b"data: ") :])
         assert payload["id"] == str(notif.id)
         assert payload["verb"] == "case.commented"
         assert payload["link"] == "/cases/abc"
@@ -124,6 +139,7 @@ class TestStreamEvents(TransactionTestCase):
         """The stream must end on its own once MAX_STREAM_SECONDS elapses, so a
         long-open browser tab cannot pin a worker thread / DB connection
         forever (the connection-exhaustion regression)."""
+
         async def runner():
             pubsub = _StubPubSub()  # no messages -> keepalive-only loop
             gen = _stream_events(
@@ -159,22 +175,24 @@ class TestStreamEvents(TransactionTestCase):
         async def runner():
             pubsub = _StubPubSub(
                 [
-                    {"data": str(n_other.id).encode("utf-8")},
-                    {"data": str(n_mine.id).encode("utf-8")},
+                    {"data": _envelope(n_other, self.other_profile.id)},
+                    {"data": _envelope(n_mine, self.profile.id)},
                 ]
             )
             gen = _stream_events(
                 "notif:o:p", recipient_id=self.profile.id, pubsub=pubsub
             )
-            await asyncio.wait_for(gen.__anext__(), timeout=1)  # discard initial keepalive
+            await asyncio.wait_for(
+                gen.__anext__(), timeout=1
+            )  # discard initial keepalive
             second = await asyncio.wait_for(gen.__anext__(), timeout=2)
             await gen.aclose()
             return second
 
         second = asyncio.run(runner())
         assert second.startswith(b"event: notification\n")
-        data_line = [l for l in second.split(b"\n") if l.startswith(b"data: ")][0]
-        payload = json.loads(data_line[len(b"data: "):])
+        data_line = [line for line in second.split(b"\n") if line.startswith(b"data: ")][0]
+        payload = json.loads(data_line[len(b"data: ") :])
         # Should be MINE, never the other recipient's row
         assert payload["id"] == str(n_mine.id)
         assert payload["verb"] == "mine"

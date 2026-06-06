@@ -18,7 +18,6 @@ import json
 import logging
 import time
 
-from asgiref.sync import sync_to_async
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -149,30 +148,6 @@ def _format_keepalive() -> bytes:
     return b": keepalive\n\n"
 
 
-async def _aget_serialized(notif_id, recipient_id):
-    """Fetch a notification by id, scoped to recipient. Returns dict or None."""
-    @sync_to_async
-    def fetch():
-        from django.db import connection
-
-        try:
-            notif = Notification.objects.filter(
-                pk=notif_id, recipient_id=recipient_id
-            ).first()
-            if notif is None:
-                return None
-            return NotificationSerializer(notif).data
-        finally:
-            # This runs in asgiref's shared thread-sensitive executor, outside
-            # Django's request/response cycle — so `close_old_connections`
-            # never fires for it. Without this explicit close the connection
-            # dangles open (the SSE tests need TransactionTestCase precisely
-            # because of it). Close it so each fetch reclaims its connection.
-            connection.close()
-
-    return await fetch()
-
-
 async def _aclose_redis(obj):
     """Close a redis.asyncio client/pubsub across versions (aclose vs close)."""
     if obj is None:
@@ -253,7 +228,21 @@ async def _stream_events(channel: str, recipient_id, *, pubsub=None):
             data = msg.get("data")
             if isinstance(data, bytes):
                 data = data.decode("utf-8", errors="replace")
-            payload = await _aget_serialized(data, recipient_id)
+            # The publisher ships the already-serialized notification as a JSON
+            # envelope, so the stream never reads Postgres — it holds zero DB
+            # connections for the whole (long-lived) request.
+            try:
+                envelope = json.loads(data)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(envelope, dict):
+                continue
+            # Defense-in-depth: per-recipient channels already scope delivery,
+            # but drop anything not addressed to this subscriber so a misrouted
+            # publish can never cross recipients.
+            if str(envelope.get("recipient")) != str(recipient_id):
+                continue
+            payload = envelope.get("notification")
             if payload is None:
                 continue
             yield _format_sse("notification", payload)
@@ -326,9 +315,9 @@ class NotificationStreamView(APIView):
         # ThreadSensitiveContext, so the connection opened by auth/middleware
         # would otherwise stay checked out for the full (possibly hours-long)
         # stream — one leaked Postgres connection per open browser tab, which
-        # is what exhausts the shared cluster. The stream's own reads go
-        # through a separate executor (see `_aget_serialized`) and close
-        # themselves, so dropping this one is safe.
+        # is what exhausts the shared cluster. The stream itself never touches
+        # Postgres (events arrive pre-serialized over Redis), so once this
+        # connection is dropped the stream holds zero DB connections.
         from django.db import connection
 
         connection.close()

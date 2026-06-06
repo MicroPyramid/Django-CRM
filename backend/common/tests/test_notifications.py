@@ -3,6 +3,7 @@
 API-level coverage lives in `test_notification_api.py` once that lands.
 """
 
+import json
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -65,9 +66,7 @@ class TestNotificationModel(NotificationModelBase):
             verb="case.assigned",
             read_at=timezone.now(),
         )
-        qs = Notification.objects.filter(
-            recipient=self.profile_a, read_at__isnull=True
-        )
+        qs = Notification.objects.filter(recipient=self.profile_a, read_at__isnull=True)
         ids = list(qs.values_list("id", flat=True))
         assert unread.id in ids
         assert read.id not in ids
@@ -130,7 +129,14 @@ class TestDispatcher(NotificationModelBase):
         pub.assert_called_once()
         channel, payload = pub.call_args[0]
         assert channel == f"notif:{self.org_a.id}:{self.profile_a.id}"
-        assert payload == str(n.id)
+        # Payload is now a serialized envelope, so the SSE consumer never
+        # re-reads Postgres per event.
+        envelope = json.loads(payload)
+        assert envelope["recipient"] == str(self.profile_a.id)
+        assert envelope["notification"]["id"] == str(n.id)
+        assert envelope["notification"]["verb"] == "case.commented"
+        assert envelope["notification"]["link"] == "/cases/123"
+        assert envelope["notification"]["data"] == {"comment_excerpt": "hello"}
 
     def test_create_skips_inactive_recipient(self):
         self.profile_a.is_active = False
@@ -170,7 +176,11 @@ class TestDispatcher(NotificationModelBase):
             gr.return_value = type(
                 "_BrokenClient",
                 (),
-                {"publish": lambda self, *a, **kw: (_ for _ in ()).throw(RuntimeError("boom"))},
+                {
+                    "publish": lambda self, *a, **kw: (_ for _ in ()).throw(
+                        RuntimeError("boom")
+                    )
+                },
             )()
             # Should NOT raise — publish is best-effort.
             n = notifications.create(self.profile_a, "case.commented")
