@@ -14,6 +14,7 @@ from django.test import TestCase, TransactionTestCase
 from rest_framework.test import APIClient
 
 from common.models import Notification, Org, Profile, User
+from common.views import notification_views
 from common.views.notification_views import (
     _format_keepalive,
     _format_sse,
@@ -118,6 +119,34 @@ class TestStreamEvents(TransactionTestCase):
         assert payload["verb"] == "case.commented"
         assert payload["link"] == "/cases/abc"
         assert payload["data"] == {"comment_excerpt": "hi"}
+
+    def test_stream_self_terminates_at_deadline(self):
+        """The stream must end on its own once MAX_STREAM_SECONDS elapses, so a
+        long-open browser tab cannot pin a worker thread / DB connection
+        forever (the connection-exhaustion regression)."""
+        async def runner():
+            pubsub = _StubPubSub()  # no messages -> keepalive-only loop
+            gen = _stream_events(
+                "notif:o:p", recipient_id=self.profile.id, pubsub=pubsub
+            )
+            first = await asyncio.wait_for(gen.__anext__(), timeout=1)
+            stopped = False
+            try:
+                # Deadline already passed -> next pull should end the stream.
+                await asyncio.wait_for(gen.__anext__(), timeout=2)
+            except StopAsyncIteration:
+                stopped = True
+            await gen.aclose()
+            return first, stopped
+
+        original = notification_views.MAX_STREAM_SECONDS
+        notification_views.MAX_STREAM_SECONDS = 0
+        try:
+            first, stopped = asyncio.run(runner())
+        finally:
+            notification_views.MAX_STREAM_SECONDS = original
+        assert first == b": keepalive\n\n"
+        assert stopped, "stream did not terminate at its deadline"
 
     def test_drops_message_for_other_recipient(self):
         n_other = Notification.objects.create(
