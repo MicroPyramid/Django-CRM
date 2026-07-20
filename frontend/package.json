@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@sentry/sveltekit": "^10.53.1",
-    "axios": "^1.16.1",
+    "axios": "^1.18.0",
     "clsx": "^2.1.1",
     "libphonenumber-js": "^1.13.3",
     "svelte-dnd-action": "^0.9.69",
