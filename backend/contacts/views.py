@@ -59,7 +59,10 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         if params:
             if params.get("name"):
-                queryset = queryset.filter(first_name__icontains=params.get("name"))
+                name = params.get("name")
+                queryset = queryset.filter(
+                    Q(first_name__icontains=name) | Q(last_name__icontains=name)
+                )
             if params.get("city"):
                 queryset = queryset.filter(address__city__icontains=params.get("city"))
             if params.get("phone"):

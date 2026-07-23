@@ -739,6 +739,34 @@ class TestContactAttachmentView:
 class TestContactListViewFilters:
     """Tests targeting uncovered filter lines in ContactsListView.get_context_data."""
 
+    def test_filter_by_name_matches_first_or_last_name(
+        self, admin_client, admin_user, org_a
+    ):
+        """The name filter matches a partial first or last name."""
+        _set_rls(org_a)
+        first_name_match = Contact.objects.create(
+            first_name="John",
+            last_name="Smith",
+            email="john.smith@example.com",
+            org=org_a,
+            created_by=admin_user,
+        )
+        last_name_match = Contact.objects.create(
+            first_name="Jane",
+            last_name="Johnson",
+            email="jane.johnson@example.com",
+            org=org_a,
+            created_by=admin_user,
+        )
+
+        response = admin_client.get(CONTACTS_LIST_URL, {"name": "john"})
+
+        assert response.status_code == status.HTTP_200_OK
+        returned_ids = {
+            contact["id"] for contact in response.data["contact_obj_list"]
+        }
+        assert returned_ids == {str(first_name_match.id), str(last_name_match.id)}
+
     def test_filter_by_city(self, admin_client, admin_user, org_a):
         """Filter by city (line 52).
         Note: The view uses address__city__icontains but the model has flat 'city' field.
