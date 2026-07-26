@@ -16,9 +16,7 @@ from common.serializer import OrgAwareRefreshToken
 def set_rls_context(org):
     """Set the PostgreSQL RLS session variable for direct ORM operations in tests."""
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def clear_rls_context():
@@ -30,6 +28,29 @@ def clear_rls_context():
 @pytest.fixture(autouse=True)
 def _use_db(db):
     """Ensure all tests have database access."""
+
+
+@pytest.fixture(autouse=True)
+def _run_on_commit_immediately(monkeypatch):
+    """Execute ``transaction.on_commit`` callbacks synchronously in tests.
+
+    pytest-django wraps each test in a transaction that is rolled back, never
+    committed, so ``on_commit`` hooks would otherwise never fire. Views dispatch
+    Celery tasks via ``transaction.on_commit`` (so a worker can't read rows the
+    request hasn't committed yet — required now that RequireOrgContext wraps each
+    request in one transaction for transaction-local RLS). Running the callbacks
+    immediately mirrors the effective production behaviour (the dispatch happens)
+    and keeps the existing "task was dispatched" assertions meaningful.
+
+    Safe because on_commit is used *only* for these dispatches — so this can only
+    affect tests that exercise the converted code paths, never unrelated ones.
+    """
+    import django.db.transaction as _txn
+
+    def _immediate(func, using=None, robust=False):
+        func()
+
+    monkeypatch.setattr(_txn, "on_commit", _immediate)
 
 
 @pytest.fixture
@@ -73,9 +94,7 @@ def user_profile(regular_user, org_a):
 
 @pytest.fixture
 def profile_b(user_b, org_b):
-    return Profile.objects.create(
-        user=user_b, org=org_b, role="ADMIN", is_active=True
-    )
+    return Profile.objects.create(user=user_b, org=org_b, role="ADMIN", is_active=True)
 
 
 def _make_authenticated_client(user, org, profile):

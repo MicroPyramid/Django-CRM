@@ -104,9 +104,7 @@ export async function load({ url, locals, cookies }) {
     if (filters.show_merged) kanbanQueryParams.append('show_merged', 'true');
 
     // Fetch tickets, kanban data, and dropdown options in parallel
-    const ticketsEndpoint = watchingOnly
-      ? '/cases/watching/'
-      : `/cases/?${queryParams.toString()}`;
+    const ticketsEndpoint = watchingOnly ? '/cases/watching/' : `/cases/?${queryParams.toString()}`;
     const [ticketsResponse, kanbanResponse, accountsRes, usersRes, contactsRes, teamsRes, tagsRes] =
       await Promise.all([
         apiRequest(ticketsEndpoint, {}, { cookies, org }),

@@ -1,5 +1,5 @@
+from django.db import transaction
 from drf_spectacular.utils import extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -199,12 +199,18 @@ class TeamsDetailView(APIView):
                 )
                 if profiles:
                     team_obj.users.add(*profiles)
-            update_team_users.delay(pk, str(request.profile.org.id))
+            transaction.on_commit(
+                lambda: update_team_users.delay(pk, str(request.profile.org.id))
+            )
             latest_users = team_obj.get_users()
             for user in actual_users:
                 if user not in latest_users:
                     removed_users.append(user)
-            remove_users.delay(removed_users, pk, str(request.profile.org.id))
+            transaction.on_commit(
+                lambda: remove_users.delay(
+                    removed_users, pk, str(request.profile.org.id)
+                )
+            )
             return Response(
                 {"error": False, "message": "Team Updated Successfully"},
                 status=status.HTTP_200_OK,

@@ -75,10 +75,7 @@
     <BarChart3 class="size-4" />
   {/snippet}
   {#snippet actions()}
-    <a
-      href="/tickets"
-      class="text-xs font-medium text-[var(--text-secondary)] hover:underline"
-    >
+    <a href="/tickets" class="text-xs font-medium text-[var(--text-secondary)] hover:underline">
       ← Back to tickets
     </a>
   {/snippet}
@@ -91,21 +88,11 @@
   >
     <div>
       <Label for="from" class="text-xs">From</Label>
-      <Input
-        id="from"
-        type="date"
-        bind:value={filters.from}
-        class="h-8 w-36 text-xs"
-      />
+      <Input id="from" type="date" bind:value={filters.from} class="h-8 w-36 text-xs" />
     </div>
     <div>
       <Label for="to" class="text-xs">To</Label>
-      <Input
-        id="to"
-        type="date"
-        bind:value={filters.to}
-        class="h-8 w-36 text-xs"
-      />
+      <Input id="to" type="date" bind:value={filters.to} class="h-8 w-36 text-xs" />
     </div>
     <div>
       <Label for="priority" class="text-xs">Priority</Label>
@@ -329,13 +316,15 @@
       </div>
     </header>
     {#if data.metrics.agents.results.length === 0}
-      <div class="p-3 text-center text-xs italic text-[var(--text-secondary)]">
+      <div class="p-3 text-center text-xs text-[var(--text-secondary)] italic">
         No assigned tickets in this window.
       </div>
     {:else}
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-[var(--border-default)] text-left text-xs text-[var(--text-secondary)]">
+          <tr
+            class="border-b border-[var(--border-default)] text-left text-xs text-[var(--text-secondary)]"
+          >
             <th class="py-1.5 font-medium">Agent</th>
             <th class="py-1.5 text-right font-medium">Handled</th>
             <th class="py-1.5 text-right font-medium">Avg FRT</th>
@@ -354,16 +343,16 @@
               <td class="py-1.5 text-right tabular-nums">
                 {fmtPercent(row.breach_rate)}
               </td>
-              <td class="py-1.5 text-right tabular-nums text-[var(--text-secondary)]">
+              <td class="py-1.5 text-right text-[var(--text-secondary)] tabular-nums">
                 {row.csat_avg ?? '—'}
               </td>
             </tr>
           {/each}
         </tbody>
       </table>
-      <p class="text-[10px] italic text-[var(--text-secondary)]">
-        CSAT averages each agent's responded surveys (1-5 stars) within the
-        active window. Tickets with no survey response are simply excluded.
+      <p class="text-[10px] text-[var(--text-secondary)] italic">
+        CSAT averages each agent's responded surveys (1-5 stars) within the active window. Tickets
+        with no survey response are simply excluded.
       </p>
     {/if}
   </section>

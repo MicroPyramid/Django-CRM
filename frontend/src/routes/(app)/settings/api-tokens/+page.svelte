@@ -49,8 +49,18 @@
    * file differs); Codex CLI uses TOML.
    */
   const CLIENTS = [
-    { id: 'claude', label: 'Claude Desktop', lang: 'json', file: 'claude_desktop_config.json — Settings → Developer → Edit Config' },
-    { id: 'cursor', label: 'Cursor', lang: 'json', file: '~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)' },
+    {
+      id: 'claude',
+      label: 'Claude Desktop',
+      lang: 'json',
+      file: 'claude_desktop_config.json — Settings → Developer → Edit Config'
+    },
+    {
+      id: 'cursor',
+      label: 'Cursor',
+      lang: 'json',
+      file: '~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)'
+    },
     { id: 'codex', label: 'Codex CLI', lang: 'toml', file: '~/.codex/config.toml' },
     { id: 'gemini', label: 'Gemini CLI', lang: 'json', file: '~/.gemini/settings.json' }
   ];
@@ -82,9 +92,7 @@ BCRM_BASE_URL = "${base}"
 BCRM_TOKEN = "${token}"`;
   }
 
-  const selectedClientMeta = $derived(
-    CLIENTS.find((c) => c.id === selectedClient) || CLIENTS[0]
-  );
+  const selectedClientMeta = $derived(CLIENTS.find((c) => c.id === selectedClient) || CLIENTS[0]);
   const configSnippet = $derived(
     selectedClientMeta.lang === 'toml'
       ? tomlConfig(baseUrl, tokenValue)
@@ -384,7 +392,8 @@ BCRM_TOKEN = "${token}"`;
 
           <p class="text-sm text-[var(--text-secondary)]">
             Add this to
-            <code class="font-mono text-xs text-[var(--text-primary)]">{selectedClientMeta.file}</code
+            <code class="font-mono text-xs text-[var(--text-primary)]"
+              >{selectedClientMeta.file}</code
             >, then restart {selectedClientMeta.label}.
             {#if form?.created?.token}
               The token below is yours — it's shown only this once.
@@ -398,7 +407,7 @@ BCRM_TOKEN = "${token}"`;
               type="button"
               size="sm"
               variant="outline"
-              class="absolute right-2 top-2 gap-1"
+              class="absolute top-2 right-2 gap-1"
               onclick={() => copyConfig(configSnippet)}
             >
               {#if configCopied}

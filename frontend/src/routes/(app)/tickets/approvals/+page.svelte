@@ -104,8 +104,7 @@
       return 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200';
     if (state === 'approved')
       return 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200';
-    if (state === 'rejected')
-      return 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-200';
+    if (state === 'rejected') return 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-200';
     return 'bg-[var(--surface-muted)] text-[var(--text-secondary)]';
   }
 </script>
@@ -161,23 +160,26 @@
   </div>
 
   {#if data.loadError}
-    <p class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+    <p
+      class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200"
+    >
       {data.loadError}
     </p>
   {:else if approvals.length === 0}
-    <p class="rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 text-center text-sm text-[var(--text-secondary)]">
+    <p
+      class="rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 text-center text-sm text-[var(--text-secondary)]"
+    >
       No approvals match this filter.
     </p>
   {:else}
     <ul class="flex flex-col gap-2">
       {#each approvals as a (a.id)}
-        <li class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
+        <li
+          class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm"
+        >
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-col">
-              <a
-                href={`/tickets/${a.case_summary?.id}`}
-                class="font-medium hover:underline"
-              >
+              <a href={`/tickets/${a.case_summary?.id}`} class="font-medium hover:underline">
                 {a.case_summary?.name || 'Ticket'}
               </a>
               <span class="text-xs text-[var(--text-secondary)]">
@@ -200,8 +202,11 @@
           </p>
 
           {#if a.state === 'rejected' && a.reason}
-            <p class="mt-1 rounded bg-red-50 p-2 text-xs text-red-900 dark:bg-red-900/30 dark:text-red-200">
-              <strong>Rejected:</strong> {a.reason}
+            <p
+              class="mt-1 rounded bg-red-50 p-2 text-xs text-red-900 dark:bg-red-900/30 dark:text-red-200"
+            >
+              <strong>Rejected:</strong>
+              {a.reason}
             </p>
           {/if}
 
@@ -219,12 +224,7 @@
                 <X class="mr-1 h-3.5 w-3.5" /> Reject
               </Button>
               {#if a.requested_by?.id === data.currentProfileId || isAdmin}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={pending}
-                  onclick={() => cancel(a.id)}
-                >
+                <Button size="sm" variant="ghost" disabled={pending} onclick={() => cancel(a.id)}>
                   <Ban class="mr-1 h-3.5 w-3.5" /> Cancel
                 </Button>
               {/if}

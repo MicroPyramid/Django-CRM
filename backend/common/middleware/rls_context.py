@@ -21,7 +21,7 @@ Usage in settings.py:
 
 import logging
 
-from django.db import connection
+from django.db import connection, transaction
 from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
@@ -123,11 +123,23 @@ class RequireOrgContext:
         "/api/public/csat/",
     ]
 
+    # Paths that require org context but must NOT be wrapped in a request-wide
+    # transaction. These return streaming/long-lived responses whose body is
+    # produced AFTER the view returns — so a request-wide transaction would
+    # already have committed (dropping the transaction-local RLS GUC) before the
+    # body runs its queries. Each such view sets its own transaction-local
+    # context around its generator instead (or, like the SSE stream, does no
+    # ORM at all).
+    NON_ATOMIC_PATHS = [
+        "/api/notifications/stream/",
+        "/api/cases/analytics/export/",
+    ]
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Check if path requires org context
+        # Enforce org context on non-exempt, resolvable paths.
         if not self._is_exempt(request.path):
             # Skip check for URLs that don't resolve (let Django return 404)
             from django.urls import resolve
@@ -144,42 +156,42 @@ class RequireOrgContext:
                     status=403,
                 )
 
-        # Set org context
-        self._set_org_context(request)
+        org = getattr(request, "org", None)
+        # Nothing to scope (exempt/anonymous paths), or a streaming endpoint
+        # that manages its own short-lived context: don't open a request-wide
+        # transaction.
+        if org is None or self._is_non_atomic(request.path):
+            return self.get_response(request)
 
-        response = self.get_response(request)
-
-        # Reset context
-        self._reset_org_context()
-
-        return response
+        # Wrap the whole request in ONE transaction and set the RLS GUC
+        # transaction-locally (is_local=True) as its first statement.
+        # Transaction scope binds the value to THIS transaction and reverts it
+        # on COMMIT/ROLLBACK, so it can never persist onto a backend that a
+        # connection pooler (PgBouncer transaction mode) later hands to another
+        # tenant. No manual reset is needed — that is the whole point.
+        with transaction.atomic():
+            self._set_org_context(str(org.id))
+            return self.get_response(request)
 
     def _is_exempt(self, path):
         """Check if path is exempt from org context requirement."""
         return any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS)
 
-    def _set_org_context(self, request):
-        """Set PostgreSQL session variable (session scope for autocommit mode)."""
-        if not hasattr(request, "org") or request.org is None:
+    def _is_non_atomic(self, path):
+        """Check if path must not be wrapped in a request-wide transaction."""
+        return any(path.startswith(p) for p in self.NON_ATOMIC_PATHS)
+
+    def _set_org_context(self, org_id):
+        """Set app.current_org transaction-locally for the current transaction.
+
+        Must be called inside an open transaction (is_local=True only persists
+        until COMMIT/ROLLBACK). No-ops on non-PostgreSQL backends (the SQLite
+        test backend has no set_config(); RLS is a Postgres-only feature).
+        """
+        if connection.vendor != "postgresql":
             return
-
-        org_id = str(request.org.id)
-
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT set_config('app.current_org', %s, false)", [org_id]
-                )
-        except Exception as e:
-            logger.warning("Failed to set RLS context: %s", e)
-
-    def _reset_org_context(self):
-        """Reset PostgreSQL session variable after request."""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT set_config('app.current_org', '', false)")
-        except Exception:
-            pass
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT set_config('app.current_org', %s, true)", [org_id])
 
 
 # SQL to enable RLS on all org-scoped tables

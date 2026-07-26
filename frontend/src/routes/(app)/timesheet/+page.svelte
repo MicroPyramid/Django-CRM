@@ -147,9 +147,7 @@
 
   const viewingLabel = $derived.by(() => {
     if (!data.profileFilter || !data.isAdmin) return 'Your timesheet';
-    const u = data.users?.find(
-      /** @param {any} u */ (u) => u.id === data.profileFilter
-    );
+    const u = data.users?.find(/** @param {any} u */ (u) => u.id === data.profileFilter);
     if (!u) return 'Filtered timesheet';
     return `${u.name || u.email}'s timesheet`;
   });
@@ -172,21 +170,11 @@
   >
     <div>
       <Label for="start" class="text-xs">From</Label>
-      <Input
-        id="start"
-        type="date"
-        bind:value={startInput}
-        class="h-8 w-40 text-xs"
-      />
+      <Input id="start" type="date" bind:value={startInput} class="h-8 w-40 text-xs" />
     </div>
     <div>
       <Label for="end" class="text-xs">To</Label>
-      <Input
-        id="end"
-        type="date"
-        bind:value={endInput}
-        class="h-8 w-40 text-xs"
-      />
+      <Input id="end" type="date" bind:value={endInput} class="h-8 w-40 text-xs" />
     </div>
 
     {#if data.isAdmin}
@@ -217,12 +205,39 @@
     </div>
 
     <div class="flex w-full flex-wrap items-center gap-1.5 pt-1">
-      <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Quick select:</span>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('this-week')}>This week</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-week')}>Last week</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-7')}>Last 7d</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-30')}>Last 30d</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('this-month')}>This month</Button>
+      <span class="text-[10px] font-semibold tracking-wider text-[var(--text-secondary)] uppercase"
+        >Quick select:</span
+      >
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 text-xs"
+        onclick={() => applyPreset('this-week')}>This week</Button
+      >
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 text-xs"
+        onclick={() => applyPreset('last-week')}>Last week</Button
+      >
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 text-xs"
+        onclick={() => applyPreset('last-7')}>Last 7d</Button
+      >
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 text-xs"
+        onclick={() => applyPreset('last-30')}>Last 30d</Button
+      >
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 text-xs"
+        onclick={() => applyPreset('this-month')}>This month</Button
+      >
     </div>
   </section>
 
@@ -234,10 +249,18 @@
       <User class="size-3.5" />
       {viewingLabel}
     </span>
-    <span><span class="text-[var(--text-secondary)]">Total:</span> <strong>{formatMinutes(totalMinutes)}</strong></span>
-    <span><span class="text-[var(--text-secondary)]">Billable:</span> <strong>{formatMinutes(billableMinutes)}</strong></span>
+    <span
+      ><span class="text-[var(--text-secondary)]">Total:</span>
+      <strong>{formatMinutes(totalMinutes)}</strong></span
+    >
+    <span
+      ><span class="text-[var(--text-secondary)]">Billable:</span>
+      <strong>{formatMinutes(billableMinutes)}</strong></span
+    >
     {#if runningCount > 0}
-      <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
+      <span
+        class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+      >
         <span class="size-1.5 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-300"></span>
         {runningCount} running
       </span>
@@ -245,17 +268,21 @@
   </div>
 
   {#if data.loadError}
-    <p class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+    <p
+      class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200"
+    >
       {data.loadError}
     </p>
   {/if}
 
   <div class="grid grid-cols-1 gap-3 lg:grid-cols-7">
     {#each days as day (day.date)}
-      <section class="flex flex-col gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3">
+      <section
+        class="flex flex-col gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3"
+      >
         <header class="flex items-center justify-between">
           <span class="text-sm font-medium">{fmtDate(day.date)}</span>
-          <span class="text-xs tabular-nums text-[var(--text-secondary)]">
+          <span class="text-xs text-[var(--text-secondary)] tabular-nums">
             {formatMinutes(day.total_minutes)}
           </span>
         </header>
@@ -273,28 +300,45 @@
                   : 'border-[var(--border-muted)] bg-[var(--surface-muted)]'}"
               >
                 <div class="flex items-baseline justify-between gap-2">
-                  <a
-                    class="truncate font-medium hover:underline"
-                    href={`/tickets/${e.case}`}
-                  >
+                  <a class="truncate font-medium hover:underline" href={`/tickets/${e.case}`}>
                     {e.description || 'Untitled session'}
                   </a>
-                  <span class="font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
+                  <span class="font-mono text-[10px] text-[var(--text-secondary)] tabular-nums">
                     {formatMinutes(minutes)}
                   </span>
                 </div>
-                <div class="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-[var(--text-secondary)]">
-                  <span>{new Date(e.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <div
+                  class="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-[var(--text-secondary)]"
+                >
+                  <span
+                    >{new Date(e.started_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span
+                  >
                   <span class="flex items-center gap-1">
                     {#if running}
-                      <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
-                        <span class="size-1 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-300"></span>
+                      <span
+                        class="inline-flex items-center gap-1 rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+                      >
+                        <span
+                          class="size-1 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-300"
+                        ></span>
                         Running
                       </span>
                     {/if}
-                    {#if e.billable}<span class="rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">Billable</span>{/if}
-                    {#if e.invoice}<span class="rounded bg-blue-100 px-1 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100">Invoiced</span>{/if}
-                    {#if e.auto_stopped}<span class="rounded bg-amber-100 px-1 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">Auto</span>{/if}
+                    {#if e.billable}<span
+                        class="rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+                        >Billable</span
+                      >{/if}
+                    {#if e.invoice}<span
+                        class="rounded bg-blue-100 px-1 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100"
+                        >Invoiced</span
+                      >{/if}
+                    {#if e.auto_stopped}<span
+                        class="rounded bg-amber-100 px-1 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                        >Auto</span
+                      >{/if}
                   </span>
                 </div>
               </li>

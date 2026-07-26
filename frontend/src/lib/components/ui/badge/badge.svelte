@@ -12,7 +12,8 @@
     variants: {
       variant: {
         // Legacy shadcn variants — kept for back-compat with existing callers.
-        default: 'bg-primary text-primary-foreground border-transparent px-2 py-0.5 [a&]:hover:bg-primary/90',
+        default:
+          'bg-primary text-primary-foreground border-transparent px-2 py-0.5 [a&]:hover:bg-primary/90',
         secondary:
           'bg-secondary text-secondary-foreground border-transparent px-2 py-0.5 [a&]:hover:bg-secondary/90',
         destructive:
@@ -23,8 +24,7 @@
         // New design-system tag variants — spec §6.4.
         customer:
           'bg-[color:var(--green-soft)] text-[color:var(--green-soft-text)] border-transparent px-[7px] py-px',
-        vip:
-          'bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)] border-transparent px-[7px] py-px',
+        vip: 'bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)] border-transparent px-[7px] py-px',
         meeting:
           'bg-[color:var(--amber-soft)] text-[color:var(--amber-soft-text)] border-transparent px-[7px] py-px',
         neutral:
@@ -77,9 +77,7 @@
   {...restProps}
 >
   {#if showDot}
-    <span
-      aria-hidden="true"
-      class="inline-block size-[5px] rounded-full bg-current shrink-0"
+    <span aria-hidden="true" class="inline-block size-[5px] shrink-0 rounded-full bg-current"
     ></span>
   {/if}
   {@render children?.()}

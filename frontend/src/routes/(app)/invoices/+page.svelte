@@ -357,11 +357,7 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
-        <Button
-          variant="outline"
-          onclick={() => (fromTimeEntriesOpen = true)}
-          class="gap-2"
-        >
+        <Button variant="outline" onclick={() => (fromTimeEntriesOpen = true)} class="gap-2">
           <Clock class="size-4" />
           From time entries
         </Button>
@@ -476,4 +472,3 @@
     />
   {/if}
 </div>
-

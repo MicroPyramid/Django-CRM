@@ -1,18 +1,14 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import (
-    extend_schema,
-    inline_serializer,
-)
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
@@ -24,6 +20,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -226,8 +223,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 tags = json.loads(tags)
             # Extract IDs if tags contains objects with 'id' field
             tag_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in tags
+                item.get("id") if isinstance(item, dict) else item for item in tags
             ]
             tag_objs = Tags.objects.filter(
                 id__in=tag_ids, org=request.profile.org, is_active=True
@@ -235,10 +231,12 @@ class ContactsListView(APIView, LimitOffsetPagination):
             contact_obj.tags.add(*tag_objs)
 
         recipients = list(contact_obj.assigned_to.all().values_list("id", flat=True))
-        send_email_to_assigned_user.delay(
-            recipients,
-            contact_obj.id,
-            str(request.profile.org.id),
+        transaction.on_commit(
+            lambda: send_email_to_assigned_user.delay(
+                recipients,
+                contact_obj.id,
+                str(request.profile.org.id),
+            )
         )
 
         if request.FILES.get("contact_attachment"):
@@ -365,8 +363,7 @@ class ContactDetailView(APIView):
                 tags = json.loads(tags)
             # Extract IDs if tags contains objects with 'id' field
             tag_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in tags
+                item.get("id") if isinstance(item, dict) else item for item in tags
             ]
             tag_objs = Tags.objects.filter(
                 id__in=tag_ids, org=request.profile.org, is_active=True
@@ -381,10 +378,12 @@ class ContactDetailView(APIView):
             contact_obj.assigned_to.all().values_list("id", flat=True)
         )
         recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-        send_email_to_assigned_user.delay(
-            recipients,
-            contact_obj.id,
-            str(request.profile.org.id),
+        transaction.on_commit(
+            lambda: send_email_to_assigned_user.delay(
+                recipients,
+                contact_obj.id,
+                str(request.profile.org.id),
+            )
         )
         if request.FILES.get("contact_attachment"):
             attachment = Attachments()
@@ -728,8 +727,7 @@ class ContactDetailView(APIView):
                     tags_list = json.loads(tags_list)
                 # Extract IDs if tags_list contains objects with 'id' field
                 tag_ids = [
-                    tag.get("id") if isinstance(tag, dict) else tag
-                    for tag in tags_list
+                    tag.get("id") if isinstance(tag, dict) else tag for tag in tags_list
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True

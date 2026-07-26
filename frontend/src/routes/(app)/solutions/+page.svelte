@@ -125,7 +125,8 @@
   {/snippet}
   {#snippet meta()}
     <span class="text-xs text-[var(--text-secondary)]">
-      {total} {total === 1 ? 'article' : 'articles'}
+      {total}
+      {total === 1 ? 'article' : 'articles'}
     </span>
   {/snippet}
   {#snippet actions()}
@@ -141,15 +142,15 @@
     class="flex flex-wrap items-end gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3"
   >
     <form class="flex flex-1 items-center gap-2" onsubmit={applySearch}>
-      <div class="relative flex-1 min-w-[200px]">
+      <div class="relative min-w-[200px] flex-1">
         <Search
-          class="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]"
+          class="pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]"
         />
         <input
           type="text"
           bind:value={search}
           placeholder="Search title or description..."
-          class="w-full rounded border border-[var(--border-default)] bg-[var(--surface-default)] py-1.5 pl-8 pr-2 text-sm"
+          class="w-full rounded border border-[var(--border-default)] bg-[var(--surface-default)] py-1.5 pr-2 pl-8 text-sm"
         />
       </div>
       <Button type="submit" size="sm" variant="outline">Search</Button>
@@ -188,12 +189,16 @@
   </section>
 
   {#if data.loadError}
-    <div class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
+    <div
+      class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200"
+    >
       {data.loadError}
     </div>
   {/if}
 
-  <section class="overflow-hidden rounded-md border border-[var(--border-default)] bg-[var(--surface-default)]">
+  <section
+    class="overflow-hidden rounded-md border border-[var(--border-default)] bg-[var(--surface-default)]"
+  >
     {#if solutions.length === 0}
       <div class="flex flex-col items-center gap-2 p-12 text-center">
         <BookOpen class="h-8 w-8 text-[var(--text-tertiary)]" />
@@ -203,7 +208,12 @@
             : 'No solutions yet. Create one to start building your knowledge base.'}
         </p>
         {#if !(search || statusFilter || publishedFilter)}
-          <Button onclick={() => goto('/solutions/new')} size="sm" variant="outline" class="mt-2 gap-1">
+          <Button
+            onclick={() => goto('/solutions/new')}
+            size="sm"
+            variant="outline"
+            class="mt-2 gap-1"
+          >
             <Plus class="h-4 w-4" />
             Create first solution
           </Button>
@@ -211,7 +221,9 @@
       </div>
     {:else}
       <table class="w-full text-sm">
-        <thead class="border-b border-[var(--border-default)] bg-[var(--surface-sunken)] text-left text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+        <thead
+          class="border-b border-[var(--border-default)] bg-[var(--surface-sunken)] text-left text-xs tracking-wide text-[var(--text-secondary)] uppercase"
+        >
           <tr>
             <th class="px-3 py-2 font-medium">Title</th>
             <th class="px-3 py-2 font-medium">Status</th>
@@ -223,7 +235,9 @@
         </thead>
         <tbody>
           {#each solutions as sol (sol.id)}
-            <tr class="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--surface-sunken)]">
+            <tr
+              class="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--surface-sunken)]"
+            >
               <td class="px-3 py-2">
                 <a
                   href={`/solutions/${sol.id}`}
@@ -238,13 +252,17 @@
                 {/if}
               </td>
               <td class="px-3 py-2">
-                <span class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}>
+                <span
+                  class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}
+                >
                   {sol.status}
                 </span>
               </td>
               <td class="px-3 py-2">
                 {#if sol.is_published}
-                  <span class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-900 dark:bg-green-900/30 dark:text-green-200">
+                  <span
+                    class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-900 uppercase dark:bg-green-900/30 dark:text-green-200"
+                  >
                     <CheckCircle2 class="h-3 w-3" />
                     Live
                   </span>
@@ -271,21 +289,39 @@
                   {#if sol.is_published}
                     <form method="POST" action="?/unpublish" use:enhance={handleUnpublish}>
                       <input type="hidden" name="id" value={sol.id} />
-                      <Button type="submit" size="sm" variant="ghost" aria-label="Unpublish" title="Unpublish">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Unpublish"
+                        title="Unpublish"
+                      >
                         <EyeOff class="h-3.5 w-3.5" />
                       </Button>
                     </form>
                   {:else if sol.status === 'approved'}
                     <form method="POST" action="?/publish" use:enhance={handlePublish}>
                       <input type="hidden" name="id" value={sol.id} />
-                      <Button type="submit" size="sm" variant="ghost" aria-label="Publish" title="Publish">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Publish"
+                        title="Publish"
+                      >
                         <Eye class="h-3.5 w-3.5" />
                       </Button>
                     </form>
                   {/if}
                   <form method="POST" action="?/delete" use:enhance={handleDelete}>
                     <input type="hidden" name="id" value={sol.id} />
-                    <Button type="submit" size="sm" variant="ghost" aria-label="Delete" title="Delete">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Delete"
+                      title="Delete"
+                    >
                       <Trash2 class="h-3.5 w-3.5 text-red-600" />
                     </Button>
                   </form>

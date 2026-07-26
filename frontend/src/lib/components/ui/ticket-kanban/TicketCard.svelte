@@ -77,7 +77,7 @@
 <div
   class="ticket-card group cursor-pointer rounded-lg border bg-white p-2.5 text-left shadow-[0_1px_0_rgba(9,30,66,0.12)] hover:border-black/10 dark:bg-white/[0.05] dark:hover:border-white/[0.1]
     {isSlaBreached
-    ? 'border-rose-300 border-l-[3px] border-l-rose-500 dark:border-rose-500/40'
+    ? 'border-l-[3px] border-rose-300 border-l-rose-500 dark:border-rose-500/40'
     : 'border-black/[0.04] dark:border-white/[0.06]'}"
   draggable="true"
   {onclick}
@@ -89,7 +89,10 @@
 >
   <!-- Priority label strip -->
   {#if labelBg}
-    <div class="mb-1.5 inline-flex h-1.5 w-10 rounded-sm {labelBg}" title="{priority} priority"></div>
+    <div
+      class="mb-1.5 inline-flex h-1.5 w-10 rounded-sm {labelBg}"
+      title="{priority} priority"
+    ></div>
   {/if}
 
   <!-- Title -->
@@ -120,7 +123,7 @@
       <div class="flex items-center gap-1.5">
         {#if isSlaBreached}
           <span
-            class="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+            class="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-rose-700 uppercase dark:bg-rose-500/15 dark:text-rose-300"
             title="SLA breached"
           >
             <Timer class="h-3 w-3" />

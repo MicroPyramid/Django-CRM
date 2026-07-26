@@ -211,12 +211,7 @@
         placeholder="Optional note for the approver"
         class="w-full rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-xs"
       ></textarea>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={pending}
-        onclick={requestApproval}
-      >
+      <Button size="sm" variant="outline" disabled={pending} onclick={requestApproval}>
         {#if pending}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
         Request approval to close
       </Button>
@@ -243,17 +238,14 @@
 
       {#if latest.state === 'rejected' && latest.reason}
         <p class="rounded bg-red-50 p-2 text-xs text-red-900 dark:bg-red-900/30 dark:text-red-200">
-          <strong>Rejected:</strong> {latest.reason}
+          <strong>Rejected:</strong>
+          {latest.reason}
         </p>
       {/if}
 
       {#if hasOpen && canActOnLatest}
         <div class="flex flex-wrap items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            disabled={pending}
-            onclick={() => approve(latest.id)}
-          >
+          <Button size="sm" disabled={pending} onclick={() => approve(latest.id)}>
             <Check class="mr-1 h-3.5 w-3.5" />
             Approve
           </Button>
@@ -267,22 +259,12 @@
             Reject
           </Button>
           {#if currentProfileId && latest.requested_by?.id === currentProfileId}
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={pending}
-              onclick={() => cancel(latest.id)}
-            >
+            <Button size="sm" variant="ghost" disabled={pending} onclick={() => cancel(latest.id)}>
               <Ban class="mr-1 h-3.5 w-3.5" />
               Cancel my request
             </Button>
           {:else if isAdmin}
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={pending}
-              onclick={() => cancel(latest.id)}
-            >
+            <Button size="sm" variant="ghost" disabled={pending} onclick={() => cancel(latest.id)}>
               <Ban class="mr-1 h-3.5 w-3.5" />
               Cancel (admin)
             </Button>
@@ -318,12 +300,7 @@
             placeholder="Optional note for the approver"
             class="w-full rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-xs"
           ></textarea>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={pending}
-            onclick={requestApproval}
-          >
+          <Button size="sm" variant="outline" disabled={pending} onclick={requestApproval}>
             {#if pending}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
             Request approval again
           </Button>
@@ -332,13 +309,17 @@
 
       {#if approvals.length > 1}
         <details class="pt-1 text-xs">
-          <summary class="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+          <summary
+            class="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
             Earlier requests ({approvals.length - 1})
           </summary>
           <ul class="mt-1 space-y-1">
             {#each approvals.slice(1) as a (a.id)}
               <li class="rounded bg-[var(--surface-muted)] p-1.5">
-                <span class={`mr-2 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${badgeClass(a.state)}`}>
+                <span
+                  class={`mr-2 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${badgeClass(a.state)}`}
+                >
                   {a.state}
                 </span>
                 <span class="text-[var(--text-secondary)]">

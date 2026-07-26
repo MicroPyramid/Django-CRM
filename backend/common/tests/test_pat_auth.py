@@ -124,16 +124,31 @@ def test_cross_org_pat_cannot_read_other_orgs_leads(org_a, admin_profile):
     if connection.vendor != "postgresql":
         pytest.skip("RLS isolation is enforced by PostgreSQL; skipping on non-Postgres DB")
 
+    from common.tasks import set_rls_context
     from leads.models import Lead
 
     # Create org B and a lead in it directly, with org explicitly set.
+    #
+    # The insert must run under org B's own RLS context: the INSERT policy's
+    # WITH CHECK rejects writing a row for a tenant other than the current one.
+    # Without this the test only works when RLS is inert (superuser/BYPASSRLS) —
+    # i.e. exactly when it is incapable of proving what it claims to prove.
     org_b = Org.objects.create(name="Cross-Org Isolation Org B")
-    lead_b = Lead.objects.create(
-        first_name="Hidden",
-        last_name="Lead-OrgB",
-        email="hidden_orgb@test.com",
-        org=org_b,
-    )
+    set_rls_context(org_b.id)
+    try:
+        lead_b = Lead.objects.create(
+            first_name="Hidden",
+            last_name="Lead-OrgB",
+            email="hidden_orgb@test.com",
+            org=org_b,
+        )
+    finally:
+        # Don't leave org B's context on the connection for the request below;
+        # the middleware sets its own transaction-local value regardless, but a
+        # stale session-scoped GUC would confuse anything that runs after.
+        # (set_rls_context("") is a no-op — it guards on `if org_id`.)
+        with connection.cursor() as cur:
+            cur.execute("SELECT set_config('app.current_org', '', false)")
 
     # Mint a PAT for the org-A admin profile and call the leads list as that token.
     raw, _ = PersonalAccessToken.generate(profile=admin_profile, name="cross-org-cli")

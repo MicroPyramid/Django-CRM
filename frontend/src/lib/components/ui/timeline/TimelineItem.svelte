@@ -28,17 +28,16 @@
 <li class={cn('flex items-start gap-3 py-3.5 first:pt-0 last:pb-0', className)}>
   <div
     aria-hidden="true"
-    class={cn(
-      'flex size-7 shrink-0 items-center justify-center rounded-full border',
-      iconBg
-    )}
+    class={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', iconBg)}
   >
     {#if icon}
       {@render icon()}
     {/if}
   </div>
   <div class="min-w-0 flex-1">
-    <div class="text-[13px] leading-[1.55] text-[color:var(--text-muted)] [&_strong]:font-medium [&_strong]:text-[color:var(--text)]">
+    <div
+      class="text-[13px] leading-[1.55] text-[color:var(--text-muted)] [&_strong]:font-medium [&_strong]:text-[color:var(--text)]"
+    >
       {@render text()}
     </div>
     {#if quote}

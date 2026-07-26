@@ -301,10 +301,7 @@
   const initialAccountId = initialUrlParams.get('accountId');
   const initialContact = initialViewId
     ? untrack(
-        () =>
-          (data.contacts || []).find(
-            (/** @type {any} */ c) => c.id === initialViewId
-          ) || null
+        () => (data.contacts || []).find((/** @type {any} */ c) => c.id === initialViewId) || null
       )
     : null;
 
@@ -315,9 +312,7 @@
     accountId = initialAccountId;
     accountFromUrl = true;
     const acct = untrack(() =>
-      (data.accounts || []).find(
-        (/** @type {any} */ a) => a.id === initialAccountId
-      )
+      (data.accounts || []).find((/** @type {any} */ a) => a.id === initialAccountId)
     );
     accountName = acct ? acct.name : 'Unknown Account';
   }
@@ -762,127 +757,123 @@
 </svelte:head>
 
 <div class="flex flex-col">
-<PageHeader
-  title="Contacts"
-  subtitle="{filteredContacts.length} of {contacts.length} contacts"
->
-  {#snippet actions()}
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        {#snippet child({ props })}
-          <Button {...props} variant="outline" size="sm" class="gap-2">
-            <Eye class="h-4 w-4" />
-            Columns
-            {#if visibleColumns.length < columns.length}
-              <span
-                class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
-              >
-                {visibleColumns.length}/{columns.length}
-              </span>
-            {/if}
-          </Button>
-        {/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" class="w-48">
-        <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-        <DropdownMenu.Separator />
-        {#each columns as column (column.key)}
-          <DropdownMenu.CheckboxItem
-            class=""
-            checked={visibleColumns.includes(column.key)}
-            onCheckedChange={() => toggleColumn(column.key)}
-            disabled={column.canHide === false}
-          >
-            {column.label}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-    <Button variant="outline" size="sm" class="gap-2" onclick={() => (importOpen = true)}>
-      <Upload class="h-4 w-4" />
-      Import CSV
-    </Button>
-    <Button onclick={openCreate}>
-      <Plus class="mr-2 h-4 w-4" />
-      New Contact
-    </Button>
-  {/snippet}
-  {#snippet tabs()}
-    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
-  {/snippet}
-</PageHeader>
-
-<div class="flex-1">
-  <FilterStrip>
-    <SearchInput
-      value={filters.search}
-      placeholder="Search contacts..."
-      onchange={(value) => updateFilters({ ...filters, search: value })}
-      class="w-56"
-    />
-    <DateRangeFilter
-      label="Created"
-      startDate={filters.created_at_gte}
-      endDate={filters.created_at_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-    />
-    <TagFilter
-      tags={data.allTags || []}
-      value={filters.tags}
-      onchange={(ids) => updateFilters({ ...filters, tags: ids })}
-    />
-    {#if activeFiltersCount > 0}
-      <FilterPill label="Clear all" dashed onclick={clearFilters} />
-    {/if}
-    {#snippet meta()}
-      <span>{filteredContacts.length} of {contacts.length} contacts</span>
+  <PageHeader title="Contacts" subtitle="{filteredContacts.length} of {contacts.length} contacts">
+    {#snippet actions()}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} variant="outline" size="sm" class="gap-2">
+              <Eye class="h-4 w-4" />
+              Columns
+              {#if visibleColumns.length < columns.length}
+                <span
+                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)] dark:bg-[var(--color-primary-default)]/15"
+                >
+                  {visibleColumns.length}/{columns.length}
+                </span>
+              {/if}
+            </Button>
+          {/snippet}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="end" class="w-48">
+          <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+          <DropdownMenu.Separator />
+          {#each columns as column (column.key)}
+            <DropdownMenu.CheckboxItem
+              class=""
+              checked={visibleColumns.includes(column.key)}
+              onCheckedChange={() => toggleColumn(column.key)}
+              disabled={column.canHide === false}
+            >
+              {column.label}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+      <Button variant="outline" size="sm" class="gap-2" onclick={() => (importOpen = true)}>
+        <Upload class="h-4 w-4" />
+        Import CSV
+      </Button>
+      <Button onclick={openCreate}>
+        <Plus class="mr-2 h-4 w-4" />
+        New Contact
+      </Button>
     {/snippet}
-  </FilterStrip>
+    {#snippet tabs()}
+      <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+    {/snippet}
+  </PageHeader>
 
-  <!-- Table -->
-  {#if filteredContacts.length === 0}
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div
-        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-      >
-        <User class="size-8 text-[var(--text-tertiary)]" />
-      </div>
-      <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
-      <p class="mt-1 text-sm text-[var(--text-secondary)]">Create a new contact to get started</p>
-    </div>
-  {:else}
-    <CrmTable
-      data={filteredContacts}
-      {columns}
-      bind:visibleColumns
-      bind:activeRowId
-      onRowChange={handleRowChange}
-      onRowClick={(row) => openContact(row)}
-    >
-      {#snippet emptyState()}
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div
-            class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
-          >
-            <User class="size-6 text-[var(--text-tertiary)]" />
-          </div>
-          <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
-        </div>
+  <div class="flex-1">
+    <FilterStrip>
+      <SearchInput
+        value={filters.search}
+        placeholder="Search contacts..."
+        onchange={(value) => updateFilters({ ...filters, search: value })}
+        class="w-56"
+      />
+      <DateRangeFilter
+        label="Created"
+        startDate={filters.created_at_gte}
+        endDate={filters.created_at_lte}
+        onchange={(start, end) =>
+          updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+      />
+      <TagFilter
+        tags={data.allTags || []}
+        value={filters.tags}
+        onchange={(ids) => updateFilters({ ...filters, tags: ids })}
+      />
+      {#if activeFiltersCount > 0}
+        <FilterPill label="Clear all" dashed onclick={clearFilters} />
+      {/if}
+      {#snippet meta()}
+        <span>{filteredContacts.length} of {contacts.length} contacts</span>
       {/snippet}
-    </CrmTable>
-  {/if}
+    </FilterStrip>
 
-  <!-- Pagination -->
-  <Pagination
-    page={pagination.page}
-    limit={pagination.limit}
-    total={pagination.total}
-    onPageChange={handlePageChange}
-    onLimitChange={handleLimitChange}
-  />
-</div>
+    <!-- Table -->
+    {#if filteredContacts.length === 0}
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
+          <User class="size-8 text-[var(--text-tertiary)]" />
+        </div>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">Create a new contact to get started</p>
+      </div>
+    {:else}
+      <CrmTable
+        data={filteredContacts}
+        {columns}
+        bind:visibleColumns
+        bind:activeRowId
+        onRowChange={handleRowChange}
+        onRowClick={(row) => openContact(row)}
+      >
+        {#snippet emptyState()}
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div
+              class="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-sunken)]"
+            >
+              <User class="size-6 text-[var(--text-tertiary)]" />
+            </div>
+            <h3 class="text-lg font-medium text-[var(--text-primary)]">No contacts found</h3>
+          </div>
+        {/snippet}
+      </CrmTable>
+    {/if}
 
+    <!-- Pagination -->
+    <Pagination
+      page={pagination.page}
+      limit={pagination.limit}
+      total={pagination.total}
+      onPageChange={handlePageChange}
+      onLimitChange={handleLimitChange}
+    />
+  </div>
 </div>
 
 <!-- Contact Drawer -->

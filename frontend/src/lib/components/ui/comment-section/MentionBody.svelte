@@ -48,8 +48,10 @@
   const tokens = $derived(tokenize(body || ''));
 </script>
 
-<span class="whitespace-pre-wrap">{#each tokens as t}{#if t.type === 'text'}{t.value}{:else if t.resolved && t.resolved.id}<a
+<span class="whitespace-pre-wrap"
+  >{#each tokens as t}{#if t.type === 'text'}{t.value}{:else if t.resolved && t.resolved.id}<a
         href={`/users/${t.resolved.id}`}
         class="rounded bg-[var(--color-primary-default)]/10 px-1 font-medium text-[var(--color-primary-default)] hover:underline"
         >@{t.username}</a
-      >{:else}@{t.username}{/if}{/each}</span>
+      >{:else}@{t.username}{/if}{/each}</span
+>

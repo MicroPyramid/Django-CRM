@@ -18,14 +18,10 @@ import logging
 
 from crum import get_current_user
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-from django.db.models.signals import (
-    m2m_changed,
-    post_delete,
-    post_save,
-    pre_save,
-)
+from django.db import transaction
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from cases.models import Case, ReopenPolicy, Solution, TimeEntry
 from common.models import Activity, Comment
@@ -263,9 +259,11 @@ def _maybe_schedule_csat(case, old_status):
     try:
         from cases.tasks import CSAT_SEND_DELAY_MINUTES, send_csat_survey
 
-        send_csat_survey.apply_async(
-            args=[str(case.id), str(case.org_id)],
-            countdown=CSAT_SEND_DELAY_MINUTES * 60,
+        transaction.on_commit(
+            lambda: send_csat_survey.apply_async(
+                args=[str(case.id), str(case.org_id)],
+                countdown=CSAT_SEND_DELAY_MINUTES * 60,
+            )
         )
     except Exception:  # pragma: no cover — broker outage shouldn't block close
         logger.exception("Failed to enqueue CSAT survey for case=%s", case.pk)
@@ -370,9 +368,7 @@ def _evaluate_reopen(case, comment):
 
     case.status = policy["reopen_to_status"]
     case.closed_on = None
-    Case.objects.filter(pk=case.pk).update(
-        status=case.status, closed_on=None
-    )
+    Case.objects.filter(pk=case.pk).update(status=case.status, closed_on=None)
     _create_activity(
         case,
         "REOPENED",
@@ -397,8 +393,10 @@ def _notify_reopen_assignees(case):
     if not assignee_ids:
         return
     try:
-        send_email_to_assigned_user.delay(
-            assignee_ids, str(case.pk), str(case.org_id)
+        transaction.on_commit(
+            lambda: send_email_to_assigned_user.delay(
+                assignee_ids, str(case.pk), str(case.org_id)
+            )
         )
     except Exception:  # pragma: no cover - notification failures are non-blocking
         logger.warning(
@@ -428,9 +426,7 @@ def maybe_reopen_for_inbound_email(case, email_message):
 
     case.status = policy["reopen_to_status"]
     case.closed_on = None
-    Case.objects.filter(pk=case.pk).update(
-        status=case.status, closed_on=None
-    )
+    Case.objects.filter(pk=case.pk).update(status=case.status, closed_on=None)
     _create_activity(
         case,
         "REOPENED",

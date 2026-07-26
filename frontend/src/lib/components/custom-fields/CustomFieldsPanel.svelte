@@ -68,9 +68,7 @@
   const isEmpty = $derived(activeDefs.length === 0);
 </script>
 
-<section
-  class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
->
+<section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
   <header class="mb-3 flex items-center gap-2">
     <Sliders class="h-4 w-4 text-[var(--text-secondary)]" />
     <h3 class="text-sm font-medium text-[var(--text-secondary)]">
@@ -102,11 +100,7 @@
       }}
       class="space-y-4"
     >
-      <input
-        type="hidden"
-        name="custom_fields"
-        value={JSON.stringify(draft || {})}
-      />
+      <input type="hidden" name="custom_fields" value={JSON.stringify(draft || {})} />
       {#each Object.entries(extraFields) as [extraKey, extraValue] (extraKey)}
         <input type="hidden" name={extraKey} value={extraValue} />
       {/each}
@@ -152,11 +146,7 @@
               />
             {:else if defn.field_type === 'checkbox'}
               <label class="flex items-center gap-2 text-sm">
-                <input
-                  id={`cf_${defn.key}`}
-                  type="checkbox"
-                  bind:checked={draft[defn.key]}
-                />
+                <input id={`cf_${defn.key}`} type="checkbox" bind:checked={draft[defn.key]} />
                 <span class="text-[var(--text-secondary)]">{defn.label}</span>
               </label>
             {:else if defn.field_type === 'dropdown'}
@@ -172,10 +162,7 @@
                 {/each}
               </select>
             {:else}
-              <Input
-                id={`cf_${defn.key}`}
-                bind:value={draft[defn.key]}
-              />
+              <Input id={`cf_${defn.key}`} bind:value={draft[defn.key]} />
             {/if}
           </div>
         {/each}

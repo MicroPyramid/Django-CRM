@@ -152,40 +152,38 @@
     <!-- Profile Header Card -->
     <SectionCard padded={false} class="p-6">
       <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-          <!-- Avatar -->
-          <Avatar.Root class="h-20 w-20 text-xl">
-            {#if data.user.profilePhoto}
-              <Avatar.Image
-                src={data.user.profilePhoto}
-                alt={data.user.name || 'Profile'}
-                class=""
-              />
-            {/if}
-            <Avatar.Fallback class="bg-[var(--color-primary-default)] text-white">
-              {getInitials(data.user.name)}
-            </Avatar.Fallback>
-          </Avatar.Root>
+        <!-- Avatar -->
+        <Avatar.Root class="h-20 w-20 text-xl">
+          {#if data.user.profilePhoto}
+            <Avatar.Image src={data.user.profilePhoto} alt={data.user.name || 'Profile'} class="" />
+          {/if}
+          <Avatar.Fallback class="bg-[var(--color-primary-default)] text-white">
+            {getInitials(data.user.name)}
+          </Avatar.Fallback>
+        </Avatar.Root>
 
-          <!-- User Info -->
-          <div class="flex-1 text-center sm:text-left">
-            <h2 class="text-foreground text-xl font-semibold">
-              {data.user.name || 'Unnamed User'}
-            </h2>
-            <p class="text-muted-foreground">{data.user.email}</p>
-            <div class="mt-3">
-              <Badge variant={data.user.isActive ? 'default' : 'destructive'}>
-                {data.user.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+        <!-- User Info -->
+        <div class="flex-1 text-center sm:text-left">
+          <h2 class="text-foreground text-xl font-semibold">
+            {data.user.name || 'Unnamed User'}
+          </h2>
+          <p class="text-muted-foreground">{data.user.email}</p>
+          <div class="mt-3">
+            <Badge variant={data.user.isActive ? 'default' : 'destructive'}>
+              {data.user.isActive ? 'Active' : 'Inactive'}
+            </Badge>
           </div>
         </div>
+      </div>
     </SectionCard>
 
     <!-- Profile Information Card -->
     <SectionCard>
       {#snippet title()}
         <div class="flex min-w-0 flex-col gap-0.5">
-          <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+          <h3
+            class="truncate text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
+          >
             Profile Information
           </h3>
           <p class="text-[12px] text-[color:var(--text-muted)]">
@@ -195,128 +193,128 @@
           </p>
         </div>
       {/snippet}
-        {#if isEditing}
-          <!-- Edit Form -->
-          <form method="POST" action="?/updateProfile" use:enhance={handleSubmit} class="space-y-6">
-            <div class="grid gap-6 sm:grid-cols-2">
-              <!-- Name -->
-              <div class="sm:col-span-2">
-                <Label for="name" class="">Full Name</Label>
-                <Input
-                  type="text"
-                  id="name"
-                  name="name"
-                  bind:value={formData.name}
-                  placeholder="Enter your full name"
-                  maxlength={255}
-                  class="mt-1.5"
-                />
-              </div>
-
-              <!-- Email (read-only) -->
-              <div>
-                <Label for="email" class="">Email Address</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={data.user.email}
-                  disabled
-                  class="bg-muted mt-1.5"
-                />
-                <p class="text-muted-foreground mt-1 text-xs">Email cannot be changed</p>
-              </div>
-
-              <!-- Phone -->
-              <div>
-                <Label for="phone" class="">Phone Number</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  bind:value={formData.phone}
-                  oninput={validatePhone}
-                  placeholder="Enter your phone number"
-                  class="mt-1.5"
-                />
-                {#if phoneError}
-                  <p class="text-destructive mt-1 text-sm">{phoneError}</p>
-                {/if}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div class="flex justify-end gap-3">
-              <Button type="button" variant="outline" onclick={toggleEdit} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting || !!phoneError}>
-                {#if isSubmitting}
-                  <svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Saving...
-                {:else}
-                  <Save class="mr-2 h-4 w-4" />
-                  Save Changes
-                {/if}
-              </Button>
-            </div>
-          </form>
-        {:else}
-          <!-- View Mode -->
+      {#if isEditing}
+        <!-- Edit Form -->
+        <form method="POST" action="?/updateProfile" use:enhance={handleSubmit} class="space-y-6">
           <div class="grid gap-6 sm:grid-cols-2">
-            <!-- Email -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Mail class="h-4 w-4" />
-                Email Address
-              </div>
-              <p class="text-foreground">{data.user.email}</p>
+            <!-- Name -->
+            <div class="sm:col-span-2">
+              <Label for="name" class="">Full Name</Label>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                bind:value={formData.name}
+                placeholder="Enter your full name"
+                maxlength={255}
+                class="mt-1.5"
+              />
+            </div>
+
+            <!-- Email (read-only) -->
+            <div>
+              <Label for="email" class="">Email Address</Label>
+              <Input
+                type="email"
+                id="email"
+                value={data.user.email}
+                disabled
+                class="bg-muted mt-1.5"
+              />
+              <p class="text-muted-foreground mt-1 text-xs">Email cannot be changed</p>
             </div>
 
             <!-- Phone -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Phone class="h-4 w-4" />
-                Phone Number
-              </div>
-              <p class="text-foreground">
-                {formattedDisplayPhone || data.user.phone || 'Not provided'}
-              </p>
-            </div>
-
-            <!-- Last Login -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Calendar class="h-4 w-4" />
-                Last Login
-              </div>
-              <p class="text-foreground">{formatDate(data.user.lastLogin)}</p>
-            </div>
-
-            <!-- Member Since -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Calendar class="h-4 w-4" />
-                Member Since
-              </div>
-              <p class="text-foreground">{formatDate(data.user.createdAt)}</p>
+            <div>
+              <Label for="phone" class="">Phone Number</Label>
+              <Input
+                type="tel"
+                id="phone"
+                name="phone"
+                bind:value={formData.phone}
+                oninput={validatePhone}
+                placeholder="Enter your phone number"
+                class="mt-1.5"
+              />
+              {#if phoneError}
+                <p class="text-destructive mt-1 text-sm">{phoneError}</p>
+              {/if}
             </div>
           </div>
-        {/if}
+
+          <Separator />
+
+          <div class="flex justify-end gap-3">
+            <Button type="button" variant="outline" onclick={toggleEdit} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !!phoneError}>
+              {#if isSubmitting}
+                <svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Saving...
+              {:else}
+                <Save class="mr-2 h-4 w-4" />
+                Save Changes
+              {/if}
+            </Button>
+          </div>
+        </form>
+      {:else}
+        <!-- View Mode -->
+        <div class="grid gap-6 sm:grid-cols-2">
+          <!-- Email -->
+          <div class="space-y-1">
+            <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+              <Mail class="h-4 w-4" />
+              Email Address
+            </div>
+            <p class="text-foreground">{data.user.email}</p>
+          </div>
+
+          <!-- Phone -->
+          <div class="space-y-1">
+            <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+              <Phone class="h-4 w-4" />
+              Phone Number
+            </div>
+            <p class="text-foreground">
+              {formattedDisplayPhone || data.user.phone || 'Not provided'}
+            </p>
+          </div>
+
+          <!-- Last Login -->
+          <div class="space-y-1">
+            <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+              <Calendar class="h-4 w-4" />
+              Last Login
+            </div>
+            <p class="text-foreground">{formatDate(data.user.lastLogin)}</p>
+          </div>
+
+          <!-- Member Since -->
+          <div class="space-y-1">
+            <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+              <Calendar class="h-4 w-4" />
+              Member Since
+            </div>
+            <p class="text-foreground">{formatDate(data.user.createdAt)}</p>
+          </div>
+        </div>
+      {/if}
     </SectionCard>
 
     <!-- Organizations Card -->
@@ -324,7 +322,9 @@
       <SectionCard>
         {#snippet title()}
           <div class="flex min-w-0 flex-col gap-0.5">
-            <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+            <h3
+              class="truncate text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
+            >
               Organizations
             </h3>
             <p class="text-[12px] text-[color:var(--text-muted)]">

@@ -5,7 +5,7 @@
   export const buttonVariants = tv({
     base: [
       'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap',
-      "rounded-[var(--r-md)] text-[13px] font-medium leading-none tracking-[-0.01em]",
+      'rounded-[var(--r-md)] text-[13px] font-medium leading-none tracking-[-0.01em]',
       'outline-none transition-[background-color,color,border-color,box-shadow] duration-150',
       'disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
       "[&_svg:not([class*='size-'])]:size-[14px] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:stroke-[1.7]",

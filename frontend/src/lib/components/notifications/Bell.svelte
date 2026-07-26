@@ -37,7 +37,7 @@
         <BellIcon class="h-5 w-5" />
         {#if notifications.unread_count > 0}
           <span
-            class="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-primary-default)] px-1 text-[10px] font-semibold leading-none text-white"
+            class="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-primary-default)] px-1 text-[10px] leading-none font-semibold text-white"
           >
             {fmt(notifications.unread_count)}
           </span>

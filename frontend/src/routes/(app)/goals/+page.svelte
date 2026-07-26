@@ -283,10 +283,10 @@
     }
 
     try {
-      const response = await fetch(
-        isCreating ? '?/create' : '?/update',
-        { method: 'POST', body: fd }
-      );
+      const response = await fetch(isCreating ? '?/create' : '?/update', {
+        method: 'POST',
+        body: fd
+      });
       const result = deserialize(await response.text());
 
       if (result.type === 'success') {
@@ -353,17 +353,13 @@
 
     return goals;
   });
-
 </script>
 
 <svelte:head>
   <title>Sales Goals - BottleCRM</title>
 </svelte:head>
 
-<PageHeader
-  title="Sales Goals"
-  subtitle="Track targets and measure team performance"
->
+<PageHeader title="Sales Goals" subtitle="Track targets and measure team performance">
   {#snippet titleIcon()}
     <Trophy class="size-4" />
   {/snippet}
@@ -380,12 +376,7 @@
 <div class="space-y-6 p-6 md:p-8">
   <!-- Filter Chips -->
   <div class="flex items-center gap-2">
-    {#each [
-      { key: 'all', label: 'All' },
-      { key: 'active', label: 'Active' },
-      { key: 'completed', label: 'Completed' },
-      { key: 'behind', label: 'Needs Attention' }
-    ] as filter}
+    {#each [{ key: 'all', label: 'All' }, { key: 'active', label: 'Active' }, { key: 'completed', label: 'Completed' }, { key: 'behind', label: 'Needs Attention' }] as filter}
       <button
         class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors {activeFilter ===
         filter.key
@@ -446,7 +437,12 @@
               tabindex="0"
               role="button"
               onclick={() => openEditDrawer(goal)}
-              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditDrawer(goal); } }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openEditDrawer(goal);
+                }
+              }}
             >
               <!-- Name -->
               <td class="px-4 py-3 font-medium text-[var(--text-primary)]">
@@ -454,7 +450,11 @@
               </td>
               <!-- Type -->
               <td class="px-4 py-3">
-                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {goalTypeOptions.find((o) => o.value === goal.goalType)?.color || ''}">
+                <span
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {goalTypeOptions.find(
+                    (o) => o.value === goal.goalType
+                  )?.color || ''}"
+                >
                   {goalTypeOptions.find((o) => o.value === goal.goalType)?.label || goal.goalType}
                 </span>
               </td>
@@ -502,7 +502,9 @@
               <!-- Status -->
               <td class="px-4 py-3">
                 <span
-                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {statusOptions.find((o) => o.value === goal.status)?.color || ''}"
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {statusOptions.find(
+                    (o) => o.value === goal.status
+                  )?.color || ''}"
                 >
                   {statusOptions.find((o) => o.value === goal.status)?.label || goal.status}
                 </span>
@@ -540,11 +542,7 @@
           <p class="text-xs text-[var(--text-tertiary)]">Current period top performers</p>
         </div>
         <div class="flex rounded-[var(--radius-md)] bg-[var(--surface-sunken)] p-0.5">
-          {#each [
-            { value: 'MONTHLY', label: 'Month' },
-            { value: 'QUARTERLY', label: 'Quarter' },
-            { value: 'YEARLY', label: 'Year' }
-          ] as opt}
+          {#each [{ value: 'MONTHLY', label: 'Month' }, { value: 'QUARTERLY', label: 'Quarter' }, { value: 'YEARLY', label: 'Year' }] as opt}
             <button
               type="button"
               class="rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors {leaderboardPeriod ===
@@ -612,9 +610,13 @@
   <Sheet.Content side="right" class="w-[480px] overflow-hidden border-l p-0 sm:max-w-[480px]">
     <form onsubmit={handleSubmit} class="flex h-full flex-col">
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4">
+      <div
+        class="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4"
+      >
         <div class="flex items-center gap-2">
-          <span class="rounded-md bg-[var(--color-primary-default)]/10 px-2 py-1 text-xs font-semibold uppercase text-[var(--color-primary-default)]">
+          <span
+            class="rounded-md bg-[var(--color-primary-default)]/10 px-2 py-1 text-xs font-semibold text-[var(--color-primary-default)] uppercase"
+          >
             Goal
           </span>
           {#if isCreating}
@@ -630,219 +632,229 @@
         </button>
       </div>
       <div class="flex-1 space-y-4 overflow-y-auto p-6">
-      <!-- Name -->
-      <div>
-        <label for="goal-name" class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Goal Name</label
-        >
-        <Input id="goal-name" bind:value={formData.name} placeholder="e.g., Q1 Revenue Target" required />
-      </div>
-
-      <!-- Goal Type -->
-      <div>
-        <label for="goal-type" class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Goal Type</label
-        >
-        <Select.Root
-          type="single"
-          value={formData.goalType}
-          onValueChange={(v) => (formData.goalType = v)}
-        >
-          <Select.Trigger class="w-full">
-            {goalTypeOptions.find((o) => o.value === formData.goalType)?.label || 'Select type'}
-          </Select.Trigger>
-          <Select.Content>
-            {#each goalTypeOptions as opt}
-              <Select.Item value={opt.value}>{opt.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
-
-      <!-- Target Value -->
-      <div>
-        <label
-          for="target-value"
-          class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-        >
-          Target {formData.goalType === 'REVENUE' ? 'Amount' : 'Count'}
-        </label>
-        <Input
-          id="target-value"
-          type="number"
-          step={formData.goalType === 'REVENUE' ? '0.01' : '1'}
-          min="1"
-          bind:value={formData.targetValue}
-          placeholder={formData.goalType === 'REVENUE' ? '100000' : '50'}
-          required
-        />
-      </div>
-
-      <!-- Period Type -->
-      <div>
-        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Period Type</span
-        >
-        <Select.Root
-          type="single"
-          value={formData.periodType}
-          onValueChange={(v) => handlePeriodTypeChange(v)}
-        >
-          <Select.Trigger class="w-full">
-            {periodTypeOptions.find((o) => o.value === formData.periodType)?.label || 'Select period'}
-          </Select.Trigger>
-          <Select.Content>
-            {#each periodTypeOptions as opt}
-              <Select.Item value={opt.value}>{opt.label}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
-
-      <!-- Period Dates -->
-      <div class="grid grid-cols-2 gap-3">
+        <!-- Name -->
         <div>
           <label
-            for="period-start"
-            class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Start Date</label
+            for="goal-name"
+            class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Goal Name</label
           >
           <Input
-            id="period-start"
-            type="date"
-            bind:value={formData.periodStart}
+            id="goal-name"
+            bind:value={formData.name}
+            placeholder="e.g., Q1 Revenue Target"
             required
-            disabled={formData.periodType !== 'CUSTOM'}
           />
         </div>
+
+        <!-- Goal Type -->
         <div>
           <label
-            for="period-end"
-            class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">End Date</label
+            for="goal-type"
+            class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">Goal Type</label
           >
+          <Select.Root
+            type="single"
+            value={formData.goalType}
+            onValueChange={(v) => (formData.goalType = v)}
+          >
+            <Select.Trigger class="w-full">
+              {goalTypeOptions.find((o) => o.value === formData.goalType)?.label || 'Select type'}
+            </Select.Trigger>
+            <Select.Content>
+              {#each goalTypeOptions as opt}
+                <Select.Item value={opt.value}>{opt.label}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+
+        <!-- Target Value -->
+        <div>
+          <label
+            for="target-value"
+            class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+          >
+            Target {formData.goalType === 'REVENUE' ? 'Amount' : 'Count'}
+          </label>
           <Input
-            id="period-end"
-            type="date"
-            bind:value={formData.periodEnd}
+            id="target-value"
+            type="number"
+            step={formData.goalType === 'REVENUE' ? '0.01' : '1'}
+            min="1"
+            bind:value={formData.targetValue}
+            placeholder={formData.goalType === 'REVENUE' ? '100000' : '50'}
             required
-            disabled={formData.periodType !== 'CUSTOM'}
           />
         </div>
-      </div>
 
-      <!-- Assigned To -->
-      <div>
-        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Assign to User</span
-        >
-        <Select.Root
-          type="single"
-          value={formData.assignedTo}
-          onValueChange={(v) => {
-            formData.assignedTo = v;
-            if (v) formData.team = '';
-          }}
-        >
-          <Select.Trigger class="w-full">
-            {userOptions.find((u) => u.id === formData.assignedTo)?.name || 'Select user (optional)'}
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="">None</Select.Item>
-            {#each userOptions as user}
-              <Select.Item value={user.id}>{user.name}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
+        <!-- Period Type -->
+        <div>
+          <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+            >Period Type</span
+          >
+          <Select.Root
+            type="single"
+            value={formData.periodType}
+            onValueChange={(v) => handlePeriodTypeChange(v)}
+          >
+            <Select.Trigger class="w-full">
+              {periodTypeOptions.find((o) => o.value === formData.periodType)?.label ||
+                'Select period'}
+            </Select.Trigger>
+            <Select.Content>
+              {#each periodTypeOptions as opt}
+                <Select.Item value={opt.value}>{opt.label}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
 
-      <!-- Team -->
-      <div>
-        <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
-          >Assign to Team</span
-        >
-        <Select.Root
-          type="single"
-          value={formData.team}
-          onValueChange={(v) => {
-            formData.team = v;
-            if (v) formData.assignedTo = '';
-          }}
-        >
-          <Select.Trigger class="w-full">
-            {teamOptions.find((t) => t.id === formData.team)?.name || 'Select team (optional)'}
-          </Select.Trigger>
-          <Select.Content>
-            <Select.Item value="">None</Select.Item>
-            {#each teamOptions as team}
-              <Select.Item value={team.id}>{team.name}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
-
-      <!-- Progress (read-only, edit mode only) -->
-      {#if !isCreating && selectedGoal}
-        <div
-          class="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-sunken)] p-4"
-        >
-          <h3 class="mb-3 text-sm font-semibold text-[var(--text-primary)]">Current Progress</h3>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-[var(--text-secondary)]">Progress</span>
-              <span class="font-medium {getStatusColor(selectedGoal.status)}">
-                {selectedGoal.progressPercent}%
-              </span>
-            </div>
-            <Progress
-              value={selectedGoal.progressPercent}
-              max={100}
-              class="h-2 {getProgressColor(selectedGoal.progressPercent)}"
+        <!-- Period Dates -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label
+              for="period-start"
+              class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+              >Start Date</label
+            >
+            <Input
+              id="period-start"
+              type="date"
+              bind:value={formData.periodStart}
+              required
+              disabled={formData.periodType !== 'CUSTOM'}
             />
-            <div class="flex items-center justify-between text-xs text-[var(--text-tertiary)]">
-              <span>
-                Achieved: {selectedGoal.goalType === 'REVENUE'
-                  ? formatCurrency(selectedGoal.progressValue, orgCurrency, true)
-                  : `${selectedGoal.progressValue} deals`}
-              </span>
-              <span>
-                Target: {selectedGoal.goalType === 'REVENUE'
-                  ? formatCurrency(selectedGoal.targetValue, orgCurrency, true)
-                  : `${selectedGoal.targetValue} deals`}
-              </span>
-            </div>
+          </div>
+          <div>
+            <label
+              for="period-end"
+              class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">End Date</label
+            >
+            <Input
+              id="period-end"
+              type="date"
+              bind:value={formData.periodEnd}
+              required
+              disabled={formData.periodType !== 'CUSTOM'}
+            />
           </div>
         </div>
-      {/if}
-    </div>
 
-    <!-- Footer Actions -->
-    <div
-      class="flex items-center justify-between border-t border-[var(--border-default)] px-6 py-4"
-    >
-      <div>
-        {#if !isCreating && selectedGoal && isAdmin}
-          <Button
-            type="button"
-            variant="ghost"
-            class="text-red-600 hover:bg-red-50 hover:text-red-700"
-            onclick={() => confirmDelete(selectedGoal)}
+        <!-- Assigned To -->
+        <div>
+          <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+            >Assign to User</span
           >
-            <Trash2 class="mr-1.5 size-4" />
-            Delete
-          </Button>
+          <Select.Root
+            type="single"
+            value={formData.assignedTo}
+            onValueChange={(v) => {
+              formData.assignedTo = v;
+              if (v) formData.team = '';
+            }}
+          >
+            <Select.Trigger class="w-full">
+              {userOptions.find((u) => u.id === formData.assignedTo)?.name ||
+                'Select user (optional)'}
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="">None</Select.Item>
+              {#each userOptions as user}
+                <Select.Item value={user.id}>{user.name}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+
+        <!-- Team -->
+        <div>
+          <span class="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+            >Assign to Team</span
+          >
+          <Select.Root
+            type="single"
+            value={formData.team}
+            onValueChange={(v) => {
+              formData.team = v;
+              if (v) formData.assignedTo = '';
+            }}
+          >
+            <Select.Trigger class="w-full">
+              {teamOptions.find((t) => t.id === formData.team)?.name || 'Select team (optional)'}
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="">None</Select.Item>
+              {#each teamOptions as team}
+                <Select.Item value={team.id}>{team.name}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+
+        <!-- Progress (read-only, edit mode only) -->
+        {#if !isCreating && selectedGoal}
+          <div
+            class="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-sunken)] p-4"
+          >
+            <h3 class="mb-3 text-sm font-semibold text-[var(--text-primary)]">Current Progress</h3>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-[var(--text-secondary)]">Progress</span>
+                <span class="font-medium {getStatusColor(selectedGoal.status)}">
+                  {selectedGoal.progressPercent}%
+                </span>
+              </div>
+              <Progress
+                value={selectedGoal.progressPercent}
+                max={100}
+                class="h-2 {getProgressColor(selectedGoal.progressPercent)}"
+              />
+              <div class="flex items-center justify-between text-xs text-[var(--text-tertiary)]">
+                <span>
+                  Achieved: {selectedGoal.goalType === 'REVENUE'
+                    ? formatCurrency(selectedGoal.progressValue, orgCurrency, true)
+                    : `${selectedGoal.progressValue} deals`}
+                </span>
+                <span>
+                  Target: {selectedGoal.goalType === 'REVENUE'
+                    ? formatCurrency(selectedGoal.targetValue, orgCurrency, true)
+                    : `${selectedGoal.targetValue} deals`}
+                </span>
+              </div>
+            </div>
+          </div>
         {/if}
       </div>
-      <div class="flex gap-2">
-        <Button type="button" variant="outline" onclick={() => (drawerOpen = false)}>
-          Cancel
-        </Button>
-        {#if isAdmin}
-          <Button type="submit">
-            {isCreating ? 'Create Goal' : 'Save Changes'}
+
+      <!-- Footer Actions -->
+      <div
+        class="flex items-center justify-between border-t border-[var(--border-default)] px-6 py-4"
+      >
+        <div>
+          {#if !isCreating && selectedGoal && isAdmin}
+            <Button
+              type="button"
+              variant="ghost"
+              class="text-red-600 hover:bg-red-50 hover:text-red-700"
+              onclick={() => confirmDelete(selectedGoal)}
+            >
+              <Trash2 class="mr-1.5 size-4" />
+              Delete
+            </Button>
+          {/if}
+        </div>
+        <div class="flex gap-2">
+          <Button type="button" variant="outline" onclick={() => (drawerOpen = false)}>
+            Cancel
           </Button>
-        {/if}
+          {#if isAdmin}
+            <Button type="submit">
+              {isCreating ? 'Create Goal' : 'Save Changes'}
+            </Button>
+          {/if}
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
   </Sheet.Content>
 </Sheet.Root>
 
@@ -857,10 +869,7 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-      <AlertDialog.Action
-        class="bg-red-600 text-white hover:bg-red-700"
-        onclick={handleDelete}
-      >
+      <AlertDialog.Action class="bg-red-600 text-white hover:bg-red-700" onclick={handleDelete}>
         Delete
       </AlertDialog.Action>
     </AlertDialog.Footer>

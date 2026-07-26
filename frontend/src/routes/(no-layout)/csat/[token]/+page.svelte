@@ -21,20 +21,22 @@
 
 <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
   {#if data.gone}
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 text-center">
+    <section
+      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 text-center"
+    >
       <h1 class="text-lg font-semibold">This survey link has expired</h1>
       <p class="mt-2 text-sm text-[var(--text-secondary)]">
-        Survey links are valid for a limited time after a ticket is closed. If
-        you'd still like to share feedback, please reply to the agent's email
-        directly.
+        Survey links are valid for a limited time after a ticket is closed. If you'd still like to
+        share feedback, please reply to the agent's email directly.
       </p>
     </section>
   {:else if data.invalid}
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 text-center">
+    <section
+      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 text-center"
+    >
       <h1 class="text-lg font-semibold">Invalid survey link</h1>
       <p class="mt-2 text-sm text-[var(--text-secondary)]">
-        We couldn't verify this link. Please use the most recent link from
-        your email.
+        We couldn't verify this link. Please use the most recent link from your email.
       </p>
     </section>
   {:else if data.error}
@@ -49,8 +51,8 @@
       <CheckCircle2 class="size-10 text-green-600" />
       <h1 class="text-lg font-semibold">Thanks for your feedback</h1>
       <p class="text-sm text-[var(--text-secondary)]">
-        Your rating of <strong>{form.rating}/5</strong> has been recorded.
-        You can update it for the next 24 hours by re-opening this link.
+        Your rating of <strong>{form.rating}/5</strong> has been recorded. You can update it for the next
+        24 hours by re-opening this link.
       </p>
     </section>
   {:else if data.survey}

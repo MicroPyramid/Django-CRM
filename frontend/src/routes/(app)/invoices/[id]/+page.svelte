@@ -240,7 +240,6 @@
     a.remove();
   }
 
-
   // Change invoice status
   async function handleStatusChange(newStatus) {
     invoice.status = newStatus;

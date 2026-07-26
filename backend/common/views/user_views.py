@@ -1,8 +1,8 @@
 from django.conf import settings
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -85,9 +85,7 @@ class UsersListView(APIView, LimitOffsetPagination):
             )
         params = request.data
         if params:
-            user_serializer = CreateUserSerializer(
-                data=params, org=request.profile.org
-            )
+            user_serializer = CreateUserSerializer(data=params, org=request.profile.org)
             address_serializer = BillingAddressSerializer(data=params)
             profile_serializer = CreateProfileSerializer(data=params)
             data = {}
@@ -103,7 +101,9 @@ class UsersListView(APIView, LimitOffsetPagination):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if address_serializer.is_valid():
-                address_obj = address_serializer.save()
+                # org must be set server-side — Address.org is NOT NULL and is
+                # never accepted from the request body (multi-tenancy rule).
+                address_obj = address_serializer.save(org=request.profile.org)
                 user = user_serializer.save(
                     is_active=True,
                 )
@@ -261,7 +261,9 @@ class UserDetailView(APIView):
         cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
         context["cases"] = CaseSerializer(cases, many=True).data
         context["assigned_data"] = assigned_data
-        comments = Comment.objects.filter(commented_by=profile_obj, org=request.profile.org)
+        comments = Comment.objects.filter(
+            commented_by=profile_obj, org=request.profile.org
+        )
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
         return Response(
@@ -424,9 +426,11 @@ class UserDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         deleted_by = self.request.profile.user.email
-        send_email_user_delete.delay(
-            self.object.user.email,
-            deleted_by=deleted_by,
+        transaction.on_commit(
+            lambda: send_email_user_delete.delay(
+                self.object.user.email,
+                deleted_by=deleted_by,
+            )
         )
         self.object.delete()
         return Response({"status": "success"}, status=status.HTTP_200_OK)

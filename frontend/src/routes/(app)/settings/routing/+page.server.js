@@ -36,9 +36,7 @@ export async function load({ cookies, locals }) {
       apiRequest('/cases/routing-rules/', {}, { cookies, org: locals?.org }),
       apiRequest('/users/', {}, { cookies, org: locals?.org }).catch(() => ({})),
       apiRequest('/teams/', {}, { cookies, org: locals?.org }).catch(() => ({})),
-      apiRequest('/cases/mailboxes/', {}, { cookies, org: locals?.org }).catch(
-        () => ({})
-      )
+      apiRequest('/cases/mailboxes/', {}, { cookies, org: locals?.org }).catch(() => ({}))
     ]);
 
     return {

@@ -67,10 +67,16 @@ export async function load({ locals, cookies, url }) {
     const leaderboardQs = new URLSearchParams({ period_type: leaderboardPeriod }).toString();
 
     const [goalsResponse, leaderboardResponse, teamsUsersResponse] = await Promise.all([
-      apiRequest(`/opportunities/goals/${queryString ? `?${queryString}` : ''}`, {}, { cookies, org }),
-      apiRequest(`/opportunities/goals/leaderboard/?${leaderboardQs}`, {}, { cookies, org }).catch(() => ({
-        leaderboard: []
-      })),
+      apiRequest(
+        `/opportunities/goals/${queryString ? `?${queryString}` : ''}`,
+        {},
+        { cookies, org }
+      ),
+      apiRequest(`/opportunities/goals/leaderboard/?${leaderboardQs}`, {}, { cookies, org }).catch(
+        () => ({
+          leaderboard: []
+        })
+      ),
       apiRequest('/users/get-teams-and-users/', {}, { cookies, org }).catch(() => ({
         teams: [],
         profiles: []
@@ -170,7 +176,11 @@ export const actions = {
         is_active: true
       };
 
-      await apiRequest('/opportunities/goals/', { method: 'POST', body: goalData }, { cookies, org });
+      await apiRequest(
+        '/opportunities/goals/',
+        { method: 'POST', body: goalData },
+        { cookies, org }
+      );
 
       return { success: true, message: 'Goal created successfully' };
     } catch (err) {
@@ -229,11 +239,7 @@ export const actions = {
         return fail(400, { message: 'Missing required data' });
       }
 
-      await apiRequest(
-        `/opportunities/goals/${goalId}/`,
-        { method: 'DELETE' },
-        { cookies, org }
-      );
+      await apiRequest(`/opportunities/goals/${goalId}/`, { method: 'DELETE' }, { cookies, org });
 
       return { success: true, message: 'Goal deleted successfully' };
     } catch (err) {

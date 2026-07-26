@@ -269,10 +269,7 @@
   const allEstimates = $derived(data.estimates);
   const template = $derived(data.template);
   const lineItemsSubtotal = $derived.by(() =>
-    (drawerFormData.lineItems || []).reduce(
-      (sum, item) => sum + getLineItemAmount(item),
-      0
-    )
+    (drawerFormData.lineItems || []).reduce((sum, item) => sum + getLineItemAmount(item), 0)
   );
 
   // Filter estimates by chip selection (client-side filtering)
@@ -1166,7 +1163,7 @@
         </div>
         <div class="overflow-hidden rounded-md border">
           <div
-            class="bg-muted/50 text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3 text-xs font-medium uppercase tracking-wide"
+            class="bg-muted/50 text-muted-foreground grid grid-cols-12 gap-3 border-b px-4 py-3 text-xs font-medium tracking-wide uppercase"
           >
             <div class="col-span-6">Description</div>
             <div class="col-span-2 text-right">Qty</div>

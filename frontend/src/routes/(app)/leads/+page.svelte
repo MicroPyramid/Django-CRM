@@ -1830,7 +1830,7 @@
             >
               {getInitials(drawerData.owner.name || drawerData.owner.email) || '?'}
             </span>
-            <span class="text-[color:var(--text)] font-medium">
+            <span class="font-medium text-[color:var(--text)]">
               {drawerData.owner.name || drawerData.owner.email}
             </span>
           </div>

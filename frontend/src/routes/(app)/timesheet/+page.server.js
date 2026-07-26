@@ -3,9 +3,7 @@ import { apiRequest } from '$lib/api-helpers.js';
 
 /** Compute the Mon..Sun ISO-week range for `date`. */
 function isoWeekRange(/** @type {Date} */ date) {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  );
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayOfWeek = (d.getUTCDay() + 6) % 7; // Mon=0
   d.setUTCDate(d.getUTCDate() - dayOfWeek);
   const start = d.toISOString().slice(0, 10);
@@ -40,16 +38,10 @@ export async function load({ url, locals, cookies }) {
 
   try {
     const [data, usersRes] = await Promise.all([
-      apiRequest(
-        `/time-entries/timesheet/?${qs.toString()}`,
-        {},
-        { cookies, org: locals.org }
-      ),
+      apiRequest(`/time-entries/timesheet/?${qs.toString()}`, {}, { cookies, org: locals.org }),
       usersPromise
     ]);
-    const users = (
-      /** @type {any} */ (usersRes).active_users?.active_users || []
-    ).map(
+    const users = /** @type {any} */ (usersRes.active_users?.active_users || []).map(
       /** @param {any} p */ (p) => ({
         id: p.id,
         email: p.user_details?.email || p.email || 'Unknown',

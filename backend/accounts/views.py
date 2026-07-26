@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
@@ -8,9 +9,6 @@ from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts import swagger_params
@@ -25,10 +23,18 @@ from accounts.serializer import (
     EmailWriteSerializer,
     TagsSerializer,
 )
-from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
+from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -43,6 +49,9 @@ from common.utils import (
     INDCHOICES,
     PRIORITY_CHOICE,
     STATUS_CHOICE,
+    create_attachment,
+    get_or_create_tags,
+    handle_m2m_assignment,
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -250,10 +259,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
             recipients = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
-            send_email_to_assigned_user.delay(
-                recipients,
-                account_object.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    account_object.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {"error": False, "message": "Account Created Successfully"},
@@ -354,8 +365,7 @@ class AccountDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -405,10 +415,12 @@ class AccountDetailView(APIView):
                 account_object.assigned_to.all().values_list("id", flat=True)
             )
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-            send_email_to_assigned_user.delay(
-                recipients,
-                account_object.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    account_object.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {"error": False, "message": "Account Updated Successfully"},
@@ -717,8 +729,7 @@ class AccountDetailView(APIView):
                         tags = json.loads(tags)
                     # Extract IDs if tags contains objects with 'id' field
                     tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags
+                        tag.get("id") if isinstance(tag, dict) else tag for tag in tags
                     ]
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
@@ -934,7 +945,9 @@ class AccountCreateMailView(APIView):
                         data["recipients"] = "Please enter valid recipient"
                         return Response({"error": True, "errors": data})
             if data.get("scheduled_later") != "true":
-                send_email.delay(email_obj.id, str(request.profile.org.id))
+                transaction.on_commit(
+                    lambda: send_email.delay(email_obj.id, str(request.profile.org.id))
+                )
             else:
                 email_obj.scheduled_later = True
                 email_obj.scheduled_date_time = scheduled_date_time

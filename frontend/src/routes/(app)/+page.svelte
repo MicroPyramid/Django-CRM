@@ -39,7 +39,6 @@
       ? `${orgCurrency} only (${otherCurrencyCount} in other currencies)`
       : `${orgCurrency} only`
   );
-
 </script>
 
 <svelte:head>

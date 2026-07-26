@@ -3,14 +3,7 @@
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { toast } from 'svelte-sonner';
-  import {
-    Eye,
-    EyeOff,
-    Trash2,
-    Loader2,
-    CheckCircle2,
-    Briefcase
-  } from '@lucide/svelte';
+  import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, Briefcase } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
@@ -126,11 +119,15 @@
   breadcrumb={[{ label: 'Knowledge Base', href: '/solutions' }, { label: sol.title }]}
 >
   {#snippet meta()}
-    <span class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}>
+    <span
+      class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}
+    >
       {sol.status}
     </span>
     {#if sol.is_published}
-      <span class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-900 dark:bg-green-900/30 dark:text-green-200">
+      <span
+        class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-900 uppercase dark:bg-green-900/30 dark:text-green-200"
+      >
         <CheckCircle2 class="h-3 w-3" />
         Live
       </span>
@@ -195,7 +192,7 @@
           name="description"
           rows="14"
           bind:value={description}
-          class="resize-y rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-sm font-mono"
+          class="resize-y rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 font-mono text-sm"
         ></textarea>
       </label>
 
@@ -238,8 +235,10 @@
     </form>
 
     <aside class="flex flex-col gap-4">
-      <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
-        <h3 class="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+      <section
+        class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm"
+      >
+        <h3 class="mb-2 text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
           Metadata
         </h3>
         <dl class="space-y-1 text-xs">
@@ -258,13 +257,19 @@
         </dl>
       </section>
 
-      <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
-        <h3 class="mb-2 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+      <section
+        class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm"
+      >
+        <h3
+          class="mb-2 flex items-center gap-1 text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase"
+        >
           <Briefcase class="h-3 w-3" />
           Linked tickets
         </h3>
         {#if !sol.linked_cases || sol.linked_cases.length === 0}
-          <p class="text-xs text-[var(--text-secondary)]">No tickets reference this solution yet.</p>
+          <p class="text-xs text-[var(--text-secondary)]">
+            No tickets reference this solution yet.
+          </p>
         {:else}
           <ul class="space-y-1">
             {#each sol.linked_cases as c (c.id)}

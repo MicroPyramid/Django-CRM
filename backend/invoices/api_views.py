@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -150,7 +150,9 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         # Sorting
         sort = params.get("sort", "-created_at")
@@ -205,22 +207,26 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             invoice = serializer.save(custom_fields=cleaned_cf)
 
             # Create history entry
-            create_invoice_history.delay(
-                str(invoice.id),
-                str(request.profile.id),
-                [],
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: create_invoice_history.delay(
+                    str(invoice.id),
+                    str(request.profile.id),
+                    [],
+                    str(request.profile.org.id),
+                )
             )
 
             # Send notification email to assigned users
             assigned_to_ids = list(invoice.assigned_to.values_list("id", flat=True))
             if assigned_to_ids:
-                send_email.delay(
-                    str(invoice.id),
-                    [str(uid) for uid in assigned_to_ids],
-                    str(request.profile.org.id),
-                    domain=getattr(settings, "DOMAIN_NAME", "localhost"),
-                    protocol=request.scheme,
+                transaction.on_commit(
+                    lambda: send_email.delay(
+                        str(invoice.id),
+                        [str(uid) for uid in assigned_to_ids],
+                        str(request.profile.org.id),
+                        domain=getattr(settings, "DOMAIN_NAME", "localhost"),
+                        protocol=request.scheme,
+                    )
                 )
 
             return Response(
@@ -354,11 +360,13 @@ class InvoiceDetailView(APIView):
             invoice = serializer.save(**save_kwargs)
 
             # Create history entry
-            create_invoice_history.delay(
-                str(invoice.id),
-                str(request.profile.id),
-                [],
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: create_invoice_history.delay(
+                    str(invoice.id),
+                    str(request.profile.id),
+                    [],
+                    str(request.profile.org.id),
+                )
             )
 
             return Response(
@@ -397,11 +405,13 @@ class InvoiceSendView(APIView):
         invoice.save()
 
         # Send invoice email to client
-        send_invoice_to_client.delay(
-            str(invoice.id),
-            str(request.profile.org.id),
-            domain=getattr(settings, "DOMAIN_NAME", "localhost"),
-            protocol=request.scheme,
+        transaction.on_commit(
+            lambda: send_invoice_to_client.delay(
+                str(invoice.id),
+                str(request.profile.org.id),
+                domain=getattr(settings, "DOMAIN_NAME", "localhost"),
+                protocol=request.scheme,
+            )
         )
 
         return Response({"error": False, "message": "Invoice sent successfully"})
@@ -1017,7 +1027,9 @@ class EstimateListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         results = self.paginate_queryset(
             queryset.order_by("-created_at"), request, view=self
@@ -1272,7 +1284,11 @@ class EstimateSendView(APIView):
         # Trigger async email task
         from invoices.tasks import send_estimate_to_client
 
-        send_estimate_to_client.delay(str(estimate.id), str(request.profile.org.id))
+        transaction.on_commit(
+            lambda: send_estimate_to_client.delay(
+                str(estimate.id), str(request.profile.org.id)
+            )
+        )
 
         return Response({"error": False, "message": "Estimate sent successfully"})
 
@@ -1353,7 +1369,9 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         results = self.paginate_queryset(queryset, request, view=self)
         return Response(
@@ -2247,11 +2265,13 @@ class InvoiceFromOpportunityView(APIView):
             invoice.save()
 
             # Create invoice history entry
-            create_invoice_history.delay(
-                str(invoice.id),
-                str(request.profile.id),
-                "created",
-                f"Invoice created from opportunity: {opportunity.name}",
+            transaction.on_commit(
+                lambda: create_invoice_history.delay(
+                    str(invoice.id),
+                    str(request.profile.id),
+                    "created",
+                    f"Invoice created from opportunity: {opportunity.name}",
+                )
             )
 
         # Return the created invoice

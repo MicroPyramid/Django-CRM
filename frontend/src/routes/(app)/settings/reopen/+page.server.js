@@ -9,11 +9,7 @@ export async function load({ cookies, locals }) {
   }
 
   try {
-    const policy = await apiRequest(
-      '/cases/reopen-policy/',
-      {},
-      { cookies, org: locals?.org }
-    );
+    const policy = await apiRequest('/cases/reopen-policy/', {}, { cookies, org: locals?.org });
     return { policy };
   } catch (err) {
     console.error('Failed to load reopen policy:', err);

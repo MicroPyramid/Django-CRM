@@ -8,13 +8,11 @@ import uuid
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from common.models import Activity
 from contacts.models import Contact
 from leads.models import Lead
-from opportunity.models import Opportunity
 
 
 @pytest.mark.django_db
@@ -34,9 +32,9 @@ class TestDashboardView:
         assert "opportunities_count" in data
 
     def test_dashboard_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets PermissionDenied."""
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        """Unauthenticated user is rejected (401/403)."""
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code in (401, 403)
 
     def test_dashboard_counts(self, admin_client, org_a, admin_user):
         """Dashboard should return accurate counts."""

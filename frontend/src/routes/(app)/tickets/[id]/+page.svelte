@@ -4,14 +4,7 @@
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
-  import {
-    ChevronLeft,
-    Clock,
-    MessageSquare,
-    History,
-    GitMerge,
-    Unlink
-  } from '@lucide/svelte';
+  import { ChevronLeft, Clock, MessageSquare, History, GitMerge, Unlink } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { invalidateAll } from '$app/navigation';
@@ -46,8 +39,7 @@
 
   let mergeOpen = $state(false);
   let cascadeOpen = $state(false);
-  const shortId = (/** @type {string} */ id) =>
-    (id || '').replace(/-/g, '').slice(0, 8);
+  const shortId = (/** @type {string} */ id) => (id || '').replace(/-/g, '').slice(0, 8);
 
   // When a server-side merge redirects us here with `?from=<duplicate-id>`,
   // surface a one-time toast so the agent knows where they landed.
@@ -116,11 +108,7 @@
               Unmerge
             </Button>
           </form>
-          <Button
-            size="sm"
-            onclick={() => goto(`/tickets/${c.mergedInto}`)}
-            class="gap-1"
-          >
+          <Button size="sm" onclick={() => goto(`/tickets/${c.mergedInto}`)} class="gap-1">
             Open primary
           </Button>
         </div>
@@ -167,7 +155,9 @@
     <section
       class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-900/40 dark:bg-blue-900/20"
     >
-      <h3 class="mb-2 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-blue-800 dark:text-blue-200">
+      <h3
+        class="mb-2 flex items-center gap-1 text-xs font-medium tracking-wide text-blue-800 uppercase dark:text-blue-200"
+      >
         <GitMerge class="h-3 w-3" />
         Merged from
       </h3>
@@ -205,9 +195,11 @@
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
     <div class="space-y-6">
       {#if c.description}
-        <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
+        <section
+          class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
+        >
           <h3 class="mb-2 text-sm font-medium text-[var(--text-secondary)]">Description</h3>
-          <p class="whitespace-pre-wrap text-sm text-[var(--text-primary)]">{c.description}</p>
+          <p class="text-sm whitespace-pre-wrap text-[var(--text-primary)]">{c.description}</p>
         </section>
       {/if}
 
@@ -258,9 +250,9 @@
         <Tabs.Content value="discussion" class="">
           <TicketDiscussion
             ticketId={c.id}
-            replies={replies}
-            internalNotes={internalNotes}
-            inboundEmails={inboundEmails}
+            {replies}
+            {internalNotes}
+            {inboundEmails}
             mentionCandidates={data.mentionCandidates || []}
           />
         </Tabs.Content>

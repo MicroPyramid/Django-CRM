@@ -1415,7 +1415,7 @@
             {#snippet title()}
               <div class="flex min-w-0 flex-col gap-0.5">
                 <h3
-                  class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]"
+                  class="truncate text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
                 >
                   Tasks for {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
                     weekday: 'long',

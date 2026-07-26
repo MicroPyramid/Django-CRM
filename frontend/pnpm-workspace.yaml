@@ -1,7 +1,18 @@
 allowBuilds:
   '@sentry/cli': true
+# Refuse packages published within the last 7 days (value is in minutes).
+# Defends against compromised-then-yanked npm releases.
+minimumReleaseAge: 10080
+# Exempt packages whose newest release is a security fix we must not delay.
+# brace-expansion 5.0.8 patches GHSA-mh99-v99m-4gvg (high, DoS/OOM); without
+# this the cooldown pins us to vulnerable 5.0.7.
 minimumReleaseAgeExclude:
-  - '@sveltejs/kit@2.61.1'
+  - 'brace-expansion'
 onlyBuiltDependencies:
   - esbuild
   - '@sentry/cli'
+overrides:
+  svelte-eslint-parser>eslint-scope: ^9.1.0
+  # Force the patched brace-expansion everywhere (GHSA-mh99-v99m-4gvg, high).
+  # Transitive parents (minimatch, glob) still allow the vulnerable <=5.0.7.
+  brace-expansion: ^5.0.8

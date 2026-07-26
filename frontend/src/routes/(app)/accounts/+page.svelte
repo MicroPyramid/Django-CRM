@@ -35,12 +35,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
-  import {
-    SearchInput,
-    SelectFilter,
-    DateRangeFilter,
-    TagFilter
-  } from '$lib/components/ui/filter';
+  import { SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { formatRelativeDate, formatCurrency, getInitials } from '$lib/utils/formatting.js';
   import { COUNTRIES } from '$lib/constants/countries.js';
@@ -304,10 +299,7 @@
   const initialAction = initialUrlParams.get('action');
   const initialAccount = initialViewId
     ? untrack(
-        () =>
-          (data.accounts || []).find(
-            (/** @type {any} */ a) => a.id === initialViewId
-          ) || null
+        () => (data.accounts || []).find((/** @type {any} */ a) => a.id === initialViewId) || null
       )
     : null;
 
@@ -754,246 +746,245 @@
 </svelte:head>
 
 <div class="flex flex-col">
-<PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
-  {#snippet actions()}
-    <div class="flex items-center gap-2">
-      <!-- Status Filter Chips -->
-      <div class="flex gap-1">
-        <button
-          type="button"
-          onclick={() => (statusChipFilter = 'ALL')}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'ALL'
-            ? 'bg-[var(--color-primary-default)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          All
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-[var(--color-primary-dark)] text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+  <PageHeader title="Accounts" subtitle="{filteredAccounts.length} of {accounts.length} accounts">
+    {#snippet actions()}
+      <div class="flex items-center gap-2">
+        <!-- Status Filter Chips -->
+        <div class="flex gap-1">
+          <button
+            type="button"
+            onclick={() => (statusChipFilter = 'ALL')}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'ALL'
+              ? 'bg-[var(--color-primary-default)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
           >
-            {accounts.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          onclick={() => (statusChipFilter = 'active')}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'active'
-            ? 'bg-[var(--color-success-default)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          Active
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
-              ? 'bg-[var(--color-success-dark)] text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {activeCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onclick={() => (statusChipFilter = 'closed')}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'closed'
-            ? 'bg-[var(--text-secondary)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          Closed
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
-              ? 'bg-[var(--text-tertiary)] text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {closedCount}
-          </span>
-        </button>
-      </div>
-
-      <!-- Column Visibility Dropdown -->
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          {#snippet child({ props })}
-            <Button {...props} variant="outline" size="sm" class="gap-2">
-              <Eye class="h-4 w-4" />
-              Columns
-              {#if visibleColumnCount < totalColumnCount}
-                <span
-                  class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-                >
-                  {visibleColumnCount}/{totalColumnCount}
-                </span>
-              {/if}
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end" class="w-48">
-          <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-          <DropdownMenu.Separator />
-          {#each columns as column (column.key)}
-            <DropdownMenu.CheckboxItem
-              class=""
-              checked={visibleColumns.includes(column.key)}
-              onCheckedChange={() => toggleColumn(column.key)}
-              disabled={column.canHide === false}
+            All
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+                ? 'bg-[var(--color-primary-dark)] text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
             >
-              {column.label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-      <Button onclick={openCreate} disabled={false}>
-        <Plus class="mr-2 h-4 w-4" />
-        New Account
-      </Button>
-    </div>
-  {/snippet}
-  {#snippet tabs()}
-    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
-  {/snippet}
-</PageHeader>
+              {accounts.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onclick={() => (statusChipFilter = 'active')}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'active'
+              ? 'bg-[var(--color-success-default)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
+          >
+            Active
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'active'
+                ? 'bg-[var(--color-success-dark)] text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+            >
+              {activeCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            onclick={() => (statusChipFilter = 'closed')}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'closed'
+              ? 'bg-[var(--text-secondary)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
+          >
+            Closed
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'closed'
+                ? 'bg-[var(--text-tertiary)] text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+            >
+              {closedCount}
+            </span>
+          </button>
+        </div>
 
-<div class="flex-1">
-  <FilterStrip>
-    <SearchInput
-      value={filters.search}
-      onchange={(value) => updateFilters({ ...filters, search: value })}
-      placeholder="Search accounts..."
-    />
-    <SelectFilter
-      label="Industry"
-      options={industryFilterOptions}
-      value={filters.industry}
-      onchange={(value) => updateFilters({ ...filters, industry: value })}
-    />
-    <DateRangeFilter
-      label="Created"
-      startDate={filters.created_at_gte}
-      endDate={filters.created_at_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-    />
-    <TagFilter
-      tags={tagOptions}
-      value={filters.tags}
-      onchange={(ids) => updateFilters({ ...filters, tags: ids })}
-    />
-    {#if activeFiltersCount > 0}
-      <FilterPill label="Clear all" dashed onclick={clearFilters} />
-    {/if}
-    {#snippet meta()}
-      <span>{filteredAccounts.length} of {pagination.total} accounts</span>
+        <!-- Column Visibility Dropdown -->
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            {#snippet child({ props })}
+              <Button {...props} variant="outline" size="sm" class="gap-2">
+                <Eye class="h-4 w-4" />
+                Columns
+                {#if visibleColumnCount < totalColumnCount}
+                  <span
+                    class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
+                  >
+                    {visibleColumnCount}/{totalColumnCount}
+                  </span>
+                {/if}
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" class="w-48">
+            <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+            <DropdownMenu.Separator />
+            {#each columns as column (column.key)}
+              <DropdownMenu.CheckboxItem
+                class=""
+                checked={visibleColumns.includes(column.key)}
+                onCheckedChange={() => toggleColumn(column.key)}
+                disabled={column.canHide === false}
+              >
+                {column.label}
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        <Button onclick={openCreate} disabled={false}>
+          <Plus class="mr-2 h-4 w-4" />
+          New Account
+        </Button>
+      </div>
     {/snippet}
-  </FilterStrip>
-  <!-- Accounts Table -->
-  {#if filteredAccounts.length === 0}
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div
-        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-      >
-        <Building2 class="size-8 text-[var(--text-tertiary)]" />
-      </div>
-      <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
-      <p class="mt-1 text-sm text-[var(--text-secondary)]">
-        Try adjusting your filters or create a new account
-      </p>
-    </div>
-  {:else}
-    <!-- Desktop Table using CrmTable -->
-    <div class="hidden md:block">
-      <CrmTable
-        data={filteredAccounts}
-        {columns}
-        bind:visibleColumns
-        bind:activeRowId
-        onRowClick={(row) => openAccount(row)}
-      >
-        {#snippet emptyState()}
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <div
-              class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-            >
-              <Building2 class="size-8 text-[var(--text-tertiary)]" />
-            </div>
-            <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
-          </div>
-        {/snippet}
-      </CrmTable>
-    </div>
+    {#snippet tabs()}
+      <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+    {/snippet}
+  </PageHeader>
 
-    <!-- Mobile Card View -->
-    <div class="divide-y divide-[var(--border-default)] md:hidden">
-      {#each filteredAccounts as account (account.id)}
-        <button
-          type="button"
-          class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-[var(--surface-sunken)] {!account.isActive
-            ? 'opacity-60'
-            : ''}"
-          onclick={() => openAccount(account)}
+  <div class="flex-1">
+    <FilterStrip>
+      <SearchInput
+        value={filters.search}
+        onchange={(value) => updateFilters({ ...filters, search: value })}
+        placeholder="Search accounts..."
+      />
+      <SelectFilter
+        label="Industry"
+        options={industryFilterOptions}
+        value={filters.industry}
+        onchange={(value) => updateFilters({ ...filters, industry: value })}
+      />
+      <DateRangeFilter
+        label="Created"
+        startDate={filters.created_at_gte}
+        endDate={filters.created_at_lte}
+        onchange={(start, end) =>
+          updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+      />
+      <TagFilter
+        tags={tagOptions}
+        value={filters.tags}
+        onchange={(ids) => updateFilters({ ...filters, tags: ids })}
+      />
+      {#if activeFiltersCount > 0}
+        <FilterPill label="Clear all" dashed onclick={clearFilters} />
+      {/if}
+      {#snippet meta()}
+        <span>{filteredAccounts.length} of {pagination.total} accounts</span>
+      {/snippet}
+    </FilterStrip>
+    <!-- Accounts Table -->
+    {#if filteredAccounts.length === 0}
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
         >
-          <div
-            class="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-primary-default)] text-sm font-medium text-white"
+          <Building2 class="size-8 text-[var(--text-tertiary)]" />
+        </div>
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">
+          Try adjusting your filters or create a new account
+        </p>
+      </div>
+    {:else}
+      <!-- Desktop Table using CrmTable -->
+      <div class="hidden md:block">
+        <CrmTable
+          data={filteredAccounts}
+          {columns}
+          bind:visibleColumns
+          bind:activeRowId
+          onRowClick={(row) => openAccount(row)}
+        >
+          {#snippet emptyState()}
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+              <div
+                class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+              >
+                <Building2 class="size-8 text-[var(--text-tertiary)]" />
+              </div>
+              <h3 class="text-lg font-medium text-[var(--text-primary)]">No accounts found</h3>
+            </div>
+          {/snippet}
+        </CrmTable>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="divide-y divide-[var(--border-default)] md:hidden">
+        {#each filteredAccounts as account (account.id)}
+          <button
+            type="button"
+            class="flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-[var(--surface-sunken)] {!account.isActive
+              ? 'opacity-60'
+              : ''}"
+            onclick={() => openAccount(account)}
           >
-            {getAccountInitials(account)}
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <p class="font-medium text-[var(--text-primary)]">{account.name}</p>
-                <div class="mt-1 flex items-center gap-1.5">
-                  {#if account.isActive !== false}
-                    <span
-                      class="inline-flex items-center rounded-full bg-[var(--color-success-light)] px-2.5 py-1 text-xs font-medium text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15"
-                    >
-                      Active
-                    </span>
-                  {:else}
-                    <span
-                      class="inline-flex items-center rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]"
-                    >
-                      Closed
-                    </span>
-                  {/if}
+            <div
+              class="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-primary-default)] text-sm font-medium text-white"
+            >
+              {getAccountInitials(account)}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="font-medium text-[var(--text-primary)]">{account.name}</p>
+                  <div class="mt-1 flex items-center gap-1.5">
+                    {#if account.isActive !== false}
+                      <span
+                        class="inline-flex items-center rounded-full bg-[var(--color-success-light)] px-2.5 py-1 text-xs font-medium text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15"
+                      >
+                        Active
+                      </span>
+                    {:else}
+                      <span
+                        class="inline-flex items-center rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]"
+                      >
+                        Closed
+                      </span>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+              <div
+                class="mt-2 flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]"
+              >
+                {#if account.industry}
+                  <span>{account.industry}</span>
+                {/if}
+                <div class="flex items-center gap-1">
+                  <Users class="size-3.5 text-[var(--text-tertiary)]" />
+                  <span>{account.contactCount || 0}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Target class="size-3.5 text-[var(--text-tertiary)]" />
+                  <span>{account.opportunityCount || 0}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Calendar class="size-3.5 text-[var(--text-tertiary)]" />
+                  <span>{formatRelativeDate(account.createdAt)}</span>
                 </div>
               </div>
             </div>
-            <div
-              class="mt-2 flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]"
-            >
-              {#if account.industry}
-                <span>{account.industry}</span>
-              {/if}
-              <div class="flex items-center gap-1">
-                <Users class="size-3.5 text-[var(--text-tertiary)]" />
-                <span>{account.contactCount || 0}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Target class="size-3.5 text-[var(--text-tertiary)]" />
-                <span>{account.opportunityCount || 0}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Calendar class="size-3.5 text-[var(--text-tertiary)]" />
-                <span>{formatRelativeDate(account.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-        </button>
-      {/each}
-    </div>
-  {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
 
-  <!-- Pagination -->
-  <Pagination
-    page={pagination.page}
-    limit={pagination.limit}
-    total={pagination.total}
-    onPageChange={handlePageChange}
-    onLimitChange={handleLimitChange}
-  />
-</div>
-
+    <!-- Pagination -->
+    <Pagination
+      page={pagination.page}
+      limit={pagination.limit}
+      total={pagination.total}
+      onPageChange={handlePageChange}
+      onLimitChange={handleLimitChange}
+    />
+  </div>
 </div>
 
 <!-- Account Drawer -->
@@ -1007,7 +998,9 @@
   headerLabel="Account"
   mode={drawerMode}
   loading={drawerLoading || isSubmitting}
-  fullPageHref={drawerMode !== 'create' && /** @type {any} */ (drawerFormData)?.id ? `/accounts/${/** @type {any} */ (drawerFormData).id}` : ''}
+  fullPageHref={drawerMode !== 'create' && /** @type {any} */ (drawerFormData)?.id
+    ? `/accounts/${/** @type {any} */ (drawerFormData).id}`
+    : ''}
   onFieldChange={handleDrawerFieldChange}
   onDelete={handleDelete}
   onClose={closeDrawer}

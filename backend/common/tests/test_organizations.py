@@ -7,9 +7,8 @@ Run with: pytest common/tests/test_organizations.py -v
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
-from common.models import Org, Profile
+from common.models import Profile
 
 
 @pytest.mark.django_db
@@ -63,9 +62,13 @@ class TestOrgProfileCreateView:
         assert org_a.name in org_names
 
     def test_list_orgs_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets 401."""
+        """Unauthenticated user is rejected (401 from DRF auth, or 403 from the
+        org-context middleware)."""
         response = unauthenticated_client.get(self.url)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
 
 
 @pytest.mark.django_db

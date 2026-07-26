@@ -10,11 +10,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-dev-key-please-change-in-production"
+)
 
 if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
     if os.environ.get("ENV_TYPE", "dev") != "dev":
-        raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
+        raise ValueError(
+            "SECRET_KEY must be set to a secure value in non-dev environments"
+        )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
@@ -98,8 +102,76 @@ DATABASES = {
         "PASSWORD": os.environ.get("DBPASSWORD", "postgres"),
         "HOST": os.environ.get("DBHOST", "localhost"),
         "PORT": os.environ.get("DBPORT", "5432"),
+        # Verify a pooled connection is alive before handing it to a request,
+        # so a Postgres restart or dropped connection retries transparently
+        # instead of surfacing as a request error.
+        "CONN_HEALTH_CHECKS": True,
     }
 }
+
+
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _reset_rls_context(conn):
+    """Clear the tenant RLS context before a connection re-enters the pool.
+
+    `RequireOrgContext` sets `app.current_org` transaction-locally, so it
+    reverts on its own. But several call sites legitimately run OUTSIDE that
+    request transaction and still set the GUC with SESSION scope
+    (is_local=False): every Celery task via `common.tasks.set_rls_context`, the
+    anonymous CSAT view, and the SES inbound webhook. psycopg_pool does not
+    reset session state on putconn — it only rolls back an open transaction —
+    so without this hook a pooled backend carries one tenant's org id to
+    whichever request or task borrows it next.
+
+    Setting the GUC to '' is equivalent to never setting it: the policies use
+    `NULLIF(current_setting(...), '')`, so both fail closed to zero rows.
+
+    Must leave the connection IDLE — psycopg_pool discards any connection its
+    reset function leaves inside a transaction.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT set_config('app.current_org', '', false)")
+    if not conn.autocommit:
+        conn.commit()
+
+
+# Bounded connection pool (psycopg3). Without it Django opens one Postgres
+# connection per request with no ceiling, so a traffic spike — or a leaked
+# long-lived connection (e.g. an SSE stream) — can exhaust a shared cluster.
+#
+# The pool is PER PROCESS, so the real server-side total is roughly
+# (max_size x web worker processes) + (max_size x celery worker processes).
+# Keep max_size small and size the sum against the DB role's CONNECTION LIMIT.
+# `timeout` is the backpressure valve: once max_size connections are checked
+# out, further checkouts wait up to this many seconds and then raise, instead
+# of opening an unbounded number of connections.
+#
+# Disable (DB_POOL_ENABLED=false) when fronting Postgres with an external
+# pooler such as PgBouncer that owns pooling instead. Note: CONN_MAX_AGE must
+# stay 0 (the default) — Django forbids persistent connections with pooling.
+#
+# WARNING: if you disable this in favour of PgBouncer, `reset` below stops
+# running, and PgBouncer does NOT clear `app.current_org` between clients in
+# transaction-pooling mode. Configure `server_reset_query` accordingly, or the
+# session-scoped call sites named in _reset_rls_context() will leak across
+# tenants.
+if os.environ.get("DB_POOL_ENABLED", "true").lower() not in ("false", "0", "no"):
+    DATABASES["default"]["OPTIONS"] = {
+        "pool": {
+            "min_size": _env_int("DB_POOL_MIN_SIZE", 2),
+            "max_size": _env_int("DB_POOL_MAX_SIZE", 10),
+            "timeout": _env_int("DB_POOL_TIMEOUT", 10),
+            # Security: never hand a connection to the next borrower carrying
+            # the previous tenant's RLS context. See _reset_rls_context().
+            "reset": _reset_rls_context,
+        }
+    }
 
 
 # Password validation
@@ -162,7 +234,9 @@ if "django_ses" in EMAIL_BACKEND:
 
 # celery Tasks
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+)
 
 
 LOGGING = {

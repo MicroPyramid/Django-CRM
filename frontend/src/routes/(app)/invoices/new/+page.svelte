@@ -226,7 +226,6 @@
     await tick();
     createForm.requestSubmit();
   }
-
 </script>
 
 <svelte:head>

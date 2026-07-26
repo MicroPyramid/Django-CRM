@@ -67,9 +67,7 @@
     formKey = defn.key;
     formLabel = defn.label;
     formFieldType = defn.field_type;
-    formOptionsText = Array.isArray(defn.options)
-      ? JSON.stringify(defn.options, null, 2)
-      : '';
+    formOptionsText = Array.isArray(defn.options) ? JSON.stringify(defn.options, null, 2) : '';
     formIsRequired = !!defn.is_required;
     formIsFilterable = !!defn.is_filterable;
     formDisplayOrder = defn.display_order ?? 0;
@@ -95,8 +93,7 @@
       closeDialog();
       invalidateAll();
     } else if (form?.error) {
-      const message =
-        typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
+      const message = typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
       toast.error(message);
     }
   });
@@ -152,16 +149,14 @@
       </div>
     </section>
 
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]"
-    >
+    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]">
       <header class="border-b border-[var(--border-default)] p-4">
         <h2 class="text-base font-medium text-[var(--text-primary)]">
           {target} fields
         </h2>
         <p class="text-sm text-[var(--text-secondary)]">
-          Active fields render on the {target.toLowerCase()} detail form. Inactive
-          fields stay archived but their values remain readable on existing records.
+          Active fields render on the {target.toLowerCase()} detail form. Inactive fields stay archived
+          but their values remain readable on existing records.
         </p>
       </header>
 
@@ -185,12 +180,16 @@
                     {describeType(defn.field_type)}
                   </span>
                   {#if defn.is_required}
-                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    <span
+                      class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                    >
                       Required
                     </span>
                   {/if}
                   {#if !defn.is_active}
-                    <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                    <span
+                      class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                    >
                       Inactive
                     </span>
                   {/if}
@@ -219,17 +218,20 @@
                     </Button>
                   </form>
                 {:else}
-                  <form
-                    method="POST"
-                    action="?/update"
-                    use:enhance
-                    class="inline"
-                  >
+                  <form method="POST" action="?/update" use:enhance class="inline">
                     <input type="hidden" name="id" value={defn.id} />
                     <input type="hidden" name="label" value={defn.label} />
                     <input type="hidden" name="display_order" value={defn.display_order ?? 0} />
-                    <input type="hidden" name="is_required" value={defn.is_required ? 'true' : 'false'} />
-                    <input type="hidden" name="is_filterable" value={defn.is_filterable ? 'true' : 'false'} />
+                    <input
+                      type="hidden"
+                      name="is_required"
+                      value={defn.is_required ? 'true' : 'false'}
+                    />
+                    <input
+                      type="hidden"
+                      name="is_filterable"
+                      value={defn.is_filterable ? 'true' : 'false'}
+                    />
                     <input type="hidden" name="is_active" value="true" />
                     <input
                       type="hidden"
@@ -300,8 +302,7 @@
           placeholder="severity"
         />
         <p class="text-xs text-[var(--text-secondary)]">
-          Lowercase slug (a-z, 0-9, _). Stored as the JSON key on the entity.
-          Immutable once saved.
+          Lowercase slug (a-z, 0-9, _). Stored as the JSON key on the entity. Immutable once saved.
         </p>
       </div>
 
@@ -345,21 +346,13 @@
           <input type="checkbox" bind:checked={formIsRequired} />
           Required
         </label>
-        <input
-          type="hidden"
-          name="is_required"
-          value={formIsRequired ? 'true' : 'false'}
-        />
+        <input type="hidden" name="is_required" value={formIsRequired ? 'true' : 'false'} />
 
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" bind:checked={formIsFilterable} />
           Filterable
         </label>
-        <input
-          type="hidden"
-          name="is_filterable"
-          value={formIsFilterable ? 'true' : 'false'}
-        />
+        <input type="hidden" name="is_filterable" value={formIsFilterable ? 'true' : 'false'} />
 
         <div class="space-y-1.5">
           <Label for="display_order" class="text-xs">Display order</Label>
@@ -376,11 +369,7 @@
           <input type="checkbox" bind:checked={formIsActive} />
           Active
         </label>
-        <input
-          type="hidden"
-          name="is_active"
-          value={formIsActive ? 'true' : 'false'}
-        />
+        <input type="hidden" name="is_active" value={formIsActive ? 'true' : 'false'} />
       </div>
 
       <Dialog.Footer>

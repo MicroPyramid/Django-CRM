@@ -16,12 +16,8 @@
 
   const sla = $derived(ticketItem.sla || {});
   const isPending = $derived(ticketItem.status === 'Pending');
-  const showFirstResponse = $derived(
-    !!sla.firstResponseDeadline && !sla.firstResponseAt
-  );
-  const showResolution = $derived(
-    !!sla.resolutionDeadline && !sla.resolvedAt
-  );
+  const showFirstResponse = $derived(!!sla.firstResponseDeadline && !sla.firstResponseAt);
+  const showResolution = $derived(!!sla.resolutionDeadline && !sla.resolvedAt);
   const tooltip =
     'Counted in business hours. Excludes weekends, holidays, and time spent waiting on customer.';
 </script>
@@ -58,10 +54,7 @@
       <h3 class="mb-2 flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)]">
         <Clock class="h-3.5 w-3.5" />
         SLA
-        <span
-          class="text-[10px] font-normal italic text-[var(--text-secondary)]"
-          title={tooltip}
-        >
+        <span class="text-[10px] font-normal text-[var(--text-secondary)] italic" title={tooltip}>
           (business hours)
         </span>
       </h3>
@@ -80,7 +73,7 @@
               {:else if isPending}
                 <PauseCircle class="h-3.5 w-3.5 text-[var(--text-secondary)]" />
               {/if}
-              <span class={isPending ? 'italic text-[var(--text-secondary)]' : ''}>
+              <span class={isPending ? 'text-[var(--text-secondary)] italic' : ''}>
                 {fmtFull(sla.firstResponseDeadline)}
               </span>
             </dd>
@@ -100,14 +93,14 @@
               {:else if isPending}
                 <PauseCircle class="h-3.5 w-3.5 text-[var(--text-secondary)]" />
               {/if}
-              <span class={isPending ? 'italic text-[var(--text-secondary)]' : ''}>
+              <span class={isPending ? 'text-[var(--text-secondary)] italic' : ''}>
                 {fmtFull(sla.resolutionDeadline)}
               </span>
             </dd>
           </div>
         {/if}
         {#if isPending}
-          <p class="pt-1 text-xs italic text-[var(--text-secondary)]">
+          <p class="pt-1 text-xs text-[var(--text-secondary)] italic">
             Paused — counter resumes when status leaves Pending.
           </p>
         {/if}
@@ -116,7 +109,9 @@
   {/if}
 
   {#if ticketItem.tags?.length}
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
+    <section
+      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
+    >
       <h3 class="mb-2 text-sm font-medium text-[var(--text-secondary)]">Tags</h3>
       <div class="flex flex-wrap gap-1">
         {#each ticketItem.tags as tag}

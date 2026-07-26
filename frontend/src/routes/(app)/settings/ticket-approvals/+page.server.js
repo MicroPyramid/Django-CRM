@@ -14,11 +14,7 @@ export async function load({ cookies, locals }) {
 
   try {
     const [rulesRes, usersRes, teamsRes] = await Promise.all([
-      apiRequest(
-        '/cases/approval-rules/',
-        {},
-        { cookies, org: locals?.org }
-      ),
+      apiRequest('/cases/approval-rules/', {}, { cookies, org: locals?.org }),
       apiRequest('/users/', {}, { cookies, org: locals?.org }).catch(() => ({})),
       apiRequest('/teams/', {}, { cookies, org: locals?.org }).catch(() => ({}))
     ]);

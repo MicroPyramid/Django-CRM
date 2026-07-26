@@ -56,8 +56,7 @@
       dialogOpen = false;
       invalidateAll();
     } else if (form?.error) {
-      const message =
-        typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
+      const message = typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
       toast.error(message);
     }
   });
@@ -80,32 +79,27 @@
       <div class="flex gap-2">
         <AlertTriangle class="h-4 w-4 flex-shrink-0" />
         <div>
-          The escalation scanner runs every 5 minutes via Celery beat. A ticket is
-          escalated at most once every 60 minutes and at most 3 times total.
-          Tickets without a configured policy for their priority are skipped.
+          The escalation scanner runs every 5 minutes via Celery beat. A ticket is escalated at most
+          once every 60 minutes and at most 3 times total. Tickets without a configured policy for
+          their priority are skipped.
         </div>
       </div>
     </section>
 
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]"
-    >
+    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]">
       <header class="flex items-center justify-between border-b border-[var(--border-default)] p-4">
         <div>
-          <h2 class="text-base font-medium text-[var(--text-primary)]">
-            Policies by priority
-          </h2>
+          <h2 class="text-base font-medium text-[var(--text-primary)]">Policies by priority</h2>
           <p class="text-sm text-[var(--text-secondary)]">
-            One policy per priority. Each policy chooses what happens on a
-            first-response breach and a resolution breach independently.
+            One policy per priority. Each policy chooses what happens on a first-response breach and
+            a resolution breach independently.
           </p>
         </div>
       </header>
 
       {#if policies.length === 0 && missingPriorities.length === priorities.length}
         <div class="p-6 text-center text-sm text-[var(--text-secondary)]">
-          No policies configured yet. Add one for each priority you want to
-          escalate.
+          No policies configured yet. Add one for each priority you want to escalate.
         </div>
       {/if}
 
@@ -123,7 +117,9 @@
           <input type="hidden" name="id" value={policy.id} />
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary-default)]">
+              <span
+                class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
+              >
                 {policy.priority}
               </span>
               <input
@@ -228,7 +224,9 @@
     </section>
 
     {#if policies.length > 0}
-      <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
+      <section
+        class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
+      >
         <h3 class="mb-3 text-sm font-medium text-[var(--text-primary)]">Delete a policy</h3>
         <div class="flex flex-wrap gap-2">
           {#each policies as policy (policy.id)}
@@ -334,9 +332,7 @@
       </div>
 
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>
-          Cancel
-        </Button>
+        <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>Cancel</Button>
         <Button type="submit">Create</Button>
       </Dialog.Footer>
     </form>

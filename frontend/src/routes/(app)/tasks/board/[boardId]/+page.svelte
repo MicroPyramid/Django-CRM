@@ -194,8 +194,7 @@
                 name="description"
                 bind:value={newTaskDescription}
                 placeholder="Description (optional)"
-                rows="2"
-              ></textarea>
+                rows="2"></textarea>
               <select name="priority" bind:value={newTaskPriority}>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>

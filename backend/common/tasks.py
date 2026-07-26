@@ -4,14 +4,22 @@ from datetime import timedelta
 from botocore.exceptions import ClientError
 from celery import shared_task
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from common.models import Comment, MagicLinkToken, Notification, Profile, Teams, User
+from common.models import (
+    Comment,
+    MagicLinkToken,
+    Notification,
+    Org,
+    Profile,
+    Teams,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -380,18 +388,26 @@ NOTIFICATION_PURGE_DAYS = 90
 
 @shared_task
 def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
-    """Delete already-read notifications older than ``days`` days.
+    """Delete already-read notifications older than ``days`` days, per org.
 
-    Schedule via celery-beat (recommended cadence: nightly). Runs once across
-    all orgs — RLS does not need a per-org context here because the query
-    targets `read_at`, which is intrinsic to the row, not org-scoped logic.
+    Schedule via celery-beat (recommended cadence: nightly).
+
+    `notification` is an RLS-protected table and the isolation policy fails
+    CLOSED — with no `app.current_org` set, it matches zero rows. So this
+    cannot run "once across all orgs": it must set the context per org and
+    sweep them in turn, the same way `check_stale_opportunities` does. (An
+    unscoped single DELETE silently purged nothing on a fresh connection, and
+    — now that connections are pooled — would purge whichever org's context
+    the previous task happened to leave behind.)
     """
     cutoff = timezone.now() - timedelta(days=days)
-    deleted, _ = Notification.objects.filter(
-        read_at__isnull=False, read_at__lt=cutoff
-    ).delete()
-    if deleted:
-        logger.info(
-            "Purged %s read notifications older than %s days", deleted, days
-        )
-    return deleted
+    total = 0
+    for org_id in Org.objects.filter(is_active=True).values_list("id", flat=True):
+        set_rls_context(org_id)
+        deleted, _ = Notification.objects.filter(
+            org_id=org_id, read_at__isnull=False, read_at__lt=cutoff
+        ).delete()
+        total += deleted
+    if total:
+        logger.info("Purged %s read notifications older than %s days", total, days)
+    return total

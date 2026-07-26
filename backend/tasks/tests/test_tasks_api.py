@@ -3,7 +3,6 @@ import json
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from cases.models import Case
@@ -44,12 +43,12 @@ class TestTaskListView:
         assert Task.objects.filter(title="New Task", org=org_a).exists()
 
     def test_create_task_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/tasks/",
-                {"title": "Unauthorized Task", "status": "New", "priority": "Low"},
-                format="json",
-            )
+        response = unauthenticated_client.post(
+            "/api/tasks/",
+            {"title": "Unauthorized Task", "status": "New", "priority": "Low"},
+            format="json",
+        )
+        assert response.status_code in (401, 403)
 
     def test_org_isolation(self, admin_client, admin_user, org_a, org_b):
         """Tasks from another org should not appear in the task list."""
@@ -116,12 +115,14 @@ class TestTaskListView:
         assert task.tags.count() == 1
         assert str(task.due_date) == "2026-12-31"
 
-    def test_create_task_duplicate_title_returns_400(
+    def test_create_task_duplicate_title_allowed(
         self, admin_client, admin_user, org_a
     ):
-        """Creating two tasks with the same title in the same org should fail."""
+        """Task titles are not identity fields — duplicates within an org are
+        allowed (unlike Account names). Repeating a common title such as
+        "Follow up" is a legitimate workflow, so the create must succeed."""
         Task.objects.create(
-            title="Unique Title",
+            title="Follow up",
             status="New",
             priority="Low",
             org=org_a,
@@ -129,11 +130,11 @@ class TestTaskListView:
         )
         response = admin_client.post(
             "/api/tasks/",
-            {"title": "Unique Title", "status": "New", "priority": "Low"},
+            {"title": "Follow up", "status": "New", "priority": "Low"},
             format="json",
         )
-        assert response.status_code == 400
-        assert response.json()["error"] is True
+        assert response.status_code == 200
+        assert Task.objects.filter(title="Follow up", org=org_a).count() == 2
 
     def test_list_tasks_filter_by_status(self, admin_client, admin_user, org_a):
         """Filtering tasks by status query param."""

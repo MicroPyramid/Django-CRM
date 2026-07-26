@@ -57,7 +57,9 @@
       {:else}
         <ul class="max-h-48 overflow-y-auto">
           {#each filteredAvailable as sol (sol.id)}
-            <li class="flex items-center justify-between gap-2 rounded px-2 py-1 hover:bg-[var(--surface-sunken)]">
+            <li
+              class="flex items-center justify-between gap-2 rounded px-2 py-1 hover:bg-[var(--surface-sunken)]"
+            >
               <span class="truncate text-sm">{sol.title}</span>
               <form
                 method="POST"
@@ -92,7 +94,9 @@
   {:else}
     <ul class="space-y-2">
       {#each linked as sol (sol.id)}
-        <li class="flex items-start justify-between gap-2 rounded-md bg-[var(--surface-sunken)] p-2">
+        <li
+          class="flex items-start justify-between gap-2 rounded-md bg-[var(--surface-sunken)] p-2"
+        >
           <div class="min-w-0">
             <p class="truncate text-sm font-medium">{sol.title}</p>
             {#if sol.description}

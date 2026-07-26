@@ -37,12 +37,7 @@
   import { getCurrentUser } from '$lib/api.js';
   import { CrmTable } from '$lib/components/ui/crm-table';
   import { OpportunityKanban } from '$lib/components/ui/opportunity-kanban';
-  import {
-    SearchInput,
-    SelectFilter,
-    DateRangeFilter,
-    TagFilter
-  } from '$lib/components/ui/filter';
+  import { SearchInput, SelectFilter, DateRangeFilter, TagFilter } from '$lib/components/ui/filter';
   import { Pagination } from '$lib/components/ui/pagination';
   import { Input } from '$lib/components/ui/input/index.js';
   import * as Select from '$lib/components/ui/select/index.js';
@@ -1190,268 +1185,282 @@
 </svelte:head>
 
 <div class="flex flex-col">
-<PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
-  {#snippet actions()}
-    <div class="flex items-center gap-2">
-      <!-- Status Filter Chips -->
-      <div class="flex gap-1">
-        <button
-          type="button"
-          onclick={() => { statusChipFilter = 'ALL'; updateFilters({}); }}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'ALL'
-            ? 'bg-[var(--color-primary-default)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          All
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
-              ? 'bg-[var(--color-primary-dark)] text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {opportunities.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          onclick={() => { statusChipFilter = 'open'; updateFilters({}); }}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'open'
-            ? 'bg-[var(--stage-qualified)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          Open
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
-              ? 'bg-black/20 text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {openCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onclick={() => { statusChipFilter = 'won'; updateFilters({}); }}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'won'
-            ? 'bg-[var(--stage-won)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          Won
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'won'
-              ? 'bg-black/20 text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {wonCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          onclick={() => { statusChipFilter = 'lost'; updateFilters({}); }}
-          class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-          'lost'
-            ? 'bg-[var(--stage-lost)] text-white'
-            : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-        >
-          Lost
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
-              ? 'bg-black/20 text-white/90'
-              : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-          >
-            {lostCount}
-          </span>
-        </button>
-        {#if staleCount > 0}
+  <PageHeader title="Opportunities" subtitle="Pipeline: {formatCurrency(stats.pipeline)}">
+    {#snippet actions()}
+      <div class="flex items-center gap-2">
+        <!-- Status Filter Chips -->
+        <div class="flex gap-1">
           <button
             type="button"
-            onclick={() => { statusChipFilter = 'stale'; updateFilters({ rotten: 'true' }); }}
+            onclick={() => {
+              statusChipFilter = 'ALL';
+              updateFilters({});
+            }}
             class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-            'stale'
-              ? 'bg-red-600 text-white'
-              : 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'}"
+            'ALL'
+              ? 'bg-[var(--color-primary-default)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
           >
-            <Clock class="h-3.5 w-3.5" />
-            Stale
+            All
             <span
-              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'stale'
-                ? 'bg-black/20 text-white/90'
-                : 'bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300'}"
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'ALL'
+                ? 'bg-[var(--color-primary-dark)] text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
             >
-              {staleCount}
+              {opportunities.length}
             </span>
           </button>
-        {/if}
-      </div>
-
-      <div class="bg-border mx-1 h-6 w-px"></div>
-
-      <!-- View mode toggle (list vs kanban) -->
-      <div class="inline-flex rounded-md border border-[var(--border-default)] p-0.5">
-        <button
-          type="button"
-          onclick={() => updateViewMode('list')}
-          class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium transition-colors {viewMode ===
-          'list'
-            ? 'bg-[var(--color-primary-default)] text-white'
-            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]'}"
-          title="List view"
-        >
-          <ListIcon class="h-4 w-4" />
-          List
-        </button>
-        <button
-          type="button"
-          onclick={() => updateViewMode('kanban')}
-          class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium transition-colors {viewMode ===
-          'kanban'
-            ? 'bg-[var(--color-primary-default)] text-white'
-            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]'}"
-          title="Kanban view"
-        >
-          <LayoutGrid class="h-4 w-4" />
-          Kanban
-        </button>
-      </div>
-
-      <!-- Column Visibility Dropdown (list view only) -->
-      {#if viewMode === 'list'}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            {#snippet child({ props })}
-              <Button {...props} variant="outline" size="sm" class="gap-2">
-                <Eye class="h-4 w-4" />
-                Columns
-                {#if visibleColumns.length < columns.length}
-                  <span
-                    class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
-                  >
-                    {visibleColumns.length}/{columns.length}
-                  </span>
-                {/if}
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" class="w-48">
-            <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-            <DropdownMenu.Separator />
-            {#each columns as column (column.key)}
-              <DropdownMenu.CheckboxItem
-                class=""
-                checked={visibleColumns.includes(column.key)}
-                onCheckedChange={() => toggleColumn(column.key)}
-                disabled={column.canHide === false}
+          <button
+            type="button"
+            onclick={() => {
+              statusChipFilter = 'open';
+              updateFilters({});
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'open'
+              ? 'bg-[var(--stage-qualified)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
+          >
+            Open
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'open'
+                ? 'bg-black/20 text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+            >
+              {openCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            onclick={() => {
+              statusChipFilter = 'won';
+              updateFilters({});
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'won'
+              ? 'bg-[var(--stage-won)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
+          >
+            Won
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'won'
+                ? 'bg-black/20 text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+            >
+              {wonCount}
+            </span>
+          </button>
+          <button
+            type="button"
+            onclick={() => {
+              statusChipFilter = 'lost';
+              updateFilters({});
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+            'lost'
+              ? 'bg-[var(--stage-lost)] text-white'
+              : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
+          >
+            Lost
+            <span
+              class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'lost'
+                ? 'bg-black/20 text-white/90'
+                : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
+            >
+              {lostCount}
+            </span>
+          </button>
+          {#if staleCount > 0}
+            <button
+              type="button"
+              onclick={() => {
+                statusChipFilter = 'stale';
+                updateFilters({ rotten: 'true' });
+              }}
+              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
+              'stale'
+                ? 'bg-red-600 text-white'
+                : 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'}"
+            >
+              <Clock class="h-3.5 w-3.5" />
+              Stale
+              <span
+                class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === 'stale'
+                  ? 'bg-black/20 text-white/90'
+                  : 'bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300'}"
               >
-                {column.label}
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      {/if}
+                {staleCount}
+              </span>
+            </button>
+          {/if}
+        </div>
 
-      <Button onclick={addNewRow} disabled={isLoading}>
-        <Plus class="mr-2 h-4 w-4" />
-        New
-      </Button>
-    </div>
-  {/snippet}
-  {#snippet tabs()}
-    <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
-  {/snippet}
-</PageHeader>
+        <div class="bg-border mx-1 h-6 w-px"></div>
 
-<div class="flex-1">
-  <!-- Filter Strip -->
-  <FilterStrip>
-    <SearchInput
-      value={filters.search}
-      onchange={(value) => updateFilters({ ...filters, search: value })}
-      placeholder="Search opportunities..."
-    />
-    <DateRangeFilter
-      label="Close Date"
-      startDate={filters.closed_on_gte}
-      endDate={filters.closed_on_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
-    />
-    <DateRangeFilter
-      label="Created"
-      startDate={filters.created_at_gte}
-      endDate={filters.created_at_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
-    />
-    <TagFilter
-      tags={data.options?.tags || []}
-      value={filters.tags}
-      onchange={(ids) => updateFilters({ ...filters, tags: ids })}
-    />
-    {#if activeFiltersCount > 0}
-      <FilterPill label="Clear all" dashed onclick={clearFilters} />
-    {/if}
-    {#snippet meta()}
-      <span>{filteredOpportunities.length} of {pagination.total} opportunities</span>
+        <!-- View mode toggle (list vs kanban) -->
+        <div class="inline-flex rounded-md border border-[var(--border-default)] p-0.5">
+          <button
+            type="button"
+            onclick={() => updateViewMode('list')}
+            class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium transition-colors {viewMode ===
+            'list'
+              ? 'bg-[var(--color-primary-default)] text-white'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]'}"
+            title="List view"
+          >
+            <ListIcon class="h-4 w-4" />
+            List
+          </button>
+          <button
+            type="button"
+            onclick={() => updateViewMode('kanban')}
+            class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium transition-colors {viewMode ===
+            'kanban'
+              ? 'bg-[var(--color-primary-default)] text-white'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)]'}"
+            title="Kanban view"
+          >
+            <LayoutGrid class="h-4 w-4" />
+            Kanban
+          </button>
+        </div>
+
+        <!-- Column Visibility Dropdown (list view only) -->
+        {#if viewMode === 'list'}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              {#snippet child({ props })}
+                <Button {...props} variant="outline" size="sm" class="gap-2">
+                  <Eye class="h-4 w-4" />
+                  Columns
+                  {#if visibleColumns.length < columns.length}
+                    <span
+                      class="rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-primary-default)]"
+                    >
+                      {visibleColumns.length}/{columns.length}
+                    </span>
+                  {/if}
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" class="w-48">
+              <DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
+              <DropdownMenu.Separator />
+              {#each columns as column (column.key)}
+                <DropdownMenu.CheckboxItem
+                  class=""
+                  checked={visibleColumns.includes(column.key)}
+                  onCheckedChange={() => toggleColumn(column.key)}
+                  disabled={column.canHide === false}
+                >
+                  {column.label}
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {/if}
+
+        <Button onclick={addNewRow} disabled={isLoading}>
+          <Plus class="mr-2 h-4 w-4" />
+          New
+        </Button>
+      </div>
     {/snippet}
-  </FilterStrip>
-  {#if viewMode === 'kanban'}
-    <!-- Kanban View — rendered directly (no wrapper) so the shared KanbanBoard
+    {#snippet tabs()}
+      <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
+    {/snippet}
+  </PageHeader>
+
+  <div class="flex-1">
+    <!-- Filter Strip -->
+    <FilterStrip>
+      <SearchInput
+        value={filters.search}
+        onchange={(value) => updateFilters({ ...filters, search: value })}
+        placeholder="Search opportunities..."
+      />
+      <DateRangeFilter
+        label="Close Date"
+        startDate={filters.closed_on_gte}
+        endDate={filters.closed_on_lte}
+        onchange={(start, end) =>
+          updateFilters({ ...filters, closed_on_gte: start, closed_on_lte: end })}
+      />
+      <DateRangeFilter
+        label="Created"
+        startDate={filters.created_at_gte}
+        endDate={filters.created_at_lte}
+        onchange={(start, end) =>
+          updateFilters({ ...filters, created_at_gte: start, created_at_lte: end })}
+      />
+      <TagFilter
+        tags={data.options?.tags || []}
+        value={filters.tags}
+        onchange={(ids) => updateFilters({ ...filters, tags: ids })}
+      />
+      {#if activeFiltersCount > 0}
+        <FilterPill label="Clear all" dashed onclick={clearFilters} />
+      {/if}
+      {#snippet meta()}
+        <span>{filteredOpportunities.length} of {pagination.total} opportunities</span>
+      {/snippet}
+    </FilterStrip>
+    {#if viewMode === 'kanban'}
+      <!-- Kanban View — rendered directly (no wrapper) so the shared KanbanBoard
          can claim its h-full of the parent flex-1 container, matching the
          pattern used on the tasks page. -->
-    <OpportunityKanban
-      data={kanbanData}
-      loading={!kanbanData}
-      onStageChange={handleKanbanStageChange}
-      onCardClick={handleKanbanCardClick}
-      onAddItem={handleKanbanAddItem}
-    />
-  {:else if filteredOpportunities.length === 0}
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div
-        class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-      >
-        <Target class="size-8 text-[var(--text-tertiary)]" />
-      </div>
-      <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
-      <p class="mt-1 text-sm text-[var(--text-secondary)]">
-        Try adjusting your filters or create a new opportunity
-      </p>
-    </div>
-  {:else}
-    <CrmTable
-      data={filteredOpportunities}
-      {columns}
-      bind:visibleColumns
-      bind:activeRowId
-      onRowChange={handleRowChange}
-      onRowClick={(row) => openDrawer(row.id)}
-    >
-      {#snippet emptyState()}
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div
-            class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-          >
-            <Target class="size-8 text-[var(--text-tertiary)]" />
-          </div>
-          <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
+      <OpportunityKanban
+        data={kanbanData}
+        loading={!kanbanData}
+        onStageChange={handleKanbanStageChange}
+        onCardClick={handleKanbanCardClick}
+        onAddItem={handleKanbanAddItem}
+      />
+    {:else if filteredOpportunities.length === 0}
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div
+          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+        >
+          <Target class="size-8 text-[var(--text-tertiary)]" />
         </div>
-      {/snippet}
-    </CrmTable>
-  {/if}
+        <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">
+          Try adjusting your filters or create a new opportunity
+        </p>
+      </div>
+    {:else}
+      <CrmTable
+        data={filteredOpportunities}
+        {columns}
+        bind:visibleColumns
+        bind:activeRowId
+        onRowChange={handleRowChange}
+        onRowClick={(row) => openDrawer(row.id)}
+      >
+        {#snippet emptyState()}
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div
+              class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
+            >
+              <Target class="size-8 text-[var(--text-tertiary)]" />
+            </div>
+            <h3 class="text-lg font-medium text-[var(--text-primary)]">No opportunities found</h3>
+          </div>
+        {/snippet}
+      </CrmTable>
+    {/if}
 
-  <!-- Pagination (list view only — kanban shows the full pipeline) -->
-  {#if viewMode === 'list'}
-    <Pagination
-      page={pagination.page}
-      limit={pagination.limit}
-      total={pagination.total}
-      onPageChange={handlePageChange}
-      onLimitChange={handleLimitChange}
-    />
-  {/if}
-</div>
-
+    <!-- Pagination (list view only — kanban shows the full pipeline) -->
+    {#if viewMode === 'list'}
+      <Pagination
+        page={pagination.page}
+        limit={pagination.limit}
+        total={pagination.total}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
+    {/if}
+  </div>
 </div>
 
 <!-- Opportunity Drawer -->
@@ -1501,7 +1510,13 @@
           {#if !isClosed && selectedRow.daysInStage != null}
             <div>
               <p class="text-xs text-[var(--text-tertiary)]">Days in Stage</p>
-              <p class="font-medium {selectedRow.agingStatus === 'red' ? 'text-red-600' : selectedRow.agingStatus === 'yellow' ? 'text-amber-500' : 'text-green-600'}">
+              <p
+                class="font-medium {selectedRow.agingStatus === 'red'
+                  ? 'text-red-600'
+                  : selectedRow.agingStatus === 'yellow'
+                    ? 'text-amber-500'
+                    : 'text-green-600'}"
+              >
                 {selectedRow.daysInStage}d
               </p>
             </div>

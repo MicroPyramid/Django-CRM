@@ -75,10 +75,7 @@
   <title>Business Hours - Settings - BottleCRM</title>
 </svelte:head>
 
-<PageHeader
-  title="Business Hours"
-  subtitle="Working hours and holidays SLA timers honor"
->
+<PageHeader title="Business Hours" subtitle="Working hours and holidays SLA timers honor">
   {#snippet actions()}
     <Button type="submit" form="business-hours-form" disabled={saving} class="gap-2">
       {#if saving}
@@ -116,7 +113,7 @@
     <input type="hidden" name="name" value={name} />
 
     <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-5"
+      class="space-y-5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
     >
       <header class="flex items-start gap-3">
         <div
@@ -125,12 +122,10 @@
           <Clock class="h-4 w-4" />
         </div>
         <div>
-          <h2 class="text-base font-medium text-[var(--text-primary)]">
-            Working hours
-          </h2>
+          <h2 class="text-base font-medium text-[var(--text-primary)]">Working hours</h2>
           <p class="text-sm text-[var(--text-secondary)]">
-            Tickets opened outside these hours don't burn SLA. Holidays and customer-wait
-            time (status Pending) are excluded automatically.
+            Tickets opened outside these hours don't burn SLA. Holidays and customer-wait time
+            (status Pending) are excluded automatically.
           </p>
         </div>
       </header>
@@ -151,7 +146,9 @@
 
       <div class="overflow-hidden rounded-md border border-[var(--border-default)]">
         <table class="w-full text-sm">
-          <thead class="bg-[var(--surface-muted)] text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+          <thead
+            class="bg-[var(--surface-muted)] text-xs tracking-wide text-[var(--text-secondary)] uppercase"
+          >
             <tr>
               <th class="px-3 py-2 text-left">Day</th>
               <th class="px-3 py-2 text-left">Closed</th>
@@ -207,7 +204,7 @@
   </form>
 
   <section
-    class="mx-auto mt-6 max-w-3xl rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-4"
+    class="mx-auto mt-6 max-w-3xl space-y-4 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
   >
     <header>
       <h2 class="text-base font-medium text-[var(--text-primary)]">Holidays</h2>
@@ -219,17 +216,18 @@
     <form
       method="POST"
       action="?/addHoliday"
-      use:enhance={() => async ({ result, update }) => {
-        await update();
-        if (result.type === 'success') {
-          newHolidayDate = '';
-          newHolidayName = '';
-          toast.success('Holiday added');
-          await invalidateAll();
-        } else if (result.type === 'failure') {
-          toast.error('Failed to add holiday');
-        }
-      }}
+      use:enhance={() =>
+        async ({ result, update }) => {
+          await update();
+          if (result.type === 'success') {
+            newHolidayDate = '';
+            newHolidayName = '';
+            toast.success('Holiday added');
+            await invalidateAll();
+          } else if (result.type === 'failure') {
+            toast.error('Failed to add holiday');
+          }
+        }}
       class="flex flex-wrap items-end gap-3"
     >
       <input type="hidden" name="id" value={calendarId} />
@@ -265,7 +263,9 @@
     {#if (calendar.holidays || []).length === 0}
       <p class="text-sm text-[var(--text-secondary)]">No holidays configured.</p>
     {:else}
-      <ul class="divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]">
+      <ul
+        class="divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]"
+      >
         {#each calendar.holidays as h (h.id)}
           <li class="flex items-center justify-between gap-2 px-3 py-2 text-sm">
             <span class="flex items-center gap-3">
@@ -275,15 +275,16 @@
             <form
               method="POST"
               action="?/removeHoliday"
-              use:enhance={() => async ({ result, update }) => {
-                await update();
-                if (result.type === 'success') {
-                  toast.success('Holiday removed');
-                  await invalidateAll();
-                } else if (result.type === 'failure') {
-                  toast.error('Failed to remove holiday');
-                }
-              }}
+              use:enhance={() =>
+                async ({ result, update }) => {
+                  await update();
+                  if (result.type === 'success') {
+                    toast.success('Holiday removed');
+                    await invalidateAll();
+                  } else if (result.type === 'failure') {
+                    toast.error('Failed to remove holiday');
+                  }
+                }}
             >
               <input type="hidden" name="id" value={calendarId} />
               <input type="hidden" name="hid" value={h.id} />

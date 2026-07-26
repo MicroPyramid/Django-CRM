@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -83,9 +83,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             if params.get("status"):
                 queryset = queryset.filter(status=params.get("status"))
             if params.getlist("tags"):
-                queryset = queryset.filter(
-                    tags__id__in=params.getlist("tags")
-                )
+                queryset = queryset.filter(tags__id__in=params.getlist("tags"))
             if params.get("city"):
                 queryset = queryset.filter(city__icontains=params.get("city"))
             if params.get("email"):
@@ -327,12 +325,14 @@ class LeadListView(APIView, LimitOffsetPagination):
             # Send email to assigned users (after assignees are set)
             # Skip if status is "converted" - that branch handles its own email
             if data.get("status") != "converted":
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients,
-                        lead_obj.id,
-                        str(request.profile.org.id),
+                    transaction.on_commit(
+                        lambda r=recipients, lid=lead_obj.id, oid=str(request.profile.org.id): (
+                            send_email_to_assigned_user.delay(r, lid, oid)
+                        )
                     )
 
             if data.get("status") == "converted":
@@ -343,12 +343,14 @@ class LeadListView(APIView, LimitOffsetPagination):
                 )
 
                 # Send email to assigned users for converted leads
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients,
-                        lead_obj.id,
-                        str(request.profile.org.id),
+                    transaction.on_commit(
+                        lambda r=recipients, lid=lead_obj.id, oid=str(request.profile.org.id): (
+                            send_email_to_assigned_user.delay(r, lid, oid)
+                        )
                     )
                 return Response(
                     {
@@ -727,12 +729,14 @@ class LeadDetailView(APIView):
                     lead_obj.assigned_to.all().values_list("id", flat=True)
                 )
                 # Only email users who were newly assigned
-                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                recipients = list(
+                    set(current_assigned_users) - set(previous_assigned_to_users)
+                )
                 if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients,
-                        lead_obj.id,
-                        str(request.profile.org.id),
+                    transaction.on_commit(
+                        lambda r=recipients, lid=lead_obj.id, oid=str(request.profile.org.id): (
+                            send_email_to_assigned_user.delay(r, lid, oid)
+                        )
                     )
 
             if params.get("status") == "converted":
@@ -743,12 +747,14 @@ class LeadDetailView(APIView):
                 )
 
                 # Send email to all assigned users for converted leads
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients,
-                        lead_obj.id,
-                        str(request.profile.org.id),
+                    transaction.on_commit(
+                        lambda r=recipients, lid=lead_obj.id, oid=str(request.profile.org.id): (
+                            send_email_to_assigned_user.delay(r, lid, oid)
+                        )
                     )
 
                 return Response(
@@ -852,12 +858,14 @@ class LeadDetailView(APIView):
             )
 
             # Send email to assigned users for converted leads
-            recipients = list(self.lead_obj.assigned_to.all().values_list("id", flat=True))
+            recipients = list(
+                self.lead_obj.assigned_to.all().values_list("id", flat=True)
+            )
             if recipients:
-                send_email_to_assigned_user.delay(
-                    recipients,
-                    self.lead_obj.id,
-                    str(request.profile.org.id),
+                transaction.on_commit(
+                    lambda r=recipients, lid=self.lead_obj.id, oid=str(request.profile.org.id): (
+                        send_email_to_assigned_user.delay(r, lid, oid)
+                    )
                 )
 
             return Response(
@@ -915,8 +923,7 @@ class LeadDetailView(APIView):
                         tags = json.loads(tags)
                     # Extract IDs if tags contains objects with 'id' field
                     tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags
+                        tag.get("id") if isinstance(tag, dict) else tag for tag in tags
                     ]
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
@@ -975,12 +982,14 @@ class LeadDetailView(APIView):
                 current_assigned_users = list(
                     lead_obj.assigned_to.all().values_list("id", flat=True)
                 )
-                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                recipients = list(
+                    set(current_assigned_users) - set(previous_assigned_to_users)
+                )
                 if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients,
-                        lead_obj.id,
-                        str(request.profile.org.id),
+                    transaction.on_commit(
+                        lambda r=recipients, lid=lead_obj.id, oid=str(request.profile.org.id): (
+                            send_email_to_assigned_user.delay(r, lid, oid)
+                        )
                     )
 
             return Response(

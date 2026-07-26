@@ -17,7 +17,8 @@ export const actions = {
     const formData = await request.formData();
     const client_id = formData.get('client_id')?.toString().trim();
     const client_secret = formData.get('client_secret')?.toString().trim();
-    const login_url = formData.get('login_url')?.toString().trim() || 'https://login.salesforce.com';
+    const login_url =
+      formData.get('login_url')?.toString().trim() || 'https://login.salesforce.com';
 
     if (!client_id || !client_secret) {
       return fail(400, { credentialError: 'Both Client ID and Client Secret are required.' });
@@ -40,7 +41,9 @@ export const actions = {
       return { connected: true };
     } catch (err) {
       return fail(400, {
-        credentialError: err?.message || 'Credentials saved but failed to connect to Salesforce. Check your Connected App settings.'
+        credentialError:
+          err?.message ||
+          'Credentials saved but failed to connect to Salesforce. Check your Connected App settings.'
       });
     }
   },

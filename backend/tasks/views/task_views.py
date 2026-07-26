@@ -10,8 +10,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import Account
+from cases.models import Case
 from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
@@ -21,7 +30,6 @@ from common.serializer import (
     TeamsSerializer,
 )
 from contacts.models import Contact
-from cases.models import Case
 from leads.models import Lead
 from opportunity.models import Opportunity
 from tasks import swagger_params
@@ -112,11 +120,24 @@ class TaskListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
+        org = self.request.profile.org
         context.update(
             {
                 "tasks_count": self.count,
                 "offset": offset,
                 "tasks": tasks,
+                # Filter-dropdown metadata, mirroring the other list endpoints
+                # (leads/opportunities expose choices + related entities).
+                "status": [value for value, _label in Task.STATUS_CHOICES],
+                "priority": [value for value, _label in Task.PRIORITY_CHOICES],
+                "accounts_list": list(
+                    Account.objects.filter(org=org).values("id", "name")
+                ),
+                "contacts_list": list(
+                    Contact.objects.filter(org=org).values(
+                        "id", "first_name", "last_name"
+                    )
+                ),
             }
         )
         return context
@@ -132,6 +153,10 @@ class TaskListView(APIView, LimitOffsetPagination):
                     "tasks_count": serializers.IntegerField(),
                     "offset": serializers.IntegerField(allow_null=True),
                     "tasks": TaskListSerializer(many=True),
+                    "status": serializers.ListField(),
+                    "priority": serializers.ListField(),
+                    "accounts_list": serializers.ListField(),
+                    "contacts_list": serializers.ListField(),
                 },
             )
         },
@@ -225,8 +250,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -566,8 +590,7 @@ class TaskDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True

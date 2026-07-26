@@ -35,7 +35,21 @@ class TestUserNameAutoFill:
         user.refresh_from_db()
         assert user.name == ""
 
-    def test_long_email_local_part_is_truncated_to_255(self):
-        long_local = "a" * 300
-        user = User.objects.create(email=f"{long_local}@example.com")
-        assert len(user.name) == 255
+    def test_longest_storable_email_fills_name_within_limit(self):
+        """The longest email the column can hold still yields a valid `name`.
+
+        `save()` caps the fallback at `[:255]` to match `name`'s max_length, but
+        that slice is unreachable through the database: `email` is an
+        EmailField (varchar(254)), so its local part tops out at 254 - len("@…")
+        and can never exceed 255. Building a 300-char local part therefore never
+        tested truncation — it just overflowed `email`, which SQLite silently
+        allows and PostgreSQL rejects with DataError.
+
+        So assert the property that is actually reachable: the longest storable
+        email fills `name` with its full local part, still within the limit.
+        """
+        domain = "@example.com"
+        local = "a" * (254 - len(domain))  # -> email is exactly 254 chars
+        user = User.objects.create(email=f"{local}{domain}")
+        assert user.name == local
+        assert len(user.name) <= 255

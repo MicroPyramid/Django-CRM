@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -14,7 +15,14 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerializer
 from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
@@ -34,7 +42,11 @@ from opportunity.serializer import (
     OpportunitySerializer,
 )
 from opportunity.tasks import send_email_to_assigned_user
-from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
+from opportunity.workflow import (
+    CLOSED_STAGES,
+    DEFAULT_STAGE_EXPECTED_DAYS,
+    ROTTEN_MULTIPLIER,
+)
 
 
 class OpportunityListView(APIView, LimitOffsetPagination):
@@ -115,8 +127,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 )
                 org = self.request.profile.org
                 aging_configs = {
-                    c.stage: c
-                    for c in StageAgingConfig.objects.filter(org=org)
+                    c.stage: c for c in StageAgingConfig.objects.filter(org=org)
                 }
                 now = timezone.now()
                 rotten_q = Q()
@@ -132,16 +143,12 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context = {}
         # Prefetch aging configs for serializer context (avoids N+1)
         org = self.request.profile.org
-        aging_configs = {
-            c.stage: c
-            for c in StageAgingConfig.objects.filter(org=org)
-        }
+        aging_configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
         results_opportunities = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
         opportunities = OpportunitySerializer(
-            results_opportunities, many=True,
-            context={"aging_configs": aging_configs}
+            results_opportunities, many=True, context={"aging_configs": aging_configs}
         ).data
         if results_opportunities:
             offset = queryset.filter(id__gte=results_opportunities[-1].id).count()
@@ -257,8 +264,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -311,10 +317,12 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 opportunity_obj.assigned_to.all().values_list("id", flat=True)
             )
 
-            send_email_to_assigned_user.delay(
-                recipients,
-                opportunity_obj.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    opportunity_obj.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {"error": False, "message": "Opportunity Created Successfully"},
@@ -428,8 +436,7 @@ class OpportunityDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -484,10 +491,12 @@ class OpportunityDetailView(APIView):
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
             )
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-            send_email_to_assigned_user.delay(
-                recipients,
-                opportunity_object.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    opportunity_object.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {"error": False, "message": "Opportunity Updated Successfully"},
@@ -711,9 +720,7 @@ class OpportunityDetailView(APIView):
         if self.request.FILES.get("opportunity_attachment"):
             attachment = Attachments()
             attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get(
-                "opportunity_attachment"
-            ).name
+            attachment.file_name = self.request.FILES.get("opportunity_attachment").name
             attachment.content_object = self.opportunity_obj
             attachment.attachment = self.request.FILES.get("opportunity_attachment")
             attachment.org = self.request.profile.org
@@ -843,8 +850,7 @@ class OpportunityDetailView(APIView):
                         tags = json.loads(tags)
                     # Extract IDs if tags contains objects with 'id' field
                     tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags
+                        tag.get("id") if isinstance(tag, dict) else tag for tag in tags
                     ]
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True

@@ -7,14 +7,12 @@ Run with: pytest common/tests/test_auth.py -v
 
 import base64
 import json
-import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
-from common.models import Org, Profile, User
+from common.models import Profile, User
 from common.serializer import OrgAwareRefreshToken
 
 
@@ -207,9 +205,9 @@ class TestProfileDetailView:
         assert str(response.data["org"]["id"]) == str(org_a.id)
 
     def test_profile_detail_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets error (401 or PermissionDenied from middleware)."""
-        with pytest.raises((PermissionDenied, Exception)):
-            unauthenticated_client.get(self.url)
+        """Unauthenticated user is rejected (401 from DRF, or 403 from middleware)."""
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code in (401, 403)
 
 
 # ---------------------------------------------------------------------------

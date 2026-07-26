@@ -88,8 +88,9 @@
 
   const industryLabel = $derived(
     account?.industry
-      ? account.industry.replace(/\b\w+/g, (/** @type {string} */ w) =>
-          w.charAt(0) + w.slice(1).toLowerCase()
+      ? account.industry.replace(
+          /\b\w+/g,
+          (/** @type {string} */ w) => w.charAt(0) + w.slice(1).toLowerCase()
         )
       : ''
   );
@@ -115,16 +116,20 @@
       : []
   );
 
-  const hasContactInfo = $derived(
-    !!(account?.email || account?.phone || account?.website)
-  );
+  const hasContactInfo = $derived(!!(account?.email || account?.phone || account?.website));
 
   const hasBusinessInfo = $derived(
     account?.industry || account?.number_of_employees != null || account?.annual_revenue != null
   );
 
   const hasAddress = $derived(
-    !!(account?.address_line || account?.city || account?.state || account?.postcode || account?.country)
+    !!(
+      account?.address_line ||
+      account?.city ||
+      account?.state ||
+      account?.postcode ||
+      account?.country
+    )
   );
 
   const addressLines = $derived(
@@ -189,14 +194,14 @@
   );
 
   const openTasks = $derived(
-    tasksList.filter(
-      (/** @type {any} */ t) => (t?.status || '').toUpperCase() !== 'COMPLETED'
-    ).length
+    tasksList.filter((/** @type {any} */ t) => (t?.status || '').toUpperCase() !== 'COMPLETED')
+      .length
   );
 
   const outstandingInvoiceAmount = $derived(
     invoices.reduce(
-      (/** @type {number} */ sum, /** @type {any} */ inv) => sum + (parseFloat(inv?.amount_due) || 0),
+      (/** @type {number} */ sum, /** @type {any} */ inv) =>
+        sum + (parseFloat(inv?.amount_due) || 0),
       0
     )
   );
@@ -313,7 +318,7 @@
     <Tabs.Trigger class="" value="contacts">
       Contacts
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {contacts.length}
       </span>
@@ -321,7 +326,7 @@
     <Tabs.Trigger class="" value="opportunities">
       Opportunities
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {opportunities.length}
       </span>
@@ -329,7 +334,7 @@
     <Tabs.Trigger class="" value="cases">
       Cases
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {cases.length}
       </span>
@@ -337,7 +342,7 @@
     <Tabs.Trigger class="" value="tasks">
       Tasks
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {tasksList.length}
       </span>
@@ -345,7 +350,7 @@
     <Tabs.Trigger class="" value="invoices">
       Invoices
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {invoices.length}
       </span>
@@ -353,7 +358,7 @@
     <Tabs.Trigger class="" value="activity">
       Activity
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {timelineItems.length}
       </span>
@@ -361,7 +366,7 @@
     <Tabs.Trigger class="" value="files">
       Files
       <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
+        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] text-[color:var(--text-subtle)] tabular-nums"
       >
         {attachments.length}
       </span>
@@ -380,7 +385,7 @@
               {account.description}
             </p>
           {:else}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
+            <p class="text-[12px] text-[color:var(--text-subtle)] italic">No description.</p>
           {/if}
         </SectionCard>
 
@@ -398,35 +403,35 @@
         {#if hasBusinessInfo}
           <SectionCard title="Business">
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-[12px] sm:grid-cols-3">
-                {#if account?.industry}
-                  <div class="flex flex-col gap-1">
-                    <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                      <Briefcase class="size-3" /> Industry
-                    </dt>
-                    <dd class="text-[13px] text-[color:var(--text)]">{industryLabel}</dd>
-                  </div>
-                {/if}
-                {#if account?.number_of_employees != null}
-                  <div class="flex flex-col gap-1">
-                    <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                      <Users class="size-3" /> Employees
-                    </dt>
-                    <dd class="text-[13px] tabular-nums text-[color:var(--text)]">
-                      {account.number_of_employees}
-                    </dd>
-                  </div>
-                {/if}
-                {#if account?.annual_revenue != null}
-                  <div class="flex flex-col gap-1">
-                    <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                      <DollarSign class="size-3" /> Annual Revenue
-                    </dt>
-                    <dd class="text-[15px] font-medium tabular-nums text-[color:var(--text)]">
-                      {formatCurrency(parseFloat(account.annual_revenue), accountCurrency)}
-                    </dd>
-                  </div>
-                {/if}
-              </dl>
+              {#if account?.industry}
+                <div class="flex flex-col gap-1">
+                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
+                    <Briefcase class="size-3" /> Industry
+                  </dt>
+                  <dd class="text-[13px] text-[color:var(--text)]">{industryLabel}</dd>
+                </div>
+              {/if}
+              {#if account?.number_of_employees != null}
+                <div class="flex flex-col gap-1">
+                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
+                    <Users class="size-3" /> Employees
+                  </dt>
+                  <dd class="text-[13px] text-[color:var(--text)] tabular-nums">
+                    {account.number_of_employees}
+                  </dd>
+                </div>
+              {/if}
+              {#if account?.annual_revenue != null}
+                <div class="flex flex-col gap-1">
+                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
+                    <DollarSign class="size-3" /> Annual Revenue
+                  </dt>
+                  <dd class="text-[15px] font-medium text-[color:var(--text)] tabular-nums">
+                    {formatCurrency(parseFloat(account.annual_revenue), accountCurrency)}
+                  </dd>
+                </div>
+              {/if}
+            </dl>
           </SectionCard>
         {/if}
 
@@ -434,67 +439,67 @@
         {#if hasContactInfo}
           <SectionCard title="Contact">
             <dl class="grid grid-cols-1 gap-y-3 text-[12px] sm:grid-cols-2">
-                {#if account?.email}
-                  <div class="flex items-start gap-2">
-                    <Mail
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Email</dt>
-                      <dd>
-                        <a
-                          href="mailto:{account.email}"
-                          class="truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {account.email}
-                        </a>
-                      </dd>
-                    </div>
+              {#if account?.email}
+                <div class="flex items-start gap-2">
+                  <Mail
+                    class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
+                    aria-hidden="true"
+                  />
+                  <div class="flex min-w-0 flex-col">
+                    <dt class="text-[11px] text-[color:var(--text-subtle)]">Email</dt>
+                    <dd>
+                      <a
+                        href="mailto:{account.email}"
+                        class="truncate text-[color:var(--color-primary-default)] hover:underline"
+                      >
+                        {account.email}
+                      </a>
+                    </dd>
                   </div>
-                {/if}
-                {#if account?.phone}
-                  <div class="flex items-start gap-2">
-                    <Phone
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Phone</dt>
-                      <dd>
-                        <a
-                          href="tel:{account.phone}"
-                          class="truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {account.phone}
-                        </a>
-                      </dd>
-                    </div>
+                </div>
+              {/if}
+              {#if account?.phone}
+                <div class="flex items-start gap-2">
+                  <Phone
+                    class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
+                    aria-hidden="true"
+                  />
+                  <div class="flex min-w-0 flex-col">
+                    <dt class="text-[11px] text-[color:var(--text-subtle)]">Phone</dt>
+                    <dd>
+                      <a
+                        href="tel:{account.phone}"
+                        class="truncate text-[color:var(--color-primary-default)] hover:underline"
+                      >
+                        {account.phone}
+                      </a>
+                    </dd>
                   </div>
-                {/if}
-                {#if account?.website}
-                  <div class="flex items-start gap-2">
-                    <Globe
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Website</dt>
-                      <dd>
-                        <a
-                          href={normalizeUrl(account.website)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1 truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {account.website}
-                          <ExternalLink class="size-3 shrink-0" aria-hidden="true" />
-                        </a>
-                      </dd>
-                    </div>
+                </div>
+              {/if}
+              {#if account?.website}
+                <div class="flex items-start gap-2">
+                  <Globe
+                    class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
+                    aria-hidden="true"
+                  />
+                  <div class="flex min-w-0 flex-col">
+                    <dt class="text-[11px] text-[color:var(--text-subtle)]">Website</dt>
+                    <dd>
+                      <a
+                        href={normalizeUrl(account.website)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 truncate text-[color:var(--color-primary-default)] hover:underline"
+                      >
+                        {account.website}
+                        <ExternalLink class="size-3 shrink-0" aria-hidden="true" />
+                      </a>
+                    </dd>
                   </div>
-                {/if}
-              </dl>
+                </div>
+              {/if}
+            </dl>
           </SectionCard>
         {/if}
 
@@ -506,7 +511,7 @@
                 class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
                 aria-hidden="true"
               />
-              <address class="flex flex-col gap-0.5 not-italic text-[color:var(--text-muted)]">
+              <address class="flex flex-col gap-0.5 text-[color:var(--text-muted)] not-italic">
                 {#each addressLines as line}
                   <span>{line}</span>
                 {/each}
@@ -517,38 +522,35 @@
 
         <!-- Activity preview card -->
         <SectionCard title="Activity">
-            <Timeline isEmpty={timelineItems.length === 0}>
-              {#each timelineItems.slice(0, 5) as item (item.id)}
-                {#if item.kind === 'comment'}
-                  <TimelineItem
-                    variant="violet"
-                    time={item.ts ? formatRelativeDate(item.ts) : ''}
-                    quote={item.payload.comment || ''}
-                  >
-                    {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
-                    {#snippet text()}
-                      <strong>{item.payload.commented_by_user || 'Someone'}</strong> commented
-                    {/snippet}
-                  </TimelineItem>
-                {:else if item.kind === 'attachment'}
-                  <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                    {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
-                    {#snippet text()}
-                      <strong>{item.payload.created_by_user || 'Someone'}</strong> uploaded
-                      <strong>{item.payload.file_name || 'a file'}</strong>
-                    {/snippet}
-                  </TimelineItem>
-                {:else}
-                  <TimelineItem
-                    variant="success"
-                    time={item.ts ? formatRelativeDate(item.ts) : ''}
-                  >
-                    {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
-                    {#snippet text()}Account created{/snippet}
-                  </TimelineItem>
-                {/if}
-              {/each}
-            </Timeline>
+          <Timeline isEmpty={timelineItems.length === 0}>
+            {#each timelineItems.slice(0, 5) as item (item.id)}
+              {#if item.kind === 'comment'}
+                <TimelineItem
+                  variant="violet"
+                  time={item.ts ? formatRelativeDate(item.ts) : ''}
+                  quote={item.payload.comment || ''}
+                >
+                  {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
+                  {#snippet text()}
+                    <strong>{item.payload.commented_by_user || 'Someone'}</strong> commented
+                  {/snippet}
+                </TimelineItem>
+              {:else if item.kind === 'attachment'}
+                <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
+                  {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
+                  {#snippet text()}
+                    <strong>{item.payload.created_by_user || 'Someone'}</strong> uploaded
+                    <strong>{item.payload.file_name || 'a file'}</strong>
+                  {/snippet}
+                </TimelineItem>
+              {:else}
+                <TimelineItem variant="success" time={item.ts ? formatRelativeDate(item.ts) : ''}>
+                  {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
+                  {#snippet text()}Account created{/snippet}
+                </TimelineItem>
+              {/if}
+            {/each}
+          </Timeline>
         </SectionCard>
       </div>
 
@@ -556,97 +558,97 @@
       <div class="flex flex-col gap-6">
         <SectionCard title="Details">
           <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Status</dt>
-                <dd>
-                  <Badge
-                    variant="secondary"
-                    class={isActive
-                      ? 'bg-[var(--color-success-light)] text-[var(--color-success-default)]'
-                      : 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)]'}
-                  >
-                    {isActive ? 'Active' : 'Closed'}
-                  </Badge>
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Industry</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {industryLabel || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Currency</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {account?.currency || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Created by</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {account?.created_by?.email || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Created</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {account?.created_at ? formatRelativeDate(account.created_at) : '—'}
-                </dd>
-              </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[color:var(--text-subtle)]">Status</dt>
+              <dd>
+                <Badge
+                  variant="secondary"
+                  class={isActive
+                    ? 'bg-[var(--color-success-light)] text-[var(--color-success-default)]'
+                    : 'bg-[var(--color-negative-light)] text-[var(--color-negative-default)]'}
+                >
+                  {isActive ? 'Active' : 'Closed'}
+                </Badge>
+              </dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[color:var(--text-subtle)]">Industry</dt>
+              <dd class="truncate text-right text-[color:var(--text-muted)]">
+                {industryLabel || '—'}
+              </dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[color:var(--text-subtle)]">Currency</dt>
+              <dd class="truncate text-right text-[color:var(--text-muted)]">
+                {account?.currency || '—'}
+              </dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[color:var(--text-subtle)]">Created by</dt>
+              <dd class="truncate text-right text-[color:var(--text-muted)]">
+                {account?.created_by?.email || '—'}
+              </dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[color:var(--text-subtle)]">Created</dt>
+              <dd class="truncate text-right text-[color:var(--text-muted)]">
+                {account?.created_at ? formatRelativeDate(account.created_at) : '—'}
+              </dd>
+            </div>
           </dl>
         </SectionCard>
 
         <!-- People -->
         <SectionCard title="People">
           <div class="flex flex-col gap-3 text-[12px]">
+            <div>
+              <div
+                class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]"
+              >
+                <UserCheck class="size-3" /> Assigned to
+              </div>
+              {#if assignedUsers.length === 0}
+                <p class="text-[color:var(--text-subtle)] italic">Unassigned</p>
+              {:else}
+                <ul class="flex flex-col gap-1.5">
+                  {#each assignedUsers as user (user.id)}
+                    <li class="flex items-center gap-2">
+                      <span
+                        class="flex size-5 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[9px] font-semibold text-[color:var(--color-primary-default)]"
+                      >
+                        {getNameInitials(user.email, '')}
+                      </span>
+                      <span class="truncate text-[color:var(--text-muted)]">{user.email}</span>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+            {#if teamItems.length > 0}
               <div>
                 <div
                   class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]"
                 >
-                  <UserCheck class="size-3" /> Assigned to
+                  <Users class="size-3" /> Teams
                 </div>
-                {#if assignedUsers.length === 0}
-                  <p class="italic text-[color:var(--text-subtle)]">Unassigned</p>
-                {:else}
-                  <ul class="flex flex-col gap-1.5">
-                    {#each assignedUsers as user (user.id)}
-                      <li class="flex items-center gap-2">
-                        <span
-                          class="flex size-5 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[9px] font-semibold text-[color:var(--color-primary-default)]"
-                        >
-                          {getNameInitials(user.email, '')}
-                        </span>
-                        <span class="truncate text-[color:var(--text-muted)]">{user.email}</span>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <div class="flex flex-wrap gap-1.5">
+                  {#each teamItems as team (team.id)}
+                    <Badge
+                      variant="secondary"
+                      class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
+                    >
+                      {team.name}
+                    </Badge>
+                  {/each}
+                </div>
               </div>
-              {#if teamItems.length > 0}
-                <div>
-                  <div
-                    class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]"
-                  >
-                    <Users class="size-3" /> Teams
-                  </div>
-                  <div class="flex flex-wrap gap-1.5">
-                    {#each teamItems as team (team.id)}
-                      <Badge
-                        variant="secondary"
-                        class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                      >
-                        {team.name}
-                      </Badge>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
+            {/if}
           </div>
         </SectionCard>
 
         <SectionCard title="Tags">
           {#if tags.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No tags.</p>
+            <p class="text-[12px] text-[color:var(--text-subtle)] italic">No tags.</p>
           {:else}
             <div class="flex flex-wrap gap-1.5">
               {#each tags as tag, i (tag.id ?? tag.slug ?? tag.name ?? i)}
@@ -656,9 +658,9 @@
                 >
                   {tag.name}
                 </Badge>
-                {/each}
-              </div>
-            {/if}
+              {/each}
+            </div>
+          {/if}
         </SectionCard>
       </div>
     </div>
@@ -668,42 +670,42 @@
   <Tabs.Content class="" value="contacts">
     <div class="pt-4 pb-8">
       <SectionCard title="Contacts">
-          {#if contacts.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">
-              No contacts linked to this account.
-            </p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each contacts as c (c.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <span
-                    class="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[10px] font-semibold text-[color:var(--color-primary-default)]"
-                  >
-                    {getNameInitials(fullContactName(c), '')}
+        {#if contacts.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">
+            No contacts linked to this account.
+          </p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each contacts as c (c.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <span
+                  class="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[10px] font-semibold text-[color:var(--color-primary-default)]"
+                >
+                  {getNameInitials(fullContactName(c), '')}
+                </span>
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate font-medium text-[color:var(--text)]">
+                    {fullContactName(c)}
                   </span>
-                  <div class="flex min-w-0 flex-1 flex-col">
-                    <span class="truncate font-medium text-[color:var(--text)]">
-                      {fullContactName(c)}
-                    </span>
-                    {#if c.email || c.primary_email}
-                      <a
-                        href="mailto:{c.email || c.primary_email}"
-                        class="truncate text-[11px] text-[color:var(--color-primary-default)] hover:underline"
-                      >
-                        {c.email || c.primary_email}
-                      </a>
-                    {/if}
-                  </div>
-                  {#if c.phone || c.mobile_number}
+                  {#if c.email || c.primary_email}
                     <a
-                      href="tel:{c.phone || c.mobile_number}"
-                      class="text-[11px] text-[color:var(--text-muted)] hover:underline"
+                      href="mailto:{c.email || c.primary_email}"
+                      class="truncate text-[11px] text-[color:var(--color-primary-default)] hover:underline"
                     >
-                      {c.phone || c.mobile_number}
+                      {c.email || c.primary_email}
                     </a>
                   {/if}
-                </li>
-              {/each}
+                </div>
+                {#if c.phone || c.mobile_number}
+                  <a
+                    href="tel:{c.phone || c.mobile_number}"
+                    class="text-[11px] text-[color:var(--text-muted)] hover:underline"
+                  >
+                    {c.phone || c.mobile_number}
+                  </a>
+                {/if}
+              </li>
+            {/each}
           </ul>
         {/if}
       </SectionCard>
@@ -714,34 +716,32 @@
   <Tabs.Content class="" value="opportunities">
     <div class="pt-4 pb-8">
       <SectionCard title="Opportunities">
-          {#if opportunities.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">
-              No opportunities linked.
-            </p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each opportunities as o (o.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <Target class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <a
-                    href="/opportunities/{o.id}"
-                    class="flex-1 truncate text-[color:var(--color-primary-default)] hover:underline"
+        {#if opportunities.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">No opportunities linked.</p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each opportunities as o (o.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <Target class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
+                <a
+                  href="/opportunities/{o.id}"
+                  class="flex-1 truncate text-[color:var(--color-primary-default)] hover:underline"
+                >
+                  {o.name}
+                </a>
+                {#if o.stage}
+                  <Badge
+                    variant="secondary"
+                    class={getOptionStyle(o.stage, opportunityStageOptions)}
                   >
-                    {o.name}
-                  </a>
-                  {#if o.stage}
-                    <Badge
-                      variant="secondary"
-                      class={getOptionStyle(o.stage, opportunityStageOptions)}
-                    >
-                      {getOptionLabel(o.stage, opportunityStageOptions) || o.stage}
-                    </Badge>
-                  {/if}
-                  <span class="w-24 text-right tabular-nums text-[color:var(--text-muted)]">
-                    {formatCurrency(parseFloat(o.amount) || 0, o.currency || accountCurrency)}
-                  </span>
-                </li>
-              {/each}
+                    {getOptionLabel(o.stage, opportunityStageOptions) || o.stage}
+                  </Badge>
+                {/if}
+                <span class="w-24 text-right text-[color:var(--text-muted)] tabular-nums">
+                  {formatCurrency(parseFloat(o.amount) || 0, o.currency || accountCurrency)}
+                </span>
+              </li>
+            {/each}
           </ul>
         {/if}
       </SectionCard>
@@ -752,37 +752,37 @@
   <Tabs.Content class="" value="cases">
     <div class="pt-4 pb-8">
       <SectionCard title="Cases">
-          {#if cases.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No cases.</p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each cases as c (c.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <Ticket class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <a
-                    href="/tickets/{c.id}"
-                    class="flex-1 truncate text-[color:var(--color-primary-default)] hover:underline"
+        {#if cases.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">No cases.</p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each cases as c (c.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <Ticket class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
+                <a
+                  href="/tickets/{c.id}"
+                  class="flex-1 truncate text-[color:var(--color-primary-default)] hover:underline"
+                >
+                  {c.name}
+                </a>
+                {#if c.priority}
+                  <Badge
+                    variant="secondary"
+                    class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
                   >
-                    {c.name}
-                  </a>
-                  {#if c.priority}
-                    <Badge
-                      variant="secondary"
-                      class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                    >
-                      {c.priority}
-                    </Badge>
-                  {/if}
-                  {#if c.status}
-                    <Badge
-                      variant="secondary"
-                      class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                    >
-                      {c.status}
-                    </Badge>
-                  {/if}
-                </li>
-              {/each}
+                    {c.priority}
+                  </Badge>
+                {/if}
+                {#if c.status}
+                  <Badge
+                    variant="secondary"
+                    class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
+                  >
+                    {c.status}
+                  </Badge>
+                {/if}
+              </li>
+            {/each}
           </ul>
         {/if}
       </SectionCard>
@@ -793,39 +793,36 @@
   <Tabs.Content class="" value="tasks">
     <div class="pt-4 pb-8">
       <SectionCard title="Tasks">
-          {#if tasksList.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No tasks.</p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each tasksList as t (t.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <CheckSquare class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <span class="flex-1 truncate text-[color:var(--text)]">
-                    {t.title}
+        {#if tasksList.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">No tasks.</p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each tasksList as t (t.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <CheckSquare class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
+                <span class="flex-1 truncate text-[color:var(--text)]">
+                  {t.title}
+                </span>
+                {#if t.priority}
+                  <Badge
+                    variant="secondary"
+                    class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
+                  >
+                    {t.priority}
+                  </Badge>
+                {/if}
+                {#if t.status}
+                  <Badge variant="secondary" class={getOptionStyle(t.status, taskStatusOptions)}>
+                    {getOptionLabel(t.status, taskStatusOptions) || t.status}
+                  </Badge>
+                {/if}
+                {#if t.due_date}
+                  <span class="w-24 text-right text-[11px] text-[color:var(--text-subtle)]">
+                    {formatDate(t.due_date)}
                   </span>
-                  {#if t.priority}
-                    <Badge
-                      variant="secondary"
-                      class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                    >
-                      {t.priority}
-                    </Badge>
-                  {/if}
-                  {#if t.status}
-                    <Badge
-                      variant="secondary"
-                      class={getOptionStyle(t.status, taskStatusOptions)}
-                    >
-                      {getOptionLabel(t.status, taskStatusOptions) || t.status}
-                    </Badge>
-                  {/if}
-                  {#if t.due_date}
-                    <span class="w-24 text-right text-[11px] text-[color:var(--text-subtle)]">
-                      {formatDate(t.due_date)}
-                    </span>
-                  {/if}
-                </li>
-              {/each}
+                {/if}
+              </li>
+            {/each}
           </ul>
         {/if}
       </SectionCard>
@@ -836,44 +833,50 @@
   <Tabs.Content class="" value="invoices">
     <div class="pt-4 pb-8">
       <SectionCard title="Invoices">
-          {#if invoices.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No invoices.</p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each invoices as inv (inv.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <Hash class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <a
-                    href="/invoices/{inv.id}"
-                    class="w-28 shrink-0 truncate text-[color:var(--color-primary-default)] hover:underline"
+        {#if invoices.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">No invoices.</p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each invoices as inv (inv.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <Hash class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
+                <a
+                  href="/invoices/{inv.id}"
+                  class="w-28 shrink-0 truncate text-[color:var(--color-primary-default)] hover:underline"
+                >
+                  {inv.invoice_number || '—'}
+                </a>
+                <span class="flex-1 truncate text-[color:var(--text)]">
+                  {inv.invoice_title || inv.client_name || ''}
+                </span>
+                {#if inv.status}
+                  <Badge
+                    variant="secondary"
+                    class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
                   >
-                    {inv.invoice_number || '—'}
-                  </a>
-                  <span class="flex-1 truncate text-[color:var(--text)]">
-                    {inv.invoice_title || inv.client_name || ''}
+                    {inv.status}
+                  </Badge>
+                {/if}
+                <span class="w-24 text-right text-[color:var(--text)] tabular-nums">
+                  {formatCurrency(
+                    parseFloat(inv.total_amount) || 0,
+                    inv.currency || accountCurrency
+                  )}
+                </span>
+                {#if parseFloat(inv.amount_due) > 0}
+                  <span
+                    class="w-24 text-right text-[11px] text-[color:var(--color-negative-default)] tabular-nums"
+                  >
+                    due {formatCurrency(
+                      parseFloat(inv.amount_due) || 0,
+                      inv.currency || accountCurrency
+                    )}
                   </span>
-                  {#if inv.status}
-                    <Badge
-                      variant="secondary"
-                      class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                    >
-                      {inv.status}
-                    </Badge>
-                  {/if}
-                  <span class="w-24 text-right tabular-nums text-[color:var(--text)]">
-                    {formatCurrency(parseFloat(inv.total_amount) || 0, inv.currency || accountCurrency)}
-                  </span>
-                  {#if parseFloat(inv.amount_due) > 0}
-                    <span
-                      class="w-24 text-right tabular-nums text-[11px] text-[color:var(--color-negative-default)]"
-                    >
-                      due {formatCurrency(parseFloat(inv.amount_due) || 0, inv.currency || accountCurrency)}
-                    </span>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-          {/if}
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </SectionCard>
     </div>
   </Tabs.Content>
@@ -882,33 +885,31 @@
   <Tabs.Content class="" value="activity">
     <div class="pt-4 pb-8">
       <SectionCard title="All activity">
-          <Timeline isEmpty={timelineItems.length === 0}>
-            {#each timelineItems as item (item.id)}
-              {#if item.kind === 'comment'}
-                <TimelineItem
-                  variant="violet"
-                  time={item.ts ? formatRelativeDate(item.ts) : ''}
-                  quote={item.payload.comment || ''}
-                >
-                  {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
-                  {#snippet text()}<strong
-                      >{item.payload.commented_by_user || 'Someone'}</strong
-                    > commented{/snippet}
-                </TimelineItem>
-              {:else if item.kind === 'attachment'}
-                <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                  {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
-                  {#snippet text()}<strong>{item.payload.created_by_user || 'Someone'}</strong>
-                    uploaded <strong>{item.payload.file_name || 'a file'}</strong>{/snippet}
-                </TimelineItem>
-              {:else}
-                <TimelineItem variant="success" time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                  {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
-                  {#snippet text()}Account created{/snippet}
-                </TimelineItem>
-              {/if}
-            {/each}
-          </Timeline>
+        <Timeline isEmpty={timelineItems.length === 0}>
+          {#each timelineItems as item (item.id)}
+            {#if item.kind === 'comment'}
+              <TimelineItem
+                variant="violet"
+                time={item.ts ? formatRelativeDate(item.ts) : ''}
+                quote={item.payload.comment || ''}
+              >
+                {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
+                {#snippet text()}<strong>{item.payload.commented_by_user || 'Someone'}</strong> commented{/snippet}
+              </TimelineItem>
+            {:else if item.kind === 'attachment'}
+              <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
+                {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
+                {#snippet text()}<strong>{item.payload.created_by_user || 'Someone'}</strong>
+                  uploaded <strong>{item.payload.file_name || 'a file'}</strong>{/snippet}
+              </TimelineItem>
+            {:else}
+              <TimelineItem variant="success" time={item.ts ? formatRelativeDate(item.ts) : ''}>
+                {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
+                {#snippet text()}Account created{/snippet}
+              </TimelineItem>
+            {/if}
+          {/each}
+        </Timeline>
       </SectionCard>
     </div>
   </Tabs.Content>
@@ -917,23 +918,23 @@
   <Tabs.Content class="" value="files">
     <div class="pt-4 pb-8">
       <SectionCard title="Files">
-          {#if attachments.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each attachments as a (a.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <Paperclip class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <span class="flex-1 truncate text-[color:var(--text)]">
-                    {a.file_name || 'File'}
-                  </span>
-                  <span class="text-[11px] text-[color:var(--text-subtle)]">
-                    {a.created_on ? formatRelativeDate(a.created_on) : ''}
-                  </span>
-                </li>
-              {/each}
-            </ul>
-          {/if}
+        {#if attachments.length === 0}
+          <p class="text-[12px] text-[color:var(--text-subtle)] italic">No files uploaded.</p>
+        {:else}
+          <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
+            {#each attachments as a (a.id)}
+              <li class="flex items-center gap-3 py-2.5 text-[12px]">
+                <Paperclip class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
+                <span class="flex-1 truncate text-[color:var(--text)]">
+                  {a.file_name || 'File'}
+                </span>
+                <span class="text-[11px] text-[color:var(--text-subtle)]">
+                  {a.created_on ? formatRelativeDate(a.created_on) : ''}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </SectionCard>
     </div>
   </Tabs.Content>

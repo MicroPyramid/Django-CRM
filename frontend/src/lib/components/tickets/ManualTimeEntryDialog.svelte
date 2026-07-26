@@ -16,12 +16,7 @@
    *   onSaved?: () => void | Promise<void>
    * }}
    */
-  let {
-    ticketId,
-    open = $bindable(false),
-    onOpenChange,
-    onSaved
-  } = $props();
+  let { ticketId, open = $bindable(false), onOpenChange, onSaved } = $props();
 
   const _toLocalInput = (/** @type {Date} */ d) => {
     const pad = (/** @type {number} */ n) => String(n).padStart(2, '0');
@@ -148,11 +143,8 @@
     </div>
 
     <Dialog.Footer>
-      <Button
-        type="button"
-        variant="outline"
-        onclick={() => (open = false)}
-        disabled={submitting}>Cancel</Button
+      <Button type="button" variant="outline" onclick={() => (open = false)} disabled={submitting}
+        >Cancel</Button
       >
       <Button
         type="button"

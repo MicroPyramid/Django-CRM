@@ -43,17 +43,14 @@
   {#if hasTitleRow}
     <header
       data-slot="section-card-header"
-      class={cn(
-        'flex items-center justify-between gap-3',
-        children && 'mb-3'
-      )}
+      class={cn('flex items-center justify-between gap-3', children && 'mb-3')}
     >
       <div class="flex min-w-0 items-center gap-2">
         {#if titleSnippet}
           {@render titleSnippet()}
         {:else if titleText}
           <h3
-            class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]"
+            class="truncate text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
           >
             {titleText}
           </h3>

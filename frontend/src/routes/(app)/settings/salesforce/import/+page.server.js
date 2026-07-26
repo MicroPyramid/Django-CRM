@@ -104,11 +104,7 @@ export const actions = {
     }
 
     try {
-      await apiRequest(
-        `/salesforce/import/${jobId}/cancel/`,
-        { method: 'POST' },
-        { cookies }
-      );
+      await apiRequest(`/salesforce/import/${jobId}/cancel/`, { method: 'POST' }, { cookies });
       return { importCancelled: true };
     } catch (err) {
       return fail(400, { importError: err?.message || 'Failed to cancel import.' });

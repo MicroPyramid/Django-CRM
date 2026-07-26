@@ -12,9 +12,7 @@ export async function GET({ url, cookies }) {
   }
 
   const [jobSettled, historySettled] = await Promise.allSettled([
-    jobId
-      ? apiRequest(`/salesforce/import/${jobId}/`, {}, { cookies })
-      : Promise.resolve(null),
+    jobId ? apiRequest(`/salesforce/import/${jobId}/`, {}, { cookies }) : Promise.resolve(null),
     apiRequest('/salesforce/import/history/', {}, { cookies })
   ]);
 

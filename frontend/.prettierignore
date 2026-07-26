@@ -4,3 +4,16 @@ pnpm-lock.yaml
 yarn.lock
 bun.lock
 bun.lockb
+
+# Generated build output
+.svelte-kit/
+build/
+
+# Local tooling state, not source (gitignored or untracked)
+.claude/
+.remember/
+.mcp.json
+
+# YAML document that carries a .json extension -- prettier picks the JSON
+# parser from the extension and hard-errors (exit 2) instead of warning.
+openapi.json

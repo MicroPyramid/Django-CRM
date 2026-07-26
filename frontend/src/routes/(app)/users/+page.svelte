@@ -273,7 +273,9 @@
                   <Plus class="h-5 w-5 text-[var(--color-success-default)]" />
                 </div>
                 <div>
-                  <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                  <h3
+                    class="text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
+                  >
                     Add New Member
                   </h3>
                   <p class="text-[12px] text-[color:var(--text-muted)]">
@@ -282,38 +284,38 @@
                 </div>
               </div>
             {/snippet}
-              <form
-                method="POST"
-                action="?/add_user"
-                class="flex flex-col gap-4 sm:flex-row sm:items-end"
-              >
-                <div class="flex-1">
-                  <Label class="" for="add-user-email">Email Address *</Label>
-                  <Input
-                    id="add-user-email"
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="user@example.com"
-                    class="mt-1.5"
-                  />
-                </div>
-                <div class="sm:w-40">
-                  <Label class="" for="add-user-role">Role</Label>
-                  <select
-                    id="add-user-role"
-                    name="role"
-                    class="border-input bg-background ring-offset-background focus-visible:ring-ring mt-1.5 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                  >
-                    <option value="USER">User</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                </div>
-                <Button type="submit">
-                  <Plus class="mr-2 h-4 w-4" />
-                  Add Member
-                </Button>
-              </form>
+            <form
+              method="POST"
+              action="?/add_user"
+              class="flex flex-col gap-4 sm:flex-row sm:items-end"
+            >
+              <div class="flex-1">
+                <Label class="" for="add-user-email">Email Address *</Label>
+                <Input
+                  id="add-user-email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="user@example.com"
+                  class="mt-1.5"
+                />
+              </div>
+              <div class="sm:w-40">
+                <Label class="" for="add-user-role">Role</Label>
+                <select
+                  id="add-user-role"
+                  name="role"
+                  class="border-input bg-background ring-offset-background focus-visible:ring-ring mt-1.5 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  <option value="USER">User</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <Button type="submit">
+                <Plus class="mr-2 h-4 w-4" />
+                Add Member
+              </Button>
+            </form>
           </SectionCard>
 
           <!-- Users Table -->
@@ -326,7 +328,9 @@
                   <Users class="h-5 w-5 text-[var(--color-primary-default)]" />
                 </div>
                 <div>
-                  <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+                  <h3
+                    class="text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]"
+                  >
                     Team Members
                   </h3>
                   <p class="text-[12px] text-[color:var(--text-muted)]">
@@ -335,163 +339,156 @@
                 </div>
               </div>
             {/snippet}
-              <div class="rounded-lg border">
-                <Table.Root>
-                  <Table.Header>
+            <div class="rounded-lg border">
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head class="w-[300px]">Member</Table.Head>
+                    <Table.Head>Role</Table.Head>
+                    <Table.Head>Joined</Table.Head>
+                    <Table.Head class="w-[80px]">Actions</Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {#each users as user (user.id)}
                     <Table.Row>
-                      <Table.Head class="w-[300px]">Member</Table.Head>
-                      <Table.Head>Role</Table.Head>
-                      <Table.Head>Joined</Table.Head>
-                      <Table.Head class="w-[80px]">Actions</Table.Head>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {#each users as user (user.id)}
-                      <Table.Row>
-                        <Table.Cell>
-                          <div class="flex items-center gap-3">
-                            <Avatar.Root class="h-9 w-9">
-                              {#if user.avatar}
-                                <Avatar.Image class="" src={user.avatar} alt={user.name} />
-                              {/if}
-                              <Avatar.Fallback
-                                class="bg-[var(--color-primary-default)] text-sm text-white"
-                              >
-                                {getInitials(user.name)}
-                              </Avatar.Fallback>
-                            </Avatar.Root>
-                            <div>
-                              <div class="flex items-center gap-2">
-                                <span class="text-foreground font-medium">{user.name}</span>
-                                {#if user.isSelf}
-                                  <Badge variant="secondary" class="text-xs">You</Badge>
-                                {/if}
-                                {#if !user.isActive}
-                                  <Badge variant="outline" class="text-muted-foreground text-xs"
-                                    >Inactive</Badge
-                                  >
-                                {/if}
-                              </div>
-                              <span class="text-muted-foreground text-sm">{user.email}</span>
-                            </div>
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          {#if user.isSelf || editingRoleId !== user.id}
-                            <Badge
-                              variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
-                              class="cursor-default"
-                            >
-                              {#if user.role === 'ADMIN'}
-                                <Shield class="mr-1 h-3 w-3" />
-                              {:else}
-                                <User class="mr-1 h-3 w-3" />
-                              {/if}
-                              {user.role}
-                            </Badge>
-                            {#if !user.isSelf}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                class="ml-2 h-6 px-2 text-xs"
-                                onclick={() => (editingRoleId = user.id)}
-                              >
-                                <Edit class="h-3 w-3" />
-                              </Button>
+                      <Table.Cell>
+                        <div class="flex items-center gap-3">
+                          <Avatar.Root class="h-9 w-9">
+                            {#if user.avatar}
+                              <Avatar.Image class="" src={user.avatar} alt={user.name} />
                             {/if}
-                          {:else}
-                            <form
-                              method="POST"
-                              action="?/edit_role"
-                              class="flex items-center gap-2"
+                            <Avatar.Fallback
+                              class="bg-[var(--color-primary-default)] text-sm text-white"
                             >
-                              <input type="hidden" name="user_id" value={user.id} />
-                              <select
-                                name="role"
-                                class="border-input bg-background h-8 rounded-md border px-2 text-sm"
-                              >
-                                <option value="USER" selected={user.role === 'USER'}>User</option>
-                                <option value="ADMIN" selected={user.role === 'ADMIN'}>Admin</option
+                              {getInitials(user.name)}
+                            </Avatar.Fallback>
+                          </Avatar.Root>
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-foreground font-medium">{user.name}</span>
+                              {#if user.isSelf}
+                                <Badge variant="secondary" class="text-xs">You</Badge>
+                              {/if}
+                              {#if !user.isActive}
+                                <Badge variant="outline" class="text-muted-foreground text-xs"
+                                  >Inactive</Badge
                                 >
-                              </select>
-                              <Button type="submit" size="icon" class="h-7 w-7" variant="default">
-                                <Check class="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="icon"
-                                class="h-7 w-7"
-                                variant="outline"
-                                onclick={() => (editingRoleId = null)}
-                              >
-                                <X class="h-3.5 w-3.5" />
-                              </Button>
-                            </form>
-                          {/if}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span class="text-muted-foreground text-sm"
-                            >{formatDate(user.joined)}</span
+                              {/if}
+                            </div>
+                            <span class="text-muted-foreground text-sm">{user.email}</span>
+                          </div>
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {#if user.isSelf || editingRoleId !== user.id}
+                          <Badge
+                            variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                            class="cursor-default"
                           >
-                        </Table.Cell>
-                        <Table.Cell>
-                          {#if user.isSelf}
-                            <span class="text-muted-foreground">-</span>
-                          {:else if !user.isActive}
-                            <!-- Inactive user: show Activate button -->
+                            {#if user.role === 'ADMIN'}
+                              <Shield class="mr-1 h-3 w-3" />
+                            {:else}
+                              <User class="mr-1 h-3 w-3" />
+                            {/if}
+                            {user.role}
+                          </Badge>
+                          {#if !user.isSelf}
                             <Button
                               variant="ghost"
-                              size="icon"
-                              class="h-8 w-8 text-[var(--color-success-default)] hover:bg-[var(--color-success-light)]"
-                              onclick={() => handleActivateUser(user.id)}
-                              title="Activate user"
+                              size="sm"
+                              class="ml-2 h-6 px-2 text-xs"
+                              onclick={() => (editingRoleId = user.id)}
                             >
-                              <UserCheck class="h-4 w-4" />
+                              <Edit class="h-3 w-3" />
                             </Button>
-                          {:else}
-                            <!-- Active user: show Deactivate button -->
-                            <AlertDialog.Root>
-                              <AlertDialog.Trigger
-                                class="text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-md"
-                                title="Deactivate user"
-                              >
-                                <Trash2 class="h-4 w-4" />
-                              </AlertDialog.Trigger>
-                              <AlertDialog.Content>
-                                <AlertDialog.Header>
-                                  <AlertDialog.Title>Deactivate Team Member</AlertDialog.Title>
-                                  <AlertDialog.Description>
-                                    Are you sure you want to deactivate <strong>{user.name}</strong
-                                    >? They will no longer be able to access the organization.
-                                  </AlertDialog.Description>
-                                </AlertDialog.Header>
-                                <AlertDialog.Footer>
-                                  <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                                  <Button
-                                    variant="destructive"
-                                    onclick={() => handleRemoveUser(user.id)}
-                                  >
-                                    Deactivate
-                                  </Button>
-                                </AlertDialog.Footer>
-                              </AlertDialog.Content>
-                            </AlertDialog.Root>
                           {/if}
-                        </Table.Cell>
-                      </Table.Row>
-                    {/each}
+                        {:else}
+                          <form method="POST" action="?/edit_role" class="flex items-center gap-2">
+                            <input type="hidden" name="user_id" value={user.id} />
+                            <select
+                              name="role"
+                              class="border-input bg-background h-8 rounded-md border px-2 text-sm"
+                            >
+                              <option value="USER" selected={user.role === 'USER'}>User</option>
+                              <option value="ADMIN" selected={user.role === 'ADMIN'}>Admin</option>
+                            </select>
+                            <Button type="submit" size="icon" class="h-7 w-7" variant="default">
+                              <Check class="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              class="h-7 w-7"
+                              variant="outline"
+                              onclick={() => (editingRoleId = null)}
+                            >
+                              <X class="h-3.5 w-3.5" />
+                            </Button>
+                          </form>
+                        {/if}
+                      </Table.Cell>
+                      <Table.Cell>
+                        <span class="text-muted-foreground text-sm">{formatDate(user.joined)}</span>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {#if user.isSelf}
+                          <span class="text-muted-foreground">-</span>
+                        {:else if !user.isActive}
+                          <!-- Inactive user: show Activate button -->
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            class="h-8 w-8 text-[var(--color-success-default)] hover:bg-[var(--color-success-light)]"
+                            onclick={() => handleActivateUser(user.id)}
+                            title="Activate user"
+                          >
+                            <UserCheck class="h-4 w-4" />
+                          </Button>
+                        {:else}
+                          <!-- Active user: show Deactivate button -->
+                          <AlertDialog.Root>
+                            <AlertDialog.Trigger
+                              class="text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 items-center justify-center rounded-md"
+                              title="Deactivate user"
+                            >
+                              <Trash2 class="h-4 w-4" />
+                            </AlertDialog.Trigger>
+                            <AlertDialog.Content>
+                              <AlertDialog.Header>
+                                <AlertDialog.Title>Deactivate Team Member</AlertDialog.Title>
+                                <AlertDialog.Description>
+                                  Are you sure you want to deactivate <strong>{user.name}</strong>?
+                                  They will no longer be able to access the organization.
+                                </AlertDialog.Description>
+                              </AlertDialog.Header>
+                              <AlertDialog.Footer>
+                                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                                <Button
+                                  variant="destructive"
+                                  onclick={() => handleRemoveUser(user.id)}
+                                >
+                                  Deactivate
+                                </Button>
+                              </AlertDialog.Footer>
+                            </AlertDialog.Content>
+                          </AlertDialog.Root>
+                        {/if}
+                      </Table.Cell>
+                    </Table.Row>
+                  {/each}
 
-                    {#if users.length === 0}
-                      <Table.Row>
-                        <Table.Cell colspan={4} class="py-8 text-center">
-                          <Users class="text-muted-foreground/50 mx-auto h-8 w-8" />
-                          <p class="text-muted-foreground mt-2 text-sm">No team members found</p>
-                        </Table.Cell>
-                      </Table.Row>
-                    {/if}
-                  </Table.Body>
-                </Table.Root>
-              </div>
+                  {#if users.length === 0}
+                    <Table.Row>
+                      <Table.Cell colspan={4} class="py-8 text-center">
+                        <Users class="text-muted-foreground/50 mx-auto h-8 w-8" />
+                        <p class="text-muted-foreground mt-2 text-sm">No team members found</p>
+                      </Table.Cell>
+                    </Table.Row>
+                  {/if}
+                </Table.Body>
+              </Table.Root>
+            </div>
           </SectionCard>
         </Tabs.Content>
 
@@ -542,7 +539,6 @@
     </div>
   {/if}
 </div>
-
 
 <!-- Team Form Dialog -->
 <TeamFormDialog

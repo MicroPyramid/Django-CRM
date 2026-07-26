@@ -85,12 +85,11 @@
         <div>
           <p class="font-medium">AWS SES setup required.</p>
           <p>
-            Create an SES Receipt Rule on a verified domain that publishes to an
-            SNS Topic with action <strong>"SNS Notification with full content"</strong>.
-            Subscribe the topic to the webhook URL shown below for each mailbox.
-            The first POST will be a <code>SubscriptionConfirmation</code> — we
-            confirm it automatically. Other providers (Mailgun, Postmark, IMAP)
-            will be enabled in a follow-up.
+            Create an SES Receipt Rule on a verified domain that publishes to an SNS Topic with
+            action <strong>"SNS Notification with full content"</strong>. Subscribe the topic to the
+            webhook URL shown below for each mailbox. The first POST will be a
+            <code>SubscriptionConfirmation</code> — we confirm it automatically. Other providers (Mailgun,
+            Postmark, IMAP) will be enabled in a follow-up.
           </p>
         </div>
       </div>
@@ -113,9 +112,10 @@
             <form
               method="POST"
               action="?/update"
-              use:enhance={() => async ({ update }) => {
-                await update();
-              }}
+              use:enhance={() =>
+                async ({ update }) => {
+                  await update();
+                }}
               class="space-y-3"
             >
               <input type="hidden" name="id" value={mailbox.id} />
@@ -127,12 +127,14 @@
                     {mailbox.address}
                   </span>
                   <span
-                    class="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs uppercase text-[var(--text-secondary)]"
+                    class="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs text-[var(--text-secondary)] uppercase"
                   >
                     {mailbox.provider}
                   </span>
                   {#if !mailbox.is_active}
-                    <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                    <span
+                      class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                    >
                       Inactive
                     </span>
                   {/if}
@@ -149,7 +151,9 @@
                 <div class="space-y-1">
                   <Label class="text-xs">Webhook URL</Label>
                   <div class="flex items-center gap-1">
-                    <code class="flex-1 truncate rounded bg-[var(--surface-muted)] px-2 py-1 text-[11px]">
+                    <code
+                      class="flex-1 truncate rounded bg-[var(--surface-muted)] px-2 py-1 text-[11px]"
+                    >
                       {webhookUrl(mailbox.id)}
                     </code>
                     <Button
@@ -166,7 +170,9 @@
                 <div class="space-y-1">
                   <Label class="text-xs">Webhook secret</Label>
                   <div class="flex items-center gap-1">
-                    <code class="flex-1 truncate rounded bg-[var(--surface-muted)] px-2 py-1 text-[11px]">
+                    <code
+                      class="flex-1 truncate rounded bg-[var(--surface-muted)] px-2 py-1 text-[11px]"
+                    >
                       {mailbox.webhook_secret}
                     </code>
                     <Button
@@ -221,11 +227,7 @@
                   </select>
                 </div>
 
-                <input
-                  type="hidden"
-                  name="address"
-                  value={mailbox.address}
-                />
+                <input type="hidden" name="address" value={mailbox.address} />
                 <input type="hidden" name="provider" value={mailbox.provider} />
                 <input
                   type="hidden"
@@ -268,9 +270,10 @@
     <form
       method="POST"
       action="?/create"
-      use:enhance={() => async ({ update }) => {
-        await update();
-      }}
+      use:enhance={() =>
+        async ({ update }) => {
+          await update();
+        }}
       class="space-y-4"
     >
       <input type="hidden" name="provider" value="ses" />
@@ -335,9 +338,7 @@
       </div>
 
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>
-          Cancel
-        </Button>
+        <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>Cancel</Button>
         <Button type="submit">Create</Button>
       </Dialog.Footer>
     </form>

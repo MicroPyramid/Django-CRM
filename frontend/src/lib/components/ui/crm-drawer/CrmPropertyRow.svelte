@@ -51,7 +51,11 @@
 
   // Stable id for ARIA wiring; falls back to a slug of the label
   const inputId = $derived(
-    id || `prop-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    id ||
+      `prop-${label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')}`
   );
   const labelId = $derived(`${inputId}-label`);
   const errorId = $derived(`${inputId}-error`);
@@ -245,10 +249,7 @@
     <div class="min-w-0 flex-1">
       {#if isPlainReadonly}
         <span
-          class={cn(
-            'block px-2.5 py-1.5 text-sm',
-            type === 'textarea' && 'whitespace-pre-wrap'
-          )}
+          class={cn('block px-2.5 py-1.5 text-sm', type === 'textarea' && 'whitespace-pre-wrap')}
           aria-labelledby={labelId}
         >
           {#if value !== null && value !== undefined && value !== ''}
@@ -271,7 +272,7 @@
           aria-required={required ? 'true' : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error ? errorId : undefined}
-          class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm font-medium transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-destructive/40"
+          class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 aria-[invalid=true]:ring-destructive/40 w-full rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm font-medium transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1"
         />
       {:else if type === 'number'}
         <div class="flex items-center">
@@ -291,11 +292,14 @@
             aria-required={required ? 'true' : undefined}
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={error ? errorId : undefined}
-            class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full rounded-lg border-0 bg-transparent px-2 py-1.5 text-sm font-medium tabular-nums transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-destructive/40"
+            class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 aria-[invalid=true]:ring-destructive/40 w-full rounded-lg border-0 bg-transparent px-2 py-1.5 text-sm font-medium tabular-nums transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1"
           />
         </div>
       {:else if isReadonlyDate}
-        <span class="text-foreground block px-2.5 py-1.5 text-sm font-medium" aria-labelledby={labelId}>
+        <span
+          class="text-foreground block px-2.5 py-1.5 text-sm font-medium"
+          aria-labelledby={labelId}
+        >
           {#if value}
             {formatDateDisplay(value)}
           {:else}
@@ -316,10 +320,13 @@
                   'hover:bg-muted/30 inline-flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all',
                   !value ? 'text-muted-foreground/50' : 'text-foreground',
                   !editable && 'cursor-default hover:bg-transparent',
-                  error && 'ring-1 ring-destructive/40'
+                  error && 'ring-destructive/40 ring-1'
                 )}
               >
-                <CalendarIcon class="text-muted-foreground/60 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <CalendarIcon
+                  class="text-muted-foreground/60 h-3.5 w-3.5 shrink-0"
+                  aria-hidden="true"
+                />
                 {formatDateDisplay(value)}
               </button>
             {/snippet}
@@ -339,19 +346,19 @@
           aria-required={required ? 'true' : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error ? errorId : undefined}
-          class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 w-full resize-none rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-destructive/40"
+          class="text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 focus:ring-primary/20 aria-[invalid=true]:ring-destructive/40 w-full resize-none rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-sm transition-all outline-none focus:ring-1 aria-[invalid=true]:ring-1"
           >{value || ''}</textarea
         >
       {:else if isReadonlySelect}
         <span
           aria-labelledby={labelId}
-          class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ring-black/5 dark:ring-white/10 {getOptionStyle(
+          class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 ring-inset dark:ring-white/10 {getOptionStyle(
             value
           )}"
         >
           <span
             aria-hidden="true"
-            class="h-2 w-2 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/20 {getOptionBgColor(
+            class="h-2 w-2 rounded-full ring-1 ring-black/10 ring-inset dark:ring-white/20 {getOptionBgColor(
               value
             )}"
           ></span>

@@ -63,11 +63,7 @@ export const actions = {
     const isActive = formData.get('is_active');
     if (isActive !== null) body.is_active = isActive.toString() === 'true';
     try {
-      await apiRequest(
-        `/macros/${id}/`,
-        { method: 'PATCH', body },
-        { cookies, org: locals?.org }
-      );
+      await apiRequest(`/macros/${id}/`, { method: 'PATCH', body }, { cookies, org: locals?.org });
       return { success: true };
     } catch (err) {
       console.error('Failed to update macro:', err);
@@ -80,11 +76,7 @@ export const actions = {
     const id = formData.get('id')?.toString();
     if (!id) return fail(400, { error: 'Missing macro id' });
     try {
-      await apiRequest(
-        `/macros/${id}/`,
-        { method: 'DELETE' },
-        { cookies, org: locals?.org }
-      );
+      await apiRequest(`/macros/${id}/`, { method: 'DELETE' }, { cookies, org: locals?.org });
       return { success: true };
     } catch (err) {
       console.error('Failed to delete macro:', err);

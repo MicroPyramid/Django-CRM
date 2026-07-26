@@ -37,7 +37,11 @@
 />
 
 <div class="mx-auto flex max-w-2xl flex-col gap-4 p-4">
-  <form method="POST" use:enhance={handleSubmit} class="flex flex-col gap-4 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
+  <form
+    method="POST"
+    use:enhance={handleSubmit}
+    class="flex flex-col gap-4 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
+  >
     <label class="flex flex-col gap-1 text-sm">
       <span class="font-medium">Title <span class="text-red-600">*</span></span>
       <input
@@ -57,8 +61,9 @@
         name="description"
         rows="10"
         placeholder="Steps, root cause, workaround..."
-        class="resize-y rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-sm font-mono"
-      >{form?.description ?? ''}</textarea>
+        class="resize-y rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 font-mono text-sm"
+        >{form?.description ?? ''}</textarea
+      >
       <span class="text-xs text-[var(--text-secondary)]">
         Markdown is fine — agents will see this when linking to a ticket.
       </span>

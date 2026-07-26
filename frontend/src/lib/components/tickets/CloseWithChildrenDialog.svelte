@@ -19,13 +19,7 @@
    *   onOpenChange: (v: boolean) => void
    * }}
    */
-  let {
-    ticketId,
-    ticketSubject,
-    childCount,
-    open = $bindable(false),
-    onOpenChange
-  } = $props();
+  let { ticketId, ticketSubject, childCount, open = $bindable(false), onOpenChange } = $props();
 
   let cascade = $state(true);
   let comment = $state('');
@@ -80,9 +74,7 @@
       const data = await res.json();
       const n = (data.cascaded_case_ids || []).length;
       toast.success(
-        n > 0
-          ? `Ticket closed; ${n} child ticket${n === 1 ? '' : 's'} cascaded.`
-          : 'Ticket closed.'
+        n > 0 ? `Ticket closed; ${n} child ticket${n === 1 ? '' : 's'} cascaded.` : 'Ticket closed.'
       );
       open = false;
       await invalidateAll();
@@ -92,10 +84,7 @@
   }
 </script>
 
-<Dialog.Root
-  bind:open
-  onOpenChange={(v) => onOpenChange?.(v)}
->
+<Dialog.Root bind:open onOpenChange={(v) => onOpenChange?.(v)}>
   <Dialog.Content class="sm:max-w-lg">
     <Dialog.Header>
       <Dialog.Title>Close ticket with children</Dialog.Title>
@@ -112,7 +101,9 @@
           <Loader2 class="h-3.5 w-3.5 animate-spin" /> Inspecting ticket tree…
         </div>
       {:else if openDescendants.length > 0}
-        <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900/40 dark:bg-amber-900/20">
+        <div
+          class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900/40 dark:bg-amber-900/20"
+        >
           <p class="mb-1 font-medium text-amber-900 dark:text-amber-100">
             {openDescendants.length} open child ticket{openDescendants.length === 1 ? '' : 's'}:
           </p>
@@ -120,7 +111,9 @@
             {#each openDescendants as d (d.id)}
               <li class="flex items-center justify-between gap-2">
                 <span class="min-w-0 truncate">{d.name}</span>
-                <span class="shrink-0 rounded bg-white/60 px-1 py-0.5 text-[10px] dark:bg-black/20">{d.status}</span>
+                <span class="shrink-0 rounded bg-white/60 px-1 py-0.5 text-[10px] dark:bg-black/20"
+                  >{d.status}</span
+                >
               </li>
             {/each}
           </ul>
@@ -161,12 +154,7 @@
     </div>
 
     <Dialog.Footer>
-      <Button
-        type="button"
-        variant="outline"
-        onclick={() => (open = false)}
-        disabled={submitting}
-      >
+      <Button type="button" variant="outline" onclick={() => (open = false)} disabled={submitting}>
         Cancel
       </Button>
       <Button type="button" disabled={submitting} onclick={submit}>

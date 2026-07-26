@@ -109,7 +109,7 @@
 <div class="flex-1 p-4 md:p-6 lg:p-8">
   <div class="mx-auto max-w-4xl space-y-6">
     <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-4"
+      class="space-y-4 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
     >
       <header class="flex items-start gap-3">
         <div
@@ -118,15 +118,14 @@
           <MessageSquareQuote class="h-4 w-4" />
         </div>
         <div>
-          <h2 class="text-base font-medium text-[var(--text-primary)]">
-            New macro
-          </h2>
+          <h2 class="text-base font-medium text-[var(--text-primary)]">New macro</h2>
           <p class="text-sm text-[var(--text-secondary)]">
             Use placeholders like
             {#each PLACEHOLDERS as p, i (p)}
-              <code class="rounded bg-[var(--surface-sunken)] px-1 text-xs"
-                >{p}</code
-              >{i < PLACEHOLDERS.length - 1 ? ', ' : ''}
+              <code class="rounded bg-[var(--surface-sunken)] px-1 text-xs">{p}</code>{i <
+              PLACEHOLDERS.length - 1
+                ? ', '
+                : ''}
             {/each}
             — they expand at apply-time.
           </p>
@@ -200,12 +199,13 @@
               <span>
                 Unknown placeholder{unknownInNew.length > 1 ? 's' : ''}:
                 {#each unknownInNew as token, i (token)}
-                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40"
-                    >{token}</code
-                  >{i < unknownInNew.length - 1 ? ', ' : ''}
+                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40">{token}</code>{i <
+                  unknownInNew.length - 1
+                    ? ', '
+                    : ''}
                 {/each}
-                — these will render literally on the ticket. Check spelling
-                against the supported list above.
+                — these will render literally on the ticket. Check spelling against the supported list
+                above.
               </span>
             </div>
           {/if}
@@ -228,12 +228,10 @@
     </section>
 
     <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-3"
+      class="space-y-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
     >
       <header>
-        <h2 class="text-base font-medium text-[var(--text-primary)]">
-          Org macros
-        </h2>
+        <h2 class="text-base font-medium text-[var(--text-primary)]">Org macros</h2>
         <p class="text-sm text-[var(--text-secondary)]">
           Visible to every agent in the org. {isAdmin
             ? 'You can edit and deactivate.'
@@ -256,14 +254,14 @@
                   <span class="font-medium">{m.title}</span>
                   {#if !m.is_active}
                     <span
-                      class="rounded bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]"
+                      class="rounded bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[10px] tracking-wide text-[var(--text-secondary)] uppercase"
                     >
                       Inactive
                     </span>
                   {/if}
                   {#if unknown.length > 0}
                     <span
-                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] tracking-wide text-amber-900 uppercase dark:bg-amber-900/40 dark:text-amber-200"
                       title={`Unknown placeholder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`}
                     >
                       <AlertTriangle class="h-3 w-3" />
@@ -272,7 +270,7 @@
                   {/if}
                 </div>
                 <p
-                  class="mt-0.5 line-clamp-2 whitespace-pre-wrap text-xs text-[var(--text-secondary)]"
+                  class="mt-0.5 line-clamp-2 text-xs whitespace-pre-wrap text-[var(--text-secondary)]"
                 >
                   {m.body}
                 </p>
@@ -293,15 +291,18 @@
                   <form
                     method="POST"
                     action="?/remove"
-                    use:enhance={() => async ({ result, update }) => {
-                      await update();
-                      if (result.type === 'success') {
-                        toast.success('Macro deactivated');
-                        await invalidateAll();
-                      } else if (result.type === 'failure') {
-                        toast.error(/** @type {any} */ (result.data)?.error || 'Failed to deactivate');
-                      }
-                    }}
+                    use:enhance={() =>
+                      async ({ result, update }) => {
+                        await update();
+                        if (result.type === 'success') {
+                          toast.success('Macro deactivated');
+                          await invalidateAll();
+                        } else if (result.type === 'failure') {
+                          toast.error(
+                            /** @type {any} */ (result.data)?.error || 'Failed to deactivate'
+                          );
+                        }
+                      }}
                   >
                     <input type="hidden" name="id" value={m.id} />
                     <Button
@@ -324,15 +325,11 @@
     </section>
 
     <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-3"
+      class="space-y-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
     >
       <header>
-        <h2 class="text-base font-medium text-[var(--text-primary)]">
-          My macros
-        </h2>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Only you can see and use these.
-        </p>
+        <h2 class="text-base font-medium text-[var(--text-primary)]">My macros</h2>
+        <p class="text-sm text-[var(--text-secondary)]">Only you can see and use these.</p>
       </header>
       {#if personalMacros.length === 0}
         <p class="text-sm text-[var(--text-secondary)]">No personal macros yet.</p>
@@ -348,7 +345,7 @@
                   <span class="font-medium">{m.title}</span>
                   {#if unknown.length > 0}
                     <span
-                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                      class="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] tracking-wide text-amber-900 uppercase dark:bg-amber-900/40 dark:text-amber-200"
                       title={`Unknown placeholder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`}
                     >
                       <AlertTriangle class="h-3 w-3" />
@@ -357,7 +354,7 @@
                   {/if}
                 </div>
                 <p
-                  class="mt-0.5 line-clamp-2 whitespace-pre-wrap text-xs text-[var(--text-secondary)]"
+                  class="mt-0.5 line-clamp-2 text-xs whitespace-pre-wrap text-[var(--text-secondary)]"
                 >
                   {m.body}
                 </p>
@@ -377,15 +374,16 @@
                 <form
                   method="POST"
                   action="?/remove"
-                  use:enhance={() => async ({ result, update }) => {
-                    await update();
-                    if (result.type === 'success') {
-                      toast.success('Macro deleted');
-                      await invalidateAll();
-                    } else if (result.type === 'failure') {
-                      toast.error(/** @type {any} */ (result.data)?.error || 'Failed to delete');
-                    }
-                  }}
+                  use:enhance={() =>
+                    async ({ result, update }) => {
+                      await update();
+                      if (result.type === 'success') {
+                        toast.success('Macro deleted');
+                        await invalidateAll();
+                      } else if (result.type === 'failure') {
+                        toast.error(/** @type {any} */ (result.data)?.error || 'Failed to delete');
+                      }
+                    }}
                 >
                   <input type="hidden" name="id" value={m.id} />
                   <Button
@@ -450,13 +448,7 @@
         </div>
         <div class="space-y-1">
           <Label for="edit-body" class="text-sm">Body</Label>
-          <Textarea
-            id="edit-body"
-            name="body"
-            rows={6}
-            bind:value={editBody}
-            required
-          />
+          <Textarea id="edit-body" name="body" rows={6} bind:value={editBody} required />
           {#if unknownInEdit.length > 0}
             <div
               class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-200"
@@ -466,9 +458,10 @@
               <span>
                 Unknown placeholder{unknownInEdit.length > 1 ? 's' : ''}:
                 {#each unknownInEdit as token, i (token)}
-                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40"
-                    >{token}</code
-                  >{i < unknownInEdit.length - 1 ? ', ' : ''}
+                  <code class="rounded bg-amber-100 px-1 dark:bg-amber-900/40">{token}</code>{i <
+                  unknownInEdit.length - 1
+                    ? ', '
+                    : ''}
                 {/each}
                 — these will render literally on the ticket.
               </span>
@@ -477,28 +470,13 @@
         </div>
         {#if editing.scope === 'org'}
           <div class="flex items-center gap-2">
-            <input
-              id="edit-active"
-              type="checkbox"
-              bind:checked={editIsActive}
-              class="h-4 w-4"
-            />
+            <input id="edit-active" type="checkbox" bind:checked={editIsActive} class="h-4 w-4" />
             <Label for="edit-active" class="text-sm">Active</Label>
-            <input
-              type="hidden"
-              name="is_active"
-              value={editIsActive ? 'true' : 'false'}
-            />
+            <input type="hidden" name="is_active" value={editIsActive ? 'true' : 'false'} />
           </div>
         {/if}
         <Dialog.Footer>
-          <Button
-            type="button"
-            variant="outline"
-            onclick={() => (editOpen = false)}
-          >
-            Cancel
-          </Button>
+          <Button type="button" variant="outline" onclick={() => (editOpen = false)}>Cancel</Button>
           <Button type="submit" disabled={saving} class="gap-2">
             {#if saving}
               <Loader2 class="h-4 w-4 animate-spin" />

@@ -22,9 +22,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
 
@@ -112,10 +111,10 @@ class TestContactListView:
             "last_name": "User",
             "email": "nope@example.com",
         }
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                CONTACTS_LIST_URL, payload, format="json"
-            )
+        response = unauthenticated_client.post(
+            CONTACTS_LIST_URL, payload, format="json"
+        )
+        assert response.status_code in (401, 403)
 
     @patch("contacts.views.send_email_to_assigned_user.delay")
     def test_org_isolation(

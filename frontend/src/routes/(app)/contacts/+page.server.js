@@ -83,9 +83,11 @@ export async function load({ url, locals, cookies }) {
       apiRequest(`/contacts/?${queryParams.toString()}`, {}, { cookies, org }),
       apiRequest('/accounts/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/tags/', {}, { cookies, org }).catch(() => ({ tags: [] })),
-      apiRequest('/custom-fields/?target_model=Contact&active_only=true', {}, { cookies, org }).catch(
-        () => ({ definitions: [] })
-      )
+      apiRequest(
+        '/custom-fields/?target_model=Contact&active_only=true',
+        {},
+        { cookies, org }
+      ).catch(() => ({ definitions: [] }))
     ]);
 
     // Handle Django response format

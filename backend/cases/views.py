@@ -1,17 +1,13 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.db.models import Q
-from drf_spectacular.utils import (
-    extend_schema,
-    inline_serializer,
-)
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
@@ -19,13 +15,13 @@ from accounts.serializer import AccountSerializer
 from cases import swagger_params
 from cases.models import Case, ReopenPolicy, Solution
 from cases.models import EmailMessage as _EmailMessageModel  # noqa: F401  (used below)
-from cases.serializer import EmailMessageSerializer
 from cases.serializer import (
     CaseCommentEditSwaggerSerializer,
     CaseCreateSerializer,
     CaseCreateSwaggerSerializer,
     CaseDetailEditSwaggerSerializer,
     CaseSerializer,
+    EmailMessageSerializer,
     ReopenPolicySerializer,
 )
 from cases.solution_serializers import SolutionSerializer
@@ -40,6 +36,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.permissions import HasOrgContext
 from common.serializer import (
     ActivitySerializer,
     AttachmentsSerializer,
@@ -49,7 +46,6 @@ from common.serializer import (
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-
 
 _ALLOWED_CASE_ORDERINGS = frozenset(
     {
@@ -148,12 +144,8 @@ class CaseListView(APIView, LimitOffsetPagination):
             "-id"
         )
         # COORDINATION_DECISIONS.md D4: hide soft-deleted cases by default; admins may opt in.
-        include_deleted = (
-            params.get("include_deleted") == "true"
-            and (
-                self.request.profile.role == "ADMIN"
-                or self.request.profile.is_admin
-            )
+        include_deleted = params.get("include_deleted") == "true" and (
+            self.request.profile.role == "ADMIN" or self.request.profile.is_admin
         )
         if not include_deleted:
             queryset = queryset.filter(is_active=True)
@@ -328,8 +320,7 @@ class CaseListView(APIView, LimitOffsetPagination):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -346,10 +337,12 @@ class CaseListView(APIView, LimitOffsetPagination):
                 attachment.save()
 
             recipients = list(cases_obj.assigned_to.all().values_list("id", flat=True))
-            send_email_to_assigned_user.delay(
-                recipients,
-                cases_obj.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    cases_obj.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {
@@ -495,8 +488,7 @@ class CaseDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -516,10 +508,12 @@ class CaseDetailView(APIView):
                 cases_object.assigned_to.all().values_list("id", flat=True)
             )
             recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-            send_email_to_assigned_user.delay(
-                recipients,
-                cases_object.id,
-                str(request.profile.org.id),
+            transaction.on_commit(
+                lambda: send_email_to_assigned_user.delay(
+                    recipients,
+                    cases_object.id,
+                    str(request.profile.org.id),
+                )
             )
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},
@@ -664,9 +658,7 @@ class CaseDetailView(APIView):
         public_comments = comments_qs.filter(is_internal=False)
         internal_notes = comments_qs.filter(is_internal=True)
 
-        linked_solutions = self.cases.solutions.filter(
-            org=self.request.profile.org
-        )
+        linked_solutions = self.cases.solutions.filter(org=self.request.profile.org)
 
         recent_activities = Activity.objects.filter(
             entity_type="Case",
@@ -1167,9 +1159,7 @@ class CaseSolutionLinkView(APIView):
             case.solutions.add(sol)
         return Response(
             {"error": False, "solution": SolutionSerializer(sol).data},
-            status=(
-                status.HTTP_200_OK if already_linked else status.HTTP_201_CREATED
-            ),
+            status=(status.HTTP_200_OK if already_linked else status.HTTP_201_CREATED),
         )
 
     @extend_schema(tags=["Cases"])
@@ -1243,9 +1233,7 @@ class CaseActivityListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
-        return Response(
-            {"activities": data, "count": self.count, "offset": offset}
-        )
+        return Response({"activities": data, "count": self.count, "offset": offset})
 
 
 class ReopenPolicyView(APIView):

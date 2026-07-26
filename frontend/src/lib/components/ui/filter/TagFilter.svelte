@@ -88,146 +88,146 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild class="">
-      {#snippet child({ props })}
-        <button
-          type="button"
-          {...props}
-          class={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[13px] font-medium leading-none transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)]',
-            hasSelection
-              ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
-              : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
-            className
-          )}
-        >
-          <Tag class="size-3.5 shrink-0" />
-          <span class="truncate">{displayText}</span>
-          {#if hasSelection}
-            <span
-              class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--violet-soft-text)] opacity-90"
-            >
-              {selectedIds.length}
-            </span>
-            <span
-              role="button"
-              tabindex="0"
-              onclick={(e) => {
+  <Popover.Trigger asChild class="">
+    {#snippet child({ props })}
+      <button
+        type="button"
+        {...props}
+        class={cn(
+          'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border px-2.5 text-[13px] leading-none font-medium transition-colors focus:ring-1 focus:ring-[color:var(--ring)] focus:outline-none',
+          hasSelection
+            ? 'border-[color:var(--violet)]/40 bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)]'
+            : 'border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)] hover:bg-[color:var(--bg-hover)]',
+          className
+        )}
+      >
+        <Tag class="size-3.5 shrink-0" />
+        <span class="truncate">{displayText}</span>
+        {#if hasSelection}
+          <span
+            class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[var(--r-sm)] px-1.5 text-[11px] font-medium text-[color:var(--violet-soft-text)] tabular-nums opacity-90"
+          >
+            {selectedIds.length}
+          </span>
+          <span
+            role="button"
+            tabindex="0"
+            onclick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              clearAll();
+            }}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
                 e.stopPropagation();
                 e.preventDefault();
                 clearAll();
-              }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  clearAll();
-                }
-              }}
-              class="-mr-1 ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm hover:bg-[color:var(--violet)]/15"
-              aria-label="Clear filter"
-            >
-              <X class="size-3" />
-            </span>
-          {:else}
-            <ChevronDown class="size-3.5 shrink-0 opacity-60" />
-          {/if}
-        </button>
-      {/snippet}
-    </Popover.Trigger>
-
-    <Popover.Content
-      align="start"
-      sideOffset={4}
-      class="w-[280px] overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-1 shadow-lg shadow-black/5"
-    >
-      {#if tags.length === 0}
-        <div class="flex flex-col items-center justify-center py-6 text-center">
-          <Tag class="text-muted-foreground/30 mb-2 h-8 w-8" />
-          <p class="text-muted-foreground text-sm font-medium">No tags available</p>
-          <p class="text-muted-foreground/60 mt-1 text-xs">Create tags to organize your leads</p>
-        </div>
-      {:else}
-        <!-- Header with selected count -->
-        {#if selectedIds.length > 0}
-          <div
-            class={cn(
-              'mb-1 flex items-center justify-between rounded-lg px-2.5 py-2',
-              'bg-primary/5 dark:bg-primary/10'
-            )}
+              }
+            }}
+            class="-mr-1 ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm hover:bg-[color:var(--violet)]/15"
+            aria-label="Clear filter"
           >
-            <span class="text-primary text-xs font-medium">
-              {selectedIds.length} tag{selectedIds.length > 1 ? 's' : ''} selected
-            </span>
-            <button
-              type="button"
-              onclick={clearAll}
-              class="text-primary/70 hover:text-primary text-xs font-medium transition-colors"
-            >
-              Clear all
-            </button>
-          </div>
+            <X class="size-3" />
+          </span>
+        {:else}
+          <ChevronDown class="size-3.5 shrink-0 opacity-60" />
         {/if}
+      </button>
+    {/snippet}
+  </Popover.Trigger>
 
-        <!-- Tags list -->
-        <div class="max-h-[280px] space-y-0.5 overflow-y-auto">
-          {#each tags as tag, i (tag.id)}
-            {@const isSelected = selectedIds.includes(tag.id)}
-            <button
-              type="button"
-              class={cn(
-                'tag-option group',
-                'relative flex w-full cursor-pointer items-center gap-2.5',
-                'rounded-lg px-2.5 py-2',
-                'transition-all duration-150',
-                'outline-none',
-                isSelected ? 'bg-primary/10 dark:bg-primary/15' : 'hover:bg-muted/80',
-                'animate-in fade-in-0 slide-in-from-left-1'
-              )}
-              style="animation-delay: {i * 15}ms"
-              onclick={() => toggleTag(tag.id)}
-            >
-              <!-- Checkbox -->
-              <div
-                class={cn(
-                  'flex h-4 w-4 shrink-0 items-center justify-center rounded',
-                  'border transition-all duration-150',
-                  isSelected
-                    ? 'border-primary bg-primary text-primary-foreground scale-100'
-                    : 'border-border/60 group-hover:border-primary/50 scale-90 bg-transparent group-hover:scale-100'
-                )}
-              >
-                {#if isSelected}
-                  <Check class="h-2.5 w-2.5" />
-                {/if}
-              </div>
-
-              <!-- Tag badge -->
-              <span
-                class={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5',
-                  'text-xs font-semibold',
-                  'transition-all duration-150',
-                  getTagStyle(tag.color),
-                  isSelected && 'ring-primary/20 ring-1'
-                )}
-              >
-                <Hash class="h-3 w-3 opacity-60" />
-                {tag.name}
-              </span>
-
-              <!-- Selected indicator glow -->
-              {#if isSelected}
-                <div
-                  class={cn(
-                    'bg-primary absolute right-2 h-2 w-2 rounded-full',
-                    'animate-in fade-in zoom-in duration-200'
-                  )}
-                ></div>
-              {/if}
-            </button>
-          {/each}
+  <Popover.Content
+    align="start"
+    sideOffset={4}
+    class="w-[280px] overflow-hidden rounded-[var(--r-md)] border border-[color:var(--border)] bg-[color:var(--bg-card)] p-1 shadow-lg shadow-black/5"
+  >
+    {#if tags.length === 0}
+      <div class="flex flex-col items-center justify-center py-6 text-center">
+        <Tag class="text-muted-foreground/30 mb-2 h-8 w-8" />
+        <p class="text-muted-foreground text-sm font-medium">No tags available</p>
+        <p class="text-muted-foreground/60 mt-1 text-xs">Create tags to organize your leads</p>
+      </div>
+    {:else}
+      <!-- Header with selected count -->
+      {#if selectedIds.length > 0}
+        <div
+          class={cn(
+            'mb-1 flex items-center justify-between rounded-lg px-2.5 py-2',
+            'bg-primary/5 dark:bg-primary/10'
+          )}
+        >
+          <span class="text-primary text-xs font-medium">
+            {selectedIds.length} tag{selectedIds.length > 1 ? 's' : ''} selected
+          </span>
+          <button
+            type="button"
+            onclick={clearAll}
+            class="text-primary/70 hover:text-primary text-xs font-medium transition-colors"
+          >
+            Clear all
+          </button>
         </div>
       {/if}
-    </Popover.Content>
-  </Popover.Root>
+
+      <!-- Tags list -->
+      <div class="max-h-[280px] space-y-0.5 overflow-y-auto">
+        {#each tags as tag, i (tag.id)}
+          {@const isSelected = selectedIds.includes(tag.id)}
+          <button
+            type="button"
+            class={cn(
+              'tag-option group',
+              'relative flex w-full cursor-pointer items-center gap-2.5',
+              'rounded-lg px-2.5 py-2',
+              'transition-all duration-150',
+              'outline-none',
+              isSelected ? 'bg-primary/10 dark:bg-primary/15' : 'hover:bg-muted/80',
+              'animate-in fade-in-0 slide-in-from-left-1'
+            )}
+            style="animation-delay: {i * 15}ms"
+            onclick={() => toggleTag(tag.id)}
+          >
+            <!-- Checkbox -->
+            <div
+              class={cn(
+                'flex h-4 w-4 shrink-0 items-center justify-center rounded',
+                'border transition-all duration-150',
+                isSelected
+                  ? 'border-primary bg-primary text-primary-foreground scale-100'
+                  : 'border-border/60 group-hover:border-primary/50 scale-90 bg-transparent group-hover:scale-100'
+              )}
+            >
+              {#if isSelected}
+                <Check class="h-2.5 w-2.5" />
+              {/if}
+            </div>
+
+            <!-- Tag badge -->
+            <span
+              class={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5',
+                'text-xs font-semibold',
+                'transition-all duration-150',
+                getTagStyle(tag.color),
+                isSelected && 'ring-primary/20 ring-1'
+              )}
+            >
+              <Hash class="h-3 w-3 opacity-60" />
+              {tag.name}
+            </span>
+
+            <!-- Selected indicator glow -->
+            {#if isSelected}
+              <div
+                class={cn(
+                  'bg-primary absolute right-2 h-2 w-2 rounded-full',
+                  'animate-in fade-in zoom-in duration-200'
+                )}
+              ></div>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  </Popover.Content>
+</Popover.Root>

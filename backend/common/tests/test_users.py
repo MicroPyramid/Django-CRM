@@ -6,7 +6,6 @@ Run with: pytest common/tests/test_users.py -v
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import Profile
 
@@ -23,8 +22,8 @@ class TestUsersListView:
         assert "active_users" in response.data
 
     def test_list_users_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code in (401, 403)
 
     def test_list_users_no_cross_org_leak(
         self, org_b_client, admin_user, admin_profile

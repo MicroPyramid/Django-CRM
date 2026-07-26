@@ -27,7 +27,6 @@
     children,
     actions
   } = $props();
-
 </script>
 
 {#snippet body()}

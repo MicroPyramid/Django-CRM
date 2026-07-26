@@ -75,7 +75,7 @@
     class="mx-auto max-w-2xl space-y-6"
   >
     <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-5"
+      class="space-y-5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6"
     >
       <header class="flex items-start gap-3">
         <div
@@ -88,9 +88,8 @@
             Auto-reopen on customer reply
           </h2>
           <p class="text-sm text-[var(--text-secondary)]">
-            When enabled, a closed ticket is automatically reopened if the customer
-            posts a comment within the configured window. Agent comments and internal
-            notes never trigger a reopen.
+            When enabled, a closed ticket is automatically reopened if the customer posts a comment
+            within the configured window. Agent comments and internal notes never trigger a reopen.
           </p>
         </div>
       </header>
@@ -103,17 +102,13 @@
           bind:checked={isEnabled}
           class="h-4 w-4 rounded border-[var(--border-default)] text-[var(--color-primary-default)] focus:ring-2 focus:ring-[var(--color-primary-default)]"
         />
-        <Label for="is_enabled" class="cursor-pointer text-sm">
-          Enable automatic reopen
-        </Label>
+        <Label for="is_enabled" class="cursor-pointer text-sm">Enable automatic reopen</Label>
       </div>
       <input type="hidden" name="is_enabled" value={isEnabled ? 'true' : 'false'} />
 
       <!-- Window days -->
       <div class="space-y-2">
-        <Label for="reopen_window_days" class="text-sm">
-          Reopen window (days)
-        </Label>
+        <Label for="reopen_window_days" class="text-sm">Reopen window (days)</Label>
         <Input
           id="reopen_window_days"
           name="reopen_window_days"
@@ -125,16 +120,14 @@
           class="w-32"
         />
         <p class="text-xs text-[var(--text-secondary)]">
-          Replies more than this many days after the ticket was closed will not
-          reopen it. Allowed range: 1–365.
+          Replies more than this many days after the ticket was closed will not reopen it. Allowed
+          range: 1–365.
         </p>
       </div>
 
       <!-- Reopen-to status -->
       <div class="space-y-2">
-        <Label for="reopen_to_status" class="text-sm">
-          Reopen to status
-        </Label>
+        <Label for="reopen_to_status" class="text-sm">Reopen to status</Label>
         <select
           id="reopen_to_status"
           name="reopen_to_status"
@@ -147,8 +140,8 @@
           {/each}
         </select>
         <p class="text-xs text-[var(--text-secondary)]">
-          The status the ticket flips to when reopened. Terminal statuses (Closed,
-          Rejected, Duplicate) are not allowed.
+          The status the ticket flips to when reopened. Terminal statuses (Closed, Rejected,
+          Duplicate) are not allowed.
         </p>
       </div>
 
@@ -165,11 +158,7 @@
           Notify previously assigned agents on reopen
         </Label>
       </div>
-      <input
-        type="hidden"
-        name="notify_assigned"
-        value={notifyAssigned ? 'true' : 'false'}
-      />
+      <input type="hidden" name="notify_assigned" value={notifyAssigned ? 'true' : 'false'} />
     </section>
 
     {#if form?.error}

@@ -30,7 +30,11 @@ export default [
       'svelte/require-each-key': 'warn',
       'svelte/no-navigation-without-resolve': 'warn',
       'svelte/prefer-svelte-reactivity': 'warn',
-      'svelte/prefer-writable-derived': 'warn'
+      'svelte/prefer-writable-derived': 'warn',
+      // We keep {#snippet children()} explicit in components that also define
+      // named snippets (e.g. actions) -- the symmetry reads better than
+      // relying on implicit children, and Svelte treats both identically.
+      'svelte/no-useless-children-snippet': 'off'
     }
   }
 ];

@@ -174,10 +174,19 @@ def build_http_app(base_url, path="/mcp"):
     The returned Starlette app carries a ``lifespan`` that MUST be run (serve it
     directly, or forward the ``lifespan`` scope to it from a parent dispatcher)
     or the MCP session manager never starts and requests fail.
+
+    ``stateless_http=True`` is deliberate. In the default stateful mode every
+    connected agent holds an open streamable-HTTP session for as long as it is
+    configured, so the server accumulates long-lived connections in proportion
+    to the number of configured clients rather than to actual in-flight work.
+    Auth here is already per-request (each call carries its own bearer token)
+    and the tools keep no server-side state between calls, so there is nothing
+    for a session to hold. Stateless mode makes each request self-contained and
+    lets the connection close when it completes.
     """
     settings = Settings(base_url=base_url.rstrip("/"), transport=HTTP)
     server = build_server(settings_loader=lambda: settings)
-    return server.http_app(path=path)
+    return server.http_app(path=path, stateless_http=True)
 
 
 def main():

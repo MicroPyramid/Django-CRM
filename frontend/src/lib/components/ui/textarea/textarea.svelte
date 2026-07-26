@@ -14,10 +14,10 @@
   data-slot={dataSlot}
   class={cn(
     [
-      'flex w-full min-w-0 min-h-[92px] py-[9px] px-3 resize-y',
+      'flex min-h-[92px] w-full min-w-0 resize-y px-3 py-[9px]',
       'rounded-[var(--r-md)] border border-[color:var(--border)]',
       'bg-[color:var(--bg-input)] text-[13px] text-[color:var(--text)]',
-      'leading-[1.55] outline-none field-sizing-content',
+      'field-sizing-content leading-[1.55] outline-none',
       'placeholder:text-[color:var(--text-subtle)]',
       'transition-[border-color,box-shadow] duration-150',
       'hover:border-[color:var(--border-strong)]',
@@ -28,5 +28,4 @@
     className
   )}
   bind:value
-  {...restProps}
-></textarea>
+  {...restProps}></textarea>

@@ -93,9 +93,7 @@
   }
 
   function actorName(activity) {
-    return (
-      activity?.user?.user_details?.email || activity?.user?.email || 'System'
-    );
+    return activity?.user?.user_details?.email || activity?.user?.email || 'System';
   }
 
   function actionSummary(a) {
@@ -147,9 +145,7 @@
       case 'ESCALATED':
         return `${who} escalated the ticket`;
       case 'EMAIL_RECEIVED':
-        return m.from_address
-          ? `Received email from ${m.from_address}`
-          : 'Received inbound email';
+        return m.from_address ? `Received email from ${m.from_address}` : 'Received inbound email';
       default:
         return `${who} ${a.action.toLowerCase().replace(/_/g, ' ')}`;
     }
@@ -172,14 +168,10 @@
   }
 </script>
 
-<section
-  class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
->
+<section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
   <div class="mb-3 flex items-center gap-2">
     <History class="h-4 w-4 text-[var(--text-secondary)]" />
-    <h3 class="text-sm font-medium text-[var(--text-secondary)]">
-      Activity timeline
-    </h3>
+    <h3 class="text-sm font-medium text-[var(--text-secondary)]">Activity timeline</h3>
     {#if totalCount}
       <span class="text-xs text-[var(--text-secondary)]">({totalCount})</span>
     {/if}
@@ -208,7 +200,7 @@
             </div>
             {#if detail}
               <pre
-                class="mt-1 whitespace-pre-wrap text-xs text-[var(--text-secondary)]">{detail}</pre>
+                class="mt-1 text-xs whitespace-pre-wrap text-[var(--text-secondary)]">{detail}</pre>
             {/if}
           </div>
           {#if a.user}
@@ -225,12 +217,7 @@
 
     {#if totalCount > activities.length}
       <div class="mt-3 flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={loadMore}
-          disabled={loading}
-        >
+        <Button variant="outline" size="sm" onclick={loadMore} disabled={loading}>
           {#if loading}
             <Loader2 class="mr-2 h-3.5 w-3.5 animate-spin" />
           {/if}
@@ -243,4 +230,3 @@
     {/if}
   {/if}
 </section>
-

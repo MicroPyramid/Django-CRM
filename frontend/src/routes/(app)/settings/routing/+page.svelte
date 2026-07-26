@@ -167,8 +167,8 @@
       </div>
       {#if rules.length === 0}
         <p class="text-sm text-[var(--text-secondary)]">
-          No routing rules yet. New tickets stay unassigned until an admin picks
-          someone, or until you add a rule here.
+          No routing rules yet. New tickets stay unassigned until an admin picks someone, or until
+          you add a rule here.
         </p>
       {:else}
         <ul class="divide-y divide-[var(--border-default)]">
@@ -183,14 +183,14 @@
                     order {rule.priority_order}
                   </span>
                   <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide {rule.is_active
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase {rule.is_active
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
                       : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'}"
                   >
                     {rule.is_active ? 'Active' : 'Disabled'}
                   </span>
                   <span
-                    class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
+                    class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-blue-700 uppercase dark:bg-blue-900/40 dark:text-blue-200"
                   >
                     {strategyLabel(rule.strategy)}
                   </span>
@@ -202,7 +202,7 @@
                     {/each}
                   </ul>
                 {:else}
-                  <p class="text-xs italic text-[var(--text-secondary)]">
+                  <p class="text-xs text-[var(--text-secondary)] italic">
                     No conditions — matches every new ticket
                   </p>
                 {/if}
@@ -256,9 +256,8 @@
           Test rule against a ticket
         </h3>
         <p class="mb-3 text-xs text-[var(--text-secondary)]">
-          Paste a ticket UUID and click Run. The engine evaluates ALL active rules
-          in order; the result tells you which rule (if any) would have
-          assigned this ticket.
+          Paste a ticket UUID and click Run. The engine evaluates ALL active rules in order; the
+          result tells you which rule (if any) would have assigned this ticket.
         </p>
         <div class="flex flex-wrap items-end gap-2">
           <div class="min-w-[280px] flex-1">
@@ -269,9 +268,7 @@
             <Play class="h-3 w-3" />
             Run
           </Button>
-          <Button type="button" variant="ghost" onclick={() => (testRuleId = null)}>
-            Close
-          </Button>
+          <Button type="button" variant="ghost" onclick={() => (testRuleId = null)}>Close</Button>
         </div>
         {#if testResult}
           <div
@@ -300,9 +297,7 @@
                 </p>
               {/if}
             {:else}
-              <p class="text-[var(--text-secondary)]">
-                No rule matched this ticket.
-              </p>
+              <p class="text-[var(--text-secondary)]">No rule matched this ticket.</p>
             {/if}
           </div>
         {/if}
@@ -316,8 +311,7 @@
     <Dialog.Header>
       <Dialog.Title>{editId ? 'Edit routing rule' : 'New routing rule'}</Dialog.Title>
       <Dialog.Description>
-        Conditions are AND-ed; create multiple rules for OR. Lower priority
-        order runs first.
+        Conditions are AND-ed; create multiple rules for OR. Lower priority order runs first.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -373,11 +367,7 @@
                   <option value={o.id}>{o.label}</option>
                 {/each}
               </select>
-              <Input
-                bind:value={cond.value}
-                placeholder="value"
-                class="max-w-[220px]"
-              />
+              <Input bind:value={cond.value} placeholder="value" class="max-w-[220px]" />
               <Button
                 type="button"
                 size="icon"
@@ -480,9 +470,7 @@
       {/if}
 
       <Dialog.Footer>
-        <Button type="button" variant="ghost" onclick={() => (dialogOpen = false)}>
-          Cancel
-        </Button>
+        <Button type="button" variant="ghost" onclick={() => (dialogOpen = false)}>Cancel</Button>
         <Button type="submit" class="gap-1.5">
           <Save class="h-4 w-4" />
           Save

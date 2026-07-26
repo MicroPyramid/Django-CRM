@@ -1,3 +1,4 @@
+from django.db import transaction
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -40,12 +41,12 @@ class LeadUploadView(APIView):
     def post(self, request, *args, **kwargs):
         lead_form = LeadListForm(request.POST, request.FILES)
         if lead_form.is_valid():
-            create_lead_from_file.delay(
-                lead_form.validated_rows,
-                lead_form.invalid_rows,
-                request.profile.id,
-                request.get_host(),
-                request.profile.org.id,
+            # Dispatch after the request's transaction commits so the worker
+            # never reads rows this request hasn't persisted yet.
+            transaction.on_commit(
+                lambda rows=lead_form.validated_rows, invalid=lead_form.invalid_rows, pid=request.profile.id, host=request.get_host(), oid=request.profile.org.id: (
+                    create_lead_from_file.delay(rows, invalid, pid, host, oid)
+                )
             )
             return Response(
                 {"error": False, "message": "Leads created Successfully"},
@@ -272,8 +273,10 @@ class CreateLeadFromSite(APIView):
             lead.assigned_to.add(user)
             # Send Email to Assigned Users
             site_address = request.scheme + "://" + request.META["HTTP_HOST"]
-            send_lead_assigned_emails.delay(
-                lead.id, [user.id], site_address, str(api_setting.org.id)
+            transaction.on_commit(
+                lambda lid=lead.id, uids=[user.id], addr=site_address, oid=str(api_setting.org.id): (
+                    send_lead_assigned_emails.delay(lid, uids, addr, oid)
+                )
             )
             # Create Contact
             try:

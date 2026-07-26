@@ -39,20 +39,16 @@ export async function load({ params, locals, cookies, url }) {
       apiRequest('/contacts/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/teams/', {}, { cookies, org }).catch(() => ({})),
       apiRequest('/tags/', {}, { cookies, org }).catch(() => ({})),
-      apiRequest(
-        '/cases/solutions/?is_published=true&limit=200',
-        {},
-        { cookies, org }
-      ).catch((e) => {
-        console.warn('Solutions picker fetch failed:', e?.message);
-        return {};
-      }),
+      apiRequest('/cases/solutions/?is_published=true&limit=200', {}, { cookies, org }).catch(
+        (e) => {
+          console.warn('Solutions picker fetch failed:', e?.message);
+          return {};
+        }
+      ),
       apiRequest(`/cases/${params.id}/watchers/`, {}, { cookies, org }).catch(() => ({})),
-      apiRequest(
-        `/cases/approvals/?case=${params.id}&state=all`,
-        {},
-        { cookies, org }
-      ).catch(() => ({}))
+      apiRequest(`/cases/approvals/?case=${params.id}&state=all`, {}, { cookies, org }).catch(
+        () => ({})
+      )
     ]);
 
     if (!detail || !detail.cases_obj) throw error(404, 'Ticket not found');
@@ -61,13 +57,11 @@ export async function load({ params, locals, cookies, url }) {
     const routedActivity = (detail.activities || []).find(
       (/** @type {any} */ a) => a.action === 'ROUTED' && !a.metadata?.reason
     );
-    const mergedFromTickets = (detail.merged_from_cases || []).map(
-      (/** @type {any} */ m) => ({
-        id: m.id,
-        name: m.name,
-        mergedAt: m.merged_at
-      })
-    );
+    const mergedFromTickets = (detail.merged_from_cases || []).map((/** @type {any} */ m) => ({
+      id: m.id,
+      name: m.name,
+      mergedAt: m.merged_at
+    }));
     const transformed = {
       id: c.id,
       subject: c.name,
@@ -94,8 +88,7 @@ export async function load({ params, locals, cookies, url }) {
       })),
       contacts: (c.contacts || detail.contacts || []).map((ct) => ({
         id: ct.id,
-        name:
-          ct.first_name && ct.last_name ? `${ct.first_name} ${ct.last_name}` : ct.email,
+        name: ct.first_name && ct.last_name ? `${ct.first_name} ${ct.last_name}` : ct.email,
         email: ct.email
       })),
       teams: (c.teams || []).map((t) => ({ id: t.id, name: t.name })),
@@ -153,11 +146,9 @@ export async function load({ params, locals, cookies, url }) {
         })
         .filter(Boolean),
       formOptions: {
-        accounts: (
-          accountsRes.active_accounts?.open_accounts ||
-          accountsRes.results ||
-          []
-        ).map((a) => ({ id: a.id, name: a.name })),
+        accounts: (accountsRes.active_accounts?.open_accounts || accountsRes.results || []).map(
+          (a) => ({ id: a.id, name: a.name })
+        ),
         users: (usersRes.active_users?.active_users || []).map((u) => ({
           id: u.id,
           name:
@@ -165,16 +156,11 @@ export async function load({ params, locals, cookies, url }) {
               ? `${u.user_details.first_name} ${u.user_details.last_name}`
               : u.user_details?.email || u.email
         })),
-        contacts: (contactsRes.contact_obj_list || contactsRes.results || []).map(
-          (ct) => ({
-            id: ct.id,
-            name:
-              ct.first_name && ct.last_name
-                ? `${ct.first_name} ${ct.last_name}`
-                : ct.email,
-            email: ct.email
-          })
-        ),
+        contacts: (contactsRes.contact_obj_list || contactsRes.results || []).map((ct) => ({
+          id: ct.id,
+          name: ct.first_name && ct.last_name ? `${ct.first_name} ${ct.last_name}` : ct.email,
+          email: ct.email
+        })),
         teams: (teamsRes.teams || teamsRes.results || []).map((t) => ({
           id: t.id,
           name: t.name

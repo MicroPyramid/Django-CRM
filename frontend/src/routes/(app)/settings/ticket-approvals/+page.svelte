@@ -42,9 +42,7 @@
       match_case_type: rule.match_case_type || '',
       match_team_id: rule.match_team?.id || '',
       approver_role: rule.approver_role || 'ADMIN',
-      approver_ids: (rule.approvers || []).map(
-        /** @param {{id: string}} p */ (p) => p.id
-      ),
+      approver_ids: (rule.approvers || []).map(/** @param {{id: string}} p */ (p) => p.id),
       is_active: !!rule.is_active
     };
     creating = false;
@@ -110,8 +108,7 @@
 
   /** @param {string} id */
   async function destroy(id) {
-    if (!window.confirm('Delete this rule? Rules with history will be disabled instead.'))
-      return;
+    if (!window.confirm('Delete this rule? Rules with history will be disabled instead.')) return;
     pending = true;
     try {
       const res = await fetch(`/api/cases/approval-rules/${id}/`, {
@@ -158,13 +155,15 @@
 
 <div class="flex flex-col gap-4 p-4">
   <p class="text-sm text-[var(--text-secondary)]">
-    Active rules block the close transition until an approval is recorded.
-    Filters combine — a rule with priority=Urgent + case_type=Incident matches
-    only urgent incidents. The most-specific active rule wins.
+    Active rules block the close transition until an approval is recorded. Filters combine — a rule
+    with priority=Urgent + case_type=Incident matches only urgent incidents. The most-specific
+    active rule wins.
   </p>
 
   {#if creating || editingId !== null}
-    <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
+    <section
+      class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
+    >
       <h2 class="mb-3 text-sm font-medium">
         {editingId ? 'Edit rule' : 'New rule'}
       </h2>
@@ -260,26 +259,30 @@
           {#if pending}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
           {editingId ? 'Save changes' : 'Create rule'}
         </Button>
-        <Button variant="ghost" onclick={cancelEdit} disabled={pending}>
-          Cancel
-        </Button>
+        <Button variant="ghost" onclick={cancelEdit} disabled={pending}>Cancel</Button>
       </div>
     </section>
   {/if}
 
   {#if rules.length === 0}
-    <p class="rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 text-center text-sm text-[var(--text-secondary)]">
+    <p
+      class="rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 text-center text-sm text-[var(--text-secondary)]"
+    >
       No approval rules yet.
     </p>
   {:else}
     <ul class="flex flex-col gap-2">
       {#each rules as r (r.id)}
-        <li class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
+        <li
+          class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm"
+        >
           <div class="flex flex-col">
             <span class="font-medium">
               {r.name}
               {#if !r.is_active}
-                <span class="ml-2 rounded bg-[var(--surface-muted)] px-1.5 text-[10px] text-[var(--text-secondary)]">
+                <span
+                  class="ml-2 rounded bg-[var(--surface-muted)] px-1.5 text-[10px] text-[var(--text-secondary)]"
+                >
                   inactive
                 </span>
               {/if}
@@ -296,25 +299,17 @@
             </span>
             {#if (r.approvers || []).length > 0}
               <span class="text-xs text-[var(--text-secondary)]">
-                Explicit: {(r.approvers || []).map(/** @param {{email: string}} p */ (p) => p.email).join(', ')}
+                Explicit: {(r.approvers || [])
+                  .map(/** @param {{email: string}} p */ (p) => p.email)
+                  .join(', ')}
               </span>
             {/if}
           </div>
           <div class="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onclick={() => startEdit(r)}
-              disabled={pending}
-            >
+            <Button size="sm" variant="ghost" onclick={() => startEdit(r)} disabled={pending}>
               <Edit3 class="mr-1 h-3.5 w-3.5" /> Edit
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onclick={() => destroy(r.id)}
-              disabled={pending}
-            >
+            <Button size="sm" variant="ghost" onclick={() => destroy(r.id)} disabled={pending}>
               <Trash2 class="mr-1 h-3.5 w-3.5" /> Delete
             </Button>
           </div>

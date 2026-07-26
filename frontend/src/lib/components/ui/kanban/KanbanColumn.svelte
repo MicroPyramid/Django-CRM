@@ -172,7 +172,7 @@
       </span>
       {#if column.wip_limit}
         <span
-          class="rounded-md px-1.5 py-px text-[10px] font-medium uppercase tracking-wide
+          class="rounded-md px-1.5 py-px text-[10px] font-medium tracking-wide uppercase
             {isAtWipLimit
             ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'
             : 'bg-gray-200/60 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'}"

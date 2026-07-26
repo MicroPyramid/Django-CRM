@@ -4,10 +4,9 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
-from common.models import Attachments, Comment, Org, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
 
@@ -46,10 +45,8 @@ class TestAccountListView:
         assert data["error"] is True
 
     def test_create_account_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/accounts/", {"name": "Test"}
-            )
+        response = unauthenticated_client.post("/api/accounts/", {"name": "Test"})
+        assert response.status_code in (401, 403)
 
     def test_create_account_with_all_fields(self, admin_client, org_a, admin_profile):
         """Test creating an account with all optional fields populated."""
@@ -991,7 +988,6 @@ class TestAccountSerializerValidation:
 
     def test_account_create_serializer_default_currency(self, admin_client, org_a):
         """AccountCreateSerializer.create() should default currency from org when annual_revenue is set."""
-        from accounts.serializer import AccountCreateSerializer
 
         # The serializer create method checks for currency default - test via API
         # We need annual_revenue but no currency

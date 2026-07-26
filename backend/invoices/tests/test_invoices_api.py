@@ -4,7 +4,6 @@ from decimal import Decimal
 
 import pytest
 from unittest.mock import patch
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from contacts.models import Contact
@@ -212,12 +211,12 @@ class TestInvoiceListView:
         assert "invoice" in data
 
     def test_create_invoice_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/invoices/",
-                {"invoice_title": "Unauthenticated Invoice"},
-                format="json",
-            )
+        response = unauthenticated_client.post(
+            "/api/invoices/",
+            {"invoice_title": "Unauthenticated Invoice"},
+            format="json",
+        )
+        assert response.status_code in (401, 403)
 
     def test_org_isolation(self, org_b_client, invoice):
         """org_b_client should not see invoices belonging to org_a."""
