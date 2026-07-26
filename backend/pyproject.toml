@@ -49,7 +49,6 @@ dependencies = [
     "djangorestframework-simplejwt>=5.5.1",
     "drf-spectacular>=0.29.0",
     "django-ses>=4.7.1",
-    "psycopg2-binary>=2.9.11",
     "whitenoise>=6.11.0",
     "sentry-sdk>=2.53.0",
     "django-storages>=1.14.6",
@@ -67,6 +66,7 @@ dependencies = [
     # Production WSGI server
     "gunicorn>=25.1.0",
     "uvicorn[standard]>=0.30",
+    "psycopg[binary,pool]>=3.2",
 ]
 
 [project.optional-dependencies]
