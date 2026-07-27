@@ -1,7 +1,11 @@
 services:
   db:
     image: postgres:16-alpine
-    env_file: .env.docker
+    env_file:
+      - .env.docker
+      # Optional local overrides (gitignored); values here win over .env.docker.
+      - path: .env.docker.local
+        required: false
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-rls-user.sql:/docker-entrypoint-initdb.d/init-rls-user.sql:ro
@@ -27,7 +31,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: .env.docker
+    env_file:
+      - .env.docker
+      # Optional local overrides (gitignored); values here win over .env.docker.
+      - path: .env.docker.local
+        required: false
     volumes:
       - ./backend:/app
       - ./docker/backend/entrypoint.sh:/entrypoint.sh:ro
@@ -44,7 +52,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: .env.docker
+    env_file:
+      - .env.docker
+      # Optional local overrides (gitignored); values here win over .env.docker.
+      - path: .env.docker.local
+        required: false
     volumes:
       - ./backend:/app
     depends_on:
@@ -58,7 +70,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: .env.docker
+    env_file:
+      - .env.docker
+      # Optional local overrides (gitignored); values here win over .env.docker.
+      - path: .env.docker.local
+        required: false
     volumes:
       - ./backend:/app
     depends_on:
@@ -72,7 +88,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    env_file: .env.docker
+    env_file:
+      - .env.docker
+      # Optional local overrides (gitignored); values here win over .env.docker.
+      - path: .env.docker.local
+        required: false
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
