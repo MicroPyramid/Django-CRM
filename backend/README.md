@@ -181,7 +181,7 @@ Every request operates within an organization context:
 - **Organization (Org)**: Top-level tenant container
 - **Users**: Regular members with USER role
 - **Admins**: Organization administrators with ADMIN role
-- **Super Admin**: Users with @micropyramid.com email domain have platform-wide access
+- **Super Admin**: Users with `is_superuser` set on the user record have platform-wide access. Grant it deliberately (`manage.py createsuperuser` or the Django admin) — it is never inferred from the email address
 
 ### Authentication
 
@@ -192,8 +192,9 @@ Authorization: Bearer <token>
 ```
 
 - Organization ID is embedded in the JWT token (not sent as header)
-- Access token lifetime: 1 day
-- Refresh token lifetime: 365 days
+- Access token lifetime: 1 hour
+- Refresh token lifetime: 14 days
+- Refresh tokens are single-use: `/api/auth/refresh-token/` blacklists the token you send and returns a replacement, so clients must persist the new `refresh` value from every response
 
 ### Middleware
 

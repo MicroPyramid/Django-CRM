@@ -77,12 +77,15 @@ export const actions = {
     }
 
     const apiUrl = publicEnv.PUBLIC_DJANGO_API_URL;
+    // Sent so the backend retires the token we are about to replace below;
+    // otherwise it stays usable against the previous org until it expires.
+    const outgoingRefresh = cookies.get('jwt_refresh');
 
     try {
       // Call switch-org endpoint to get new tokens with org context
       const response = await axios.post(
         `${apiUrl}/api/auth/switch-org/`,
-        { org_id: orgId },
+        outgoingRefresh ? { org_id: orgId, refresh: outgoingRefresh } : { org_id: orgId },
         {
           headers: {
             Authorization: `Bearer ${jwtAccess}`,

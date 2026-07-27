@@ -8,9 +8,11 @@ Run with: pytest common/tests/test_auth.py -v
 import base64
 import json
 import uuid
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
@@ -118,6 +120,65 @@ class TestTokenRefreshView:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_refresh_rejects_replayed_token(
+        self, unauthenticated_client, admin_user, org_a, admin_profile
+    ):
+        """A refresh token is single-use: replaying it after rotation must fail.
+
+        Without blacklisting, a stolen refresh token keeps minting access
+        tokens for its full lifetime even after the legitimate user rotates.
+        """
+        token = str(
+            OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
+        )
+
+        first = unauthenticated_client.post(
+            self.url, {"refresh": token}, format="json"
+        )
+        assert first.status_code == status.HTTP_200_OK
+
+        replay = unauthenticated_client.post(
+            self.url, {"refresh": token}, format="json"
+        )
+        assert replay.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_refresh_rejects_replayed_token_without_org(
+        self, unauthenticated_client, admin_user
+    ):
+        """The no-org refresh branch must rotate its token too."""
+        token = str(OrgAwareRefreshToken.for_user_and_org(admin_user, None))
+
+        first = unauthenticated_client.post(
+            self.url, {"refresh": token}, format="json"
+        )
+        assert first.status_code == status.HTTP_200_OK
+
+        replay = unauthenticated_client.post(
+            self.url, {"refresh": token}, format="json"
+        )
+        assert replay.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_refresh_rotated_token_is_usable(
+        self, unauthenticated_client, admin_user, org_a, admin_profile
+    ):
+        """Rotation must hand back a token that works for the next refresh."""
+        token = str(
+            OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
+        )
+
+        first = unauthenticated_client.post(
+            self.url, {"refresh": token}, format="json"
+        )
+        assert first.status_code == status.HTTP_200_OK
+
+        second = unauthenticated_client.post(
+            self.url,
+            {"refresh": first.data["refresh"]},
+            format="json",
+        )
+        assert second.status_code == status.HTTP_200_OK
+        assert second.data["refresh"] != first.data["refresh"]
+
 
 @pytest.mark.django_db
 class TestOrgSwitchView:
@@ -192,6 +253,104 @@ class TestOrgSwitchView:
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
+    def test_switch_org_revokes_presented_refresh_token(
+        self,
+        admin_client,
+        unauthenticated_client,
+        admin_user,
+        org_a,
+        admin_profile,
+        org_b,
+    ):
+        """Switching orgs must retire the refresh token the caller was holding.
+
+        The client replaces its token pair on switch, so leaving the old refresh
+        token live just means a stolen copy keeps working against the old org for
+        the rest of its 14-day life.
+        """
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
+        old_refresh = str(
+            OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
+        )
+
+        response = admin_client.post(
+            self.url,
+            {"org_id": str(org_b.id), "refresh": old_refresh},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        replay = unauthenticated_client.post(
+            "/api/auth/refresh-token/", {"refresh": old_refresh}, format="json"
+        )
+        assert replay.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_switch_org_returned_refresh_token_is_usable(
+        self, admin_client, unauthenticated_client, admin_user, org_a, admin_profile, org_b
+    ):
+        """Retiring the old token must not strand the caller."""
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
+        old_refresh = str(
+            OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
+        )
+
+        response = admin_client.post(
+            self.url,
+            {"org_id": str(org_b.id), "refresh": old_refresh},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        follow_up = unauthenticated_client.post(
+            "/api/auth/refresh-token/",
+            {"refresh": response.data["refresh_token"]},
+            format="json",
+        )
+        assert follow_up.status_code == status.HTTP_200_OK
+
+    def test_switch_org_without_refresh_token_still_succeeds(
+        self, admin_client, admin_user, org_b
+    ):
+        """Clients that omit `refresh` must keep working.
+
+        Mobile builds already in the wild do not send it; failing their org
+        switch would be worse than letting one token expire on its own.
+        """
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
+        response = admin_client.post(
+            self.url, {"org_id": str(org_b.id)}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_switch_org_will_not_revoke_another_users_token(
+        self, admin_client, unauthenticated_client, admin_user, org_a, org_b
+    ):
+        """A caller must not be able to retire someone else's session.
+
+        Without an ownership check, `refresh` becomes a way to forcibly log out
+        any user whose token you can observe.
+        """
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
+        victim = User.objects.create(email="victim@example.com", password="unusable")
+        victim_profile = Profile.objects.create(
+            user=victim, org=org_a, role="USER", is_active=True
+        )
+        victim_refresh = str(
+            OrgAwareRefreshToken.for_user_and_org(victim, org_a, victim_profile)
+        )
+
+        response = admin_client.post(
+            self.url,
+            {"org_id": str(org_b.id), "refresh": victim_refresh},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        still_valid = unauthenticated_client.post(
+            "/api/auth/refresh-token/", {"refresh": victim_refresh}, format="json"
+        )
+        assert still_valid.status_code == status.HTTP_200_OK
+
 
 @pytest.mark.django_db
 class TestProfileDetailView:
@@ -217,11 +376,15 @@ class TestProfileDetailView:
 # ---------------------------------------------------------------------------
 
 
-def _make_fake_id_token(email, picture="https://photo.example.com/pic.jpg"):
+def _make_fake_id_token(
+    email, picture="https://photo.example.com/pic.jpg", email_verified=True
+):
     """Create a fake JWT-like ID token with the given email in the payload."""
     header = base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(
-        json.dumps({"email": email, "picture": picture}).encode()
+        json.dumps(
+            {"email": email, "picture": picture, "email_verified": email_verified}
+        ).encode()
     ).decode().rstrip("=")
     signature = base64.urlsafe_b64encode(b"fakesig").decode().rstrip("=")
     return f"{header}.{payload}.{signature}"
@@ -410,6 +573,85 @@ class TestGoogleOAuthCallbackView:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def _post_code(self, client):
+        return client.post(
+            self.url,
+            {
+                "code": "authcode",
+                "code_verifier": "verifier",
+                "redirect_uri": "http://localhost:3000/callback",
+            },
+            format="json",
+        )
+
+    @patch("common.views.auth_views.requests.post")
+    def test_rejects_unverified_email(self, mock_post, unauthenticated_client):
+        """An unverified Google email must not create or authenticate a user.
+
+        Without this, a Google account holding an address the owner never
+        proved control of is enough to become that address in this system.
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id_token": _make_fake_id_token(
+                "unverified@example.com", email_verified=False
+            ),
+            "access_token": "at",
+        }
+        mock_post.return_value = mock_response
+
+        response = self._post_code(unauthenticated_client)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email="unverified@example.com").exists()
+
+    @patch("common.views.auth_views.requests.post")
+    def test_rejects_missing_email_verified_claim(
+        self, mock_post, unauthenticated_client
+    ):
+        """A response with no email_verified claim must fail closed."""
+        header = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode())
+            .decode()
+            .rstrip("=")
+        )
+        payload = (
+            base64.urlsafe_b64encode(json.dumps({"email": "noclaim@example.com"}).encode())
+            .decode()
+            .rstrip("=")
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id_token": f"{header}.{payload}.sig",
+            "access_token": "at",
+        }
+        mock_post.return_value = mock_response
+
+        response = self._post_code(unauthenticated_client)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email="noclaim@example.com").exists()
+
+    @patch("common.views.auth_views.requests.post")
+    def test_rejects_deactivated_user(self, mock_post, unauthenticated_client, admin_user):
+        """A deactivated account must not be able to log back in via Google."""
+        admin_user.is_active = False
+        admin_user.save(update_fields=["is_active"])
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id_token": _make_fake_id_token(admin_user.email),
+            "access_token": "at",
+        }
+        mock_post.return_value = mock_response
+
+        response = self._post_code(unauthenticated_client)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "access_token" not in response.data
+
 
 # ---------------------------------------------------------------------------
 # Google ID Token View tests (lines 173-232)
@@ -458,6 +700,7 @@ class TestGoogleIdTokenView:
         """Valid token with new email should create user and return JWT."""
         mock_verify.return_value = {
             "email": "mobileuser@example.com",
+            "email_verified": True,
             "picture": "https://photo.example.com/pic.jpg",
         }
         response = unauthenticated_client.post(
@@ -481,6 +724,7 @@ class TestGoogleIdTokenView:
         """Existing user should get their organizations in response."""
         mock_verify.return_value = {
             "email": admin_user.email,
+            "email_verified": True,
             "picture": "https://photo.example.com/pic.jpg",
         }
         response = unauthenticated_client.post(
@@ -489,6 +733,59 @@ class TestGoogleIdTokenView:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["organizations"]) == 1
         assert response.data["organizations"][0]["id"] == str(org_a.id)
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_rejects_unverified_email(
+        self, mock_request_cls, mock_verify, unauthenticated_client
+    ):
+        """An unverified Google email must not authenticate on mobile either."""
+        mock_verify.return_value = {
+            "email": "unverified@example.com",
+            "email_verified": False,
+        }
+
+        response = unauthenticated_client.post(
+            self.url, {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email="unverified@example.com").exists()
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_rejects_missing_email_verified_claim(
+        self, mock_request_cls, mock_verify, unauthenticated_client
+    ):
+        """A verified token with no email_verified claim must fail closed."""
+        mock_verify.return_value = {"email": "noclaim@example.com"}
+
+        response = unauthenticated_client.post(
+            self.url, {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not User.objects.filter(email="noclaim@example.com").exists()
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_rejects_deactivated_user(
+        self, mock_request_cls, mock_verify, unauthenticated_client, admin_user
+    ):
+        """A deactivated account must not be able to log back in on mobile."""
+        admin_user.is_active = False
+        admin_user.save(update_fields=["is_active"])
+        mock_verify.return_value = {
+            "email": admin_user.email,
+            "email_verified": True,
+        }
+
+        response = unauthenticated_client.post(
+            self.url, {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "JWTtoken" not in response.data
 
 
 # ---------------------------------------------------------------------------
@@ -515,3 +812,58 @@ class TestTokenRefreshUserNotFound:
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "User not found" in response.data["error"]
+
+
+@pytest.mark.django_db
+class TestFlushExpiredRefreshTokens:
+    """Tests for common.tasks.flush_expired_refresh_tokens."""
+
+    def _outstanding(self, user, jti, expires_at):
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+        return OutstandingToken.objects.create(
+            user=user,
+            jti=jti,
+            token="not-a-real-token",
+            created_at=timezone.now() - timedelta(days=30),
+            expires_at=expires_at,
+        )
+
+    def test_deletes_expired_but_keeps_live_records(self, admin_user):
+        """Rotation bookkeeping must not grow without bound."""
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+        from common.tasks import flush_expired_refresh_tokens
+
+        now = timezone.now()
+        expired = self._outstanding(admin_user, "expired-jti", now - timedelta(days=1))
+        live = self._outstanding(admin_user, "live-jti", now + timedelta(days=1))
+
+        assert flush_expired_refresh_tokens() == 1
+
+        assert not OutstandingToken.objects.filter(pk=expired.pk).exists()
+        assert OutstandingToken.objects.filter(pk=live.pk).exists()
+
+    def test_expired_blacklist_entry_is_cascaded(self, admin_user):
+        """Deleting the outstanding row must take its blacklist entry with it."""
+        from rest_framework_simplejwt.token_blacklist.models import (
+            BlacklistedToken,
+            OutstandingToken,
+        )
+
+        from common.tasks import flush_expired_refresh_tokens
+
+        expired = self._outstanding(
+            admin_user, "expired-jti", timezone.now() - timedelta(days=1)
+        )
+        BlacklistedToken.objects.create(token=expired)
+
+        assert flush_expired_refresh_tokens() == 1
+        assert not BlacklistedToken.objects.exists()
+        assert not OutstandingToken.objects.exists()
+
+    def test_returns_zero_when_nothing_expired(self, admin_user):
+        self._outstanding(admin_user, "live-jti", timezone.now() + timedelta(days=1))
+        from common.tasks import flush_expired_refresh_tokens
+
+        assert flush_expired_refresh_tokens() == 0
