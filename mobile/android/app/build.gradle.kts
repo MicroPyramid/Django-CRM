@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -27,12 +28,8 @@ android {
     ndkVersion = "28.2.13676358"  // Bumped to satisfy jni plugin requirement
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -73,6 +70,15 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+    }
+}
+
+// Replaces the old `android { kotlinOptions { jvmTarget = "..." } }` block —
+// KGP 2.4 removed the String-typed jvmTarget in favour of this DSL. Must stay
+// in step with compileOptions above (Java 17); AGP hard-fails on a mismatch.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

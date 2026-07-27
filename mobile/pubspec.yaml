@@ -20,12 +20,10 @@ dependencies:
   package_info_plus: ^10.1.0
 
   # Firebase / Crashlytics (Android only — no iOS GoogleService-Info.plist yet)
-  firebase_core: ^3.10.0
-  firebase_crashlytics: ^4.2.0
+  firebase_core: ^4.12.1
+  firebase_crashlytics: ^5.2.6
   # Icons
   cupertino_icons: ^1.0.9
-  lucide_icons: ^0.257.0
-
   # Navigation
   go_router: ^17.2.3
 
@@ -44,6 +42,7 @@ dependencies:
 
   # Google Fonts for distinctive typography
   google_fonts: ^8.1.0
+  lucide_icons_flutter: ^3.1.15
 
 dev_dependencies:
   flutter_test:
