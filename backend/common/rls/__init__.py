@@ -196,14 +196,14 @@ def get_enable_policy_sql(table):
         CREATE POLICY {ISOLATION_POLICY} ON "{table}"
             FOR ALL
             USING (
-                org_id::text = NULLIF(current_setting('{CONTEXT_VARIABLE}', true), '')
+                org_id::text = (select NULLIF(current_setting('{CONTEXT_VARIABLE}', true), ''))
             );
 
         -- Create insert check policy
         CREATE POLICY {INSERT_POLICY} ON "{table}"
             FOR INSERT
             WITH CHECK (
-                org_id::text = NULLIF(current_setting('{CONTEXT_VARIABLE}', true), '')
+                org_id::text = (select NULLIF(current_setting('{CONTEXT_VARIABLE}', true), ''))
             );
     """
 

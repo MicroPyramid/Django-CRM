@@ -229,14 +229,14 @@ Each table has two policies:
    ```sql
    CREATE POLICY org_isolation ON "lead"
        FOR ALL
-       USING (org_id::text = NULLIF(current_setting('app.current_org', true), ''));
+       USING (org_id::text = (select NULLIF(current_setting('app.current_org', true), '')));
    ```
 
 2. **Insert Check Policy**:
    ```sql
    CREATE POLICY org_insert_check ON "lead"
        FOR INSERT
-       WITH CHECK (org_id::text = NULLIF(current_setting('app.current_org', true), ''));
+       WITH CHECK (org_id::text = (select NULLIF(current_setting('app.current_org', true), '')));
    ```
 
 The `NULLIF(..., '')` ensures **no rows are returned** when context is not set (fail-safe).
