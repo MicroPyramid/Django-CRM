@@ -1,7 +1,4 @@
 allowBuilds:
   '@sentry/cli': true
-minimumReleaseAgeExclude:
-  - '@sveltejs/kit@2.61.1'
 onlyBuiltDependencies:
-  - esbuild
   - '@sentry/cli'

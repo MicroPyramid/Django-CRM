@@ -1045,7 +1045,7 @@ class TestLeadListViewFilters:
     """Tests targeting uncovered filter lines 59-106 in LeadListView.get_context_data."""
 
     def test_filter_by_name(self, admin_client, admin_user, org_a):
-        """Filter by name uses first_name AND last_name icontains (lines 59-62)."""
+        """Filter by name matches first_name OR last_name icontains (lines 59-62)."""
         Lead.objects.create(
             first_name="NameFilter",
             last_name="NameFilter",
@@ -1058,6 +1058,41 @@ class TestLeadListViewFilters:
         open_leads = response.json()["open_leads"]["open_leads"]
         emails = [lead["email"] for lead in open_leads]
         assert "namefilter@example.com" in emails
+
+    def test_filter_by_name_matches_first_or_last_name(
+        self, admin_client, admin_user, org_a
+    ):
+        """The name filter matches a partial first or last name (issue #709)."""
+        _set_rls(org_a)
+        first_name_match = Lead.objects.create(
+            first_name="John",
+            last_name="Smith",
+            email="john.smith@example.com",
+            created_by=admin_user,
+            org=org_a,
+        )
+        last_name_match = Lead.objects.create(
+            first_name="Jane",
+            last_name="Johnson",
+            email="jane.johnson@example.com",
+            created_by=admin_user,
+            org=org_a,
+        )
+        Lead.objects.create(
+            first_name="Alice",
+            last_name="Walker",
+            email="alice.walker@example.com",
+            created_by=admin_user,
+            org=org_a,
+        )
+
+        response = admin_client.get(LEADS_LIST_URL, {"name": "john"})
+
+        assert response.status_code == 200
+        returned_ids = {
+            lead["id"] for lead in response.json()["open_leads"]["open_leads"]
+        }
+        assert returned_ids == {str(first_name_match.id), str(last_name_match.id)}
 
     def test_filter_by_salutation(self, admin_client, admin_user, org_a):
         """Filter by salutation (lines 63-66)."""

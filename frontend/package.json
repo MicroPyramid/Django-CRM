@@ -40,15 +40,6 @@
     "typescript": "^6.0.3",
     "vite": "^8.1.5"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "@sentry/cli"
-    ],
-    "overrides": {
-      "svelte-eslint-parser>eslint-scope": "^9.1.0"
-    }
-  },
   "dependencies": {
     "@sentry/sveltekit": "^10.68.0",
     "axios": "^1.18.1",
