@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -40,6 +40,7 @@ from invoices.pdf import (
     generate_invoice_filename,
     generate_invoice_pdf,
 )
+from invoices.permissions import get_invoice_or_error
 from invoices.serializer import (
     EstimateCreateSerializer,
     EstimateListSerializer,
@@ -150,7 +151,9 @@ class InvoiceListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         # Sorting
         sort = params.get("sort", "-created_at")
@@ -247,31 +250,11 @@ class InvoiceDetailView(APIView):
     def get_object(self, pk):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
-    def check_permissions_for_object(self, invoice):
-        """Check if user has permission to access this invoice"""
-        role = self.request.profile.role
-        if role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                self.request.profile == invoice.created_by
-                or self.request.profile in invoice.assigned_to.all()
-            ):
-                return False
-        return True
-
     @extend_schema(tags=["Invoices"], operation_id="invoices_retrieve")
     def get(self, request, pk, format=None):
-        invoice = self.get_object(pk)
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if not self.check_permissions_for_object(invoice):
-            return Response(
-                {"error": True, "message": "Permission denied"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
 
         # Get attachments and comments
         invoice_content_type = ContentType.objects.get_for_model(Invoice)
@@ -308,18 +291,9 @@ class InvoiceDetailView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_update")
     def put(self, request, pk, format=None):
-        invoice = self.get_object(pk)
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if not self.check_permissions_for_object(invoice):
-            return Response(
-                {"error": True, "message": "Permission denied"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
 
         save_kwargs = {}
         if "custom_fields" in request.data:
@@ -382,11 +356,19 @@ class InvoiceSendView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_send")
     def post(self, request, pk):
-        invoice = Invoice.objects.filter(id=pk, org=request.profile.org).first()
-        if not invoice:
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
+
+        # A settled invoice must not be re-sent: doing so would overwrite
+        # sent_at/is_email_sent and mail the client about a closed invoice.
+        if invoice.status in ("Paid", "Cancelled"):
             return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {
+                    "error": True,
+                    "message": f"Cannot send a {invoice.status.lower()} invoice",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Update status and sent_at
@@ -414,27 +396,27 @@ class InvoiceMarkPaidView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_mark_paid")
     def post(self, request, pk):
-        invoice = Invoice.objects.filter(id=pk, org=request.profile.org).first()
-        if not invoice:
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
+
+        # Fall back to settling the outstanding balance, but route everything
+        # through the serializer so the amount is validated either way.
+        payload = {
+            "amount": request.data.get("amount", invoice.amount_due),
+            "payment_method": request.data.get("payment_method", "OTHER"),
+            "payment_date": request.data.get("payment_date", timezone.now().date()),
+            "reference_number": request.data.get("reference_number", ""),
+            "notes": request.data.get("notes", ""),
+        }
+        serializer = PaymentCreateSerializer(data=payload, context={"invoice": invoice})
+        if not serializer.is_valid():
             return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create payment record if amount provided
-        amount = request.data.get("amount", invoice.amount_due)
-        payment_method = request.data.get("payment_method", "OTHER")
-        payment_date = request.data.get("payment_date", timezone.now().date())
-
-        Payment.objects.create(
-            invoice=invoice,
-            amount=amount,
-            payment_method=payment_method,
-            payment_date=payment_date,
-            reference_number=request.data.get("reference_number", ""),
-            notes=request.data.get("notes", ""),
-            org=request.profile.org,
-        )
+        serializer.save(invoice=invoice, org=request.profile.org)
 
         # Refresh invoice from DB to get updated payment totals
         invoice.refresh_from_db()
@@ -455,12 +437,9 @@ class InvoiceDuplicateView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_duplicate")
     def post(self, request, pk):
-        original = Invoice.objects.filter(id=pk, org=request.profile.org).first()
-        if not original:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        original, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
 
         with transaction.atomic():
             # Create duplicate invoice
@@ -537,24 +516,9 @@ class InvoiceCancelView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_cancel")
     def post(self, request, pk):
-        invoice = Invoice.objects.filter(id=pk, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Check permissions
-        role = request.profile.role
-        if role != "ADMIN" and not request.user.is_superuser:
-            if not (
-                request.profile == invoice.created_by
-                or request.profile in invoice.assigned_to.all()
-            ):
-                return Response(
-                    {"error": True, "message": "Permission denied"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
 
         # Cannot cancel already cancelled invoices
         if invoice.status == "Cancelled":
@@ -591,24 +555,9 @@ class InvoicePDFView(APIView):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_pdf")
     def get(self, request, pk):
-        invoice = Invoice.objects.filter(id=pk, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Check user permissions
-        role = request.profile.role
-        if role != "ADMIN" and not request.user.is_superuser:
-            if not (
-                request.profile == invoice.created_by
-                or request.profile in invoice.assigned_to.all()
-            ):
-                return Response(
-                    {"error": True, "message": "Permission denied"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        invoice, error = get_invoice_or_error(request, pk)
+        if error:
+            return error
 
         try:
             pdf_content = generate_invoice_pdf(invoice)
@@ -641,31 +590,20 @@ class InvoiceLineItemListView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def get_invoice(self, invoice_id):
-        return Invoice.objects.filter(
-            id=invoice_id, org=self.request.profile.org
-        ).first()
-
     @extend_schema(tags=["Invoice Line Items"], operation_id="line_items_list")
     def get(self, request, invoice_id):
-        invoice = self.get_invoice(invoice_id)
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
         line_items = invoice.line_items.all().order_by("order")
         return Response(InvoiceLineItemSerializer(line_items, many=True).data)
 
     @extend_schema(tags=["Invoice Line Items"], operation_id="line_items_create")
     def post(self, request, invoice_id):
-        invoice = self.get_invoice(invoice_id)
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
         serializer = InvoiceLineItemCreateSerializer(data=request.data)
         if serializer.is_valid():
@@ -702,6 +640,10 @@ class InvoiceLineItemDetailView(APIView):
 
     @extend_schema(tags=["Invoice Line Items"], operation_id="line_items_update")
     def put(self, request, invoice_id, pk):
+        _, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
+
         line_item = self.get_object(invoice_id, pk)
         if not line_item:
             return Response(
@@ -734,6 +676,10 @@ class InvoiceLineItemDetailView(APIView):
 
     @extend_schema(tags=["Invoice Line Items"], operation_id="line_items_destroy")
     def delete(self, request, invoice_id, pk):
+        _, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
+
         line_item = self.get_object(invoice_id, pk)
         if not line_item:
             return Response(
@@ -766,26 +712,22 @@ class PaymentListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Payments"], operation_id="payments_list")
     def get(self, request, invoice_id):
-        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
         payments = invoice.payments.all().order_by("-payment_date")
         return Response(PaymentSerializer(payments, many=True).data)
 
     @extend_schema(tags=["Payments"], operation_id="payments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
-        serializer = PaymentCreateSerializer(data=request.data)
+        serializer = PaymentCreateSerializer(
+            data=request.data, context={"invoice": invoice}
+        )
         if serializer.is_valid():
             payment = serializer.save(invoice=invoice, org=request.profile.org)
             return Response(
@@ -811,6 +753,10 @@ class PaymentDetailView(APIView):
 
     @extend_schema(tags=["Payments"], operation_id="payments_destroy")
     def delete(self, request, invoice_id, pk):
+        _, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
+
         payment = (
             Payment.objects.filter(
                 id=pk, invoice_id=invoice_id, org=request.profile.org
@@ -823,19 +769,6 @@ class PaymentDetailView(APIView):
                 {"error": True, "message": "Payment not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        # Check user permissions - must be admin, invoice creator, or assigned to invoice
-        invoice = payment.invoice
-        role = request.profile.role
-        if role != "ADMIN" and not request.user.is_superuser:
-            if not (
-                request.profile == invoice.created_by
-                or request.profile in invoice.assigned_to.all()
-            ):
-                return Response(
-                    {"error": True, "message": "Permission denied"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
 
         payment.delete()
         return Response(
@@ -1017,7 +950,9 @@ class EstimateListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         results = self.paginate_queryset(
             queryset.order_by("-created_at"), request, view=self
@@ -1353,7 +1288,9 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
             if raw_key.startswith("cf_") and raw_value:
                 cf_key = raw_key[3:]
                 if cf_key:
-                    queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
+                    queryset = queryset.filter(
+                        custom_fields__contains={cf_key: raw_value}
+                    )
 
         results = self.paginate_queryset(queryset, request, view=self)
         return Response(
@@ -1654,12 +1591,9 @@ class InvoiceCommentView(APIView):
 
     @extend_schema(tags=["Invoice Comments"], operation_id="comments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
         comment_text = request.data.get("comment")
         if not comment_text:
@@ -1753,12 +1687,9 @@ class InvoiceAttachmentView(APIView):
 
     @extend_schema(tags=["Invoice Attachments"], operation_id="attachments_create")
     def post(self, request, invoice_id):
-        invoice = Invoice.objects.filter(id=invoice_id, org=request.profile.org).first()
-        if not invoice:
-            return Response(
-                {"error": True, "message": "Invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        invoice, error = get_invoice_or_error(request, invoice_id)
+        if error:
+            return error
 
         if not request.FILES.get("file"):
             return Response(
@@ -1772,7 +1703,7 @@ class InvoiceAttachmentView(APIView):
             object_id=invoice.id,
             file_name=request.FILES.get("file").name,
             attachment=request.FILES.get("file"),
-            created_by=request.profile,
+            created_by=request.user,
             org=request.profile.org,
         )
 
@@ -1800,8 +1731,11 @@ class InvoiceAttachmentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # created_by is a User FK, so it must be compared against request.user --
+        # comparing it to request.profile is always unequal and locks the
+        # uploader out of their own attachment.
         role = request.profile.role
-        if attachment.created_by != request.profile and role != "ADMIN":
+        if attachment.created_by_id != request.user.id and role != "ADMIN":
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1983,9 +1917,9 @@ class RevenueReportView(APIView):
         # Format results
         data = [
             {
-                "period": item["period"].strftime("%Y-%m-%d")
-                if item["period"]
-                else None,
+                "period": (
+                    item["period"].strftime("%Y-%m-%d") if item["period"] else None
+                ),
                 "revenue": str(item["revenue"] or 0),
                 "count": item["count"],
             }
@@ -2066,9 +2000,9 @@ class AgingReportView(APIView):
                         "client_name": inv.client_name,
                         "due_date": str(inv.due_date) if inv.due_date else None,
                         "amount_due": str(inv.amount_due),
-                        "days_overdue": (today - inv.due_date).days
-                        if inv.due_date
-                        else 0,
+                        "days_overdue": (
+                            (today - inv.due_date).days if inv.due_date else 0
+                        ),
                     }
                     for inv in invoices[:10]  # Limit to 10 per category
                 ],

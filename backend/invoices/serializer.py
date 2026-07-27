@@ -26,7 +26,6 @@ from invoices.models import (
 )
 from opportunity.models import Opportunity
 
-
 # =============================================================================
 # MINIMAL OPPORTUNITY SERIALIZER (to avoid circular import)
 # =============================================================================
@@ -271,7 +270,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class PaymentCreateSerializer(serializers.ModelSerializer):
-    """Serializer for recording Payments"""
+    """Serializer for recording Payments.
+
+    Pass the target invoice via ``context={"invoice": invoice}`` so the amount
+    can be bounded by the outstanding balance.
+    """
 
     class Meta:
         model = Payment
@@ -282,6 +285,22 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
             "reference_number",
             "notes",
         )
+
+    def validate_amount(self, value):
+        # Payment totals are a SUM over this invoice's payments, so a zero or
+        # negative amount would silently walk amount_paid back down.
+        if value <= Decimal("0"):
+            raise serializers.ValidationError(
+                "Payment amount must be greater than zero."
+            )
+
+        invoice = self.context.get("invoice")
+        if invoice is not None and value > invoice.amount_due:
+            raise serializers.ValidationError(
+                f"Payment amount exceeds the amount due ({invoice.amount_due})."
+            )
+
+        return value
 
 
 # =============================================================================

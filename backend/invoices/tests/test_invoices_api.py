@@ -1,9 +1,9 @@
 import datetime
 import uuid
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
 from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
@@ -20,7 +20,6 @@ from invoices.models import (
     RecurringInvoice,
     RecurringInvoiceLineItem,
 )
-
 
 # ---------------------------------------------------------------------------
 # Local fixtures
@@ -147,6 +146,31 @@ def recurring_invoice(account_for_invoice, contact_for_invoice, org_a):
         is_active=True,
         org=org_a,
     )
+
+
+@pytest.fixture
+def invoice_with_balance(account_for_invoice, org_a):
+    """An invoice carrying a 1000.00 outstanding balance.
+
+    The plain ``invoice`` fixture has no line items, so its amount_due is 0 and
+    any payment against it is now rejected as exceeding the balance.
+    """
+    inv = Invoice.objects.create(
+        invoice_title="Invoice With Balance",
+        account=account_for_invoice,
+        currency="USD",
+        org=org_a,
+    )
+    InvoiceLineItem.objects.create(
+        invoice=inv,
+        name="Consulting",
+        quantity=Decimal("10"),
+        unit_price=Decimal("100.00"),
+        org=org_a,
+    )
+    inv.recalculate_totals()
+    inv.save()
+    return inv
 
 
 @pytest.fixture
@@ -286,9 +310,9 @@ class TestInvoiceActions:
         invoice.refresh_from_db()
         assert invoice.status == "Sent"
 
-    def test_mark_paid(self, admin_client, invoice):
+    def test_mark_paid(self, admin_client, invoice_with_balance):
         response = admin_client.post(
-            f"/api/invoices/{invoice.id}/mark-paid/",
+            f"/api/invoices/{invoice_with_balance.id}/mark-paid/",
             {
                 "amount": "500.00",
                 "payment_method": "BANK_TRANSFER",
@@ -386,9 +410,9 @@ class TestInvoiceLineItems:
 class TestInvoicePayments:
     """Tests for /api/invoices/<invoice_id>/payments/."""
 
-    def test_create_payment(self, admin_client, invoice):
+    def test_create_payment(self, admin_client, invoice_with_balance):
         response = admin_client.post(
-            f"/api/invoices/{invoice.id}/payments/",
+            f"/api/invoices/{invoice_with_balance.id}/payments/",
             {
                 "amount": "250.00",
                 "payment_date": "2026-02-01",
@@ -449,17 +473,13 @@ class TestInvoiceListFilters:
         assert data["count"] >= 1
 
     def test_search_by_invoice_number(self, admin_client, invoice):
-        response = admin_client.get(
-            f"/api/invoices/?search={invoice.invoice_number}"
-        )
+        response = admin_client.get(f"/api/invoices/?search={invoice.invoice_number}")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] >= 1
 
     def test_filter_by_account(self, admin_client, invoice):
-        response = admin_client.get(
-            f"/api/invoices/?account={invoice.account_id}"
-        )
+        response = admin_client.get(f"/api/invoices/?account={invoice.account_id}")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] >= 1
@@ -637,9 +657,7 @@ class TestInvoiceCreateValidation:
 class TestInvoiceDetailPermissions:
     """Tests for invoice detail view permission checks."""
 
-    def test_regular_user_cannot_see_unassigned_invoice(
-        self, user_client, invoice
-    ):
+    def test_regular_user_cannot_see_unassigned_invoice(self, user_client, invoice):
         """Non-admin user who is neither creator nor assigned cannot see the invoice."""
         response = user_client.get(f"/api/invoices/{invoice.id}/")
         assert response.status_code == 403
@@ -670,9 +688,7 @@ class TestInvoiceDetailPermissions:
         )
         assert response.status_code == 403
 
-    def test_detail_includes_attachments_comments_history(
-        self, admin_client, invoice
-    ):
+    def test_detail_includes_attachments_comments_history(self, admin_client, invoice):
         response = admin_client.get(f"/api/invoices/{invoice.id}/")
         assert response.status_code == 200
         data = response.json()
@@ -689,7 +705,11 @@ class TestInvoiceDetailPermissions:
             f"/api/invoices/{invoice.id}/",
             {
                 "line_items": [
-                    {"name": "Replacement Item", "quantity": "1", "unit_price": "999.00"},
+                    {
+                        "name": "Replacement Item",
+                        "quantity": "1",
+                        "unit_price": "999.00",
+                    },
                 ],
             },
             format="json",
@@ -731,7 +751,11 @@ class TestInvoiceActionsEdgeCases:
         fake_id = uuid.uuid4()
         response = admin_client.post(
             f"/api/invoices/{fake_id}/mark-paid/",
-            {"amount": "100.00", "payment_method": "CASH", "payment_date": "2026-01-01"},
+            {
+                "amount": "100.00",
+                "payment_method": "CASH",
+                "payment_date": "2026-01-01",
+            },
             format="json",
         )
         assert response.status_code == 404
@@ -752,24 +776,25 @@ class TestInvoiceActionsEdgeCases:
         response = user_client.post(f"/api/invoices/{invoice.id}/cancel/")
         assert response.status_code == 403
 
-    def test_duplicate_invoice_with_line_items(
-        self, admin_client, invoice, line_item
-    ):
+    def test_duplicate_invoice_with_line_items(self, admin_client, invoice, line_item):
         """Duplicate should copy line items."""
         response = admin_client.post(f"/api/invoices/{invoice.id}/duplicate/")
         assert response.status_code == 201
         new_id = response.json()["invoice"]["id"]
         assert InvoiceLineItem.objects.filter(invoice_id=new_id).count() == 1
 
-    def test_mark_paid_with_defaults(self, admin_client, invoice):
-        """Mark paid with no explicit amount uses amount_due."""
+    def test_mark_paid_with_defaults(self, admin_client, invoice_with_balance):
+        """Mark paid with no explicit amount settles the full amount_due."""
         response = admin_client.post(
-            f"/api/invoices/{invoice.id}/mark-paid/",
+            f"/api/invoices/{invoice_with_balance.id}/mark-paid/",
             format="json",
         )
         assert response.status_code == 200
         data = response.json()
         assert data["error"] is False
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.amount_paid == Decimal("1000.00")
+        assert invoice_with_balance.status == "Paid"
 
 
 # ---------------------------------------------------------------------------
@@ -783,9 +808,7 @@ class TestInvoicePDF:
 
     @patch("invoices.api_views.generate_invoice_pdf")
     @patch("invoices.api_views.generate_invoice_filename")
-    def test_pdf_success(
-        self, mock_filename, mock_pdf, admin_client, invoice
-    ):
+    def test_pdf_success(self, mock_filename, mock_pdf, admin_client, invoice):
         mock_pdf.return_value = b"%PDF-1.4 test content"
         mock_filename.return_value = "invoice.pdf"
         response = admin_client.get(f"/api/invoices/{invoice.id}/pdf/")
@@ -928,9 +951,7 @@ class TestPaymentDetail:
         )
         assert response.status_code == 404
 
-    def test_delete_payment_permission_denied(
-        self, user_client, invoice, payment
-    ):
+    def test_delete_payment_permission_denied(self, user_client, invoice, payment):
         response = user_client.delete(
             f"/api/invoices/{invoice.id}/payments/{payment.id}/"
         )
@@ -986,7 +1007,9 @@ class TestProductListView:
         for r in data["results"]:
             assert r["is_active"] is True
 
-    def test_list_products_filter_inactive(self, admin_client, product, product_inactive):
+    def test_list_products_filter_inactive(
+        self, admin_client, product, product_inactive
+    ):
         response = admin_client.get("/api/invoices/products/?is_active=false")
         assert response.status_code == 200
         data = response.json()
@@ -1127,7 +1150,9 @@ class TestEstimateListView:
         data = response.json()
         assert data["count"] >= 1
 
-    def test_create_estimate(self, admin_client, account_for_invoice, contact_for_invoice):
+    def test_create_estimate(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
         response = admin_client.post(
             "/api/invoices/estimates/",
             {
@@ -1176,9 +1201,7 @@ class TestEstimateListView:
         assert created.subtotal == Decimal("200.00")
         assert created.total_amount == Decimal("220.00")
 
-    def test_create_estimate_invalid_account(
-        self, admin_client, contact_for_invoice
-    ):
+    def test_create_estimate_invalid_account(self, admin_client, contact_for_invoice):
         fake_id = str(uuid.uuid4())
         response = admin_client.post(
             "/api/invoices/estimates/",
@@ -1262,9 +1285,7 @@ class TestEstimateActions:
 
     @patch("invoices.api_views.create_invoice_history.delay")
     def test_convert_estimate_to_invoice(self, mock_history, admin_client, estimate):
-        response = admin_client.post(
-            f"/api/invoices/estimates/{estimate.id}/convert/"
-        )
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/convert/")
         assert response.status_code == 201
         data = response.json()
         assert data["error"] is False
@@ -1280,9 +1301,7 @@ class TestEstimateActions:
     ):
         estimate.converted_to_invoice = invoice
         estimate.save()
-        response = admin_client.post(
-            f"/api/invoices/estimates/{estimate.id}/convert/"
-        )
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/convert/")
         assert response.status_code == 400
         data = response.json()
         assert data["error"] is True
@@ -1294,9 +1313,7 @@ class TestEstimateActions:
 
     @patch("invoices.tasks.send_estimate_to_client.delay")
     def test_send_estimate(self, mock_send, admin_client, estimate):
-        response = admin_client.post(
-            f"/api/invoices/estimates/{estimate.id}/send/"
-        )
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
         assert response.status_code == 200
         data = response.json()
         assert data["error"] is False
@@ -1308,9 +1325,7 @@ class TestEstimateActions:
     def test_send_already_sent_estimate(self, mock_send, admin_client, estimate):
         estimate.status = "Sent"
         estimate.save()
-        response = admin_client.post(
-            f"/api/invoices/estimates/{estimate.id}/send/"
-        )
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
         assert response.status_code == 200
         estimate.refresh_from_db()
         assert estimate.status == "Sent"
@@ -1327,9 +1342,7 @@ class TestEstimateActions:
     ):
         mock_pdf.return_value = b"%PDF-1.4 estimate"
         mock_filename.return_value = "estimate.pdf"
-        response = admin_client.get(
-            f"/api/invoices/estimates/{estimate.id}/pdf/"
-        )
+        response = admin_client.get(f"/api/invoices/estimates/{estimate.id}/pdf/")
         assert response.status_code == 200
         assert response["Content-Type"] == "application/pdf"
 
@@ -1343,9 +1356,7 @@ class TestEstimateActions:
     def test_estimate_pdf_permission_denied(
         self, mock_filename, mock_pdf, user_client, estimate
     ):
-        response = user_client.get(
-            f"/api/invoices/estimates/{estimate.id}/pdf/"
-        )
+        response = user_client.get(f"/api/invoices/estimates/{estimate.id}/pdf/")
         assert response.status_code == 403
 
     @patch(
@@ -1353,9 +1364,7 @@ class TestEstimateActions:
         side_effect=ImportError("no weasyprint"),
     )
     def test_estimate_pdf_import_error(self, mock_pdf, admin_client, estimate):
-        response = admin_client.get(
-            f"/api/invoices/estimates/{estimate.id}/pdf/"
-        )
+        response = admin_client.get(f"/api/invoices/estimates/{estimate.id}/pdf/")
         assert response.status_code == 503
 
     @patch(
@@ -1363,9 +1372,7 @@ class TestEstimateActions:
         side_effect=RuntimeError("unexpected"),
     )
     def test_estimate_pdf_generic_error(self, mock_pdf, admin_client, estimate):
-        response = admin_client.get(
-            f"/api/invoices/estimates/{estimate.id}/pdf/"
-        )
+        response = admin_client.get(f"/api/invoices/estimates/{estimate.id}/pdf/")
         assert response.status_code == 500
 
     @patch("invoices.api_views.create_invoice_history.delay")
@@ -1380,9 +1387,7 @@ class TestEstimateActions:
             unit_price=Decimal("100.00"),
             org=estimate.org,
         )
-        response = admin_client.post(
-            f"/api/invoices/estimates/{estimate.id}/convert/"
-        )
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/convert/")
         assert response.status_code == 201
         inv_id = response.json()["invoice"]["id"]
         assert InvoiceLineItem.objects.filter(invoice_id=inv_id).count() == 1
@@ -1404,18 +1409,14 @@ class TestRecurringInvoiceListView:
         assert "results" in data
         assert data["count"] >= 1
 
-    def test_list_recurring_filter_active(
-        self, admin_client, recurring_invoice
-    ):
+    def test_list_recurring_filter_active(self, admin_client, recurring_invoice):
         response = admin_client.get("/api/invoices/recurring/?is_active=true")
         assert response.status_code == 200
         data = response.json()
         for r in data["results"]:
             assert r["is_active"] is True
 
-    def test_list_recurring_filter_inactive(
-        self, admin_client, recurring_invoice
-    ):
+    def test_list_recurring_filter_inactive(self, admin_client, recurring_invoice):
         recurring_invoice.is_active = False
         recurring_invoice.save()
         response = admin_client.get("/api/invoices/recurring/?is_active=false")
@@ -1482,9 +1483,7 @@ class TestRecurringInvoiceListView:
         assert created.subtotal == Decimal("100.00")
         assert created.total_amount == Decimal("110.00")
 
-    def test_create_recurring_invalid_account(
-        self, admin_client, contact_for_invoice
-    ):
+    def test_create_recurring_invalid_account(self, admin_client, contact_for_invoice):
         response = admin_client.post(
             "/api/invoices/recurring/",
             {
@@ -1515,9 +1514,7 @@ class TestRecurringInvoiceDetailView:
     """Tests for GET/PUT/DELETE /api/invoices/recurring/<pk>/."""
 
     def test_get_recurring(self, admin_client, recurring_invoice):
-        response = admin_client.get(
-            f"/api/invoices/recurring/{recurring_invoice.id}/"
-        )
+        response = admin_client.get(f"/api/invoices/recurring/{recurring_invoice.id}/")
         assert response.status_code == 200
         data = response.json()
         assert data["recurring_invoice"]["title"] == "Monthly Hosting"
@@ -1554,9 +1551,7 @@ class TestRecurringInvoiceDetailView:
         assert response.status_code == 200
         data = response.json()
         assert data["error"] is False
-        assert not RecurringInvoice.objects.filter(
-            id=recurring_invoice.id
-        ).exists()
+        assert not RecurringInvoice.objects.filter(id=recurring_invoice.id).exists()
 
     def test_delete_nonexistent_recurring(self, admin_client):
         fake_id = uuid.uuid4()
@@ -1677,9 +1672,7 @@ class TestInvoiceTemplateDetailView:
         assert response.status_code == 404
 
     def test_delete_template(self, admin_client, template):
-        response = admin_client.delete(
-            f"/api/invoices/templates/{template.id}/"
-        )
+        response = admin_client.delete(f"/api/invoices/templates/{template.id}/")
         assert response.status_code == 200
         data = response.json()
         assert data["error"] is False
@@ -1896,17 +1889,13 @@ class TestRevenueReport:
         assert data["group_by"] == "day"
 
     def test_revenue_report_by_week(self, admin_client):
-        response = admin_client.get(
-            "/api/invoices/reports/revenue/?group_by=week"
-        )
+        response = admin_client.get("/api/invoices/reports/revenue/?group_by=week")
         assert response.status_code == 200
         data = response.json()
         assert data["group_by"] == "week"
 
     def test_revenue_report_by_year(self, admin_client):
-        response = admin_client.get(
-            "/api/invoices/reports/revenue/?group_by=year"
-        )
+        response = admin_client.get("/api/invoices/reports/revenue/?group_by=year")
         assert response.status_code == 200
         data = response.json()
         assert data["group_by"] == "year"
@@ -1954,7 +1943,15 @@ class TestAgingReport:
         inv.recalculate_totals()
         inv.due_date = due_date
         inv.status = status
-        inv.save(update_fields=["due_date", "status", "subtotal", "total_amount", "amount_due"])
+        inv.save(
+            update_fields=[
+                "due_date",
+                "status",
+                "subtotal",
+                "total_amount",
+                "amount_due",
+            ]
+        )
         return inv
 
     def test_aging_report_with_overdue_invoices(
@@ -1963,29 +1960,39 @@ class TestAgingReport:
         """Create invoices with various due dates and check aging buckets."""
         today = datetime.date.today()
         self._make_unpaid_invoice(
-            "Current Invoice", "Sent",
+            "Current Invoice",
+            "Sent",
             today + datetime.timedelta(days=5),
-            account_for_invoice, org_a,
+            account_for_invoice,
+            org_a,
         )
         self._make_unpaid_invoice(
-            "Overdue 15d", "Sent",
+            "Overdue 15d",
+            "Sent",
             today - datetime.timedelta(days=15),
-            account_for_invoice, org_a,
+            account_for_invoice,
+            org_a,
         )
         self._make_unpaid_invoice(
-            "Overdue 45d", "Sent",
+            "Overdue 45d",
+            "Sent",
             today - datetime.timedelta(days=45),
-            account_for_invoice, org_a,
+            account_for_invoice,
+            org_a,
         )
         self._make_unpaid_invoice(
-            "Overdue 75d", "Partially_Paid",
+            "Overdue 75d",
+            "Partially_Paid",
             today - datetime.timedelta(days=75),
-            account_for_invoice, org_a,
+            account_for_invoice,
+            org_a,
         )
         self._make_unpaid_invoice(
-            "Overdue 120d", "Overdue",
+            "Overdue 120d",
+            "Overdue",
             today - datetime.timedelta(days=120),
-            account_for_invoice, org_a,
+            account_for_invoice,
+            org_a,
         )
         response = admin_client.get("/api/invoices/reports/aging/")
         assert response.status_code == 200
@@ -2001,8 +2008,11 @@ class TestAgingReport:
     ):
         """Invoice with no due date goes to current bucket."""
         self._make_unpaid_invoice(
-            "No Due Date", "Sent", None,
-            account_for_invoice, org_a,
+            "No Due Date",
+            "Sent",
+            None,
+            account_for_invoice,
+            org_a,
         )
         response = admin_client.get("/api/invoices/reports/aging/")
         assert response.status_code == 200
@@ -2021,6 +2031,7 @@ class TestPublicInvoiceView:
 
     def _get(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicInvoiceView
 
         factory = APIRequestFactory()
@@ -2087,6 +2098,7 @@ class TestPublicInvoicePDFView:
 
     def _get(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicInvoicePDFView
 
         factory = APIRequestFactory()
@@ -2135,6 +2147,7 @@ class TestPublicEstimateView:
 
     def _get(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicEstimateView
 
         factory = APIRequestFactory()
@@ -2187,6 +2200,7 @@ class TestPublicEstimatePDFView:
 
     def _get(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicEstimatePDFView
 
         factory = APIRequestFactory()
@@ -2196,9 +2210,7 @@ class TestPublicEstimatePDFView:
 
     @patch("invoices.public_views.generate_estimate_pdf")
     @patch("invoices.public_views.generate_estimate_filename")
-    def test_public_estimate_pdf_success(
-        self, mock_filename, mock_pdf, estimate
-    ):
+    def test_public_estimate_pdf_success(self, mock_filename, mock_pdf, estimate):
         mock_pdf.return_value = b"%PDF-1.4 est"
         mock_filename.return_value = "estimate.pdf"
         response = self._get(estimate.public_token)
@@ -2232,6 +2244,7 @@ class TestPublicEstimateAcceptDecline:
 
     def _post_accept(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicEstimateAcceptView
 
         factory = APIRequestFactory()
@@ -2241,6 +2254,7 @@ class TestPublicEstimateAcceptDecline:
 
     def _post_decline(self, token):
         from rest_framework.test import APIRequestFactory
+
         from invoices.public_views import PublicEstimateDeclineView
 
         factory = APIRequestFactory()
@@ -2368,9 +2382,7 @@ class TestInvoiceModel:
         result = invoice.calculate_due_date()
         assert result is None
 
-    def test_recalculate_totals_percentage_discount(
-        self, invoice, org_a
-    ):
+    def test_recalculate_totals_percentage_discount(self, invoice, org_a):
         InvoiceLineItem.objects.create(
             invoice=invoice,
             name="Item",
