@@ -22,6 +22,33 @@ from common.serializer import OrgAwareRefreshToken
 logger = logging.getLogger(__name__)
 
 
+def _google_email_is_verified(claims):
+    """Whether Google asserts the caller controls the email in ``claims``.
+
+    Fails closed: a missing ``email_verified`` claim counts as unverified.
+    Google always sends it alongside the ``email`` scope, so its absence means
+    the payload is not the shape we think it is. Without this check, a Google
+    account carrying an address whose owner never proved control of it is enough
+    to become that address here — which matters because other parts of the
+    system key off the email string.
+    """
+    verified = claims.get("email_verified")
+    return verified is True or str(verified).strip().lower() == "true"
+
+
+def _disabled_account_response():
+    """403 for a login attempt by a deactivated account.
+
+    Deactivation is the offboarding lever, so every login path must honour it —
+    otherwise a revoked user simply signs in again. Kept identical across the
+    Google and magic-link flows so clients can handle one shape.
+    """
+    return Response(
+        {"error": "User account is disabled"},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
 class GoogleOAuthCallbackView(APIView):
     """
     Handle Google OAuth authorization code exchange with PKCE.
@@ -122,6 +149,14 @@ class GoogleOAuthCallbackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Reject before touching the database so an unverified address cannot
+        # even provision an account.
+        if not _google_email_is_verified(payload):
+            return Response(
+                {"error": "Google account email is not verified"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Get or create user
         created = False
         try:
@@ -134,6 +169,9 @@ class GoogleOAuthCallbackView(APIView):
                 password=make_password(secrets.token_urlsafe(32)),
             )
             created = True
+
+        if not user.is_active:
+            return _disabled_account_response()
 
         # Backfill name from Google when the user hasn't set one yet.
         if not user.name and google_name:
@@ -223,6 +261,14 @@ class GoogleIdTokenView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Reject before touching the database so an unverified address cannot
+        # even provision an account.
+        if not _google_email_is_verified(idinfo):
+            return Response(
+                {"error": "Google account email is not verified"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Get or create user
         user, _created = User.objects.get_or_create(
             email=email,
@@ -232,6 +278,10 @@ class GoogleIdTokenView(APIView):
                 "password": make_password(secrets.token_urlsafe(32)),
             },
         )
+
+        if not user.is_active:
+            return _disabled_account_response()
+
         # Backfill name from Google for existing users who don't have one.
         if not user.name and google_name:
             user.name = google_name
@@ -318,6 +368,8 @@ class OrgAwareTokenRefreshView(APIView):
         },
     )
     def post(self, request):
+        from django.db import transaction
+
         from rest_framework_simplejwt.exceptions import TokenError
         from rest_framework_simplejwt.tokens import RefreshToken as BaseRefreshToken
 
@@ -347,6 +399,8 @@ class OrgAwareTokenRefreshView(APIView):
                 )
 
             # If token has org context, validate membership
+            org = None
+            profile = None
             if org_id:
                 try:
                     profile = Profile.objects.get(
@@ -365,13 +419,18 @@ class OrgAwareTokenRefreshView(APIView):
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                # Generate new tokens with same org context (include profile for role)
+            # Rotate: a refresh token is single-use. Blacklisting the presented
+            # token means a copy stolen via XSS, a proxy, or a log cannot keep
+            # minting access tokens once the legitimate client has refreshed.
+            # Both writes share one transaction so a failure can never leave the
+            # caller tokenless while the old token stays usable.
+            # `profile` is None when there is no org context, which is exactly
+            # what for_user_and_org expects.
+            with transaction.atomic():
+                token.blacklist()
                 new_token = OrgAwareRefreshToken.for_user_and_org(user, org, profile)
-                audit_log.token_refresh(user, org, request)
-            else:
-                # No org context - refresh with user info only
-                new_token = OrgAwareRefreshToken.for_user_and_org(user, None)
-                audit_log.token_refresh(user, None, request)
+
+            audit_log.token_refresh(user, org, request)
 
             return Response(
                 {"access": str(new_token.access_token), "refresh": str(new_token)},
@@ -400,12 +459,52 @@ class OrgSwitchView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def _retire_presented_refresh_token(self, request):
+        """Blacklist the refresh token the caller is switching away from.
+
+        Optional by design: clients already in the wild do not send ``refresh``,
+        and failing their org switch would be worse than letting one token expire
+        on its own schedule. When it *is* sent, the old token stops working
+        immediately instead of staying valid against the previous org for the
+        rest of its 14-day life.
+
+        The token must belong to the authenticated caller. Without that check
+        this field would let anyone retire any refresh token they can observe,
+        turning a convenience parameter into a remote logout for other users.
+        """
+        from rest_framework_simplejwt.exceptions import TokenError
+        from rest_framework_simplejwt.tokens import RefreshToken as BaseRefreshToken
+
+        presented = request.data.get("refresh")
+        if not presented:
+            return
+
+        try:
+            token = BaseRefreshToken(presented)
+        except TokenError:
+            # Expired, malformed, or already blacklisted: nothing left to retire,
+            # and the switch itself does not depend on it.
+            return
+
+        if str(token.get("user_id")) != str(request.user.id):
+            return
+
+        token.blacklist()
+
     @extend_schema(
         description="Switch to a different organization and get new JWT tokens",
         request=inline_serializer(
             name="OrgSwitchRequest",
             fields={
-                "org_id": serializers.UUIDField(help_text="Target organization ID")
+                "org_id": serializers.UUIDField(help_text="Target organization ID"),
+                "refresh": serializers.CharField(
+                    required=False,
+                    help_text=(
+                        "Optional. The refresh token being replaced; it is "
+                        "blacklisted so it cannot be reused after the switch. "
+                        "Ignored unless it belongs to the caller."
+                    ),
+                ),
             },
         ),
         responses={
@@ -421,6 +520,8 @@ class OrgSwitchView(APIView):
         },
     )
     def post(self, request):
+        from django.db import transaction
+
         from common.audit_log import audit_log
 
         org_id = request.data.get("org_id")
@@ -455,10 +556,14 @@ class OrgSwitchView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Generate new tokens with the target org (include profile for role)
-        token = OrgAwareRefreshToken.for_user_and_org(
-            request.user, profile.org, profile
-        )
+        # Retire the outgoing refresh token and issue its replacement together,
+        # so a failure cannot leave the caller without a usable token while the
+        # old one is already dead.
+        with transaction.atomic():
+            self._retire_presented_refresh_token(request)
+            token = OrgAwareRefreshToken.for_user_and_org(
+                request.user, profile.org, profile
+            )
 
         # Audit log the org switch
         audit_log.org_switch(request.user, from_org, profile.org, request)
@@ -619,6 +724,9 @@ class MagicLinkVerifyView(APIView):
             )
             created = True
 
+        if not user.is_active:
+            return _disabled_account_response()
+
         if created:
             from common.tasks import send_welcome_email
 
@@ -751,6 +859,9 @@ class MagicLinkVerifyCodeView(APIView):
                 is_active=True,
             )
             created = True
+
+        if not user.is_active:
+            return _disabled_account_response()
 
         if created:
             from common.tasks import send_welcome_email

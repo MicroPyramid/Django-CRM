@@ -31,6 +31,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    # Required for refresh-token rotation: simplejwt only defines
+    # RefreshToken.blacklist()/check_blacklist() when this app is installed, so
+    # without it BLACKLIST_AFTER_ROTATION below is silently a no-op.
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_ses",
     "drf_spectacular",

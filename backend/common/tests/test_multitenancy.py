@@ -658,27 +658,50 @@ class TestPermissionClasses(MultiTenancyBaseTestCase):
         perm = IsOrgAdmin()
         self.assertFalse(perm.has_permission(request, None))
 
-    def test_is_super_admin_with_super_email(self):
-        """IsSuperAdmin allows micropyramid.com email."""
+    def test_is_super_admin_with_explicit_flag(self):
+        """IsSuperAdmin allows a user explicitly flagged is_superuser."""
         from common.permissions import IsSuperAdmin
 
-        user = MagicMock()
-        user.is_authenticated = True
-        user.email = "admin@micropyramid.com"
+        self.user_a.is_superuser = True
         request = MagicMock()
-        request.user = user
+        request.user = self.user_a
         perm = IsSuperAdmin()
         self.assertTrue(perm.has_permission(request, None))
 
-    def test_is_super_admin_regular_email(self):
-        """IsSuperAdmin denies non-micropyramid emails."""
+    def test_is_super_admin_ignores_email_domain(self):
+        """An email domain must NEVER confer super admin.
+
+        Granting platform-wide super admin to anyone whose email ends in a
+        given domain is a privilege-escalation hole: the domain is attacker
+        controlled input as far as the permission check is concerned.
+        """
         from common.permissions import IsSuperAdmin
 
-        user = MagicMock()
-        user.is_authenticated = True
-        user.email = "admin@test.com"
+        self.user_a.email = "attacker@micropyramid.com"
+        self.user_a.is_superuser = False
         request = MagicMock()
-        request.user = user
+        request.user = self.user_a
+        perm = IsSuperAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_super_admin_regular_user(self):
+        """IsSuperAdmin denies a user without the flag."""
+        from common.permissions import IsSuperAdmin
+
+        self.user_a.is_superuser = False
+        request = MagicMock()
+        request.user = self.user_a
+        perm = IsSuperAdmin()
+        self.assertFalse(perm.has_permission(request, None))
+
+    def test_is_super_admin_inactive_user(self):
+        """IsSuperAdmin denies a deactivated super admin."""
+        from common.permissions import IsSuperAdmin
+
+        self.user_a.is_superuser = True
+        self.user_a.is_active = False
+        request = MagicMock()
+        request.user = self.user_a
         perm = IsSuperAdmin()
         self.assertFalse(perm.has_permission(request, None))
 

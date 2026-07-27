@@ -346,9 +346,13 @@ class AuthService {
     try {
       debugPrint('AuthService: Switching to organization: ${org.name}...');
 
-      // Call switch-org API to get new tokens with org context
+      // Call switch-org API to get new tokens with org context. The outgoing
+      // refresh token is sent so the backend blacklists it — we replace it below
+      // either way, and leaving it live keeps a stolen copy working against the
+      // previous org until it expires.
       final response = await _apiService.post(ApiConfig.switchOrg, {
         'org_id': org.id,
+        if (_refreshToken != null) 'refresh': _refreshToken,
       }, requiresAuth: true);
 
       if (!response.success || response.data == null) {
@@ -356,9 +360,14 @@ class AuthService {
         return false;
       }
 
-      // Update tokens from response
+      // Update tokens from response. The backend has now blacklisted the token
+      // we sent, so a malformed reply must not clear the field — mirror the
+      // guard in refreshAccessToken rather than stranding the session.
       _accessToken = response.data!['access_token'] as String?;
-      _refreshToken = response.data!['refresh_token'] as String?;
+      final newRefresh = response.data!['refresh_token'] as String?;
+      if (newRefresh != null) {
+        _refreshToken = newRefresh;
+      }
 
       // Update selected organization
       _selectedOrganization = org;

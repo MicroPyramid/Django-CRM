@@ -63,15 +63,21 @@ class IsSuperAdmin(permissions.BasePermission):
     """
     Permission class for platform-level super admins.
 
-    Super admins are identified by @micropyramid.com email domain.
-    They have access to admin panel and can manage all organizations.
+    Super admin is an explicit, deliberately granted flag on the user record
+    (``User.is_superuser``), never inferred from the email address. Deriving it
+    from an email domain would hand platform-wide access — every org, every
+    user — to anyone who can obtain an account at that domain, turning an
+    ordinary signup into vertical privilege escalation.
+
+    Grant it with ``manage.py createsuperuser``, the Django admin, or another
+    audited path — not by handing out an email address.
     """
 
     message = "Super admin access required."
 
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
             return False
 
-        # Check for super admin email domain
-        return request.user.email.endswith("@micropyramid.com")
+        return bool(user.is_active and user.is_superuser)

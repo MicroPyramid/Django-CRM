@@ -204,6 +204,24 @@ class TestMagicLinkVerify:
         )
         assert response2.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_verify_rejects_deactivated_user(self, unauthenticated_client, admin_user):
+        """A deactivated account must not be able to log itself back in.
+
+        Deactivation is the offboarding lever; if a magic link still mints
+        tokens for `is_active=False`, revoking access does not actually revoke
+        access.
+        """
+        admin_user.is_active = False
+        admin_user.save(update_fields=["is_active"])
+        token_obj = self._create_valid_token(email=admin_user.email)
+
+        response = unauthenticated_client.post(
+            self.url, {"token": token_obj.token}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "access_token" not in response.data
+
 
 @pytest.mark.django_db
 class TestMagicLinkRequestCode:
@@ -422,3 +440,20 @@ class TestMagicLinkVerifyCode:
         assert not MagicLinkToken.objects.filter(
             email="linktok@example.com", is_used=True
         ).exists()
+
+    def test_verify_code_rejects_deactivated_user(
+        self, unauthenticated_client, admin_user
+    ):
+        """The OTP path must honour deactivation just like the link path."""
+        admin_user.is_active = False
+        admin_user.save(update_fields=["is_active"])
+        self._create_code_token(email=admin_user.email, code="222222")
+
+        response = unauthenticated_client.post(
+            self.url,
+            {"email": admin_user.email, "code": "222222"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "access_token" not in response.data

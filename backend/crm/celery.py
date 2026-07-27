@@ -69,4 +69,9 @@ app.conf.beat_schedule = {
         "task": "cases.tasks.auto_stop_stale_timers",
         "schedule": crontab(minute="*/30"),
     },
+    # Drop rotated/expired refresh token records - daily at 3:30 AM
+    "flush-expired-refresh-tokens": {
+        "task": "common.tasks.flush_expired_refresh_tokens",
+        "schedule": crontab(hour=3, minute=30),
+    },
 }

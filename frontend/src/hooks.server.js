@@ -75,17 +75,60 @@ function verifyTokenLocally(accessToken) {
 }
 
 /**
- * Refresh access token using refresh token
- * @param {string} refreshToken - JWT refresh token
- * @returns {Promise<string|null>} New access token or null if refresh failed
+ * Refreshes currently in flight, keyed by the refresh token being spent.
+ * Entries are removed as soon as the request settles, so this holds at most one
+ * entry per user mid-refresh.
+ * @type {Map<string, Promise<{access: string, refresh?: string}|null>>}
  */
-async function refreshAccessToken(refreshToken) {
+const refreshesInFlight = new Map();
+
+/**
+ * Refresh access token using refresh token.
+ *
+ * The backend rotates refresh tokens: the one we send is blacklisted server-side
+ * and a replacement comes back in `refresh`. Callers MUST persist that
+ * replacement — reusing the old token on the next refresh gets a 401 and logs
+ * the user out.
+ *
+ * Concurrent requests arriving with the same expired access token would
+ * otherwise each spend the same refresh token, and every one but the winner
+ * would 401. Requests sharing a refresh token therefore share one round-trip.
+ *
+ * @param {string} refreshToken - JWT refresh token
+ * @returns {Promise<{access: string, refresh?: string}|null>} New tokens or null if refresh failed
+ */
+function refreshAccessToken(refreshToken) {
+  const existing = refreshesInFlight.get(refreshToken);
+  if (existing) {
+    return existing;
+  }
+
+  const pending = performTokenRefresh(refreshToken).finally(() => {
+    refreshesInFlight.delete(refreshToken);
+  });
+  refreshesInFlight.set(refreshToken, pending);
+
+  return pending;
+}
+
+/**
+ * Perform the actual refresh round-trip. Use refreshAccessToken() instead —
+ * it deduplicates concurrent callers.
+ *
+ * @param {string} refreshToken - JWT refresh token
+ * @returns {Promise<{access: string, refresh?: string}|null>} New tokens or null if refresh failed
+ */
+async function performTokenRefresh(refreshToken) {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/refresh-token/`, {
       refresh: refreshToken
     });
 
-    return response.data.access;
+    if (!response.data?.access) {
+      return null;
+    }
+
+    return { access: response.data.access, refresh: response.data.refresh };
   } catch (error) {
     console.error('Token refresh failed:', error);
     return null;
@@ -95,16 +138,22 @@ async function refreshAccessToken(refreshToken) {
 // Profile info is now embedded in JWT - no API call needed
 
 /**
- * Switch organization and get new tokens with org context
+ * Switch organization and get new tokens with org context.
+ *
+ * Passes the outgoing refresh token so the backend can blacklist it — otherwise
+ * it stays valid against the previous org for the rest of its lifetime even
+ * though we replace it in the cookie below.
+ *
  * @param {string} accessToken - Current JWT access token
  * @param {string} orgId - Organization UUID to switch to
+ * @param {string} [refreshToken] - Refresh token being replaced, to be retired
  * @returns {Promise<SwitchOrgResult|null>} New tokens and org data or null if failed
  */
-async function switchOrg(accessToken, orgId) {
+async function switchOrg(accessToken, orgId, refreshToken) {
   try {
     const response = await axios.post(
       `${API_BASE_URL}/auth/switch-org/`,
-      { org_id: orgId },
+      refreshToken ? { org_id: orgId, refresh: refreshToken } : { org_id: orgId },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -126,7 +175,9 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
   // Get tokens from cookies
   /** @type {string | undefined} */
   let accessToken = event.cookies.get('jwt_access');
-  const refreshToken = event.cookies.get('jwt_refresh');
+  // Reassigned if we rotate below, so later calls hand on the live token rather
+  // than the one we just spent.
+  let refreshToken = event.cookies.get('jwt_refresh');
   const orgId = event.cookies.get('org');
 
   /** @type {JWTPayload | null} */
@@ -138,18 +189,31 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
 
     // If access token expired, try to refresh
     if (!jwtPayload && refreshToken) {
-      const newAccessToken = await refreshAccessToken(refreshToken);
-      if (newAccessToken) {
+      const refreshed = await refreshAccessToken(refreshToken);
+      if (refreshed) {
         // Update cookie with new access token
-        event.cookies.set('jwt_access', newAccessToken, {
+        event.cookies.set('jwt_access', refreshed.access, {
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
           maxAge: 60 * 60 * 24 // 1 day
         });
-        accessToken = newAccessToken;
-        jwtPayload = verifyTokenLocally(newAccessToken);
+        // Persist the rotated refresh token. The one we just spent is
+        // blacklisted server-side, so keeping it would 401 the next refresh
+        // and bounce the user to /login an hour later.
+        if (refreshed.refresh) {
+          event.cookies.set('jwt_refresh', refreshed.refresh, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 365 // 1 year
+          });
+          refreshToken = refreshed.refresh;
+        }
+        accessToken = refreshed.access;
+        jwtPayload = verifyTokenLocally(refreshed.access);
       } else {
         // Refresh failed, clear cookies
         event.cookies.delete('jwt_access', { path: '/' });
@@ -195,7 +259,7 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
         };
       } else {
         // Token doesn't have org context, need to switch (1 API call)
-        const switchResult = await switchOrg(token, orgId);
+        const switchResult = await switchOrg(token, orgId, refreshToken);
 
         if (switchResult) {
           // Update cookies with new tokens that have org context

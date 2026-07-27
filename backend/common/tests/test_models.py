@@ -29,7 +29,6 @@ from common.models import (
     Document,
     Org,
     Profile,
-    SessionToken,
     Teams,
     User,
 )
@@ -193,59 +192,6 @@ class TestDocumentFileType:
         doc = self._make_document(org_a, "Makefile")
         doc.document_file.url = "/media/docs/Makefile"
         assert doc.file_type() == ("file", "fa fa-file")
-
-
-# ---------------------------------------------------------------------------
-# SessionToken.revoke() and cleanup_expired()
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.django_db
-class TestSessionToken:
-    """Test SessionToken.revoke() and cleanup_expired() methods."""
-
-    def _create_token(self, user, **kwargs):
-        defaults = {
-            "user": user,
-            "token_jti": str(uuid.uuid4()),
-            "refresh_token_jti": str(uuid.uuid4()),
-            "expires_at": timezone.now() + timezone.timedelta(hours=1),
-            "is_active": True,
-        }
-        defaults.update(kwargs)
-        return SessionToken.objects.create(**defaults)
-
-    def test_revoke(self, admin_user):
-        token = self._create_token(admin_user)
-        assert token.is_active is True
-        assert token.revoked_at is None
-
-        token.revoke()
-        token.refresh_from_db()
-
-        assert token.is_active is False
-        assert token.revoked_at is not None
-
-    def test_cleanup_expired(self, admin_user):
-        # Create an expired token
-        expired = self._create_token(
-            admin_user,
-            token_jti=str(uuid.uuid4()),
-            refresh_token_jti=str(uuid.uuid4()),
-            expires_at=timezone.now() - timezone.timedelta(hours=1),
-        )
-        # Create a valid token
-        valid = self._create_token(
-            admin_user,
-            token_jti=str(uuid.uuid4()),
-            refresh_token_jti=str(uuid.uuid4()),
-            expires_at=timezone.now() + timezone.timedelta(hours=1),
-        )
-
-        deleted_count, _ = SessionToken.cleanup_expired()
-        assert deleted_count == 1
-        assert not SessionToken.objects.filter(pk=expired.pk).exists()
-        assert SessionToken.objects.filter(pk=valid.pk).exists()
 
 
 # ---------------------------------------------------------------------------

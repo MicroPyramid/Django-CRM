@@ -507,56 +507,6 @@ class APISettings(BaseModel):
         super().save(*args, **kwargs)
 
 
-# Phase 3: JWT Token Tracking
-
-
-class SessionToken(BaseModel):
-    """Track active JWT sessions for security"""
-
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="session_tokens"
-    )
-    token_jti = models.CharField(max_length=255, unique=True, db_index=True)  # JWT ID
-    refresh_token_jti = models.CharField(
-        max_length=255, unique=True, db_index=True, null=True, blank=True
-    )
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True, null=True)
-    expires_at = models.DateTimeField()
-    is_active = models.BooleanField(default=True)
-    revoked_at = models.DateTimeField(null=True, blank=True)
-    last_used_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Session Token"
-        verbose_name_plural = "Session Tokens"
-        db_table = "session_token"
-        ordering = ("-created_at",)
-        indexes = [
-            models.Index(fields=["user", "is_active"]),
-            models.Index(fields=["token_jti"]),
-            models.Index(fields=["expires_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.user.email} - {self.token_jti[:8]}..."
-
-    def revoke(self):
-        """Revoke this session token"""
-        from django.utils import timezone
-
-        self.is_active = False
-        self.revoked_at = timezone.now()
-        self.save()
-
-    @classmethod
-    def cleanup_expired(cls):
-        """Remove expired tokens (call via cron/celery)"""
-        from django.utils import timezone
-
-        return cls.objects.filter(expires_at__lt=timezone.now()).delete()
-
-
 class MagicLinkToken(models.Model):
     """One-time magic link tokens for passwordless authentication.
 

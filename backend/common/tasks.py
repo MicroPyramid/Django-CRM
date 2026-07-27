@@ -395,3 +395,31 @@ def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
             "Purged %s read notifications older than %s days", deleted, days
         )
     return deleted
+
+
+@shared_task
+def flush_expired_refresh_tokens():
+    """Delete refresh-token bookkeeping rows whose tokens have already expired.
+
+    `OrgAwareTokenRefreshView` rotates refresh tokens, so simplejwt writes one
+    `OutstandingToken` row per token minted and one `BlacklistedToken` row per
+    rotation. An expired token is rejected on its `exp` claim regardless of
+    blacklist state, so those rows stop carrying security value once
+    `expires_at` passes — and would otherwise grow unbounded, one row per login
+    and per refresh. Deleting the outstanding row cascades to its blacklist
+    entry.
+
+    Equivalent to simplejwt's `manage.py flushexpiredtokens`; schedule via
+    celery-beat (nightly is plenty). Not org-scoped — `expires_at` is intrinsic
+    to the row, so no RLS context is needed.
+
+    Returns the number of outstanding-token rows removed.
+    """
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+    expired = OutstandingToken.objects.filter(expires_at__lte=timezone.now())
+    count = expired.count()
+    if count:
+        expired.delete()
+        logger.info("Flushed %s expired refresh token records", count)
+    return count

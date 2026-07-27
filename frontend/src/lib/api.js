@@ -111,10 +111,39 @@ export function getCurrentUser() {
 }
 
 /**
- * Refresh the access token using refresh token
+ * In-flight refresh shared by concurrent callers, or null when idle.
+ * @type {Promise<string|null>|null}
+ */
+let refreshInFlight = null;
+
+/**
+ * Refresh the access token using refresh token.
+ *
+ * The backend rotates refresh tokens — the token we send is blacklisted and a
+ * replacement comes back — so concurrent callers must not each spend the same
+ * one. Whichever request landed second would get a 401 and log the user out,
+ * so all callers share a single in-flight refresh.
+ *
  * @returns {Promise<string|null>} New access token or null if refresh failed
  */
 async function refreshAccessToken() {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = performTokenRefresh().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
+/**
+ * Perform the actual refresh round-trip. Use refreshAccessToken() instead —
+ * it deduplicates concurrent callers.
+ * @returns {Promise<string|null>} New access token or null if refresh failed
+ */
+async function performTokenRefresh() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     return null;
@@ -131,7 +160,16 @@ async function refreshAccessToken() {
 
     if (response.ok) {
       const data = await response.json();
+      if (!data.access) {
+        clearAuthData();
+        return null;
+      }
       setInStorage(STORAGE_KEYS.ACCESS_TOKEN, data.access);
+      // Persist the rotated refresh token. The one we just spent is
+      // blacklisted server-side, so keeping it would 401 the next refresh.
+      if (data.refresh) {
+        setInStorage(STORAGE_KEYS.REFRESH_TOKEN, data.refresh);
+      }
       return data.access;
     }
 
@@ -232,10 +270,16 @@ export const auth = {
     if (!orgId || !UUID_RE.test(orgId)) {
       throw new Error('Invalid organization ID format');
     }
+    // Hand over the outgoing refresh token so the backend retires it; we replace
+    // it below either way, and leaving it live keeps a stolen copy working
+    // against the previous org.
+    const outgoingRefresh = getRefreshToken();
     /** @type {any} */
     const data = await apiRequest('/auth/switch-org/', {
       method: 'POST',
-      body: { org_id: orgId }
+      body: outgoingRefresh
+        ? { org_id: orgId, refresh: outgoingRefresh }
+        : { org_id: orgId }
     });
 
     // Update tokens with new org context
