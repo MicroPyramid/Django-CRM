@@ -66,9 +66,9 @@ class LeadListView(APIView, LimitOffsetPagination):
 
         if params:
             if params.get("name"):
+                name = params.get("name")
                 queryset = queryset.filter(
-                    Q(first_name__icontains=params.get("name"))
-                    & Q(last_name__icontains=params.get("name"))
+                    Q(first_name__icontains=name) | Q(last_name__icontains=name)
                 )
             if params.get("salutation"):
                 queryset = queryset.filter(
