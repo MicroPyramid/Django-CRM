@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
@@ -1412,7 +1412,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           label: 'LinkedIn (Optional)',
           hint: 'https://linkedin.com/in/...',
           controller: _linkedinController,
-          prefixIcon: LucideIcons.linkedin,
+          prefixIcon: LucideIcons.link,
           keyboardType: TextInputType.url,
           maxLength: 255,
           textInputAction: TextInputAction.next,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
@@ -582,7 +582,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     if (lead.linkedinUrl != null && lead.linkedinUrl!.trim().isNotEmpty) {
       addRow(
         _InfoRow(
-          icon: LucideIcons.linkedin,
+          icon: LucideIcons.link,
           label: 'LINKEDIN',
           value: lead.linkedinUrl!,
           onTap: () => _launchWeb(lead.linkedinUrl!),

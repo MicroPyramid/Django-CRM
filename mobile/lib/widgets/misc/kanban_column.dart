@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../cards/deal_card.dart';
@@ -113,12 +113,16 @@ class KanbanColumn extends StatelessWidget {
                               onDragStarted: selected
                                   ? null
                                   : () => onDealLongPress?.call(deal),
+                              // No onLongPress here: DealCard's own long-press
+                              // recognizer sits deeper in the tree than this
+                              // LongPressDraggable and shares the same 500ms
+                              // deadline, so it would win the gesture arena and
+                              // the drag would never start. Selection is still
+                              // reachable — onDragStarted above enters selection
+                              // mode, and tapping toggles it once in that mode.
                               child: DealCard(
                                 deal: deal,
                                 onTap: () => onDealTap(deal),
-                                onLongPress: onDealLongPress == null
-                                    ? null
-                                    : () => onDealLongPress!.call(deal),
                                 isSelected: selected,
                               ),
                             );

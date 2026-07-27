@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
@@ -213,6 +213,12 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
       );
       return;
     }
+
+    // Picking a card up selects it (KanbanColumn's onDragStarted), so drop the
+    // selection once the move lands — otherwise the selection app bar is left
+    // stranded over a board the user has already finished editing. Mirrors
+    // _bulkChangeStage, which also clears once the stage change completes.
+    _clearSelection();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

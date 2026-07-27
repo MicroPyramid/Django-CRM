@@ -46,6 +46,46 @@ void main() {
       ]);
     });
 
+    testWidgets('clears the selection after a successful move', (tester) async {
+      tester.view.physicalSize = const Size(1600, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final dealsNotifier = _FakeDealsNotifier(
+        DealsListData(deals: [_deal(stage: DealStage.prospecting)]),
+      );
+
+      await tester.pumpWidget(_testApp(dealsNotifier));
+      await tester.pumpAndSettle();
+
+      // Picking a card up selects it (LongPressDraggable.onDragStarted), so a
+      // completed move must not leave the selection app bar stranded.
+      await _dragDealToStage(tester, 'Prospecting Deal', DealStage.qualified);
+
+      expect(dealsNotifier.stageUpdates, [
+        ('deal-prospecting', DealStage.qualified),
+      ]);
+      expect(find.text('1 selected'), findsNothing);
+    });
+
+    testWidgets('keeps the selection when a move fails', (tester) async {
+      tester.view.physicalSize = const Size(1600, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final dealsNotifier = _FakeDealsNotifier(
+        DealsListData(deals: [_deal(stage: DealStage.prospecting)]),
+        updateError: 'Network unreachable',
+      );
+
+      await tester.pumpWidget(_testApp(dealsNotifier));
+      await tester.pumpAndSettle();
+
+      await _dragDealToStage(tester, 'Prospecting Deal', DealStage.qualified);
+
+      expect(find.text('1 selected'), findsOneWidget);
+    });
+
     testWidgets('loads the next page when list view is scrolled near the end', (
       tester,
     ) async {
@@ -128,9 +168,10 @@ Deal _deal({String? id, String? title, required DealStage stage}) {
 }
 
 class _FakeDealsNotifier extends DealsNotifier {
-  _FakeDealsNotifier(this.initialData);
+  _FakeDealsNotifier(this.initialData, {this.updateError});
 
   final DealsListData initialData;
+  final String? updateError;
   final List<(String id, DealStage stage)> stageUpdates = [];
   int loadMoreCalls = 0;
 
@@ -151,6 +192,9 @@ class _FakeDealsNotifier extends DealsNotifier {
     DealStage stage,
   ) async {
     stageUpdates.add((id, stage));
+    if (updateError != null) {
+      return (success: false, error: updateError);
+    }
     return (success: true, error: null);
   }
 }
