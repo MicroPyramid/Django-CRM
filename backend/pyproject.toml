@@ -41,32 +41,32 @@ classifiers = [
 ]
 
 dependencies = [
-    "django>=6.0.5",
-    "celery>=5.6.2",
-    "python-dotenv>=1.2.1",
+    "django>=6.0.7",
+    "celery>=5.6.3",
+    "python-dotenv>=1.2.2",
     "django-cors-headers>=4.9.0",
-    "djangorestframework>=3.16.1",
+    "djangorestframework>=3.17.1",
     "djangorestframework-simplejwt>=5.5.1",
-    "drf-spectacular>=0.29.0",
-    "django-ses>=4.7.1",
-    "psycopg2-binary>=2.9.11",
-    "whitenoise>=6.11.0",
-    "sentry-sdk>=2.53.0",
+    "drf-spectacular>=0.30.0",
+    "django-ses>=4.7.2",
+    "psycopg2-binary>=2.9.12",
+    "whitenoise>=6.12.0",
+    "sentry-sdk>=2.66.1",
     "django-storages>=1.14.6",
     "django-crum>=0.7.9",
-    "disposable-email-domains>=0.0.162",
-    "redis>=7.2.0",
-    "pytz>=2025.2",
-    "requests>=2.32.5",
-    "faker>=40.4.0",
+    "disposable-email-domains>=0.0.231",
+    "redis>=8.0.1",
+    "pytz>=2026.3.post1",
+    "requests>=2.34.2",
+    "faker>=40.36.0",
     "python-dateutil>=2.9.0.post0",
-    "google-auth>=2.48.0",
+    "google-auth>=2.56.2",
     # PDF generation (also needs system libs: cairo, pango, gdk-pixbuf, libffi, shared-mime-info)
-    "weasyprint>=68.1",
+    "weasyprint>=69.0",
     "cairocffi>=1.7.1",
     # Production WSGI server
-    "gunicorn>=25.1.0",
-    "uvicorn[standard]>=0.30",
+    "gunicorn>=26.0.0",
+    "uvicorn[standard]>=0.51.0",
 ]
 
 [project.optional-dependencies]
@@ -87,9 +87,9 @@ Changelog = "https://github.com/MicroPyramid/Django-CRM/releases"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.1.1",
     "pytest-django>=4.12.0",
-    "pytest-cov>=7.0.0",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.hatch.build.targets.wheel]
