@@ -8,7 +8,7 @@ import pytest
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
-from common.models import Profile
+from common.models import Address, Profile
 
 
 @pytest.mark.django_db
@@ -140,6 +140,147 @@ class TestUsersListView:
             user__email="new-member@test.com", org=org_a
         ).exists()
 
+    def test_create_user_minimal_payload_creates_no_address(self, admin_client, org_a):
+        """No address fields sent -> no empty Address row is created."""
+        response = admin_client.post(
+            self.url,
+            {"email": "no-address@test.com", "role": "USER"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        profile = Profile.objects.get(user__email="no-address@test.com", org=org_a)
+        assert profile.address is None
+
+    def test_create_user_with_address_scopes_address_to_org(self, admin_client, org_a):
+        """Address fields sent -> Address is created and scoped to the admin's org."""
+        response = admin_client.post(
+            self.url,
+            {
+                "email": "with-address@test.com",
+                "role": "USER",
+                "city": "Hyderabad",
+                "country": "IN",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        profile = Profile.objects.get(user__email="with-address@test.com", org=org_a)
+        assert profile.address is not None
+        assert profile.address.city == "Hyderabad"
+        assert profile.address.org == org_a
+
+    def test_create_user_reuses_existing_account_from_another_org(
+        self, admin_client, org_a, org_b
+    ):
+        """Inviting an email that already has an account adds a Profile, not a 400."""
+        from common.models import User
+
+        existing = User.objects.create_user(
+            email="veteran@test.com", password="pass123"
+        )
+        Profile.objects.create(user=existing, org=org_b, role="USER", is_active=True)
+
+        response = admin_client.post(
+            self.url,
+            {"email": "veteran@test.com", "role": "USER"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        # Same underlying account, now a member of both orgs.
+        assert User.objects.filter(email="veteran@test.com").count() == 1
+        new_profile = Profile.objects.get(user=existing, org=org_a)
+        assert new_profile.role == "USER"
+        assert Profile.objects.filter(user=existing, org=org_b).exists()
+
+    def test_create_user_reuse_does_not_mutate_existing_account(
+        self, admin_client, org_a, org_b
+    ):
+        """Inviting an existing account must not touch that account's own fields."""
+        from common.models import User
+
+        existing = User.objects.create_user(
+            email="dormant@test.com", password="pass123"
+        )
+        existing.name = "Original Name"
+        existing.profile_pic = "original.png"
+        existing.is_active = False
+        existing.save()
+        Profile.objects.create(user=existing, org=org_b, role="ADMIN", is_active=True)
+
+        response = admin_client.post(
+            self.url,
+            {
+                "email": "dormant@test.com",
+                "role": "USER",
+                "profile_pic": "attacker.png",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        existing.refresh_from_db()
+        assert existing.name == "Original Name"
+        assert existing.profile_pic == "original.png"
+        # A deactivated account must not be silently re-enabled by an invite.
+        assert existing.is_active is False
+
+    def test_create_user_losing_race_returns_400_not_500(self, admin_client, org_a):
+        """A concurrent invite that wins the DB race yields 400, never a 500."""
+        from unittest.mock import patch
+
+        from django.db import IntegrityError
+
+        # Stands in for a second request that committed the same membership
+        # between this request's validation and its INSERT.
+        with patch.object(
+            Profile.objects, "create", side_effect=IntegrityError("duplicate key")
+        ):
+            response = admin_client.post(
+                self.url,
+                {"email": "raced@test.com", "role": "USER"},
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_create_user_rolls_back_account_when_membership_fails(
+        self, admin_client, org_a
+    ):
+        """A failed invite must not strand a half-built account behind it."""
+        from unittest.mock import patch
+
+        from django.db import IntegrityError
+
+        from common.models import User
+
+        with patch.object(
+            Profile.objects, "create", side_effect=IntegrityError("duplicate key")
+        ):
+            admin_client.post(
+                self.url,
+                {"email": "orphan@test.com", "role": "USER", "city": "Hyderabad"},
+                format="json",
+            )
+
+        assert not User.objects.filter(email="orphan@test.com").exists()
+        assert not Address.objects.filter(city="Hyderabad").exists()
+
+    def test_create_user_duplicate_within_same_org_rejected(self, admin_client, org_a):
+        """Re-inviting someone who is already a member of this org still 400s."""
+        from common.models import User
+
+        member = User.objects.create_user(email="member@test.com", password="pass123")
+        Profile.objects.create(user=member, org=org_a, role="USER", is_active=True)
+
+        response = admin_client.post(
+            self.url,
+            {"email": "member@test.com", "role": "USER"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert Profile.objects.filter(user=member, org=org_a).count() == 1
+
 
 @pytest.mark.django_db
 class TestUserDetailView:
@@ -236,6 +377,25 @@ class TestUserDetailView:
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
+
+    def test_patch_user_email_taken_by_another_account(
+        self, admin_client, org_a, org_b, regular_user, user_profile
+    ):
+        """Renaming a user onto an email another account owns is a clean 400."""
+        from common.models import User
+
+        other = User.objects.create_user(email="taken@test.com", password="pass123")
+        Profile.objects.create(user=other, org=org_b, role="USER", is_active=True)
+
+        response = admin_client.patch(
+            self._url(regular_user.id),
+            {"email": "taken@test.com"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        regular_user.refresh_from_db()
+        assert regular_user.email != "taken@test.com"
 
     def test_patch_user_non_admin_other(
         self, user_client, admin_user, admin_profile, user_profile
