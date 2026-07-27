@@ -45,6 +45,16 @@ jobs:
         working-directory: backend
         run: uv sync --frozen
 
+      # The suite runs with --no-migrations for speed, so nothing else would
+      # catch a model change that is missing its migration.
+      - name: Check for missing migrations
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crm.test_settings
+          SECRET_KEY: test-secret-key-for-ci
+          ADMIN_EMAIL: admin@test.com
+        run: uv run python manage.py makemigrations --check --dry-run
+
       - name: Run tests with coverage
         working-directory: backend
         env:
