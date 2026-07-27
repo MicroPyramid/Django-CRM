@@ -1,7 +1,6 @@
 import logging
 
 from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import AuthenticationFailed
 
 from common.models import Org, Profile
 
@@ -167,7 +166,9 @@ class GetProfileAndOrg:
 
             if not profile:
                 logger.error("No active admin profile found for org %s", organization.id)
-                raise AuthenticationFailed("Invalid API Key configuration")
+                # Let DRF authentication reject this — raising AuthenticationFailed
+                # here escapes the middleware stack as a 500 instead of a 401.
+                return
 
             request.profile = profile
             request.org = organization
@@ -175,6 +176,8 @@ class GetProfileAndOrg:
 
             logger.debug("Set org context from API key: org=%s", organization.id)
 
-        except Org.DoesNotExist as exc:
+        except Org.DoesNotExist:
             logger.warning("Invalid API key attempted")
-            raise AuthenticationFailed("Invalid API Key") from exc
+            # Same as above: APIKeyAuthentication raises inside the DRF layer,
+            # which turns it into a proper 401 response.
+            return

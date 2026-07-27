@@ -24,6 +24,7 @@ from common.views.notification_views import (
 )
 from common.views.document_views import DocumentDetailView, DocumentListView
 from common.views.organization_views import (
+    OrgApiKeyView,
     OrgProfileCreateView,
     OrgUpdateView,
     ProfileDetailView,
@@ -69,6 +70,8 @@ urlpatterns = [
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
+    # Must precede org/<str:pk>/ so the literal path isn't captured as a pk.
+    path("org/api-key/", OrgApiKeyView.as_view(), name="org_api_key"),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
     # Personal Access Tokens (MCP server) — a user manages ONLY their own

@@ -241,6 +241,92 @@ class OrgUpdateView(APIView):
         )
 
 
+class OrgApiKeyView(APIView):
+    """Read and rotate the org API key. Admins only.
+
+    The key authenticates its bearer as the org's first ADMIN profile, so it is
+    kept out of every nested representation (see `OrganizationSerializer`) and
+    served only here. The org is always taken from `request.profile` -- never
+    from a client-supplied id -- so a caller can only ever reach their own.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def _admin_org_or_error(self, request):
+        """Return (org, None) for org admins, or (None, error Response)."""
+        if not request.profile:
+            return None, Response(
+                {"error": True, "errors": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if (
+            request.profile.role != "ADMIN"
+            and not request.profile.is_organization_admin
+        ):
+            return None, Response(
+                {
+                    "error": True,
+                    "errors": "Only organization admins can access the API key",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return request.profile.org, None
+
+    @extend_schema(
+        operation_id="org_api_key_retrieve",
+        description="Retrieve the current organization's API key (admins only)",
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OrgApiKeyResponse",
+                fields={"api_key": serializers.CharField()},
+            )
+        },
+    )
+    def get(self, request, format=None):
+        org, error = self._admin_org_or_error(request)
+        if error:
+            return error
+
+        return Response(
+            {"error": False, "api_key": org.api_key},
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        operation_id="org_api_key_rotate",
+        description=(
+            "Rotate the current organization's API key (admins only). "
+            "The previous key stops authenticating immediately."
+        ),
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OrgApiKeyRotateResponse",
+                fields={"api_key": serializers.CharField()},
+            )
+        },
+    )
+    def post(self, request, format=None):
+        org, error = self._admin_org_or_error(request)
+        if error:
+            return error
+
+        org.api_key = secrets.token_urlsafe(32)
+        org.save(update_fields=["api_key"])
+
+        return Response(
+            {
+                "error": False,
+                "message": "API key rotated. The previous key is no longer valid.",
+                "api_key": org.api_key,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ProfileView(APIView):
     permission_classes = (IsAuthenticated,)
 

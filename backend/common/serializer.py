@@ -92,9 +92,17 @@ class OrgAwareRefreshToken(RefreshToken):
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
+    """Public org representation, nested into most CRM records.
+
+    `api_key` is deliberately excluded: it authenticates its bearer as the
+    org's first ADMIN profile (see `common.external_auth.APIKeyAuthentication`),
+    so including it here would hand every org member -- including role="USER"
+    -- a path to admin. Admins read and rotate it via `OrgApiKeyView`.
+    """
+
     class Meta:
         model = Org
-        fields = ("id", "name", "api_key")
+        fields = ("id", "name")
 
 
 class OrgSettingsSerializer(serializers.ModelSerializer):
