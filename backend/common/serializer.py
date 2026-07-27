@@ -2,6 +2,7 @@ import re
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from disposable_email_domains import blocklist as disposable_domains
@@ -426,16 +427,38 @@ class CreateUserSerializer(serializers.ModelSerializer):
         self.org = kwargs.pop("org", None)
         super().__init__(*args, **kwargs)
         self.fields["email"].required = True
+        # Membership is per-org: one account can belong to several orgs, so the
+        # model-level unique check would wrongly reject inviting someone who
+        # already signed up elsewhere. validate_email enforces the real rule --
+        # one profile per email per org -- and the view reuses the existing
+        # User instead of creating a duplicate.
+        self.fields["email"].validators = [
+            validator
+            for validator in self.fields["email"].validators
+            if not isinstance(validator, UniqueValidator)
+        ]
 
     def validate_email(self, email):
         if self.instance:
-            if self.instance.email != email:
-                if not Profile.objects.filter(user__email=email, org=self.org).exists():
-                    return email
+            if self.instance.email.lower() == email.lower():
+                return email
+            # Renaming an account: the address must be free globally, since
+            # there is no way to fold two existing accounts together.
+            if (
+                User.objects.filter(email__iexact=email)
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
+                raise serializers.ValidationError("Email already exists")
+            if Profile.objects.filter(
+                user__email__iexact=email, org=self.org
+            ).exists():
                 raise serializers.ValidationError("Email already exists")
             return email
-        if not Profile.objects.filter(user__email=email.lower(), org=self.org).exists():
-            return email
+        # Creating a membership: an account owned elsewhere is reused by the
+        # view, so only same-org duplicates are rejected here.
+        if not Profile.objects.filter(user__email__iexact=email, org=self.org).exists():
+            return email.lower()
         raise serializers.ValidationError("Given Email id already exists")
 
 

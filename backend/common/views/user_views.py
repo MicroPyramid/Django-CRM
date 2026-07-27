@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -12,7 +13,7 @@ from rest_framework.views import APIView
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common import swagger_params
-from common.models import Comment, Profile, Teams
+from common.models import Comment, Profile, Teams, User
 from common.serializer import (
     BillingAddressSerializer,
     CommentSerializer,
@@ -102,24 +103,43 @@ class UsersListView(APIView, LimitOffsetPagination):
                     {"error": True, "errors": data},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if address_serializer.is_valid():
-                address_obj = address_serializer.save()
-                user = user_serializer.save(
-                    is_active=True,
-                )
-                user.email = user.email
-                user.save()
-                Profile.objects.create(
-                    user=user,
-                    date_of_joining=timezone.now(),
-                    role=params.get("role"),
-                    address=address_obj,
-                    org=request.profile.org,
-                )
+            # A concurrent invite for the same email can commit between the
+            # checks above and the writes below. Keep the account, address and
+            # membership in one transaction so a lost race rolls back cleanly
+            # instead of stranding a half-built user.
+            try:
+                with transaction.atomic():
+                    # Address is org-scoped and RLS-protected, so it must carry
+                    # the org. Only create one when address fields were actually
+                    # supplied -- invites from the web UI send just email + role.
+                    address_obj = None
+                    if any(address_serializer.validated_data.values()):
+                        address_obj = address_serializer.save(org=request.profile.org)
+
+                    email = user_serializer.validated_data["email"]
+                    user = User.objects.filter(email__iexact=email).first()
+                    if user is None:
+                        user = user_serializer.save(is_active=True)
+                    # An existing account is reused as-is: the inviting admin
+                    # gets a profile in their own org and no say over that
+                    # person's account.
+
+                    Profile.objects.create(
+                        user=user,
+                        date_of_joining=timezone.now(),
+                        role=profile_serializer.validated_data["role"],
+                        address=address_obj,
+                        org=request.profile.org,
+                    )
+            except IntegrityError:
                 return Response(
-                    {"error": False, "message": "User Created Successfully"},
-                    status=status.HTTP_201_CREATED,
+                    {"error": True, "errors": "User already in organization"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+            return Response(
+                {"error": False, "message": "User Created Successfully"},
+                status=status.HTTP_201_CREATED,
+            )
         return Response(
             {"error": True, "errors": "Invalid request"},
             status=status.HTTP_400_BAD_REQUEST,

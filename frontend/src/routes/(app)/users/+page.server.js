@@ -45,6 +45,22 @@ function collectErrorMessages(value) {
 }
 
 /**
+ * An error carrying the status the API responded with, so callers can tell a
+ * rejected input apart from a genuine server fault.
+ */
+class ApiError extends Error {
+  /**
+   * @param {string} message
+   * @param {number} status
+   */
+  constructor(message, status) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+/**
  * Make authenticated API request
  * @param {string} endpoint
  * @param {Object} options
@@ -68,10 +84,24 @@ async function apiRequest(endpoint, options = {}, context) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
     const messages = collectErrorMessages(errorData.errors || errorData.error);
-    throw new Error(messages[0] || response.statusText);
+    // Carry the upstream status so a rejected input is not reported to the
+    // browser as a server crash.
+    throw new ApiError(messages[0] || response.statusText, response.status);
   }
 
   return await response.json();
+}
+
+/**
+ * Turn a caught API error into an action failure, preserving the API's status
+ * where it gave us a usable one.
+ * @param {any} err
+ * @param {string} fallbackMessage
+ */
+function apiFail(err, fallbackMessage) {
+  const status =
+    Number.isInteger(err?.status) && err.status >= 400 && err.status <= 599 ? err.status : 500;
+  return fail(status, { error: err?.message || fallbackMessage });
 }
 
 /** @type {import('./$types').PageServerLoad} */
@@ -204,7 +234,7 @@ export const actions = {
       if (err.message.includes('not found')) {
         return fail(404, { error: 'No user found with that email' });
       }
-      return fail(500, { error: err.message || 'Failed to add user' });
+      return apiFail(err, 'Failed to add user');
     }
   },
 
@@ -246,7 +276,7 @@ export const actions = {
       if (err.message.includes('at least one admin')) {
         return fail(400, { error: 'Organization must have at least one admin' });
       }
-      return fail(500, { error: err.message || 'Failed to edit role' });
+      return apiFail(err, 'Failed to edit role');
     }
   },
 
@@ -287,7 +317,7 @@ export const actions = {
       if (err.message.includes('at least one admin')) {
         return fail(400, { error: 'Organization must have at least one admin' });
       }
-      return fail(500, { error: err.message || 'Failed to remove user' });
+      return apiFail(err, 'Failed to remove user');
     }
   },
 
@@ -318,7 +348,7 @@ export const actions = {
       return { success: true, action: 'activate_user' };
     } catch (err) {
       console.error('Error activating user:', err);
-      return fail(500, { error: err.message || 'Failed to activate user' });
+      return apiFail(err, 'Failed to activate user');
     }
   },
 
@@ -359,7 +389,7 @@ export const actions = {
       if (err.message.includes('already exists')) {
         return fail(400, { error: 'A team with this name already exists' });
       }
-      return fail(500, { error: err.message || 'Failed to create team' });
+      return apiFail(err, 'Failed to create team');
     }
   },
 
@@ -404,7 +434,7 @@ export const actions = {
       if (err.message.includes('already exists')) {
         return fail(400, { error: 'A team with this name already exists' });
       }
-      return fail(500, { error: err.message || 'Failed to update team' });
+      return apiFail(err, 'Failed to update team');
     }
   },
 
@@ -434,7 +464,7 @@ export const actions = {
       return { success: true, action: 'delete_team' };
     } catch (err) {
       console.error('Error deleting team:', err);
-      return fail(500, { error: err.message || 'Failed to delete team' });
+      return apiFail(err, 'Failed to delete team');
     }
   }
 };
