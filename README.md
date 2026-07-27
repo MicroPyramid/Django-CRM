@@ -189,9 +189,12 @@ docker compose exec backend python manage.py manage_rls --status
 
 The default env vars live in `.env.docker` (committed). To override locally without touching git:
 
-1. Copy `.env.docker` to `.env.docker.local`
-2. Edit values as needed
-3. Update `env_file` in `docker-compose.yml` to point to `.env.docker.local`
+1. Copy `.env.docker` to `.env.docker.local` (gitignored)
+2. Edit values as needed — set your own `SECRET_KEY` here, not in `.env.docker`
+3. Rebuild/restart: `docker compose up --build`
+
+Every service loads `.env.docker` first and then `.env.docker.local` if it exists, so
+your overrides win. No edits to `docker-compose.yml` are needed.
 
 ## Project Structure
 
