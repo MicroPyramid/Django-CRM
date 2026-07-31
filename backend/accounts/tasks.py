@@ -1,3 +1,5 @@
+import logging
+
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -8,12 +10,18 @@ from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Profile
 from common.tasks import set_rls_context
 
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def send_email(email_obj_id, org_id):
     set_rls_context(org_id)
-    email_obj = AccountEmail.objects.filter(id=email_obj_id).first()
-    if email_obj:
+    try:
+        email_obj = AccountEmail.objects.get(id=email_obj_id)
+    except AccountEmail.DoesNotExist:
+        logger.error("AccountEmail id=%s not found, skipping task.", email_obj_id)
+        return
+    else:
         from_email = email_obj.from_email
         contacts = email_obj.recipients.all()
         for contact_obj in contacts:
