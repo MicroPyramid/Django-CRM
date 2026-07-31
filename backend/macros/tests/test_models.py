@@ -28,9 +28,7 @@ class TestMacroScopeConstraint:
             )
 
     def test_org_scope_without_owner_allowed(self, org_a):
-        m = Macro.objects.create(
-            org=org_a, title="ok", body="x", scope=Macro.SCOPE_ORG
-        )
+        m = Macro.objects.create(org=org_a, title="ok", body="x", scope=Macro.SCOPE_ORG)
         assert m.id is not None
         assert m.owner is None
 
@@ -46,9 +44,7 @@ class TestMacroScopeConstraint:
         assert m.owner_id == user_profile.id
 
     def test_default_is_active_true_and_usage_zero(self, org_a):
-        m = Macro.objects.create(
-            org=org_a, title="t", body="b", scope=Macro.SCOPE_ORG
-        )
+        m = Macro.objects.create(org=org_a, title="t", body="b", scope=Macro.SCOPE_ORG)
         assert m.is_active is True
         assert m.usage_count == 0
 

@@ -1,13 +1,11 @@
 import re
 
+from disposable_email_domains import blocklist as disposable_domains
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from disposable_email_domains import blocklist as disposable_domains
-
-from common.utils import CURRENCY_SYMBOLS
 from common.custom_fields import (
     is_supported_target,
     validate_definition_options,
@@ -28,6 +26,8 @@ from common.models import (
     Teams,
     User,
 )
+from common.utils import CURRENCY_SYMBOLS
+from common.validators import flexible_phone_validator
 
 
 class OrgAwareRefreshToken(RefreshToken):
@@ -106,10 +106,26 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 
 class OrgSettingsSerializer(serializers.ModelSerializer):
-    """Serializer for org settings (currency, country, locale, company profile)"""
+    """The org's own settings: company profile, locale, and case-handling switches.
+
+    This is the ONLY writable representation of the org an admin edits through the
+    settings page (`OrgSettingsView`). The field list is an allow-list on purpose:
+
+    - `api_key` is absent. It authenticates its bearer as the org's first ADMIN
+      profile (see `OrganizationSerializer`), so it is never editable or readable
+      through a settings form; admins rotate it via `OrgApiKeyView`.
+    - `is_active` (the org-level kill switch) and `id` are not writable here either
+      -- an org must not be able to deactivate itself, or change its own id, from a
+      profile-edit form.
+
+    `csat_enabled` and `auto_close_children_on_parent_close` are real `Org` columns
+    that previously had NO write path through any serializer; this is where they are
+    edited. `member_count` and `created_at` are read-only header context.
+    """
 
     currency_symbol = serializers.SerializerMethodField()
     logo_url = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Org
@@ -133,8 +149,20 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
             "default_currency",
             "default_country",
             "currency_symbol",
+            # Case-handling behaviour (org-wide switches). Editable only here.
+            "csat_enabled",
+            "auto_close_children_on_parent_close",
+            # Read-only context for the settings page header.
+            "member_count",
+            "created_at",
         ]
-        read_only_fields = ["id", "currency_symbol", "logo_url"]
+        read_only_fields = [
+            "id",
+            "currency_symbol",
+            "logo_url",
+            "member_count",
+            "created_at",
+        ]
 
     @extend_schema_field(str)
     def get_currency_symbol(self, obj):
@@ -148,6 +176,12 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.logo.url)
             return obj.logo.url
         return None
+
+    @extend_schema_field(int)
+    def get_member_count(self, obj):
+        # Active members in this org, for the settings header. Naturally
+        # org-scoped: obj is always request.profile.org.
+        return obj.profiles.filter(is_active=True).count()
 
 
 class TagsSerializer(serializers.ModelSerializer):
@@ -458,9 +492,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 .exists()
             ):
                 raise serializers.ValidationError("Email already exists")
-            if Profile.objects.filter(
-                user__email__iexact=email, org=self.org
-            ).exists():
+            if Profile.objects.filter(user__email__iexact=email, org=self.org).exists():
                 raise serializers.ValidationError("Email already exists")
             return email
         # Creating a membership: an account owned elsewhere is reused by the
@@ -482,11 +514,35 @@ class CreateProfileSerializer(serializers.ModelSerializer):
             "is_organization_admin",
         )
 
+    # The fields that grant access rather than describe a person. Only an admin
+    # acting on someone other than themselves may set these; see the caller
+    # notes in common/views/user_views.py.
+    PRIVILEGED_FIELDS = (
+        "role",
+        "is_organization_admin",
+        "has_sales_access",
+        "has_marketing_access",
+    )
+
     def __init__(self, *args, **kwargs):
+        # `can_grant_privileges` gates the fields above. It defaults to False so
+        # a caller that forgets to pass it fails closed: the worst outcome of a
+        # missing flag is that a privileged field is ignored, never that an
+        # unprivileged caller gets to set one. A plain member editing their own
+        # profile could otherwise PATCH themselves to role="ADMIN" — a live
+        # privilege escalation this closes by making these fields read_only
+        # (so they are silently ignored) when the caller may not grant them.
+        can_grant = kwargs.pop("can_grant_privileges", False)
         super().__init__(*args, **kwargs)
         self.fields["alternate_phone"].required = False
         self.fields["phone"].required = False
-        self.fields["role"].required = True
+        if can_grant:
+            self.fields["role"].required = True
+        else:
+            for name in self.PRIVILEGED_FIELDS:
+                # read_only and required are mutually exclusive in DRF, so this
+                # also drops role's requirement for the self-edit path.
+                self.fields[name].read_only = True
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -517,6 +573,31 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
         )
+
+
+class ProfileSelfUpdateSerializer(serializers.Serializer):
+    """The two fields a user may change on their OWN profile via PATCH /api/profile/.
+
+    Deliberately just ``phone`` (on Profile) and ``name`` (on User). Role, org,
+    and the ``has_*_access`` / ``is_organization_admin`` flags are NOT here:
+    those decide permissions and are an admin's to set. Leaving them out is what
+    keeps this self-edit endpoint from becoming the same self-serve privilege
+    escalation ``CreateProfileSerializer`` once was — a field the serializer does
+    not name cannot be written, no matter what the request body contains.
+
+    ``phone`` is validated (not written raw as the view used to), so a bad value
+    is a clean 400 instead of an unvalidated string in the column. A blank phone
+    is allowed and clears it — ``allow_blank`` short-circuits before the regex,
+    which requires 7–25 characters.
+    """
+
+    name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=20,
+        validators=[flexible_phone_validator],
+    )
 
 
 class AttachmentsSerializer(serializers.ModelSerializer):
@@ -580,10 +661,30 @@ class DocumentSerializer(serializers.ModelSerializer):
     teams = serializers.SerializerMethodField()
     created_by = UserSerializer()
     org = OrganizationSerializer()
+    size_bytes = serializers.SerializerMethodField()
 
     @extend_schema_field(list)
     def get_teams(self, obj):
-        return obj.teams.all().values()
+        # `member_count` is what a reader needs to understand a team share —
+        # "Support (3)" says how many people the pick actually reaches, which a
+        # bare team name does not. Naming the team rather than flattening it to
+        # its members keeps the share meaning what was chosen as people join and
+        # leave. Only the (unpaginated, small) documents page consumes this.
+        return [
+            {"id": str(team.id), "name": team.name, "member_count": team.users.count()}
+            for team in obj.teams.all()
+        ]
+
+    @extend_schema_field(int)
+    def get_size_bytes(self, obj):
+        # The file's size on disk, so the list can show "284 kB" instead of a
+        # bare filename. Guarded because `.size` reaches the storage backend: a
+        # row whose file is missing (a stale path, a not-yet-synced media dir)
+        # must degrade to an unknown size, never 500 the whole list.
+        try:
+            return obj.document_file.size
+        except (ValueError, OSError):
+            return None
 
     class Meta:
         model = Document
@@ -594,6 +695,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             "status",
             "shared_to",
             "teams",
+            "size_bytes",
             "created_at",
             "created_by",
             "org",
@@ -619,7 +721,9 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                 )
         else:
             if Document.objects.filter(title__iexact=title, org=self.org).exists():
-                raise serializers.ValidationError("Document with this Title already exists")
+                raise serializers.ValidationError(
+                    "Document with this Title already exists"
+                )
         return title
 
     class Meta:
@@ -750,6 +854,7 @@ class UserUpdateStatusSwaggerSerializer(serializers.Serializer):
 
 class MagicLinkRequestSerializer(serializers.Serializer):
     """Serializer for requesting a magic link or OTP code."""
+
     email = serializers.EmailField(required=True)
     delivery = serializers.ChoiceField(
         choices=("link", "code"), required=False, default="link"
@@ -766,11 +871,13 @@ class MagicLinkRequestSerializer(serializers.Serializer):
 
 class MagicLinkVerifySerializer(serializers.Serializer):
     """Serializer for verifying a magic link token."""
+
     token = serializers.CharField(required=True, max_length=64)
 
 
 class MagicLinkVerifyCodeSerializer(serializers.Serializer):
     """Serializer for verifying an OTP code (mobile flow)."""
+
     email = serializers.EmailField(required=True)
     code = serializers.RegexField(r"^\d{6}$", required=True, max_length=6)
 

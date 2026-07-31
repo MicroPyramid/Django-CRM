@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cases.models import Case, EmailMessage
+from cases.notifications import case_link
 from cases.serializer import CaseSerializer
 from cases.signals import _create_activity
 from common.models import Attachments, Comment
@@ -102,7 +103,7 @@ class CaseMergeView(APIView):
                             "already_merged": True,
                             "target_case": CaseSerializer(target).data,
                             "source_case_id": str(source.id),
-                            "redirected_url": f"/cases/{target.id}",
+                            "redirected_url": case_link(target.id),
                         },
                         status=status.HTTP_200_OK,
                     )
@@ -221,7 +222,7 @@ class CaseMergeView(APIView):
                 "message": "Tickets merged",
                 "target_case": CaseSerializer(target).data,
                 "source_case_id": str(source.id),
-                "redirected_url": f"/cases/{target.id}",
+                "redirected_url": case_link(target.id),
             },
             status=status.HTTP_200_OK,
         )

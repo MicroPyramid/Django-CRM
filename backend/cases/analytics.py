@@ -14,13 +14,15 @@ ever pushes past that, switch to a Postgres-only path or the optional
 from __future__ import annotations
 
 import math
-from datetime import date, datetime, timedelta, timezone as dt_timezone
+from datetime import date, datetime, timedelta
+from datetime import timezone as dt_timezone
 from typing import Iterable, Optional
 from uuid import UUID
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
+from cases.workflow import DEFAULT_FIRST_RESPONSE_SLA, TERMINAL_STATUSES
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -476,15 +478,17 @@ def case_ids_for_metric(
 
     if metric == "sla":
         if bucket == "frt_breach":
-            return [UUID(s) for s in compute_sla(qs, from_dt, to_dt)["frt_breach_case_ids"]]
+            return [
+                UUID(s) for s in compute_sla(qs, from_dt, to_dt)["frt_breach_case_ids"]
+            ]
         if bucket == "resolution_breach":
             return [
                 UUID(s)
                 for s in compute_sla(qs, from_dt, to_dt)["resolution_breach_case_ids"]
             ]
-        return qs.filter(
-            created_at__gte=from_dt, created_at__lt=to_dt
-        ).values_list("id", flat=True)
+        return qs.filter(created_at__gte=from_dt, created_at__lt=to_dt).values_list(
+            "id", flat=True
+        )
 
     if metric == "backlog":
         # Bucket is a YYYY-MM-DD date — return cases open at end of that day.
@@ -505,10 +509,287 @@ def case_ids_for_metric(
         # Bucket = profile_id (uuid string).
         if not bucket:
             raise ValueError("agents drilldown requires a bucket=<profile_id>")
-        return qs.filter(
-            created_at__gte=from_dt,
-            created_at__lt=to_dt,
-            assigned_to=bucket,
-        ).values_list("id", flat=True).distinct()
+        return (
+            qs.filter(
+                created_at__gte=from_dt,
+                created_at__lt=to_dt,
+                assigned_to=bucket,
+            )
+            .values_list("id", flat=True)
+            .distinct()
+        )
 
     raise ValueError(f"unknown metric: {metric}")
+
+
+# ---------------------------------------------------------------------------
+# Service-desk overview (single-call dashboard for /v2/tickets/analytics)
+#
+# The per-metric endpoints above answer one question each; this assembles the
+# whole "service health" page in one admin-only call so the frontend does not
+# fan out five requests. Elapsed times are wall-clock, consistent with the
+# compute_* functions above (business hours inform SLA *deadlines*, not the
+# elapsed math here — the same caveat the rest of this module already lives
+# with). The caller admin-gates this, so `qs` is the full org queryset with no
+# per-user visibility narrowing.
+
+# Worst-priority first, so the card leads with what hurts most. Every priority
+# is emitted even with no cases, so the shape is stable window to window.
+_SERVICE_PRIORITY_ORDER = ("Urgent", "High", "Normal", "Low")
+
+
+def _business_hours_state(org_id) -> tuple[Optional[str], bool]:
+    """(calendar_name, business_hours_applied) for the org's default calendar.
+
+    Mirrors the SLA engine's own fallback (`business_hours.calendar`): no
+    calendar, or a calendar with no open weekday window, means 24/7
+    wall-clock — reported here as not-applied with a null name.
+    """
+    from business_hours.calendar import get_default_calendar
+
+    cal = get_default_calendar(org_id)
+    if cal is None:
+        return None, False
+    applied = any(
+        o is not None and c is not None and c > o for (o, c) in cal.windows_by_weekday()
+    )
+    return cal.name, applied
+
+
+def _accumulate_frt(
+    bucket: dict, created_at, first_response_at, sla_hours, now
+) -> None:
+    """Fold one case's first-response outcome into a per-{priority,agent} bucket.
+
+    A responded case contributes its FRT (minutes) to the median list and, if
+    over its own SLA, a breach. An unresponded case only counts as a breach
+    once it is already overdue; while still in-flight it counts toward neither
+    met nor missed, so attainment describes only decided cases.
+    """
+    sla = sla_hours or 0
+    if first_response_at is not None:
+        hours = _hours_between(first_response_at, created_at)
+        bucket["frt_minutes"].append(hours * 60.0)
+        if hours > sla:
+            bucket["breached"] += 1
+        else:
+            bucket["met"] += 1
+    elif _hours_between(now, created_at) > sla:
+        bucket["breached"] += 1
+
+
+def _first_response_by_priority(created_rows, now) -> list[dict]:
+    """Per-priority first-response attainment, worst-priority first.
+
+    `target_minutes` is the org's promise for that priority (the global
+    workflow default, in minutes); `met`/`missed` are scored against each
+    case's own stored SLA. Priorities with no activity are still emitted with
+    zero counts and a null median so the card never collapses.
+    """
+    per: dict[str, dict] = {
+        prio: {"met": 0, "breached": 0, "frt_minutes": []}
+        for prio in _SERVICE_PRIORITY_ORDER
+    }
+    for _id, created_at, first_response_at, sla_hours, priority, _ctype in created_rows:
+        bucket = per.get(priority)
+        if bucket is None:
+            # Unknown priority string — skip rather than invent a column.
+            continue
+        _accumulate_frt(bucket, created_at, first_response_at, sla_hours, now)
+
+    out: list[dict] = []
+    for prio in _SERVICE_PRIORITY_ORDER:
+        bucket = per[prio]
+        median = _percentile(sorted(bucket["frt_minutes"]), 50)
+        out.append(
+            {
+                "priority": prio,
+                "target_minutes": DEFAULT_FIRST_RESPONSE_SLA.get(prio, 4) * 60,
+                "median_minutes": round(median) if median is not None else None,
+                "met": bucket["met"],
+                "missed": bucket["breached"],
+            }
+        )
+    return out
+
+
+def _agent_table(qs, from_dt, to_dt, now) -> list[dict]:
+    """Per-agent table: currently-open, closed-this-week, median FRT, breaches.
+
+    Each column has its own natural time basis: `open` is point-in-time (not
+    in a terminal status), `closed_this_week` is the trailing 7 days, and the
+    FRT/breach figures are over the [from, to) window. A case with N assignees
+    counts once per agent (M2M fan-out). The unassigned bucket is computed with
+    explicit `assigned_to__isnull=True` filters rather than a NULL row from the
+    M2M join, so it does not depend on whether Django emits an inner or outer
+    join for the multi-valued relation.
+    """
+    week_from = now - timedelta(days=7)
+    open_qs = qs.exclude(status__in=TERMINAL_STATUSES)
+    closed_week_qs = qs.filter(
+        resolved_at__isnull=False, resolved_at__gte=week_from, resolved_at__lt=to_dt
+    )
+    window_qs = qs.filter(created_at__gte=from_dt, created_at__lt=to_dt)
+
+    agents: dict = {}
+
+    def bucket(pid):
+        return agents.setdefault(
+            pid,
+            {
+                "open": 0,
+                "closed_this_week": 0,
+                "frt_minutes": [],
+                "breached": 0,
+                "met": 0,
+            },
+        )
+
+    for _cid, pid in open_qs.values_list("id", "assigned_to"):
+        if pid is not None:
+            bucket(pid)["open"] += 1
+    for _cid, pid in closed_week_qs.values_list("id", "assigned_to"):
+        if pid is not None:
+            bucket(pid)["closed_this_week"] += 1
+    for _cid, created_at, fra, sla_hours, pid in window_qs.values_list(
+        "id",
+        "created_at",
+        "first_response_at",
+        "sla_first_response_hours",
+        "assigned_to",
+    ):
+        if pid is not None:
+            _accumulate_frt(bucket(pid), created_at, fra, sla_hours, now)
+
+    # Unassigned bucket — explicit isnull filters (see docstring).
+    un = {"open": 0, "closed_this_week": 0, "frt_minutes": [], "breached": 0, "met": 0}
+    un["open"] = open_qs.filter(assigned_to__isnull=True).count()
+    un["closed_this_week"] = closed_week_qs.filter(assigned_to__isnull=True).count()
+    for _cid, created_at, fra, sla_hours in window_qs.filter(
+        assigned_to__isnull=True
+    ).values_list("id", "created_at", "first_response_at", "sla_first_response_hours"):
+        _accumulate_frt(un, created_at, fra, sla_hours, now)
+
+    from common.models import Profile
+
+    label_by_pid = {
+        pid: (name or email or str(pid))
+        for pid, name, email in Profile.objects.filter(
+            id__in=list(agents.keys())
+        ).values_list("id", "user__name", "user__email")
+    }
+
+    def _row(pid, name, b):
+        median = _percentile(sorted(b["frt_minutes"]), 50)
+        return {
+            "id": None if pid is None else str(pid),
+            "name": name,
+            "open": b["open"],
+            "closed_this_week": b["closed_this_week"],
+            "median_first_response_minutes": (
+                round(median) if median is not None else None
+            ),
+            "breached": b["breached"],
+        }
+
+    rows = [_row(pid, label_by_pid.get(pid, str(pid)), b) for pid, b in agents.items()]
+    rows.sort(key=lambda r: (-r["open"], r["name"].lower()))
+
+    # Only show the unassigned line when it carries signal, so it does not
+    # dangle as an all-zero row on a fully-triaged queue.
+    if un["open"] or un["closed_this_week"] or un["frt_minutes"] or un["breached"]:
+        rows.append(_row(None, "Unassigned", un))
+    return rows
+
+
+def compute_service_overview(qs: QuerySet, org_id, days: int = 14) -> dict:
+    """Assemble the full /v2/tickets/analytics payload in one call.
+
+    Returns `{totals, volume, first_response, by_type, by_agent}`. The window
+    is the last `days` whole days (default 14, clamped to [1, 90]), anchored to
+    UTC day boundaries so `volume` has exactly `days` buckets. `qs` must be the
+    org-scoped Case queryset; this function does no visibility narrowing (the
+    endpoint is admin-only).
+    """
+    try:
+        days = int(days)
+    except (TypeError, ValueError):
+        days = 14
+    days = max(1, min(days, 90))
+
+    now = timezone.now()
+    to_dt = datetime.combine(
+        now.date() + timedelta(days=1), datetime.min.time(), tzinfo=dt_timezone.utc
+    )
+    from_dt = to_dt - timedelta(days=days)
+
+    created_rows = list(
+        qs.filter(created_at__gte=from_dt, created_at__lt=to_dt).values_list(
+            "id",
+            "created_at",
+            "first_response_at",
+            "sla_first_response_hours",
+            "priority",
+            "case_type",
+        )
+    )
+    resolved_rows = list(
+        qs.filter(
+            resolved_at__isnull=False,
+            resolved_at__gte=from_dt,
+            resolved_at__lt=to_dt,
+        ).values_list("id", "created_at", "resolved_at")
+    )
+
+    # ---- totals ----
+    mttr_hours = sorted(
+        _hours_between(resolved_at, created_at)
+        for _id, created_at, resolved_at in resolved_rows
+    )
+    median_res = _percentile(mttr_hours, 50)
+    calendar_name, business_hours_applied = _business_hours_state(org_id)
+    totals = {
+        "opened": len(created_rows),
+        "closed": len(resolved_rows),
+        "open_now": qs.exclude(status__in=TERMINAL_STATUSES).count(),
+        "median_resolution_hours": round(median_res) if median_res is not None else 0,
+        "window_days": days,
+        "business_hours_applied": business_hours_applied,
+        "calendar_name": calendar_name,
+    }
+
+    # ---- volume (opened/closed per day) ----
+    opened_by_day: dict[date, int] = {}
+    for _id, created_at, _fra, _sla, _prio, _ctype in created_rows:
+        d = created_at.date()
+        opened_by_day[d] = opened_by_day.get(d, 0) + 1
+    closed_by_day: dict[date, int] = {}
+    for _id, _created, resolved_at in resolved_rows:
+        d = resolved_at.date()
+        closed_by_day[d] = closed_by_day.get(d, 0) + 1
+    volume = [
+        {
+            "date": d.isoformat(),
+            "opened": opened_by_day.get(d, 0),
+            "closed": closed_by_day.get(d, 0),
+        }
+        for d in _bucket_dates(from_dt, to_dt)
+    ]
+
+    # ---- case-type mix (None → "Uncategorized") ----
+    type_counts: dict[str, int] = {}
+    for _id, _created, _fra, _sla, _prio, case_type in created_rows:
+        label = case_type or "Uncategorized"
+        type_counts[label] = type_counts.get(label, 0) + 1
+    by_type = [
+        {"case_type": label, "count": n}
+        for label, n in sorted(type_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    ]
+
+    return {
+        "totals": totals,
+        "volume": volume,
+        "first_response": _first_response_by_priority(created_rows, now),
+        "by_type": by_type,
+        "by_agent": _agent_table(qs, from_dt, to_dt, now),
+    }

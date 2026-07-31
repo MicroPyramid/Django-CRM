@@ -30,7 +30,6 @@ from cases.tasks import (
 from common.permissions import HasOrgContext
 from common.tasks import set_rls_context
 
-
 # How long after the first response a customer can edit their rating.
 EDIT_WINDOW_HOURS = 24
 
@@ -80,6 +79,9 @@ class PublicCsatView(APIView):
         return Response(
             {
                 "case_subject": case.name,
+                "case_closed_on": (
+                    case.closed_on.isoformat() if case.closed_on else None
+                ),
                 "org_name": case.org.name,
                 "agent_name": agent_email or "your support team",
                 "rating": survey.rating,
@@ -88,7 +90,9 @@ class PublicCsatView(APIView):
                     survey.responded_at.isoformat() if survey.responded_at else None
                 ),
                 "edit_window_closes_at": (
-                    (survey.responded_at + timedelta(hours=EDIT_WINDOW_HOURS)).isoformat()
+                    (
+                        survey.responded_at + timedelta(hours=EDIT_WINDOW_HOURS)
+                    ).isoformat()
                     if survey.responded_at
                     else None
                 ),
@@ -149,9 +153,7 @@ class CsatAggregateView(APIView):
 
     def get(self, request):
         org = request.profile.org
-        responded = CsatSurvey.objects.filter(
-            org=org, rating__isnull=False
-        )
+        responded = CsatSurvey.objects.filter(org=org, rating__isnull=False)
         total = responded.count()
         if total == 0:
             return Response(
@@ -163,9 +165,7 @@ class CsatAggregateView(APIView):
             )
         avg = responded.aggregate(avg=Avg("rating"))["avg"]
         dist_rows = (
-            responded.values("rating")
-            .annotate(n=Count("id"))
-            .order_by("rating")
+            responded.values("rating").annotate(n=Count("id")).order_by("rating")
         )
         distribution = {str(i): 0 for i in range(1, 6)}
         for row in dist_rows:

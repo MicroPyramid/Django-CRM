@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clearing — BottleCRM mock set</title>
+<style>
+/* ============================================================
+   PLAYGROUND SHELL
+   ============================================================ */
+:root{
+  --bg:#0c0e11; --panel:#13161b; --panel2:#171b21; --line:#242a33; --line2:#2f3641;
+  --txt:#e7ebf1; --dim:#8b95a3; --dim2:#646e7c; --acc:#3ecf9a; --acc-dim:#1c7a5b;
+  --fui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --fmono:ui-monospace,"SF Mono","JetBrains Mono","DejaVu Sans Mono","Liberation Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--fui);font-size:14px;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:3px}
+.app{display:grid;grid-template-columns:300px 1fr;height:100vh}
+.ctl{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding-bottom:40px}
+.ctl::-webkit-scrollbar{width:9px}
+.ctl::-webkit-scrollbar-thumb{background:#2b323c;border-radius:9px}
+.brand{padding:17px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:5}
+.brand h1{margin:0;font-size:14px;font-weight:650;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand h1 i{width:11px;height:11px;border-radius:3px;background:#0E5E45;display:block}
+.brand p{margin:6px 0 0;font-size:11.5px;color:var(--dim);line-height:1.5}
+.grp{padding:14px 20px;border-bottom:1px solid var(--line)}
+.grp>h2{margin:0 0 10px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim2);font-weight:650}
+.slist{display:flex;flex-direction:column;gap:1px}
+.sgrp{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim2);font-weight:650;margin:12px 0 5px;padding-left:9px}
+.sgrp:first-child{margin-top:0}
+.sbtn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;border-radius:7px;padding:7px 9px;font-size:12.5px;color:var(--dim);transition:.1s}
+.sbtn:hover{background:var(--panel2);color:var(--txt)}
+.sbtn[aria-pressed="true"]{background:#12241d;color:var(--acc);font-weight:600}
+.sbtn .n{margin-left:auto;font-family:var(--fmono);font-size:10px;color:var(--dim2)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.row label{font-size:12px;color:var(--dim)}
+.row .val{font-family:var(--fmono);font-size:11px;color:var(--acc)}
+input[type=range]{width:100%;accent-color:var(--acc);background:none}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px}
+.seg button{flex:1;background:none;border:0;padding:6px 4px;border-radius:6px;font-size:11.5px;color:var(--dim)}
+.seg button:hover{color:var(--txt)}
+.seg button[aria-pressed="true"]{background:#262d37;color:var(--txt)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:20px;padding:5px 11px;font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{color:var(--txt);border-color:var(--line2);background:#232932}
+.chip i{width:10px;height:10px;border-radius:50%;display:block}
+.sw{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--dim);cursor:pointer;user-select:none}
+.sw input{appearance:none;width:32px;height:18px;border-radius:20px;background:#2b323c;position:relative;transition:.15s;flex:none;margin:0;cursor:pointer}
+.sw input:checked{background:var(--acc-dim)}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#8f9aa8;transition:.15s}
+.sw input:checked::after{background:var(--acc);transform:translateX(14px)}
+.sw:hover{color:var(--txt)}
+.note{font-size:11px;color:var(--dim2);line-height:1.55;margin:9px 0 0}
+.stage{display:grid;grid-template-rows:1fr auto;overflow:hidden;background:#08090b}
+.canvas{overflow:auto;padding:24px;display:flex;justify-content:center;align-items:flex-start}
+.canvas::-webkit-scrollbar{width:10px;height:10px}
+.canvas::-webkit-scrollbar-thumb{background:#232932;border-radius:10px}
+.scaler{position:relative;flex:none}
+.scinner{transform-origin:top left;position:absolute;top:0;left:0}
+.frame{border-radius:12px;overflow:hidden;border:1px solid #262c35;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.pbar{border-top:1px solid var(--line);background:var(--panel);padding:12px 18px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;max-height:26vh}
+.ptxt{font-family:var(--fmono);font-size:11.5px;line-height:1.65;color:#c3ccd8;white-space:pre-wrap;overflow-y:auto;max-height:calc(26vh - 28px);padding-right:8px}
+.ptxt::-webkit-scrollbar{width:8px}
+.ptxt::-webkit-scrollbar-thumb{background:#2b323c;border-radius:8px}
+.ptxt b{color:var(--acc);font-weight:600}
+.copy{background:var(--acc);color:#052419;border:0;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:640;white-space:nowrap}
+.copy:hover{filter:brightness(1.08)}
+.copy.done{background:#2b323c;color:var(--acc)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ============================================================
+   CLEARING — design tokens
+   ============================================================ */
+.pv{
+  --paper:#FBFBF8; --surf:#FFFFFF; --line:#E4E7E2; --line2:#F0F2EE; --ink:#101A16; --dim:#5D6B64;
+  --accent:#0E5E45; --accent-soft:rgba(14,94,69,.09); --accent-ink:#fff;
+  --r:10px; --rowh:44px; --pad:22px; --fs:14.4px;
+  --fui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --fnum:ui-monospace,"SF Mono","DejaVu Sans Mono","Liberation Mono",Menlo,Consolas,monospace;
+  background:var(--paper);color:var(--ink);font-family:var(--fui);font-size:var(--fs);
+  display:flex;height:780px;overflow:hidden;line-height:1.45;-webkit-font-smoothing:antialiased;position:relative;
+}
+.pv[data-theme=dark]{--paper:#0D1310;--surf:#141C18;--line:#233029;--line2:#1A241F;--ink:#E9F0EB;--dim:#8AA096}
+.pv *{box-sizing:border-box}
+.pv ::-webkit-scrollbar{width:8px;height:8px}
+.pv ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ink) 15%,transparent);border-radius:8px}
+.pv .num{font-family:var(--fnum);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pv .mut{color:var(--dim)}
+.pv main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.pv .scroll{overflow-y:auto;flex:1;min-height:0}
+
+/* primitives */
+.pv .av{border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:640;flex:none;
+  background:color-mix(in srgb,var(--accent) 15%,var(--surf));color:var(--accent);width:26px;height:26px}
+.pv .dot{width:6px;height:6px;border-radius:50%;flex:none;display:inline-block}
+.pv .btn{border:1px solid var(--line);background:var(--surf);color:var(--ink);border-radius:8px;
+  padding:7px 13px;font-size:calc(var(--fs) - 1.6px);font-family:inherit;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.pv .btn:hover{border-color:color-mix(in srgb,var(--ink) 22%,transparent)}
+.pv .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.pv .btn.gho{border-color:transparent;background:transparent;color:var(--dim)}
+.pv .btn.sm{padding:4px 9px;font-size:calc(var(--fs) - 2.6px);border-radius:7px}
+.pv .kbd{font-family:var(--fnum);font-size:9.5px;border:1px solid var(--line);border-radius:4px;padding:1px 4px;color:var(--dim)}
+.pv .pill{display:inline-flex;align-items:center;gap:5px;font-size:calc(var(--fs) - 3px);font-weight:600;
+  padding:2.5px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.005em}
+.pv .card{background:var(--surf);border:1px solid var(--line);border-radius:var(--r)}
+.pv .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:650}
+
+/* annotation pins */
+.ann{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#D4380D;color:#fff;
+  font-size:9.5px;font-weight:700;vertical-align:middle;margin-left:6px;position:relative;cursor:help;flex:none}
+.ann:hover::after{content:attr(data-tip);position:absolute;left:22px;top:-6px;width:260px;background:#1a1d22;color:#e8ecf2;
+  font-size:11px;font-weight:400;line-height:1.5;padding:9px 11px;border-radius:7px;z-index:99;text-align:left;
+  box-shadow:0 8px 26px rgba(0,0,0,.5);pointer-events:none;text-transform:none;letter-spacing:0}
+
+/* sidebar */
+.nav{width:222px;flex:none;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:13px 11px}
+.nav .org{display:flex;align-items:center;gap:9px;padding:5px 8px 13px}
+.nav .org b{font-size:13.5px;letter-spacing:-.01em}
+.mark{width:24px;height:24px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.nav .sec{margin-top:13px;padding:0 8px 5px;font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:650}
+.nlink{display:flex;align-items:center;gap:9px;padding:6.5px 8px;border-radius:7px;color:var(--ink);font-size:13px;text-decoration:none;margin-bottom:1px;cursor:pointer}
+.nlink .ic{width:15px;text-align:center;opacity:.5;font-size:12px}
+.nlink .ct{margin-left:auto;font-size:11px;color:var(--dim);font-family:var(--fnum)}
+.nlink.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nlink.on .ic{opacity:1}
+.nlink:hover:not(.on){background:var(--line2)}
+.nav .ftr{margin-top:auto;padding:9px 8px 0;border-top:1px solid var(--line)}
+
+/* page header */
+.ph{padding:16px var(--pad) 0;display:flex;align-items:flex-start;gap:12px;flex:none}
+.ph h1{margin:0;font-size:calc(var(--fs) + 7.5px);letter-spacing:-.023em;font-weight:640;line-height:1.2}
+.ph .sub{margin:5px 0 0;color:var(--dim);font-size:calc(var(--fs) - 1px)}
+.ph .crumb{font-size:12px;color:var(--dim);margin-bottom:3px}
+.ph .acts{margin-left:auto;display:flex;gap:7px;align-items:center;padding-top:2px}
+
+/* one filter system */
+.fbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:13px var(--pad) 11px;flex:none}
+.fchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;
+  padding:3.5px 9px 3.5px 10px;font-size:12px;background:var(--surf)}
+.fchip b{font-weight:600}
+.fchip .x{color:var(--dim);font-size:13px;line-height:1;margin-left:1px}
+.fchip.add{border-style:dashed;color:var(--dim)}
+.viewsel{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surf);
+  border-radius:8px;padding:4.5px 10px;font-size:12.5px;font-weight:600}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;background:var(--surf)}
+.tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--dim);padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--surf);z-index:2}
+.tbl td{padding:0 14px;height:var(--rowh);border-bottom:1px solid var(--line2);vertical-align:middle;white-space:nowrap}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:color-mix(in srgb,var(--ink) 2.5%,transparent)}
+.tbl .r{text-align:right}
+.tbl .pri{font-weight:600;letter-spacing:-.01em}
+.tbl .s2{font-size:12px;color:var(--dim);margin-top:1px}
+.tblwrap{margin:0 var(--pad) 18px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surf)}
+
+/* stage meter */
+.smeter{display:flex;gap:2px;align-items:center}
+.smeter i{width:15px;height:4px;border-radius:2px;background:var(--line);display:block}
+.smeter i.f{background:var(--accent)}
+
+/* next-action strip — the signature */
+.strip{display:flex;align-items:center;gap:12px;background:var(--accent-soft);
+  border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:var(--r);padding:12px 15px}
+.strip .st-t{font-weight:600;margin-top:2px;letter-spacing:-.01em}
+.strip .lbl{color:var(--accent)}
+
+/* right rail */
+.rail{width:300px;flex:none;border-left:1px solid var(--line);padding:15px;overflow-y:auto;background:var(--paper)}
+.rail .rh{margin:17px 0 9px}
+.rail .rh:first-child{margin-top:0}
+.kv{display:grid;grid-template-columns:100px 1fr;gap:7px 10px;font-size:calc(var(--fs) - 1.2px)}
+.kv dt{color:var(--dim)}
+.kv dd{margin:0;font-weight:500}
+.rrow{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+
+/* timeline */
+.tl{position:relative;padding-left:19px}
+.tl::before{content:"";position:absolute;left:5px;top:6px;bottom:8px;width:1px;background:var(--line)}
+.ev{position:relative;padding-bottom:15px}
+.ev::before{content:"";position:absolute;left:-17px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--surf);border:2px solid var(--line)}
+.ev.hi::before{border-color:var(--accent);background:var(--accent)}
+.ev .em{font-size:11.5px;color:var(--dim);margin-top:2px}
+
+/* board */
+.board{display:flex;gap:12px;padding:0 var(--pad) 16px;overflow-x:auto;flex:1;min-height:0}
+.lane{width:248px;flex:none;display:flex;flex-direction:column;min-height:0}
+.lh{display:flex;align-items:center;gap:8px;padding:0 3px 9px;flex:none}
+.lh .t{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:650;color:var(--dim)}
+.lh .n{margin-left:auto;font-family:var(--fnum);font-size:11.5px;color:var(--dim)}
+.lbody{overflow-y:auto;min-height:0;padding:1px}
+.dcard{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;margin-bottom:8px}
+.dcard .t{font-weight:600;letter-spacing:-.01em;font-size:calc(var(--fs) - .8px);line-height:1.3}
+.dcard .a{font-size:12px;color:var(--dim);margin-top:2px}
+.dcard .ft{display:flex;align-items:center;gap:7px;margin-top:10px}
+
+/* forms */
+.form{max-width:560px;padding:4px 0 30px}
+.fld{margin-bottom:15px}
+.fld>label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px}
+.fld .hint{font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.45}
+.inp{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--surf);
+  color:var(--ink);font-size:calc(var(--fs) - .5px);font-family:inherit;display:flex;align-items:center;gap:8px}
+.inp.ph{color:var(--dim)}
+.inp.bad{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.09)}
+.err{font-size:12px;color:#C0392B;margin-top:5px;display:flex;gap:6px;align-items:flex-start}
+.disc{border-top:1px solid var(--line);margin-top:20px;padding-top:14px}
+
+/* overlay / palette */
+.scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 34%,transparent);
+  backdrop-filter:blur(1.5px);display:grid;place-items:start center;padding-top:88px;z-index:20}
+.pal{width:540px;background:var(--surf);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.28)}
+.palin{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line);font-size:15px}
+.palg{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:650;padding:10px 15px 5px}
+.palr{display:flex;align-items:center;gap:10px;padding:7px 15px;font-size:13.5px}
+.palr.on{background:var(--accent-soft)}
+.palr .m{margin-left:auto;font-size:11.5px;color:var(--dim)}
+.palftr{border-top:1px solid var(--line);padding:8px 15px;display:flex;gap:14px;font-size:11px;color:var(--dim)}
+
+/* empty / error */
+.state{max-width:430px;margin:0 auto;text-align:center;padding:52px 0}
+.state .ico{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center;font-size:21px;margin:0 auto 15px}
+.state h3{margin:0 0 7px;font-size:calc(var(--fs) + 3px);letter-spacing:-.015em;font-weight:640}
+.state p{margin:0 0 17px;color:var(--dim);font-size:calc(var(--fs) - .5px);line-height:1.55}
+
+/* design system sheet */
+.ds{padding:0 var(--pad) 30px}
+.ds h3{font-size:calc(var(--fs) + 1px);margin:24px 0 11px;letter-spacing:-.015em;font-weight:640}
+.ds h3:first-child{margin-top:4px}
+.swat{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.sw1{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surf)}
+.sw1 .c{height:44px}
+.sw1 .m{padding:7px 9px;font-size:10.5px;line-height:1.4}
+.sw1 .m b{display:block;font-weight:600}
+.sw1 .m span{color:var(--dim);font-family:var(--fnum);font-size:9.5px}
+.scale{display:flex;flex-direction:column;gap:9px}
+.scale .r1{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--line2);padding-bottom:9px}
+.scale .r1 .m{margin-left:auto;font-family:var(--fnum);font-size:10.5px;color:var(--dim);white-space:nowrap}
+.compgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+.comp{border:1px solid var(--line);border-radius:var(--r);padding:13px;background:var(--surf)}
+.comp .cn{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:650;margin-bottom:10px}
+.maprow{display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.maprow code{font-family:var(--fnum);font-size:11px;color:var(--dim)}
+
+/* mobile */
+.mob{display:flex;gap:34px;justify-content:center;align-items:flex-start;padding:26px var(--pad) 30px;flex-wrap:wrap}
+.phone{width:340px;flex:none}
+.phone .cap{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:650;margin-bottom:9px;text-align:center}
+.pscr{border:9px solid color-mix(in srgb,var(--ink) 82%,transparent);border-radius:30px;overflow:hidden;height:496px;
+  background:var(--paper);display:flex;flex-direction:column;position:relative}
+.pbarr{height:26px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 15px;font-size:10.5px;font-weight:600;color:var(--dim)}
+.ptop{padding:5px 15px 10px;flex:none;display:flex;align-items:center;gap:10px}
+.ptop h2{margin:0;font-size:19px;letter-spacing:-.02em;font-weight:640}
+.pbody{flex:1;min-height:0;overflow-y:auto;padding:0 15px 12px}
+.ptab{height:52px;flex:none;border-top:1px solid var(--line);display:flex;background:var(--surf)}
+.ptab div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:9.5px;color:var(--dim)}
+.ptab div.on{color:var(--accent);font-weight:600}
+.ptab div .i{font-size:15px}
+.mcard{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+.fab{position:absolute;right:15px;bottom:64px;width:46px;height:46px;border-radius:50%;background:var(--accent);
+  color:var(--accent-ink);display:grid;place-items:center;font-size:21px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="ctl">
+  <div class="brand">
+    <h1><i></i>Clearing — mock set</h1>
+    <p>Sixteen screens in one direction. Real routes, real enums, real field names from the Django models.</p>
+  </div>
+  <div class="grp">
+    <h2>Screen</h2>
+    <div class="slist" id="screens"></div>
+  </div>
+  <div class="grp">
+    <h2>Feel</h2>
+    <div class="row"><label for="dens">Density</label><span class="val" id="densv"></span></div>
+    <input type="range" id="dens" min="0" max="100" value="46">
+    <div style="height:13px"></div>
+    <div class="row"><label>Accent — bottle glass</label></div>
+    <div class="chips" id="accents"></div>
+    <div style="height:11px"></div>
+    <div class="seg" id="themes">
+      <button data-v="light" type="button">Light</button>
+      <button data-v="dark" type="button">Dark</button>
+    </div>
+  </div>
+  <div class="grp">
+    <h2>Overlay</h2>
+    <label class="sw"><input type="checkbox" id="ann"><span>Mark what this fixes</span></label>
+    <p class="note">Pins tie each screen back to a defect from the 27 Jul audit. Hover one to read it.</p>
+  </div>
+  <div class="grp">
+    <h2>Canvas width</h2>
+    <div class="row"><label for="vw">Desktop width</label><span class="val" id="vwv"></span></div>
+    <input type="range" id="vw" min="1024" max="1600" step="20" value="1260">
+    <p class="note">Phone layouts have their own screen — see <b>Mobile</b> under Foundations.</p>
+  </div>
+</aside>
+<main class="stage">
+  <div class="canvas" id="canvas"><div class="scaler" id="scaler"><div class="scinner" id="scinner"></div></div></div>
+  <div class="pbar">
+    <div class="ptxt" id="prompt"></div>
+    <button class="copy" id="copy" type="button">Copy brief</button>
+  </div>
+</main>
+</div>
+
+<script>
+/* ============================================================
+   DATA — mirrors the Django models
+   opportunity.STAGES · leads.LEAD_STATUS/LEAD_SOURCE
+   cases.STATUS_CHOICE/PRIORITY_CHOICE/CASE_TYPE · invoices.INVOICE_STATUS
+   ============================================================ */
+const STAGE_ORDER=['PROSPECTING','QUALIFICATION','PROPOSAL','NEGOTIATION','CLOSED_WON','CLOSED_LOST'];
+const STAGE_LABEL={PROSPECTING:'Prospecting',QUALIFICATION:'Qualification',PROPOSAL:'Proposal',NEGOTIATION:'Negotiation',CLOSED_WON:'Closed Won',CLOSED_LOST:'Closed Lost'};
+
+const DEALS=[
+ {id:'OPP-118',name:'Platform renewal',acct:'Northwind Traders',stage:'NEGOTIATION',val:42000,owner:'Priya Raman',close:'8 Aug',touch:12,type:'RENEWAL',prob:70,age:'stalled'},
+ {id:'OPP-124',name:'40 seats + onboarding',acct:'Acme Manufacturing',stage:'PROPOSAL',val:18400,owner:'Marcus Cole',close:'15 Aug',touch:2,type:'NEW_BUSINESS',prob:50,age:'ontrack'},
+ {id:'OPP-109',name:'Warehouse rollout',acct:'Sundara Foods',stage:'PROPOSAL',val:26500,owner:'Ken Ito',close:'22 Aug',touch:8,type:'EXISTING_BUSINESS',prob:55,age:'aging'},
+ {id:'OPP-131',name:'API add-on',acct:'Bluepeak Logistics',stage:'QUALIFICATION',val:7250,owner:'Priya Raman',close:'2 Sep',touch:5,type:'UPSELL',prob:30,age:'ontrack'},
+ {id:'OPP-140',name:'Starter plan',acct:'Corner Bakery Co',stage:'PROSPECTING',val:1980,owner:'Dana Whitfield',close:'20 Sep',touch:1,type:'NEW_BUSINESS',prob:10,age:'ontrack'},
+ {id:'OPP-136',name:'Fleet tracking pilot',acct:'Cedar Freight',stage:'QUALIFICATION',val:9400,owner:'Marcus Cole',close:'11 Sep',touch:16,type:'NEW_BUSINESS',prob:25,age:'stalled'},
+ {id:'OPP-152',name:'Regional expansion',acct:'Tallgrass Seed Co',stage:'PROPOSAL',val:14200,owner:'Ken Ito',close:'29 Aug',touch:3,type:'NEW_BUSINESS',prob:55,age:'ontrack'},
+ {id:'OPP-147',name:'Support tier upgrade',acct:'Vela Interiors',stage:'NEGOTIATION',val:6800,owner:'Sofia Álvarez',close:'12 Aug',touch:6,type:'UPSELL',prob:65,age:'aging'},
+ {id:'OPP-143',name:'Data migration',acct:'Harbor Point Legal',stage:'QUALIFICATION',val:11500,owner:'Priya Raman',close:'5 Sep',touch:21,type:'NEW_BUSINESS',prob:20,age:'stalled'},
+ {id:'OPP-133',name:'Custom reporting',acct:'Delta Ridge Mining',stage:'NEGOTIATION',val:22750,owner:'Dana Whitfield',close:'1 Sep',touch:9,type:'CROSS_SELL',prob:60,age:'aging'},
+ {id:'OPP-129',name:'Onboarding package',acct:'Pike Street Dental',stage:'PROSPECTING',val:3400,owner:'Ken Ito',close:'30 Sep',touch:2,type:'NEW_BUSINESS',prob:15,age:'ontrack'},
+ {id:'OPP-115',name:'Annual renewal',acct:'Castleford Foods',stage:'NEGOTIATION',val:38900,owner:'Marcus Cole',close:'14 Aug',touch:7,type:'RENEWAL',prob:75,age:'ontrack'}
+];
+const T_DEALS=63,T_VALUE=486300,T_WEIGHTED=268400;
+
+const LEADS=[
+ {name:'Kavi Menon',co:'Northwind Traders',title:'Head of Operations',status:'in process',src:'existing customer',amt:42000,owner:'Priya Raman',touch:3,ind:'Logistics'},
+ {name:'Halima Yusuf',co:'Beacon Dental Group',title:'Practice Manager',status:'assigned',src:'compaign',amt:8400,owner:'Dana Whitfield',touch:0,ind:'Healthcare'},
+ {name:'Tomas Brenner',co:'Ridgeline Outfitters',title:'Owner',status:'in process',src:'public relations',amt:5200,owner:'Marcus Cole',touch:6,ind:'Retail'},
+ {name:'Ana Sokolova',co:'Квант Systems',title:'CTO',status:'assigned',src:'partner',amt:26000,owner:'Ken Ito',touch:1,ind:'Software'},
+ {name:'Derek Osei',co:'Fairwater Marine',title:'Fleet Director',status:'recycled',src:'call',amt:15500,owner:'Priya Raman',touch:34,ind:'Marine'},
+ {name:'Junko Abe',co:'Sakura Print House',title:'Director',status:'converted',src:'email',amt:9800,owner:'Sofia Álvarez',touch:4,ind:'Printing'},
+ {name:'Miguel Ortiz',co:'Verano Foods',title:'Procurement Lead',status:'assigned',src:'other',amt:12300,owner:'Marcus Cole',touch:2,ind:'Food & Beverage'},
+ {name:'Lena Fischer',co:'Altbau Property',title:'Managing Partner',status:'closed',src:'call',amt:0,owner:'Dana Whitfield',touch:19,ind:'Real Estate'}
+];
+const T_LEADS=24;
+
+const TICKETS=[
+ {id:'418',name:'SSO login loop after password reset',acct:'Meridian Health',pri:'Urgent',st:'Assigned',type:'Incident',who:'Priya Raman',age:'3h',fr:'12m',sla:0.82},
+ {id:'416',name:'Invoice PDF missing the tax line',acct:'Bluepeak Logistics',pri:'High',st:'Pending',type:'Problem',who:'Sofia Álvarez',age:'1d',fr:'34m',sla:0.55},
+ {id:'414',name:'Can we export deals to CSV?',acct:'Corner Bakery Co',pri:'Normal',st:'New',type:'Question',who:'—',age:'2d',fr:'—',sla:0.3},
+ {id:'411',name:'Webhook retries firing twice',acct:'Nordwall Systems',pri:'High',st:'Assigned',type:'Incident',who:'Ken Ito',age:'2d',fr:'8m',sla:0.68},
+ {id:'409',name:'Add a second billing contact',acct:'Sundara Foods',pri:'Low',st:'Pending',type:'Question',who:'Marcus Cole',age:'4d',fr:'2h',sla:0.2},
+ {id:'404',name:'Timesheet totals off by an hour after DST',acct:'Cedar Freight',pri:'Normal',st:'Assigned',type:'Problem',who:'Priya Raman',age:'5d',fr:'51m',sla:0.44},
+ {id:'399',name:'Duplicate contact created by import',acct:'Acme Manufacturing',pri:'Low',st:'Duplicate',type:'Problem',who:'Sofia Álvarez',age:'6d',fr:'1h',sla:0.1}
+];
+const T_TICKETS=12;
+
+const INVOICES=[
+ {no:'INV-2043',acct:'Bluepeak Logistics',st:'Overdue',amt:12800,due:'19 Jul',days:9},
+ {no:'INV-2051',acct:'Meridian Health',st:'Paid',amt:31000,due:'24 Jul',days:0},
+ {no:'INV-2055',acct:'Northwind Traders',st:'Sent',amt:42000,due:'8 Aug',days:-11},
+ {no:'INV-2057',acct:'Sundara Foods',st:'Viewed',amt:26500,due:'12 Aug',days:-15},
+ {no:'INV-2058',acct:'Acme Manufacturing',st:'Draft',amt:18400,due:'—',days:null},
+ {no:'INV-2040',acct:'Cedar Freight',st:'Partially_Paid',amt:9400,due:'2 Aug',days:-5},
+ {no:'INV-2036',acct:'Vela Interiors',st:'Overdue',amt:6800,due:'11 Jul',days:17}
+];
+
+const THREAD=[
+ {t:'Today 09:12',who:'Priya Raman',type:'note',x:'Left a voicemail. Kavi is out until Thursday — legal is the holdup, not price.'},
+ {t:'24 Jul',who:'',type:'stage',x:'Stage moved from Proposal to Negotiation'},
+ {t:'22 Jul',who:'Marcus Cole',type:'email',x:'Sent the revised quote: 3-year term, 8% discount, net-30 payment terms.'},
+ {t:'18 Jul',who:'Priya Raman',type:'call',x:'45 minutes with Kavi and Dana. Security review passed, procurement is next.'},
+ {t:'11 Jul',who:'',type:'ticket',x:'Ticket #418 opened — SSO login loop (Urgent)'}
+];
+const PEOPLE=[
+ {n:'Kavi Menon',r:'Head of Operations · champion'},
+ {n:'Dana Whitfield',r:'CFO · signs the contract'},
+ {n:'Ravi Subramanian',r:'IT lead'}
+];
+const ARTIFACTS=[
+ {t:'Quote Q-118 v3',d:'$42,000 · sent 22 Jul · unopened',c:'amber'},
+ {t:'Invoice INV-2043',d:'$12,800 · 9 days past due',c:'red'},
+ {t:'Ticket #418',d:'SSO login loop · Urgent · open',c:'violet'},
+ {t:'3 open tasks',d:'Next: send security addendum, due Thu',c:'green'}
+];
+const QUEUE=[
+ {k:'red',   t:'Northwind renewal has gone quiet',    d:'No touch in 12 days · closes 8 Aug · $42,000', a:'Log a call',    w:'Overdue'},
+ {k:'amber', t:'Acme’s quote expires tomorrow',       d:'Proposal · Q-124 v2 · $18,400',                a:'Open quote',    w:'Today'},
+ {k:'violet',t:'SSO login loop after password reset', d:'Urgent · Meridian Health · open 3h',           a:'Reply',         w:'Today'},
+ {k:'blue',  t:'INV-2043 is 9 days past due',         d:'$12,800 · Bluepeak Logistics',                 a:'Send reminder', w:'Today'},
+ {k:'green', t:'Discovery call with Corner Bakery',   d:'Tomorrow 10:00 · first conversation',          a:'Open notes',    w:'Tomorrow'}
+];
+
+/* ---------- semantic colours ---------- */
+const C={
+  slate :['#5A6B7D','#A2B2C2'], blue:['#0D6E9E','#5CC0F0'], amber:['#96600A','#E0A93C'],
+  violet:['#7B2C8C','#D392E0'], green:['#0E7A55','#41C795'], red:['#B3301B','#FF8A6B']
+};
+const STAGE_C={PROSPECTING:'slate',QUALIFICATION:'blue',PROPOSAL:'amber',NEGOTIATION:'violet',CLOSED_WON:'green',CLOSED_LOST:'red'};
+const LEAD_C ={'assigned':'blue','in process':'amber','converted':'green','recycled':'slate','closed':'red'};
+const PRI_C  ={Urgent:'red',High:'amber',Normal:'blue',Low:'slate'};
+const TST_C  ={New:'blue',Assigned:'violet',Pending:'amber',Closed:'green',Rejected:'red',Duplicate:'slate'};
+const INV_C  ={Draft:'slate',Sent:'blue',Viewed:'violet',Paid:'green',Partially_Paid:'green',Overdue:'red',Pending:'amber',Cancelled:'slate'};
+const AGE_C  ={ontrack:'green',aging:'amber',stalled:'red'};
+const AGE_L  ={ontrack:'On track',aging:'Aging',stalled:'Stalled'};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const money=n=>'$'+n.toLocaleString('en-US');
+const initials=n=>n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const av=(n,s)=>`<span class="av"${s?` style="width:${s}px;height:${s}px;font-size:${(s*.38).toFixed(1)}px"`:''}>${esc(initials(n))}</span>`;
+const col=k=>C[k][state.theme==='dark'?1:0];
+const pill=(txt,k)=>`<span class="pill" style="color:${col(k)};background:color-mix(in srgb,${col(k)} 14%,transparent)">${esc(txt)}</span>`;
+const dotp=(txt,k)=>`<span class="pill" style="color:${col(k)};background:color-mix(in srgb,${col(k)} 12%,transparent)"><i class="dot" style="background:${col(k)}"></i>${esc(txt)}</span>`;
+
+const FIX={
+ nav:'Fixed: /leads appeared in the sidebar twice — as “Pipeline” and as “Leads” (AppSidebar.svelte:180,184). One destination, one entry. “Deals” now points at /opportunities, and /deals redirects instead of 404ing.',
+ count:'Fixed: counts were computed from the loaded page, not the result set — a 15-row list read “10 of 10”. Every total here comes from the API count.',
+ filt:'Fixed: segment pills + view tabs + inline dropdowns were three overlapping filter systems. One system: a saved view, then a removable chip per active filter.',
+ rec:'Fixed: a record opened as ~28 stacked label/value rows with no next step. The next action leads; fields move to the rail; the timeline is the body.',
+ work:'Fixed: an account was a form. It is now a workspace — open deals, people, tickets and invoices in one place, so you stop navigating away to answer a question.',
+ mob:'Fixed: CrmTable had no mobile branch and no overflow-x-auto, so seven list pages broke below md. Lists become cards; the rail becomes a sheet.',
+ aging:'Uses the aging chain that already exists — StageAgingConfig → aging_status on Opportunity. It is computed today but rendered in only one component.',
+ lead:'Leads have no aging chain at all — only deals do. “Quiet for N days” here needs the same StageAgingConfig treatment on Lead before it can ship.',
+ form:'Fixed: the create form asked for ~28 fields up front. Five are required; the rest sit behind a disclosure and can be filled from the record later.',
+ tot:'Fixed: these pills summed the loaded page. A 50-row invoice list showed pills adding up to 10.'
+};
+const ann=(n,tip)=>state.ann?`<span class="ann" data-tip="${esc(tip)}">${n}</span>`:'';
+
+/* ============================================================
+   SHARED CHROME
+   ============================================================ */
+function nav(active){
+  const L=(label,icon,count,key)=>`<a class="nlink${active===key?' on':''}"><span class="ic">${icon}</span>${label}${count?`<span class="ct">${count}</span>`:''}</a>`;
+  return `<nav class="nav">
+    <div class="org"><span class="mark">M</span><b>MicroPyramid</b></div>
+    ${L('Today','◎',null,'today')}
+    ${L('Inbox','✉','7','inbox')}
+    <div class="sec">Sell${ann(1,FIX.nav)}</div>
+    ${L('Pipeline','◫',String(T_DEALS),'pipeline')}
+    ${L('Leads','◈',String(T_LEADS),'leads')}
+    ${L('Accounts','▤',null,'accounts')}
+    ${L('Contacts','☺',null,'contacts')}
+    <div class="sec">Serve</div>
+    ${L('Tickets','◔',String(T_TICKETS),'tickets')}
+    ${L('Knowledge base','▣',null,'kb')}
+    <div class="sec">Bill</div>
+    ${L('Invoices','▦','3','invoices')}
+    ${L('Products','◧',null,'products')}
+    <div class="ftr"><a class="nlink"><span class="ic">⌕</span>Search<span class="ct">⌘K</span></a>
+      <a class="nlink"><span class="ic">⚙</span>Settings</a></div>
+  </nav>`;
+}
+const ph=(o)=>`<div class="ph">
+  <div style="min-width:0">${o.crumb?`<div class="crumb">${o.crumb}</div>`:''}
+    <h1>${o.title}</h1>${o.sub?`<div class="sub">${o.sub}</div>`:''}</div>
+  ${o.acts?`<div class="acts">${o.acts}</div>`:''}</div>`;
+
+const fbar=(view,chips,meta)=>`<div class="fbar">
+  <span class="viewsel">${esc(view)} <span class="mut" style="font-weight:400">▾</span></span>
+  ${chips.map(c=>`<span class="fchip"><b>${esc(c[0])}</b> ${esc(c[1])}<span class="x">×</span></span>`).join('')}
+  <span class="fchip add">+ Filter</span>
+  ${meta?`<span class="mut" style="font-size:12px;margin-left:auto">${meta}</span>`:''}</div>`;
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+const S={};
+
+/* ---------- 1 · TODAY ---------- */
+S.today={g:'Sell',n:'Today',r:'/',render:()=>`${nav('today')}<main>
+  ${ph({title:'Tuesday morning, Priya',sub:'Five things want you today. Two deals worth $51,400 have gone quiet — those are first.'})}
+  <div class="scroll"><div style="padding:14px var(--pad) 26px">
+    ${QUEUE.map(q=>`<div class="card" style="margin-bottom:8px"><div style="display:flex;gap:13px;padding:12px 15px;align-items:center">
+      <span style="width:3px;align-self:stretch;border-radius:3px;background:${col(q.k)};flex:none"></span>
+      <div style="flex:1;min-width:0"><div style="font-weight:640;letter-spacing:-.01em">${esc(q.t)}</div>
+        <div class="mut" style="font-size:calc(var(--fs) - 2px);margin-top:2px">${esc(q.d)}</div></div>
+      ${pill(q.w,q.k)}<button class="btn pri">${esc(q.a)}</button></div></div>`).join('')}
+    <p class="mut" style="font-size:12.5px;margin:15px 0 21px">That’s everything due today.</p>
+    <div class="lbl" style="margin-bottom:9px">Later this week</div>
+    ${[['Thu','Security addendum due back from Northwind','OPP-118 · you owe them this'],
+       ['Thu','Sundara Foods rollout call, 14:00','Ken presents, you are on pricing'],
+       ['Fri','Cedar Freight has been quiet 16 days','$9,400 · Qualification'],
+       ['Fri','8 invoices auto-send at 09:00','$41,200 across 6 accounts']].map(x=>`
+      <div style="display:flex;gap:13px;padding:9px 3px;border-bottom:1px solid var(--line2);align-items:baseline">
+        <span class="mut" style="font-size:11.5px;font-weight:650;width:26px;flex:none">${x[0]}</span>
+        <span style="flex:1;font-size:13.5px">${x[1]}</span>
+        <span class="mut" style="font-size:11.5px">${x[2]}</span></div>`).join('')}
+  </div></div></main>`};
+
+/* ---------- 2 · PIPELINE LIST ---------- */
+S.pipeline={g:'Sell',n:'Pipeline — list',r:'/opportunities',render:()=>`${nav('pipeline')}<main>
+  ${ph({title:'Pipeline',
+    sub:`<b class="num">${T_DEALS}</b> open deals · <b class="num">${money(T_VALUE)}</b> · <b class="num">${money(T_WEIGHTED)}</b> weighted${ann(2,FIX.count)}`,
+    acts:`<span class="btn gho">◫ Board</span><button class="btn">Export</button><button class="btn pri">New deal</button>`})}
+  ${fbar('My open deals',[['Owner','Priya Raman'],['Stage','is not Closed'],['Closing','this quarter']],`Sorted by value${ann(3,FIX.filt)}`)}
+  <div class="scroll"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Deal</th><th>Stage</th><th>Health</th><th class="r">Value</th><th>Closing</th><th>Last touch</th><th>Owner</th></tr></thead>
+    <tbody>${DEALS.slice(0,10).map(d=>{const i=STAGE_ORDER.indexOf(d.stage);return `<tr>
+      <td><div class="pri">${esc(d.name)}</div><div class="s2">${esc(d.acct)}</div></td>
+      <td><div class="smeter">${[0,1,2,3].map(k=>`<i class="${k<=Math.min(i,3)?'f':''}"></i>`).join('')}</div>
+          <div class="s2" style="margin-top:3px">${STAGE_LABEL[d.stage]}</div></td>
+      <td>${dotp(AGE_L[d.age],AGE_C[d.age])}</td>
+      <td class="r num" style="font-weight:600">${money(d.val)}</td>
+      <td>${d.close}</td>
+      <td>${d.touch>10?`<span style="color:${col('red')};font-weight:600">${d.touch} days ago</span>`:`<span class="mut">${d.touch} ${d.touch===1?'day':'days'} ago</span>`}</td>
+      <td>${av(d.owner,22)}</td></tr>`}).join('')}</tbody></table></div>
+    <p class="mut" style="font-size:12px;margin:0 var(--pad) 20px">Showing 10 of <b class="num">${T_DEALS}</b> · <a style="color:var(--accent)">Load more</a></p>
+  </div></main>`};
+
+/* ---------- 3 · PIPELINE BOARD ---------- */
+S.board={g:'Sell',n:'Pipeline — board',r:'/opportunities?view=board',render:()=>{
+  const lanes=['PROSPECTING','QUALIFICATION','PROPOSAL','NEGOTIATION'];
+  return `${nav('pipeline')}<main>
+  ${ph({title:'Pipeline',sub:`<b class="num">${T_DEALS}</b> open deals · <b class="num">${money(T_VALUE)}</b>`,
+    acts:`<span class="btn" style="border-color:var(--accent);color:var(--accent)">◫ Board</span><button class="btn gho">☰ List</button><button class="btn pri">New deal</button>`})}
+  ${fbar('My open deals',[['Owner','Priya Raman'],['Closing','this quarter']],`Drag a card to move a stage${ann(7,FIX.aging)}`)}
+  <div class="board">${lanes.map(l=>{
+    const rows=DEALS.filter(d=>d.stage===l);const sum=rows.reduce((a,b)=>a+b.val,0);
+    return `<div class="lane">
+      <div class="lh"><span class="dot" style="background:${col(STAGE_C[l])}"></span>
+        <span class="t">${STAGE_LABEL[l]}</span><span class="n">${rows.length} · ${money(sum)}</span></div>
+      <div class="lbody">${rows.map(d=>`<div class="dcard">
+        <div class="t">${esc(d.name)}</div><div class="a">${esc(d.acct)}</div>
+        <div style="margin-top:9px">${dotp(AGE_L[d.age],AGE_C[d.age])}</div>
+        <div class="ft">${av(d.owner,21)}<span class="num" style="font-weight:600">${money(d.val)}</span>
+          <span class="mut" style="margin-left:auto;font-size:11.5px">${d.close}</span></div></div>`).join('')}
+        <div class="dcard" style="border-style:dashed;text-align:center;color:var(--dim);font-size:12.5px;background:transparent">+ New deal</div>
+      </div></div>`}).join('')}
+    <div class="lane" style="width:190px">
+      <div class="lh"><span class="dot" style="background:${col('green')}"></span><span class="t">Closed</span></div>
+      <div class="lbody"><div class="dcard" style="background:transparent">
+        <div class="mut" style="font-size:12px">This quarter</div>
+        <div class="num" style="font-size:19px;font-weight:640;margin-top:3px">${money(112400)}</div>
+        <div class="mut" style="font-size:12px;margin-top:9px">12 won · 5 lost</div>
+        <button class="btn sm" style="margin-top:10px;width:100%;justify-content:center">Show closed</button></div></div>
+    </div>
+  </div></main>`}};
+
+/* ---------- 4 · DEAL RECORD ---------- */
+S.deal={g:'Sell',n:'Deal record',r:'/opportunities/[id]',render:()=>{
+  const d=DEALS[0];const i=STAGE_ORDER.indexOf(d.stage);
+  return `${nav('pipeline')}<main>
+  ${ph({crumb:'Pipeline / Northwind Traders',title:esc(d.name),
+    acts:`<button class="btn">Edit</button><button class="btn">▸ Move stage</button><button class="btn pri">Log activity</button>`})}
+  <div style="padding:13px var(--pad) 0;display:flex;gap:7px;align-items:center;flex:none">
+    ${STAGE_ORDER.slice(0,4).map((s,k)=>`<span class="pill" style="${k<=i
+      ?`color:${col('green')};background:color-mix(in srgb,${col('green')} 14%,transparent)`
+      :'color:var(--dim);background:var(--line2)'}">${k<i?'✓ ':''}${STAGE_LABEL[s]}</span>`).join('<span class="mut" style="font-size:11px">→</span>')}
+    <span style="margin-left:auto">${dotp('Stalled 12 days in Negotiation','red')}</span></div>
+  <div class="scroll"><div style="padding:13px var(--pad) 26px">
+    <div class="strip" style="margin-bottom:16px">
+      <div style="flex:1"><div class="lbl">Next action${ann(4,FIX.rec)}</div>
+        <div class="st-t">Call Kavi about the legal review — nobody has since 16 July.</div></div>
+      <button class="btn pri">Log a call</button><button class="btn">Snooze</button></div>
+    <div class="lbl" style="margin-bottom:11px">Activity</div>
+    <div class="tl">${THREAD.map((e,k)=>`<div class="ev${k===0?' hi':''}">
+      <div style="font-weight:500">${esc(e.x)}</div>
+      <div class="em">${esc(e.t)}${e.who?' · '+esc(e.who):''}</div></div>`).join('')}</div>
+    <div class="lbl" style="margin:18px 0 9px">Line items</div>
+    <div class="card" style="overflow:hidden"><table class="tbl">
+      <thead><tr><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Platform licence — 3 year</td><td class="r num">120</td><td class="r num">$280</td><td class="r num">$33,600</td></tr>
+        <tr><td>Onboarding &amp; migration</td><td class="r num">1</td><td class="r num">$6,000</td><td class="r num">$6,000</td></tr>
+        <tr><td>Priority support</td><td class="r num">1</td><td class="r num">$2,400</td><td class="r num">$2,400</td></tr>
+      </tbody></table>
+      <div style="display:flex;justify-content:flex-end;gap:22px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px">
+        <span class="mut">Discount 8%</span><span class="mut num">−$3,652</span>
+        <span style="font-weight:640">Total</span><span class="num" style="font-weight:640">${money(d.val)}</span></div>
+    </div>
+  </div></div></main>
+  <aside class="rail">
+    <div class="lbl rh">Deal</div>
+    <dl class="kv"><dt>Stage</dt><dd>${STAGE_LABEL[d.stage]}</dd><dt>Value</dt><dd class="num">${money(d.val)}</dd>
+      <dt>Probability</dt><dd class="num">${d.prob}%</dd><dt>Closing</dt><dd>${d.close}</dd>
+      <dt>Type</dt><dd>Renewal</dd><dt>Source</dt><dd>Existing customer</dd><dt>Owner</dt><dd>${esc(d.owner)}</dd></dl>
+    <div class="lbl rh">People</div>
+    ${PEOPLE.map(p=>`<div class="rrow">${av(p.n,26)}<div><div style="font-size:12.5px;font-weight:550">${esc(p.n)}</div>
+      <div class="mut" style="font-size:11px">${esc(p.r)}</div></div></div>`).join('')}
+    <div class="lbl rh">Attached</div>
+    ${ARTIFACTS.map(a=>`<div class="rrow"><span class="dot" style="background:${col(a.c)};margin-top:6px"></span>
+      <div><div style="font-size:12.5px;font-weight:550">${esc(a.t)}</div><div class="mut" style="font-size:11px">${esc(a.d)}</div></div></div>`).join('')}
+  </aside>`}};
+
+/* ---------- 5 · LEADS LIST ---------- */
+S.leads={g:'Sell',n:'Leads — list',r:'/leads',render:()=>`${nav('leads')}<main>
+  ${ph({title:'Leads',sub:`<b class="num">${T_LEADS}</b> open · 6 unworked for more than a week`,
+    acts:`<button class="btn">Import</button><button class="btn pri">New lead</button>`})}
+  ${fbar('Unworked leads',[['Status','Assigned or In process'],['Owner','anyone']],`Sorted by age${ann(3,FIX.filt)}`)}
+  <div class="scroll"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Lead</th><th>Company</th><th>Status</th><th>Source</th><th class="r">Est. value</th><th>Last touch</th><th>Owner</th></tr></thead>
+    <tbody>${LEADS.map(l=>`<tr>
+      <td><div class="pri">${esc(l.name)}</div><div class="s2">${esc(l.title)}</div></td>
+      <td>${esc(l.co)}<div class="s2">${esc(l.ind)}</div></td>
+      <td>${pill(l.status,LEAD_C[l.status])}</td>
+      <td class="mut" style="font-size:12.5px">${esc(l.src)}</td>
+      <td class="r num">${l.amt?money(l.amt):'—'}</td>
+      <td>${l.touch>13?`<span style="color:${col('red')};font-weight:600">${l.touch}d ago</span>`
+            :l.touch===0?`<span class="mut">today</span>`:`<span class="mut">${l.touch}d ago</span>`}</td>
+      <td>${av(l.owner,22)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="mut" style="font-size:12px;margin:0 var(--pad) 20px">Showing 8 of <b class="num">${T_LEADS}</b>${ann(8,FIX.lead)}</p>
+  </div></main>`};
+
+/* ---------- 6 · LEAD RECORD ---------- */
+S.lead={g:'Sell',n:'Lead record + convert',r:'/leads/[id]',render:()=>`${nav('leads')}<main>
+  ${ph({crumb:'Leads / Northwind Traders',title:'Kavi Menon',
+    acts:`<button class="btn">Edit</button><button class="btn">Recycle</button><button class="btn pri">Convert</button>`})}
+  <div class="scroll"><div style="padding:13px var(--pad) 26px">
+    <div class="strip" style="margin-bottom:16px">
+      <div style="flex:1"><div class="lbl">Next action</div>
+        <div class="st-t">Confirm budget with Dana, then convert — three of four qualification checks pass.</div></div>
+      <button class="btn pri">Log a call</button></div>
+    <div class="card" style="padding:14px 15px;margin-bottom:16px">
+      <div class="lbl" style="margin-bottom:11px">Ready to convert?</div>
+      ${[['Decision maker identified','Kavi Menon · Head of Operations',true],
+         ['Need confirmed','Replacing a spreadsheet-based rota',true],
+         ['Timing','Wants to be live before the August renewal',true],
+         ['Budget confirmed','Dana has not given a number yet',false]].map(x=>`
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0">
+          <span style="color:${x[2]?col('green'):col('amber')};font-size:14px;line-height:1.3">${x[2]?'✓':'○'}</span>
+          <div><div style="font-size:13px;font-weight:550">${x[0]}</div>
+            <div class="mut" style="font-size:12px">${x[1]}</div></div></div>`).join('')}
+      <div style="border-top:1px solid var(--line);margin-top:11px;padding-top:12px;display:flex;align-items:center;gap:12px">
+        <div class="mut" style="font-size:12.5px;flex:1;line-height:1.5">Converting creates an <b style="color:var(--ink)">account</b>, a <b style="color:var(--ink)">contact</b> and one <b style="color:var(--ink)">deal</b> worth $42,000. The lead stays linked.</div>
+        <button class="btn pri">Convert lead</button></div>
+    </div>
+    <div class="lbl" style="margin-bottom:11px">Activity</div>
+    <div class="tl">
+      <div class="ev hi"><div style="font-weight:500">Asked for a security questionnaire and a reference in logistics.</div><div class="em">Today 08:40 · Priya Raman</div></div>
+      <div class="ev"><div style="font-weight:500">Status moved from Assigned to In process</div><div class="em">21 Jul</div></div>
+      <div class="ev"><div style="font-weight:500">Replied to the August campaign — 40 users, 3 sites.</div><div class="em">19 Jul · inbound email</div></div>
+      <div class="ev"><div style="font-weight:500">Lead created from campaign “Ops teams — August”</div><div class="em">18 Jul</div></div>
+    </div>
+  </div></div></main>
+  <aside class="rail">
+    <div class="lbl rh">Lead</div>
+    <dl class="kv"><dt>Status</dt><dd>${pill('in process','amber')}</dd><dt>Source</dt><dd>existing customer</dd>
+      <dt>Title</dt><dd>Head of Operations</dd><dt>Company</dt><dd>Northwind Traders</dd>
+      <dt>Industry</dt><dd>Logistics</dd><dt>Est. value</dt><dd class="num">$42,000</dd>
+      <dt>Email</dt><dd style="font-size:12px">kavi@northwind.example</dd><dt>Phone</dt><dd class="num">+44 20 7946 0114</dd>
+      <dt>Website</dt><dd style="font-size:12px">northwind.example</dd><dt>Owner</dt><dd>Priya Raman</dd></dl>
+    <div class="lbl rh">Also at this company</div>
+    <div class="rrow">${av('Dana Whitfield',26)}<div><div style="font-size:12.5px;font-weight:550">Dana Whitfield</div>
+      <div class="mut" style="font-size:11px">CFO · separate lead, same company</div></div></div>
+    <div class="card" style="padding:10px 11px;font-size:12px;line-height:1.5;background:var(--paper)">
+      <b>Possible duplicate.</b> Two leads share northwind.example. Merge them, or link both to one account on convert.</div>
+  </aside>`};
+
+/* ---------- 7 · ACCOUNT WORKSPACE ---------- */
+S.account={g:'Sell',n:'Account workspace',r:'/accounts/[id]',render:()=>`${nav('accounts')}<main>
+  ${ph({crumb:'Accounts',title:'Northwind Traders',
+    sub:'Logistics · 240 staff · customer since March 2023 · renews every August',
+    acts:`<button class="btn">Edit</button><button class="btn pri">Log activity</button>`})}
+  <div class="scroll"><div style="padding:14px var(--pad) 26px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px">
+      ${[['Lifetime value',money(96400),'green','Across 3 closed deals'],['Open pipeline',money(42000),'violet','One deal, closes 8 Aug'],
+         ['Overdue',money(12800),'red','INV-2043 · 9 days'],['Open tickets','1','amber','#418 · Urgent']].map(x=>`
+        <div class="card" style="padding:12px 13px"><div class="lbl">${x[0]}</div>
+          <div class="num" style="font-size:19px;font-weight:640;margin-top:3px;color:${col(x[2])}">${x[1]}</div>
+          <div class="mut" style="font-size:11px;margin-top:2px">${x[3]}</div></div>`).join('')}
+    </div>
+    <div class="strip" style="margin-bottom:16px">
+      <div style="flex:1"><div class="lbl">Next action${ann(5,FIX.work)}</div>
+        <div class="st-t">The renewal is stalled and an invoice is 9 days past due — same account, two problems.</div></div>
+      <button class="btn pri">Open the deal</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card" style="overflow:hidden">
+        <div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)">
+          <span class="lbl">Deals</span><a class="mut" style="margin-left:auto;font-size:12px">View all 3</a></div>
+        ${DEALS.filter(d=>d.acct==='Northwind Traders').concat([
+          {name:'Fleet module',stage:'CLOSED_WON',val:24000,close:'Aug 2025',age:'ontrack'},
+          {name:'Initial licence',stage:'CLOSED_WON',val:30400,close:'Mar 2023',age:'ontrack'}]).map(d=>`
+          <div style="display:flex;gap:11px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line2)">
+            <div style="flex:1"><div style="font-weight:550;font-size:13px">${esc(d.name)}</div>
+              <div class="mut" style="font-size:11.5px">${STAGE_LABEL[d.stage]} · ${d.close}</div></div>
+            <span class="num" style="font-weight:600;font-size:13px">${money(d.val)}</span></div>`).join('')}
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)">
+          <span class="lbl">People</span><a class="mut" style="margin-left:auto;font-size:12px">View all 6</a></div>
+        ${PEOPLE.map(p=>`<div style="display:flex;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line2)">
+          ${av(p.n,28)}<div style="flex:1"><div style="font-weight:550;font-size:13px">${esc(p.n)}</div>
+            <div class="mut" style="font-size:11.5px">${esc(p.r)}</div></div>
+          <span class="btn sm">✉</span><span class="btn sm">☎</span></div>`).join('')}
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)">
+          <span class="lbl">Tickets</span><a class="mut" style="margin-left:auto;font-size:12px">View all</a></div>
+        ${[['418','SSO login loop after password reset','Urgent'],['390','Rota export times out','Normal']].map(t=>`
+          <div style="display:flex;gap:11px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line2)">
+            <span class="mut num" style="font-size:12px">#${t[0]}</span>
+            <span style="flex:1;font-size:13px">${t[1]}</span>${pill(t[2],PRI_C[t[2]])}</div>`).join('')}
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)">
+          <span class="lbl">Invoices</span><a class="mut" style="margin-left:auto;font-size:12px">View all</a></div>
+        ${[['INV-2043','Overdue',12800],['INV-2055','Sent',42000],['INV-1988','Paid',30400]].map(iv=>`
+          <div style="display:flex;gap:11px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line2)">
+            <span class="num" style="font-size:12.5px">${iv[0]}</span>${pill(iv[1].replace('_',' '),INV_C[iv[1]])}
+            <span class="num" style="margin-left:auto;font-weight:600;font-size:13px">${money(iv[2])}</span></div>`).join('')}
+      </div>
+    </div>
+  </div></div></main>`};
+
+/* ---------- 8 · TICKETS QUEUE ---------- */
+S.tickets={g:'Serve',n:'Tickets — queue',r:'/tickets',render:()=>`${nav('tickets')}<main>
+  ${ph({title:'Tickets',sub:`<b class="num">${T_TICKETS}</b> open · 1 urgent · 2 breach their first-response target today`,
+    acts:`<button class="btn">Approvals</button><button class="btn">Analytics</button><button class="btn pri">New ticket</button>`})}
+  ${fbar('Open, by priority',[['Status','is not Closed'],['Team','Support']],`First response target 1h${ann(3,FIX.filt)}`)}
+  <div class="scroll"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th style="width:52px">#</th><th>Subject</th><th>Priority</th><th>Status</th><th>Type</th><th>Account</th><th>Assignee</th><th class="r">Age</th><th style="width:104px">First reply</th></tr></thead>
+    <tbody>${TICKETS.map(t=>`<tr>
+      <td class="mut num" style="font-size:12.5px">${t.id}</td>
+      <td><div class="pri">${esc(t.name)}</div></td>
+      <td>${pill(t.pri,PRI_C[t.pri])}</td>
+      <td>${pill(t.st,TST_C[t.st])}</td>
+      <td class="mut" style="font-size:12.5px">${t.type}</td>
+      <td class="mut" style="font-size:12.5px">${esc(t.acct)}</td>
+      <td>${t.who==='—'?'<span class="mut">Unassigned</span>':av(t.who,22)}</td>
+      <td class="r num mut">${t.age}</td>
+      <td><div style="display:flex;align-items:center;gap:7px">
+        <span style="flex:1;height:4px;border-radius:3px;background:var(--line2);overflow:hidden">
+          <i style="display:block;height:100%;width:${Math.round(t.sla*100)}%;background:${col(t.sla>.7?'red':t.sla>.45?'amber':'green')}"></i></span>
+        <span class="num mut" style="font-size:11px">${t.fr}</span></div></td></tr>`).join('')}</tbody></table></div>
+    <p class="mut" style="font-size:12px;margin:0 var(--pad) 20px">Showing 7 of <b class="num">${T_TICKETS}</b></p>
+  </div></main>`};
+
+/* ---------- 9 · TICKET RECORD ---------- */
+S.ticket={g:'Serve',n:'Ticket record',r:'/tickets/[id]',render:()=>`${nav('tickets')}<main>
+  ${ph({crumb:'Tickets / Meridian Health',title:'SSO login loop after password reset',
+    acts:`<button class="btn">Escalate</button><button class="btn">Close</button><button class="btn pri">Reply</button>`})}
+  <div style="padding:12px var(--pad) 0;display:flex;gap:7px;align-items:center;flex:none">
+    ${pill('Urgent','red')}${pill('Assigned','violet')}${pill('Incident','blue')}
+    <span class="mut" style="font-size:12.5px">#418 · opened 3h ago · first reply in 12m</span></div>
+  <div class="scroll"><div style="padding:14px var(--pad) 26px">
+    <div class="strip" style="margin-bottom:16px">
+      <div style="flex:1"><div class="lbl">Next action</div>
+        <div class="st-t">Engineering confirmed the fix ships at 14:00. Tell Amara, then set the ticket to Pending.</div></div>
+      <button class="btn pri">Reply with update</button></div>
+    ${[['Amara Osei','Meridian Health','3h ago',
+        'Since this morning nobody can log in through SSO after a password reset — it bounces between our IdP and the app. Forty staff are locked out.','in'],
+       ['Priya Raman','Support','2h 48m ago',
+        'Thanks Amara — reproduced it. It affects accounts whose password changed after the 26 Jul release. Engineering is on it; I will update you within the hour.','out'],
+       ['Amara Osei','Meridian Health','1h ago','Any update? We have a shift change at 14:00.','in']].map(m=>`
+      <div style="display:flex;gap:11px;margin-bottom:13px;${m[4]==='out'?'flex-direction:row-reverse':''}">
+        ${av(m[0],30)}
+        <div class="card" style="padding:11px 13px;max-width:70%;${m[4]==='out'?`background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 24%,transparent)`:''}">
+          <div style="font-size:11.5px;color:var(--dim);margin-bottom:4px"><b style="color:var(--ink);font-weight:600">${m[0]}</b> · ${m[1]} · ${m[2]}</div>
+          <div style="font-size:calc(var(--fs) - 1px);line-height:1.55">${m[3]}</div></div></div>`).join('')}
+    <div class="card" style="padding:12px 13px;margin-top:16px">
+      <div class="inp ph" style="border:0;padding:0;margin-bottom:11px">Write a reply…</div>
+      <div style="display:flex;gap:7px;align-items:center;border-top:1px solid var(--line);padding-top:11px">
+        <button class="btn sm">⚡ Macro</button><button class="btn sm">▣ Insert article</button><button class="btn sm">📎 Attach</button>
+        <span class="mut" style="margin-left:auto;font-size:11.5px">Status on send</span>
+        <span class="btn sm">Pending ▾</span><button class="btn pri">Send reply</button></div></div>
+  </div></div></main>
+  <aside class="rail">
+    <div class="lbl rh">Ticket</div>
+    <dl class="kv"><dt>Priority</dt><dd>${pill('Urgent','red')}</dd><dt>Status</dt><dd>${pill('Assigned','violet')}</dd>
+      <dt>Type</dt><dd>Incident</dd><dt>Assignee</dt><dd>Priya Raman</dd>
+      <dt>Opened</dt><dd>Today 06:14</dd><dt>First reply</dt><dd class="num">12m</dd></dl>
+    <div class="lbl rh">Account</div>
+    <div class="rrow">${av('Meridian Health',28)}<div><div style="font-size:12.5px;font-weight:550">Meridian Health</div>
+      <div class="mut" style="font-size:11px">Paid ${money(31000)} · closed 24 Jul</div></div></div>
+    <div class="rrow">${av('Amara Osei',26)}<div><div style="font-size:12.5px;font-weight:550">Amara Osei</div>
+      <div class="mut" style="font-size:11px">IT Manager · reporter</div></div></div>
+    <div class="lbl rh">Suggested articles</div>
+    ${[['SSO redirect loops after a password change','Updated 3 days ago'],
+       ['Forcing a session reset for one user','Updated 2 weeks ago']].map(a=>`
+      <div class="rrow"><span class="dot" style="background:${col('blue')};margin-top:6px"></span>
+        <div><div style="font-size:12.5px;font-weight:550;line-height:1.35">${a[0]}</div>
+          <div class="mut" style="font-size:11px">${a[1]}</div></div></div>`).join('')}
+    <div class="lbl rh">Also open here</div>
+    <div class="mut" style="font-size:12px;line-height:1.5">#390 Rota export times out — Normal, 6 days old</div>
+  </aside>`};
+
+/* ---------- 10 · INVOICES LIST ---------- */
+S.invoices={g:'Bill',n:'Invoices — list',r:'/invoices',render:()=>{
+  const buckets=[['Overdue',19600,'red'],['Due this month',68500,'amber'],['Paid this quarter',112400,'green'],['Draft',18400,'slate']];
+  return `${nav('invoices')}<main>
+  ${ph({title:'Invoices',sub:`<b class="num">50</b> invoices · <b class="num">${money(218900)}</b> outstanding${ann(9,FIX.tot)}`,
+    acts:`<button class="btn">Estimates</button><button class="btn">Recurring</button><button class="btn pri">New invoice</button>`})}
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;padding:14px var(--pad) 0;flex:none">
+    ${buckets.map(b=>`<div class="card" style="padding:12px 13px"><div class="lbl">${b[0]}</div>
+      <div class="num" style="font-size:19px;font-weight:640;margin-top:3px;color:${col(b[2])}">${money(b[1])}</div></div>`).join('')}
+  </div>
+  ${fbar('Outstanding',[['Status','is not Paid'],['Due','before 31 Aug']],'Sorted by days overdue')}
+  <div class="scroll"><div class="tblwrap"><table class="tbl">
+    <thead><tr><th>Invoice</th><th>Account</th><th>Status</th><th class="r">Amount</th><th>Due</th><th class="r">Age</th><th style="width:120px"></th></tr></thead>
+    <tbody>${INVOICES.map(iv=>`<tr>
+      <td class="pri num" style="font-size:13px">${iv.no}</td>
+      <td>${esc(iv.acct)}</td>
+      <td>${pill(iv.st.replace('_',' '),INV_C[iv.st])}</td>
+      <td class="r num" style="font-weight:600">${money(iv.amt)}</td>
+      <td>${iv.due}</td>
+      <td class="r num ${iv.days>0?'':'mut'}" style="${iv.days>0?`color:${col('red')};font-weight:600`:''}">${iv.days===null?'—':iv.days>0?iv.days+'d late':Math.abs(iv.days)+'d left'}</td>
+      <td>${iv.st==='Overdue'?'<button class="btn sm">Send reminder</button>':iv.st==='Draft'?'<button class="btn sm">Send</button>':''}</td></tr>`).join('')}</tbody></table></div>
+    <p class="mut" style="font-size:12px;margin:0 var(--pad) 20px">Showing 7 of <b class="num">50</b></p>
+  </div></main>`}};
+
+/* ---------- 11 · INVOICE RECORD ---------- */
+S.invoice={g:'Bill',n:'Invoice record',r:'/invoices/[id]',render:()=>`${nav('invoices')}<main>
+  ${ph({crumb:'Invoices / Bluepeak Logistics',title:'INV-2043',
+    acts:`<button class="btn">Download PDF</button><button class="btn">Record payment</button><button class="btn pri">Send reminder</button>`})}
+  <div class="scroll"><div style="padding:14px var(--pad) 26px">
+    <div class="strip" style="margin-bottom:16px;background:color-mix(in srgb,${col('red')} 9%,transparent);border-color:color-mix(in srgb,${col('red')} 26%,transparent)">
+      <div style="flex:1"><div class="lbl" style="color:${col('red')}">9 days past due</div>
+        <div class="st-t">Two reminders sent, no reply. Rana opened it on 21 July.</div></div>
+      <button class="btn pri">Send reminder</button><button class="btn">Call Rana</button></div>
+    <div style="display:flex;gap:5px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+      ${['Draft','Sent','Viewed','Overdue'].map((s,k)=>`<span class="pill" style="${k<=3
+        ?`color:${col(INV_C[s])};background:color-mix(in srgb,${col(INV_C[s])} 14%,transparent)`
+        :'color:var(--dim);background:var(--line2)'}">${s}</span>`).join('<span class="mut" style="font-size:11px">→</span>')}
+      <span class="pill" style="color:var(--dim);background:var(--line2)">Paid</span>
+      <span class="mut" style="font-size:12px;margin-left:8px">Sent 5 Jul · viewed 21 Jul · due 19 Jul</span></div>
+    <div class="card" style="overflow:hidden;margin-bottom:16px"><table class="tbl">
+      <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Tax</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>API add-on — annual<div class="s2">1 Aug 2026 – 31 Jul 2027</div></td><td class="r num">1</td><td class="r num">$7,250</td><td class="r num">20%</td><td class="r num">$8,700</td></tr>
+        <tr><td>Additional 20 seats<div class="s2">Pro-rated from 1 Jul</div></td><td class="r num">20</td><td class="r num">$155</td><td class="r num">20%</td><td class="r num">$3,720</td></tr>
+        <tr><td>Implementation support</td><td class="r num">2</td><td class="r num">$160</td><td class="r num">20%</td><td class="r num">$384</td></tr>
+      </tbody></table></div>
+    <div style="display:flex;justify-content:flex-end"><dl class="kv" style="grid-template-columns:150px 110px;width:260px">
+      <dt>Subtotal</dt><dd class="num" style="text-align:right">$10,670</dd>
+      <dt>Tax (20%)</dt><dd class="num" style="text-align:right">$2,134</dd>
+      <dt style="color:var(--ink);font-weight:600">Total due</dt><dd class="num" style="text-align:right;font-weight:700;font-size:16px">$12,800</dd>
+      <dt>Paid</dt><dd class="num" style="text-align:right">$0.00</dd></dl></div>
+  </div></div></main>
+  <aside class="rail">
+    <div class="lbl rh">Invoice</div>
+    <dl class="kv"><dt>Status</dt><dd>${pill('Overdue','red')}</dd><dt>Number</dt><dd class="num">INV-2043</dd>
+      <dt>Issued</dt><dd>5 Jul 2026</dd><dt>Due</dt><dd>19 Jul 2026</dd>
+      <dt>Terms</dt><dd>Net 14</dd><dt>Currency</dt><dd>USD</dd></dl>
+    <div class="lbl rh">Bill to</div>
+    <div class="mut" style="font-size:12.5px;line-height:1.65">Bluepeak Logistics<br>Rana Haddad, Finance<br>rana@bluepeak.example<br>Unit 4, Dock Road<br>Liverpool L3 4BQ</div>
+    <div class="lbl rh">Reminders</div>
+    ${[['First reminder','20 Jul · opened'],['Second reminder','25 Jul · opened'],['Next automatic','1 Aug · weekly until paid']].map(r=>`
+      <div class="rrow"><span class="dot" style="background:${col('amber')};margin-top:6px"></span>
+        <div><div style="font-size:12.5px;font-weight:550">${r[0]}</div><div class="mut" style="font-size:11px">${r[1]}</div></div></div>`).join('')}
+    <div class="lbl rh">Linked</div>
+    <div class="mut" style="font-size:12.5px;line-height:1.6">Deal OPP-131 — API add-on<br>Ticket #416 — missing tax line</div>
+  </aside>`};
+
+/* ---------- 12 · NEW DEAL ---------- */
+S.create={g:'Flows',n:'New deal',r:'/opportunities/new',render:()=>`${nav('pipeline')}<main>
+  ${ph({crumb:'Pipeline',title:'New deal',acts:`<button class="btn">Cancel</button><button class="btn pri">Create deal</button>`})}
+  <div class="scroll"><div style="padding:16px var(--pad) 26px"><div class="form">
+    <p class="mut" style="font-size:13px;margin:0 0 20px;line-height:1.55">Five fields to create it. Everything else can wait until you know it.${ann(10,FIX.form)}</p>
+    <div class="fld"><label>Deal name</label><div class="inp">Platform renewal</div></div>
+    <div class="fld"><label>Account</label>
+      <div class="inp"><span class="av" style="width:20px;height:20px;font-size:8px">NT</span>Northwind Traders</div>
+      <div class="hint">Not in the list? <a style="color:var(--accent)">Create the account as you go</a> — you can fill in its details later.</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+      <div class="fld"><label>Value</label><div class="inp"><span class="mut">$</span>42,000</div></div>
+      <div class="fld"><label>Expected close</label><div class="inp bad">8 Jul 2026</div>
+        <div class="err"><span>⚠</span><span>That date has passed. Pick a date on or after 28 July 2026.</span></div></div>
+    </div>
+    <div class="fld"><label>Stage</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${STAGE_ORDER.slice(0,4).map((s,k)=>`
+        <span class="pill" style="${k===3?`color:${col('violet')};background:color-mix(in srgb,${col('violet')} 15%,transparent);box-shadow:inset 0 0 0 1px ${col('violet')}`:'color:var(--dim);background:var(--line2)'};cursor:pointer;padding:5px 12px">${STAGE_LABEL[s]}</span>`).join('')}</div>
+      <div class="hint">Probability follows the stage — Negotiation sets it to 70%. Override it on the record.</div></div>
+    <div class="disc">
+      <div style="display:flex;align-items:center;gap:9px;cursor:pointer">
+        <span class="mut">▸</span><span style="font-weight:600;font-size:13px">More fields</span>
+        <span class="mut" style="font-size:12px">Type, source, teams, tags, currency, description — 11 more</span></div>
+    </div>
+    <div class="card" style="margin-top:18px;padding:12px 14px;background:var(--paper)">
+      <div class="lbl" style="margin-bottom:7px">On create</div>
+      <div class="mut" style="font-size:12.5px;line-height:1.6">Assigned to you · added to <b style="color:var(--ink)">My open deals</b> ·
+        Kavi Menon and Dana Whitfield linked from the account · a task to send the quote is created, due in 2 days.</div></div>
+  </div></div></div></main>`};
+
+/* ---------- 13 · COMMAND PALETTE ---------- */
+S.palette={g:'Flows',n:'Search — ⌘K',r:'overlay',render:()=>`${S.pipeline.render()}
+  <div class="scrim"><div class="pal">
+    <div class="palin"><span class="mut">⌕</span><span>northw</span><span style="width:1px;height:17px;background:var(--accent)"></span>
+      <span class="mut" style="margin-left:auto;font-size:11.5px">14 results</span></div>
+    <div class="palg">Deals</div>
+    <div class="palr on"><span class="dot" style="background:${col('violet')}"></span>Platform renewal<span class="mut">· Northwind Traders</span><span class="m num">$42,000 · Negotiation</span></div>
+    <div class="palr"><span class="dot" style="background:${col('green')}"></span>Fleet module<span class="mut">· Northwind Traders</span><span class="m num">$24,000 · Closed Won</span></div>
+    <div class="palg">Accounts &amp; people</div>
+    <div class="palr">${av('Northwind Traders',20)}Northwind Traders<span class="m">Logistics · 6 contacts</span></div>
+    <div class="palr">${av('Kavi Menon',20)}Kavi Menon<span class="mut">· Head of Operations</span><span class="m">Northwind Traders</span></div>
+    <div class="palg">Actions</div>
+    <div class="palr"><span class="mut">＋</span>New deal for Northwind Traders<span class="m"><span class="kbd">⏎</span></span></div>
+    <div class="palr"><span class="mut">☎</span>Log a call with Kavi Menon<span class="m"><span class="kbd">⌘L</span></span></div>
+    <div class="palftr"><span><span class="kbd">↑↓</span> move</span><span><span class="kbd">⏎</span> open</span>
+      <span><span class="kbd">⌘⏎</span> open in a new tab</span><span style="margin-left:auto"><span class="kbd">esc</span> close</span></div>
+  </div></div>`};
+
+/* ---------- 14 · STATES ---------- */
+S.states={g:'Flows',n:'Empty & error',r:'—',render:()=>`${nav('pipeline')}<main>
+  ${ph({title:'Pipeline',sub:'No open deals yet'})}
+  <div class="scroll"><div style="padding:0 var(--pad) 26px">
+    <div class="state">
+      <div class="ico">◫</div>
+      <h3>No open deals yet</h3>
+      <p>A deal tracks one opportunity to sell, from first conversation to signature. Create one, or convert a lead you have already spoken to.</p>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn pri">New deal</button><button class="btn">Convert a lead</button></div>
+    </div>
+    <div style="max-width:660px;margin:0 auto;display:grid;gap:12px">
+      <div class="card" style="padding:14px 15px;display:flex;gap:13px;align-items:flex-start">
+        <span style="color:${col('amber')};font-size:16px;line-height:1.2">⚠</span>
+        <div style="flex:1"><div style="font-weight:600;margin-bottom:3px">Deals did not load</div>
+          <div class="mut" style="font-size:12.5px;line-height:1.55">The request timed out after 30 seconds. Your filters are still applied.</div></div>
+        <button class="btn">Try again</button></div>
+      <div class="card" style="padding:14px 15px;display:flex;gap:13px;align-items:flex-start">
+        <span style="color:${col('slate')};font-size:16px;line-height:1.2">🔒</span>
+        <div style="flex:1"><div style="font-weight:600;margin-bottom:3px">You cannot see this deal</div>
+          <div class="mut" style="font-size:12.5px;line-height:1.55">It belongs to another team. Ask an admin to add you, or ask Priya Raman to reassign it.</div></div>
+        <button class="btn">Request access</button></div>
+      <div class="card" style="padding:14px 15px;display:flex;gap:13px;align-items:flex-start">
+        <span style="color:${col('blue')};font-size:16px;line-height:1.2">◷</span>
+        <div style="flex:1"><div style="font-weight:600;margin-bottom:3px">No deals match these filters</div>
+          <div class="mut" style="font-size:12.5px;line-height:1.55">Owner is Priya Raman, stage is Negotiation, closing this week.</div></div>
+        <button class="btn">Clear filters</button></div>
+    </div>
+    <p class="mut" style="text-align:center;font-size:11.5px;margin-top:22px;line-height:1.6">Every state names what happened and what to do next.<br>No apologies, no dead ends, no “Something went wrong.”</p>
+  </div></div></main>`};
+
+/* ---------- 15 · DESIGN SYSTEM ---------- */
+S.ds={g:'Foundations',n:'Design system',r:'—',render:()=>{
+  const tk=[['Paper','--paper','var(--paper)'],['Surface','--surf','var(--surf)'],['Line','--line','var(--line)'],
+            ['Ink','--ink','var(--ink)'],['Dim','--dim','var(--dim)'],['Accent','--accent','var(--accent)']];
+  const sem=[['Slate','slate','Neutral, prospecting, low priority'],['Blue','blue','Informational, new, qualification'],
+             ['Amber','amber','Attention, proposal, aging, pending'],['Violet','violet','In flight, negotiation, assigned'],
+             ['Green','green','Good, won, paid, on track'],['Red','red','Overdue, stalled, urgent, lost']];
+  return `${nav('')}<main>
+  ${ph({title:'Design system',sub:'Six semantic colours, one type scale, eight components. Every status enum in the product maps onto this.'})}
+  <div class="scroll"><div class="ds">
+    <h3>Surface tokens</h3>
+    <div class="swat">${tk.map(t=>`<div class="sw1"><div class="c" style="background:${t[2]}"></div>
+      <div class="m"><b>${t[0]}</b><span>${t[1]}</span></div></div>`).join('')}</div>
+    <h3>Semantic colour — meaning, not decoration</h3>
+    <div class="swat">${sem.map(s=>`<div class="sw1"><div class="c" style="background:${col(s[1])}"></div>
+      <div class="m"><b>${s[0]}</b><span style="font-family:inherit;font-size:10px;line-height:1.35;display:block;margin-top:2px">${s[2]}</span></div></div>`).join('')}</div>
+    <h3>Type scale</h3>
+    <div class="scale">
+      <div class="r1"><span style="font-size:calc(var(--fs) + 7.5px);font-weight:640;letter-spacing:-.023em">Page title</span><span class="m">22px / 640 / −0.023em</span></div>
+      <div class="r1"><span style="font-size:calc(var(--fs) + 1px);font-weight:640;letter-spacing:-.015em">Section heading</span><span class="m">15.4px / 640</span></div>
+      <div class="r1"><span style="font-weight:600">Row primary — a deal name</span><span class="m">14.4px / 600</span></div>
+      <div class="r1"><span>Body copy, the default for everything else</span><span class="m">14.4px / 400</span></div>
+      <div class="r1"><span class="mut" style="font-size:12.5px">Secondary — account, timestamp, hint</span><span class="m">12.5px / 400 / dim</span></div>
+      <div class="r1"><span class="lbl">Label — uppercase, tracked</span><span class="m">10px / 650 / 0.09em</span></div>
+      <div class="r1"><span class="num" style="font-weight:600">$486,300 · 12d · 70%</span><span class="m">tabular numerals, always</span></div>
+    </div>
+    <h3>Components</h3>
+    <div class="compgrid">
+      <div class="comp"><div class="cn">Buttons</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn pri">Primary</button><button class="btn">Secondary</button>
+          <button class="btn gho">Ghost</button><button class="btn sm">Small</button></div>
+        <div class="mut" style="font-size:11.5px;margin-top:10px;line-height:1.5">One primary per view. It names the outcome — “Log a call”, never “Submit”.</div></div>
+      <div class="comp"><div class="cn">Status pills</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${pill('Urgent','red')}${pill('Proposal','amber')}${pill('Paid','green')}${pill('New','blue')}${dotp('Stalled','red')}</div>
+        <div class="mut" style="font-size:11.5px;margin-top:10px;line-height:1.5">Tinted background, never a solid fill — solid reads as a button.</div></div>
+      <div class="comp"><div class="cn">Next-action strip</div>
+        <div class="strip"><div style="flex:1"><div class="lbl">Next action</div>
+          <div class="st-t" style="font-size:13px">Call Kavi about the legal review.</div></div><button class="btn pri">Log a call</button></div>
+        <div class="mut" style="font-size:11.5px;margin-top:10px;line-height:1.5">The signature element. One per record, at the top, always a verb.</div></div>
+      <div class="comp"><div class="cn">Filter chips</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="viewsel" style="font-size:12px">My open deals ▾</span>
+          <span class="fchip"><b>Owner</b> Priya<span class="x">×</span></span><span class="fchip add">+ Filter</span></div>
+        <div class="mut" style="font-size:11.5px;margin-top:10px;line-height:1.5">A saved view, then one removable chip per filter. Nothing hidden.</div></div>
+      <div class="comp"><div class="cn">Stage meter</div>
+        <div class="smeter">${[0,1,2,3].map(k=>`<i class="${k<3?'f':''}"></i>`).join('')}</div>
+        <div class="mut" style="font-size:11.5px;margin-top:10px;line-height:1.5">Four segments for four open stages. Closed states leave the meter and become a pill.</div></div>
+      <div class="comp"><div class="cn">Timeline event</div>
+        <div class="tl"><div class="ev hi" style="padding-bottom:8px"><div style="font-weight:500;font-size:13px">Stage moved to Negotiation</div>
+          <div class="em">24 Jul · Marcus Cole</div></div></div>
+        <div class="mut" style="font-size:11.5px;margin-top:4px;line-height:1.5">Newest first. The accent dot marks the latest event only.</div></div>
+    </div>
+    <h3>Every status enum, mapped</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 30px">
+      <div><div class="lbl" style="margin-bottom:7px">Opportunity.stage <code style="font-family:var(--fnum);font-size:10px">STAGES</code></div>
+        ${STAGE_ORDER.map(s=>`<div class="maprow">${pill(STAGE_LABEL[s],STAGE_C[s])}<code>${s}</code></div>`).join('')}
+        <div class="lbl" style="margin:15px 0 7px">Lead.status <code style="font-family:var(--fnum);font-size:10px">LEAD_STATUS</code></div>
+        ${Object.keys(LEAD_C).map(s=>`<div class="maprow">${pill(s,LEAD_C[s])}<code>${s}</code></div>`).join('')}</div>
+      <div><div class="lbl" style="margin-bottom:7px">Case.priority / Case.status</div>
+        ${Object.keys(PRI_C).map(s=>`<div class="maprow">${pill(s,PRI_C[s])}<code>PRIORITY_CHOICE</code></div>`).join('')}
+        ${Object.keys(TST_C).map(s=>`<div class="maprow">${pill(s,TST_C[s])}<code>STATUS_CHOICE</code></div>`).join('')}
+        <div class="lbl" style="margin:15px 0 7px">Invoice.status <code style="font-family:var(--fnum);font-size:10px">INVOICE_STATUS</code></div>
+        ${Object.keys(INV_C).map(s=>`<div class="maprow">${pill(s.replace('_',' '),INV_C[s])}<code>${s}</code></div>`).join('')}</div>
+    </div>
+  </div></div></main>`}};
+
+/* ---------- 16 · MOBILE ---------- */
+S.mobile={g:'Foundations',n:'Mobile',r:'—',render:()=>{
+  const tabs=(on)=>`<div class="ptab">${[['◎','Today'],['◫','Pipeline'],['◔','Tickets'],['⌕','Search']].map(t=>
+    `<div class="${t[1]===on?'on':''}"><span class="i">${t[0]}</span>${t[1]}</div>`).join('')}</div>`;
+  return `${nav('')}<main>
+  ${ph({title:'Mobile',sub:'Lists become cards, the rail becomes a sheet, and the next action stays at the top.'+ann(6,FIX.mob)})}
+  <div class="scroll"><div class="mob">
+    <div class="phone"><div class="cap">Today</div>
+      <div class="pscr">
+        <div class="pbarr"><span>09:41</span><span>▮▮▮ ▾</span></div>
+        <div class="ptop"><div style="flex:1"><h2>Today</h2>
+          <div class="mut" style="font-size:12px;margin-top:1px">5 things · 2 deals quiet</div></div>${av('Priya Raman',30)}</div>
+        <div class="pbody">
+          ${QUEUE.slice(0,3).map(q=>`<div class="mcard">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">${pill(q.w,q.k)}</div>
+            <div style="font-weight:600;font-size:13.5px;line-height:1.35">${esc(q.t)}</div>
+            <div class="mut" style="font-size:11.5px;margin-top:3px;line-height:1.4">${esc(q.d)}</div>
+            <button class="btn pri sm" style="margin-top:9px;width:100%;justify-content:center">${esc(q.a)}</button></div>`).join('')}
+        </div>
+        <div class="fab">＋</div>${tabs('Today')}
+      </div></div>
+    <div class="phone"><div class="cap">Deal record</div>
+      <div class="pscr">
+        <div class="pbarr"><span>09:41</span><span>▮▮▮ ▾</span></div>
+        <div class="ptop"><span class="mut" style="font-size:17px">‹</span><div style="flex:1;min-width:0">
+          <h2 style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Platform renewal</h2>
+          <div class="mut" style="font-size:11.5px">Northwind Traders · $42,000</div></div><span class="mut">⋯</span></div>
+        <div class="pbody">
+          <div class="strip" style="padding:10px 12px;margin-bottom:11px;display:block">
+            <div class="lbl">Next action</div>
+            <div style="font-weight:600;font-size:13px;margin-top:2px;line-height:1.35">Call Kavi about the legal review.</div>
+            <button class="btn pri sm" style="margin-top:9px;width:100%;justify-content:center">Log a call</button></div>
+          <div style="display:flex;gap:6px;margin-bottom:11px;overflow-x:auto">
+            ${pill('Negotiation','violet')}${dotp('Stalled 12d','red')}${pill('70%','slate')}</div>
+          <div class="lbl" style="margin-bottom:7px">Activity</div>
+          <div class="tl">${THREAD.slice(0,3).map((e,k)=>`<div class="ev${k===0?' hi':''}" style="padding-bottom:12px">
+            <div style="font-weight:500;font-size:13px;line-height:1.4">${esc(e.x)}</div>
+            <div class="em" style="font-size:11px">${esc(e.t)}${e.who?' · '+esc(e.who):''}</div></div>`).join('')}</div>
+          <button class="btn" style="width:100%;justify-content:center;margin-top:4px">Details &amp; people</button>
+        </div>${tabs('Pipeline')}
+      </div></div>
+  </div>
+  <p class="mut" style="text-align:center;font-size:12px;padding:0 var(--pad) 26px;line-height:1.6;max-width:620px;margin:0 auto">
+    Rules: one column below 768px · the rail becomes a “Details &amp; people” sheet · tables become cards with the two columns that matter ·
+    the primary action is full-width and thumb-reachable · the next-action strip never collapses.</p>
+  </div></main>`}};
+
+/* ============================================================
+   STATE + RENDER
+   ============================================================ */
+const ACCENTS={bottle:{n:'Bottle green',l:'#0E5E45',d:'#3FCB9B'},cobalt:{n:'Cobalt',l:'#1E43A8',d:'#7EA0FF'},
+               amber:{n:'Amber',l:'#A05A0A',d:'#E5A63A'},oxide:{n:'Oxide',l:'#98301E',d:'#FF8A6B'}};
+const DEFAULTS={screen:'today',dens:46,accent:'bottle',theme:'light',ann:false,vw:1260};
+const state={...DEFAULTS};
+
+function render(){
+  const sc=$('#scinner');sc.innerHTML='';
+  const cv=$('#canvas'),availW=cv.clientWidth-48,availH=cv.clientHeight-48;
+  const el=document.createElement('div');
+  el.className='pv';el.dataset.theme=state.theme;
+  const a=ACCENTS[state.accent],acc=state.theme==='dark'?a.d:a.l;
+  el.style.setProperty('--accent',acc);
+  el.style.setProperty('--accent-soft',`color-mix(in srgb, ${acc} ${state.theme==='dark'?17:9}%, transparent)`);
+  el.style.setProperty('--accent-ink',state.theme==='dark'?'#08110d':'#ffffff');
+  const t=state.dens/100;
+  el.style.setProperty('--rowh',(54-t*22).toFixed(0)+'px');
+  el.style.setProperty('--pad',(28-t*13).toFixed(0)+'px');
+  el.style.setProperty('--fs',(15.3-t*2.2).toFixed(2)+'px');
+  const natH=Math.min(840,Math.max(620,availH));
+  el.style.height=natH+'px';
+  el.innerHTML=S[state.screen].render();
+  const fr=document.createElement('div');fr.className='frame';fr.style.width=state.vw+'px';
+  fr.appendChild(el);sc.appendChild(fr);
+  const s=Math.min(1,availW/state.vw,availH/(natH+2));
+  sc.style.transform=`scale(${s})`;sc.style.width=state.vw+'px';
+  const o=$('#scaler');o.style.width=(state.vw*s)+'px';o.style.height=((natH+2)*s)+'px';
+}
+
+function updatePrompt(){
+  const sc=S[state.screen],a=ACCENTS[state.accent],t=state.dens;
+  const dens=t>72?'compact — tight rows, small type':t>50?'balanced, leaning dense':t>30?'balanced — the default':'airy — generous whitespace';
+  const p=[];
+  p.push(`Build the **${sc.n}** screen (${sc.r}) in the **Clearing** direction — the BottleCRM redesign for an SMB sales rep who lives in the app all day.`);
+  p.push(``);
+  p.push(`CLEARING IN ONE LINE — the app you have, minus the confusion: shadcn-svelte primitives kept, IA collapsed, counts that tell the truth, one filter system, and a record that leads with the next action instead of 28 label/value rows.`);
+  p.push(``);
+  p.push(`NON-NEGOTIABLES FOR EVERY SCREEN`);
+  p.push(`· Sidebar: 222px, grouped Sell / Serve / Bill, one entry per destination. Counts come from the API, not the page.`);
+  p.push(`· Filters: a saved-view selector plus one removable chip per active filter. No segment pills, no view tabs, no hidden dropdown state.`);
+  p.push(`· Records: a next-action strip at the top (one sentence, one verb button), timeline as the body, fields in a 300px right rail.`);
+  p.push(`· Density: ${dens}. Accent ${a.n} (${a.l} light / ${a.d} dark) from a bottle-glass palette.`);
+  p.push(`· Six semantic colours — slate, blue, amber, violet, green, red — carry every status enum. Pills are tinted, never solid.`);
+  p.push(`· Tabular numerals on all money, ages and percentages.`);
+  if(state.theme==='dark') p.push(`· Dark mode is a first-class surface: #0D1310 paper, #141C18 surface, lifted accent. Not an inversion.`);
+  p.push(``);
+  p.push(`THIS SCREEN — ${sc.n}`);
+  p.push(SCREEN_BRIEF[state.screen]);
+  p.push(``);
+  p.push(`Svelte 5 runes, Tailwind 4, shadcn-svelte. Extract the shared list shell and record shell FIRST — leads/+page.svelte is 2,020 lines and AppSidebar.svelte is 1,303 with its nav markup repeated four times, so anything built before the extraction gets rebuilt nine times.`);
+  $('#prompt').innerHTML=esc(p.join('\n')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+
+const SCREEN_BRIEF={
+ today:`A work queue, not a dashboard. One sentence of plain-language status, then five actionable cards ordered by urgency — each with a colour-coded spine, a verb-first title, the context needed to act, and a single primary button. Close with "That's everything due today" and a muted "Later this week" list. No KPI tiles, no charts.`,
+ pipeline:`Header carries the true result-set totals (count, sum, weighted). Table columns: deal + account, a four-segment stage meter, aging health pill, value, closing date, last touch (red past 10 days), owner avatar. Aging comes from the StageAgingConfig chain that already exists on Opportunity.`,
+ board:`Four lanes for the open stages, each with count and sum in the header. Cards show name, account, aging pill, owner, value and close date. Closed Won/Lost collapse into a summary column. Drag moves a stage and writes the change to the timeline.`,
+ deal:`Stage stepper across the top with an aging callout. Next-action strip. Timeline as the body, newest first. Line items table with discount and total. Rail: deal fields, people with their roles, attached quote/invoice/ticket/tasks.`,
+ leads:`Same list shell as Pipeline. Columns: lead + title, company + industry, status pill, source, estimated value, last touch, owner. NOTE: Lead has no aging chain today — only Opportunity does. Shipping "quiet for N days" here means extending StageAgingConfig to Lead first.`,
+ lead:`Next-action strip, then a qualification checklist (decision maker, need, timing, budget) that gates the Convert button and states plainly what converting creates: an account, a contact and one deal. Rail carries lead fields plus a duplicate warning when two leads share a domain.`,
+ account:`The account is a workspace, not a form. Four stat cards, a next-action strip that connects problems across objects, then a 2×2 of open deals, people with inline call/email, tickets and invoices. The point is answering a question without navigating away.`,
+ tickets:`Queue sorted by priority. Columns: id, subject, priority, status, type, account, assignee, age, and a first-response meter that fills toward the target and turns amber then red. Unassigned rows say "Unassigned" rather than showing an empty cell.`,
+ ticket:`Conversation view: inbound left, outbound tinted right, each with author, org and relative time. Reply composer with macros, article insertion, and an explicit "status on send" control. Rail: ticket fields, account with revenue context, reporter, suggested knowledge-base articles.`,
+ invoices:`Four aging buckets computed from the whole result set — this is where the page-scoped count bug was most visible. Table: number, account, status pill, amount, due date, days late/left, and a contextual action per row (Send reminder for overdue, Send for draft).`,
+ invoice:`Overdue state takes over the strip with a red treatment. Status progression rendered as a stepper across the real INVOICE_STATUS values. Line items with qty, rate, tax, amount, then a right-aligned totals block. Rail: invoice fields, bill-to, reminder history, linked deal and ticket.`,
+ create:`Five fields, not 28. Name, account (with create-as-you-go), value, close date, stage. Everything else behind a "More fields" disclosure. Inline validation with a fix, not a complaint. Close with a plain-language summary of what happens on create.`,
+ palette:`⌘K over any screen. Results grouped Deals / Accounts & people / Actions, each row showing enough to choose without opening. Actions are contextual to the query. Footer documents the keys.`,
+ states:`Empty, error, permission-denied and no-results. Each names what happened and gives the next step. Errors never apologise and never say "Something went wrong"; empty states are an invitation with a real first action.`,
+ ds:`The reference sheet: surface tokens, six semantic colours with their meanings, the type scale, eight components with usage rules, and every status enum in the product mapped to a colour — STAGES, LEAD_STATUS, PRIORITY_CHOICE, STATUS_CHOICE, INVOICE_STATUS.`,
+ mobile:`Phone layouts for Today and the deal record. One column below 768px, rail becomes a "Details & people" sheet, tables become cards keeping the two columns that matter, primary action full-width and thumb-reachable, next-action strip never collapses.`
+};
+
+/* ---------- controls ---------- */
+function buildControls(){
+  const groups={};
+  Object.entries(S).forEach(([k,v])=>{(groups[v.g]=groups[v.g]||[]).push([k,v])});
+  $('#screens').innerHTML=Object.entries(groups).map(([g,items])=>
+    `<div class="sgrp">${g}</div>`+items.map(([k,v])=>
+      `<button class="sbtn" data-screen="${k}" type="button" aria-pressed="${state.screen===k}">${v.n}
+        <span class="n">${v.r==='—'||v.r==='overlay'?'':v.r.replace('/opportunities','/opp')}</span></button>`).join('')).join('');
+  $('#accents').innerHTML=Object.entries(ACCENTS).map(([k,v])=>
+    `<button class="chip" data-acc="${k}" type="button" aria-pressed="${state.accent===k}"><i style="background:${v.l}"></i>${v.n}</button>`).join('');
+}
+function sync(){
+  document.querySelectorAll('[data-screen]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.screen===state.screen));
+  document.querySelectorAll('[data-acc]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.acc===state.accent));
+  document.querySelectorAll('#themes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.theme));
+  $('#dens').value=state.dens;$('#vw').value=state.vw;$('#ann').checked=state.ann;
+  const t=state.dens;$('#densv').textContent=t>72?'compact':t>50?'tight':t>30?'balanced':'airy';
+  $('#vwv').textContent=state.vw+'px';
+}
+function updateAll(){sync();render();updatePrompt()}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.screen){state.screen=b.dataset.screen;updateAll()}
+  else if(b.dataset.acc){state.accent=b.dataset.acc;updateAll()}
+  else if(b.dataset.v){state.theme=b.dataset.v;updateAll()}
+});
+$('#dens').addEventListener('input',e=>{state.dens=+e.target.value;updateAll()});
+$('#vw').addEventListener('input',e=>{state.vw=+e.target.value;updateAll()});
+$('#ann').addEventListener('change',e=>{state.ann=e.target.checked;updateAll()});
+$('#copy').addEventListener('click',async()=>{
+  const btn=$('#copy');
+  try{await navigator.clipboard.writeText($('#prompt').textContent)}
+  catch(err){const ta=document.createElement('textarea');ta.value=$('#prompt').textContent;
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}
+  btn.textContent='Copied';btn.classList.add('done');
+  setTimeout(()=>{btn.textContent='Copy brief';btn.classList.remove('done')},1400);
+});
+window.addEventListener('resize',render);
+buildControls();updateAll();
+</script>
+</body>
+</html>

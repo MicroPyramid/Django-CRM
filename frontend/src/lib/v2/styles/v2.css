@@ -1,0 +1,1793 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOTTLECRM v2 — "Clearing"
+   Scoped design system. Every selector is prefixed .v2- or nested under
+   .v2-root so this file cannot leak into the v1 app (which uses orange as
+   decoration and would be visually altered by any global override here).
+
+   THE ONE RULE
+   Ember (#EA580C) marks something you can act on, or something that needs
+   you. Never a heading. Never an icon tint. Never "active chrome".
+   Everything else is ink, slate and paper.
+
+   WHERE THE NUMBERS COME FROM
+   Colour is this file's own (the Ember palette). Every metric and every type
+   size below is taken from docs/design/clearing-reference.html, which is the
+   agreed reference for layout and type. That reference is built on a 14.4px
+   base and derives most sizes from it, so --v2-fs is a real variable here and
+   sizes are written as calc() against it — same as the mocks.
+
+   This supersedes the earlier "Label 9.5px mono / .12em" line: the reference
+   sets section labels and table headers in quiet sans, and mono is reserved
+   for numerals only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.v2-root {
+  /* ── palette ────────────────────────────────────────────────────────── */
+  --v2-ember: #ea580c; /* primary action, due-now */
+  --v2-ember-soft: rgba(234, 88, 12, 0.09);
+  --v2-ember-line: rgba(234, 88, 12, 0.28);
+  --v2-ink: #1c1917; /* all primary text, bulk-action bar */
+  --v2-slate: #78716c; /* labels, secondary text, on-pace aging */
+  --v2-paper: #fafaf9; /* app canvas */
+  --v2-card: #ffffff; /* cards sit on paper in pure white */
+  --v2-clay: #b45309; /* aging_status "yellow" — past expected_days */
+  --v2-rust: #9a3412; /* aging_status "red", overdue, destructive */
+  --v2-moss: #3f6212; /* won, completed, positive delta. Sparingly. */
+
+  --v2-line: #e7e5e4; /* stone-200 */
+  --v2-line-soft: #f5f5f4; /* stone-100 */
+  --v2-hover: rgba(28, 25, 23, 0.025);
+
+  /* ── type ───────────────────────────────────────────────────────────── */
+  --v2-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --v2-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'DejaVu Sans Mono', Menlo, monospace;
+  --v2-fs: 14.4px; /* the base everything else is derived from */
+
+  /* ── metrics (density dial) ─────────────────────────────────────────── */
+  --v2-row: 44px;
+  --v2-pad: 22px;
+  --v2-radius: 10px;
+
+  background: var(--v2-paper);
+  color: var(--v2-ink);
+  font-family: var(--v2-sans);
+  font-size: var(--v2-fs);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark .v2-root {
+  --v2-ember: #fb8c3c;
+  --v2-ember-soft: rgba(251, 140, 60, 0.14);
+  --v2-ember-line: rgba(251, 140, 60, 0.32);
+  --v2-ink: #fafaf9;
+  --v2-slate: #a8a29e;
+  --v2-paper: #1c1917;
+  --v2-card: #262322;
+  --v2-clay: #e0a83b;
+  --v2-rust: #f2705b;
+  --v2-moss: #9bcb3c;
+  --v2-line: #33302e;
+  --v2-line-soft: #2a2726;
+  --v2-hover: rgba(250, 250, 249, 0.035);
+}
+
+.v2-root *,
+.v2-root *::before,
+.v2-root *::after {
+  box-sizing: border-box;
+}
+
+/* ── type scale ───────────────────────────────────────────────────────────
+   The reference sets one h1 for both list pages and record pages — a record
+   title is not a bigger thing than a page title, it is the same thing with a
+   crumb above it. .v2-record-title is kept as an alias so PageHeader's
+   `record` prop stays meaningful for screen readers and future divergence. */
+.v2-page-title,
+.v2-record-title {
+  font-size: calc(var(--v2-fs) + 7.5px); /* 21.9px */
+  font-weight: 640;
+  letter-spacing: -0.023em;
+  line-height: 1.2;
+  margin: 0;
+}
+.v2-section {
+  font-size: calc(var(--v2-fs) + 1px); /* 15.4px */
+  font-weight: 640;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+/* Quiet sans micro-caps. Used for section headings, nav groups and lane
+   titles — anywhere a word labels the block beneath it. */
+.v2-label {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--v2-slate);
+}
+/* Every number in the product is tabular monospace. Mono means "this is a
+   figure you might compare down a column" — nothing else. */
+.v2-num {
+  font-family: var(--v2-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.01em;
+}
+.v2-muted {
+  color: var(--v2-slate);
+}
+.v2-sub {
+  font-size: calc(var(--v2-fs) - 1px); /* 13.4px */
+  color: var(--v2-slate);
+}
+
+/* ── layout ───────────────────────────────────────────────────────────── */
+.v2-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.v2-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.v2-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.v2-pad {
+  padding-left: var(--v2-pad);
+  padding-right: var(--v2-pad);
+}
+
+/* ── sidebar ──────────────────────────────────────────────────────────── */
+.v2-nav {
+  width: 222px;
+  flex: none;
+  background: var(--v2-paper);
+  border-right: 1px solid var(--v2-line);
+  display: flex;
+  flex-direction: column;
+  padding: 13px 11px;
+  overflow-y: auto;
+}
+.v2-org {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px 13px;
+}
+.v2-org b {
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+}
+.v2-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--v2-ink);
+  color: var(--v2-paper);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+.v2-nav-group {
+  margin-top: 13px;
+  padding: 0 8px 5px;
+}
+.v2-nav-group:first-of-type {
+  margin-top: 4px;
+}
+.v2-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6.5px 8px;
+  border-radius: 7px;
+  color: var(--v2-ink);
+  font-size: 13px;
+  text-decoration: none;
+  margin-bottom: 1px;
+}
+.v2-link svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--v2-slate);
+  stroke-width: 1.75;
+}
+.v2-link .v2-count {
+  margin-left: auto;
+  font-family: var(--v2-mono);
+  font-size: 11px;
+  color: var(--v2-slate);
+}
+.v2-link:hover {
+  background: var(--v2-line-soft);
+}
+/* Active is weight and ink — not ember. Where you are is not an action. */
+.v2-link[aria-current='page'] {
+  background: var(--v2-line-soft);
+  font-weight: 640;
+}
+.v2-link[aria-current='page'] svg {
+  color: var(--v2-ink);
+}
+.v2-nav-foot {
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px solid var(--v2-line);
+}
+
+/* ── page header ──────────────────────────────────────────────────────── */
+.v2-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px var(--v2-pad) 0;
+  flex: none;
+}
+/* Header for a centred form page. It matches the form's column so the title
+   lines up above the fields rather than drifting to the far left. The default
+   column is the standard 560px form plus the header's own side padding; a page
+   with a wider body passes its outer width through `--v2-header-col`. */
+.v2-header.is-centered {
+  width: min(100%, var(--v2-header-col, calc(560px + 2 * var(--v2-pad))));
+  margin-left: auto;
+  margin-right: auto;
+}
+.v2-header .v2-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex: none;
+  padding-top: 2px;
+}
+.v2-crumb {
+  font-size: 12px;
+  color: var(--v2-slate);
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.v2-crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.v2-crumb a:hover {
+  color: var(--v2-ink);
+  text-decoration: underline;
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+.v2-btn {
+  border: 1px solid var(--v2-line);
+  background: var(--v2-card);
+  color: var(--v2-ink);
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: calc(var(--v2-fs) - 1.6px); /* 12.8px */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.v2-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+.v2-btn:hover {
+  border-color: var(--v2-slate);
+}
+/* The only ember button. One per view. */
+.v2-btn-primary {
+  background: var(--v2-ember);
+  border-color: var(--v2-ember);
+  color: #fff;
+  font-weight: 600;
+}
+.dark .v2-btn-primary {
+  color: #1c1917;
+}
+.v2-btn-primary:hover {
+  filter: brightness(1.06);
+  border-color: var(--v2-ember);
+}
+.v2-btn-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--v2-slate);
+}
+.v2-btn-quiet:hover {
+  background: var(--v2-line-soft);
+  color: var(--v2-ink);
+  border-color: transparent;
+}
+.v2-btn-sm {
+  padding: 4px 9px;
+  font-size: calc(var(--v2-fs) - 2.6px); /* 11.8px */
+  border-radius: 7px;
+}
+.v2-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.v2-kbd {
+  font-family: var(--v2-mono);
+  font-size: 9.5px;
+  border: 1px solid var(--v2-line);
+  border-radius: 4px;
+  padding: 1px 4px;
+  color: var(--v2-slate);
+}
+
+/* ── pills ────────────────────────────────────────────────────────────── */
+.v2-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(var(--v2-fs) - 3px); /* 11.4px */
+  font-weight: 600;
+  padding: 2.5px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.005em;
+  line-height: 1.4;
+}
+.v2-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* ── the next-action strip — the signature element ────────────────────── */
+.v2-next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--v2-ember-soft);
+  border: 1px solid var(--v2-ember-line);
+  border-radius: var(--v2-radius);
+  padding: 12px 15px;
+}
+.v2-next-body {
+  flex: 1;
+  min-width: 0;
+}
+.v2-next .v2-label {
+  color: var(--v2-ember);
+}
+.v2-next-text {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+
+/* ── cards ────────────────────────────────────────────────────────────── */
+.v2-card {
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+}
+.v2-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-card-head a {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--v2-slate);
+  text-decoration: none;
+}
+.v2-card-head a:hover {
+  color: var(--v2-ink);
+  text-decoration: underline;
+}
+
+/* ── tables ───────────────────────────────────────────────────────────── */
+.v2-table-wrap {
+  margin: 0 var(--v2-pad) 18px;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  overflow: hidden;
+  background: var(--v2-card);
+}
+.v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--v2-card);
+}
+/* Quiet sans, sentence case. A header row set in tracked mono caps competes
+   with the data underneath it; this recedes and lets the rows read. */
+.v2-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v2-slate);
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--v2-line);
+  white-space: nowrap;
+  background: var(--v2-card);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.v2-table td {
+  padding: 0 14px;
+  height: var(--v2-row);
+  border-bottom: 1px solid var(--v2-line-soft);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.v2-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.v2-table tbody tr:hover td {
+  background: var(--v2-hover);
+}
+.v2-table .v2-r {
+  text-align: right;
+}
+.v2-table-primary {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.v2-table-secondary {
+  font-size: 12px;
+  color: var(--v2-slate);
+  margin-top: 1px;
+}
+.v2-row-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+.v2-row-link:hover .v2-table-primary {
+  text-decoration: underline;
+}
+
+/* ── section tabs ─────────────────────────────────────────────────────── */
+/* Second level inside one destination. The active tab is weight plus an ink
+   underline — not an ember one. Ember marks what you can act on; "you are
+   here" is not an action. */
+.v2-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--v2-pad);
+  border-bottom: 1px solid var(--v2-line-soft);
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.v2-tabs::-webkit-scrollbar {
+  display: none;
+}
+.v2-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 11px 8px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--v2-slate);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.v2-tabs a:hover {
+  color: var(--v2-ink);
+}
+.v2-tabs a[aria-current='page'] {
+  color: var(--v2-ink);
+  font-weight: 640;
+  border-bottom-color: var(--v2-ink);
+}
+.v2-tab-count {
+  font-size: 10.5px;
+  font-weight: 650;
+  color: var(--v2-slate);
+  background: var(--v2-hover);
+  border-radius: 20px;
+  padding: 1px 6px;
+}
+
+/* ── bars ─────────────────────────────────────────────────────────────── */
+/* One horizontal track, used for goal attainment and for SLA attainment.
+   `--v2-bar-pace` positions a hairline where a second value falls, so a
+   percentage can be read against the thing it should be compared with —
+   attainment against elapsed time, rather than against nothing. */
+.v2-bar {
+  position: relative;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--v2-hover);
+  overflow: hidden;
+}
+.v2-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--v2-slate);
+}
+.v2-bar-pace {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--v2-ink);
+  opacity: 0.55;
+  border-radius: 2px;
+}
+.v2-bar-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--v2-slate);
+  margin-top: 5px;
+}
+
+/* Vertical columns for a count-per-day series. No axis furniture: the point
+   is the shape and the outliers, and gridlines behind fourteen bars are more
+   ink than the data. */
+.v2-cols {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 104px;
+}
+/* Two bars per day, SIDE BY SIDE. Stacking them would make the column's
+   total height read as opened + closed, which is not a quantity — a day with
+   6 opened and 5 closed would tower over a day with 8 opened and 1 closed. */
+.v2-cols .v2-col {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+}
+.v2-cols .v2-col i {
+  flex: 1;
+  display: block;
+  border-radius: 2px;
+  min-height: 2px;
+}
+.v2-cols .v2-col .in {
+  background: var(--v2-ink);
+  opacity: 0.75;
+}
+.v2-cols .v2-col .out {
+  background: var(--v2-line);
+}
+.v2-cols-axis {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.v2-cols-axis span {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  color: var(--v2-slate);
+  min-width: 0;
+}
+
+/* Legend swatch for a two-series column chart. Same two weights the columns
+   themselves use — ink for the primary series, line for the comparison — so
+   the key and the bars cannot drift apart. Never ember: a legend is a label,
+   not something you act on. */
+.v2-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--v2-line);
+  margin-right: 4px;
+}
+.v2-swatch-in {
+  background: var(--v2-ink);
+  opacity: 0.75;
+}
+
+/* ── week grid (timesheet) ────────────────────────────────────────────── */
+.v2-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+.v2-day {
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  background: var(--v2-card);
+  display: flex;
+  flex-direction: column;
+  min-height: 168px;
+  overflow: hidden;
+}
+/* Today is marked by the border, not by a fill — a tinted column reads as a
+   status, and "it is Wednesday" is not a status. */
+.v2-day[data-today='true'] {
+  border-color: var(--v2-ink);
+}
+/* A day with nothing logged is the thing a timesheet exists to show, so it
+   keeps its full height rather than collapsing out of the row. */
+.v2-day[data-empty='true'] {
+  background: none;
+  border-style: dashed;
+}
+.v2-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 9px 10px 7px;
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-day[data-empty='true'] .v2-day-head {
+  border-bottom-color: transparent;
+}
+.v2-entry {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--v2-line-soft);
+  font-size: 12px;
+}
+.v2-entry:last-child {
+  border-bottom: 0;
+}
+
+/* ── two-column page split ────────────────────────────────────────────── */
+/* A main column and a narrower companion. This is a class rather than an
+   inline grid on each page for one reason: an inline grid-template-columns
+   cannot be overridden by a media query, so every page that wrote its own
+   stayed two columns at 414px and squeezed both to nothing. */
+/* Both carry the layout, so either works alone. `.v2-split-wide` used to be a
+   modifier that needed `.v2-split` beside it, and two pages in one batch used
+   it on its own and silently rendered a single full-width column — a modifier
+   whose absence degrades quietly is a modifier that will be misused. */
+.v2-split,
+.v2-split-wide {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+.v2-split {
+  grid-template-columns: 1.15fr 1fr;
+}
+.v2-split-wide {
+  grid-template-columns: 1.35fr 1fr;
+}
+@media (max-width: 1000px) {
+  .v2-split,
+  .v2-split-wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── settings rows ────────────────────────────────────────────────────── */
+.v2-setting {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--v2-line-soft);
+  color: inherit;
+  text-decoration: none;
+}
+.v2-setting:last-child {
+  border-bottom: 0;
+}
+a.v2-setting:hover {
+  background: var(--v2-hover);
+}
+.v2-setting-body {
+  flex: 1;
+  min-width: 0;
+}
+.v2-setting-body b {
+  font-weight: 600;
+  font-size: 13px;
+  display: block;
+}
+
+/* ── one filter system ────────────────────────────────────────────────── */
+.v2-filters {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 13px var(--v2-pad) 11px;
+  flex: none;
+}
+.v2-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-card);
+  color: var(--v2-ink);
+  border-radius: 8px;
+  padding: 4.5px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.v2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--v2-line);
+  border-radius: 20px;
+  padding: 3.5px 9px 3.5px 10px;
+  font-size: 12px;
+  background: var(--v2-card);
+}
+.v2-chip b {
+  font-weight: 600;
+}
+.v2-chip button {
+  border: 0;
+  background: none;
+  color: var(--v2-slate);
+  cursor: pointer;
+  padding: 0 1px;
+  font-size: 13px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.v2-chip button:hover {
+  color: var(--v2-rust);
+}
+.v2-chip-add {
+  border-style: dashed;
+  color: var(--v2-slate);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ── stage meter ──────────────────────────────────────────────────────── */
+.v2-meter {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.v2-meter i {
+  width: 15px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--v2-line);
+  display: block;
+}
+/* Filled segments are ink, not ember — progress through a funnel is a fact
+   about the record, not something you can act on. */
+.v2-meter i.on {
+  background: var(--v2-ink);
+}
+
+/* ── avatar ───────────────────────────────────────────────────────────── */
+/* The reference tints this with the accent. Ember can't be spent on an
+   identity chip, so it carries the same visual weight in neutral instead:
+   a filled stone circle, no border. */
+.v2-avatar {
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 650;
+  flex: none;
+  background: var(--v2-line);
+  color: var(--v2-slate);
+}
+
+/* ── right rail ───────────────────────────────────────────────────────── */
+.v2-rail {
+  width: 300px;
+  flex: none;
+  border-left: 1px solid var(--v2-line);
+  padding: 15px;
+  overflow-y: auto;
+  background: var(--v2-paper);
+}
+.v2-rail-head {
+  margin: 17px 0 9px;
+}
+.v2-rail-head:first-child {
+  margin-top: 0;
+}
+.v2-kv {
+  display: grid;
+  /* `minmax(0, 1fr)`, not `1fr`. A grid track's implicit minimum is its
+     content's min-width, so one unbreakable string — an email address, a URL,
+     a long job title — widens the column past the rail and scrolls the whole
+     record sideways. Fixture data was all short enough never to show it. */
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 7px 10px;
+  font-size: calc(var(--v2-fs) - 1.2px); /* 13.2px */
+  margin: 0;
+}
+.v2-kv dt {
+  color: var(--v2-slate);
+}
+.v2-kv dd {
+  margin: 0;
+  font-weight: 500;
+  /* Breaks mid-word only when there is no other option, which is what these
+     values need — `break-all` would hyphenate ordinary company names too. */
+  overflow-wrap: anywhere;
+}
+.v2-rail-row {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 9px;
+}
+
+/* ── timeline ─────────────────────────────────────────────────────────── */
+.v2-timeline {
+  position: relative;
+  padding-left: 19px;
+}
+.v2-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--v2-line);
+}
+.v2-event {
+  position: relative;
+  padding-bottom: 15px;
+}
+.v2-event::before {
+  content: '';
+  position: absolute;
+  left: -17px;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--v2-card);
+  border: 2px solid var(--v2-line);
+}
+.v2-event.latest::before {
+  border-color: var(--v2-ink);
+  background: var(--v2-ink);
+}
+.v2-event-meta {
+  font-size: 11.5px;
+  color: var(--v2-slate);
+  margin-top: 2px;
+}
+
+/* ── board ────────────────────────────────────────────────────────────── */
+.v2-board {
+  display: flex;
+  gap: 12px;
+  padding: 0 var(--v2-pad) 16px;
+  overflow-x: auto;
+  flex: 1;
+  min-height: 0;
+}
+.v2-lane {
+  width: 248px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.v2-lane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 3px 9px;
+  flex: none;
+}
+.v2-lane-head .v2-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.v2-lane-head .v2-num {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--v2-slate);
+}
+.v2-lane-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1px;
+}
+.v2-deal-card {
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.v2-deal-card:hover {
+  border-color: var(--v2-slate);
+}
+.v2-deal-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+/* ── stat tiles ───────────────────────────────────────────────────────── */
+/* A stat row is always followed by a section, so the space between them
+   belongs here rather than in a padding-top on each page. Thirteen pages set
+   that padding by hand and eight of them forgot, which put the first section
+   label flush against the cards with a 0px gap. */
+.v2-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 11px;
+  margin-bottom: 16px;
+}
+.v2-stat {
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  padding: 13px;
+}
+.v2-stat-value {
+  font-family: var(--v2-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: calc(var(--v2-fs) + 4.5px); /* 18.9px */
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+}
+
+/* ── queue (Today) ────────────────────────────────────────────────────── */
+.v2-queue-item {
+  display: flex;
+  gap: 13px;
+  padding: 12px 15px;
+  align-items: center;
+}
+.v2-queue-spine {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 3px;
+  flex: none;
+}
+.v2-queue-body {
+  flex: 1;
+  min-width: 0;
+}
+.v2-queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+/* ── forms ────────────────────────────────────────────────────────────── */
+.v2-form {
+  max-width: 560px;
+  /* Edit/create forms sit in a centred column rather than hugging the left of
+     a wide content area. The page header opts into the same centring with
+     `.is-centered` (see the page-header block) so the title stays directly
+     above the form's left edge. */
+  margin-inline: auto;
+  padding: 4px 0 30px;
+}
+.v2-field {
+  margin-bottom: 15px;
+}
+.v2-field > label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.v2-input {
+  width: 100%;
+  border: 1px solid var(--v2-line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: var(--v2-card);
+  color: var(--v2-ink);
+  font-family: inherit;
+  font-size: calc(var(--v2-fs) - 0.5px); /* 13.9px */
+}
+.v2-input:focus {
+  outline: 2px solid var(--v2-ember);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+.v2-input-invalid,
+.v2-input[aria-invalid='true'] {
+  border-color: var(--v2-rust);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-rust) 9%, transparent);
+}
+/* A field you cannot type in has to look like one. Without this a disabled
+   input is pixel-identical to an editable one, and the only way to find out
+   is to click it and have nothing happen. */
+.v2-input:disabled {
+  background: var(--v2-line-soft);
+  color: var(--v2-slate);
+  cursor: not-allowed;
+}
+.v2-hint {
+  font-size: 11.5px;
+  color: var(--v2-slate);
+  margin-top: 5px;
+  line-height: 1.45;
+}
+.v2-error {
+  font-size: 12px;
+  color: var(--v2-rust);
+  margin-top: 5px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+/* "More fields" — everything the form does not need to open with. */
+.v2-disclosure {
+  border-top: 1px solid var(--v2-line);
+  margin-top: 20px;
+  padding-top: 14px;
+}
+
+/* ── entry / auth (login · magic-link verify · org select · org create) ────
+   The four screens that live outside the shell — no sidebar, so they carry the
+   tokens through .v2-root directly and centre one card on paper. Same ink,
+   slate and Ember as the app: the single Ember per screen is the primary
+   action (Continue with Google, Create organisation), never the chrome.
+   Choosing an org is navigation, not an action, so those rows stay neutral. */
+.v2-auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 20px;
+}
+.v2-auth-box {
+  width: 100%;
+  max-width: 400px;
+}
+.v2-auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  color: inherit;
+  text-decoration: none;
+}
+.v2-auth-brand img {
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  display: block;
+  flex: none;
+}
+.v2-auth-brand b {
+  font-size: 17px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+.v2-auth-card {
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: 14px;
+  padding: 27px 25px;
+}
+.v2-auth-head {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.v2-auth-head h1 {
+  font-size: calc(var(--v2-fs) + 4px); /* 18.4px */
+  font-weight: 660;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.v2-auth-head p {
+  color: var(--v2-slate);
+  font-size: calc(var(--v2-fs) - 0.5px);
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+/* The line between the two sign-in methods. */
+.v2-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+  color: var(--v2-slate);
+  font-size: 11px;
+}
+.v2-auth-divider::before,
+.v2-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--v2-line);
+}
+.v2-auth-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.v2-auth-foot a {
+  color: var(--v2-slate);
+  font-size: 12px;
+  text-decoration: none;
+}
+.v2-auth-foot a:hover {
+  color: var(--v2-ink);
+}
+.v2-auth-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--v2-line);
+}
+
+/* Full-width action; the auth cards stack one button per row. */
+.v2-btn-block {
+  width: 100%;
+  justify-content: center;
+  padding-top: 9.5px;
+  padding-bottom: 9.5px;
+}
+
+/* The Google mark keeps its own colours on a white tile so it stays itself on
+   the Ember button rather than turning into an orange-on-orange blob. */
+.v2-auth-gicon {
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px;
+  flex: none;
+}
+
+/* A selectable organisation row on the picker. Neutral: it lifts to a slate
+   border on hover like every other card, and carries no Ember. */
+.v2-auth-org {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 13px;
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.v2-auth-org + .v2-auth-org {
+  margin-top: 8px;
+}
+.v2-auth-org:hover {
+  border-color: var(--v2-slate);
+}
+.v2-auth-org:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.v2-auth-org-body {
+  flex: 1;
+  min-width: 0;
+}
+.v2-auth-org-body b {
+  display: block;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-auth-org > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--v2-slate);
+  flex: none;
+}
+.v2-auth-org:hover > svg {
+  color: var(--v2-ink);
+}
+
+/* The dashed create-org affordance under a populated list. */
+.v2-auth-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px dashed var(--v2-line);
+  border-radius: var(--v2-radius);
+  background: none;
+  color: var(--v2-slate);
+  font-family: inherit;
+  font-size: calc(var(--v2-fs) - 1.4px);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.v2-auth-add:hover {
+  border-color: var(--v2-slate);
+  color: var(--v2-ink);
+}
+.v2-auth-add svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Reusable spinner. Borders are currentColor, so it reads white on the Ember
+   button and ink (or Ember, if the parent sets colour) on paper — no variant
+   needed. The reduced-motion block above already stops the animation. */
+.v2-spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: v2-spin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes v2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Inline note inside an auth card — success (moss) or error (rust). */
+.v2-auth-note {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: calc(var(--v2-fs) - 1.4px);
+  line-height: 1.45;
+}
+.v2-auth-note b {
+  font-weight: 640;
+}
+.v2-auth-note svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
+}
+.v2-auth-note-ok {
+  background: color-mix(in srgb, var(--v2-moss) 10%, transparent);
+  color: var(--v2-moss);
+}
+.v2-auth-note-bad {
+  background: color-mix(in srgb, var(--v2-rust) 9%, transparent);
+  color: var(--v2-rust);
+}
+
+@media (max-width: 480px) {
+  .v2-auth {
+    justify-content: flex-start;
+    padding-top: 40px;
+  }
+  .v2-auth-card {
+    padding: 22px 18px;
+  }
+}
+
+/* ── command palette (⌘K) ─────────────────────────────────────────────── */
+.v2-scrim {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--v2-ink) 34%, transparent);
+  backdrop-filter: blur(1.5px);
+  display: grid;
+  place-items: start center;
+  padding: 88px 16px 16px;
+  z-index: 60;
+}
+.v2-palette {
+  width: 540px;
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+}
+.v2-palette-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--v2-line);
+  flex: none;
+}
+.v2-palette-input input {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--v2-ink);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  min-width: 0;
+}
+.v2-palette-input input::placeholder {
+  color: var(--v2-slate);
+}
+/* No focus ring on the palette input. It is the only focusable thing on
+   screen while the dialog is open and it already shows a caret — a 2px ember
+   outline there reads as a validation error, not as focus. */
+.v2-palette-input input:focus-visible {
+  outline: none;
+}
+.v2-palette-list {
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 5px;
+}
+.v2-palette-group {
+  padding: 10px 15px 5px;
+}
+.v2-palette-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 15px;
+  font-family: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+}
+/* The highlighted row is what Enter will do, so it is genuinely an action —
+   the one place a soft ember fill is not decoration. */
+.v2-palette-row[aria-selected='true'] {
+  background: var(--v2-ember-soft);
+}
+.v2-palette-row svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--v2-slate);
+}
+.v2-palette-row .v2-palette-meta {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--v2-slate);
+  padding-left: 10px;
+}
+.v2-palette-foot {
+  border-top: 1px solid var(--v2-line);
+  padding: 8px 15px;
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--v2-slate);
+  flex: none;
+}
+
+/* ── empty / error states ─────────────────────────────────────────────── */
+.v2-state {
+  max-width: 430px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 52px 0;
+}
+.v2-state-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--v2-line-soft);
+  color: var(--v2-slate);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 15px;
+}
+.v2-state h3 {
+  margin: 0 0 7px;
+  font-size: calc(var(--v2-fs) + 3px); /* 17.4px */
+  font-weight: 640;
+  letter-spacing: -0.015em;
+}
+.v2-state p {
+  margin: 0 0 17px;
+  color: var(--v2-slate);
+  font-size: calc(var(--v2-fs) - 0.5px);
+  line-height: 1.55;
+}
+
+/* ── mobile chrome ────────────────────────────────────────────────────── */
+/* Hidden on desktop; the media query at the foot of this file swaps the
+   sidebar for these. */
+.v2-mobile-top,
+.v2-tabbar,
+.v2-fab {
+  display: none;
+}
+.v2-mobile-top {
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--v2-pad);
+  flex: none;
+  border-bottom: 1px solid var(--v2-line);
+  background: var(--v2-paper);
+}
+.v2-mobile-top h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+.v2-tabbar {
+  height: 52px;
+  flex: none;
+  border-top: 1px solid var(--v2-line);
+  background: var(--v2-card);
+}
+.v2-tabbar a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 9.5px;
+  color: var(--v2-slate);
+  text-decoration: none;
+}
+.v2-tabbar a svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.9;
+}
+/* Same rule as the sidebar: where you are is weight and ink, not ember. */
+.v2-tabbar a[aria-current='page'] {
+  color: var(--v2-ink);
+  font-weight: 600;
+}
+.v2-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 66px;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--v2-ember);
+  color: #fff;
+  place-items: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  z-index: 30;
+  cursor: pointer;
+}
+.dark .v2-fab {
+  color: #1c1917;
+}
+
+/* ── a11y ─────────────────────────────────────────────────────────────── */
+.v2-root :focus-visible {
+  outline: 2px solid var(--v2-ember);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.v2-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px var(--v2-pad);
+  background: var(--v2-ink);
+  color: var(--v2-paper);
+  font-size: 12px;
+  flex: none;
+}
+.v2-banner a {
+  color: inherit;
+  text-decoration: underline;
+}
+/* The live banner has to read as a different statement from the preview one at
+   a glance, not as the same bar with different words. Rust is the strongest
+   thing here that is not Ember — Ember stays action-only. */
+.v2-banner-live {
+  background: var(--v2-rust);
+}
+.v2-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-root *,
+  .v2-root *::before,
+  .v2-root *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ── responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1180px) {
+  .v2-rail {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .v2-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .v2-root {
+    --v2-pad: 15px;
+    --v2-row: 42px;
+  }
+  .v2-nav {
+    display: none;
+  }
+  .v2-mobile-top {
+    display: flex;
+  }
+  .v2-tabbar {
+    display: flex;
+  }
+  .v2-fab {
+    display: grid;
+  }
+  .v2-header {
+    flex-wrap: wrap;
+  }
+  .v2-header .v2-actions {
+    width: 100%;
+    margin-left: 0;
+    padding-top: 10px;
+  }
+  .v2-page-title,
+  .v2-record-title {
+    font-size: calc(var(--v2-fs) + 4.5px);
+  }
+  /* Rows become cards. A seven-column table is 836px wide in a 390px viewport,
+     so two thirds of every row — including the name being scanned for — sat
+     behind a sideways swipe. Each row is now a card: the identifying cell on
+     the first line, a status tag to its right, and the rest wrapping beneath
+     as a meta line.
+
+     The defaults do the work, so every table improves without being touched.
+     `data-m` only refines: `hide` drops a column outright, because a phone is
+     not a narrow desktop and columns worth cutting are better cut than
+     shrunk; `title` and `tag` move the anchor cells when the first column
+     is not the identifier. */
+  .v2-table thead {
+    display: none;
+  }
+  .v2-table,
+  .v2-table tbody {
+    display: block;
+  }
+  /* Block, not flex. Flexbox picks its line breaks from each item's content
+     width before it grows anything, so a long title either demanded a line of
+     its own or — with a zero basis — let the meta cells crowd onto line one and
+     squeeze it into a column three words wide. Which of the two happened
+     depended on the length of the data. Blocks and floats are duller and do
+     the same thing every time. */
+  .v2-table tr {
+    display: block;
+    position: relative;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--v2-line-soft);
+  }
+  .v2-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .v2-table td {
+    display: inline-block;
+    height: auto;
+    padding: 0;
+    border: 0;
+    margin-right: 9px;
+    vertical-align: baseline;
+    font-size: 12.5px;
+  }
+  /* Beats `.v2-table .v2-r`; a right-aligned figure in a meta line reads as a
+     gap rather than as a column. */
+  .v2-table td.v2-r,
+  .v2-table td[data-m] {
+    text-align: left;
+  }
+  /* Owns the first line; the right padding reserves the tag's corner so a long
+     title wraps before it reaches the pill rather than running under it. */
+  .v2-table td:first-child,
+  .v2-table td[data-m='title'] {
+    display: block;
+    margin: 0 0 3px;
+    padding-right: 96px;
+    font-size: var(--v2-fs);
+    white-space: normal;
+  }
+  /* Ordered after the rule above so it wins the tie on a first cell that is
+     not the identifier. */
+  .v2-table td[data-m='meta'] {
+    display: inline-block;
+    margin: 0 9px 0 0;
+    padding-right: 0;
+    font-size: 12.5px;
+  }
+  /* The row's one control gets a gutter of its own rather than being floated
+     into the text. Floating it indented only the lines that sat beside it, so
+     the title started in one place and the note under it in another; a list
+     with a ragged left edge is harder to run your eye down. The cell is also
+     usually `:first-child`, so it has to give back the padding the title rule
+     reserves for the tag. */
+  .v2-table tr:has(td[data-m='lead']) {
+    padding-left: 51px;
+  }
+  .v2-table td[data-m='lead'] {
+    position: absolute;
+    top: 11px;
+    left: 14px;
+    margin: 0;
+    padding-right: 0;
+  }
+  /* Only where the value cannot speak for itself. A date or a person's name
+     needs no label; three money columns in a row are indistinguishable
+     without one, since the header that told them apart is gone. */
+  .v2-table td[data-l]::before {
+    content: attr(data-l) ' ';
+    /* Set explicitly because these cells are `.v2-num`, and a label inheriting
+       that would put a word in the numeral face. Mono is numerals only. */
+    font-family: var(--v2-sans);
+    font-size: 11.5px;
+    color: var(--v2-slate);
+    font-weight: 400;
+  }
+  /* Pinned to the corner rather than left in the flow, so where it sits does
+     not depend on how long the title happens to be. */
+  .v2-table td[data-m='tag'] {
+    position: absolute;
+    top: 11px;
+    right: 14px;
+    margin: 0;
+    font-size: 12.5px;
+  }
+  /* A cell holding a meter rather than a value. It needs a width to mean
+     anything, so it takes a line of its own instead of sharing the meta run. */
+  .v2-table td[data-m='bar'] {
+    display: block;
+    clear: both;
+    margin: 4px 0 0;
+  }
+  /* Last, and stated twice. Hiding has to beat every layout rule above it, and
+     `.v2-table td:first-child` carries an element selector that a lone
+     attribute selector loses to — so the `td` form ties on specificity and
+     wins on order. The bare form covers elements inside a cell, because some
+     columns are worth dropping only in part: a contact's job label can go, the
+     "Do not call" pill beside it cannot, least of all on the device the call
+     would be placed from. */
+  .v2-table td[data-m='hide'],
+  .v2-table [data-m='hide'] {
+    display: none;
+  }
+  .v2-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Touch targets. These sat at 29–35px, and the icon-only ones cannot reach a
+     usable size on padding alone — an empty button has nothing to pad around —
+     so they get an explicit minimum instead. The pointer is a fingertip here. */
+  .v2-btn,
+  .v2-view {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+  .v2-btn-sm {
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+  .v2-chip {
+    padding: 7px 10px 7px 12px;
+  }
+  /* Was 12×14px — a target smaller than the fingertip aiming at it, sitting
+     inside a chip that does something different when hit by mistake. */
+  .v2-chip button {
+    min-width: 32px;
+    min-height: 32px;
+    margin: -6px -8px -6px 0;
+  }
+  /* Clear the floating action button. It sits 66px above the tab bar, so
+     without this the last row of every list hides underneath it. */
+  .v2-scroll {
+    padding-bottom: 62px;
+  }
+  /* Title on its own line, pill and action beneath it — at 414px the
+     three-across desktop row leaves about four words per line. */
+  .v2-queue-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .v2-queue-body {
+    flex-basis: calc(100% - 16px);
+  }
+  .v2-queue-actions {
+    width: 100%;
+    padding-left: 16px;
+    margin-top: 10px;
+  }
+  .v2-queue-actions .v2-btn {
+    margin-left: auto;
+  }
+  /* One lane at a time, snapped. The board keeps its own scrollers, so it
+     needs the FAB clearance applied to the lane rather than to .v2-scroll. */
+  .v2-board {
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  .v2-lane {
+    scroll-snap-align: start;
+    width: calc(100vw - 2 * var(--v2-pad));
+  }
+  .v2-lane-body {
+    padding-bottom: 62px;
+  }
+  /* Seven columns at 414px gives each day about 45px, which fits a date and
+     nothing else. Stacked, one day per row, the entries stay readable. */
+  .v2-week {
+    grid-template-columns: 1fr;
+  }
+  .v2-day {
+    min-height: 0;
+  }
+  .v2-day[data-empty='true'] {
+    min-height: 0;
+  }
+  .v2-scrim {
+    padding-top: 40px;
+  }
+}

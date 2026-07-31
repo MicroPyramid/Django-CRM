@@ -26,6 +26,7 @@ from common.serializer import (
     CustomFieldDefinitionSerializer,
 )
 from invoices.models import (
+    UNPAID_STATUSES,
     Estimate,
     Invoice,
     InvoiceLineItem,
@@ -40,7 +41,11 @@ from invoices.pdf import (
     generate_invoice_filename,
     generate_invoice_pdf,
 )
-from invoices.permissions import get_invoice_or_error
+from invoices.permissions import (
+    get_estimate_or_error,
+    get_invoice_or_error,
+    get_recurring_or_error,
+)
 from invoices.serializer import (
     EstimateCreateSerializer,
     EstimateListSerializer,
@@ -52,7 +57,7 @@ from invoices.serializer import (
     InvoiceListSerializer,
     InvoiceSerializer,
     InvoiceTemplateCreateSerializer,
-    InvoiceTemplateSerializer,
+    InvoiceTemplateListSerializer,
     PaymentCreateSerializer,
     PaymentSerializer,
     ProductCreateSerializer,
@@ -170,7 +175,8 @@ class InvoiceListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_list")
     def get(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        base = self.get_queryset()
+        queryset = self.filter_queryset(base)
         results = self.paginate_queryset(queryset, request, view=self)
         serializer = InvoiceListSerializer(results, many=True)
 
@@ -180,8 +186,53 @@ class InvoiceListView(APIView, LimitOffsetPagination):
                 "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
                 "results": serializer.data,
+                # Header figures over everything the caller can see, not just
+                # this page or the current filter -- v1 summed the loaded page,
+                # so the pills disagreed with the rows.
+                "totals": self._totals(base),
             }
         )
+
+    def _totals(self, queryset):
+        """Aggregate the list-header figures in a single query.
+
+        Computed over a subquery of the visible pks rather than ``queryset``
+        directly: the non-admin queryset joins ``assigned_to`` (an M2M), and a
+        ``Sum`` across that join multiplies an invoice's amount by its number
+        of assignees. ``pk__in`` drops the join so the sums are honest.
+        """
+        scoped = Invoice.objects.filter(pk__in=queryset.values("pk"))
+        today = timezone.now().date()
+        unpaid = Q(status__in=UNPAID_STATUSES)
+        quarter_start = datetime.date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
+
+        needs_action = Q(status="Draft") | (unpaid & Q(due_date__lt=today))
+        agg = scoped.aggregate(
+            count=Count("id"),
+            outstanding=Sum("amount_due", filter=unpaid),
+            overdue=Sum("amount_due", filter=unpaid & Q(due_date__lt=today)),
+            due_this_month=Sum(
+                "total_amount",
+                filter=unpaid
+                & Q(due_date__year=today.year, due_date__month=today.month),
+            ),
+            paid_this_quarter=Sum(
+                "amount_paid", filter=Q(paid_at__date__gte=quarter_start)
+            ),
+            draft=Sum("total_amount", filter=Q(status="Draft")),
+            # A *count* (not an amount) for the sidebar badge: invoices waiting
+            # on this person -- drafts to send, plus anything overdue to chase.
+            action_needed=Count("id", filter=needs_action),
+        )
+        return {
+            "count": agg["count"] or 0,
+            "outstanding": str(agg["outstanding"] or 0),
+            "overdue": str(agg["overdue"] or 0),
+            "due_this_month": str(agg["due_this_month"] or 0),
+            "paid_this_quarter": str(agg["paid_this_quarter"] or 0),
+            "draft": str(agg["draft"] or 0),
+            "action_needed": agg["action_needed"] or 0,
+        }
 
     @extend_schema(tags=["Invoices"], operation_id="invoices_create")
     def post(self, request, *args, **kwargs):
@@ -809,7 +860,15 @@ class ProductListView(APIView, LimitOffsetPagination):
         if request.query_params.get("category"):
             queryset = queryset.filter(category=request.query_params.get("category"))
 
-        results = self.paginate_queryset(queryset.order_by("name"), request, view=self)
+        # `used_on` — how many distinct invoices each product is a line item on.
+        # Annotated once here (the hot path) instead of per row so the list does
+        # not fan out into N count queries; `ProductSerializer.get_used_on` reads
+        # this attribute and falls back to its own query on the detail views.
+        queryset = queryset.annotate(
+            used_on_count=Count("invoice_line_items__invoice", distinct=True)
+        ).order_by("name")
+
+        results = self.paginate_queryset(queryset, request, view=self)
         return Response(
             {
                 "count": self.count,
@@ -821,6 +880,20 @@ class ProductListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Products"], operation_id="products_create")
     def post(self, request):
+        # The catalogue is org-wide config: its list prices flow onto every
+        # rep's invoices and estimates. Reading it is open to any member (they
+        # need it to build line items), but changing it is an admin act — the
+        # same posture Organization and Team settings take. A non-admin who
+        # curls this endpoint is refused here, not just hidden from in the UI.
+        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+            return Response(
+                {
+                    "error": True,
+                    "message": "Only an administrator can change the product catalog.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = ProductCreateSerializer(
             data=request.data, context={"request": request}
         )
@@ -859,6 +932,18 @@ class ProductDetailView(APIView):
             )
         return Response(ProductSerializer(product).data)
 
+    def _require_admin(self, request):
+        """Editing the shared catalog is admin-only; see ProductListView.post."""
+        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+            return Response(
+                {
+                    "error": True,
+                    "message": "Only an administrator can change the product catalog.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return None
+
     @extend_schema(tags=["Products"], operation_id="products_update")
     def put(self, request, pk):
         product = self.get_object(pk)
@@ -867,6 +952,10 @@ class ProductDetailView(APIView):
                 {"error": True, "message": "Product not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        denied = self._require_admin(request)
+        if denied:
+            return denied
 
         serializer = ProductCreateSerializer(
             product, data=request.data, partial=True, context={"request": request}
@@ -895,6 +984,10 @@ class ProductDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        denied = self._require_admin(request)
+        if denied:
+            return denied
+
         product.delete()
         return Response(
             {"error": False, "message": "Product deleted"},
@@ -917,12 +1010,16 @@ class EstimateListView(APIView, LimitOffsetPagination):
         role = self.request.profile.role
 
         queryset = Estimate.objects.filter(org=org).select_related(
-            "account", "contact", "opportunity", "created_by"
+            "account", "contact", "opportunity", "created_by", "converted_to_invoice"
         )
 
         if role != "ADMIN" and not self.request.user.is_superuser:
+            # created_by is a User FK; comparing it to a Profile does not just
+            # silently fail here, it reaches the DB as Q(created_by=<Profile>)
+            # and raised ValueError -- a 500 on every non-admin estimate list.
             queryset = queryset.filter(
-                Q(created_by=self.request.profile) | Q(assigned_to=self.request.profile)
+                Q(created_by=self.request.profile.user)
+                | Q(assigned_to=self.request.profile)
             ).distinct()
 
         return queryset
@@ -1008,17 +1105,11 @@ class EstimateDetailView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def get_object(self, pk):
-        return Estimate.objects.filter(id=pk, org=self.request.profile.org).first()
-
     @extend_schema(tags=["Estimates"], operation_id="estimates_retrieve")
     def get(self, request, pk):
-        estimate = self.get_object(pk)
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
         cf_definitions = CustomFieldDefinition.objects.filter(
             org=request.profile.org,
             target_model="Estimate",
@@ -1035,12 +1126,9 @@ class EstimateDetailView(APIView):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_update")
     def put(self, request, pk):
-        estimate = self.get_object(pk)
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
 
         save_kwargs = {}
         if "custom_fields" in request.data:
@@ -1087,12 +1175,9 @@ class EstimateDetailView(APIView):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_destroy")
     def delete(self, request, pk):
-        estimate = self.get_object(pk)
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
 
         estimate.delete()
         return Response(
@@ -1108,12 +1193,9 @@ class EstimateConvertView(APIView):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_convert")
     def post(self, request, pk):
-        estimate = Estimate.objects.filter(id=pk, org=request.profile.org).first()
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
 
         if estimate.converted_to_invoice:
             return Response(
@@ -1191,12 +1273,9 @@ class EstimateSendView(APIView):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_send")
     def post(self, request, pk):
-        estimate = Estimate.objects.filter(id=pk, org=request.profile.org).first()
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
 
         # Update status and sent_at
         if estimate.status == "Draft":
@@ -1219,24 +1298,13 @@ class EstimatePDFView(APIView):
 
     @extend_schema(tags=["Estimates"], operation_id="estimates_pdf")
     def get(self, request, pk):
-        estimate = Estimate.objects.filter(id=pk, org=request.profile.org).first()
-        if not estimate:
-            return Response(
-                {"error": True, "message": "Estimate not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Check user permissions
-        role = request.profile.role
-        if role != "ADMIN" and not request.user.is_superuser:
-            if not (
-                request.profile == estimate.created_by
-                or request.profile in estimate.assigned_to.all()
-            ):
-                return Response(
-                    {"error": True, "message": "Permission denied"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # The old inline check compared request.profile (a Profile) to
+        # estimate.created_by (a User), which is always unequal -- so the
+        # estimate's creator was denied their own PDF while assignees got it.
+        # get_estimate_or_error compares created_by against request.user.
+        estimate, error = get_estimate_or_error(request, pk)
+        if error:
+            return error
 
         try:
             pdf_content = generate_estimate_pdf(estimate)
@@ -1276,6 +1344,15 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
             .select_related("account", "contact")
             .order_by("-created_at")
         )
+
+        # Non-admins see only schedules they created or are assigned to -- the
+        # same scoping as the invoice and estimate lists. created_by is a User
+        # FK, so it is matched against request.profile.user; assigned_to holds
+        # Profiles, matched against request.profile.
+        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+            queryset = queryset.filter(
+                Q(created_by=request.profile.user) | Q(assigned_to=request.profile)
+            ).distinct()
 
         # Apply filters
         params = request.query_params
@@ -1344,19 +1421,11 @@ class RecurringInvoiceDetailView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def get_object(self, pk):
-        return RecurringInvoice.objects.filter(
-            id=pk, org=self.request.profile.org
-        ).first()
-
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_retrieve")
     def get(self, request, pk):
-        recurring = self.get_object(pk)
-        if not recurring:
-            return Response(
-                {"error": True, "message": "Recurring invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        recurring, error = get_recurring_or_error(request, pk)
+        if error:
+            return error
         cf_definitions = CustomFieldDefinition.objects.filter(
             org=request.profile.org,
             target_model="RecurringInvoice",
@@ -1373,12 +1442,9 @@ class RecurringInvoiceDetailView(APIView):
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_update")
     def put(self, request, pk):
-        recurring = self.get_object(pk)
-        if not recurring:
-            return Response(
-                {"error": True, "message": "Recurring invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        recurring, error = get_recurring_or_error(request, pk)
+        if error:
+            return error
 
         save_kwargs = {}
         if "custom_fields" in request.data:
@@ -1425,12 +1491,9 @@ class RecurringInvoiceDetailView(APIView):
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_destroy")
     def delete(self, request, pk):
-        recurring = self.get_object(pk)
-        if not recurring:
-            return Response(
-                {"error": True, "message": "Recurring invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        recurring, error = get_recurring_or_error(request, pk)
+        if error:
+            return error
 
         recurring.delete()
         return Response(
@@ -1446,14 +1509,9 @@ class RecurringInvoicePauseView(APIView):
 
     @extend_schema(tags=["Recurring Invoices"], operation_id="recurring_toggle")
     def post(self, request, pk):
-        recurring = RecurringInvoice.objects.filter(
-            id=pk, org=request.profile.org
-        ).first()
-        if not recurring:
-            return Response(
-                {"error": True, "message": "Recurring invoice not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        recurring, error = get_recurring_or_error(request, pk)
+        if error:
+            return error
 
         recurring.is_active = not recurring.is_active
         recurring.save()
@@ -1473,6 +1531,27 @@ class RecurringInvoicePauseView(APIView):
 # =============================================================================
 
 
+def _forbid_non_admin_template_write(request):
+    """Return a 403 Response for non-admins, or None to allow.
+
+    Invoice templates are org-wide shared config: every member reads the
+    catalogue (to see how their invoices look), but changing a template — its
+    colours, its default flag, its raw HTML/CSS — affects everyone in the org
+    and drives the server-side PDF render. So writes (create/update/delete) are
+    admin-only, while reads stay open. Role is derived from ``request.profile``,
+    never the request body.
+    """
+    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        return Response(
+            {
+                "error": True,
+                "message": "Only an administrator can change invoice templates.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
 class InvoiceTemplateListView(APIView, LimitOffsetPagination):
     """List and create invoice templates"""
 
@@ -1480,8 +1559,10 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_list")
     def get(self, request):
-        queryset = InvoiceTemplate.objects.filter(org=request.profile.org).order_by(
-            "-is_default", "name"
+        queryset = (
+            InvoiceTemplate.objects.filter(org=request.profile.org)
+            .annotate(used_on_invoices_count=Count("invoices"))
+            .order_by("-is_default", "name")
         )
 
         results = self.paginate_queryset(queryset, request, view=self)
@@ -1490,12 +1571,16 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
                 "count": self.count,
                 "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
-                "results": InvoiceTemplateSerializer(results, many=True).data,
+                "results": InvoiceTemplateListSerializer(results, many=True).data,
             }
         )
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_create")
     def post(self, request):
+        denied = _forbid_non_admin_template_write(request)
+        if denied:
+            return denied
+
         serializer = InvoiceTemplateCreateSerializer(
             data=request.data, context={"request": request}
         )
@@ -1505,7 +1590,7 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
                 {
                     "error": False,
                     "message": "Template created",
-                    "template": InvoiceTemplateSerializer(template).data,
+                    "template": InvoiceTemplateListSerializer(template).data,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -1534,10 +1619,15 @@ class InvoiceTemplateDetailView(APIView):
                 {"error": True, "message": "Template not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response(InvoiceTemplateSerializer(template).data)
+        # Safe serializer only — never returns the raw template_html/css.
+        return Response(InvoiceTemplateListSerializer(template).data)
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_update")
     def put(self, request, pk):
+        denied = _forbid_non_admin_template_write(request)
+        if denied:
+            return denied
+
         template = self.get_object(pk)
         if not template:
             return Response(
@@ -1554,7 +1644,7 @@ class InvoiceTemplateDetailView(APIView):
                 {
                     "error": False,
                     "message": "Template updated",
-                    "template": InvoiceTemplateSerializer(template).data,
+                    "template": InvoiceTemplateListSerializer(template).data,
                 }
             )
 
@@ -1565,6 +1655,10 @@ class InvoiceTemplateDetailView(APIView):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_destroy")
     def delete(self, request, pk):
+        denied = _forbid_non_admin_template_write(request)
+        if denied:
+            return denied
+
         template = self.get_object(pk)
         if not template:
             return Response(
@@ -1753,6 +1847,29 @@ class InvoiceAttachmentDetailView(APIView):
 # =============================================================================
 
 
+def _forbid_non_admin_reports(request):
+    """Return a 403 Response for non-admins, or None to allow.
+
+    The invoice reports are org-wide financial roll-ups -- total invoiced and
+    collected, revenue by month, AR aging, who owes what across every account.
+    That is management data. The invoice and estimate *lists* scope a non-admin
+    to their own and assigned records; a report that ignored that scoping and
+    showed the whole org's revenue and receivables to any member would be the
+    leak those scopes exist to prevent. So the three report endpoints are
+    admin-only (Django superusers included), the same bar as the org and team
+    settings.
+    """
+    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        return Response(
+            {
+                "error": True,
+                "message": "Only an administrator can view invoice reports.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
 class InvoiceDashboardView(APIView):
     """Dashboard summary for invoices"""
 
@@ -1760,6 +1877,10 @@ class InvoiceDashboardView(APIView):
 
     @extend_schema(tags=["Reports"], operation_id="dashboard")
     def get(self, request):
+        denied = _forbid_non_admin_reports(request)
+        if denied:
+            return denied
+
         org = request.profile.org
         today = timezone.now().date()
         thirty_days_ago = today - timedelta(days=30)
@@ -1798,6 +1919,17 @@ class InvoiceDashboardView(APIView):
             recent_invoices.aggregate(total=Sum("total_amount"))["total"] or 0
         )
 
+        # Average days from issue to payment, over paid invoices that carry both
+        # dates. Computed in Python so it does not depend on a database-specific
+        # date-difference expression; the paid set is bounded.
+        paid_with_dates = all_invoices.filter(
+            paid_at__isnull=False, issue_date__isnull=False
+        ).only("paid_at", "issue_date")
+        pay_gaps = [
+            (inv.paid_at.date() - inv.issue_date).days for inv in paid_with_dates
+        ]
+        average_days_to_pay = round(sum(pay_gaps) / len(pay_gaps)) if pay_gaps else 0
+
         # Estimates summary
         all_estimates = Estimate.objects.filter(org=org)
         estimates_pending = all_estimates.filter(status__in=["Sent", "Viewed"]).count()
@@ -1811,6 +1943,8 @@ class InvoiceDashboardView(APIView):
                     "total_paid": str(totals["total_paid"] or 0),
                     "total_due": str(totals["total_due"] or 0),
                 },
+                "invoice_count": all_invoices.count(),
+                "average_days_to_pay": average_days_to_pay,
                 "status_counts": {
                     item["status"]: item["count"] for item in status_counts
                 },
@@ -1840,6 +1974,10 @@ class RevenueReportView(APIView):
 
     @extend_schema(tags=["Reports"], operation_id="revenue_report")
     def get(self, request):
+        denied = _forbid_non_admin_reports(request)
+        if denied:
+            return denied
+
         org = request.profile.org
 
         # Date range filters
@@ -1857,80 +1995,78 @@ class RevenueReportView(APIView):
         else:
             end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
 
-        # Get paid invoices in date range
+        from django.db.models.functions import (
+            TruncDay,
+            TruncMonth,
+            TruncWeek,
+            TruncYear,
+        )
+
+        trunc = {
+            "day": TruncDay,
+            "week": TruncWeek,
+            "year": TruncYear,
+        }.get(group_by, TruncMonth)
+
+        # Two series over the same window, on two different dates: money
+        # *collected* is grouped by paid_at, money *invoiced* by issue_date. They
+        # do not line up period to period -- an invoice raised in one month is
+        # paid in another -- which is the whole point the chart is trying to
+        # show, so both are returned and merged by period rather than divided.
         paid_invoices = Invoice.objects.filter(
             org=org,
             paid_at__date__gte=start_date,
             paid_at__date__lte=end_date,
         )
+        paid_grouped = (
+            paid_invoices.annotate(period=trunc("paid_at"))
+            .values("period")
+            .annotate(revenue=Sum("amount_paid"), count=Count("id"))
+        )
 
-        # Group revenue
-        if group_by == "day":
-            from django.db.models.functions import TruncDay
+        invoiced_invoices = Invoice.objects.filter(
+            org=org,
+            issue_date__gte=start_date,
+            issue_date__lte=end_date,
+        )
+        invoiced_grouped = (
+            invoiced_invoices.annotate(period=trunc("issue_date"))
+            .values("period")
+            .annotate(invoiced=Sum("total_amount"))
+        )
 
-            grouped = (
-                paid_invoices.annotate(period=TruncDay("paid_at"))
-                .values("period")
-                .annotate(
-                    revenue=Sum("amount_paid"),
-                    count=Count("id"),
-                )
-                .order_by("period")
+        # Merge the two series into one period-keyed row set.
+        periods = {}
+        for item in paid_grouped:
+            key = item["period"].strftime("%Y-%m-%d") if item["period"] else None
+            row = periods.setdefault(
+                key, {"period": key, "invoiced": 0, "revenue": 0, "count": 0}
             )
-        elif group_by == "week":
-            from django.db.models.functions import TruncWeek
-
-            grouped = (
-                paid_invoices.annotate(period=TruncWeek("paid_at"))
-                .values("period")
-                .annotate(
-                    revenue=Sum("amount_paid"),
-                    count=Count("id"),
-                )
-                .order_by("period")
+            row["revenue"] = item["revenue"] or 0
+            row["count"] = item["count"]
+        for item in invoiced_grouped:
+            key = item["period"].strftime("%Y-%m-%d") if item["period"] else None
+            row = periods.setdefault(
+                key, {"period": key, "invoiced": 0, "revenue": 0, "count": 0}
             )
-        elif group_by == "year":
-            from django.db.models.functions import TruncYear
+            row["invoiced"] = item["invoiced"] or 0
 
-            grouped = (
-                paid_invoices.annotate(period=TruncYear("paid_at"))
-                .values("period")
-                .annotate(
-                    revenue=Sum("amount_paid"),
-                    count=Count("id"),
-                )
-                .order_by("period")
-            )
-        else:  # month (default)
-            from django.db.models.functions import TruncMonth
-
-            grouped = (
-                paid_invoices.annotate(period=TruncMonth("paid_at"))
-                .values("period")
-                .annotate(
-                    revenue=Sum("amount_paid"),
-                    count=Count("id"),
-                )
-                .order_by("period")
-            )
-
-        # Format results
         data = [
             {
-                "period": (
-                    item["period"].strftime("%Y-%m-%d") if item["period"] else None
-                ),
-                "revenue": str(item["revenue"] or 0),
-                "count": item["count"],
+                "period": row["period"],
+                "invoiced": str(row["invoiced"] or 0),
+                "revenue": str(row["revenue"] or 0),
+                "count": row["count"],
             }
-            for item in grouped
+            for row in sorted(
+                periods.values(), key=lambda r: (r["period"] is None, r["period"])
+            )
         ]
 
-        # Total
-        total = paid_invoices.aggregate(
-            revenue=Sum("amount_paid"),
-            count=Count("id"),
+        paid_total = paid_invoices.aggregate(
+            revenue=Sum("amount_paid"), count=Count("id")
         )
+        invoiced_total = invoiced_invoices.aggregate(invoiced=Sum("total_amount"))
 
         return Response(
             {
@@ -1939,8 +2075,9 @@ class RevenueReportView(APIView):
                 "group_by": group_by,
                 "data": data,
                 "total": {
-                    "revenue": str(total["revenue"] or 0),
-                    "count": total["count"],
+                    "invoiced": str(invoiced_total["invoiced"] or 0),
+                    "revenue": str(paid_total["revenue"] or 0),
+                    "count": paid_total["count"],
                 },
             }
         )
@@ -1953,15 +2090,20 @@ class AgingReportView(APIView):
 
     @extend_schema(tags=["Reports"], operation_id="aging_report")
     def get(self, request):
+        denied = _forbid_non_admin_reports(request)
+        if denied:
+            return denied
+
         org = request.profile.org
         today = timezone.now().date()
 
-        # Get unpaid invoices
+        # Get unpaid invoices. select_related the account so the by-account
+        # roll-up below does not fire a query per invoice.
         unpaid_invoices = Invoice.objects.filter(
             org=org,
-            status__in=["Sent", "Viewed", "Partially_Paid", "Overdue"],
+            status__in=UNPAID_STATUSES,
             amount_due__gt=0,
-        )
+        ).select_related("account")
 
         # Categorize by age
         current = []  # Not yet due
@@ -1969,6 +2111,9 @@ class AgingReportView(APIView):
         days_31_60 = []
         days_61_90 = []
         over_90 = []
+        # Overdue money rolled up by who owes it -- the "who owes it" table needs
+        # a per-account view the capped per-bucket invoice lists cannot give.
+        by_account = {}
 
         for invoice in unpaid_invoices:
             if not invoice.due_date:
@@ -1979,7 +2124,9 @@ class AgingReportView(APIView):
 
             if days_overdue <= 0:
                 current.append(invoice)
-            elif days_overdue <= 30:
+                continue
+
+            if days_overdue <= 30:
                 days_1_30.append(invoice)
             elif days_overdue <= 60:
                 days_31_60.append(invoice)
@@ -1987,6 +2134,26 @@ class AgingReportView(APIView):
                 days_61_90.append(invoice)
             else:
                 over_90.append(invoice)
+
+            # Only genuinely-overdue invoices (past their due date) roll up here.
+            key = str(invoice.account_id) if invoice.account_id else None
+            entry = by_account.get(key)
+            if entry is None:
+                entry = {
+                    "id": key,
+                    "name": (
+                        invoice.account.name
+                        if invoice.account_id
+                        else (invoice.client_name or "No account")
+                    ),
+                    "count": 0,
+                    "oldest_days": 0,
+                    "amount": Decimal("0"),
+                }
+                by_account[key] = entry
+            entry["count"] += 1
+            entry["amount"] += invoice.amount_due or Decimal("0")
+            entry["oldest_days"] = max(entry["oldest_days"], days_overdue)
 
         def summarize(invoices):
             total = sum((inv.amount_due or Decimal("0")) for inv in invoices)
@@ -2008,6 +2175,24 @@ class AgingReportView(APIView):
                 ],
             }
 
+        overdue_invoices = days_1_30 + days_31_60 + days_61_90 + over_90
+        overdue_amount = sum(
+            (inv.amount_due or Decimal("0")) for inv in overdue_invoices
+        )
+
+        by_account_rows = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "count": row["count"],
+                "oldest_days": row["oldest_days"],
+                "amount": str(row["amount"]),
+            }
+            for row in sorted(
+                by_account.values(), key=lambda r: r["amount"], reverse=True
+            )
+        ]
+
         return Response(
             {
                 "current": summarize(current),
@@ -2015,6 +2200,11 @@ class AgingReportView(APIView):
                 "31_60_days": summarize(days_31_60),
                 "61_90_days": summarize(days_61_90),
                 "over_90_days": summarize(over_90),
+                "overdue": {
+                    "count": len(overdue_invoices),
+                    "amount": str(overdue_amount),
+                },
+                "by_account": by_account_rows,
                 "total": {
                     "count": unpaid_invoices.count(),
                     "amount": str(

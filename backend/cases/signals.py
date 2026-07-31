@@ -177,6 +177,74 @@ def case_pre_save_sla_pause(sender, instance, **kwargs):
         instance.sla_paused_at = None
 
 
+RESOLVED_STATUSES = ("Closed",)
+
+
+@receiver(pre_save, sender=Case)
+def case_pre_save_stamp_resolved_at(sender, instance, **kwargs):
+    """Record *when* a case was resolved, which nothing did.
+
+    `resolved_at` drives `is_sla_resolution_breached`, the MTTR dashboard and
+    the resolution half of the escalation scan. The only code in the repo that
+    ever wrote it was `parent_views.close_with_children`; a case closed the
+    ordinary way — the API, the v1 UI, a bulk update, a kanban drag — kept
+    `resolved_at = NULL` forever. Both seeded Closed cases show it.
+
+    The consequences ran one way: a resolved case stayed permanently
+    "resolution breached" because the property reads NULL as *not resolved
+    yet*, and MTTR silently excluded every ticket the team actually closed.
+
+    Stamped on the transition into Closed and cleared on the way back out, so
+    a reopened case is not still carrying the timestamp of its last life.
+
+    `closed_on` is cleared on the way out for the same reason, and for a second
+    one: the serializer's close gate requires a closing date, and it accepts a
+    date already on the record. A ticket reopened without clearing it would sit
+    there as status=New holding last month's closing date, and the next close
+    would satisfy the gate with it instead of a real one. The customer-reply
+    reopen path in `_evaluate_reopen` has always cleared it; a status change
+    made by hand did not.
+    """
+    old = getattr(instance, "_audit_old", None)
+    was_resolved = old is not None and old.status in RESOLVED_STATUSES
+    is_resolved = instance.status in RESOLVED_STATUSES
+
+    if is_resolved and not was_resolved and instance.resolved_at is None:
+        instance.resolved_at = timezone.now()
+    elif was_resolved and not is_resolved:
+        instance.resolved_at = None
+        instance.closed_on = None
+
+
+def _maybe_stamp_first_response(case, comment):
+    """Stamp `first_response_at` on the first agent reply to a ticket.
+
+    Nothing wrote this field either — not the API, not the v1 UI, not the
+    inbound-email path — while four things read it: the breach property, the
+    "first reply" column, the escalation scan and the FRT dashboard. So every
+    case in every org was permanently first-response-breached, the escalation
+    task re-fired on tickets that had been answered hours ago, and no ticket
+    could ever be shown as having met its target. Confirmed live: replying to
+    a ticket left the field NULL and `is_sla_first_response_breached` True.
+
+    "First response" is the first *public* comment from somebody on our side.
+    An internal note is not a reply to the customer, and a comment with no
+    `commented_by` is the customer themselves — the same test
+    `_evaluate_reopen` already uses to tell the two apart.
+    """
+    if case.first_response_at is not None:
+        return
+    if getattr(comment, "is_internal", False):
+        return
+    if comment.commented_by_id is None:
+        return
+    stamped = comment.created_at or timezone.now()
+    case.first_response_at = stamped
+    Case.objects.filter(pk=case.pk, first_response_at__isnull=True).update(
+        first_response_at=stamped
+    )
+
+
 @receiver(post_save, sender=Case)
 def case_post_save_emit_activity(sender, instance, created, **kwargs):
     if created:
@@ -370,8 +438,12 @@ def _evaluate_reopen(case, comment):
 
     case.status = policy["reopen_to_status"]
     case.closed_on = None
+    # `.update()` skips signals, so the resolved_at reset that
+    # `case_pre_save_stamp_resolved_at` does on a normal save has to be
+    # written out by hand here — a reopened ticket is not a resolved one.
+    case.resolved_at = None
     Case.objects.filter(pk=case.pk).update(
-        status=case.status, closed_on=None
+        status=case.status, closed_on=None, resolved_at=None
     )
     _create_activity(
         case,
@@ -397,9 +469,7 @@ def _notify_reopen_assignees(case):
     if not assignee_ids:
         return
     try:
-        send_email_to_assigned_user.delay(
-            assignee_ids, str(case.pk), str(case.org_id)
-        )
+        send_email_to_assigned_user.delay(assignee_ids, str(case.pk), str(case.org_id))
     except Exception:  # pragma: no cover - notification failures are non-blocking
         logger.warning(
             "send_email_to_assigned_user failed for reopen of case=%s", case.pk
@@ -428,8 +498,12 @@ def maybe_reopen_for_inbound_email(case, email_message):
 
     case.status = policy["reopen_to_status"]
     case.closed_on = None
+    # `.update()` skips signals, so the resolved_at reset that
+    # `case_pre_save_stamp_resolved_at` does on a normal save has to be
+    # written out by hand here — a reopened ticket is not a resolved one.
+    case.resolved_at = None
     Case.objects.filter(pk=case.pk).update(
-        status=case.status, closed_on=None
+        status=case.status, closed_on=None, resolved_at=None
     )
     _create_activity(
         case,
@@ -532,6 +606,7 @@ def comment_post_save_emit_activity(sender, instance, created, **kwargs):
         reopen_outcome = _evaluate_reopen(case, instance)
         if reopen_outcome == "out_of_window":
             metadata["out_of_reopen_window"] = True
+        _maybe_stamp_first_response(case, instance)
         _create_activity(case, "COMMENT", metadata, actor=actor)
         # Tier 2: fan out to watchers + mentions. Local import avoids a
         # circular import (cases.notifications -> cases.models -> signals).

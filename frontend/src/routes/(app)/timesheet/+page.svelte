@@ -275,7 +275,7 @@
                 <div class="flex items-baseline justify-between gap-2">
                   <a
                     class="truncate font-medium hover:underline"
-                    href={`/tickets/${e.case}`}
+                    href={`/tickets/${e.case.id}`}
                   >
                     {e.description || 'Untitled session'}
                   </a>

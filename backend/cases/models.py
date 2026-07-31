@@ -12,7 +12,6 @@ from common.models import Org, Profile, Tags, Teams
 from common.utils import CASE_TYPE, CURRENCY_CODES, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 
-
 # Cleanup notes:
 # - Removed 'created_on_arrow' property from Case and Solution (frontend computes its own timestamps)
 # - Fixed case_type default from "" to None (empty string is bad default for nullable field)
@@ -243,9 +242,7 @@ class Case(AssignableMixin, BaseModel):
                         ) % {"max": self.PARENT_MAX_DEPTH}
                 # Block linking to/from a Duplicate (merged) case.
                 if parent_obj is not None and parent_obj.status == "Duplicate":
-                    errors["parent"] = _(
-                        "Cannot link to a case that has been merged."
-                    )
+                    errors["parent"] = _("Cannot link to a case that has been merged.")
                 if self.status == "Duplicate":
                     errors["parent"] = _(
                         "A merged case cannot be linked under a parent."
@@ -304,11 +301,9 @@ class Case(AssignableMixin, BaseModel):
         # forward verbatim — we don't try to walk this through business hours
         # again because it represents real elapsed time the agent had to wait,
         # not a target that respects the calendar.
-        paused = (self.sla_paused_seconds or 0)
+        paused = self.sla_paused_seconds or 0
         if self.sla_paused_at is not None:
-            paused += max(
-                int((timezone.now() - self.sla_paused_at).total_seconds()), 0
-            )
+            paused += max(int((timezone.now() - self.sla_paused_at).total_seconds()), 0)
         if paused:
             deadline = deadline + timedelta(seconds=paused)
         return deadline
@@ -368,9 +363,7 @@ class CaseWatcher(BaseModel):
     subscribed_via = models.CharField(
         max_length=16, choices=SUBSCRIBED_VIA_CHOICES, default="manual"
     )
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="case_watchers"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="case_watchers")
 
     class Meta:
         verbose_name = "Case Watcher"
@@ -423,9 +416,7 @@ class CsatSurvey(BaseModel):
     comment = models.TextField(blank=True, default="")
     responded_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField()
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="csat_surveys"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="csat_surveys")
 
     class Meta:
         verbose_name = "CSAT Survey"
@@ -710,9 +701,7 @@ class InboundMailbox(BaseModel):
         Org, on_delete=models.CASCADE, related_name="inbound_mailboxes"
     )
     address = models.EmailField(_("Inbound Address"))
-    provider = models.CharField(
-        max_length=16, choices=PROVIDER_CHOICES, default="ses"
-    )
+    provider = models.CharField(max_length=16, choices=PROVIDER_CHOICES, default="ses")
     webhook_secret = models.CharField(
         max_length=128,
         blank=True,
@@ -732,7 +721,11 @@ class InboundMailbox(BaseModel):
     )
     default_case_type = models.CharField(
         max_length=255,
-        choices=[("Question", "Question"), ("Incident", "Incident"), ("Problem", "Problem")],
+        choices=[
+            ("Question", "Question"),
+            ("Incident", "Incident"),
+            ("Problem", "Problem"),
+        ],
         blank=True,
         null=True,
     )
@@ -785,6 +778,16 @@ class EmailMessage(BaseModel):
         blank=True,
         help_text="Null when the message was dropped (spam/bounce/auto-reply) "
         "but we still want an audit trail.",
+    )
+    mailbox = models.ForeignKey(
+        "InboundMailbox",
+        on_delete=models.SET_NULL,
+        related_name="email_messages",
+        null=True,
+        blank=True,
+        help_text="The inbound address this message arrived through. Set at "
+        "ingest; SET_NULL keeps the audit row if the mailbox is later deleted. "
+        "Null on historical rows the backfill could not attribute.",
     )
     direction = models.CharField(
         max_length=16, choices=DIRECTION_CHOICES, default="inbound"
@@ -855,9 +858,7 @@ class RoutingRule(BaseModel):
         ("by_team", "Assign to target_team"),
     ]
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="routing_rules"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="routing_rules")
     name = models.CharField(max_length=255)
     priority_order = models.PositiveIntegerField(
         default=100,
@@ -940,9 +941,7 @@ class TimeEntry(BaseModel):
     check.
     """
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="time_entries"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="time_entries")
     case = models.ForeignKey(
         Case, on_delete=models.CASCADE, related_name="time_entries"
     )
@@ -968,9 +967,7 @@ class TimeEntry(BaseModel):
         blank=True,
         help_text="Snapshot at log time so future rate changes do not alter history.",
     )
-    currency = models.CharField(
-        max_length=3, choices=CURRENCY_CODES, default="USD"
-    )
+    currency = models.CharField(max_length=3, choices=CURRENCY_CODES, default="USD")
 
     invoice = models.ForeignKey(
         "invoices.Invoice",
@@ -1040,4 +1037,3 @@ class TimeEntry(BaseModel):
 # but must be importable through ``cases.models`` so Django's app registry,
 # `makemigrations`, and existing reverse-related lookups all resolve them.
 from cases.approvals import Approval, ApprovalRule  # noqa: E402,F401
-

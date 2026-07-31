@@ -28,11 +28,13 @@ export async function load({ params, fetch }) {
     token: params.token,
     survey: {
       ticketSubject: data.case_subject,
+      closedAt: data.case_closed_on,
       orgName: data.org_name,
       agentName: data.agent_name,
       rating: data.rating,
       comment: data.comment || '',
-      respondedAt: data.responded_at
+      respondedAt: data.responded_at,
+      editableUntil: data.edit_window_closes_at
     }
   };
 }

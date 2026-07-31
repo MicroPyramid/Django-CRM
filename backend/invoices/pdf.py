@@ -8,12 +8,13 @@ for invoices and estimates with customizable templates.
 import io
 import os
 from decimal import Decimal
+from urllib.parse import unquote, urlparse
 
 from django.conf import settings
 from django.template.loader import render_to_string
 
 try:
-    from weasyprint import CSS, HTML
+    from weasyprint import CSS, HTML, default_url_fetcher
     from weasyprint.text.fonts import FontConfiguration
 
     WEASYPRINT_AVAILABLE = True
@@ -27,6 +28,116 @@ def check_weasyprint():
         raise ImportError(
             "WeasyPrint is not installed. Install it with: pip install weasyprint"
         )
+
+
+def _within(path, root):
+    """True only if `path` resolves to a location inside `root`.
+
+    Both are canonicalised with realpath first so that `..` segments and
+    symlinks cannot escape `root`.
+    """
+    if not root:
+        return False
+    try:
+        root_real = os.path.realpath(str(root))
+        path_real = os.path.realpath(str(path))
+        return os.path.commonpath([root_real, path_real]) == root_real
+    except (ValueError, OSError):
+        return False
+
+
+# The ONLY files a PDF render legitimately loads are logos. Restrict local file
+# access to these subtrees of MEDIA_ROOT so a crafted template cannot embed
+# another tenant's uploaded attachments/documents (MEDIA_ROOT is a flat,
+# cross-tenant tree: `attachments/…`, `docs/…` are NOT org-partitioned). Only a
+# cross-org LOGO read remains possible, which is low-sensitivity branding.
+_ALLOWED_MEDIA_SUBDIRS = ("org_logos/", "invoice_templates/logos/")
+
+
+def _allowed_media_file(parsed):
+    """Map an allowed local MEDIA logo url onto its on-disk path, or return None.
+
+    Three walls: the url path must sit under MEDIA_URL; the remainder must be one
+    of the logo subtrees in ``_ALLOWED_MEDIA_SUBDIRS`` (so attachments/docs of
+    any org are unreachable); and the joined path, once canonicalised, must not
+    escape MEDIA_ROOT (blocks ``..``/symlink traversal). Anything else — app
+    source, ``crm/settings.py``, ``.env``, keys, other orgs' attachments — is
+    outside the allowlist and returns None.
+    """
+    media_root = getattr(settings, "MEDIA_ROOT", "")
+    if not media_root or not os.path.isabs(str(media_root)):
+        # No usable local MEDIA root (e.g. the S3 marker in prod) — no local
+        # file is legitimately loadable; the http(s) allowlist handles prod.
+        return None
+
+    url_path = unquote(parsed.path or "")
+    media_url = getattr(settings, "MEDIA_URL", "/media/") or "/media/"
+    prefix = urlparse(media_url).path or media_url
+    if not prefix.startswith("/"):
+        prefix = "/" + prefix
+    if not prefix.endswith("/"):
+        prefix += "/"
+    if not url_path.startswith(prefix):
+        return None
+
+    rel = url_path[len(prefix) :].lstrip("/")
+    if not rel.startswith(_ALLOWED_MEDIA_SUBDIRS):
+        return None
+
+    candidate = os.path.join(str(media_root), rel)
+    if _within(candidate, media_root) and os.path.isfile(candidate):
+        return candidate
+    return None
+
+
+def safe_pdf_url_fetcher(url):
+    """Restrict what WeasyPrint may fetch while rendering an invoice/estimate.
+
+    Invoice templates carry org-authored HTML/CSS (``template_html`` /
+    ``template_css``) that is rendered server-side with ``base_url=BASE_DIR``.
+    Left unrestricted (the WeasyPrint default fetcher allows ``file://`` and any
+    ``http(s)``), an ``<img>`` or CSS ``url()`` in that markup turns PDF
+    generation into an SSRF (cloud metadata at 169.254.169.254, localhost,
+    internal services) and a local-file read (``/etc/passwd``, app source,
+    ``.env``, secret keys). This fetcher denies by default and only permits the
+    three things a legitimate render actually needs:
+
+    * ``data:`` URIs — inert, no disk or network.
+    * A local logo file inside MEDIA_ROOT (see ``_allowed_media_file``) — dev.
+    * HTTPS to the configured S3 media host only — the org logo in prod.
+
+    Must be passed to BOTH ``HTML(...)`` and ``CSS(...)`` — WeasyPrint resolves
+    ``@import`` / ``@font-face`` / ``@color-profile`` at CSS parse time through
+    the CSS object's own fetcher, so a CSS() left on the default fetcher would
+    reopen the whole SSRF/LFI through ``template_css``.
+    """
+    parsed = urlparse(url)
+    scheme = (parsed.scheme or "").lower()
+
+    if scheme == "data":
+        return default_url_fetcher(url)
+
+    # http(s) — and protocol-relative //host/path — only to the S3 media host.
+    if scheme in ("http", "https") or (scheme == "" and parsed.netloc):
+        s3_host = (getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "") or "").lower()
+        host = (parsed.hostname or "").lower()
+        if s3_host and host == s3_host:
+            # Residual: default_url_fetcher follows 30x, and only the first hop
+            # is host-checked. Low risk — the S3 host is trusted and fixed, and
+            # only serves the org's own logo object; urllib refuses redirects to
+            # non-http(s)/ftp, so no redirect->file://.
+            return default_url_fetcher(url)
+        raise ValueError(f"Blocked non-allowlisted host in PDF template: {url!r}")
+
+    # file:// or a bare local path — only files inside MEDIA_ROOT.
+    if scheme in ("", "file"):
+        candidate = _allowed_media_file(parsed)
+        if candidate:
+            return default_url_fetcher("file://" + candidate)
+        raise ValueError(f"Blocked local-file access in PDF template: {url!r}")
+
+    # ftp:, gopher:, jar:, dict: ... — deny by default.
+    raise ValueError(f"Blocked disallowed URL scheme in PDF template: {url!r}")
 
 
 def get_default_css():
@@ -361,9 +472,9 @@ def generate_invoice_pdf(invoice, include_payments=True):
         line_items.append(
             {
                 "name": item.name if item.name else item.description,
-                "description": item.description
-                if item.name
-                else "",  # Show description as subtitle if name is set
+                "description": (
+                    item.description if item.name else ""
+                ),  # Show description as subtitle if name is set
                 "quantity": item.quantity,
                 "unit_price": format_currency(item.unit_price, invoice.currency),
                 "tax_rate": item.tax_rate,
@@ -425,8 +536,17 @@ def generate_invoice_pdf(invoice, include_payments=True):
 
     # Generate PDF
     font_config = FontConfiguration()
-    html = HTML(string=html_content, base_url=settings.BASE_DIR)
-    css = CSS(string=css_content, font_config=font_config)
+    html = HTML(
+        string=html_content,
+        base_url=settings.BASE_DIR,
+        url_fetcher=safe_pdf_url_fetcher,
+    )
+    css = CSS(
+        string=css_content,
+        base_url=settings.BASE_DIR,
+        url_fetcher=safe_pdf_url_fetcher,
+        font_config=font_config,
+    )
 
     pdf_buffer = io.BytesIO()
     html.write_pdf(pdf_buffer, stylesheets=[css], font_config=font_config)
@@ -459,9 +579,9 @@ def generate_estimate_pdf(estimate):
         line_items.append(
             {
                 "name": item.name if item.name else item.description,
-                "description": item.description
-                if item.name
-                else "",  # Show description as subtitle if name is set
+                "description": (
+                    item.description if item.name else ""
+                ),  # Show description as subtitle if name is set
                 "quantity": item.quantity,
                 "unit_price": format_currency(item.unit_price, estimate.currency),
                 "tax_rate": item.tax_rate,
@@ -495,8 +615,17 @@ def generate_estimate_pdf(estimate):
 
     # Generate PDF
     font_config = FontConfiguration()
-    html = HTML(string=html_content, base_url=settings.BASE_DIR)
-    css = CSS(string=css_content, font_config=font_config)
+    html = HTML(
+        string=html_content,
+        base_url=settings.BASE_DIR,
+        url_fetcher=safe_pdf_url_fetcher,
+    )
+    css = CSS(
+        string=css_content,
+        base_url=settings.BASE_DIR,
+        url_fetcher=safe_pdf_url_fetcher,
+        font_config=font_config,
+    )
 
     pdf_buffer = io.BytesIO()
     html.write_pdf(pdf_buffer, stylesheets=[css], font_config=font_config)

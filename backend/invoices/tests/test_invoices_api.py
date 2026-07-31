@@ -4,6 +4,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
@@ -72,6 +73,21 @@ def invoice_org_b(account_org_b, org_b):
         invoice_title="Org B Invoice",
         account=account_org_b,
         currency="USD",
+        org=org_b,
+    )
+
+
+@pytest.fixture
+def estimate_org_b(account_org_b, contact_org_b, org_b):
+    return Estimate.objects.create(
+        title="Org B Estimate",
+        account=account_org_b,
+        contact=contact_org_b,
+        client_name="Org B Client",
+        client_email="orgbclient@example.com",
+        currency="USD",
+        issue_date=datetime.date.today(),
+        expiry_date=datetime.date.today() + datetime.timedelta(days=30),
         org=org_b,
     )
 
@@ -648,6 +664,115 @@ class TestInvoiceCreateValidation:
         assert mock_history.called
 
 
+@pytest.mark.django_db
+class TestInvoiceCreateAuthorization:
+    """The from-scratch invoice builder posts to InvoiceCreateSerializer. Three
+    member-reachable holes are closed here and proven both ways: status is
+    lifecycle-only (a new invoice is always Draft, never a fake "Paid"), and the
+    template + line-item product FKs are org-scoped (no cross-tenant IDOR).
+    account/contact/opportunity were already scoped and stay covered elsewhere.
+    """
+
+    def _payload(self, account, contact, **extra):
+        payload = {
+            "invoice_title": "Builder invoice",
+            "account_id": str(account.id),
+            "contact_id": str(contact.id),
+            "currency": "USD",
+        }
+        payload.update(extra)
+        return payload
+
+    def test_status_is_forced_to_draft_on_create(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
+        # A client POSTing status="Paid" must NOT mint a paid invoice.
+        response = admin_client.post(
+            "/api/invoices/",
+            self._payload(account_for_invoice, contact_for_invoice, status="Paid"),
+            format="json",
+        )
+        assert response.status_code == 201
+        invoice = Invoice.objects.get(id=response.json()["invoice"]["id"])
+        assert invoice.status == "Draft"
+        assert invoice.amount_paid == 0
+        assert not invoice.payments.exists()
+
+    def test_cross_org_template_is_rejected(
+        self, admin_client, account_for_invoice, contact_for_invoice, org_b
+    ):
+        other = InvoiceTemplate.objects.create(name="Org B template", org=org_b)
+        response = admin_client.post(
+            "/api/invoices/",
+            self._payload(
+                account_for_invoice, contact_for_invoice, template_id=str(other.id)
+            ),
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "template_id" in response.json().get("errors", {})
+
+    def test_own_org_template_is_accepted(
+        self, admin_client, account_for_invoice, contact_for_invoice, template
+    ):
+        response = admin_client.post(
+            "/api/invoices/",
+            self._payload(
+                account_for_invoice, contact_for_invoice, template_id=str(template.id)
+            ),
+            format="json",
+        )
+        assert response.status_code == 201
+        invoice = Invoice.objects.get(id=response.json()["invoice"]["id"])
+        assert invoice.template_id == template.id
+
+    def test_cross_org_line_item_product_is_rejected(
+        self, admin_client, account_for_invoice, contact_for_invoice, org_b
+    ):
+        other_product = Product.objects.create(
+            name="Org B product", price=Decimal("5.00"), org=org_b
+        )
+        response = admin_client.post(
+            "/api/invoices/",
+            self._payload(
+                account_for_invoice,
+                contact_for_invoice,
+                line_items=[
+                    {
+                        "name": "Item",
+                        "quantity": 1,
+                        "unit_price": "5.00",
+                        "product": str(other_product.id),
+                    }
+                ],
+            ),
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "line_items" in response.json().get("errors", {})
+
+    def test_own_org_line_item_product_is_accepted(
+        self, admin_client, account_for_invoice, contact_for_invoice, product
+    ):
+        response = admin_client.post(
+            "/api/invoices/",
+            self._payload(
+                account_for_invoice,
+                contact_for_invoice,
+                line_items=[
+                    {
+                        "name": "Item",
+                        "quantity": 1,
+                        "unit_price": "5.00",
+                        "product": str(product.id),
+                    }
+                ],
+            ),
+            format="json",
+        )
+        assert response.status_code == 201
+
+
 # ---------------------------------------------------------------------------
 # Invoice Detail - permission edge cases
 # ---------------------------------------------------------------------------
@@ -1114,6 +1239,113 @@ class TestProductDetailView:
         assert response.status_code == 404
 
 
+@pytest.mark.django_db
+class TestProductWriteAuthorization:
+    """The product catalogue is org-wide config: its list prices flow onto every
+    rep's invoices and estimates. Reading it is open to any member (they build
+    line items from it), but creating/editing/deleting is admin-only — see
+    ProductListView.post and ProductDetailView._require_admin. Both directions
+    are proven here: a non-admin is refused, an admin is allowed.
+    """
+
+    def test_non_admin_can_list_products(self, user_client, product):
+        response = user_client.get("/api/invoices/products/")
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+
+    def test_non_admin_can_read_product(self, user_client, product):
+        response = user_client.get(f"/api/invoices/products/{product.id}/")
+        assert response.status_code == 200
+        assert response.json()["name"] == "Test Product"
+
+    def test_non_admin_cannot_create_product(self, user_client):
+        response = user_client.post(
+            "/api/invoices/products/",
+            {"name": "Sneaky", "price": "10.00"},
+            format="json",
+        )
+        assert response.status_code == 403
+        assert not Product.objects.filter(name="Sneaky").exists()
+
+    def test_non_admin_cannot_update_product(self, user_client, product):
+        response = user_client.put(
+            f"/api/invoices/products/{product.id}/",
+            {"name": "Repriced", "price": "1.00"},
+            format="json",
+        )
+        assert response.status_code == 403
+        product.refresh_from_db()
+        assert product.name == "Test Product"
+        assert product.price == Decimal("99.99")
+
+    def test_non_admin_cannot_delete_product(self, user_client, product):
+        response = user_client.delete(f"/api/invoices/products/{product.id}/")
+        assert response.status_code == 403
+        assert Product.objects.filter(id=product.id).exists()
+
+    def test_admin_can_create_update_delete(self, admin_client):
+        created = admin_client.post(
+            "/api/invoices/products/",
+            {"name": "Adminmade", "price": "5.00"},
+            format="json",
+        )
+        assert created.status_code == 201
+        pid = created.json()["product"]["id"]
+
+        updated = admin_client.put(
+            f"/api/invoices/products/{pid}/",
+            {"price": "6.00"},
+            format="json",
+        )
+        assert updated.status_code == 200
+
+        deleted = admin_client.delete(f"/api/invoices/products/{pid}/")
+        assert deleted.status_code == 200
+        assert not Product.objects.filter(id=pid).exists()
+
+
+@pytest.mark.django_db
+class TestProductUsedOn:
+    """`used_on` reports the number of DISTINCT invoices a product is a line item
+    on — annotated across the list, computed on the single detail. Two line items
+    on one invoice count once; it is why a retired product stays worth listing.
+    """
+
+    def test_used_on_zero_when_never_invoiced(self, admin_client, product):
+        response = admin_client.get(f"/api/invoices/products/{product.id}/")
+        assert response.status_code == 200
+        assert response.json()["used_on"] == 0
+
+    def test_used_on_counts_distinct_invoices(
+        self, admin_client, product, account_for_invoice, org_a
+    ):
+        inv1 = Invoice.objects.create(
+            invoice_title="Inv1", account=account_for_invoice, currency="USD", org=org_a
+        )
+        # Two line items on the SAME invoice must not double-count.
+        InvoiceLineItem.objects.create(
+            invoice=inv1, product=product, name="a", org=org_a
+        )
+        InvoiceLineItem.objects.create(
+            invoice=inv1, product=product, name="b", org=org_a
+        )
+        inv2 = Invoice.objects.create(
+            invoice_title="Inv2", account=account_for_invoice, currency="USD", org=org_a
+        )
+        InvoiceLineItem.objects.create(
+            invoice=inv2, product=product, name="c", org=org_a
+        )
+
+        # Detail path — the serializer's fallback query.
+        detail = admin_client.get(f"/api/invoices/products/{product.id}/")
+        assert detail.json()["used_on"] == 2
+
+        # List path — the annotation.
+        listed = admin_client.get("/api/invoices/products/")
+        row = next(r for r in listed.json()["results"] if r["id"] == str(product.id))
+        assert row["used_on"] == 2
+
+
 # ---------------------------------------------------------------------------
 # Estimates CRUD
 # ---------------------------------------------------------------------------
@@ -1223,6 +1455,61 @@ class TestEstimateListView:
             format="json",
         )
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+class TestEstimateListRowShape:
+    """The list row must carry enough to run the worklist.
+
+    The estimates page separates "accepted but not yet billed" from "already
+    billed"; that decision is ``status == 'Accepted' and not
+    converted_to_invoice``. If the list serializer omits the conversion
+    reference the page cannot tell the two apart and offers to raise a *second*
+    invoice for an estimate that already has one -- a duplicate. These pin the
+    two fields the row needs.
+    """
+
+    def _row(self, client, estimate_id):
+        response = client.get("/api/invoices/estimates/")
+        assert response.status_code == 200
+        rows = response.data["results"]
+        return next(r for r in rows if r["id"] == str(estimate_id))
+
+    def test_unconverted_estimate_has_null_conversion(self, admin_client, estimate):
+        row = self._row(admin_client, estimate.id)
+        # Present (so the client can rely on it) and null (nothing billed yet).
+        assert "converted_to_invoice" in row
+        assert row["converted_to_invoice"] is None
+
+    def test_converted_estimate_exposes_its_invoice(self, admin_client, estimate):
+        convert = admin_client.post(f"/api/invoices/estimates/{estimate.id}/convert/")
+        assert convert.status_code == 201
+        row = self._row(admin_client, estimate.id)
+        assert row["converted_to_invoice"] is not None
+        assert row["converted_to_invoice"]["id"]
+        assert row["converted_to_invoice"]["invoice_number"]
+
+    def test_opportunity_absent_serializes_as_null(self, admin_client, estimate):
+        # The base estimate has no opportunity; the field must still be present
+        # and null rather than missing, so the page can read e.opportunity.
+        row = self._row(admin_client, estimate.id)
+        assert "opportunity" in row
+        assert row["opportunity"] is None
+
+    def test_opportunity_present_serializes_id_and_name(
+        self, admin_client, estimate, org_a, account_for_invoice
+    ):
+        from opportunity.models import Opportunity
+
+        opp = Opportunity.objects.create(
+            name="Renewal — 40 seats",
+            account=account_for_invoice,
+            org=org_a,
+        )
+        estimate.opportunity = opp
+        estimate.save(update_fields=["opportunity"])
+        row = self._row(admin_client, estimate.id)
+        assert row["opportunity"] == {"id": str(opp.id), "name": "Renewal — 40 seats"}
 
 
 @pytest.mark.django_db
@@ -1391,6 +1678,112 @@ class TestEstimateActions:
         assert response.status_code == 201
         inv_id = response.json()["invoice"]["id"]
         assert InvoiceLineItem.objects.filter(invoice_id=inv_id).count() == 1
+
+
+@pytest.mark.django_db
+class TestEstimateAuthorization:
+    """Object-level authorization on the estimate endpoints.
+
+    The estimate views used to carry only an org filter -- no object check at
+    all on detail/update/delete/convert/send -- so any member could act on any
+    estimate in the org, while the *list* crashed for non-admins. These pin the
+    fix and every one of them fails against the pre-fix code:
+
+    * the list case 500s (``Q(created_by=<Profile>)`` raises ``ValueError``);
+    * the "member is blocked" cases returned 200 and mutated the row;
+    * the creator-PDF case returned 403 (``request.profile == created_by`` is a
+      Profile-vs-User comparison, always False).
+    """
+
+    # -- E1: the list no longer 500s for a non-admin --------------------------
+
+    def test_member_can_list_estimates(self, user_client, estimate):
+        response = user_client.get("/api/invoices/estimates/")
+        assert response.status_code == 200
+
+    # -- E2/E3: a member who is neither creator nor assignee is blocked -------
+
+    def test_member_not_owner_cannot_get(self, user_client, estimate):
+        response = user_client.get(f"/api/invoices/estimates/{estimate.id}/")
+        assert response.status_code == 403
+
+    def test_member_not_owner_cannot_update(self, user_client, estimate):
+        response = user_client.put(
+            f"/api/invoices/estimates/{estimate.id}/",
+            {"title": "Hijacked"},
+            format="json",
+        )
+        assert response.status_code == 403
+        estimate.refresh_from_db()
+        assert estimate.title == "Test Estimate"
+
+    def test_member_not_owner_cannot_delete(self, user_client, estimate):
+        response = user_client.delete(f"/api/invoices/estimates/{estimate.id}/")
+        assert response.status_code == 403
+        assert Estimate.objects.filter(id=estimate.id).exists()
+
+    def test_member_not_owner_cannot_convert(self, user_client, estimate):
+        response = user_client.post(f"/api/invoices/estimates/{estimate.id}/convert/")
+        assert response.status_code == 403
+        estimate.refresh_from_db()
+        assert estimate.converted_to_invoice is None
+
+    @patch("invoices.tasks.send_estimate_to_client.delay")
+    def test_member_not_owner_cannot_send(self, mock_send, user_client, estimate):
+        # send_estimate_to_client is imported inside the view, so patch it at
+        # its source. The 403 short-circuits before the import is even reached.
+        response = user_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
+        assert response.status_code == 403
+        mock_send.assert_not_called()
+
+    # -- the positive direction: assignee and creator do have access ----------
+
+    def test_assignee_can_get_and_update(self, user_client, user_profile, estimate):
+        estimate.assigned_to.set([user_profile])
+        assert (
+            user_client.get(f"/api/invoices/estimates/{estimate.id}/").status_code
+            == 200
+        )
+        response = user_client.put(
+            f"/api/invoices/estimates/{estimate.id}/",
+            {"title": "Updated by assignee"},
+            format="json",
+        )
+        assert response.status_code == 200
+        estimate.refresh_from_db()
+        assert estimate.title == "Updated by assignee"
+
+    def test_creator_can_get(self, user_client, regular_user, estimate):
+        # .update() rather than assignment: created_by is stamped by
+        # BaseModel.save() from the request thread, which the fixture had none.
+        Estimate.objects.filter(id=estimate.id).update(created_by=regular_user)
+        response = user_client.get(f"/api/invoices/estimates/{estimate.id}/")
+        assert response.status_code == 200
+
+    @patch("invoices.api_views.generate_estimate_filename", return_value="e.pdf")
+    @patch("invoices.api_views.generate_estimate_pdf", return_value=b"%PDF-1.4")
+    def test_creator_can_get_pdf(
+        self, mock_pdf, mock_name, user_client, regular_user, estimate
+    ):
+        # E4: the creator was denied their own estimate's PDF because the check
+        # compared a Profile to a User. They are neither admin nor assignee here.
+        Estimate.objects.filter(id=estimate.id).update(created_by=regular_user)
+        response = user_client.get(f"/api/invoices/estimates/{estimate.id}/pdf/")
+        assert response.status_code == 200
+        assert response["Content-Type"] == "application/pdf"
+
+    # -- admin keeps blanket access, and other orgs get 404 not 403 -----------
+
+    def test_admin_can_access_any_estimate(self, admin_client, estimate):
+        assert (
+            admin_client.get(f"/api/invoices/estimates/{estimate.id}/").status_code
+            == 200
+        )
+
+    def test_other_org_estimate_is_404_not_403(self, user_client, estimate_org_b):
+        # A member of org A must not even learn that org B's estimate exists.
+        response = user_client.get(f"/api/invoices/estimates/{estimate_org_b.id}/")
+        assert response.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -1593,6 +1986,104 @@ class TestRecurringInvoicePauseToggle:
         assert response.status_code == 404
 
 
+@pytest.mark.django_db
+class TestRecurringInvoiceAuthorization:
+    """Object-level authorization on the recurring-invoice endpoints.
+
+    Every recurring view used to filter on ``org`` only -- no object check on
+    detail/update/delete/toggle, and no non-admin scoping on the list -- so any
+    member could read, edit, delete or pause/resume *every* schedule in the org.
+    A schedule is an owned billing record (``AssignableMixin`` + ``created_by``),
+    the same shape as Invoice and Estimate, so it now follows the same rule:
+    admins and superusers see all; everyone else only what they created or are
+    assigned to. The ``recurring_invoice`` fixture has no creator and no
+    assignee, so ``user_client`` is neither -- every block below is a 403.
+    """
+
+    def test_member_can_list_recurring(self, user_client, recurring_invoice):
+        # Never a 500 (the list carries no bad Profile-vs-User comparison).
+        assert user_client.get("/api/invoices/recurring/").status_code == 200
+
+    def test_member_list_excludes_unowned(self, user_client, recurring_invoice):
+        response = user_client.get("/api/invoices/recurring/")
+        ids = [r["id"] for r in response.json()["results"]]
+        assert str(recurring_invoice.id) not in ids
+
+    def test_admin_list_includes_it(self, admin_client, recurring_invoice):
+        response = admin_client.get("/api/invoices/recurring/")
+        ids = [r["id"] for r in response.json()["results"]]
+        assert str(recurring_invoice.id) in ids
+
+    def test_member_not_owner_cannot_get(self, user_client, recurring_invoice):
+        response = user_client.get(f"/api/invoices/recurring/{recurring_invoice.id}/")
+        assert response.status_code == 403
+
+    def test_member_not_owner_cannot_update(self, user_client, recurring_invoice):
+        response = user_client.put(
+            f"/api/invoices/recurring/{recurring_invoice.id}/",
+            {"title": "Hijacked"},
+            format="json",
+        )
+        assert response.status_code == 403
+        recurring_invoice.refresh_from_db()
+        assert recurring_invoice.title == "Monthly Hosting"
+
+    def test_member_not_owner_cannot_delete(self, user_client, recurring_invoice):
+        response = user_client.delete(
+            f"/api/invoices/recurring/{recurring_invoice.id}/"
+        )
+        assert response.status_code == 403
+        assert RecurringInvoice.objects.filter(id=recurring_invoice.id).exists()
+
+    def test_member_not_owner_cannot_toggle(self, user_client, recurring_invoice):
+        was_active = recurring_invoice.is_active
+        response = user_client.post(
+            f"/api/invoices/recurring/{recurring_invoice.id}/toggle/"
+        )
+        assert response.status_code == 403
+        recurring_invoice.refresh_from_db()
+        assert recurring_invoice.is_active is was_active
+
+    def test_assignee_can_get_and_toggle(
+        self, user_client, user_profile, recurring_invoice
+    ):
+        recurring_invoice.assigned_to.set([user_profile])
+        assert (
+            user_client.get(
+                f"/api/invoices/recurring/{recurring_invoice.id}/"
+            ).status_code
+            == 200
+        )
+        response = user_client.post(
+            f"/api/invoices/recurring/{recurring_invoice.id}/toggle/"
+        )
+        assert response.status_code == 200
+        recurring_invoice.refresh_from_db()
+        assert recurring_invoice.is_active is False
+
+
+@pytest.mark.django_db
+class TestRecurringInvoiceListRowShape:
+    """The row must carry what the schedules worklist renders."""
+
+    def test_row_includes_terms_cadence_and_contact(
+        self, admin_client, recurring_invoice
+    ):
+        recurring_invoice.frequency = "CUSTOM"
+        recurring_invoice.custom_days = 14
+        recurring_invoice.save(update_fields=["frequency", "custom_days"])
+        response = admin_client.get("/api/invoices/recurring/")
+        row = next(
+            r
+            for r in response.json()["results"]
+            if r["id"] == str(recurring_invoice.id)
+        )
+        assert row["payment_terms"] == "NET_30"
+        assert row["custom_days"] == 14
+        # contact_name comes from the Contact FK, present on the fixture.
+        assert row["contact_name"]
+
+
 # ---------------------------------------------------------------------------
 # Invoice Templates CRUD
 # ---------------------------------------------------------------------------
@@ -1682,6 +2173,277 @@ class TestInvoiceTemplateDetailView:
         fake_id = uuid.uuid4()
         response = admin_client.delete(f"/api/invoices/templates/{fake_id}/")
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestInvoiceTemplateWriteAuthorization:
+    """Invoice templates are org-wide shared config: how every invoice reaches a
+    customer. Any member reads the catalogue, but creating/editing/deleting a
+    template — or flipping the org default — is admin-only (see
+    _forbid_non_admin_template_write). Both directions proven: a non-admin is
+    refused, an admin is allowed.
+    """
+
+    def test_non_admin_can_list_templates(self, user_client, template):
+        response = user_client.get("/api/invoices/templates/")
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+
+    def test_non_admin_can_read_template(self, user_client, template):
+        response = user_client.get(f"/api/invoices/templates/{template.id}/")
+        assert response.status_code == 200
+        assert response.json()["name"] == "Default Template"
+
+    def test_non_admin_cannot_create_template(self, user_client):
+        response = user_client.post(
+            "/api/invoices/templates/",
+            {"name": "Sneaky", "primary_color": "#FF0000"},
+            format="json",
+        )
+        assert response.status_code == 403
+        assert not InvoiceTemplate.objects.filter(name="Sneaky").exists()
+
+    def test_non_admin_cannot_update_template(self, user_client, template):
+        response = user_client.put(
+            f"/api/invoices/templates/{template.id}/",
+            {"name": "Hijacked"},
+            format="json",
+        )
+        assert response.status_code == 403
+        template.refresh_from_db()
+        assert template.name == "Default Template"
+
+    def test_non_admin_cannot_flip_default(self, user_client, org_a, template):
+        # The default drives which template every PDF uses; a member must not be
+        # able to swap it. `template` is already the default, so try to demote it.
+        other = InvoiceTemplate.objects.create(
+            name="Other", is_default=False, org=org_a
+        )
+        response = user_client.put(
+            f"/api/invoices/templates/{other.id}/",
+            {"is_default": True},
+            format="json",
+        )
+        assert response.status_code == 403
+        other.refresh_from_db()
+        assert other.is_default is False
+
+    def test_non_admin_cannot_delete_template(self, user_client, template):
+        response = user_client.delete(f"/api/invoices/templates/{template.id}/")
+        assert response.status_code == 403
+        assert InvoiceTemplate.objects.filter(id=template.id).exists()
+
+    def test_admin_can_create_update_delete(self, admin_client):
+        created = admin_client.post(
+            "/api/invoices/templates/",
+            {"name": "Adminmade", "primary_color": "#123456"},
+            format="json",
+        )
+        assert created.status_code == 201
+        tid = created.json()["template"]["id"]
+
+        updated = admin_client.put(
+            f"/api/invoices/templates/{tid}/",
+            {"name": "Adminrenamed"},
+            format="json",
+        )
+        assert updated.status_code == 200
+        assert updated.json()["template"]["name"] == "Adminrenamed"
+
+        deleted = admin_client.delete(f"/api/invoices/templates/{tid}/")
+        assert deleted.status_code == 200
+        assert not InvoiceTemplate.objects.filter(id=tid).exists()
+
+
+@pytest.mark.django_db
+class TestInvoiceTemplateSafeShape:
+    """The list/detail responses must never carry the raw template_html /
+    template_css (org-authored markup that WeasyPrint renders into a PDF — a
+    stored-XSS vector the moment it reaches a browser DOM). They surface flags
+    and a byte count instead, plus usage/authorship the page needs.
+    """
+
+    def test_list_never_exposes_markup(self, admin_client, org_a):
+        InvoiceTemplate.objects.create(
+            name="Custom",
+            template_html="<div>{{ invoice_number }}</div>",
+            template_css="body { color: red; }",
+            org=org_a,
+        )
+        response = admin_client.get("/api/invoices/templates/")
+        assert response.status_code == 200
+        row = next(r for r in response.json()["results"] if r["name"] == "Custom")
+        assert "template_html" not in row
+        assert "template_css" not in row
+        assert row["has_custom_html"] is True
+        assert row["has_custom_css"] is True
+        assert row["custom_html_bytes"] == len(
+            "<div>{{ invoice_number }}</div>".encode("utf-8")
+        )
+
+    def test_detail_never_exposes_markup(self, admin_client, org_a):
+        tpl = InvoiceTemplate.objects.create(
+            name="Custom2",
+            template_html="<b>secret</b>",
+            template_css="b{}",
+            org=org_a,
+        )
+        response = admin_client.get(f"/api/invoices/templates/{tpl.id}/")
+        assert response.status_code == 200
+        body = response.json()
+        assert "template_html" not in body
+        assert "template_css" not in body
+        assert body["has_custom_html"] is True
+
+    def test_used_on_invoices_counts(self, admin_client, org_a, account_for_invoice):
+        tpl = InvoiceTemplate.objects.create(name="Counted", org=org_a)
+        for _ in range(2):
+            Invoice.objects.create(
+                invoice_title="X",
+                account=account_for_invoice,
+                currency="USD",
+                org=org_a,
+                template=tpl,
+            )
+        response = admin_client.get("/api/invoices/templates/")
+        row = next(r for r in response.json()["results"] if r["name"] == "Counted")
+        assert row["used_on_invoices"] == 2
+
+
+@pytest.mark.django_db
+class TestSafePdfUrlFetcher:
+    """The invoice/estimate PDF render fetcher. Templates carry org-authored
+    HTML/CSS rendered server-side with base_url=BASE_DIR, so an <img>/url() in
+    that markup is an SSRF + local-file-read lever. The fetcher denies by
+    default and permits only data: URIs, files inside MEDIA_ROOT (the org logo
+    in dev), and HTTPS to the configured S3 host (the logo in prod). Both
+    directions proven per branch.
+    """
+
+    def _fetcher(self):
+        from invoices.pdf import safe_pdf_url_fetcher
+
+        return safe_pdf_url_fetcher
+
+    def test_blocks_etc_passwd(self):
+        with pytest.raises(ValueError):
+            self._fetcher()("file:///etc/passwd")
+
+    def test_blocks_app_source(self, settings):
+        # The exact LFI the sink enabled: base_url=BASE_DIR let markup read
+        # settings.py / .env / keys — all outside MEDIA_ROOT.
+        with pytest.raises(ValueError):
+            self._fetcher()(f"file://{settings.BASE_DIR}/crm/settings.py")
+
+    def test_blocks_cloud_metadata_ssrf(self):
+        with pytest.raises(ValueError):
+            self._fetcher()("http://169.254.169.254/latest/meta-data/")
+
+    def test_blocks_localhost_ssrf(self):
+        with pytest.raises(ValueError):
+            self._fetcher()("http://127.0.0.1:8000/api/internal/")
+
+    def test_blocks_arbitrary_external_host(self):
+        with pytest.raises(ValueError):
+            self._fetcher()("https://evil.example.com/x.png")
+
+    def test_blocks_other_schemes(self):
+        for url in ("ftp://host/f", "gopher://host/1"):
+            with pytest.raises(ValueError):
+                self._fetcher()(url)
+
+    def test_allows_data_uri(self):
+        with patch("invoices.pdf.default_url_fetcher", lambda u: {"delegated": u}):
+            result = self._fetcher()("data:text/plain,hello")
+        assert result == {"delegated": "data:text/plain,hello"}
+
+    def test_allows_media_file(self, settings, tmp_path):
+        settings.MEDIA_ROOT = str(tmp_path)
+        settings.MEDIA_URL = "/media/"
+        (tmp_path / "org_logos").mkdir()
+        (tmp_path / "org_logos" / "logo.png").write_bytes(b"PNG")
+        with patch("invoices.pdf.default_url_fetcher", lambda u: {"delegated": u}):
+            result = self._fetcher()("file:///media/org_logos/logo.png")
+        assert result["delegated"].endswith("org_logos/logo.png")
+
+    def test_blocks_media_traversal(self, settings, tmp_path):
+        settings.MEDIA_ROOT = str(tmp_path)
+        settings.MEDIA_URL = "/media/"
+        (tmp_path.parent / "secret.txt").write_bytes(b"nope")
+        with pytest.raises(ValueError):
+            self._fetcher()("file:///media/../secret.txt")
+
+    def test_allows_s3_host_in_prod(self, settings):
+        settings.AWS_S3_CUSTOM_DOMAIN = "mybucket.s3.amazonaws.com"
+        with patch("invoices.pdf.default_url_fetcher", lambda u: {"delegated": u}):
+            result = self._fetcher()(
+                "https://mybucket.s3.amazonaws.com/media/org_logos/logo.png"
+            )
+        assert result["delegated"].startswith("https://mybucket.s3.amazonaws.com/")
+
+    def test_blocks_s3_lookalike_host(self, settings):
+        settings.AWS_S3_CUSTOM_DOMAIN = "mybucket.s3.amazonaws.com"
+        with pytest.raises(ValueError):
+            self._fetcher()("https://mybucket.s3.amazonaws.com.evil.com/x")
+
+    def test_blocks_non_logo_media_cross_tenant(self, settings, tmp_path):
+        # Files under MEDIA_ROOT that are not logos (another org's attachments or
+        # documents — MEDIA_ROOT is a flat, cross-tenant tree) must be blocked.
+        # Only the logo subtrees are allowed.
+        settings.MEDIA_ROOT = str(tmp_path)
+        settings.MEDIA_URL = "/media/"
+        att = tmp_path / "attachments" / "2026" / "07"
+        att.mkdir(parents=True)
+        (att / "victim-contract.png").write_bytes(b"PNG")
+        with pytest.raises(ValueError):
+            self._fetcher()("file:///media/attachments/2026/07/victim-contract.png")
+
+
+@pytest.mark.django_db
+class TestPdfRenderWiring:
+    """The safe fetcher must reach BOTH the HTML and the CSS render. WeasyPrint
+    resolves @import / @font-face / @color-profile through the CSS object's own
+    fetcher at PARSE time, so a CSS() left on the default fetcher reopens the
+    whole SSRF/LFI via template_css. This pins the fetcher onto both constructors
+    so that regression can't come back silently.
+    """
+
+    def test_invoice_render_wires_safe_fetcher_into_html_and_css(
+        self, org_a, account_for_invoice
+    ):
+        from invoices import pdf
+
+        tpl = InvoiceTemplate.objects.create(
+            name="Malicious",
+            template_html="<div>{{ invoice_number }}</div>",
+            template_css='@import url("http://169.254.169.254/latest/meta-data/");',
+            org=org_a,
+        )
+        inv = Invoice.objects.create(
+            invoice_title="X",
+            account=account_for_invoice,
+            currency="USD",
+            org=org_a,
+            template=tpl,
+        )
+        captured = {}
+
+        class FakeHTML:
+            def __init__(self, **kwargs):
+                captured["html"] = kwargs
+
+            def write_pdf(self, target, **kwargs):
+                target.write(b"%PDF-1.7")
+
+        class FakeCSS:
+            def __init__(self, **kwargs):
+                captured["css"] = kwargs
+
+        with patch("invoices.pdf.HTML", FakeHTML), patch("invoices.pdf.CSS", FakeCSS):
+            pdf.generate_invoice_pdf(inv)
+
+        assert captured["html"].get("url_fetcher") is pdf.safe_pdf_url_fetcher
+        assert captured["css"].get("url_fetcher") is pdf.safe_pdf_url_fetcher
 
 
 # ---------------------------------------------------------------------------
@@ -2020,6 +2782,174 @@ class TestAgingReport:
         assert data["current"]["count"] >= 1
 
 
+@pytest.mark.django_db
+class TestReportsAreAdminOnly:
+    """The three invoice reports are org-wide financials — admin-only.
+
+    They roll up the whole org's invoiced/collected/overdue and its AR aging
+    across every account. The list views scope a non-admin to their own records;
+    a report that showed them the org's total revenue and receivables would leak
+    exactly what that scoping protects. So a member (role ``USER``) is refused
+    all three, and an admin is allowed.
+    """
+
+    REPORTS = (
+        "/api/invoices/reports/dashboard/",
+        "/api/invoices/reports/revenue/",
+        "/api/invoices/reports/aging/",
+    )
+
+    def test_member_is_forbidden_every_report(self, user_client):
+        for path in self.REPORTS:
+            assert user_client.get(path).status_code == 403, path
+
+    def test_admin_is_allowed_every_report(self, admin_client):
+        for path in self.REPORTS:
+            assert admin_client.get(path).status_code == 200, path
+
+
+@pytest.mark.django_db
+class TestReportPayloadShape:
+    """The dashboard, revenue and aging rows carry what the v2 page renders."""
+
+    def test_dashboard_has_avg_pay_and_invoice_count(self, admin_client, invoice):
+        data = admin_client.get("/api/invoices/reports/dashboard/").json()
+        assert "average_days_to_pay" in data
+        assert isinstance(data["average_days_to_pay"], int)
+        assert data["invoice_count"] >= 1
+
+    def test_average_days_to_pay_is_computed(self, admin_client, invoice):
+        # A paid invoice issued 10 days before it was paid -> ~10 day average.
+        invoice.issue_date = datetime.date.today() - datetime.timedelta(days=10)
+        invoice.status = "Paid"
+        invoice.paid_at = timezone.now()
+        invoice.amount_paid = invoice.total_amount
+        invoice.save()
+        data = admin_client.get("/api/invoices/reports/dashboard/").json()
+        assert data["average_days_to_pay"] == 10
+
+    def test_revenue_rows_carry_invoiced_and_paid(self, admin_client, invoice):
+        invoice.issue_date = datetime.date.today()
+        invoice.status = "Paid"
+        invoice.paid_at = timezone.now()
+        invoice.amount_paid = invoice.total_amount
+        invoice.save()
+        data = admin_client.get("/api/invoices/reports/revenue/?group_by=month").json()
+        assert "invoiced" in data["total"]
+        assert data["data"], "expected at least one period row"
+        row = data["data"][0]
+        assert "invoiced" in row and "revenue" in row
+
+    def test_aging_has_by_account_and_overdue(
+        self, admin_client, account_for_invoice, org_a
+    ):
+        # An overdue invoice with an account shows up in the by-account roll-up.
+        # A line item is needed so recalculate_totals leaves amount_due > 0.
+        inv = Invoice.objects.create(
+            invoice_title="Late invoice",
+            status="Sent",
+            account=account_for_invoice,
+            client_name="Late Co",
+            org=org_a,
+        )
+        InvoiceLineItem.objects.create(
+            invoice=inv,
+            name="Service",
+            quantity=Decimal("1"),
+            unit_price=Decimal("500.00"),
+            org=org_a,
+        )
+        inv.recalculate_totals()
+        inv.due_date = datetime.date.today() - datetime.timedelta(days=45)
+        inv.save(update_fields=["due_date", "subtotal", "total_amount", "amount_due"])
+        data = admin_client.get("/api/invoices/reports/aging/").json()
+        assert "by_account" in data
+        assert "overdue" in data
+        assert data["overdue"]["count"] >= 1
+        row = next(
+            (r for r in data["by_account"] if r["id"] == str(account_for_invoice.id)),
+            None,
+        )
+        assert row is not None
+        assert row["count"] >= 1
+        assert row["oldest_days"] >= 45
+
+
+# ---------------------------------------------------------------------------
+# Public portal — reachability through the real middleware stack
+#
+# The view-level tests below this class use APIRequestFactory and call the view
+# directly, which skips MIDDLEWARE entirely. That is fine for testing what the
+# view returns, but it means they passed for the whole time the portal was
+# returning 403 to every customer: `RequireOrgContext` listed
+# "/api/public/csat/" in EXEMPT_PATHS and neither "/api/public/invoice/" nor
+# "/api/public/estimate/", and `_is_exempt` is a startswith check, so the
+# sibling prefixes were never covered.
+#
+# These tests use the full Django test client on purpose. They are the ones
+# that fail if the exemption is removed, narrowed, or reordered.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestPublicPortalIsReachableAnonymously:
+    """The customer-facing links must work with no auth and no org context."""
+
+    def test_invoice_link_is_reachable(self, client, invoice):
+        response = client.get(f"/api/public/invoice/{invoice.public_token}/")
+        assert response.status_code == 200, (
+            "Anonymous GET must not be rejected by RequireOrgContext — "
+            "this is the emailed customer link."
+        )
+        assert response.json()["invoice_number"] == invoice.invoice_number
+
+    def test_estimate_link_is_reachable(self, client, estimate):
+        response = client.get(f"/api/public/estimate/{estimate.public_token}/")
+        assert response.status_code == 200
+        assert response.json()["estimate_number"] == estimate.estimate_number
+
+    def test_invoice_pdf_subpath_is_reachable(self, client, invoice):
+        """The exemption is a prefix, so /pdf/ under it must be covered too."""
+        with patch("invoices.public_views.generate_invoice_pdf", return_value=b"%PDF-"):
+            response = client.get(f"/api/public/invoice/{invoice.public_token}/pdf/")
+        assert response.status_code == 200
+
+    def test_unknown_token_is_404_not_403(self, client):
+        """A bad token must read as 'no such document', never as 'log in'.
+
+        403 here would be the old bug wearing a different hat: it tells the
+        customer to sign in to an application they have no account on.
+        """
+        response = client.get("/api/public/invoice/not-a-real-token/")
+        assert response.status_code == 404
+
+    def test_disabled_link_is_404(self, client, invoice):
+        invoice.public_link_enabled = False
+        invoice.save()
+        response = client.get(f"/api/public/invoice/{invoice.public_token}/")
+        assert response.status_code == 404
+
+    def test_exemption_does_not_leak_to_the_rest_of_the_api(self, client):
+        """The other half of the check: it must still return False.
+
+        A permission check that cannot return both answers is not a check. If
+        someone ever 'simplifies' EXEMPT_PATHS to "/api/public/" or "/api/",
+        this is what catches it.
+        """
+        response = client.get("/api/invoices/")
+        assert response.status_code in (401, 403)
+
+    def test_exempt_prefixes_are_specific(self):
+        """Guard the shape of the list, not just its behaviour."""
+        from common.middleware.rls_context import RequireOrgContext
+
+        exempt = RequireOrgContext.EXEMPT_PATHS
+        assert "/api/public/invoice/" in exempt
+        assert "/api/public/estimate/" in exempt
+        assert "/api/public/" not in exempt
+        assert "/api/" not in exempt
+
+
 # ---------------------------------------------------------------------------
 # Public Invoice Views (tested via RequestFactory to bypass RequireOrgContext middleware)
 # ---------------------------------------------------------------------------
@@ -2242,13 +3172,20 @@ class TestPublicEstimatePDFView:
 class TestPublicEstimateAcceptDecline:
     """Tests for PublicEstimateAcceptView and PublicEstimateDeclineView."""
 
-    def _post_accept(self, token):
+    def _post_accept(self, token, data=None, **meta):
         from rest_framework.test import APIRequestFactory
 
         from invoices.public_views import PublicEstimateAcceptView
 
+        # Accepting now requires the acceptor to identify themselves; default to
+        # a valid name+email so the pre-existing happy-path tests keep passing,
+        # and let callers override to exercise the validation.
+        if data is None:
+            data = {"name": "Dana Buyer", "email": "dana@buyer.example"}
         factory = APIRequestFactory()
-        request = factory.post(f"/api/public/estimate/{token}/accept/")
+        request = factory.post(
+            f"/api/public/estimate/{token}/accept/", data, format="json", **meta
+        )
         view = PublicEstimateAcceptView.as_view()
         return view(request, token=token)
 
@@ -2265,12 +3202,22 @@ class TestPublicEstimateAcceptDecline:
     def test_accept_estimate(self, estimate):
         estimate.status = "Sent"
         estimate.save()
-        response = self._post_accept(estimate.public_token)
+        response = self._post_accept(
+            estimate.public_token,
+            data={"name": "Dana Buyer", "email": "dana@buyer.example"},
+            HTTP_USER_AGENT="Mozilla/5.0 (portal test)",
+            REMOTE_ADDR="203.0.113.9",
+        )
         assert response.status_code == 200
         assert response.data["error"] is False
         estimate.refresh_from_db()
         assert estimate.status == "Accepted"
         assert estimate.accepted_at is not None
+        # Acceptance is authorisation; the acceptor is now recorded.
+        assert estimate.accepted_by_name == "Dana Buyer"
+        assert estimate.accepted_by_email == "dana@buyer.example"
+        assert estimate.accepted_ip == "203.0.113.9"
+        assert "portal test" in estimate.accepted_user_agent
 
     def test_accept_viewed_estimate(self, estimate):
         estimate.status = "Viewed"
@@ -2290,6 +3237,68 @@ class TestPublicEstimateAcceptDecline:
         response = self._post_accept("bad_token")
         assert response.status_code == 404
 
+    def test_accept_expired_estimate_is_rejected(self, estimate):
+        """An expired quote is not acceptable at its original price."""
+        import datetime
+
+        estimate.status = "Sent"
+        estimate.expiry_date = datetime.date.today() - datetime.timedelta(days=1)
+        estimate.save()
+        response = self._post_accept(estimate.public_token)
+        assert response.status_code == 400
+        assert "expired" in response.data["message"].lower()
+        estimate.refresh_from_db()
+        assert estimate.status == "Sent"
+        assert estimate.accepted_at is None
+
+    def test_accept_on_expiry_day_still_allowed(self, estimate):
+        """is_expired is strictly past the date — the last day still counts."""
+        import datetime
+
+        estimate.status = "Sent"
+        estimate.expiry_date = datetime.date.today()
+        estimate.save()
+        response = self._post_accept(estimate.public_token)
+        assert response.status_code == 200
+        estimate.refresh_from_db()
+        assert estimate.status == "Accepted"
+
+    def test_accept_requires_name_and_email(self, estimate):
+        estimate.status = "Sent"
+        estimate.save()
+        # Missing name
+        r1 = self._post_accept(estimate.public_token, data={"email": "x@y.example"})
+        assert r1.status_code == 400
+        # Missing email
+        r2 = self._post_accept(estimate.public_token, data={"name": "Dana"})
+        assert r2.status_code == 400
+        estimate.refresh_from_db()
+        assert estimate.status == "Sent"
+        assert estimate.accepted_at is None
+
+    def test_accept_rejects_invalid_email(self, estimate):
+        estimate.status = "Sent"
+        estimate.save()
+        response = self._post_accept(
+            estimate.public_token, data={"name": "Dana", "email": "not-an-email"}
+        )
+        assert response.status_code == 400
+        estimate.refresh_from_db()
+        assert estimate.status == "Sent"
+
+    def test_accept_ip_prefers_forwarded_for(self, estimate):
+        estimate.status = "Sent"
+        estimate.save()
+        response = self._post_accept(
+            estimate.public_token,
+            data={"name": "Dana", "email": "dana@buyer.example"},
+            HTTP_X_FORWARDED_FOR="198.51.100.7, 10.0.0.1",
+            REMOTE_ADDR="10.0.0.1",
+        )
+        assert response.status_code == 200
+        estimate.refresh_from_db()
+        assert estimate.accepted_ip == "198.51.100.7"
+
     def test_decline_estimate(self, estimate):
         estimate.status = "Sent"
         estimate.save()
@@ -2308,6 +3317,34 @@ class TestPublicEstimateAcceptDecline:
     def test_decline_nonexistent_estimate(self):
         response = self._post_decline("bad_token")
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestPortalTokenRegistration:
+    """Creating a token-bearing record registers the unscoped org lookup.
+
+    The lookup is what lets the anonymous portal view resolve the org before
+    RLS; if a save does not populate it, that record's link 404s in production.
+    """
+
+    def test_creating_estimate_registers_lookup(self, estimate):
+        from common.portal_tokens import resolve_portal_org
+
+        assert resolve_portal_org(estimate.public_token, "estimate") == str(
+            estimate.org_id
+        )
+
+    def test_creating_invoice_registers_lookup(self, invoice):
+        from common.portal_tokens import resolve_portal_org
+
+        assert resolve_portal_org(invoice.public_token, "invoice") == str(
+            invoice.org_id
+        )
+
+    def test_estimate_token_does_not_resolve_as_invoice(self, estimate):
+        from common.portal_tokens import resolve_portal_org
+
+        assert resolve_portal_org(estimate.public_token, "invoice") is None
 
 
 # ---------------------------------------------------------------------------

@@ -5,10 +5,11 @@ See docs/cases/tier1/email-to-ticket.md.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+from django.utils.timezone import now as dj_now
 
 from cases.inbound.parser import ParsedEmail, parse_raw_email
 from cases.inbound.pipeline import ingest
@@ -108,7 +109,7 @@ class TestParser:
             "Date: Sat, 9 May 2026 12:00:00 +0000\r\n"
             "Message-ID: <bounce@x>\r\n"
             "MIME-Version: 1.0\r\n"
-            'Content-Type: multipart/report; report-type=delivery-status; '
+            "Content-Type: multipart/report; report-type=delivery-status; "
             'boundary="b"\r\n'
             "\r\n"
             "--b\r\n"
@@ -133,7 +134,9 @@ class TestSpam:
         assert drop is False and reason == ""
 
     def test_drops_auto_submitted(self):
-        parsed = parse_raw_email(_raw_email(extra_headers="Auto-Submitted: auto-replied"))
+        parsed = parse_raw_email(
+            _raw_email(extra_headers="Auto-Submitted: auto-replied")
+        )
         drop, reason = should_drop(parsed)
         assert drop is True and reason == "auto_submitted"
 
@@ -186,21 +189,34 @@ class TestSpam:
 class TestThreading:
     def test_in_reply_to_match(self, admin_user, org_a):
         case = Case.objects.create(
-            name="Original", status="New", priority="Normal",
-            org=org_a, created_by=admin_user, external_thread_id="root@x",
+            name="Original",
+            status="New",
+            priority="Normal",
+            org=org_a,
+            created_by=admin_user,
+            external_thread_id="root@x",
         )
         EmailMessage.objects.create(
-            org=org_a, case=case, direction="inbound",
-            message_id="root@x", from_address="user@x.com",
+            org=org_a,
+            case=case,
+            direction="inbound",
+            message_id="root@x",
+            from_address="user@x.com",
             received_at=datetime.now(timezone.utc),
         )
-        parsed = parse_raw_email(_raw_email(message_id="<reply@x>", in_reply_to="<root@x>"))
+        parsed = parse_raw_email(
+            _raw_email(message_id="<reply@x>", in_reply_to="<root@x>")
+        )
         assert find_existing_case(parsed, org_a) == case
 
     def test_references_match(self, admin_user, org_a):
         case = Case.objects.create(
-            name="Original", status="New", priority="Normal",
-            org=org_a, created_by=admin_user, external_thread_id="root@x",
+            name="Original",
+            status="New",
+            priority="Normal",
+            org=org_a,
+            created_by=admin_user,
+            external_thread_id="root@x",
         )
         parsed = parse_raw_email(
             _raw_email(message_id="<reply@x>", references="<root@x> <other@x>")
@@ -213,8 +229,11 @@ class TestThreading:
 
     def test_subject_fallback(self, admin_user, org_a):
         case = Case.objects.create(
-            name="Original", status="New", priority="Normal",
-            org=org_a, created_by=admin_user,
+            name="Original",
+            status="New",
+            priority="Normal",
+            org=org_a,
+            created_by=admin_user,
         )
         prefix = short_case_id(case)
         parsed = parse_raw_email(
@@ -226,9 +245,12 @@ class TestThreading:
         assert find_existing_case(parsed, org_a) == case
 
     def test_subject_only_no_brackets_no_match(self, admin_user, org_a):
-        case = Case.objects.create(
-            name="Help", status="New", priority="Normal",
-            org=org_a, created_by=admin_user,
+        Case.objects.create(
+            name="Help",
+            status="New",
+            priority="Normal",
+            org=org_a,
+            created_by=admin_user,
         )
         # Subject identical but no `[Case #...]` marker — must not match.
         parsed = parse_raw_email(_raw_email(message_id="<reply@x>", subject="Help"))
@@ -236,10 +258,16 @@ class TestThreading:
 
     def test_cross_org_isolation(self, admin_user, org_a, org_b):
         Case.objects.create(
-            name="org-a", status="New", priority="Normal",
-            org=org_a, created_by=admin_user, external_thread_id="x@x",
+            name="org-a",
+            status="New",
+            priority="Normal",
+            org=org_a,
+            created_by=admin_user,
+            external_thread_id="x@x",
         )
-        parsed = parse_raw_email(_raw_email(message_id="<reply@x>", in_reply_to="<x@x>"))
+        parsed = parse_raw_email(
+            _raw_email(message_id="<reply@x>", in_reply_to="<x@x>")
+        )
         # Looking up against org_b should miss
         assert find_existing_case(parsed, org_b) is None
 
@@ -284,7 +312,9 @@ class TestPipeline:
 
     def test_spam_dropped_no_case_created(self, org_a):
         mailbox = _make_mailbox(org_a)
-        parsed = parse_raw_email(_raw_email(extra_headers="Auto-Submitted: auto-replied"))
+        parsed = parse_raw_email(
+            _raw_email(extra_headers="Auto-Submitted: auto-replied")
+        )
         result = ingest(parsed, mailbox)
         assert result.dropped is True
         assert result.drop_reason == "auto_submitted"
@@ -393,9 +423,7 @@ class TestInboundActivityAndReopen:
         assert result.dropped is True
         from common.models import Activity
 
-        assert (
-            Activity.objects.filter(action="EMAIL_RECEIVED", org=org_a).count() == 0
-        )
+        assert Activity.objects.filter(action="EMAIL_RECEIVED", org=org_a).count() == 0
 
     def test_reply_within_window_reopens_closed_case(self, org_a):
         from common.models import Activity
@@ -528,13 +556,45 @@ class TestMailboxAPI:
         )
         assert response.status_code == 403
 
+    def test_non_admin_cannot_read_webhook_secret(self, user_client, org_a):
+        """webhook_secret is the credential a sender signs with — a non-admin
+        member may see the mailbox config but never the secret (list + detail)."""
+        mailbox = _make_mailbox(org_a, webhook_secret="s3cr3t-value")
+
+        listed = user_client.get(MAILBOXES_URL)
+        assert listed.status_code == 200
+        rows = listed.json()["mailboxes"]
+        assert len(rows) == 1
+        assert rows[0]["address"] == "support@acme.com"  # config still visible
+        assert "webhook_secret" not in rows[0]  # secret stripped
+
+        detail = user_client.get(f"{MAILBOXES_URL}{mailbox.id}/")
+        assert detail.status_code == 200
+        assert "webhook_secret" not in detail.json()
+
+    def test_admin_can_read_webhook_secret(self, admin_client, org_a):
+        """The admin who manages the integration still sees the secret."""
+        mailbox = _make_mailbox(org_a, webhook_secret="s3cr3t-value")
+
+        listed = admin_client.get(MAILBOXES_URL)
+        assert listed.json()["mailboxes"][0]["webhook_secret"] == "s3cr3t-value"
+
+        detail = admin_client.get(f"{MAILBOXES_URL}{mailbox.id}/")
+        assert detail.json()["webhook_secret"] == "s3cr3t-value"
+
     def test_unsupported_provider_returns_501(self, admin_client, org_a):
         # Mailgun isn't yet wired into the webhook, but the model accepts it.
         # Create a mailbox with provider=mailgun and verify the webhook 501s.
         mailbox = _make_mailbox(org_a, provider="mailgun")
         response = admin_client.post(
             f"/api/cases/inbound/{mailbox.id}/",
-            {"Type": "Notification", "Message": "x", "Signature": "x", "SigningCertURL": "x", "SignatureVersion": "1"},
+            {
+                "Type": "Notification",
+                "Message": "x",
+                "Signature": "x",
+                "SigningCertURL": "x",
+                "SignatureVersion": "1",
+            },
             format="json",
         )
         assert response.status_code == 501
@@ -606,7 +666,101 @@ class TestWebhook:
             verify.side_effect = SNSVerificationError("nope")
             response = admin_client.post(
                 f"/api/cases/inbound/{mailbox.id}/",
-                {"Type": "Notification", "Message": "x", "Signature": "x", "SigningCertURL": "x", "SignatureVersion": "1"},
+                {
+                    "Type": "Notification",
+                    "Message": "x",
+                    "Signature": "x",
+                    "SigningCertURL": "x",
+                    "SignatureVersion": "1",
+                },
                 format="json",
             )
         assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Mailbox list analytics — cases_last_30d / last_received_at, attributed to a
+# mailbox via the EmailMessage.mailbox FK (set at ingest). Driven through the
+# real pipeline so the FK is populated the way production populates it.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestMailboxAnalytics:
+    def _list(self, client):
+        resp = client.get(MAILBOXES_URL)
+        assert resp.status_code == 200
+        return resp.json()
+
+    def _row(self, body, address):
+        return next((m for m in body["mailboxes"] if m["address"] == address), None)
+
+    def test_cases_and_last_received_attributed(self, admin_client, org_a):
+        mbx = _make_mailbox(org_a, address="support@acme.com")
+        ingest(parse_raw_email(_raw_email(message_id="<a1@x.com>")), mbx)
+        ingest(
+            parse_raw_email(
+                _raw_email(
+                    message_id="<a2@x.com>",
+                    from_="Other <o@x.com>",
+                    subject="Second issue",
+                )
+            ),
+            mbx,
+        )
+        body = self._list(admin_client)
+        row = self._row(body, "support@acme.com")
+        assert row["cases_last_30d"] == 2
+        assert row["last_received_at"] is not None
+        assert body["totals"]["cases_last_30d"] == 2
+
+    def test_counts_isolated_between_mailboxes(self, admin_client, org_a):
+        m1 = _make_mailbox(org_a, address="one@acme.com")
+        _make_mailbox(org_a, address="two@acme.com")
+        ingest(parse_raw_email(_raw_email(message_id="<b1@x.com>")), m1)
+        body = self._list(admin_client)
+        assert self._row(body, "one@acme.com")["cases_last_30d"] == 1
+        two = self._row(body, "two@acme.com")
+        assert two["cases_last_30d"] == 0
+        assert two["last_received_at"] is None
+
+    def test_reply_to_old_case_is_not_a_new_ticket(self, admin_client, org_a):
+        mbx = _make_mailbox(org_a)
+        first = ingest(parse_raw_email(_raw_email(message_id="<c1@x.com>")), mbx)
+        Case.objects.filter(pk=first.case.pk).update(
+            created_at=dj_now() - timedelta(days=40)
+        )
+        # A threaded reply arrives now: new EmailMessage, no new case.
+        ingest(
+            parse_raw_email(
+                _raw_email(message_id="<c2@x.com>", in_reply_to="<c1@x.com>")
+            ),
+            mbx,
+        )
+        row = self._row(self._list(admin_client), "support@acme.com")
+        assert row["cases_last_30d"] == 0  # no ticket created in the window
+        assert row["last_received_at"] is not None  # but mail did arrive
+
+    def test_dropped_mail_sets_last_received_but_no_ticket(self, admin_client, org_a):
+        mbx = _make_mailbox(org_a)
+        ingest(
+            parse_raw_email(_raw_email(extra_headers="Auto-Submitted: auto-replied")),
+            mbx,
+        )
+        row = self._row(self._list(admin_client), "support@acme.com")
+        assert row["cases_last_30d"] == 0
+        assert row["last_received_at"] is not None
+
+    def test_totals_count_and_active(self, admin_client, org_a):
+        _make_mailbox(org_a, address="live@acme.com", is_active=True)
+        _make_mailbox(org_a, address="off@acme.com", is_active=False)
+        totals = self._list(admin_client)["totals"]
+        assert totals["count"] == 2
+        assert totals["active"] == 1
+
+    def test_cross_org_counts_isolated(self, admin_client, org_a, org_b):
+        mbx_b = _make_mailbox(org_b, address="b@acme.com")
+        ingest(parse_raw_email(_raw_email(message_id="<d1@x.com>")), mbx_b)
+        body = self._list(admin_client)  # org_a admin
+        assert all(m["address"] != "b@acme.com" for m in body["mailboxes"])
+        assert body["totals"]["cases_last_30d"] == 0

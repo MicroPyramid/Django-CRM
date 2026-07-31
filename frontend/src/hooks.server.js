@@ -1,4 +1,4 @@
-import {sequence} from '@sveltejs/kit/hooks';
+import { sequence } from '@sveltejs/kit/hooks';
 import * as Sentry from '@sentry/sveltekit';
 /**
  * SvelteKit Server Hooks with JWT Authentication
@@ -304,8 +304,16 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
   // Route protection
   const pathname = event.url.pathname;
 
-  // Define public routes (no auth required)
-  const PUBLIC_ROUTES = ['/login', '/logout', '/bounce'];
+  // Define public routes (no auth required).
+  //
+  // `/portal` and `/csat` are the customer-facing pages reached from an emailed
+  // link — the invoice/estimate portals and the CSAT survey. They are anonymous
+  // by design: the only credential is the token in the URL, and the pages read
+  // nothing from the session or org (only the token-scoped public Django
+  // endpoints). Without them here the guard redirects every customer who clicks
+  // a link to /login, so the portal is unreachable. Server-side token→org
+  // resolution + RLS is what actually protects the data (see docs/PORTAL_RLS.md).
+  const PUBLIC_ROUTES = ['/login', '/logout', '/bounce', '/portal', '/csat'];
 
   // Define semi-protected routes (auth required, but no org)
   const AUTH_ONLY_ROUTES = ['/org'];

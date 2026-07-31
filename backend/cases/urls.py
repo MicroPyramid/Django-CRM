@@ -12,10 +12,10 @@ from cases import (
     kb_views,
     merge_views,
     parent_views,
-    unmerge_views,
     routing_views,
     solution_views,
     time_views,
+    unmerge_views,
     views,
     watcher_views,
 )
@@ -153,6 +153,11 @@ urlpatterns = [
         "analytics/sla/",
         analytics_views.AnalyticsSlaView.as_view(),
         name="analytics_sla",
+    ),
+    path(
+        "analytics/service/",
+        analytics_views.AnalyticsServiceView.as_view(),
+        name="analytics_service",
     ),
     path(
         "analytics/drilldown/",

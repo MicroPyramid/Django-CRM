@@ -329,6 +329,72 @@ class TestSalesGoalAPI:
         assert response.status_code == 200
         assert response.data["goals_count"] == 0
 
+    def _valid_goal_payload(self, **overrides):
+        today = date.today()
+        data = {
+            "name": "Cross-org probe",
+            "goal_type": "REVENUE",
+            "target_value": "50000",
+            "period_type": "MONTHLY",
+            "period_start": str(today.replace(day=1)),
+            "period_end": str(
+                (today.replace(day=28) + timedelta(days=4)).replace(day=1)
+                - timedelta(days=1)
+            ),
+        }
+        data.update(overrides)
+        return data
+
+    def test_create_goal_rejects_foreign_org_assigned_to(
+        self, admin_client, profile_b
+    ):
+        """An org_a admin cannot assign a goal to an org_b Profile.
+
+        ``common_profile`` is not RLS-protected, so without the serializer's
+        org check the foreign profile would resolve and leak into this org's
+        goal detail/leaderboard.
+        """
+        data = self._valid_goal_payload(assigned_to=str(profile_b.id))
+        response = admin_client.post(self.GOALS_URL, data, format="json")
+        assert response.status_code == 400
+        assert not SalesGoal.objects.filter(
+            name="Cross-org probe", assigned_to=profile_b
+        ).exists()
+
+    def test_create_goal_rejects_foreign_org_team(self, admin_client, org_b):
+        """An org_a admin cannot assign a goal to an org_b Team."""
+        foreign_team = Teams.objects.create(name="Team B", org=org_b)
+        data = self._valid_goal_payload(team=str(foreign_team.id))
+        response = admin_client.post(self.GOALS_URL, data, format="json")
+        assert response.status_code == 400
+        assert not SalesGoal.objects.filter(
+            name="Cross-org probe", team=foreign_team
+        ).exists()
+
+    def test_create_goal_accepts_same_org_assigned_to(
+        self, admin_client, org_a, user_profile
+    ):
+        """The same check must still let an in-org assignee through (True path)."""
+        data = self._valid_goal_payload(
+            name="Same-org goal", assigned_to=str(user_profile.id)
+        )
+        response = admin_client.post(self.GOALS_URL, data, format="json")
+        assert response.status_code == 201
+        goal = SalesGoal.objects.get(name="Same-org goal", org=org_a)
+        assert goal.assigned_to == user_profile
+
+    def test_update_goal_rejects_foreign_org_assigned_to(
+        self, admin_client, goal_revenue, profile_b
+    ):
+        """The PUT path shares the write serializer, so it is guarded too."""
+        url = f"{self.GOALS_URL}{goal_revenue.id}/"
+        response = admin_client.put(
+            url, {"assigned_to": str(profile_b.id)}, format="json"
+        )
+        assert response.status_code == 400
+        goal_revenue.refresh_from_db()
+        assert goal_revenue.assigned_to != profile_b
+
     def test_get_goal_detail(self, admin_client, goal_revenue):
         url = f"{self.GOALS_URL}{goal_revenue.id}/"
         response = admin_client.get(url)

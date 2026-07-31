@@ -1,11 +1,14 @@
 import json
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import DecimalField, F, Q, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -37,9 +40,74 @@ from opportunity.tasks import send_email_to_assigned_user
 from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 
 
+def stalled_filter(org):
+    """`Q` matching open deals that have sat in one stage past the red line.
+
+    This is the *same* definition `Opportunity.get_aging_status()` uses to
+    return "red": per-stage `expected_days` from the org's `StageAgingConfig`
+    (falling back to `DEFAULT_STAGE_EXPECTED_DAYS`), multiplied by
+    `ROTTEN_MULTIPLIER`.
+
+    It lives here, once, because two callers need it — the `?rotten=true`
+    filter and the `stalled` figure in the list totals — and a header that
+    counts stalled deals differently from the pills on the rows underneath it
+    is worse than no header. Note this cannot be an ORM annotation shared with
+    the serializer: the threshold varies per stage and per org, so it has to be
+    assembled as an OR over the stages.
+    """
+    aging_configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
+    now = timezone.now()
+    query = Q()
+    for stage, default_days in DEFAULT_STAGE_EXPECTED_DAYS.items():
+        config = aging_configs.get(stage)
+        expected = config.expected_days if config else default_days
+        threshold = now - timedelta(days=int(expected * ROTTEN_MULTIPLIER))
+        query |= Q(stage=stage, stage_changed_at__lte=threshold)
+    return query
+
+
 class OpportunityListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Opportunity
+
+    def get_totals(self, queryset):
+        """Aggregates over the whole filtered queryset, not the current page.
+
+        `opportunities_count` already existed but nothing else did, so a client
+        wanting the pipeline value had to add up the rows it happened to be
+        holding — which is one page of ten. The resulting header reads as a
+        statement about the pipeline and is actually a statement about the
+        page, and it changes when you paginate.
+
+        `weighted_sum` is SUM(amount * probability / 100): the forecast, as
+        opposed to `amount_sum`, which is what the deals are worth if every one
+        of them lands. `probability` is never null on a saved row —
+        `Opportunity.save()` fills it from `STAGE_PROBABILITIES` — but `amount`
+        is nullable, so both sums coalesce to zero rather than returning None
+        to a caller that will format it as currency.
+        """
+        totals_queryset = queryset.distinct()
+        money = DecimalField(max_digits=14, decimal_places=2)
+        aggregates = totals_queryset.aggregate(
+            amount_sum=Coalesce(Sum("amount"), Decimal("0"), output_field=money),
+            weighted_sum=Coalesce(
+                Sum(F("amount") * F("probability") / Decimal("100")),
+                Decimal("0"),
+                output_field=money,
+            ),
+        )
+        return {
+            "count": totals_queryset.count(),
+            "amount_sum": aggregates["amount_sum"],
+            "weighted_sum": aggregates["weighted_sum"],
+            # Closed deals are never stalled — `get_aging_status()` returns
+            # green for them — so the count excludes them regardless of whether
+            # the caller asked for open deals only.
+            "stalled_count": totals_queryset.exclude(stage__in=CLOSED_STAGES)
+            .filter(stage_changed_at__isnull=False)
+            .filter(stalled_filter(self.request.profile.org))
+            .count(),
+        }
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -108,28 +176,23 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                             custom_fields__contains={cf_key: raw_value}
                         )
 
+            # `?open=true` — everything that is not Closed Won or Closed Lost.
+            # The existing `stage` filter is a `contains` match, so it cannot
+            # express "not closed"; a caller wanting the working pipeline had to
+            # fetch every deal and drop the closed ones client-side, which is
+            # only correct until the first page boundary.
+            if params.get("open") == "true":
+                queryset = queryset.exclude(stage__in=CLOSED_STAGES)
+
             if params.get("rotten") == "true":
                 # Filter for rotten deals at DB level using stage-specific thresholds
                 queryset = queryset.exclude(stage__in=CLOSED_STAGES).filter(
                     stage_changed_at__isnull=False
                 )
-                org = self.request.profile.org
-                aging_configs = {
-                    c.stage: c
-                    for c in StageAgingConfig.objects.filter(org=org)
-                }
-                now = timezone.now()
-                rotten_q = Q()
-                for stage, default_days in DEFAULT_STAGE_EXPECTED_DAYS.items():
-                    config = aging_configs.get(stage)
-                    expected = config.expected_days if config else default_days
-                    threshold_date = now - timedelta(
-                        days=int(expected * ROTTEN_MULTIPLIER)
-                    )
-                    rotten_q |= Q(stage=stage, stage_changed_at__lte=threshold_date)
-                queryset = queryset.filter(rotten_q)
+                queryset = queryset.filter(stalled_filter(self.request.profile.org))
 
         context = {}
+        context["totals"] = self.get_totals(queryset)
         # Prefetch aging configs for serializer context (avoids N+1)
         org = self.request.profile.org
         aging_configs = {
@@ -179,6 +242,19 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 name="OpportunityListResponse",
                 fields={
                     "opportunities_count": serializers.IntegerField(),
+                    "totals": inline_serializer(
+                        name="OpportunityListTotals",
+                        fields={
+                            "count": serializers.IntegerField(),
+                            "amount_sum": serializers.DecimalField(
+                                max_digits=14, decimal_places=2
+                            ),
+                            "weighted_sum": serializers.DecimalField(
+                                max_digits=14, decimal_places=2
+                            ),
+                            "stalled_count": serializers.IntegerField(),
+                        },
+                    ),
                     "offset": serializers.IntegerField(allow_null=True),
                     "per_page": serializers.IntegerField(),
                     "page_number": serializers.IntegerField(),
@@ -208,6 +284,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 fields={
                     "error": serializers.BooleanField(),
                     "message": serializers.CharField(),
+                    "id": serializers.UUIDField(),
                 },
             )
         },
@@ -265,10 +342,12 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 )
                 opportunity_obj.tags.add(*tag_objs)
 
-            if params.get("stage"):
-                stage = params.get("stage")
-                if stage in ["CLOSED_WON", "CLOSED_LOST"]:
-                    opportunity_obj.closed_by = self.request.profile
+            # `.save()` is the point. This block used to assign `closed_by` and
+            # then never persist it, so a deal could be created already won and
+            # the record of who won it was discarded on the way out.
+            if params.get("stage") in CLOSED_STAGES:
+                opportunity_obj.closed_by = self.request.profile
+                opportunity_obj.save()
 
             if params.get("teams"):
                 teams_list = params.get("teams")
@@ -316,8 +395,15 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 opportunity_obj.id,
                 str(request.profile.org.id),
             )
+            # `id` is additive — no existing key changes — and without it a
+            # client cannot open the deal it just created. The alternative is
+            # guessing by name, which is a race and breaks on duplicates.
             return Response(
-                {"error": False, "message": "Opportunity Created Successfully"},
+                {
+                    "error": False,
+                    "message": "Opportunity Created Successfully",
+                    "id": str(opportunity_obj.id),
+                },
                 status=status.HTTP_200_OK,
             )
 
@@ -333,6 +419,32 @@ class OpportunityDetailView(APIView):
 
     def get_object(self, pk):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
+
+    def assert_deal_access(self, opportunity):
+        """Admins, the creator, and anyone assigned. Everyone else gets a 403.
+
+        Four copies of this check used to live inline in `get`, `put`, `patch`
+        and `post`, and all four compared `request.profile` — a Profile — to
+        `opportunity.created_by`, which is a FK to `User`. Those types are
+        never equal, so the creator half was dead: a non-admin who created a
+        deal and did not also assign it to themselves was refused their own
+        record. `delete()` got the same comparison right
+        (`request.profile.user != created_by`), which is how you could tell it
+        was a mistake rather than a policy — the same person could delete the
+        deal they were not allowed to read.
+
+        Raising beats returning a Response: a returned Response from a helper
+        gets wrapped in `Response(...)` by the caller and renders as a 500.
+        """
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            return
+        if self.request.profile.user_id == opportunity.created_by_id:
+            return
+        if self.request.profile.id in {
+            profile.id for profile in opportunity.assigned_to.all()
+        }:
+            return
+        raise PermissionDenied("You do not have Permission to perform this action")
 
     @extend_schema(
         operation_id="opportunities_update",
@@ -357,23 +469,7 @@ class OpportunityDetailView(APIView):
                 {"error": True, "errors": "Opportunity not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if opportunity_object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == opportunity_object.created_by)
-                or (self.request.profile in opportunity_object.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_deal_access(opportunity_object)
 
         serializer = OpportunityCreateSerializer(
             opportunity_object,
@@ -436,10 +532,11 @@ class OpportunityDetailView(APIView):
                 )
                 opportunity_object.tags.add(*tag_objs)
 
-            if params.get("stage"):
-                stage = params.get("stage")
-                if stage in ["CLOSED_WON", "CLOSED_LOST"]:
-                    opportunity_object.closed_by = self.request.profile
+            # Same missing `.save()` as create: PUT could close a deal and drop
+            # the name of whoever closed it.
+            if params.get("stage") in CLOSED_STAGES:
+                opportunity_object.closed_by = self.request.profile
+                opportunity_object.save()
 
             opportunity_object.teams.clear()
             if params.get("teams"):
@@ -568,34 +665,16 @@ class OpportunityDetailView(APIView):
                 {"error": True, "errors": "Opportunity not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        self.assert_deal_access(self.opportunity)
+
         context = {}
         context["opportunity_obj"] = OpportunitySerializer(self.opportunity).data
-        if self.opportunity.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == self.opportunity.created_by)
-                or (self.request.profile in self.opportunity.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
 
-        comment_permission = False
-
-        if (
-            self.request.profile == self.opportunity.created_by
+        comment_permission = (
+            self.request.profile.user_id == self.opportunity.created_by_id
             or self.request.user.is_superuser
             or self.request.profile.role == "ADMIN"
-        ):
-            comment_permission = True
+        )
 
         if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
             users_mention = list(
@@ -603,11 +682,14 @@ class OpportunityDetailView(APIView):
                     is_active=True, org=self.request.profile.org
                 ).values("user__email")
             )
-        elif self.request.profile != self.opportunity.created_by:
-            if self.opportunity.created_by:
-                users_mention = [{"username": self.opportunity.created_by.user.email}]
-            else:
-                users_mention = []
+        elif self.opportunity.created_by:
+            # `created_by` IS the User. The old code read `created_by.user.email`,
+            # which raised AttributeError and returned a 500 for every non-admin
+            # assignee opening a deal somebody else had created — the common
+            # case, and invisible until the 403 above stopped firing wrongly.
+            # Key is `user__email` to match the admin branch above; the two
+            # returned different key names for the same list.
+            users_mention = [{"user__email": self.opportunity.created_by.email}]
         else:
             users_mention = []
 
@@ -672,24 +754,16 @@ class OpportunityDetailView(APIView):
     def post(self, request, pk, **kwargs):
         params = request.data
         context = {}
-        self.opportunity_obj = Opportunity.objects.get(pk=pk, org=request.profile.org)
-        if self.opportunity_obj.org != request.profile.org:
+        # `.get()` here raised DoesNotExist (a 500) for a deal that had been
+        # deleted or belongs to another org. `get_object` is the same lookup
+        # with the org filter and answers 404, which is what the other verbs do.
+        self.opportunity_obj = self.get_object(pk=pk)
+        if not self.opportunity_obj:
             return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": True, "errors": "Opportunity not found."},
+                status=status.HTTP_404_NOT_FOUND,
             )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == self.opportunity_obj.created_by)
-                or (self.request.profile in self.opportunity_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_deal_access(self.opportunity_obj)
 
         # Create the comment directly via the generic Comment ORM path — the
         # previous code routed through CommentSerializer.save(opportunity_id=...,
@@ -763,26 +837,7 @@ class OpportunityDetailView(APIView):
                 {"error": True, "errors": "Opportunity not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if opportunity_object.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == opportunity_object.created_by)
-                or (self.request.profile in opportunity_object.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_deal_access(opportunity_object)
 
         serializer = OpportunityCreateSerializer(
             opportunity_object,
@@ -884,7 +939,7 @@ class OpportunityDetailView(APIView):
                     opportunity_object.assigned_to.add(*profiles)
 
             # Handle closed_by if stage changed to closed
-            if params.get("stage") in ["CLOSED_WON", "CLOSED_LOST"]:
+            if params.get("stage") in CLOSED_STAGES:
                 opportunity_object.closed_by = self.request.profile
                 opportunity_object.save()
 

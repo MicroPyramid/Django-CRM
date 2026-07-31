@@ -1,13 +1,16 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
     extend_schema,
     inline_serializer,
 )
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -42,14 +45,40 @@ from contacts.tasks import send_email_to_assigned_user
 from tasks.serializer import TaskSerializer
 
 
+def link_primary_account(contact):
+    """Make `contact.account` show up on that account's people list.
+
+    A Contact is joined to an Account two ways -- the `account` FK, documented
+    on the model as "Primary account this contact belongs to", and membership
+    of `Account.contacts`. Nothing kept them in step, and the whole seeded org
+    demonstrates the result: not one contact has the FK set, while twelve of
+    fifteen are in the M2M. So the account field on a contact form wrote to a
+    column the account page does not read, and the person never appeared where
+    they work.
+
+    Setting the primary account now also records the membership. The reverse is
+    deliberately not true: clearing the FK leaves the membership alone, because
+    membership can be granted from the account side and losing "primary" is not
+    a statement that the person left the company.
+    """
+    if contact.account_id:
+        contact.account.contacts.add(contact)
+
+
 class ContactsListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Contact
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
-            "-id"
+        queryset = (
+            self.model.objects.filter(org=self.request.profile.org)
+            # `-id` is a random UUID, so "the list" was in no order at all --
+            # a page that says "most recent first" was shuffling people. The
+            # model's own Meta.ordering is `-created_at`; this now agrees.
+            .order_by("-created_at")
+            .select_related("account")
+            .prefetch_related("account_contacts", "assigned_to__user", "teams", "tags")
         )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
@@ -64,14 +93,21 @@ class ContactsListView(APIView, LimitOffsetPagination):
                     Q(first_name__icontains=name) | Q(last_name__icontains=name)
                 )
             if params.get("city"):
-                queryset = queryset.filter(address__city__icontains=params.get("city"))
+                # Contact keeps a flat `city`; there has been no related
+                # address object to traverse since the model was flattened, so
+                # `address__city` raised FieldError and the filter answered 500.
+                queryset = queryset.filter(city__icontains=params.get("city"))
             if params.get("phone"):
                 queryset = queryset.filter(phone__icontains=params.get("phone"))
             if params.get("email"):
                 queryset = queryset.filter(email__icontains=params.get("email"))
             if params.getlist("assigned_to"):
+                # `getlist` to ask and `get` to read gave `__in` a single
+                # string, which Django iterates character by character -- each
+                # character then failed to parse as a UUID, so filtering by an
+                # owner answered 500.
                 queryset = queryset.filter(
-                    assigned_to__id__in=params.get("assigned_to")
+                    assigned_to__id__in=params.getlist("assigned_to")
                 ).distinct()
             if params.get("tags"):
                 queryset = queryset.filter(
@@ -103,6 +139,16 @@ class ContactsListView(APIView, LimitOffsetPagination):
                         )
 
         context = {}
+        # Both halves counted before the split, so a list showing one of them
+        # can say how many it is holding back. There was no way to ask for
+        # either: `is_active` was stored, shown and never filterable, so a page
+        # that wanted "people who still work there" had to fetch everyone and
+        # discard rows -- which quietly lies as soon as there is a second page.
+        context["active_count"] = queryset.filter(is_active=True).distinct().count()
+        context["inactive_count"] = queryset.filter(is_active=False).distinct().count()
+        if params.get("is_active") in ("true", "false"):
+            queryset = queryset.filter(is_active=params.get("is_active") == "true")
+
         results_contact = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
@@ -196,6 +242,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
         contact_obj = contact_serializer.save(
             org=request.profile.org, custom_fields=cleaned_cf
         )
+        link_primary_account(contact_obj)
 
         if params.get("teams"):
             teams_list = params.get("teams")
@@ -229,8 +276,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 tags = json.loads(tags)
             # Extract IDs if tags contains objects with 'id' field
             tag_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in tags
+                item.get("id") if isinstance(item, dict) else item for item in tags
             ]
             tag_objs = Tags.objects.filter(
                 id__in=tag_ids, org=request.profile.org, is_active=True
@@ -253,7 +299,14 @@ class ContactsListView(APIView, LimitOffsetPagination):
             attachment.org = request.profile.org
             attachment.save()
         return Response(
-            {"error": False, "message": "Contact created Successfuly"},
+            # The id, so that whatever created the contact can go to it. Without
+            # it a caller has to guess -- list the org and hope the newest row
+            # is the one it just made.
+            {
+                "error": False,
+                "message": "Contact created Successfuly",
+                "id": str(contact_obj.id),
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -263,7 +316,112 @@ class ContactDetailView(APIView):
     model = Contact
 
     def get_object(self, pk):
-        return get_object_or_404(Contact, pk=pk, org=self.request.profile.org)
+        try:
+            return get_object_or_404(
+                Contact.objects.select_related("account").prefetch_related(
+                    "account_contacts", "assigned_to__user", "teams", "tags"
+                ),
+                pk=pk,
+                org=self.request.profile.org,
+            )
+        except (DjangoValidationError, ValueError):
+            # The route matches <str:pk>, so anything at all can arrive here.
+            # UUIDField.to_python raises Django's ValidationError, which
+            # get_object_or_404 does not catch, so /api/contacts/banana/ was a
+            # 500 -- an error report for a URL somebody simply mistyped.
+            raise Http404("No such contact.")
+
+    def assert_contact_access(self, contact):
+        """Who may work on this person's record.
+
+        One predicate for every verb, because the divergence was the bug. The
+        list filter and `delete` compared `created_by` (a User) against
+        `request.profile.user`, correctly. `get`, `put`, `patch` and the
+        comment endpoint compared it against `request.profile` -- a Profile is
+        never equal to a User, so those four branches could only ever be False.
+        The result a non-admin actually saw: their own contacts listed on the
+        index, 403 on opening any of them, and a successful delete on the same
+        record they had just been refused a look at.
+
+        Assignment to the account the person belongs to counts as access. That
+        rule was already here on `get` alone; whoever owns the company owns the
+        conversation with the people at it, and there is no reading under which
+        that is true for viewing but false for editing.
+        """
+        profile = self.request.profile
+        if profile.role == "ADMIN" or profile.is_admin:
+            return
+        if profile.user_id == contact.created_by_id:
+            return
+        if profile.id in {assignee.id for assignee in contact.assigned_to.all()}:
+            return
+        my_accounts = set(profile.account_assigned_users.values_list("id", flat=True))
+        if my_accounts & self.account_ids(contact):
+            return
+        raise PermissionDenied("You do not have Permission to perform this action")
+
+    @staticmethod
+    def account_ids(contact):
+        """Every account this contact is joined to, by either route."""
+        accounts = set(contact.account_contacts.values_list("id", flat=True))
+        if contact.account_id:
+            accounts.add(contact.account_id)
+        return accounts
+
+    def related_deals(self, contact):
+        return [
+            {
+                "id": str(deal.id),
+                "name": deal.name,
+                "stage": deal.stage,
+                "amount": deal.amount,
+                "closed_on": deal.closed_on,
+            }
+            for deal in contact.opportunity_contacts.filter(
+                org=self.request.profile.org
+            ).order_by("-created_at")[:10]
+        ]
+
+    def related_cases(self, contact):
+        return [
+            {
+                "id": str(case.id),
+                "name": case.name,
+                "status": case.status,
+                "priority": case.priority,
+                "created_at": case.created_at,
+            }
+            for case in contact.case_contacts.filter(
+                org=self.request.profile.org
+            ).order_by("-created_at")[:10]
+        ]
+
+    def related_colleagues(self, contact):
+        """Other people at the same company.
+
+        Matched on the account link rather than on `organization`, which is free
+        text and, across the seeded org, frequently names a different company
+        from the account the person is actually attached to.
+        """
+        accounts = self.account_ids(contact)
+        if not accounts:
+            return []
+        colleagues = (
+            Contact.objects.filter(org=self.request.profile.org)
+            .filter(Q(account_contacts__id__in=accounts) | Q(account_id__in=accounts))
+            .exclude(id=contact.id)
+            .distinct()
+            .order_by("first_name", "last_name")[:8]
+        )
+        return [
+            {
+                "id": str(person.id),
+                "first_name": person.first_name,
+                "last_name": person.last_name,
+                "title": person.title or "",
+            }
+            for person in colleagues
+        ]
 
     @extend_schema(
         operation_id="contacts_update",
@@ -283,24 +441,7 @@ class ContactDetailView(APIView):
     def put(self, request, pk, format=None):
         data = request.data
         contact_obj = self.get_object(pk=pk)
-        if contact_obj.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == contact_obj.created_by)
-                or (self.request.profile in contact_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_contact_access(contact_obj)
 
         contact_serializer = CreateContactSerializer(
             data=data, instance=contact_obj, request_obj=request
@@ -333,6 +474,7 @@ class ContactDetailView(APIView):
             save_kwargs["custom_fields"] = cleaned_cf
 
         contact_obj = contact_serializer.save(**save_kwargs)
+        link_primary_account(contact_obj)
         contact_obj.teams.clear()
         if data.get("teams"):
             teams_list = data.get("teams")
@@ -368,8 +510,7 @@ class ContactDetailView(APIView):
                 tags = json.loads(tags)
             # Extract IDs if tags contains objects with 'id' field
             tag_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in tags
+                item.get("id") if isinstance(item, dict) else item for item in tags
             ]
             tag_objs = Tags.objects.filter(
                 id__in=tag_ids, org=request.profile.org, is_active=True
@@ -424,29 +565,8 @@ class ContactDetailView(APIView):
     def get(self, request, pk, format=None):
         context = {}
         contact_obj = self.get_object(pk)
+        self.assert_contact_access(contact_obj)
         context["contact_obj"] = ContactSerializer(contact_obj).data
-        user_assgn_list = [
-            assigned_to.id for assigned_to in contact_obj.assigned_to.all()
-        ]
-        user_assigned_accounts = set(
-            self.request.profile.account_assigned_users.values_list("id", flat=True)
-        )
-        contact_accounts = set(
-            contact_obj.account_contacts.values_list("id", flat=True)
-        )
-        if user_assigned_accounts.intersection(contact_accounts):
-            user_assgn_list.append(self.request.profile.id)
-        if self.request.profile == contact_obj.created_by:
-            user_assgn_list.append(self.request.profile.id)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile.id not in user_assgn_list:
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
         assigned_data = []
         for each in contact_obj.assigned_to.all():
             assigned_dict = {}
@@ -460,13 +580,22 @@ class ContactDetailView(APIView):
                     "user__email"
                 )
             )
-        elif self.request.profile != contact_obj.created_by:
-            users_mention = [{"username": contact_obj.created_by.user.email}]
+        elif self.request.profile.user_id != contact_obj.created_by_id:
+            # `created_by` is a User, so `.user` was an attribute that never
+            # existed and this line raised AttributeError. Every non-admin who
+            # was allowed to open a contact got a 500 at the last step -- which
+            # is to say the detail page has never worked for a non-admin at
+            # all, since the other branch was unreachable for the same
+            # Profile-versus-User reason. The key is `user__email` to match the
+            # admin branch above; it was `username`, so the two shapes
+            # disagreed even in the case that did run.
+            users_mention = (
+                [{"user__email": contact_obj.created_by.email}]
+                if contact_obj.created_by_id
+                else []
+            )
         else:
             users_mention = list(contact_obj.assigned_to.all().values("user__email"))
-
-        if request.profile == contact_obj.created_by:
-            user_assgn_list.append(self.request.profile.id)
 
         # Address is now flat fields on Contact model
         context["address_obj"] = {
@@ -497,6 +626,19 @@ class ContactDetailView(APIView):
                     contact_obj.task_contacts.all(), many=True
                 ).data,
                 "users_mention": users_mention,
+                # What this person is involved in. Contact is on the far side of
+                # a many-to-many from Opportunity and from Case, so a page that
+                # wanted "their deals" had no way to ask for them and had to
+                # settle for the account's -- which is a different question, and
+                # the wrong one on an account with four people and eight deals.
+                #
+                # Deliberately hand-built rather than run through the module
+                # serializers: OpportunitySerializer nests its account, its
+                # contacts and every assignee, which is several hundred lines of
+                # JSON per row to render a name and an amount.
+                "opportunities": self.related_deals(contact_obj),
+                "cases": self.related_cases(contact_obj),
+                "colleagues": self.related_colleagues(contact_obj),
             }
         )
 
@@ -527,15 +669,13 @@ class ContactDetailView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # Deliberately narrower than `assert_contact_access`: an assignee may
+        # work on a contact, only an admin or the person who entered it may
+        # destroy the record. This comparison was already the right one.
         if (
             self.request.profile.role != "ADMIN"
             and not self.request.profile.is_admin
-            and self.request.profile.user != self.object.created_by
+            and self.request.profile.user_id != self.object.created_by_id
         ):
             return Response(
                 {
@@ -569,27 +709,42 @@ class ContactDetailView(APIView):
     def post(self, request, pk, **kwargs):
         params = request.data
         context = {}
-        self.contact_obj = Contact.objects.get(pk=pk)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.contact_obj.created_by)
-                or (self.request.profile in self.contact_obj.assigned_to.all())
-            ):
+        # Was `Contact.objects.get(pk=pk)`: no org filter, so an admin of any
+        # org could post to any contact id in the database and get that
+        # contact's name, email, phone and address back in the response. It
+        # also raised DoesNotExist -- a 500 -- for an id that was merely gone.
+        self.contact_obj = self.get_object(pk)
+        self.assert_contact_access(self.contact_obj)
+        if params.get("comment"):
+            # Comments on a contact have never been recorded. `Comment` is a
+            # generic relation with no `contact` field, so `save(contact_id=)`
+            # raised TypeError; and because `object_id` and `org` are required
+            # on the serializer and the client is not supposed to send them,
+            # `is_valid()` was False anyway and the whole block was skipped in
+            # silence -- 200, with the comment dropped. Both halves are fixed
+            # here: the target and the author come from the server, and a
+            # comment that cannot be saved says so.
+            comment_serializer = CommentSerializer(
+                data={
+                    "comment": params.get("comment"),
+                    "is_internal": str(params.get("is_internal", "")).lower()
+                    in ("true", "1"),
+                    # Which record and which org are the server's to say, not
+                    # the caller's, so they are filled in here rather than read
+                    # out of the request body.
+                    "object_id": str(self.contact_obj.id),
+                    "org": str(request.profile.org_id),
+                }
+            )
+            if not comment_serializer.is_valid():
                 return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
+                    {"error": True, "errors": comment_serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-        comment_serializer = CommentSerializer(data=params)
-        if comment_serializer.is_valid():
-            if params.get("comment"):
-                comment_serializer.save(
-                    contact_id=self.contact_obj.id,
-                    commented_by_id=self.request.profile.id,
-                    org=request.profile.org,
-                )
+            comment_serializer.save(
+                content_type=ContentType.objects.get_for_model(Contact),
+                commented_by=self.request.profile,
+            )
 
         if self.request.FILES.get("contact_attachment"):
             attachment = Attachments()
@@ -639,26 +794,7 @@ class ContactDetailView(APIView):
         """Handle partial updates to a contact."""
         data = request.data
         contact_obj = self.get_object(pk=pk)
-        if contact_obj.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == contact_obj.created_by)
-                or (self.request.profile in contact_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_contact_access(contact_obj)
 
         contact_serializer = CreateContactSerializer(
             data=data, instance=contact_obj, request_obj=request, partial=True
@@ -691,6 +827,7 @@ class ContactDetailView(APIView):
             save_kwargs["custom_fields"] = cleaned_cf
 
         contact_obj = contact_serializer.save(**save_kwargs)
+        link_primary_account(contact_obj)
 
         # Handle M2M fields if present in request
         if "teams" in data:
@@ -731,8 +868,7 @@ class ContactDetailView(APIView):
                     tags_list = json.loads(tags_list)
                 # Extract IDs if tags_list contains objects with 'id' field
                 tag_ids = [
-                    tag.get("id") if isinstance(tag, dict) else tag
-                    for tag in tags_list
+                    tag.get("id") if isinstance(tag, dict) else tag for tag in tags_list
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -750,7 +886,12 @@ class ContactCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        # `.get()` raised DoesNotExist for a comment somebody else had already
+        # deleted, which reached the client as a 500.
+        try:
+            return get_object_or_404(self.model, pk=pk, org=self.request.profile.org)
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such comment.")
 
     @extend_schema(
         tags=["contacts"],
@@ -888,11 +1029,27 @@ class ContactAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        # Two defects in one line, both proven against a running server:
+        #
+        # `Attachments` is a single generic table shared by every module, and
+        # this lookup had no org filter -- so this endpoint deleted any
+        # attachment in the database, belonging to any org, hanging off any
+        # kind of record. As MicroPyramid's admin I deleted another org's file
+        # and got a 200. Row-level security blocks that in a deployment whose
+        # DB role is not a superuser, which the dev one is; the ORM filter is
+        # the contract, RLS is the net.
+        #
+        # And `request.profile == self.object.created_by` compares a Profile to
+        # a User, so it was always False: the person who uploaded a file could
+        # not delete it unless they were an admin.
+        try:
+            self.object = get_object_or_404(self.model, pk=pk, org=request.profile.org)
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such attachment.")
         if (
             request.profile.role == "ADMIN"
             or request.profile.is_admin
-            or request.profile == self.object.created_by
+            or request.profile.user_id == self.object.created_by_id
         ):
             self.object.delete()
             return Response(

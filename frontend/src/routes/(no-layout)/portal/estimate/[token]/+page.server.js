@@ -6,6 +6,12 @@
  */
 
 import { error, fail } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
+
+// The Django API, reached server-to-server. Absolute (not a relative `/api/...`
+// that only resolves behind a production reverse proxy) so the anonymous portal
+// works the same in dev and prod — the CSAT loader takes the same approach.
+const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ params, fetch }) {
@@ -16,8 +22,10 @@ export async function load({ params, fetch }) {
   }
 
   try {
-    // Fetch estimate from public API (no auth)
-    const response = await fetch(`/api/public/estimate/${token}/`);
+    // Fetch estimate from public API (no auth). The v2 portal renders the
+    // Django shape directly (snake_case, template nested), so pass it through
+    // rather than re-mapping to camelCase.
+    const response = await fetch(`${API_BASE_URL}/public/estimate/${token}/`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -28,40 +36,7 @@ export async function load({ params, fetch }) {
 
     const estimate = await response.json();
 
-    return {
-      estimate: {
-        id: estimate.id,
-        estimateNumber: estimate.estimate_number,
-        title: estimate.title,
-        status: estimate.status,
-        clientName: estimate.client_name,
-        clientEmail: estimate.client_email,
-        issueDate: estimate.issue_date,
-        expiryDate: estimate.expiry_date,
-        subtotal: estimate.subtotal,
-        discountAmount: estimate.discount_amount,
-        taxAmount: estimate.tax_amount,
-        totalAmount: estimate.total_amount,
-        currency: estimate.currency,
-        notes: estimate.notes,
-        terms: estimate.terms,
-        clientAddress: estimate.client_address,
-        lineItems: estimate.line_items || [],
-        org: estimate.org
-      },
-      template: estimate.template
-        ? {
-            primaryColor: estimate.template.primary_color || '#3B82F6',
-            secondaryColor: estimate.template.secondary_color || '#1E40AF',
-            footerText: estimate.template.footer_text || ''
-          }
-        : {
-            primaryColor: '#3B82F6',
-            secondaryColor: '#1E40AF',
-            footerText: ''
-          },
-      token
-    };
+    return { estimate, token };
   } catch (err) {
     if (err.status) throw err;
     console.error('Error loading public estimate:', err);
@@ -71,20 +46,41 @@ export async function load({ params, fetch }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  accept: async ({ params, fetch }) => {
+  accept: async ({ params, fetch, request, getClientAddress }) => {
     const { token } = params;
 
+    // Accepting authorises the quote's price, so the server now requires the
+    // acceptor to identify themselves. Collect their name and email, and pass
+    // the real client IP/user-agent through so the acceptance record reflects
+    // the customer, not this SvelteKit server.
+    const formData = await request.formData();
+    const name = (formData.get('name') || '').toString().trim();
+    const email = (formData.get('email') || '').toString().trim();
+
+    if (!name || !email) {
+      return fail(400, {
+        error: 'Please enter your name and email to accept this estimate.',
+        values: { name, email }
+      });
+    }
+
     try {
-      const response = await fetch(`/api/public/estimate/${token}/accept/`, {
+      const response = await fetch(`${API_BASE_URL}/public/estimate/${token}/accept/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': getClientAddress(),
+          'User-Agent': request.headers.get('user-agent') || ''
+        },
+        body: JSON.stringify({ name, email })
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        return fail(response.status, { error: data.message || 'Failed to accept estimate' });
+        const data = await response.json().catch(() => ({}));
+        return fail(response.status, {
+          error: data.message || 'Failed to accept estimate',
+          values: { name, email }
+        });
       }
 
       return { success: true, action: 'accepted' };
@@ -98,7 +94,7 @@ export const actions = {
     const { token } = params;
 
     try {
-      const response = await fetch(`/api/public/estimate/${token}/decline/`, {
+      const response = await fetch(`${API_BASE_URL}/public/estimate/${token}/decline/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -89,9 +89,9 @@ class TestRuleMatching:
             match_case_type="Incident",
         )
         chosen = find_matching_rule(case)
-        assert chosen == specific, (
-            f"More-specific rule should win, got: {chosen.name if chosen else None}"
-        )
+        assert (
+            chosen == specific
+        ), f"More-specific rule should win, got: {chosen.name if chosen else None}"
         # Unused but covers the broader rule still being a candidate.
         assert broad.matches(case) is True
 
@@ -201,22 +201,24 @@ class TestRequestApprovalEndpoint:
 
 @pytest.mark.django_db
 class TestStateTransitions:
-    def _setup(self, org, admin_profile, admin_user, *, approvers=None):
-        case = _make_case(org, admin_user, priority="Urgent")
+    def _setup(self, org, requester_profile, creator_user, *, approvers=None):
+        case = _make_case(org, creator_user, priority="Urgent")
         rule = _make_rule(org, match_priority="Urgent", approvers=approvers)
         approval = Approval.objects.create(
             org=org,
             case=case,
             rule=rule,
-            requested_by=admin_profile,
+            requested_by=requester_profile,
             state="pending",
         )
         return case, rule, approval
 
     def test_approve_records_activity(
-        self, admin_client, admin_user, admin_profile, org_a
+        self, admin_client, admin_profile, user_profile, regular_user, org_a
     ):
-        case, rule, approval = self._setup(org_a, admin_profile, admin_user)
+        # Requested by the USER, approved by the admin — a requester and an
+        # approver who are different people, which the rule now requires.
+        case, rule, approval = self._setup(org_a, user_profile, regular_user)
         res = admin_client.post(
             f"/api/cases/approvals/{approval.id}/approve/",
             data={"note": "ok"},
@@ -227,14 +229,12 @@ class TestStateTransitions:
         approval.refresh_from_db()
         assert approval.approver_id == admin_profile.id
         assert approval.decided_at is not None
-        assert Activity.objects.filter(
-            entity_id=case.id, action="APPROVED"
-        ).exists()
+        assert Activity.objects.filter(entity_id=case.id, action="APPROVED").exists()
 
     def test_reject_requires_reason(
-        self, admin_client, admin_user, admin_profile, org_a
+        self, admin_client, admin_profile, user_profile, regular_user, org_a
     ):
-        case, rule, approval = self._setup(org_a, admin_profile, admin_user)
+        case, rule, approval = self._setup(org_a, user_profile, regular_user)
         bare = admin_client.post(
             f"/api/cases/approvals/{approval.id}/reject/", data={}, format="json"
         )
@@ -249,9 +249,35 @@ class TestStateTransitions:
         approval.refresh_from_db()
         assert approval.state == "rejected"
         assert approval.reason == "needs more triage"
-        assert Activity.objects.filter(
-            entity_id=case.id, action="REJECTED"
-        ).exists()
+        assert Activity.objects.filter(entity_id=case.id, action="REJECTED").exists()
+
+    def test_cannot_approve_own_request(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        # The admin files the request AND is in the ADMIN approver pool, but
+        # separation of duties forbids approving your own request (the bug this
+        # guard closes: an admin used to be able to rubber-stamp their own).
+        _, _, approval = self._setup(org_a, admin_profile, admin_user)
+        res = admin_client.post(
+            f"/api/cases/approvals/{approval.id}/approve/", data={}, format="json"
+        )
+        assert res.status_code == 403
+        assert "your own" in str(res.data).lower()
+        approval.refresh_from_db()
+        assert approval.state == "pending"  # untouched
+
+    def test_cannot_reject_own_request(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        _, _, approval = self._setup(org_a, admin_profile, admin_user)
+        res = admin_client.post(
+            f"/api/cases/approvals/{approval.id}/reject/",
+            data={"reason": "on second thought"},
+            format="json",
+        )
+        assert res.status_code == 403
+        approval.refresh_from_db()
+        assert approval.state == "pending"
 
     def test_cancel_requires_requester_or_admin(
         self,
@@ -334,9 +360,9 @@ class TestStateTransitions:
         assert res.status_code == 403
 
     def test_double_approve_rejected(
-        self, admin_client, admin_user, admin_profile, org_a
+        self, admin_client, admin_profile, user_profile, regular_user, org_a
     ):
-        _, _, approval = self._setup(org_a, admin_profile, admin_user)
+        _, _, approval = self._setup(org_a, user_profile, regular_user)
         a = admin_client.post(
             f"/api/cases/approvals/{approval.id}/approve/",
             data={},
@@ -380,12 +406,13 @@ class TestInbox:
             approvers=[user_profile],
         )
 
-        # Both approvals exist.
+        # Both approvals exist. The admin-only one is requested by the USER so
+        # the admin can actually act on it (a requester can't act on their own).
         Approval.objects.create(
             org=org_a,
             case=case,
             rule=rule_admin_only,
-            requested_by=admin_profile,
+            requested_by=user_profile,
             state="pending",
         )
         case2 = _make_case(
@@ -400,21 +427,50 @@ class TestInbox:
         )
 
         # Admin sees both via mine=true (admin role + admin-only rule).
-        admin_view = admin_client.get(
-            "/api/cases/approvals/?mine=true&state=pending"
-        )
+        admin_view = admin_client.get("/api/cases/approvals/?mine=true&state=pending")
         assert admin_view.status_code == 200
         admin_ids = {a["id"] for a in admin_view.data["approvals"]}
         # Admin matches the ADMIN-role rule but isn't in the explicit-user pool.
         assert len(admin_ids) == 1
 
         # Regular user sees only the explicit pool entry.
-        user_view = user_client.get(
-            "/api/cases/approvals/?mine=true&state=pending"
-        )
+        user_view = user_client.get("/api/cases/approvals/?mine=true&state=pending")
         assert user_view.status_code == 200
         user_ids = {a["id"] for a in user_view.data["approvals"]}
         assert len(user_ids) == 1
+
+    def test_can_act_and_is_own_request_flags(
+        self, admin_client, admin_profile, user_profile, regular_user, admin_user, org_a
+    ):
+        """The per-row flags the queue's button guard reads must match the
+        approve endpoint: can_act only when actionable-and-not-yours."""
+        rule = _make_rule(org_a, match_priority="Urgent", approver_role="ADMIN")
+        own = Approval.objects.create(
+            org=org_a,
+            case=_make_case(org_a, admin_user, priority="Urgent"),
+            rule=rule,
+            requested_by=admin_profile,  # the admin's own request
+            state="pending",
+        )
+        others = Approval.objects.create(
+            org=org_a,
+            case=_make_case(org_a, regular_user, name="C2", priority="Urgent"),
+            rule=rule,
+            requested_by=user_profile,  # someone else's request
+            state="pending",
+        )
+        rows = {
+            a["id"]: a
+            for a in admin_client.get("/api/cases/approvals/?state=pending").data[
+                "approvals"
+            ]
+        }
+        # The admin's own request: flagged as theirs, and not actionable.
+        assert rows[str(own.id)]["is_own_request"] is True
+        assert rows[str(own.id)]["can_act"] is False
+        # Someone else's request the admin may decide: actionable, not theirs.
+        assert rows[str(others.id)]["is_own_request"] is False
+        assert rows[str(others.id)]["can_act"] is True
 
 
 @pytest.mark.django_db
@@ -440,6 +496,50 @@ class TestRuleCRUD:
         )
         assert res.status_code == 403
 
+    def test_put_rejects_cross_org_approver(
+        self, admin_client, org_a, org_b, profile_b
+    ):
+        """PUT must not attach another org's Profile as an approver. POST
+        validated this manually; PUT relied on serializer org-scoping that
+        wasn't there, so a foreign-tenant Profile could be pinned to the rule."""
+        rule = _make_rule(org_a, match_priority="Urgent")
+        res = admin_client.put(
+            f"/api/cases/approval-rules/{rule.id}/",
+            data={"approver_ids": [str(profile_b.id)]},
+            format="json",
+        )
+        assert res.status_code == 400, res.content
+        rule.refresh_from_db()
+        assert rule.approvers.count() == 0
+
+    def test_put_rejects_cross_org_team(self, admin_client, org_a, org_b):
+        """Same hole on the match_team FK."""
+        from common.models import Teams
+
+        team_b = Teams.objects.create(org=org_b, name="Foreign team")
+        rule = _make_rule(org_a, match_priority="Urgent")
+        res = admin_client.put(
+            f"/api/cases/approval-rules/{rule.id}/",
+            data={"match_team_id": str(team_b.id)},
+            format="json",
+        )
+        assert res.status_code == 400, res.content
+        rule.refresh_from_db()
+        assert rule.match_team_id is None
+
+    def test_put_accepts_same_org_approver(self, admin_client, org_a, user_profile):
+        """The allowed side — a same-org approver PUTs fine, proving the two
+        rejections above are org-scoping and not a blanket block on the field."""
+        rule = _make_rule(org_a, match_priority="Urgent")
+        res = admin_client.put(
+            f"/api/cases/approval-rules/{rule.id}/",
+            data={"approver_ids": [str(user_profile.id)]},
+            format="json",
+        )
+        assert res.status_code == 200, res.content
+        rule.refresh_from_db()
+        assert user_profile in rule.approvers.all()
+
     def test_delete_with_history_soft_disables(
         self, admin_client, admin_user, admin_profile, org_a
     ):
@@ -457,3 +557,75 @@ class TestRuleCRUD:
         assert res.status_code == 200
         rule.refresh_from_db()
         assert rule.is_active is False
+
+
+# ---------------------------------------------------------------------------
+# Rule-list analytics — pending_count per rule + org totals, read from the
+# Approval log (state="pending").
+# ---------------------------------------------------------------------------
+
+RULES_URL = "/api/cases/approval-rules/"
+
+
+@pytest.mark.django_db
+class TestApprovalRuleAnalytics:
+    def _list(self, client):
+        resp = client.get(RULES_URL)
+        assert resp.status_code == 200
+        return resp.json()
+
+    def _row(self, body, name):
+        return next((r for r in body["rules"] if r["name"] == name), None)
+
+    def _pending(self, org, rule, requester, n):
+        for _ in range(n):
+            case = _make_case(org, requester.user)
+            Approval.objects.create(
+                org=org, case=case, rule=rule, requested_by=requester, state="pending"
+            )
+
+    def test_pending_count_and_total(self, admin_client, admin_profile, org_a):
+        a = _make_rule(org_a, name="Rule A")
+        b = _make_rule(org_a, name="Rule B")
+        self._pending(org_a, a, admin_profile, 2)
+        self._pending(org_a, b, admin_profile, 1)
+        body = self._list(admin_client)
+        assert self._row(body, "Rule A")["pending_count"] == 2
+        assert self._row(body, "Rule B")["pending_count"] == 1
+        assert body["totals"]["pending"] == 3
+
+    def test_only_pending_state_counts(self, admin_client, admin_profile, org_a):
+        rule = _make_rule(org_a, name="Rule A")
+        self._pending(org_a, rule, admin_profile, 1)
+        for terminal in ("approved", "rejected", "cancelled"):
+            case = _make_case(org_a, admin_profile.user)
+            Approval.objects.create(
+                org=org_a,
+                case=case,
+                rule=rule,
+                requested_by=admin_profile,
+                state=terminal,
+            )
+        body = self._list(admin_client)
+        assert self._row(body, "Rule A")["pending_count"] == 1
+        assert body["totals"]["pending"] == 1
+
+    def test_totals_count_and_active(self, admin_client, admin_profile, org_a):
+        _make_rule(org_a, name="Live 1", is_active=True)
+        _make_rule(org_a, name="Live 2", is_active=True)
+        _make_rule(org_a, name="Off", is_active=False)
+        totals = self._list(admin_client)["totals"]
+        assert totals["count"] == 3
+        assert totals["active"] == 2
+
+    def test_cross_org_pending_isolated(
+        self, admin_client, admin_profile, org_a, org_b, profile_b
+    ):
+        rule_a = _make_rule(org_a, name="Rule A")
+        rule_b = _make_rule(org_b, name="Rule B")
+        self._pending(org_a, rule_a, admin_profile, 1)
+        self._pending(org_b, rule_b, profile_b, 2)
+        body = self._list(admin_client)  # org_a admin
+        assert self._row(body, "Rule A")["pending_count"] == 1
+        assert self._row(body, "Rule B") is None  # org_b rule invisible
+        assert body["totals"]["pending"] == 1  # only org_a's pending

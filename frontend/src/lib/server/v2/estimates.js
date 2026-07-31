@@ -1,0 +1,162 @@
+/**
+ * Estimates — the fifteenth v2 module wired to the real API, and the second of
+ * the invoices sub-pages (after products).
+ *
+ * Same rules as the fourteen before it: this file lives under `$lib/server`
+ * because the access token is an httpOnly cookie SvelteKit refuses to bundle
+ * into client code. The org is never a parameter; it is a claim in the JWT and
+ * the backend reads it from there.
+ *
+ * WHY THIS MODULE
+ * The estimates worklist has one job: surface money the customer has already
+ * agreed to and nobody has billed — an estimate that is `Accepted` and not yet
+ * converted — and let a rep raise the invoice in one click. The fixture faked
+ * both the list and that action. Wiring them turns "Raise invoice" into a real
+ * `convert` call that lands on the new draft.
+ *
+ * WHAT THE WIRING NEEDED FROM THE BACKEND
+ * The list serializer omitted the two facts the worklist turns on —
+ * `converted_to_invoice` and `opportunity` — so a row could not say whether it
+ * had already been billed. Reading fixtures, every accepted estimate looked
+ * unbilled, so the page would have offered to raise a *second* invoice for one
+ * that already had one. Those two fields were added to `EstimateListSerializer`
+ * (read-only, id + one label each) rather than papered over here.
+ *
+ * TOTALS ARE COMPUTED HERE, NOT ON THE WIRE
+ * The estimate list endpoint has no `totals` envelope (unlike invoices). The
+ * four header figures are derived from the loaded rows, so they cover the same
+ * set the table shows — the requester's, which the API already scopes (an admin
+ * sees the org, a member sees their own and assigned). At more than 1000
+ * estimates the derived figures would cover only the first page; the list is
+ * requested with `limit=1000` and that ceiling is called out where it is set.
+ *
+ * WHAT STAYS DEFERRED
+ * Creating an estimate from scratch is a builder — header, three FK pickers and
+ * a line-item table — the same class of surface as the invoice builder (#48),
+ * not a sub-page's worth of work. In this product an estimate is raised from a
+ * deal, which is what the page's empty state has always said, so "New estimate"
+ * points at the pipeline rather than a form this change would only half-build.
+ */
+import { apiRequest } from '$lib/api-helpers.js';
+
+/** Statuses still awaiting the client's decision — the only ones with a live validity. */
+const AWAITING = ['Sent', 'Viewed'];
+
+const num = (/** @type {any} */ value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Whole days from today to an ISO date; negative when the date is in the past. */
+function daysUntil(/** @type {string | null} */ iso) {
+  if (!iso) return null;
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return null;
+  const startOfDay = (/** @type {Date} */ d) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((startOfDay(then) - startOfDay(new Date())) / 86_400_000);
+}
+
+/**
+ * A list row from `EstimateListSerializer`. The serializer splits the account
+ * into an `account` uuid and a separate `account_name`; the page wants the
+ * nested `{ id, name }` the mock had, so it is rebuilt here once. `contact` is
+ * shown as a plain name, and `converted_to_invoice` is renamed to the
+ * `converted_invoice` the page reads.
+ *
+ * @param {any} row
+ */
+function toRow(row) {
+  const opp = row.opportunity;
+  const converted = row.converted_to_invoice;
+  return {
+    id: row.id,
+    estimate_number: row.estimate_number ?? '',
+    title: row.title || '(untitled estimate)',
+    status: row.status,
+    account: { id: row.account ?? null, name: row.account_name ?? '(no account)' },
+    contact: row.contact_name ?? row.client_name ?? '',
+    opportunity: opp ? { id: opp.id, name: opp.name } : null,
+    total_amount: num(row.total_amount),
+    currency: row.currency ?? 'USD',
+    valid_until: row.expiry_date ?? null,
+    converted_invoice: converted
+      ? { id: converted.id, invoice_number: converted.invoice_number }
+      : null
+  };
+}
+
+/** Accepted and not yet billed — the row this whole page is built to surface. */
+const needsBilling = (/** @type {any} */ e) => e.status === 'Accepted' && !e.converted_invoice;
+
+/**
+ * The four header figures, derived from the visible rows.
+ *
+ * - `accepted_unconverted` — agreed money with no invoice yet (the point).
+ * - `awaiting_reply` — value of estimates the client has not answered.
+ * - `expiring_within_7d` — live estimates whose validity runs out inside a week.
+ *
+ * @param {any[]} rows
+ */
+function computeTotals(rows) {
+  let accepted_unconverted = 0;
+  let awaiting_reply = 0;
+  let expiring_within_7d = 0;
+  for (const r of rows) {
+    if (needsBilling(r)) accepted_unconverted += r.total_amount;
+    if (AWAITING.includes(r.status)) {
+      awaiting_reply += r.total_amount;
+      const d = daysUntil(r.valid_until);
+      if (d !== null && d >= 0 && d <= 7) expiring_within_7d += 1;
+    }
+  }
+  return { accepted_unconverted, awaiting_reply, expiring_within_7d };
+}
+
+/**
+ * The estimates worklist, accepted-but-unbilled first.
+ *
+ * The rows follow whatever the API returns for the requester (org-wide for an
+ * admin, own-and-assigned for a member — the endpoint scopes it), so the header
+ * figures and the table always describe the same set.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ */
+export async function listEstimates({ cookies }) {
+  const query = new URLSearchParams();
+  // One page covers every real org; totals are derived from what comes back,
+  // so anything past this ceiling would be uncounted — see the module note.
+  query.set('limit', '1000');
+
+  const response = await apiRequest(`/invoices/estimates/?${query.toString()}`, {}, { cookies });
+  const rows = (response.results ?? []).map(toRow);
+  // Bring the one row with an action to the top; the API already sorts the rest
+  // newest-first, and Array.prototype.sort is stable, so that order survives.
+  rows.sort((a, b) => Number(needsBilling(b)) - Number(needsBilling(a)));
+
+  return {
+    estimates: rows,
+    totals: {
+      count: response.count ?? rows.length,
+      ...computeTotals(rows)
+    }
+  };
+}
+
+/**
+ * Raise an invoice from an estimate. A bare POST through
+ * `get_estimate_or_error`, so the API — not this layer — decides who may
+ * convert (creator, an assignee, or an admin) and refuses the rest, and
+ * refuses a second conversion of an already-converted estimate. Returns the new
+ * invoice so the caller can open it.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ */
+export async function convertEstimate({ cookies }, id) {
+  return apiRequest(
+    `/invoices/estimates/${id}/convert/`,
+    { method: 'POST', body: {} },
+    { cookies }
+  );
+}

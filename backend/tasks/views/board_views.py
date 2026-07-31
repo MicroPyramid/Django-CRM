@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -16,6 +17,34 @@ from tasks.serializer import (
     BoardSerializer,
     BoardTaskSerializer,
 )
+
+
+def _resequence_column(column, moved_task=None, target_index=None):
+    """Renumber a column's cards to a contiguous ``0..n-1`` ``order``.
+
+    A board card carries a per-column ``order`` with no uniqueness constraint, so
+    a naive "save the dropped index" leaves ties and gaps that make reloads
+    non-deterministic. After any move/reorder we renumber the affected column(s)
+    here: existing cards are taken in ``(order, created_at)`` order (deterministic
+    tie-break) and, when a card was dropped into this column, it is spliced in at
+    ``target_index`` (clamped to the column's bounds). This lets a single PUT both
+    relocate a card and place it exactly, without a separate batch-reorder
+    endpoint. Only rows whose ``order`` actually changes are written.
+    """
+    others = list(
+        column.tasks.exclude(pk=moved_task.pk)
+        if moved_task is not None
+        else column.tasks.all()
+    )
+    others.sort(key=lambda t: (t.order, t.created_at))
+    if moved_task is not None:
+        idx = 0 if target_index is None else max(0, min(int(target_index), len(others)))
+        others.insert(idx, moved_task)
+    for i, task in enumerate(others):
+        if task.order != i:
+            BoardTask.objects.filter(pk=task.pk).update(order=i)
+            if moved_task is not None and task.pk == moved_task.pk:
+                moved_task.order = i
 
 
 class BoardListCreateView(APIView, LimitOffsetPagination):
@@ -54,6 +83,7 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
             Board.objects.filter(
                 Q(org=org) & (Q(owner=user_profile) | Q(members=user_profile))
             )
+            .prefetch_related("memberships")
             .distinct()
             .order_by("-created_at")
         )
@@ -70,7 +100,9 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
 
         # Pagination
         results = self.paginate_queryset(queryset, request, view=self)
-        serializer = BoardListSerializer(results, many=True)
+        serializer = BoardListSerializer(
+            results, many=True, context={"request": request}
+        )
 
         return Response(
             {
@@ -118,7 +150,9 @@ class BoardListCreateView(APIView, LimitOffsetPagination):
                 {"name": "Done", "order": 3, "color": "#10B981"},
             ]
             for col_data in default_columns:
-                BoardColumn.objects.create(board=board, org=org, created_by=request.user, **col_data)
+                BoardColumn.objects.create(
+                    board=board, org=org, created_by=request.user, **col_data
+                )
 
         return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
 
@@ -294,7 +328,17 @@ class BoardColumnListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        columns = board.columns.all()
+        # Prefetch the nested cards with their account + assignees so rendering a
+        # full board (this is the endpoint the kanban reads) stays a handful of
+        # queries rather than one-per-card.
+        columns = board.columns.prefetch_related(
+            Prefetch(
+                "tasks",
+                queryset=BoardTask.objects.select_related("account").prefetch_related(
+                    "assigned_to__user"
+                ),
+            )
+        )
         serializer = BoardColumnSerializer(columns, many=True)
         return Response(serializer.data)
 
@@ -327,6 +371,22 @@ class BoardColumnListCreateView(APIView):
         if not serializer.is_valid():
             return Response(
                 {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ``BoardColumn`` has ``unique_together = (board, name)``, but ``board``
+        # is read-only on the serializer so DRF cannot auto-attach a uniqueness
+        # validator for it. Without this, a duplicate name reaches the DB and
+        # surfaces as a 500 IntegrityError; check it here for a clean 400.
+        name = serializer.validated_data.get("name")
+        if BoardColumn.objects.filter(board=board, name=name).exists():
+            return Response(
+                {
+                    "error": True,
+                    "errors": {
+                        "name": "A column with this name already exists on this board."
+                    },
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -428,7 +488,7 @@ class BoardTaskDetailView(APIView):
         responses={200: BoardTaskSerializer},
     )
     def put(self, request, pk):
-        """Update task (including moving to different column)"""
+        """Update task (including moving to a different column)."""
         org = request.profile.org
         task = get_object_or_404(BoardTask, pk=pk, column__board__org=org)
 
@@ -443,6 +503,31 @@ class BoardTaskDetailView(APIView):
             )
 
         data = request.data.copy()
+
+        # Resolve an optional column move. ``column`` is read-only on the
+        # serializer, so the drag-and-drop target is validated and applied here
+        # instead: it must be a column of *this* board (which, since the board is
+        # already org-scoped, keeps the card inside its org). Sending a column
+        # from another board — or a garbage id — is a 400, not a silent no-op.
+        source_column = task.column
+        target_column = source_column
+        raw_column = data.get("column")
+        if raw_column and str(raw_column) != str(source_column.id):
+            try:
+                target_column = BoardColumn.objects.filter(
+                    pk=raw_column, board=board
+                ).first()
+            except (DjangoValidationError, ValueError, TypeError):
+                target_column = None
+            if target_column is None:
+                return Response(
+                    {
+                        "error": True,
+                        "errors": {"column": "Invalid column for this board."},
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         serializer = BoardTaskSerializer(task, data=data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -450,12 +535,26 @@ class BoardTaskDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        task = serializer.save(updated_by=request.user)
+        moved = target_column.id != source_column.id
+        save_kwargs = {"updated_by": request.user}
+        if moved:
+            save_kwargs["column"] = target_column
+        task = serializer.save(**save_kwargs)
 
         # Handle assigned_to
         if "assigned_to_ids" in data:
             profiles = Profile.objects.filter(id__in=data["assigned_to_ids"], org=org)
             task.assigned_to.set(profiles)
+
+        # Keep each touched column densely ordered so the card lands exactly where
+        # it was dropped and reloads are stable.
+        if moved or "order" in serializer.validated_data:
+            requested_index = serializer.validated_data.get("order", task.order)
+            _resequence_column(
+                target_column, moved_task=task, target_index=requested_index
+            )
+            if moved:
+                _resequence_column(source_column)
 
         return Response(BoardTaskSerializer(task).data)
 

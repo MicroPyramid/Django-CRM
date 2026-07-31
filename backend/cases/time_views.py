@@ -34,6 +34,7 @@ from cases.serializer import (
     TimeEntrySerializer,
     TimeEntryUpdateSerializer,
 )
+from common.models import Profile
 from common.permissions import HasOrgContext
 
 
@@ -315,7 +316,7 @@ class TimesheetView(APIView):
                 started_at__date__gte=start,
                 started_at__date__lte=end,
             )
-            .select_related("case", "profile", "profile__user")
+            .select_related("case", "profile", "profile__user", "invoice")
             .order_by("started_at")
         )
         days = OrderedDict()
@@ -339,6 +340,19 @@ class TimesheetView(APIView):
                 # math straddles midnight; skip silently.
                 continue
             data = TimeEntrySerializer(entry).data
+            # The timesheet page shows each ticket's name and links a billed
+            # entry to its invoice, so expand these two FKs from the bare ids
+            # the serializer emits. Both are select_related above, so this adds
+            # no per-row queries.
+            data["case"] = {"id": str(entry.case_id), "name": entry.case.name}
+            data["invoice"] = (
+                {
+                    "id": str(entry.invoice_id),
+                    "invoice_number": entry.invoice.invoice_number,
+                }
+                if entry.invoice_id
+                else None
+            )
             if entry.ended_at is None:
                 # Surface a server-side live duration so non-JS clients still
                 # see the right number; the frontend re-ticks it locally.
@@ -358,9 +372,29 @@ class TimesheetView(APIView):
 
         week_total = sum(d["total_minutes"] for d in days.values())
         billable_total = sum(d["billable_minutes"] for d in days.values())
+
+        # Whose timesheet this is, named for the header. Reuse request.profile
+        # when it's the caller's own week (the common case) to avoid a lookup;
+        # otherwise resolve the org-scoped target profile. user.name is never
+        # blank (it falls back to the email local-part on first save).
+        if str(target_profile_id) == str(request.profile.id):
+            target_profile = request.profile
+        else:
+            target_profile = (
+                Profile.objects.filter(org=request.profile.org, id=target_profile_id)
+                .select_related("user")
+                .first()
+            )
+        profile_name = (
+            target_profile.user.name
+            if target_profile and target_profile.user_id
+            else ""
+        )
+
         return Response(
             {
                 "profile_id": str(target_profile_id),
+                "profile": {"id": str(target_profile_id), "name": profile_name},
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "days": list(days.values()),

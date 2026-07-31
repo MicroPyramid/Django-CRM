@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
-
 # Match `%token%` where token is letters/digits/underscores. Greedy enough
 # to handle adjacent placeholders without eating intermediate text.
 _PLACEHOLDER_RE = re.compile(r"%([a-zA-Z_][a-zA-Z0-9_]*)%")
@@ -80,16 +79,25 @@ def _supported_values(case, profile) -> dict[str, str]:
     }
 
 
+# The placeholders `render_macro` substitutes, in the order the composer shows
+# them, each paired with a human description of what it resolves to. This tuple
+# is the single source of truth for the supported set: `SUPPORTED_TOKENS` (used
+# by both the renderer and `find_unknown_placeholders`) is derived from it, and
+# the macros list API returns it verbatim so a web/mobile reference card cannot
+# drift from the tokens the server actually expands. Tokens carry their `%...%`
+# wrapping so consumers can show them exactly as they appear in a macro body.
+SUPPORTED_PLACEHOLDERS: tuple[dict[str, str], ...] = (
+    {"token": "%customer_name%", "resolves": "The case's first contact"},
+    {"token": "%customer_email%", "resolves": "That contact's email"},
+    {"token": "%case_id%", "resolves": "The case number"},
+    {"token": "%case_subject%", "resolves": "The case title"},
+    {"token": "%agent_name%", "resolves": "You — the local part of your email"},
+    {"token": "%agent_email%", "resolves": "Your email"},
+    {"token": "%org_name%", "resolves": "The organisation name"},
+)
+
 SUPPORTED_TOKENS: Iterable[str] = frozenset(
-    [
-        "customer_name",
-        "customer_email",
-        "case_id",
-        "case_subject",
-        "agent_name",
-        "agent_email",
-        "org_name",
-    ]
+    p["token"].strip("%") for p in SUPPORTED_PLACEHOLDERS
 )
 
 

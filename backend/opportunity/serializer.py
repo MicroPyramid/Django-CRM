@@ -12,6 +12,7 @@ from common.serializer import (
 from contacts.serializer import ContactSerializer
 from invoices.serializer import ProductSerializer
 from opportunity.models import Opportunity, OpportunityLineItem, SalesGoal, StageAgingConfig
+from opportunity.workflow import AMOUNT_REQUIRED_STAGES, CLOSED_STAGES
 
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
@@ -226,6 +227,46 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
                 )
         return name
 
+    def _resolved(self, data, field):
+        """The value this save will end up with — the submitted one if the
+        request carried the field, otherwise what is already on the record.
+
+        Needed because PATCH is the verb the edit form uses: a request that
+        only moves the stage still has to be judged against the amount and
+        close date already stored, not against the empty half of its own body.
+        """
+        if field in data:
+            return data[field]
+        return getattr(self.instance, field, None)
+
+    def validate(self, data):
+        """Enforce the two rules `Opportunity.clean()` declares.
+
+        `clean()` is a model method and DRF never calls it — `ModelSerializer`
+        does not run `full_clean()` — so both rules existed only as unit tests
+        against the model. Through the API a deal could be marked Closed Won
+        with no amount and no close date, and it silently landed in
+        `SalesGoal.compute_progress()` (which sums `amount` over won deals)
+        as a win worth nothing.
+
+        Kept as a serializer rule rather than wired into `save()` so the client
+        gets a 400 naming the field instead of a 500 out of the database, per
+        the API Validation rules in CLAUDE.md.
+        """
+        stage = self._resolved(data, "stage")
+        errors = {}
+
+        if stage in CLOSED_STAGES and not self._resolved(data, "closed_on"):
+            errors["closed_on"] = (
+                "A deal cannot be closed without the date it closed on."
+            )
+        if stage in AMOUNT_REQUIRED_STAGES and not self._resolved(data, "amount"):
+            errors["amount"] = "A won deal has to record what it was worth."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
+
     class Meta:
         model = Opportunity
         fields = (
@@ -418,6 +459,23 @@ class SalesGoalSerializer(serializers.ModelSerializer):
 
 
 class SalesGoalCreateSerializer(serializers.ModelSerializer):
+    """Write serializer for SalesGoal (create + partial update).
+
+    ``org`` and ``created_by`` are set by the view from ``request.profile`` —
+    they are not fields here, so they can never be mass-assigned from the body.
+
+    ``assigned_to`` (a Profile) and ``team`` (a Teams) are the tenant-boundary
+    risk on this serializer. DRF's default ``PrimaryKeyRelatedField`` resolves
+    them against *every* row in the table, and ``common_profile`` is **not**
+    RLS-protected (it is an auth-bootstrap table looked up before org context
+    exists), so without the checks below an admin could POST/PUT a goal whose
+    ``assigned_to`` is a Profile in another org — leaking that person's name and
+    email into this org's goal detail and leaderboard. ``teams`` *is* RLS-scoped,
+    but the contract is the explicit org check, not the safety net, so both are
+    validated the same way. The view passes ``context={"request": request}`` for
+    exactly this reason.
+    """
+
     class Meta:
         model = SalesGoal
         fields = (
@@ -431,6 +489,31 @@ class SalesGoalCreateSerializer(serializers.ModelSerializer):
             "team",
             "is_active",
         )
+
+    def _caller_org(self):
+        request = self.context.get("request")
+        profile = getattr(request, "profile", None) if request else None
+        return getattr(profile, "org", None)
+
+    def validate_assigned_to(self, value):
+        if value is None:
+            return value
+        org = self._caller_org()
+        if org is None or value.org_id != org.id:
+            raise serializers.ValidationError(
+                "Selected assignee is not a member of this organization."
+            )
+        return value
+
+    def validate_team(self, value):
+        if value is None:
+            return value
+        org = self._caller_org()
+        if org is None or value.org_id != org.id:
+            raise serializers.ValidationError(
+                "Selected team does not belong to this organization."
+            )
+        return value
 
     def validate(self, data):
         period_start = data.get("period_start", getattr(self.instance, "period_start", None))

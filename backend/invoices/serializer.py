@@ -53,6 +53,8 @@ class OpportunityMinimalSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product catalog"""
 
+    used_on = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = (
@@ -64,10 +66,26 @@ class ProductSerializer(serializers.ModelSerializer):
             "currency",
             "category",
             "is_active",
+            "used_on",
             "created_at",
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_used_on(self, obj):
+        """Distinct invoices this product is a line item on.
+
+        Line items denormalise their own name and unit price, so retiring or
+        even deleting a product never rewrites a historic invoice (the FK is
+        SET_NULL); this count is why a retired product is still worth listing.
+        `ProductListView` annotates `used_on_count` to avoid an N+1 across the
+        list, so read that when present and fall back to a query on the single
+        detail views.
+        """
+        annotated = getattr(obj, "used_on_count", None)
+        if annotated is not None:
+            return annotated
+        return obj.invoice_line_items.values("invoice_id").distinct().count()
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
@@ -103,7 +121,16 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 class InvoiceTemplateSerializer(serializers.ModelSerializer):
-    """Serializer for Invoice Templates"""
+    """Full template serializer — EXPOSES the raw ``template_html`` /
+    ``template_css``.
+
+    Those two fields are org-authored HTML/CSS rendered into a PDF server-side;
+    handing them to a browser is a stored-XSS vector. This serializer must only
+    ever back an admin-only editor fetch. No list, detail, create/update, or
+    nested response uses it — those all use ``InvoiceTemplateListSerializer``
+    (below), which never returns the markup. Do not wire this to a wide-read or
+    non-admin surface.
+    """
 
     class Meta:
         model = InvoiceTemplate
@@ -123,6 +150,72 @@ class InvoiceTemplateSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+
+class InvoiceTemplateListSerializer(serializers.ModelSerializer):
+    """Safe template representation — never returns the raw markup.
+
+    ``template_html`` / ``template_css`` are org-authored HTML/CSS that
+    WeasyPrint renders into a PDF server-side. The moment either reaches a
+    browser DOM (an accidental ``{@html}``) a PDF setting becomes stored XSS, so
+    they are kept off every list/detail/create/nested response. Callers get
+    booleans and a byte count describing the markup, never the markup itself.
+    This is the serializer every read path uses.
+    """
+
+    has_logo = serializers.SerializerMethodField()
+    has_custom_html = serializers.SerializerMethodField()
+    has_custom_css = serializers.SerializerMethodField()
+    custom_html_bytes = serializers.SerializerMethodField()
+    used_on_invoices = serializers.SerializerMethodField()
+    updated_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InvoiceTemplate
+        fields = (
+            "id",
+            "name",
+            "is_default",
+            "primary_color",
+            "secondary_color",
+            "has_logo",
+            "has_custom_html",
+            "has_custom_css",
+            "custom_html_bytes",
+            "default_notes",
+            "default_terms",
+            "footer_text",
+            "used_on_invoices",
+            "created_at",
+            "updated_at",
+            "updated_by",
+        )
+
+    def get_has_logo(self, obj):
+        return bool(obj.logo)
+
+    def get_has_custom_html(self, obj):
+        return bool(obj.template_html)
+
+    def get_has_custom_css(self, obj):
+        return bool(obj.template_css)
+
+    def get_custom_html_bytes(self, obj):
+        return len((obj.template_html or "").encode("utf-8"))
+
+    def get_used_on_invoices(self, obj):
+        # ``InvoiceTemplateListView`` annotates this to avoid an N+1; fall back
+        # to a direct count for single-object (detail/create) and nested uses.
+        annotated = getattr(obj, "used_on_invoices_count", None)
+        if annotated is not None:
+            return annotated
+        return obj.invoices.count()
+
+    def get_updated_by(self, obj):
+        user = obj.updated_by or obj.created_by
+        if not user:
+            return None
+        return (user.name or "").strip() or user.email
 
 
 class InvoiceTemplateCreateSerializer(serializers.ModelSerializer):
@@ -354,7 +447,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     account = AccountSerializer(read_only=True)
     contact = ContactSerializer(read_only=True)
     opportunity = OpportunityMinimalSerializer(read_only=True)
-    template = InvoiceTemplateSerializer(read_only=True)
+    template = InvoiceTemplateListSerializer(read_only=True)
     line_items = InvoiceLineItemSerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
     created_by = UserSerializer(read_only=True)
@@ -515,6 +608,14 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             # Line Items
             "line_items",
         )
+        # `status` is a lifecycle field, not a client-set one. A new invoice is
+        # always created as Draft (the model default); status then advances only
+        # through the validated lifecycle endpoints (InvoiceSendView /
+        # InvoiceMarkPaidView / InvoiceCancelView). Left writable here, a member
+        # could POST status="Paid" and mint an invoice that reports as paid with
+        # no Payment behind it — corrupting AR, aging, and revenue. Read-only
+        # closes that on both create and update.
+        read_only_fields = ("status",)
 
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
@@ -555,6 +656,23 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_template_id(self, value):
+        """Validate template exists and belongs to org (if provided).
+
+        Without this, a member could attach another org's InvoiceTemplate UUID
+        and render its markup/branding on this invoice's PDF — a cross-tenant
+        IDOR. Mirrors the account/contact/opportunity checks above.
+        """
+        if value is None:
+            return value
+        if not self.org:
+            raise serializers.ValidationError("Organization context required")
+        if not InvoiceTemplate.objects.filter(id=value, org=self.org).exists():
+            raise serializers.ValidationError(
+                "Template not found or does not belong to your organization"
+            )
+        return value
+
     def validate(self, attrs):
         """Cross-field validation"""
         account_id = attrs.get("account_id")
@@ -567,6 +685,23 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"contact_id": "Contact does not belong to the selected account"}
                 )
+
+        # Line-item products must belong to this org. The nested line-item
+        # serializer's `product` is an auto PrimaryKeyRelatedField over an
+        # unscoped queryset (all orgs), so a cross-org product UUID resolves;
+        # this is where we have org context to reject it. Guards create + update.
+        if self.org:
+            for item in attrs.get("line_items") or []:
+                product = item.get("product")
+                if product is not None and product.org_id != self.org.id:
+                    raise serializers.ValidationError(
+                        {
+                            "line_items": (
+                                "A line item references a product from another "
+                                "organization."
+                            )
+                        }
+                    )
         return attrs
 
     def create(self, validated_data):
@@ -681,10 +816,20 @@ class EstimateLineItemSerializer(serializers.ModelSerializer):
 
 
 class EstimateListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for Estimate list views"""
+    """Lightweight serializer for Estimate list views.
+
+    ``opportunity`` and ``converted_to_invoice`` are on the list row on purpose:
+    the estimates worklist exists to separate "accepted but not yet billed"
+    (money agreed, no invoice) from "already billed". Without the conversion
+    reference the client cannot tell the two apart and would offer to raise a
+    second invoice for an estimate that already has one. Both are trimmed to the
+    two fields the list needs -- never the full nested object.
+    """
 
     account_name = serializers.CharField(source="account.name", read_only=True)
     contact_name = serializers.SerializerMethodField()
+    opportunity = serializers.SerializerMethodField()
+    converted_to_invoice = serializers.SerializerMethodField()
 
     class Meta:
         model = Estimate
@@ -697,6 +842,8 @@ class EstimateListSerializer(serializers.ModelSerializer):
             "account_name",
             "contact",
             "contact_name",
+            "opportunity",
+            "converted_to_invoice",
             "client_name",
             "issue_date",
             "expiry_date",
@@ -709,6 +856,17 @@ class EstimateListSerializer(serializers.ModelSerializer):
     def get_contact_name(self, obj):
         if obj.contact:
             return f"{obj.contact.first_name} {obj.contact.last_name}"
+        return None
+
+    def get_opportunity(self, obj):
+        if obj.opportunity_id:
+            return {"id": str(obj.opportunity_id), "name": obj.opportunity.name}
+        return None
+
+    def get_converted_to_invoice(self, obj):
+        invoice = obj.converted_to_invoice
+        if invoice:
+            return {"id": str(invoice.id), "invoice_number": invoice.invoice_number}
         return None
 
 
@@ -889,9 +1047,16 @@ class RecurringInvoiceLineItemSerializer(serializers.ModelSerializer):
 
 
 class RecurringInvoiceListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for Recurring Invoice list views"""
+    """Lightweight serializer for Recurring Invoice list views.
+
+    ``payment_terms``, ``custom_days`` and ``contact_name`` are on the row
+    because the schedules worklist shows all three: the terms line, the "every N
+    days" cadence for a CUSTOM frequency, and the contact under the account.
+    ``custom_days`` is null unless ``frequency == 'CUSTOM'``.
+    """
 
     account_name = serializers.CharField(source="account.name", read_only=True)
+    contact_name = serializers.SerializerMethodField()
 
     class Meta:
         model = RecurringInvoice
@@ -900,8 +1065,12 @@ class RecurringInvoiceListSerializer(serializers.ModelSerializer):
             "title",
             "account",
             "account_name",
+            "contact",
+            "contact_name",
             "client_name",
             "frequency",
+            "custom_days",
+            "payment_terms",
             "start_date",
             "end_date",
             "next_generation_date",
@@ -912,6 +1081,11 @@ class RecurringInvoiceListSerializer(serializers.ModelSerializer):
             "invoices_generated",
             "created_at",
         )
+
+    def get_contact_name(self, obj):
+        if obj.contact:
+            return f"{obj.contact.first_name} {obj.contact.last_name}"
+        return None
 
 
 class RecurringInvoiceSerializer(serializers.ModelSerializer):

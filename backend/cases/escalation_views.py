@@ -3,19 +3,109 @@
 See docs/cases/tier1/escalation.md.
 """
 
+from datetime import timedelta
+
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from cases.models import EscalationPolicy
+from business_hours.calendar import add_business_hours, get_default_calendar
+from cases.models import Case, EscalationPolicy
 from cases.serializer import EscalationPolicySerializer
 from common.permissions import HasOrgContext
+
+# Cases opened within this many days form the cohort the breach counts report on.
+BREACH_WINDOW_DAYS = 30
 
 
 def _is_admin(profile):
     return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
+
+
+def _sla_deadline(created_at, hours, calendar, paused_at, paused_seconds, now):
+    """Business-hours deadline for one SLA half, with customer wait added back.
+
+    A hand-inlined mirror of ``Case._sla_deadline`` that takes an already-
+    resolved ``calendar`` so a whole cohort can be scored with ONE
+    ``get_default_calendar`` query instead of one per case (the property re-
+    resolves it every call). Keep the pause arithmetic in step with the model.
+    """
+    if created_at is None or hours is None:
+        return None
+    deadline = add_business_hours(created_at, hours, calendar)
+    paused = paused_seconds or 0
+    if paused_at is not None:
+        paused += max(int((now - paused_at).total_seconds()), 0)
+    if paused:
+        deadline = deadline + timedelta(seconds=paused)
+    return deadline
+
+
+def _breach_counts_last_30d(org):
+    """Count SLA breaches per priority among cases OPENED in the last 30 days.
+
+    The escalation page shows these under each priority's policy AND, crucially,
+    keeps showing them when the policy is dead (off, or no recipient) — that is
+    the entire point of the screen ("breaches told nobody"). So this cannot be
+    sourced from the ``ESCALATED`` Activity log: ``scan_for_breached_cases``
+    records an activity only when a policy actually acts (active + a target set),
+    so a dead policy leaves no event and would read as zero breaches. We count
+    the breach *condition* on the case itself instead.
+
+    A case breached first response iff its business-hours deadline has passed and
+    the first response either never came or came after it; likewise resolution
+    against ``resolved_at``. That definition counts breached-then-resolved-late
+    cases, which the live ``is_sla_*_breached`` properties drop the moment a case
+    is answered or closed.
+
+    Anchored on ``created_at`` (a standard SLA cohort framing) so the scan stays
+    bounded and index-friendly. Not captured: a case opened before the window
+    whose deadline slipped inside it via a long Pending pause — rare; noted, not
+    counted.
+    """
+    now = timezone.now()
+    cutoff = now - timedelta(days=BREACH_WINDOW_DAYS)
+    # One calendar for the whole org — resolved once, not per case.
+    calendar = get_default_calendar(org.id)
+    counts = {}
+    qs = Case.objects.filter(org=org, is_active=True, created_at__gte=cutoff)
+    for case in qs.iterator():
+        bucket = counts.setdefault(
+            case.priority, {"first_response": 0, "resolution": 0}
+        )
+        fr_deadline = _sla_deadline(
+            case.created_at,
+            case.sla_first_response_hours,
+            calendar,
+            case.sla_paused_at,
+            case.sla_paused_seconds,
+            now,
+        )
+        if fr_deadline is not None and (
+            (
+                case.first_response_at is not None
+                and case.first_response_at > fr_deadline
+            )
+            or (case.first_response_at is None and now > fr_deadline)
+        ):
+            bucket["first_response"] += 1
+        res_deadline = _sla_deadline(
+            case.created_at,
+            case.sla_resolution_hours,
+            calendar,
+            case.sla_paused_at,
+            case.sla_paused_seconds,
+            now,
+        )
+        if res_deadline is not None and (
+            (case.resolved_at is not None and case.resolved_at > res_deadline)
+            or (case.resolved_at is None and now > res_deadline)
+        ):
+            bucket["resolution"] += 1
+    return counts
 
 
 def _admin_required():
@@ -30,17 +120,21 @@ class EscalationPolicyListCreateView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["Escalation"], responses={200: EscalationPolicySerializer(many=True)})
+    @extend_schema(
+        tags=["Escalation"], responses={200: EscalationPolicySerializer(many=True)}
+    )
     def get(self, request, *args, **kwargs):
         org = request.profile.org
         qs = EscalationPolicy.objects.filter(org=org).order_by("priority")
-        return Response(
-            {
-                "policies": EscalationPolicySerializer(
-                    qs, many=True, context={"request": request, "org": org}
-                ).data
-            }
-        )
+        policies = EscalationPolicySerializer(
+            qs, many=True, context={"request": request, "org": org}
+        ).data
+        counts = _breach_counts_last_30d(org)
+        for policy in policies:
+            policy["breaches_last_30d"] = counts.get(
+                policy["priority"], {"first_response": 0, "resolution": 0}
+            )
+        return Response({"policies": policies})
 
     @extend_schema(
         tags=["Escalation"],

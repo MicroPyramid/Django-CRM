@@ -22,7 +22,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import connection
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from common.models import Attachments, Comment, Tags, Teams
@@ -142,10 +141,15 @@ class TestOpportunityListView:
             "name": "Unauthorized Deal",
             "stage": "QUALIFICATION",
         }
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                OPPORTUNITIES_LIST_URL, payload, format="json"
-            )
+        # Asserts the response, not an exception. The old version expected
+        # `PermissionDenied` to propagate out of the client call, which DRF
+        # never lets happen — it catches the exception and renders a 403 — so
+        # the test could only ever fail. It had been failing.
+        response = unauthenticated_client.post(
+            OPPORTUNITIES_LIST_URL, payload, format="json"
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not Opportunity.objects.filter(name="Unauthorized Deal").exists()
 
     @patch("opportunity.views.opportunity_views.send_email_to_assigned_user.delay")
     def test_org_isolation(
@@ -731,10 +735,16 @@ class TestOpportunityDetailView:
     def test_patch_opportunity_closed_won_sets_closed_by(
         self, admin_client, opportunity
     ):
-        """PATCH with CLOSED_WON stage sets closed_by."""
+        """PATCH with CLOSED_WON stage sets closed_by.
+
+        Now sends the amount and the close date, because closing a deal
+        requires both. This used to pass with neither — see
+        `test_patch_closed_won_without_amount_is_rejected` in
+        test_deal_access_and_totals.py.
+        """
         response = admin_client.patch(
             _detail_url(opportunity.pk),
-            {"stage": "CLOSED_WON"},
+            {"stage": "CLOSED_WON", "amount": "9000.00", "closed_on": "2026-02-01"},
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK

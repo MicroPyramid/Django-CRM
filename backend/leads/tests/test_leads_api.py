@@ -4,7 +4,6 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import Attachments, Comment, Profile, Tags, Teams
 from contacts.models import Contact
@@ -76,11 +75,20 @@ class TestLeadListView:
         assert data["error"] is True
 
     def test_create_lead_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/leads/",
-                {"first_name": "Test", "last_name": "Lead", "email": "t@t.com"},
-            )
+        """`HasOrgContext` refuses before anything reads the body.
+
+        Was already failing before the v2 leads work — it asserted that the
+        request *raises* `PermissionDenied` out of the client, but DRF handles
+        the exception and renders it, so nothing propagates. Assert the
+        response the caller actually receives.
+        """
+        response = unauthenticated_client.post(
+            "/api/leads/",
+            {"first_name": "Test", "last_name": "Lead", "email": "t@t.com"},
+        )
+
+        assert response.status_code == 403
+        assert not Lead.objects.filter(email="t@t.com").exists()
 
     def test_org_isolation(self, org_b_client, admin_user, org_a):
         Lead.objects.create(
@@ -1327,9 +1335,14 @@ class TestLeadDetailViewNonAdmin:
     def test_detail_non_admin_assigned_exercises_non_creator_branch(
         self, user_client, admin_user, org_a, user_profile
     ):
-        """Non-admin non-creator assigned user exercises lines 373-374.
-        Line 374 has a bug (User model has no 'username' attr), which we verify.
-        This still exercises the uncovered branch.
+        """An assigned non-admin can open a lead somebody else created.
+
+        This used to assert `pytest.raises(AttributeError, match="username")`,
+        pinning a crash in place as though it were the specification: the
+        mention list read `created_by.username`, and this User model sets
+        `USERNAME_FIELD = "email"` and has no `username` field. Being assigned
+        a lead and then getting a 500 when you open it is not a branch worth
+        covering — it is the bug.
         """
         lead = self._create_lead_with_creator(
             admin_user,
@@ -1339,17 +1352,22 @@ class TestLeadDetailViewNonAdmin:
             email="assignedview@example.com",
         )
         lead.assigned_to.add(user_profile)
-        # Line 374 accesses created_by.username but custom User has no username field
-        with pytest.raises(AttributeError, match="username"):
-            user_client.get(_detail_url(lead.id))
+
+        response = user_client.get(_detail_url(lead.id))
+
+        assert response.status_code == 200
+        assert response.json()["users_mention"] == [{"user__email": admin_user.email}]
 
     def test_detail_non_admin_not_assigned_not_creator_gets_error(
         self, user_client, admin_user, org_a, user_profile
     ):
-        """Non-admin user not assigned/creator triggers permission check (lines 343-345).
-        The view's get_context_data returns a Response object for forbidden users,
-        which causes a serialization error when wrapped in another Response.
-        Exercises lines 343-345 (the permission branch).
+        """A non-admin who is neither assigned nor the creator gets a 403.
+
+        This used to assert `pytest.raises(TypeError, match="not JSON
+        serializable")`, and the docstring described the mechanism as though it
+        were intended: `get_context_data` returned a `Response` on refusal and
+        `get()` wrapped it in a second one, so the 403 rendered as a 500. The
+        refusal is now raised, so it arrives as the status it always meant.
         """
         lead = self._create_lead_with_creator(
             admin_user,
@@ -1358,9 +1376,8 @@ class TestLeadDetailViewNonAdmin:
             last_name="Detail",
             email="forbiddendetail@example.com",
         )
-        # This will trigger the permission check and the Response-in-Response bug
-        with pytest.raises(TypeError, match="not JSON serializable"):
-            user_client.get(_detail_url(lead.id))
+
+        assert user_client.get(_detail_url(lead.id)).status_code == 403
 
     def test_detail_non_admin_creator_assigned_exercises_creator_branch(
         self, user_client, regular_user, org_a, user_profile

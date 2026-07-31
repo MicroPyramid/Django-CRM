@@ -1,7 +1,12 @@
 import json
+import statistics
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.http import Http404
+from django.utils import timezone
 from drf_spectacular.utils import (
     extend_schema,
     inline_serializer,
@@ -10,22 +15,29 @@ from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
 from accounts.models import Account
 from accounts.serializer import AccountSerializer
 from cases import swagger_params
+from cases.access import (
+    assert_case_delete_access,
+    assert_case_read_access,
+    assert_case_write_access,
+    get_case_or_404,
+    has_case_write_access,
+    is_org_admin,
+    visible_cases_qs,
+)
 from cases.models import Case, ReopenPolicy, Solution
 from cases.models import EmailMessage as _EmailMessageModel  # noqa: F401  (used below)
-from cases.serializer import EmailMessageSerializer
 from cases.serializer import (
     CaseCommentEditSwaggerSerializer,
     CaseCreateSerializer,
     CaseCreateSwaggerSerializer,
     CaseDetailEditSwaggerSerializer,
     CaseSerializer,
+    EmailMessageSerializer,
     ReopenPolicySerializer,
 )
 from cases.solution_serializers import SolutionSerializer
@@ -40,6 +52,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.permissions import HasOrgContext
 from common.serializer import (
     ActivitySerializer,
     AttachmentsSerializer,
@@ -50,6 +63,10 @@ from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
+# A ticket is "open" while somebody still owes the customer something. The
+# other three values in STATUS_CHOICE — Closed, Rejected, Duplicate — are all
+# ways of being finished with it.
+OPEN_STATUSES = ("New", "Assigned", "Pending")
 
 _ALLOWED_CASE_ORDERINGS = frozenset(
     {
@@ -144,16 +161,20 @@ class CaseListView(APIView, LimitOffsetPagination):
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
-            "-id"
+        # `-id` is a random UUID, so the default "newest first" was in fact no
+        # order at all — the queue came back shuffled and the page still said
+        # it was sorted. `-created_at` is the order the header promises;
+        # `-id` stays as a tiebreak so pagination is stable when a batch of
+        # cases shares a timestamp (which the seeded data does exactly).
+        queryset = (
+            self.model.objects.filter(org=self.request.profile.org)
+            .order_by("-created_at", "-id")
+            .select_related("account", "org", "created_by", "parent")
+            .prefetch_related("assigned_to__user", "contacts", "teams", "tags")
         )
         # COORDINATION_DECISIONS.md D4: hide soft-deleted cases by default; admins may opt in.
-        include_deleted = (
-            params.get("include_deleted") == "true"
-            and (
-                self.request.profile.role == "ADMIN"
-                or self.request.profile.is_admin
-            )
+        include_deleted = params.get("include_deleted") == "true" and is_org_admin(
+            self.request.profile
         )
         if not include_deleted:
             queryset = queryset.filter(is_active=True)
@@ -166,15 +187,15 @@ class CaseListView(APIView, LimitOffsetPagination):
         accounts = Account.objects.filter(org=self.request.profile.org).order_by("-id")
         contacts = Contact.objects.filter(org=self.request.profile.org).order_by("-id")
         profiles = Profile.objects.filter(is_active=True, org=self.request.profile.org)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             # Watcher allowance: a non-admin who is a watcher must still be
-            # able to see the case even when un-assigned. See
-            # docs/cases/tier2/watchers-mentions.md "Watcher who loses access".
+            # able to see the case even when un-assigned. The rule now lives
+            # in `cases.access` so the detail view enforces the same one — it
+            # used to drop the watcher clause, which meant this list handed
+            # somebody a ticket that answered 403 when they clicked it.
             queryset = queryset.filter(
-                Q(created_by=self.request.profile.user)
-                | Q(assigned_to=self.request.profile)
-                | Q(watchers=self.request.profile)
-            ).distinct()
+                pk__in=visible_cases_qs(self.request.profile).values("pk")
+            )
             accounts = accounts.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
@@ -188,6 +209,22 @@ class CaseListView(APIView, LimitOffsetPagination):
         queryset = apply_case_list_filters(queryset, params)
 
         context = {}
+
+        # Queue totals, counted over the whole filtered queryset rather than
+        # the page, so a header that says "12 open" is not really saying
+        # "12 on this screen". All three are plain DB counts.
+        #
+        # `awaiting_first_reply` is deliberately not called "breaching": a
+        # breach depends on the org's business calendar and is a Python
+        # property per row, so counting it here would mean instantiating every
+        # case in the queue. Nobody having replied yet is the fact the queue
+        # can actually establish, and it is the one worth acting on.
+        open_cases = queryset.filter(status__in=OPEN_STATUSES)
+        context["open_count"] = open_cases.count()
+        context["urgent_count"] = open_cases.filter(priority="Urgent").count()
+        context["awaiting_first_reply"] = open_cases.filter(
+            first_response_at__isnull=True
+        ).count()
 
         results_cases = self.paginate_queryset(queryset, self.request, view=self)
         cases = CaseSerializer(results_cases, many=True).data
@@ -208,8 +245,21 @@ class CaseListView(APIView, LimitOffsetPagination):
         context["status"] = STATUS_CHOICE
         context["priority"] = PRIORITY_CHOICE
         context["type_of_case"] = CASE_TYPE
-        context["accounts_list"] = AccountSerializer(accounts, many=True).data
-        context["contacts_list"] = ContactSerializer(contacts, many=True).data
+        # The account and contact catalogues exist for the case *form*, but
+        # they were serialized in full on every list call — 190 KB of response
+        # for a queue of five tickets in the seeded org, and it grows with the
+        # org rather than with the page. `?slim=true` omits them for callers
+        # that only want the queue. The default is unchanged, so v1 and the
+        # mobile client see exactly what they saw before.
+        if params.get("slim") != "true":
+            context["accounts_list"] = AccountSerializer(accounts, many=True).data
+            context["contacts_list"] = ContactSerializer(contacts, many=True).data
+        # `profiles` was computed a few lines up — narrowed to admins for
+        # non-admins, even — and then dropped on the floor. So a ticket form
+        # had no way to populate an assignee picker from the endpoint that
+        # already knew the answer. Same `id` / `user__email` shape the
+        # contacts and accounts lists publish.
+        context["users"] = list(profiles.values("id", "user__email"))
         return context
 
     @extend_schema(
@@ -328,8 +378,7 @@ class CaseListView(APIView, LimitOffsetPagination):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -372,7 +421,14 @@ class CaseDetailView(APIView):
     model = Case
 
     def get_object(self, pk):
-        return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
+        """A case in the requester's org, or 404.
+
+        This used to return ``None`` for a missing case and leave every caller
+        to notice. Only `get` did; `put`, `patch` and `delete` went straight
+        on to `cases_object.org` and answered **500**. A malformed id was a
+        500 on all four, because the UUID column raises rather than missing.
+        """
+        return get_case_or_404(self.request.profile, pk)
 
     @extend_schema(
         operation_id="cases_update",
@@ -392,23 +448,7 @@ class CaseDetailView(APIView):
     def put(self, request, pk, format=None):
         params = request.data
         cases_object = self.get_object(pk=pk)
-        if cases_object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile.user == cases_object.created_by)
-                or (self.request.profile in cases_object.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        assert_case_write_access(request.profile, cases_object)
 
         serializer = CaseCreateSerializer(
             cases_object,
@@ -495,8 +535,7 @@ class CaseDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -546,20 +585,7 @@ class CaseDetailView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile.user != self.object.created_by:
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        assert_case_delete_access(request.profile, self.object)
         self.object.delete()
         return Response(
             {"error": False, "message": "Case Deleted Successfully."},
@@ -585,16 +611,6 @@ class CaseDetailView(APIView):
     )
     def get(self, request, pk, format=None):
         self.cases = self.get_object(pk=pk)
-        if not self.cases:
-            return Response(
-                {"error": True, "errors": "Case not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        if self.cases.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         # Merged duplicate → tell the client to redirect. JSON form (200) keeps
         # the SvelteKit route's error handling simple. The query param
         # `?show_merged=true` lets agents view the duplicate directly via
@@ -612,41 +628,39 @@ class CaseDetailView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
+        # Authorise before serialising: the old order built the response body
+        # for a case the requester was about to be refused.
+        assert_case_read_access(request.profile, self.cases)
+
         context = {}
         context["cases_obj"] = CaseSerializer(self.cases).data
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile.user == self.cases.created_by)
-                or (self.request.profile in self.cases.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
 
-        comment_permission = False
+        # `comment_permission` used to be creator-or-admin while `post` below
+        # accepted creator, admin *or assignee*. The flag told an assignee they
+        # could not reply to their own ticket and the endpoint then let them.
+        # Both now read the same rule, so the button matches the answer.
+        comment_permission = has_case_write_access(request.profile, self.cases)
 
-        if (
-            self.request.profile.user == self.cases.created_by
-            or self.request.profile.is_admin
-            or self.request.profile.role == "ADMIN"
-        ):
-            comment_permission = True
-
-        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
+        if is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True, org=self.request.profile.org
                 ).values("user__email")
             )
-        elif self.request.profile != self.cases.created_by:
-            if self.cases.created_by:
-                users_mention = [{"username": self.cases.created_by.user.email}]
-            else:
-                users_mention = []
+        elif self.request.profile.user_id != self.cases.created_by_id:
+            # `created_by` is a `User`; `Profile.user` is the FK pointing at
+            # one, so `User.user` does not exist and this line raised
+            # AttributeError — a 500 for *every* non-admin on *every* ticket
+            # they were entitled to open. The guard above it compared a
+            # Profile to a User and was always true, so nothing shielded it.
+            # The admin branch above emits `user__email` keys, so this one does
+            # too. It used to say `username`, which meant a mention list that
+            # changed shape with the reader's role.
+            users_mention = (
+                [{"user__email": self.cases.created_by.email}]
+                if self.cases.created_by_id
+                else []
+            )
         else:
             users_mention = []
 
@@ -664,9 +678,7 @@ class CaseDetailView(APIView):
         public_comments = comments_qs.filter(is_internal=False)
         internal_notes = comments_qs.filter(is_internal=True)
 
-        linked_solutions = self.cases.solutions.filter(
-            org=self.request.profile.org
-        )
+        linked_solutions = self.cases.solutions.filter(org=self.request.profile.org)
 
         recent_activities = Activity.objects.filter(
             entity_type="Case",
@@ -736,25 +748,12 @@ class CaseDetailView(APIView):
     )
     def post(self, request, pk, **kwargs):
         params = request.data
-        self.cases_obj = Case.objects.get(pk=pk, org=request.profile.org)
-        if self.cases_obj.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # `.get()` raised DoesNotExist — a 500 — when the case was missing or
+        # belonged to another org. Replying to a ticket that is not there is a
+        # 404, not a crash.
+        self.cases_obj = self.get_object(pk)
+        assert_case_write_access(request.profile, self.cases_obj)
         context = {}
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile.user == self.cases_obj.created_by)
-                or (self.request.profile in self.cases_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
         comment_text = params.get("comment")
         if comment_text:
             is_internal_raw = params.get("is_internal", False)
@@ -825,26 +824,7 @@ class CaseDetailView(APIView):
         """Handle partial updates to a case."""
         params = request.data
         cases_object = self.get_object(pk=pk)
-        if cases_object.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile.user == cases_object.created_by)
-                or (self.request.profile in cases_object.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        assert_case_write_access(request.profile, cases_object)
 
         serializer = CaseCreateSerializer(
             cases_object,
@@ -855,12 +835,16 @@ class CaseDetailView(APIView):
 
         if serializer.is_valid():
             save_kwargs = {
-                "closed_on": params.get("closed_on")
-                if "closed_on" in params
-                else cases_object.closed_on,
-                "case_type": params.get("case_type")
-                if "case_type" in params
-                else cases_object.case_type,
+                "closed_on": (
+                    params.get("closed_on")
+                    if "closed_on" in params
+                    else cases_object.closed_on
+                ),
+                "case_type": (
+                    params.get("case_type")
+                    if "case_type" in params
+                    else cases_object.case_type
+                ),
             }
             if "custom_fields" in params:
                 cf_payload = params.get("custom_fields")
@@ -963,7 +947,17 @@ class CaseCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        """Org-scoped already; `.get()` was the problem — a comment id that
+        does not exist raised DoesNotExist and answered 500 instead of 404."""
+        try:
+            comment = self.model.objects.filter(
+                pk=pk, org=self.request.profile.org
+            ).first()
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such comment.")
+        if comment is None:
+            raise Http404("No such comment.")
+        return comment
 
     @extend_schema(
         tags=["Cases"],
@@ -1102,11 +1096,37 @@ class CaseAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        """Delete one attachment hanging off a case.
+
+        Two defects, both proven live before the fix:
+
+        1. `objects.get(pk=pk)` had **no org filter**. `Attachments` is one
+           generic table shared by leads, accounts, contacts, deals, cases and
+           tasks, so this endpoint deleted any attachment in the database
+           belonging to any organisation, given only its UUID. RLS blocks that
+           in a correctly-configured deployment — but per CLAUDE.md the ORM
+           filter is the contract and RLS is the safety net, and the dev role
+           here is a superuser, so the probe went through.
+        2. `request.profile == self.object.created_by` compares a `Profile` to
+           a `User` FK and is therefore never true, which quietly made the
+           endpoint admin-only: the person who uploaded the file could not
+           remove it.
+
+        The same one-line lookup bug is still open in `leads`, `tasks` and
+        `opportunity`.
+        """
+        try:
+            self.object = self.model.objects.filter(
+                pk=pk, org=request.profile.org
+            ).first()
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such attachment.")
+        if self.object is None:
+            raise Http404("No such attachment.")
+
         if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.created_by
+            is_org_admin(request.profile)
+            or request.profile.user_id == self.object.created_by_id
         ):
             self.object.delete()
             return Response(
@@ -1127,11 +1147,12 @@ class CaseSolutionLinkView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def _get_case(self, pk, org):
-        return Case.objects.filter(pk=pk, org=org).first()
-
     def _get_solution(self, pk, org):
-        return Solution.objects.filter(pk=pk, org=org).first()
+        try:
+            return Solution.objects.filter(pk=pk, org=org).first()
+        except (DjangoValidationError, ValueError):
+            # A malformed UUID is a solution that does not exist, not a 500.
+            return None
 
     @extend_schema(
         tags=["Cases"],
@@ -1141,12 +1162,15 @@ class CaseSolutionLinkView(APIView):
         ),
     )
     def post(self, request, pk):
-        case = self._get_case(pk, request.profile.org)
-        if not case:
-            return Response(
-                {"error": True, "errors": "Case not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        case = get_case_or_404(request.profile, pk)
+        # Attaching an article to a ticket changes the ticket, so it takes the
+        # same permission as any other change to it. Org alone was the whole
+        # check, which meant somebody refused the case with a 403 could still
+        # link to it — and then read the case straight back out of the
+        # article's `linked_cases`. Closing that read-around at the serializer
+        # is not enough on its own: writing to a ticket you cannot open is a
+        # defect whichever way the data comes back.
+        assert_case_write_access(request.profile, case)
 
         solution_id = request.data.get("solution_id")
         if not solution_id:
@@ -1167,19 +1191,13 @@ class CaseSolutionLinkView(APIView):
             case.solutions.add(sol)
         return Response(
             {"error": False, "solution": SolutionSerializer(sol).data},
-            status=(
-                status.HTTP_200_OK if already_linked else status.HTTP_201_CREATED
-            ),
+            status=(status.HTTP_200_OK if already_linked else status.HTTP_201_CREATED),
         )
 
     @extend_schema(tags=["Cases"])
     def delete(self, request, pk, solution_pk):
-        case = self._get_case(pk, request.profile.org)
-        if not case:
-            return Response(
-                {"error": True, "errors": "Case not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        case = get_case_or_404(request.profile, pk)
+        assert_case_write_access(request.profile, case)
         sol = self._get_solution(solution_pk, request.profile.org)
         if not sol:
             return Response(
@@ -1210,24 +1228,8 @@ class CaseActivityListView(APIView, LimitOffsetPagination):
         },
     )
     def get(self, request, pk):
-        case = Case.objects.filter(pk=pk, org=request.profile.org).first()
-        if not case:
-            return Response(
-                {"error": True, "errors": "Case not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        if request.profile.role != "ADMIN" and not request.profile.is_admin:
-            if not (
-                request.profile.user == case.created_by
-                or request.profile in case.assigned_to.all()
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        case = get_case_or_404(request.profile, pk)
+        assert_case_read_access(request.profile, case)
 
         queryset = Activity.objects.filter(
             entity_type="Case",
@@ -1243,9 +1245,95 @@ class CaseActivityListView(APIView, LimitOffsetPagination):
                 offset = None
         else:
             offset = 0
-        return Response(
-            {"activities": data, "count": self.count, "offset": offset}
+        return Response({"activities": data, "count": self.count, "offset": offset})
+
+
+def _reopen_analytics(org):
+    """Honest 30-day reopen metrics for the settings page.
+
+    All three come from what the reopen path in `cases/signals.py` actually
+    persists:
+    - `reopened_last_30d`: one REOPENED Activity is written per reopen.
+    - `replies_after_window_30d`: when an external reply lands too late the
+      signal flags the COMMENT Activity `out_of_reopen_window=True` — the
+      authoritative "reopened nothing" record, judged against the window in
+      force at the time (which a recompute here could not reproduce).
+    - `median_days_to_reply`: days-from-close-to-reply across every post-close
+      external reply we can date. A reply that reopened nulled `closed_on`, so
+      its delta survives only in the REOPENED Activity's `days_since_close`; a
+      reply that did not reopen left its case Closed, so its delta is
+      `commented_on − closed_on`. The median unions both, with no double count —
+      a reopened case is no longer Closed, so it drops out of the comment side.
+
+    Every query is `org=`-scoped explicitly (RLS is inert for the app's DB role
+    in dev/test), so another org's cases, comments and activities cannot leak in.
+    """
+    cutoff = timezone.now() - timedelta(days=30)
+
+    # Reopen side: REOPENED activities (count + the delta carried in each).
+    reopened_meta = list(
+        Activity.objects.filter(
+            org=org,
+            action="REOPENED",
+            entity_type="Case",
+            created_at__gte=cutoff,
+        ).values_list("metadata", flat=True)
+    )
+
+    # Missed-window side: the signal's authoritative flag on COMMENT activities.
+    comment_meta = Activity.objects.filter(
+        org=org,
+        action="COMMENT",
+        entity_type="Case",
+        created_at__gte=cutoff,
+    ).values_list("metadata", flat=True)
+    replies_after_window_30d = sum(
+        1 for m in comment_meta if (m or {}).get("out_of_reopen_window") is True
+    )
+
+    # Median: reopened replies contribute their metadata delta...
+    deltas = []
+    for metadata in reopened_meta:
+        try:
+            days = int((metadata or {}).get("days_since_close"))
+        except (TypeError, ValueError):
+            continue
+        if days >= 0:
+            deltas.append(days)
+
+    # ...and non-reopened post-close replies contribute commented_on − closed_on.
+    # `Comment` is a generic relation, so join to Case by hand.
+    case_ct = ContentType.objects.get_for_model(Case)
+    external_comments = list(
+        Comment.objects.filter(
+            org=org,
+            content_type=case_ct,
+            commented_by__isnull=True,
+            is_internal=False,
+            commented_on__gte=cutoff,
+        ).values_list("object_id", "commented_on")
+    )
+    object_ids = {oid for oid, _ in external_comments}
+    closed_on_by_id = {}
+    if object_ids:
+        closed_on_by_id = dict(
+            Case.objects.filter(org=org, id__in=object_ids, status="Closed")
+            .exclude(closed_on__isnull=True)
+            .values_list("id", "closed_on")
         )
+    for object_id, commented_on in external_comments:
+        closed_on = closed_on_by_id.get(object_id)
+        if closed_on is None:
+            continue  # reopened / reassigned open / comment predates the close
+        days = (commented_on.date() - closed_on).days
+        if days >= 0:
+            deltas.append(days)
+
+    return {
+        "reopened_last_30d": len(reopened_meta),
+        "replies_after_window_30d": replies_after_window_30d,
+        "median_days_to_reply": (round(statistics.median(deltas), 1) if deltas else 0),
+    }
 
 
 class ReopenPolicyView(APIView):
@@ -1274,7 +1362,9 @@ class ReopenPolicyView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         policy = self._get_or_create_policy(request.profile.org)
-        return Response(ReopenPolicySerializer(policy).data)
+        data = ReopenPolicySerializer(policy).data
+        data.update(_reopen_analytics(request.profile.org))
+        return Response(data)
 
     @extend_schema(
         tags=["Cases"],

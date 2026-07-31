@@ -6,7 +6,6 @@ import pytest
 
 from business_hours.models import BusinessCalendar, BusinessHoliday
 
-
 CALENDAR_URL = "/api/business-hours/calendar/"
 
 
@@ -140,9 +139,12 @@ class TestHolidayEndpoints:
             format="json",
         )
         assert r.status_code == 200
-        assert BusinessHoliday.objects.filter(
-            calendar=calendar_a, date=date(2026, 12, 25)
-        ).count() == 1
+        assert (
+            BusinessHoliday.objects.filter(
+                calendar=calendar_a, date=date(2026, 12, 25)
+            ).count()
+            == 1
+        )
 
     def test_user_cannot_add(self, user_client, calendar_a):
         r = user_client.post(
@@ -152,9 +154,7 @@ class TestHolidayEndpoints:
         )
         assert r.status_code == 403
 
-    def test_admin_can_delete_holiday(
-        self, admin_client, calendar_a, holiday_factory
-    ):
+    def test_admin_can_delete_holiday(self, admin_client, calendar_a, holiday_factory):
         h = holiday_factory(calendar_a, date=date(2026, 7, 4), name="Independence Day")
         r = admin_client.delete(_holiday_detail_url(calendar_a.id, h.id))
         assert r.status_code == 204
@@ -177,3 +177,25 @@ class TestHolidayEndpoints:
         )
         r = admin_client.delete(_holiday_detail_url(other_cal.id, h.id))
         assert r.status_code == 404
+
+
+@pytest.mark.django_db
+class TestOrgContextRequired:
+    """The views require org context (HasOrgContext), not just authentication.
+
+    Without it an authenticated-but-org-less token would reach
+    ``request.profile.org`` on a ``None`` profile and 500. With it the request
+    is refused cleanly with a 403 before the handler runs.
+    """
+
+    def test_authenticated_without_profile_is_403_not_500(self, admin_user):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+
+        from business_hours.views import BusinessCalendarView
+
+        request = APIRequestFactory().get(CALENDAR_URL)
+        force_authenticate(request, user=admin_user)
+        # This direct-call path skips the middleware that sets request.profile,
+        # so the request has no org context — exactly what HasOrgContext guards.
+        response = BusinessCalendarView.as_view()(request)
+        assert response.status_code == 403

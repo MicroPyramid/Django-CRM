@@ -258,15 +258,21 @@ class TestDocumentDetailView:
     def test_delete_document_non_admin_own(
         self, user_client, org_a, regular_user, user_profile
     ):
-        """Non-admin cannot delete documents (view has type mismatch bug:
-        compares Profile with User in created_by check, always 403)."""
+        """A non-admin can delete a document they uploaded.
+
+        This previously asserted 403 and said so in its own docstring: the
+        view compared `request.profile` (a Profile) with `doc.created_by` (a
+        **User** FK), so the branch was always False and nobody could remove
+        their own upload. The comparison now uses `created_by_id` against
+        `profile.user_id`. See `common/tests/test_documents_access.py` for the
+        full matrix, including the cases that must still be refused.
+        """
         doc = self._create_doc(org_a, regular_user)
         # Manually set created_by since crum overrides it in tests
         Document.objects.filter(id=doc.id).update(created_by=regular_user)
         response = user_client.delete(self._url(doc.pk))
-        # View compares request.profile (Profile) != doc.created_by (User),
-        # which is always True, so non-admins always get 403.
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
+        assert not Document.objects.filter(id=doc.id).exists()
 
     def test_delete_document_non_admin_other(
         self, user_client, org_a, admin_user, user_profile

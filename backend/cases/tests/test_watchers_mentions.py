@@ -8,6 +8,7 @@ from django.utils import timezone
 from cases.models import Case, CaseWatcher
 from cases.notifications import (
     MENTION_RE,
+    case_link,
     dispatch_for_comment,
     parse_mentions,
     resolve_mentions,
@@ -192,3 +193,47 @@ class TestDispatchForComment:
         assert not Notification.objects.filter(
             recipient=bob, verb="case.commented"
         ).exists()
+
+
+@pytest.mark.django_db
+class TestNotificationLinkIsReachable:
+    """`Notification.link` is a client path, and it has to be one a client serves.
+
+    The producer wrote `/cases/<id>` for the entire life of the feature. No
+    client has ever had a `/cases` route — the SvelteKit app serves tickets at
+    `/tickets/<id>` — and its notification panel assigns `link` straight to
+    `window.location.href`, so every notification ever sent landed on a 404.
+    """
+
+    def test_case_link_points_at_the_route_clients_serve(self):
+        assert case_link("abc-123") == "/tickets/abc-123"
+
+    def test_case_link_is_not_an_api_path(self):
+        """It is consumed by a router, not by fetch(). An /api/ prefix here
+        would send the browser to JSON."""
+        assert not case_link("abc-123").startswith("/api/")
+
+    def test_mention_notification_links_to_the_ticket(
+        self, case_a, admin_profile, org_a
+    ):
+        bob = _make_profile(org_a, email="bob@org.com")
+        _comment(case_a, "hey @bob please review", by=admin_profile)
+        notif = Notification.objects.get(recipient=bob, verb="case.mentioned")
+        assert notif.link == f"/tickets/{case_a.id}"
+
+    def test_watcher_notification_links_to_the_ticket(
+        self, case_a, admin_profile, org_a
+    ):
+        bob = _make_profile(org_a, email="bob@org.com")
+        CaseWatcher.objects.create(
+            case=case_a, profile=bob, org=org_a, subscribed_via="manual"
+        )
+        _comment(case_a, "no mentions in this one", by=admin_profile)
+        notif = Notification.objects.get(recipient=bob, verb="case.commented")
+        assert notif.link == f"/tickets/{case_a.id}"
+
+    def test_no_notification_still_points_at_cases(self, case_a, admin_profile, org_a):
+        """The other direction: nothing anywhere may emit the dead prefix."""
+        bob = _make_profile(org_a, email="bob@org.com")
+        _comment(case_a, "hey @bob", by=admin_profile)
+        assert not Notification.objects.filter(link__startswith="/cases/").exists()

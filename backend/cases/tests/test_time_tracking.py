@@ -381,6 +381,69 @@ class TestTimesheetEndpoint:
         )
         assert resp.status_code == 403
 
+    def test_entry_expands_case_and_names_profile(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        case = _make_case(org_a, admin_user, name="SSO login loop")
+        _entry(
+            case,
+            admin_profile,
+            started_at=timezone.now() - timedelta(minutes=45),
+            ended_at=timezone.now(),
+            billable=True,
+            hourly_rate=Decimal("145.00"),
+        )
+        body = admin_client.get("/api/time-entries/timesheet/").json()
+
+        # The envelope names whose week this is, for the page header.
+        assert body["profile"] == {
+            "id": str(admin_profile.id),
+            "name": admin_profile.user.name,
+        }
+
+        entries = [e for d in body["days"] for e in d["entries"]]
+        assert len(entries) == 1
+        entry = entries[0]
+        # case is expanded to {id, name} — not the bare id the serializer emits —
+        # so the page can show the ticket name and link to it.
+        assert entry["case"] == {"id": str(case.id), "name": "SSO login loop"}
+        # An unbilled entry carries invoice: null, so the page never links to an
+        # invoice that isn't there.
+        assert entry["invoice"] is None
+        assert entry["is_running"] is False
+
+    def test_billed_entry_links_its_invoice(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        case = _make_case(org_a, admin_user)
+        account = Account.objects.create(name="ACME", org=org_a)
+        invoice = Invoice.objects.create(
+            invoice_title="Time for ACME",
+            account=account,
+            currency="USD",
+            status="Draft",
+            org=org_a,
+        )
+        entry = _entry(
+            case,
+            admin_profile,
+            started_at=timezone.now() - timedelta(hours=1),
+            ended_at=timezone.now(),
+            billable=True,
+            hourly_rate=Decimal("100.00"),
+        )
+        TimeEntry.objects.filter(id=entry.id).update(invoice=invoice)
+
+        body = admin_client.get("/api/time-entries/timesheet/").json()
+        entries = [e for d in body["days"] for e in d["entries"]]
+        assert len(entries) == 1
+        # A billed entry expands to {id, invoice_number} so the row links to the
+        # invoice instead of offering to bill the hour a second time.
+        assert entries[0]["invoice"] == {
+            "id": str(invoice.id),
+            "invoice_number": invoice.invoice_number,
+        }
+
 
 @pytest.mark.django_db
 class TestTimeSummaryEndpoint:

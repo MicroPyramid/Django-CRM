@@ -4,7 +4,6 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.models import Attachments, Comment, Org, Profile, Tags, Teams
@@ -46,10 +45,17 @@ class TestAccountListView:
         assert data["error"] is True
 
     def test_create_account_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/accounts/", {"name": "Test"}
-            )
+        """An anonymous POST is refused, and creates nothing.
+
+        This used to assert `pytest.raises(PermissionDenied)`, which can never
+        hold through an APIClient: DRF catches APIException and renders it as a
+        response, so the exception never reaches the test. The assertion worth
+        making is the one about the database.
+        """
+        response = unauthenticated_client.post("/api/accounts/", {"name": "Test"})
+
+        assert response.status_code in (401, 403)
+        assert not Account.objects.filter(name="Test").exists()
 
     def test_create_account_with_all_fields(self, admin_client, org_a, admin_profile):
         """Test creating an account with all optional fields populated."""
@@ -95,8 +101,12 @@ class TestAccountListView:
 
     def test_list_accounts_with_filters(self, admin_client, org_a):
         """Test listing accounts with query parameter filters."""
-        Account.objects.create(name="Alpha Corp", city="Chicago", industry="TECHNOLOGY", org=org_a)
-        Account.objects.create(name="Beta Inc", city="Boston", industry="FINANCE", org=org_a)
+        Account.objects.create(
+            name="Alpha Corp", city="Chicago", industry="TECHNOLOGY", org=org_a
+        )
+        Account.objects.create(
+            name="Beta Inc", city="Boston", industry="FINANCE", org=org_a
+        )
 
         # Filter by name
         response = admin_client.get("/api/accounts/?name=Alpha")
@@ -289,9 +299,7 @@ class TestAccountDetailView:
     def test_update_account_with_contacts(self, admin_client, org_a):
         """Test updating an account with contacts."""
         account = Account.objects.create(name="Contact Account", org=org_a)
-        contact = Contact.objects.create(
-            first_name="John", last_name="Doe", org=org_a
-        )
+        contact = Contact.objects.create(first_name="John", last_name="Doe", org=org_a)
         response = admin_client.put(
             f"/api/accounts/{account.id}/",
             {
@@ -332,9 +340,7 @@ class TestAccountDetailView:
         assert response.status_code == 400
         assert response.json()["error"] is True
 
-    def test_delete_account_non_admin_own(
-        self, user_client, org_a, regular_user
-    ):
+    def test_delete_account_non_admin_own(self, user_client, org_a, regular_user):
         """Non-admin user can delete their own account."""
         account = Account.objects.create(name="My Account", org=org_a)
         # Manually set created_by since crum overrides it in tests
@@ -389,9 +395,7 @@ class TestAccountDetailView:
 
     def test_patch_account(self, admin_client, org_a):
         """Test partial update via PATCH."""
-        account = Account.objects.create(
-            name="Patch Me", city="OldCity", org=org_a
-        )
+        account = Account.objects.create(name="Patch Me", city="OldCity", org=org_a)
         response = admin_client.patch(
             f"/api/accounts/{account.id}/",
             {"city": "NewCity"},
@@ -441,9 +445,7 @@ class TestAccountDetailView:
         assert account.tags.count() == 0
         assert account.assigned_to.count() == 0
 
-    def test_patch_account_non_admin_forbidden(
-        self, user_client, org_a, admin_user
-    ):
+    def test_patch_account_non_admin_forbidden(self, user_client, org_a, admin_user):
         """Non-admin user not assigned gets 403 on PATCH."""
         account = Account.objects.create(
             name="Patch Forbidden", org=org_a, created_by=admin_user
@@ -473,9 +475,7 @@ class TestAccountDetailView:
         assert "attachments" in data
         assert "account_obj" in data
 
-    def test_add_comment_non_admin_not_assigned(
-        self, user_client, org_a, admin_user
-    ):
+    def test_add_comment_non_admin_not_assigned(self, user_client, org_a, admin_user):
         """Non-admin user not assigned cannot add comment."""
         account = Account.objects.create(
             name="No Comment Account",
@@ -519,9 +519,7 @@ class TestAccountCommentView:
     def test_delete_comment(self, admin_client, admin_profile, org_a):
         account = Account.objects.create(name="Comment Account", org=org_a)
         comment = self._create_comment(account, admin_profile, org_a)
-        response = admin_client.delete(
-            f"/api/accounts/comment/{comment.id}/"
-        )
+        response = admin_client.delete(f"/api/accounts/comment/{comment.id}/")
         assert response.status_code == 200
 
     def test_edit_comment_no_permission(
@@ -543,9 +541,7 @@ class TestAccountCommentView:
         """Non-admin user who didn't create the comment cannot delete."""
         account = Account.objects.create(name="Comment Del Perm", org=org_a)
         comment = self._create_comment(account, admin_profile, org_a)
-        response = user_client.delete(
-            f"/api/accounts/comment/{comment.id}/"
-        )
+        response = user_client.delete(f"/api/accounts/comment/{comment.id}/")
         assert response.status_code == 403
 
     def test_edit_comment_without_comment_text(
@@ -589,9 +585,7 @@ class TestAccountCommentView:
         )
         assert response.status_code == 403
 
-    def test_own_comment_can_edit(
-        self, user_client, org_a, user_profile
-    ):
+    def test_own_comment_can_edit(self, user_client, org_a, user_profile):
         """User who created the comment can edit it."""
         account = Account.objects.create(name="Own Comment Account", org=org_a)
         comment = self._create_comment(account, user_profile, org_a)
@@ -602,15 +596,11 @@ class TestAccountCommentView:
         )
         assert response.status_code == 200
 
-    def test_own_comment_can_delete(
-        self, user_client, org_a, user_profile
-    ):
+    def test_own_comment_can_delete(self, user_client, org_a, user_profile):
         """User who created the comment can delete it."""
         account = Account.objects.create(name="Own Del Comment Account", org=org_a)
         comment = self._create_comment(account, user_profile, org_a)
-        response = user_client.delete(
-            f"/api/accounts/comment/{comment.id}/"
-        )
+        response = user_client.delete(f"/api/accounts/comment/{comment.id}/")
         assert response.status_code == 200
 
 
@@ -632,9 +622,7 @@ class TestAccountAttachmentView:
     def test_delete_attachment(self, admin_client, admin_profile, org_a):
         account = Account.objects.create(name="Attachment Account", org=org_a)
         attachment = self._create_attachment(account, admin_profile.user, org_a)
-        response = admin_client.delete(
-            f"/api/accounts/attachment/{attachment.id}/"
-        )
+        response = admin_client.delete(f"/api/accounts/attachment/{attachment.id}/")
         assert response.status_code == 200
 
     def test_delete_attachment_no_permission(
@@ -643,9 +631,7 @@ class TestAccountAttachmentView:
         """Non-admin who didn't create the attachment cannot delete."""
         account = Account.objects.create(name="Att Perm Account", org=org_a)
         attachment = self._create_attachment(account, admin_profile.user, org_a)
-        response = user_client.delete(
-            f"/api/accounts/attachment/{attachment.id}/"
-        )
+        response = user_client.delete(f"/api/accounts/attachment/{attachment.id}/")
         assert response.status_code == 403
 
     def test_delete_attachment_success_message(
@@ -654,9 +640,7 @@ class TestAccountAttachmentView:
         """Verify that successful attachment deletion returns proper message."""
         account = Account.objects.create(name="Att Msg Account", org=org_a)
         attachment = self._create_attachment(account, admin_profile.user, org_a)
-        response = admin_client.delete(
-            f"/api/accounts/attachment/{attachment.id}/"
-        )
+        response = admin_client.delete(f"/api/accounts/attachment/{attachment.id}/")
         assert response.status_code == 200
         data = response.json()
         assert data["error"] is False
@@ -678,9 +662,7 @@ class TestAccountListFilters:
         acct.assigned_to.add(admin_profile)
         Account.objects.create(name="Unassigned Acct", org=org_a)
 
-        response = admin_client.get(
-            f"/api/accounts/?assigned_to={admin_profile.id}"
-        )
+        response = admin_client.get(f"/api/accounts/?assigned_to={admin_profile.id}")
         assert response.status_code == 200
         names = [a["name"] for a in response.json()["active_accounts"]["open_accounts"]]
         assert "Assigned Acct" in names
@@ -702,9 +684,7 @@ class TestAccountListFilters:
 
         response = admin_client.get(f"/api/accounts/?tags={tag_vip.id}")
         assert response.status_code == 200
-        names = {
-            a["name"] for a in response.json()["active_accounts"]["open_accounts"]
-        }
+        names = {a["name"] for a in response.json()["active_accounts"]["open_accounts"]}
         assert names == {"Tagged Acct"}
 
     def test_filter_by_created_at_range(self, admin_client, org_a):
@@ -742,13 +722,9 @@ class TestAccountCreateWithEmail:
         assert admin_profile.id in args[0]  # recipients list
 
     @patch("accounts.views.send_email_to_assigned_user.delay")
-    def test_create_account_with_contacts(
-        self, mock_email, admin_client, org_a
-    ):
+    def test_create_account_with_contacts(self, mock_email, admin_client, org_a):
         """Creating an account with contacts m2m."""
-        contact = Contact.objects.create(
-            first_name="Jane", last_name="Doe", org=org_a
-        )
+        contact = Contact.objects.create(first_name="Jane", last_name="Doe", org=org_a)
         response = admin_client.post(
             "/api/accounts/",
             {
@@ -804,9 +780,7 @@ class TestAccountUpdateWithEmail:
     ):
         """PUT with contacts as a plain list of IDs."""
         account = Account.objects.create(name="JSON Contacts Acct", org=org_a)
-        contact = Contact.objects.create(
-            first_name="Bob", last_name="Smith", org=org_a
-        )
+        contact = Contact.objects.create(first_name="Bob", last_name="Smith", org=org_a)
         response = admin_client.put(
             f"/api/accounts/{account.id}/",
             {
@@ -824,9 +798,7 @@ class TestAccountUpdateWithEmail:
 class TestAccountDetailUsersMention:
     """Cover the users_mention branches in the GET detail view."""
 
-    def test_users_mention_no_created_by(
-        self, user_client, org_a, user_profile
-    ):
+    def test_users_mention_no_created_by(self, user_client, org_a, user_profile):
         """Non-admin assigned to account with no created_by gets empty users_mention."""
         account = Account.objects.create(name="No Creator Acct", org=org_a)
         account.assigned_to.add(user_profile)
@@ -896,9 +868,7 @@ class TestAccountEmailModel:
             from_email="test@example.com",
             org=org_a,
         )
-        contact = Contact.objects.create(
-            first_name="Log", last_name="Infer", org=org_a
-        )
+        contact = Contact.objects.create(first_name="Log", last_name="Infer", org=org_a)
         log = AccountEmailLog(email=email, contact=contact, is_sent=False)
         log.save()
         assert log.org_id == org_a.id
@@ -1015,9 +985,7 @@ class TestAccountSerializerMethods:
         """AccountSerializer.get_country_display returns display name."""
         from accounts.serializer import AccountSerializer
 
-        account = Account.objects.create(
-            name="Country Acct", org=org_a, country="US"
-        )
+        account = Account.objects.create(name="Country Acct", org=org_a, country="US")
         serializer = AccountSerializer(account)
         assert serializer.data["country_display"] is not None
 

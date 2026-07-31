@@ -20,7 +20,7 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
  * are managed by hooks and locals contains the user and org context.
  *
  * @param {string} endpoint - API endpoint (e.g., '/accounts/', '/leads/123/')
- * @param {{ method?: string, body?: Record<string, unknown>, headers?: Record<string, string> }} options - Fetch options
+ * @param {{ method?: string, body?: Record<string, unknown> | FormData, headers?: Record<string, string> }} options - Fetch options
  * @param {{ cookies?: Cookies, org?: { id: string } } | Cookies} locals - SvelteKit locals object or cookies directly
  * @returns {Promise<any>} Response data
  * @throws {Error} If request fails
@@ -36,10 +36,17 @@ export async function apiRequest(endpoint, options = {}, locals) {
   );
   const accessToken = cookies?.get?.('jwt_access');
 
+  // A FormData body is a file upload (multipart). Do NOT set Content-Type for it
+  // — fetch has to add the multipart boundary itself, and a hand-set
+  // 'application/json' would make Django parse the parts as a JSON string and
+  // find neither the field nor the file. Plain-object bodies stay JSON, so every
+  // existing caller is unaffected.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   // Build request headers
   /** @type {Record<string, string>} */
   const requestHeaders = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...headers
   };
 
@@ -58,7 +65,7 @@ export async function apiRequest(endpoint, options = {}, locals) {
 
   // Add body for non-GET requests
   if (body && method !== 'GET') {
-    requestOptions.body = JSON.stringify(body);
+    requestOptions.body = isFormData ? body : JSON.stringify(body);
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
@@ -107,7 +114,22 @@ export async function apiRequest(endpoint, options = {}, locals) {
       }
 
       console.error(`API Error Response:`, errorData);
-      throw new Error(errorMessage);
+      /*
+       * The status travels with the error.
+       *
+       * Callers used to decide "is this a 404?" by searching the message for
+       * the string "404" or "not found" — and Django's own message for a
+       * missing record is "No Lead matches the given query.", which contains
+       * neither. So a perfectly ordinary 404 rendered as a 500. Sniffing prose
+       * to recover a number that was right there is a bug waiting for the day
+       * somebody rewords an error.
+       */
+      const failure = /** @type {Error & { status: number, body: any }} */ (
+        new Error(errorMessage)
+      );
+      failure.status = response.status;
+      failure.body = errorData;
+      throw failure;
     }
 
     // Handle 204 No Content

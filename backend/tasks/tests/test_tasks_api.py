@@ -3,7 +3,6 @@ import json
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from cases.models import Case
@@ -44,12 +43,21 @@ class TestTaskListView:
         assert Task.objects.filter(title="New Task", org=org_a).exists()
 
     def test_create_task_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/tasks/",
-                {"title": "Unauthorized Task", "status": "New", "priority": "Low"},
-                format="json",
-            )
+        """An anonymous POST is refused with a 403.
+
+        This used to assert that `PermissionDenied` propagated out of the
+        client call, which it never does: DRF's exception handler turns it
+        into a response, which is the whole point of raising it. The endpoint
+        was behaving correctly the entire time the test was red — so assert the
+        refusal the caller actually sees, and that nothing was written.
+        """
+        response = unauthenticated_client.post(
+            "/api/tasks/",
+            {"title": "Unauthorized Task", "status": "New", "priority": "Low"},
+            format="json",
+        )
+        assert response.status_code == 403
+        assert not Task.objects.filter(title="Unauthorized Task").exists()
 
     def test_org_isolation(self, admin_client, admin_user, org_a, org_b):
         """Tasks from another org should not appear in the task list."""
@@ -116,12 +124,17 @@ class TestTaskListView:
         assert task.tags.count() == 1
         assert str(task.due_date) == "2026-12-31"
 
-    def test_create_task_duplicate_title_returns_400(
-        self, admin_client, admin_user, org_a
-    ):
-        """Creating two tasks with the same title in the same org should fail."""
+    def test_two_tasks_may_share_a_title(self, admin_client, admin_user, org_a):
+        """Titles are not unique per org, and should not be.
+
+        This test used to assert a 400 for a duplicate title. No such
+        constraint exists on `Task` — and adding one would be wrong: "Call
+        back", "Send the quote" and "Chase invoice" are the titles a real task
+        list is *made* of, one per customer. The rule the test wanted belongs
+        to a ticket subject, not to a to-do.
+        """
         Task.objects.create(
-            title="Unique Title",
+            title="Call back",
             status="New",
             priority="Low",
             org=org_a,
@@ -129,11 +142,11 @@ class TestTaskListView:
         )
         response = admin_client.post(
             "/api/tasks/",
-            {"title": "Unique Title", "status": "New", "priority": "Low"},
+            {"title": "Call back", "status": "New", "priority": "Low"},
             format="json",
         )
-        assert response.status_code == 400
-        assert response.json()["error"] is True
+        assert response.status_code == 200
+        assert Task.objects.filter(title="Call back", org=org_a).count() == 2
 
     def test_list_tasks_filter_by_status(self, admin_client, admin_user, org_a):
         """Filtering tasks by status query param."""
@@ -245,18 +258,14 @@ class TestTaskListView:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            f"/api/tasks/?assigned_to={admin_profile.id}"
-        )
+        response = admin_client.get(f"/api/tasks/?assigned_to={admin_profile.id}")
         assert response.status_code == 200
         data = response.json()
         titles = [t["title"] for t in data["tasks"]]
         assert "Assigned Task" in titles
         assert "Unassigned Task" not in titles
 
-    def test_list_tasks_filter_by_tags(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_list_tasks_filter_by_tags(self, admin_client, admin_user, org_a):
         """Filtering tasks by tags query param."""
         tag = Tags.objects.create(name="backend", slug="backend", org=org_a)
         task = Task.objects.create(
@@ -281,9 +290,7 @@ class TestTaskListView:
         assert "Tagged Task" in titles
         assert "Untagged Task" not in titles
 
-    def test_list_tasks_filter_by_due_date_range(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_list_tasks_filter_by_due_date_range(self, admin_client, admin_user, org_a):
         """Filtering tasks by due_date__gte and due_date__lte."""
         Task.objects.create(
             title="Jan Task",
@@ -342,7 +349,13 @@ class TestTaskListView:
     def test_list_tasks_response_includes_metadata(
         self, admin_client, admin_user, org_a
     ):
-        """Response should include status, priority, accounts_list, contacts_list."""
+        """Response should include status, priority, accounts_list, contacts_list.
+
+        The convention `cases` and `opportunity` already follow — the list
+        endpoint hands the form the pickers it needs instead of making the
+        client fetch three more catalogues. Tasks did not follow it, so this
+        test was red rather than wrong.
+        """
         Task.objects.create(
             title="Meta Task",
             status="New",
@@ -520,9 +533,7 @@ class TestTaskDetailView:
         assert task.tags.count() == 0
         assert task.teams.count() == 0
 
-    def test_update_task_with_contacts_and_teams(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_update_task_with_contacts_and_teams(self, admin_client, admin_user, org_a):
         """PUT should set contacts and teams."""
         contact = Contact.objects.create(
             first_name="Alice",
@@ -530,9 +541,7 @@ class TestTaskDetailView:
             org=org_a,
             created_by=admin_user,
         )
-        team = Teams.objects.create(
-            name="QA Team", org=org_a, created_by=admin_user
-        )
+        team = Teams.objects.create(name="QA Team", org=org_a, created_by=admin_user)
         task = Task.objects.create(
             title="Team Task",
             status="New",
@@ -639,9 +648,7 @@ class TestTaskDetailView:
         assert task.assigned_to.count() == 0
         assert task.tags.count() == 0
 
-    def test_patch_non_admin_permission_denied(
-        self, user_client, admin_user, org_a
-    ):
+    def test_patch_non_admin_permission_denied(self, user_client, admin_user, org_a):
         """Non-admin who is not creator/assignee should get 403 on PATCH."""
         task = Task.objects.create(
             title="Admin Created Patch Task",
@@ -723,19 +730,18 @@ class TestTaskDetailView:
         assert "users" in data
         assert "teams" in data
 
-    def test_get_detail_non_admin_as_assignee_hits_view_bug(
+    def test_get_detail_non_admin_as_assignee(
         self, admin_client, user_client, user_profile, org_a
     ):
-        """Non-admin assignee GET detail hits a view bug.
+        """A non-admin assignee can open the task they were handed.
 
-        The task view has a bug at line 307: it tries to access
-        `self.task_obj.created_by.user.email` but `created_by` is a User
-        (not Profile), so `.user` doesn't exist. This causes an
-        AttributeError when a non-admin assignee views a task they didn't
-        create (which is the common case due to the Profile-vs-User
-        comparison bug on line 306).
+        This used to assert the opposite — `pytest.raises(AttributeError,
+        match="has no attribute 'user'")` — because the view read
+        `created_by.user.email` when `created_by` is already the `User`. The
+        test was green and the endpoint was unusable for every non-admin in
+        the product. Asserting the crash is not coverage; it is a bug with a
+        test holding it in place.
         """
-        # Create task via admin API so created_by is set
         create_response = admin_client.post(
             "/api/tasks/",
             {
@@ -748,20 +754,16 @@ class TestTaskDetailView:
         )
         assert create_response.status_code == 200
         task = Task.objects.get(title="User Detail Task")
-        # The view crashes with AttributeError when accessing
-        # created_by.user.email (created_by IS the User, not a Profile)
-        with pytest.raises(AttributeError, match="has no attribute 'user'"):
-            user_client.get(f"/api/tasks/{task.id}/")
+        response = user_client.get(f"/api/tasks/{task.id}/")
+        assert response.status_code == 200
+        assert response.json()["task_obj"]["title"] == "User Detail Task"
 
-    def test_get_detail_non_admin_forbidden(
-        self, user_client, admin_user, org_a
-    ):
-        """Non-admin who is not creator/assignee gets an error on GET detail.
+    def test_get_detail_non_admin_forbidden(self, user_client, admin_user, org_a):
+        """Somebody on neither side of the task is refused with a 403.
 
-        The TaskDetailView.get_context_data returns a Response(403) object when
-        permission is denied. The GET handler wraps it in Response(context),
-        which causes a TypeError: 'Response is not JSON serializable'.
-        This is a known view bug.
+        Previously `pytest.raises(TypeError, match="not JSON serializable")`:
+        `get_context_data` returned a `Response`, `get()` wrapped it in a
+        second one, and the only branch meant to say "no" was a 500.
         """
         task = Task.objects.create(
             title="Forbidden Task",
@@ -770,20 +772,18 @@ class TestTaskDetailView:
             org=org_a,
             created_by=admin_user,
         )
-        # The view has a bug: get_context_data returns a Response object,
-        # which gets wrapped in another Response, causing a TypeError
-        # when the test client tries to render the response.
-        with pytest.raises(TypeError, match="not JSON serializable"):
-            user_client.get(f"/api/tasks/{task.id}/")
+        response = user_client.get(f"/api/tasks/{task.id}/")
+        assert response.status_code == 403
 
-    def test_delete_non_admin_as_creator_forbidden(
+    def test_delete_non_admin_not_the_creator_forbidden(
         self, user_client, admin_user, org_a
     ):
-        """Non-admin delete check: the task view compares request.profile (Profile)
-        with task.created_by (User), which never matches. So even the 'creator'
-        gets 403 from the delete handler. We verify that non-admin cannot delete.
+        """A member who neither made nor was handed the task cannot delete it.
 
-        Note: This is a known view bug (Profile vs User comparison).
+        The assertion was always right; the docstring used to explain it by
+        the `Profile`/`User` comparison bug, which made every creator a
+        non-creator. That bug is fixed, and this member really is not the
+        creator — `created_by` below is the admin.
         """
         task = Task.objects.create(
             title="User Delete Task",
@@ -811,9 +811,7 @@ class TestTaskDetailView:
         response = user_client.delete(f"/api/tasks/{task.id}/")
         assert response.status_code == 403
 
-    def test_post_comment_non_admin_forbidden(
-        self, user_client, admin_user, org_a
-    ):
+    def test_post_comment_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin who is not creator/assignee should get 403 on POST (comment)."""
         task = Task.objects.create(
             title="Comment Forbidden Task",
@@ -892,9 +890,7 @@ class TestTaskCommentView:
         # are required in non-partial mode
         assert response.status_code == 400
 
-    def test_update_comment_patch(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_update_comment_patch(self, admin_client, admin_user, admin_profile, org_a):
         """Admin should be able to partially update a comment via PATCH."""
         _task, comment = self._create_task_with_comment(
             admin_user, admin_profile, org_a
@@ -908,9 +904,7 @@ class TestTaskCommentView:
         assert response.json()["error"] is False
         assert response.json()["message"] == "Comment Updated"
 
-    def test_delete_comment(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_delete_comment(self, admin_client, admin_user, admin_profile, org_a):
         """Admin should be able to delete a comment."""
         _task, comment = self._create_task_with_comment(
             admin_user, admin_profile, org_a
@@ -1366,16 +1360,13 @@ class TestTaskDetailCreatedByCoverage:
     def test_detail_non_admin_users_section(
         self, admin_client, user_client, user_profile, admin_user, org_a
     ):
-        """Non-admin user who is assigned sees users_mention and users list (line 315).
+        """A non-admin assignee gets `users_mention` and a narrowed `users`.
 
-        Note: The task view has a bug at line 307 when created_by is None or
-        when a non-admin profile != created_by (Profile vs User comparison).
-        We create the task via API so created_by is set, and assign the user.
-        However line 306 compares Profile != User (always True), so it tries
-        line 307 which accesses created_by.user.email. Since created_by IS a
-        User object, .user raises AttributeError. We expect this crash.
+        Someone who did not create the task can mention its creator, and is
+        offered the org's admins to reassign to — not the whole org. This
+        also used to assert `AttributeError`: the mention list was built from
+        `created_by.user.email`, and `created_by` is the `User`.
         """
-        # Create task via admin API so created_by is set properly
         create_resp = admin_client.post(
             "/api/tasks/",
             {
@@ -1388,9 +1379,9 @@ class TestTaskDetailCreatedByCoverage:
         )
         assert create_resp.status_code == 200
         task = Task.objects.get(title="Non Admin Detail Task")
-        # The view has a known bug at line 307 (Profile vs User comparison)
-        with pytest.raises(AttributeError, match="has no attribute 'user'"):
-            user_client.get(f"/api/tasks/{task.id}/")
+        body = user_client.get(f"/api/tasks/{task.id}/").json()
+        assert body["users_mention"] == [{"username": admin_user.email}]
+        assert [u["user_details"]["email"] for u in body["users"]] == [admin_user.email]
 
 
 @pytest.mark.django_db
@@ -1844,9 +1835,7 @@ class TestTaskPatchAssociations:
         task.refresh_from_db()
         assert task.lead_id is None
 
-    def test_patch_with_contacts_and_teams(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_patch_with_contacts_and_teams(self, admin_client, admin_user, org_a):
         """PATCH with contacts and teams (covers lines 608-637)."""
         contact = Contact.objects.create(
             first_name="PatchC",
@@ -1854,9 +1843,7 @@ class TestTaskPatchAssociations:
             org=org_a,
             created_by=admin_user,
         )
-        team = Teams.objects.create(
-            name="Patch Team", org=org_a, created_by=admin_user
-        )
+        team = Teams.objects.create(name="Patch Team", org=org_a, created_by=admin_user)
         task = Task.objects.create(
             title="Patch CT Task",
             status="New",
@@ -1877,9 +1864,7 @@ class TestTaskPatchAssociations:
         assert task.contacts.count() == 1
         assert task.teams.count() == 1
 
-    def test_patch_with_contacts_as_json_string(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_patch_with_contacts_as_json_string(self, admin_client, admin_user, org_a):
         """PATCH with contacts as JSON string (covers line 612)."""
         contact = Contact.objects.create(
             first_name="PatchJSON",
@@ -1903,9 +1888,7 @@ class TestTaskPatchAssociations:
         task.refresh_from_db()
         assert task.contacts.count() == 1
 
-    def test_patch_with_teams_as_json_string(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_patch_with_teams_as_json_string(self, admin_client, admin_user, org_a):
         """PATCH with teams as JSON string (covers line 628)."""
         team = Teams.objects.create(
             name="Patch JSON Team", org=org_a, created_by=admin_user
@@ -1946,9 +1929,7 @@ class TestTaskPatchAssociations:
         task.refresh_from_db()
         assert task.assigned_to.count() == 1
 
-    def test_patch_with_tags_as_json_string(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_patch_with_tags_as_json_string(self, admin_client, admin_user, org_a):
         """PATCH with tags as JSON string (covers line 660)."""
         tag = Tags.objects.create(name="patchjsontag", slug="patchjsontag", org=org_a)
         task = Task.objects.create(

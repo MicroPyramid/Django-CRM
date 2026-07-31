@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 
 from tasks.models import Board, BoardColumn, BoardMember, BoardTask
@@ -8,9 +10,7 @@ class TestBoardListView:
     """Tests for GET /api/boards/ and POST /api/boards/."""
 
     def test_list_boards(self, admin_client, admin_profile, org_a):
-        board = Board.objects.create(
-            name="Test Board", owner=admin_profile, org=org_a
-        )
+        board = Board.objects.create(name="Test Board", owner=admin_profile, org=org_a)
         BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
         response = admin_client.get("/api/boards/")
         assert response.status_code == 200
@@ -44,13 +44,9 @@ class TestBoardListView:
 
     def test_list_boards_search(self, admin_client, admin_profile, org_a):
         """Search filter on board name."""
-        board = Board.objects.create(
-            name="Alpha Board", owner=admin_profile, org=org_a
-        )
+        board = Board.objects.create(name="Alpha Board", owner=admin_profile, org=org_a)
         BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
-        board2 = Board.objects.create(
-            name="Beta Board", owner=admin_profile, org=org_a
-        )
+        board2 = Board.objects.create(name="Beta Board", owner=admin_profile, org=org_a)
         BoardMember.objects.create(board=board2, profile=admin_profile, role="owner")
         response = admin_client.get("/api/boards/?search=Alpha")
         assert response.status_code == 200
@@ -58,9 +54,7 @@ class TestBoardListView:
         assert data["count"] == 1
         assert data["results"][0]["name"] == "Alpha Board"
 
-    def test_list_boards_filter_archived(
-        self, admin_client, admin_profile, org_a
-    ):
+    def test_list_boards_filter_archived(self, admin_client, admin_profile, org_a):
         """Filter by archived status."""
         board = Board.objects.create(
             name="Active Board",
@@ -84,6 +78,42 @@ class TestBoardListView:
         names = [b["name"] for b in data["results"]]
         assert "Archived Board" in names
         assert "Active Board" not in names
+
+    def test_list_boards_reports_owner_role(self, admin_client, admin_profile, org_a):
+        """The requester's own role rides on each row as ``my_role``."""
+        board = Board.objects.create(name="Owned Board", owner=admin_profile, org=org_a)
+        BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
+        response = admin_client.get("/api/boards/")
+        assert response.status_code == 200
+        row = next(b for b in response.json()["results"] if b["id"] == str(board.id))
+        assert row["my_role"] == "owner"
+
+    def test_list_boards_reports_member_role(
+        self, user_client, admin_profile, user_profile, org_a
+    ):
+        """A plain member sees ``my_role == 'member'`` — the frontend uses this
+        to hide the owner/admin-only column controls it could never use."""
+        board = Board.objects.create(
+            name="Shared Board", owner=admin_profile, org=org_a
+        )
+        BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
+        BoardMember.objects.create(board=board, profile=user_profile, role="member")
+        response = user_client.get("/api/boards/")
+        assert response.status_code == 200
+        row = next(b for b in response.json()["results"] if b["id"] == str(board.id))
+        assert row["my_role"] == "member"
+
+    def test_my_role_is_derived_not_client_supplied(
+        self, user_client, admin_profile, user_profile, org_a
+    ):
+        """``my_role`` is server-derived: a member cannot inflate it to owner."""
+        board = Board.objects.create(name="Role Board", owner=admin_profile, org=org_a)
+        BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
+        BoardMember.objects.create(board=board, profile=user_profile, role="member")
+        # Even if the client sends its own my_role, the field is read-only.
+        response = user_client.get("/api/boards/?my_role=owner")
+        row = next(b for b in response.json()["results"] if b["id"] == str(board.id))
+        assert row["my_role"] == "member"
 
 
 @pytest.mark.django_db
@@ -289,6 +319,33 @@ class TestBoardColumns:
         response = user_client.get(f"/api/boards/{board.id}/columns/")
         assert response.status_code == 404
 
+    def test_create_duplicate_column_name_returns_400(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """A second column with the same name is a clean 400, not a 500.
+
+        ``BoardColumn`` has ``unique_together = (board, name)``; without an
+        explicit guard the duplicate hits the DB constraint and 500s, because
+        ``board`` is read-only on the serializer so DRF cannot auto-validate it.
+        """
+        board = Board.objects.create(
+            name="Dup Col Board",
+            owner=admin_profile,
+            org=org_a,
+            created_by=admin_user,
+        )
+        BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
+        BoardColumn.objects.create(board=board, name="To Do", order=1, org=org_a)
+        response = admin_client.post(
+            f"/api/boards/{board.id}/columns/",
+            {"name": "To Do", "order": 2},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "name" in response.json()["errors"]
+        # Only the original column survives.
+        assert BoardColumn.objects.filter(board=board, name="To Do").count() == 1
+
 
 @pytest.mark.django_db
 class TestBoardTasks:
@@ -308,9 +365,7 @@ class TestBoardTasks:
         )
         return board, column
 
-    def test_create_board_task(
-        self, admin_client, admin_profile, admin_user, org_a
-    ):
+    def test_create_board_task(self, admin_client, admin_profile, admin_user, org_a):
         _board, column = self._create_board_with_column(
             admin_profile, admin_user, org_a
         )
@@ -324,9 +379,7 @@ class TestBoardTasks:
         assert data["title"] == "New Card"
         assert BoardTask.objects.filter(column=column, title="New Card").exists()
 
-    def test_get_board_task(
-        self, admin_client, admin_profile, admin_user, org_a
-    ):
+    def test_get_board_task(self, admin_client, admin_profile, admin_user, org_a):
         """Verify a board task appears in the column task list."""
         _board, column = self._create_board_with_column(
             admin_profile, admin_user, org_a
@@ -344,9 +397,7 @@ class TestBoardTasks:
         titles = [t["title"] for t in data]
         assert "Existing Card" in titles
 
-    def test_delete_board_task(
-        self, admin_client, admin_profile, admin_user, org_a
-    ):
+    def test_delete_board_task(self, admin_client, admin_profile, admin_user, org_a):
         _board, column = self._create_board_with_column(
             admin_profile, admin_user, org_a
         )
@@ -396,9 +447,7 @@ class TestBoardTasks:
         task.refresh_from_db()
         assert task.assigned_to.count() == 1
 
-    def test_update_board_task(
-        self, admin_client, admin_profile, admin_user, org_a
-    ):
+    def test_update_board_task(self, admin_client, admin_profile, admin_user, org_a):
         """PUT on a board task should update it."""
         _board, column = self._create_board_with_column(
             admin_profile, admin_user, org_a
@@ -431,9 +480,7 @@ class TestBoardTasks:
             created_by=admin_user,
         )
         BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
-        column = BoardColumn.objects.create(
-            board=board, name="Col", order=1, org=org_a
-        )
+        column = BoardColumn.objects.create(board=board, name="Col", order=1, org=org_a)
         task = BoardTask.objects.create(
             column=column,
             title="Private Card",
@@ -459,9 +506,7 @@ class TestBoardTasks:
             created_by=admin_user,
         )
         BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
-        column = BoardColumn.objects.create(
-            board=board, name="Col", order=1, org=org_a
-        )
+        column = BoardColumn.objects.create(board=board, name="Col", order=1, org=org_a)
         response = user_client.get(f"/api/boards/columns/{column.id}/tasks/")
         assert response.status_code == 404
 
@@ -476,9 +521,7 @@ class TestBoardTasks:
             created_by=admin_user,
         )
         BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
-        column = BoardColumn.objects.create(
-            board=board, name="Col", order=1, org=org_a
-        )
+        column = BoardColumn.objects.create(board=board, name="Col", order=1, org=org_a)
         response = user_client.post(
             f"/api/boards/columns/{column.id}/tasks/",
             {"title": "Blocked Card", "priority": "low"},
@@ -511,3 +554,184 @@ class TestBoardTasks:
         assert response.status_code == 200
         task.refresh_from_db()
         assert task.assigned_to.count() == 1
+
+    def _board_with_two_columns(self, admin_profile, admin_user, org_a):
+        """Board (owner membership) with two ordered columns for move tests."""
+        board = Board.objects.create(
+            name="Move Board", owner=admin_profile, org=org_a, created_by=admin_user
+        )
+        BoardMember.objects.create(board=board, profile=admin_profile, role="owner")
+        todo = BoardColumn.objects.create(board=board, name="To Do", order=1, org=org_a)
+        doing = BoardColumn.objects.create(
+            board=board, name="Doing", order=2, org=org_a
+        )
+        return board, todo, doing
+
+    def test_move_board_task_to_another_column(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """PUT with a sibling column id relocates the card — the core kanban move.
+
+        Regression: ``column`` was read-only on the serializer, so the change was
+        silently dropped and the card never left its lane (200, but no move)."""
+        _board, todo, doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        task = BoardTask.objects.create(
+            column=todo,
+            title="Drag me",
+            priority="medium",
+            order=0,
+            org=org_a,
+            created_by=admin_user,
+        )
+        response = admin_client.put(
+            f"/api/boards/tasks/{task.id}/",
+            {"column": str(doing.id), "order": 0},
+            format="json",
+        )
+        assert response.status_code == 200
+        task.refresh_from_db()
+        assert task.column_id == doing.id
+        assert task.order == 0
+
+    def test_move_to_column_on_another_board_rejected(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """A card cannot be moved into a column that belongs to another board."""
+        _board, todo, _doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        other_board = Board.objects.create(
+            name="Other Board", owner=admin_profile, org=org_a, created_by=admin_user
+        )
+        BoardMember.objects.create(
+            board=other_board, profile=admin_profile, role="owner"
+        )
+        foreign_col = BoardColumn.objects.create(
+            board=other_board, name="Elsewhere", order=1, org=org_a
+        )
+        task = BoardTask.objects.create(
+            column=todo,
+            title="Stay put",
+            priority="low",
+            org=org_a,
+            created_by=admin_user,
+        )
+        response = admin_client.put(
+            f"/api/boards/tasks/{task.id}/",
+            {"column": str(foreign_col.id)},
+            format="json",
+        )
+        assert response.status_code == 400
+        task.refresh_from_db()
+        assert task.column_id == todo.id  # unchanged
+
+    def test_move_to_nonexistent_column_rejected(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """A random column id is a 400, not a silent no-op."""
+        _board, todo, _doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        task = BoardTask.objects.create(
+            column=todo,
+            title="Stay",
+            priority="low",
+            org=org_a,
+            created_by=admin_user,
+        )
+        response = admin_client.put(
+            f"/api/boards/tasks/{task.id}/",
+            {"column": str(uuid.uuid4())},
+            format="json",
+        )
+        assert response.status_code == 400
+        task.refresh_from_db()
+        assert task.column_id == todo.id
+
+    def test_reorder_within_column_resequences(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """Dropping a card at the top of its own lane renumbers to a contiguous
+        0..n-1 with no duplicate order values."""
+        _board, todo, _doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        a = BoardTask.objects.create(
+            column=todo, title="A", order=0, org=org_a, created_by=admin_user
+        )
+        b = BoardTask.objects.create(
+            column=todo, title="B", order=1, org=org_a, created_by=admin_user
+        )
+        c = BoardTask.objects.create(
+            column=todo, title="C", order=2, org=org_a, created_by=admin_user
+        )
+        response = admin_client.put(
+            f"/api/boards/tasks/{c.id}/",
+            {"order": 0},
+            format="json",
+        )
+        assert response.status_code == 200
+        a.refresh_from_db()
+        b.refresh_from_db()
+        c.refresh_from_db()
+        assert c.order == 0
+        assert a.order == 1
+        assert b.order == 2
+
+    def test_move_recompacts_source_column(
+        self, admin_client, admin_profile, admin_user, org_a
+    ):
+        """When a card leaves a lane, the cards left behind close the gap."""
+        _board, todo, doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        a = BoardTask.objects.create(
+            column=todo, title="A", order=0, org=org_a, created_by=admin_user
+        )
+        b = BoardTask.objects.create(
+            column=todo, title="B", order=1, org=org_a, created_by=admin_user
+        )
+        c = BoardTask.objects.create(
+            column=todo, title="C", order=2, org=org_a, created_by=admin_user
+        )
+        response = admin_client.put(
+            f"/api/boards/tasks/{b.id}/",
+            {"column": str(doing.id), "order": 0},
+            format="json",
+        )
+        assert response.status_code == 200
+        a.refresh_from_db()
+        b.refresh_from_db()
+        c.refresh_from_db()
+        assert b.column_id == doing.id and b.order == 0
+        assert sorted([a.order, c.order]) == [0, 1]  # no gap where B was
+
+    def test_cannot_overwrite_created_by_on_update(
+        self, admin_client, admin_profile, admin_user, org_a, user_b
+    ):
+        """created_by is a server-derived audit fact — it FKs common.User, which
+        RLS does not org-scope, so it must not be mass-assignable from the body."""
+        _board, todo, _doing = self._board_with_two_columns(
+            admin_profile, admin_user, org_a
+        )
+        task = BoardTask.objects.create(
+            column=todo,
+            title="Owned",
+            priority="low",
+            org=org_a,
+        )
+        # Seed created_by directly (BaseModel.save() derives it from the request
+        # user, so it can't be set through the ORM in a test).
+        BoardTask.objects.filter(pk=task.pk).update(created_by=admin_user)
+
+        response = admin_client.put(
+            f"/api/boards/tasks/{task.id}/",
+            {"title": "Owned", "created_by": str(user_b.id)},
+            format="json",
+        )
+        assert response.status_code == 200
+        task.refresh_from_db()
+        assert task.created_by_id == admin_user.id  # unchanged
+        assert task.created_by_id != user_b.id  # the mass-assignment was rejected
