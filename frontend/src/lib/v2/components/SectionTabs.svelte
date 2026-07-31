@@ -18,7 +18,11 @@
   let { set } = $props();
 
   let counts = $derived(page.data.counts ?? {});
-  let tabs = $derived(TAB_SETS[set] ?? []);
+  // `role` rides on the app layout data (server-derived from the JWT). Drop
+  // admin-only tabs for a member so the strip does not offer a page that only
+  // gate-cards them; the backend still enforces the gate, so this is UX only.
+  let role = $derived(page.data.role ?? 'USER');
+  let tabs = $derived((TAB_SETS[set] ?? []).filter((tab) => role === 'ADMIN' || !tab.admin));
 
   const isActive = (href, exact) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);

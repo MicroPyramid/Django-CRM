@@ -107,7 +107,12 @@ const LIVE_COUNTS = {
 export async function load(event) {
   const shell = {
     counts: /** @type {Record<string, number>} */ ({}),
-    org: { name: event.locals.org?.name || 'BottleCRM' }
+    org: { name: event.locals.org?.name || 'BottleCRM' },
+    // Server-derived from the JWT (never the client). Display-only: it lets the
+    // shell hide destinations a member can only reach to be turned away — the
+    // backend still enforces every one of those gates, so this is UX, not a
+    // security control. Defaults to the non-admin view when the claim is absent.
+    role: event.locals.profile?.role ?? 'USER'
   };
 
   const keys = Object.keys(LIVE_COUNTS);

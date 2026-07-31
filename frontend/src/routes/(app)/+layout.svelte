@@ -7,7 +7,7 @@
   import CommandPalette from '$lib/v2/components/CommandPalette.svelte';
   import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
 
-  /** @type {{ data: { counts: Record<string, number>, org: { name: string } }, children: import('svelte').Snippet }} */
+  /** @type {{ data: { counts: Record<string, number>, org: { name: string }, role: string }, children: import('svelte').Snippet }} */
   let { data, children } = $props();
 
   let paletteOpen = $state(false);
@@ -56,7 +56,12 @@
 <svelte:window {onkeydown} />
 
 <div class="v2-root v2-shell">
-  <Sidebar counts={data.counts} org={data.org} onsearch={() => (paletteOpen = true)} />
+  <Sidebar
+    counts={data.counts}
+    org={data.org}
+    role={data.role}
+    onsearch={() => (paletteOpen = true)}
+  />
   <div class="v2-main">
     <!-- Phone top bar. The sidebar is hidden below 768px; this replaces the
          org mark and the search affordance it carried. -->
@@ -127,6 +132,7 @@
         <Sidebar
           counts={data.counts}
           org={data.org}
+          role={data.role}
           onsearch={() => {
             menuOpen = false;
             paletteOpen = true;

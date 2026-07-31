@@ -7,12 +7,16 @@
  * `count` names a key in the shell counts, which SectionTabs reads from the
  * layout data. Naming the key rather than passing the number keeps the tab
  * list a static declaration.
+ *
+ * `admin: true` marks a tab whose page is a "for administrators" gate to a
+ * member — SectionTabs hides it for non-admins so they are not offered a tab
+ * that only turns them away. The backend still enforces the gate; this is UX.
  */
 export const TAB_SETS = {
   tickets: [
     { href: '/tickets', label: 'Queue', exact: true, count: 'tickets' },
     { href: '/tickets/approvals', label: 'Approvals', count: 'approvals' },
-    { href: '/tickets/analytics', label: 'Analytics' }
+    { href: '/tickets/analytics', label: 'Analytics', admin: true }
   ],
   /**
    * These two are NOT two views of one list. `tasks.Task` and
@@ -31,7 +35,7 @@ export const TAB_SETS = {
     { href: '/invoices/estimates', label: 'Estimates' },
     { href: '/invoices/recurring', label: 'Recurring' },
     { href: '/invoices/products', label: 'Products' },
-    { href: '/invoices/reports', label: 'Reports' },
+    { href: '/invoices/reports', label: 'Reports', admin: true },
     { href: '/invoices/templates', label: 'Templates' }
   ]
 };

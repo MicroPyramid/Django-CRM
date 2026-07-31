@@ -32,13 +32,20 @@
    * v1 had /leads listed twice, as "Pipeline" and as "Leads", and a "Deals"
    * entry pointing at /opportunities while /deals 404'd.
    *
+   * `role` is server-derived from the JWT (see the app layout loader). It only
+   * decides which destinations to *show* — every hidden one is still enforced
+   * by the backend, so this is UX, not access control. An item marked `admin`
+   * is one where a member gets nothing but a "for administrators" gate, so
+   * showing it would only teach them to bounce off it.
+   *
    * @type {{
    *   counts?: Record<string, number>,
    *   org?: { name: string },
+   *   role?: string,
    *   onsearch?: () => void
    * }}
    */
-  let { counts = {}, org = { name: 'BottleCRM' }, onsearch = () => {} } = $props();
+  let { counts = {}, org = { name: 'BottleCRM' }, role = 'USER', onsearch = () => {} } = $props();
 
   const GROUPS = [
     {
@@ -74,13 +81,25 @@
     {
       // Administration, kept apart from the work. Someone who never touches
       // these should not read past them four times a day.
+      //
+      // Team is admin-only — a member reaches it only to be told so. Settings
+      // is not: the hub is readable by any member (it just omits admin-only
+      // counts), so it stays for everyone.
       label: 'Run',
       items: [
-        { href: '/team', label: 'Team and access', icon: UserCog },
+        { href: '/team', label: 'Team and access', icon: UserCog, admin: true },
         { href: '/settings', label: 'Settings', icon: SlidersHorizontal }
       ]
     }
   ];
+
+  // Drop admin-only items for members, then drop any group left with nothing.
+  let groups = $derived(
+    GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => role === 'ADMIN' || !item.admin)
+    })).filter((group) => group.items.length > 0)
+  );
 
   const isActive = (href, exact) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
@@ -97,7 +116,7 @@
     /opportunities while /deals 404'd; an Inbox link with nothing behind it
     would be the same mistake.
   -->
-  {#each GROUPS as group (group.label)}
+  {#each groups as group (group.label)}
     <div class="v2-nav-group v2-label">{group.label}</div>
     {#each group.items as item (item.href)}
       <a
