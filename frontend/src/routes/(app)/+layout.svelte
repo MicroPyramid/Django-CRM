@@ -2,14 +2,27 @@
   import '../../app.css';
   import '$lib/v2/styles/v2.css';
   import { page } from '$app/state';
+  import { afterNavigate } from '$app/navigation';
   import Sidebar from '$lib/v2/components/Sidebar.svelte';
   import CommandPalette from '$lib/v2/components/CommandPalette.svelte';
-  import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus } from '@lucide/svelte';
+  import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
 
   /** @type {{ data: { counts: Record<string, number>, org: { name: string } }, children: import('svelte').Snippet }} */
   let { data, children } = $props();
 
   let paletteOpen = $state(false);
+
+  // The sidebar is hidden below 768px, and the tab bar only carries four of the
+  // ~16 destinations. This drawer is how a phone reaches the rest of the nav and
+  // the footer — profile, notifications, help, sign out. It reuses the same
+  // <Sidebar>, so the two can never drift apart. Closes itself on navigation.
+  let menuOpen = $state(false);
+  afterNavigate(() => (menuOpen = false));
+
+  /** Focus the panel on open so Escape reaches it and keyboard users land inside. */
+  function autofocus(/** @type {HTMLElement} */ node) {
+    node.focus();
+  }
 
   /**
    * The five things worth a thumb on a phone. Fewer than the sidebar on
@@ -29,6 +42,8 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       paletteOpen = !paletteOpen;
+    } else if (e.key === 'Escape' && menuOpen) {
+      menuOpen = false;
     }
   }
 </script>
@@ -46,6 +61,15 @@
     <!-- Phone top bar. The sidebar is hidden below 768px; this replaces the
          org mark and the search affordance it carried. -->
     <div class="v2-mobile-top">
+      <button
+        class="v2-btn v2-btn-quiet"
+        type="button"
+        onclick={() => (menuOpen = true)}
+        aria-label="Open menu"
+        aria-expanded={menuOpen}
+      >
+        <Menu />
+      </button>
       <span class="v2-mark">{data.org.name.slice(0, 1)}</span>
       <h2>{data.org.name}</h2>
       <button
@@ -74,6 +98,43 @@
   <!-- Both live inside .v2-root so they inherit the scoped tokens; both are
        position:fixed, so the shell's overflow:hidden does not clip them. -->
   <a class="v2-fab" href="/pipeline/new" aria-label="New deal"><Plus size={21} /></a>
+
+  <!-- Mobile navigation drawer. Only openable from the mobile top bar, so it
+       never surfaces on desktop; a backdrop click, Escape, or navigating all
+       close it. It renders the same <Sidebar> the desktop shows. -->
+  {#if menuOpen}
+    <div
+      class="v2-drawer-scrim"
+      role="presentation"
+      onclick={(e) => {
+        if (e.target === e.currentTarget) menuOpen = false;
+      }}
+    >
+      <div
+        class="v2-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        tabindex="-1"
+        use:autofocus
+        onkeydown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            menuOpen = false;
+          }
+        }}
+      >
+        <Sidebar
+          counts={data.counts}
+          org={data.org}
+          onsearch={() => {
+            menuOpen = false;
+            paletteOpen = true;
+          }}
+        />
+      </div>
+    </div>
+  {/if}
 
   <CommandPalette open={paletteOpen} onclose={() => (paletteOpen = false)} />
 </div>

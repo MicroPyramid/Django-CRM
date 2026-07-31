@@ -19,7 +19,8 @@
     Bell,
     SlidersHorizontal,
     Search,
-    Smartphone
+    Smartphone,
+    LogOut
   } from '@lucide/svelte';
 
   /**
@@ -151,6 +152,13 @@
     >
       <Smartphone />
       Download app
+    </a>
+    <!-- Leaving the app. Last in the list, and a plain link — /logout is a
+         server load that clears the auth cookies and redirects to /login, so a
+         GET navigation is all it takes and no data-fetching component follows. -->
+    <a class="v2-link" href="/logout" data-sveltekit-reload>
+      <LogOut />
+      Sign out
     </a>
   </div>
 </nav>

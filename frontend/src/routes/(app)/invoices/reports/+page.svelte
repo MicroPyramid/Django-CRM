@@ -232,6 +232,9 @@
 <style>
   .rep-locked {
     max-width: 560px;
+    /* Centre it: this card is the whole page for a non-admin, so left-hugging
+       it strands the rest of a wide screen. Matches the tickets/analytics gate. */
+    margin-inline: auto;
     padding: 20px 22px;
   }
   .rep-locked p {

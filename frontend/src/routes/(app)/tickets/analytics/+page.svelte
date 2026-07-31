@@ -83,7 +83,10 @@
 
 {#if !canView}
   <div class="v2-pad" style="padding-top:40px">
-    <div class="v2-card" style="padding:20px 22px;max-width:520px">
+    <!-- Centred, not left-hugging: this is all a non-admin sees on this page,
+         so a capped card pinned to the left leaves the rest of a wide screen
+         empty. margin-inline centres the column. -->
+    <div class="v2-card" style="padding:20px 22px;max-width:520px;margin-inline:auto">
       <strong>This dashboard is for administrators.</strong>
       <p>
         Opened and closed volume, first-response attainment and the queue breakdown are

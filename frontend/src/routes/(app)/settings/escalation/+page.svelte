@@ -18,6 +18,7 @@
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import EmptyState from '$lib/v2/components/EmptyState.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import { count } from '$lib/v2/format.js';
   import { ESCALATION_ACTION_LABEL, PRIORITY_TONE } from '$lib/v2/enums.js';
@@ -81,69 +82,82 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-top:18px;padding-bottom:32px">
-    {#if breachesGoingNowhere > 0}
-      <!-- The headline fact, above the table, because it is the reason to be
+    {#if policies.length === 0}
+      <!-- No policy for any priority. Without this the page falls to a header
+           over a blank column — the each-block renders nothing and the trailing
+           note hangs alone. The empty state says what a policy is and what its
+           absence means, and centres itself like every other empty state. -->
+      <EmptyState
+        title="No escalation policies yet"
+        body="An escalation policy decides what happens when a ticket misses its first-response or resolution target — one per priority. None are set for this organisation, so a breach currently escalates to nobody."
+      >
+        {#snippet icon()}<BellOff size={21} />{/snippet}
+      </EmptyState>
+    {:else}
+      {#if breachesGoingNowhere > 0}
+        <!-- The headline fact, above the table, because it is the reason to be
            on this page. Derived from the same rows shown below, not a
            separate figure that could disagree with them. -->
-      <div class="v2-escalation-banner">
-        <BellOff size={17} style="color:var(--v2-clay);flex:none;margin-top:1px" />
-        <div>
-          <div style="font-weight:600;font-size:13px">
-            <span class="v2-num">{count(breachesGoingNowhere)}</span> breaches in the last 30 days told
-            nobody
+        <div class="v2-escalation-banner">
+          <BellOff size={17} style="color:var(--v2-clay);flex:none;margin-top:1px" />
+          <div>
+            <div style="font-weight:600;font-size:13px">
+              <span class="v2-num">{count(breachesGoingNowhere)}</span> breaches in the last 30 days told
+              nobody
+            </div>
+            <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
+              {deadCount === 0
+                ? 'Some halves of these policies resolve to no recipient.'
+                : `${deadCount} of ${policies.length} policies do nothing at all when a ticket breaches.`}
+              A policy that exists is not the same as a policy that fires.
+            </p>
           </div>
-          <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
-            {deadCount === 0
-              ? 'Some halves of these policies resolve to no recipient.'
-              : `${deadCount} of ${policies.length} policies do nothing at all when a ticket breaches.`}
-            A policy that exists is not the same as a policy that fires.
-          </p>
         </div>
+      {/if}
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        {#each policies as p (p.id)}
+          {@const first = outcome(p, 'first_response')}
+          {@const res = outcome(p, 'resolution')}
+          <div class="v2-card" style="padding:15px 16px;opacity:{p.is_active ? 1 : 0.62}">
+            <div style="display:flex;gap:9px;align-items:center;margin-bottom:12px">
+              <Pill tone={PRIORITY_TONE[p.priority]}>{p.priority}</Pill>
+              {#if !p.is_active}<Pill tone="slate">Off</Pill>{/if}
+            </div>
+
+            <div class="v2-escalation-halves">
+              {#each [{ label: 'Missed first response', o: first, n: p.breaches_last_30d.first_response }, { label: 'Missed resolution', o: res, n: p.breaches_last_30d.resolution }] as half (half.label)}
+                <div class="v2-escalation-half">
+                  <div class="v2-label" style="font-size:10px;margin-bottom:5px">{half.label}</div>
+                  <div style="display:flex;gap:7px;align-items:flex-start">
+                    {#if half.o.dead}
+                      <TriangleAlert
+                        size={14}
+                        style="color:var(--v2-clay);flex:none;margin-top:2px"
+                      />
+                    {/if}
+                    <span style="font-size:13px;{half.o.dead ? 'color:var(--v2-slate)' : ''}">
+                      {half.o.text}
+                    </span>
+                  </div>
+                  <div class="v2-sub" style="font-size:11.5px;margin-top:6px">
+                    <span class="v2-num">{count(half.n)}</span>
+                    in the last 30 days{half.o.dead && half.n > 0 ? ' — none of them acted on' : ''}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
       </div>
+
+      <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
+        Targets are measured on
+        <a href="/settings/business-hours" style="color:inherit">business hours</a>, so a breach
+        counts working time only. What counts as breached for each priority is set with the target
+        itself, not here.
+      </p>
     {/if}
-
-    <div style="display:flex;flex-direction:column;gap:10px">
-      {#each policies as p (p.id)}
-        {@const first = outcome(p, 'first_response')}
-        {@const res = outcome(p, 'resolution')}
-        <div class="v2-card" style="padding:15px 16px;opacity:{p.is_active ? 1 : 0.62}">
-          <div style="display:flex;gap:9px;align-items:center;margin-bottom:12px">
-            <Pill tone={PRIORITY_TONE[p.priority]}>{p.priority}</Pill>
-            {#if !p.is_active}<Pill tone="slate">Off</Pill>{/if}
-          </div>
-
-          <div class="v2-escalation-halves">
-            {#each [{ label: 'Missed first response', o: first, n: p.breaches_last_30d.first_response }, { label: 'Missed resolution', o: res, n: p.breaches_last_30d.resolution }] as half (half.label)}
-              <div class="v2-escalation-half">
-                <div class="v2-label" style="font-size:10px;margin-bottom:5px">{half.label}</div>
-                <div style="display:flex;gap:7px;align-items:flex-start">
-                  {#if half.o.dead}
-                    <TriangleAlert
-                      size={14}
-                      style="color:var(--v2-clay);flex:none;margin-top:2px"
-                    />
-                  {/if}
-                  <span style="font-size:13px;{half.o.dead ? 'color:var(--v2-slate)' : ''}">
-                    {half.o.text}
-                  </span>
-                </div>
-                <div class="v2-sub" style="font-size:11.5px;margin-top:6px">
-                  <span class="v2-num">{count(half.n)}</span>
-                  in the last 30 days{half.o.dead && half.n > 0 ? ' — none of them acted on' : ''}
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-      {/each}
-    </div>
-
-    <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
-      Targets are measured on
-      <a href="/settings/business-hours" style="color:inherit">business hours</a>, so a breach
-      counts working time only. What counts as breached for each priority is set with the target
-      itself, not here.
-    </p>
   </div>
 </div>
 
