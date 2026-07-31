@@ -1,398 +1,173 @@
 <script>
-  import { enhance } from '$app/forms';
-  import { goto, invalidateAll } from '$app/navigation';
-  import { page } from '$app/stores';
-  import { toast } from 'svelte-sonner';
-  import { Plus, Pencil, Archive, RotateCcw, Sliders, Check, X } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import * as Dialog from '$lib/components/ui/dialog/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
+  /**
+   * Fields this organisation added to records that shipped without them.
+   *
+   * Grouped by the record they extend, because that is how anyone looks for
+   * one — "what do we collect on a ticket" is the question, not "show me all
+   * 40 definitions sorted by created date".
+   *
+   * The number that earns its place here is `records_missing_value`. Marking a
+   * field required only binds writes from that moment; records saved before it
+   * existed keep their gap and nothing backfills them. So "Required" on a
+   * field with 23 records missing a value is a promise the data does not keep,
+   * and reporting on that field will quietly exclude or mis-bucket those 23.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import StatCard from '$lib/v2/components/StatCard.svelte';
+  import { count } from '$lib/v2/format.js';
+  import { FIELD_TYPE_LABEL, TARGET_MODEL_LABEL } from '$lib/v2/enums.js';
+  import { Plus, TriangleAlert, Filter } from '@lucide/svelte';
 
-  /** @type {{ data: any, form: any }} */
-  let { data, form } = $props();
+  /** @type {{ data: any }} */
+  let { data } = $props();
 
-  const target = $derived(data.target || 'Case');
-  const targets = $derived(data.targets || []);
-  const definitions = $derived(data.definitions || []);
+  let totals = $derived(data.totals);
 
-  const FIELD_TYPES = [
-    { value: 'text', label: 'Text' },
-    { value: 'textarea', label: 'Textarea' },
-    { value: 'number', label: 'Number' },
-    { value: 'dropdown', label: 'Dropdown' },
-    { value: 'date', label: 'Date' },
-    { value: 'checkbox', label: 'Checkbox' }
-  ];
-
-  let dialogOpen = $state(false);
-  /** @type {any} */
-  let editing = $state(null);
-
-  // Form fields
-  let formKey = $state('');
-  let formLabel = $state('');
-  let formFieldType = $state('text');
-  let formOptionsText = $state('');
-  let formIsRequired = $state(false);
-  let formIsFilterable = $state(false);
-  let formDisplayOrder = $state(0);
-  let formIsActive = $state(true);
-
-  function slugify(value) {
-    return String(value || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .slice(0, 64);
-  }
-
-  function openCreate() {
-    editing = null;
-    formKey = '';
-    formLabel = '';
-    formFieldType = 'text';
-    formOptionsText = '';
-    formIsRequired = false;
-    formIsFilterable = false;
-    formDisplayOrder = 0;
-    formIsActive = true;
-    dialogOpen = true;
-  }
-
-  /** @param {any} defn */
-  function openEdit(defn) {
-    editing = defn;
-    formKey = defn.key;
-    formLabel = defn.label;
-    formFieldType = defn.field_type;
-    formOptionsText = Array.isArray(defn.options)
-      ? JSON.stringify(defn.options, null, 2)
-      : '';
-    formIsRequired = !!defn.is_required;
-    formIsFilterable = !!defn.is_filterable;
-    formDisplayOrder = defn.display_order ?? 0;
-    formIsActive = defn.is_active !== false;
-    dialogOpen = true;
-  }
-
-  function closeDialog() {
-    dialogOpen = false;
-    editing = null;
-  }
-
-  /** @param {string} value */
-  function selectTarget(value) {
-    const params = new URLSearchParams($page.url.search);
-    params.set('target', value);
-    goto(`?${params.toString()}`, { keepFocus: true, noScroll: true });
-  }
-
-  $effect(() => {
-    if (form?.success) {
-      toast.success(editing ? 'Custom field updated' : 'Custom field saved');
-      closeDialog();
-      invalidateAll();
-    } else if (form?.error) {
-      const message =
-        typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
-      toast.error(message);
+  /** One group per extended model, fields kept in display_order. */
+  let groups = $derived.by(() => {
+    /** @type {Map<string, any[]>} */
+    const byModel = new Map();
+    for (const f of data.fields) {
+      byModel.set(f.target_model, [...(byModel.get(f.target_model) ?? []), f]);
     }
+    return [...byModel.entries()].map(([model, fields]) => ({
+      model,
+      label: TARGET_MODEL_LABEL[model] ?? model,
+      fields: [...fields].sort((a, b) => a.display_order - b.display_order)
+    }));
   });
 
-  /** @param {string} type */
-  function describeType(type) {
-    return FIELD_TYPES.find((t) => t.value === type)?.label || type;
-  }
+  let gaps = $derived(data.fields.filter((f) => f.is_required && f.records_missing_value > 0));
 </script>
 
-<svelte:head>
-  <title>Custom Fields - Settings - BottleCRM</title>
-</svelte:head>
-
-<PageHeader
-  title="Custom Fields"
-  subtitle="Per-org schema extensions for tickets, leads, contacts, accounts, opportunities, tasks, invoices, estimates, and recurring invoices"
->
+<PageHeader title="Custom fields">
+  {#snippet crumb()}<SettingsCrumb />{/snippet}
+  {#snippet sub()}
+    <span class="v2-num">{count(totals.active)}</span> fields across
+    <span class="v2-num">{count(totals.models_extended)}</span> record types
+  {/snippet}
   {#snippet actions()}
-    <Button onclick={openCreate} class="gap-2">
-      <Plus class="h-4 w-4" />
-      New field
-    </Button>
+    <button class="v2-btn v2-btn-primary"><Plus />New field</button>
   {/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6 lg:p-8">
-  <div class="mx-auto max-w-4xl space-y-6">
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
-    >
-      <div class="flex flex-wrap items-center gap-2">
-        <Sliders class="h-4 w-4 text-[var(--text-secondary)]" />
-        <span class="text-sm text-[var(--text-secondary)]">Entity:</span>
-        {#each targets as t (t.value)}
-          {@const isCurrent = t.value === target}
-          <button
-            type="button"
-            onclick={() => t.enabled && selectTarget(t.value)}
-            disabled={!t.enabled}
-            class={[
-              'rounded-md border px-3 py-1 text-xs transition-colors',
-              isCurrent
-                ? 'border-[var(--color-primary-default)] bg-[var(--color-primary-light)] text-[var(--color-primary-default)]'
-                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]',
-              !t.enabled && 'cursor-not-allowed opacity-50'
-            ]}
-            title={t.enabled ? '' : 'Coming soon — entity needs a custom_fields column first'}
-          >
-            {t.label}
-          </button>
-        {/each}
-      </div>
-    </section>
-
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]"
-    >
-      <header class="border-b border-[var(--border-default)] p-4">
-        <h2 class="text-base font-medium text-[var(--text-primary)]">
-          {target} fields
-        </h2>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Active fields render on the {target.toLowerCase()} detail form. Inactive
-          fields stay archived but their values remain readable on existing records.
-        </p>
-      </header>
-
-      {#if definitions.length === 0}
-        <div class="p-6 text-center text-sm text-[var(--text-secondary)]">
-          No custom fields yet. Click <strong>New field</strong> to define one.
-        </div>
-      {:else}
-        <ul class="divide-y divide-[var(--border-default)]">
-          {#each definitions as defn (defn.id)}
-            <li class="flex items-center gap-3 p-4">
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-baseline gap-2">
-                  <span class="text-sm font-medium text-[var(--text-primary)]">
-                    {defn.label}
-                  </span>
-                  <code class="text-xs text-[var(--text-secondary)]">{defn.key}</code>
-                  <span
-                    class="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs text-[var(--text-secondary)]"
-                  >
-                    {describeType(defn.field_type)}
-                  </span>
-                  {#if defn.is_required}
-                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                      Required
-                    </span>
-                  {/if}
-                  {#if !defn.is_active}
-                    <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                      Inactive
-                    </span>
-                  {/if}
-                </div>
-                {#if defn.field_type === 'dropdown' && defn.options?.length}
-                  <p class="mt-1 text-xs text-[var(--text-secondary)]">
-                    {defn.options.length} options:
-                    {defn.options.map((/** @type {any} */ o) => o.label).join(', ')}
-                  </p>
-                {/if}
-              </div>
-              <div class="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onclick={() => openEdit(defn)} class="gap-1">
-                  <Pencil class="h-3.5 w-3.5" />
-                </Button>
-                {#if defn.is_active}
-                  <form method="POST" action="?/delete" use:enhance class="inline">
-                    <input type="hidden" name="id" value={defn.id} />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="sm"
-                      class="gap-1 text-[var(--color-danger-default)]"
-                    >
-                      <Archive class="h-3.5 w-3.5" />
-                    </Button>
-                  </form>
-                {:else}
-                  <form
-                    method="POST"
-                    action="?/update"
-                    use:enhance
-                    class="inline"
-                  >
-                    <input type="hidden" name="id" value={defn.id} />
-                    <input type="hidden" name="label" value={defn.label} />
-                    <input type="hidden" name="display_order" value={defn.display_order ?? 0} />
-                    <input type="hidden" name="is_required" value={defn.is_required ? 'true' : 'false'} />
-                    <input type="hidden" name="is_filterable" value={defn.is_filterable ? 'true' : 'false'} />
-                    <input type="hidden" name="is_active" value="true" />
-                    <input
-                      type="hidden"
-                      name="options"
-                      value={defn.options ? JSON.stringify(defn.options) : ''}
-                    />
-                    <Button type="submit" variant="ghost" size="sm" class="gap-1">
-                      <RotateCcw class="h-3.5 w-3.5" />
-                    </Button>
-                  </form>
-                {/if}
-              </div>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </section>
+<div class="v2-pad" style="padding-top:16px;flex:none">
+  <div class="v2-stats">
+    <StatCard label="Active fields" value={count(totals.active)} tone="ink" />
+    <StatCard label="Record types extended" value={count(totals.models_extended)} tone="slate" />
+    <StatCard
+      label="Required with gaps"
+      value={count(totals.required_with_gaps)}
+      tone={totals.required_with_gaps > 0 ? 'clay' : 'slate'}
+      detail="Records that predate the rule"
+    />
+    <StatCard label="Turned off" value={count(totals.count - totals.active)} tone="slate" />
   </div>
 </div>
 
-<Dialog.Root bind:open={dialogOpen}>
-  <Dialog.Content class="sm:max-w-lg">
-    <Dialog.Header>
-      <Dialog.Title>{editing ? 'Edit field' : 'New field'}</Dialog.Title>
-      <Dialog.Description>
-        {editing
-          ? 'Key, target entity, and type are immutable; create a new field if you need to change shape.'
-          : 'Define a custom field for ' + target + '.'}
-      </Dialog.Description>
-    </Dialog.Header>
-
-    <form
-      method="POST"
-      action={editing ? '?/update' : '?/create'}
-      use:enhance={() => {
-        return async ({ update }) => {
-          await update();
-        };
-      }}
-      class="space-y-4"
-    >
-      {#if editing}
-        <input type="hidden" name="id" value={editing.id} />
-      {/if}
-      <input type="hidden" name="target_model" value={target} />
-
-      <div class="space-y-1.5">
-        <Label for="label">Label *</Label>
-        <Input
-          id="label"
-          name="label"
-          required
-          bind:value={formLabel}
-          oninput={() => {
-            if (!editing && !formKey) formKey = slugify(formLabel);
-          }}
-        />
-      </div>
-
-      <div class="space-y-1.5">
-        <Label for="key">Key *</Label>
-        <Input
-          id="key"
-          name="key"
-          required
-          bind:value={formKey}
-          disabled={!!editing}
-          placeholder="severity"
-        />
-        <p class="text-xs text-[var(--text-secondary)]">
-          Lowercase slug (a-z, 0-9, _). Stored as the JSON key on the entity.
-          Immutable once saved.
-        </p>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label for="field_type">Type *</Label>
-        <select
-          id="field_type"
-          name="field_type"
-          bind:value={formFieldType}
-          disabled={!!editing}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary-default)] disabled:opacity-50"
-        >
-          {#each FIELD_TYPES as opt (opt.value)}
-            <option value={opt.value}>{opt.label}</option>
-          {/each}
-        </select>
-      </div>
-
-      {#if formFieldType === 'dropdown'}
-        <div class="space-y-1.5">
-          <Label for="options">Dropdown options (JSON)</Label>
-          <textarea
-            id="options"
-            name="options"
-            bind:value={formOptionsText}
-            rows={5}
-            placeholder={`[
-  { "value": "S1", "label": "S1" },
-  { "value": "S2", "label": "S2" }
-]`}
-            class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 font-mono text-xs focus:ring-2 focus:ring-[var(--color-primary-default)]"
-          ></textarea>
-          <p class="text-xs text-[var(--text-secondary)]">
-            JSON array of {'{ value, label }'} objects. Values must be unique.
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-bottom:32px">
+    {#if gaps.length}
+      <div class="v2-cf-banner">
+        <TriangleAlert size={16} style="color:var(--v2-clay);flex:none;margin-top:1px" />
+        <div>
+          <div style="font-weight:600;font-size:13px">
+            Required does not mean every record has one
+          </div>
+          <p class="v2-sub" style="font-size:12px;margin:4px 0 0;line-height:1.5">
+            {gaps
+              .map(
+                (f) =>
+                  `${f.label} is missing on ${f.records_missing_value} ${(TARGET_MODEL_LABEL[f.target_model] ?? f.target_model).toLowerCase()}`
+              )
+              .join('; ')}. Marking a field required binds new writes only — nothing goes back and
+            fills in what was saved before.
           </p>
         </div>
-      {/if}
-
-      <div class="grid grid-cols-2 gap-3">
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" bind:checked={formIsRequired} />
-          Required
-        </label>
-        <input
-          type="hidden"
-          name="is_required"
-          value={formIsRequired ? 'true' : 'false'}
-        />
-
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" bind:checked={formIsFilterable} />
-          Filterable
-        </label>
-        <input
-          type="hidden"
-          name="is_filterable"
-          value={formIsFilterable ? 'true' : 'false'}
-        />
-
-        <div class="space-y-1.5">
-          <Label for="display_order" class="text-xs">Display order</Label>
-          <Input
-            id="display_order"
-            name="display_order"
-            type="number"
-            min="0"
-            bind:value={formDisplayOrder}
-          />
-        </div>
-
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" bind:checked={formIsActive} />
-          Active
-        </label>
-        <input
-          type="hidden"
-          name="is_active"
-          value={formIsActive ? 'true' : 'false'}
-        />
       </div>
+    {/if}
 
-      <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={closeDialog} class="gap-1">
-          <X class="h-4 w-4" />
-          Cancel
-        </Button>
-        <Button type="submit" class="gap-1">
-          <Check class="h-4 w-4" />
-          {editing ? 'Save changes' : 'Create field'}
-        </Button>
-      </Dialog.Footer>
-    </form>
-  </Dialog.Content>
-</Dialog.Root>
+    <div class="v2-cf-groups">
+      {#each groups as g (g.model)}
+        <div>
+          <div class="v2-label" style="margin-bottom:10px">On {g.label.toLowerCase()}</div>
+          <div class="v2-card" style="overflow:hidden">
+            {#each g.fields as f (f.id)}
+              <div class="v2-setting" style="opacity:{f.is_active ? 1 : 0.6}">
+                <div class="v2-setting-body">
+                  <div style="display:flex;gap:7px;align-items:baseline;flex-wrap:wrap">
+                    <b>{f.label}</b>
+                    <code class="v2-cf-key">{f.key}</code>
+                  </div>
+                  <span class="v2-sub" style="font-size:11.5px">
+                    {FIELD_TYPE_LABEL[f.field_type]}{#if f.options}
+                      · {f.options.map((o) => o.label).join(', ')}
+                    {/if}
+                    {#if f.is_required && f.records_missing_value > 0}
+                      · <span style="color:var(--v2-clay)">
+                        {count(f.records_missing_value)} without a value
+                      </span>
+                    {/if}
+                  </span>
+                </div>
+
+                {#if f.is_filterable}
+                  <!-- Filterable is the difference between a field you can
+                       search a list by and one you can only read once you have
+                       already opened the record. -->
+                  <Filter size={13} style="color:var(--v2-slate);flex:none" />
+                {/if}
+                {#if !f.is_active}
+                  <Pill tone="slate">Off</Pill>
+                {:else if f.is_required}
+                  <Pill tone="clay">Required</Pill>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:66ch">
+      A field marked with the filter icon can be used to narrow a list; the rest are readable only
+      on the record itself. Turning a field off stops it being collected and hides it, and leaves
+      the values already stored on each record untouched.
+    </p>
+  </div>
+</div>
+
+<style>
+  .v2-cf-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+    align-items: start;
+  }
+  .v2-cf-key {
+    font-family: var(--v2-mono);
+    font-size: 11px;
+    color: var(--v2-slate);
+    background: var(--v2-hover);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+  .v2-cf-banner {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--v2-line);
+    border-radius: var(--v2-radius);
+    background: var(--v2-card);
+  }
+
+  @media (max-width: 1000px) {
+    .v2-cf-groups {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

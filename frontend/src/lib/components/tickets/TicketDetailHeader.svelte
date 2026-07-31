@@ -10,8 +10,7 @@
       High: 'bg-[var(--priority-high-bg)] text-[var(--priority-high)]',
       Normal: 'bg-[var(--priority-medium-bg)] text-[var(--priority-medium)]',
       Low: 'bg-[var(--priority-low-bg)] text-[var(--priority-low)]'
-    }[ticketItem.priority] ||
-      'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
+    }[ticketItem.priority] || 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
   );
 
   const escalationCount = $derived(ticketItem.escalationCount || 0);
@@ -31,14 +30,18 @@
   <div class="min-w-0 flex-1">
     <h1 class="text-xl font-semibold text-[var(--text-primary)]">{ticketItem.subject}</h1>
     <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-      <span class="inline-flex items-center rounded-md border border-[var(--border-default)] px-2 py-0.5">
+      <span
+        class="inline-flex items-center rounded-md border border-[var(--border-default)] px-2 py-0.5"
+      >
         {ticketItem.status}
       </span>
       <span class="inline-flex items-center rounded-md px-2 py-0.5 {priorityColor}">
         {ticketItem.priority}
       </span>
       {#if ticketItem.ticketType}
-        <span class="inline-flex items-center rounded-md border border-[var(--border-default)] px-2 py-0.5">
+        <span
+          class="inline-flex items-center rounded-md border border-[var(--border-default)] px-2 py-0.5"
+        >
           {ticketItem.ticketType}
         </span>
       {/if}
@@ -53,7 +56,7 @@
       {/if}
       {#if escalationCount > 0}
         <span
-          class="inline-flex items-center gap-1 rounded-md bg-rose-600 px-2 py-0.5 font-medium uppercase tracking-wide text-white"
+          class="inline-flex items-center gap-1 rounded-md bg-rose-600 px-2 py-0.5 font-medium tracking-wide text-white uppercase"
           title={ticketItem.lastEscalationFiredAt
             ? `Last escalation fired ${formatTimestamp(ticketItem.lastEscalationFiredAt)} (${escalationCount}x)`
             : 'Escalated'}

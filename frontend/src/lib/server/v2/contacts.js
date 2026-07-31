@@ -9,7 +9,7 @@
  * WHY THIS MODULE, AND WHY NOW
  * Three wired pages already show people — a lead's converted contact, the
  * deal's contact rail, the account's people rail — and not one of them could
- * link to a person, because `/v2/contacts/<uuid>` answered 404. The rails were
+ * link to a person, because `/contacts/<uuid>` answered 404. The rails were
  * written as dead text for exactly that reason. Contacts was also the last
  * object in the core record graph still on fixtures: leads become an account,
  * a contact and a deal, and three quarters of that sentence was live.

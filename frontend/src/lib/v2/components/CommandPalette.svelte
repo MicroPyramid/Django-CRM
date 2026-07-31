@@ -33,7 +33,7 @@
       id: 'act-deal',
       title: 'New deal',
       meta: 'Pipeline',
-      href: '/v2/pipeline/new',
+      href: '/pipeline/new',
       icon: Plus
     },
     {
@@ -41,7 +41,7 @@
       id: 'act-today',
       title: 'Go to Today',
       meta: '',
-      href: '/v2',
+      href: '/',
       icon: Columns3
     },
     {
@@ -49,7 +49,7 @@
       id: 'act-tasks',
       title: 'Go to Tasks',
       meta: '',
-      href: '/v2/tasks',
+      href: '/tasks',
       icon: Columns3
     },
     {
@@ -57,7 +57,7 @@
       id: 'act-invoices',
       title: 'Go to Invoices',
       meta: '',
-      href: '/v2/invoices',
+      href: '/invoices',
       icon: Receipt
     }
   ];

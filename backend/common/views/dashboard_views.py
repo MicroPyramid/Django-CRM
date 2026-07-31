@@ -432,7 +432,7 @@ class ApiTodayView(APIView):
                     "title": c.name,
                     "detail": f"{c.priority} · {c.account.name if c.account_id else 'No account'} · awaiting first reply",
                     "action": "Reply",
-                    "href": f"/v2/tickets/{c.id}",
+                    "href": f"/tickets/{c.id}",
                 }
             )
 
@@ -447,7 +447,7 @@ class ApiTodayView(APIView):
                     "title": inv.invoice_title or inv.invoice_number,
                     "detail": f"{_fmt_money(inv.total_amount, inv.currency)} · {inv.account.name if inv.account_id else 'No account'} · due {_fmt_date(inv.due_date)}",
                     "action": "Send a reminder",
-                    "href": f"/v2/invoices/{inv.id}",
+                    "href": f"/invoices/{inv.id}",
                 }
             )
 
@@ -469,7 +469,7 @@ class ApiTodayView(APIView):
                     "title": opp.name,
                     "detail": f"No movement for {days} days · {_fmt_money(opp.amount, opp.currency)} · {stage_labels.get(opp.stage, opp.stage)}",
                     "action": "Open the deal",
-                    "href": f"/v2/pipeline/{opp.id}",
+                    "href": f"/pipeline/{opp.id}",
                 }
             )
 
@@ -489,7 +489,7 @@ class ApiTodayView(APIView):
                         else t.priority
                     ),
                     "action": "Open the task",
-                    "href": f"/v2/tasks/{t.id}",
+                    "href": f"/tasks/{t.id}",
                 }
             )
 

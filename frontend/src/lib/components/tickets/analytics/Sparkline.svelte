@@ -20,12 +20,8 @@
 
   const padding = 6;
 
-  const numericPoints = $derived(
-    points.filter((p) => p.y !== null && Number.isFinite(p.y))
-  );
-  const yMax = $derived(
-    Math.max(1, ...numericPoints.map((p) => /** @type {number} */ (p.y)))
-  );
+  const numericPoints = $derived(points.filter((p) => p.y !== null && Number.isFinite(p.y)));
+  const yMax = $derived(Math.max(1, ...numericPoints.map((p) => /** @type {number} */ (p.y))));
   const linePath = $derived.by(() => {
     if (numericPoints.length === 0) return '';
     const stepX = (width - 2 * padding) / Math.max(1, points.length - 1);

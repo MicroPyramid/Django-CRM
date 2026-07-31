@@ -15,17 +15,14 @@ export async function GET({ cookies, request, url }) {
 
   const qs = url.searchParams.toString();
   // Org context lives inside the JWT — no extra header needed.
-  const upstream = await fetch(
-    `${API_BASE_URL}/cases/analytics/export/${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'text/csv'
-      },
-      signal: request.signal
-    }
-  );
+  const upstream = await fetch(`${API_BASE_URL}/cases/analytics/export/${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'text/csv'
+    },
+    signal: request.signal
+  });
 
   if (!upstream.ok || !upstream.body) {
     return new Response(`Upstream error: ${upstream.status}`, {
@@ -38,8 +35,7 @@ export async function GET({ cookies, request, url }) {
     headers: {
       'Content-Type': upstream.headers.get('Content-Type') || 'text/csv',
       'Content-Disposition':
-        upstream.headers.get('Content-Disposition') ||
-        'attachment; filename="cases.csv"'
+        upstream.headers.get('Content-Disposition') || 'attachment; filename="cases.csv"'
     }
   });
 }

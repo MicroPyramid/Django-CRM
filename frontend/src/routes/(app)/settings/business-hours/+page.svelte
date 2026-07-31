@@ -1,306 +1,121 @@
 <script>
-  import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
-  import { Loader2, Clock, Check, Plus, Trash2 } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
+  /**
+   * The calendar every response target is measured against.
+   *
+   * This page is small but it is the reason "answered in 4h" means anything.
+   * A ticket opened at 17:20 on Friday and answered at 09:10 on Monday is
+   * either fifteen hours late or fifty minutes early, and only this calendar
+   * decides which. v1 hid it three levels into a settings dropdown, so the
+   * analytics page reported numbers nobody could interpret.
+   *
+   * Closed days and holidays are shown, not omitted. A blank row for Saturday
+   * reads as missing data; "Closed" reads as a decision.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import { shortDate, relativeDays } from '$lib/v2/format.js';
+  import { Plus, Clock } from '@lucide/svelte';
 
-  /** @type {{ data: any, form: any }} */
-  let { data, form } = $props();
+  /** @type {{ data: any }} */
+  let { data } = $props();
 
-  const calendar = $derived(data.calendar || {});
-  const calendarId = $derived(calendar.id || '');
+  let calendar = $derived(data.calendar);
 
-  const WEEKDAYS = [
-    { key: 'monday', label: 'Monday' },
-    { key: 'tuesday', label: 'Tuesday' },
-    { key: 'wednesday', label: 'Wednesday' },
-    { key: 'thursday', label: 'Thursday' },
-    { key: 'friday', label: 'Friday' },
-    { key: 'saturday', label: 'Saturday' },
-    { key: 'sunday', label: 'Sunday' }
-  ];
+  /** Hours a day is open, for the weekly total. */
+  function hours(d) {
+    if (!d.open || !d.close) return 0;
+    const [oh, om] = d.open.split(':').map(Number);
+    const [ch, cm] = d.close.split(':').map(Number);
+    return (ch * 60 + cm - (oh * 60 + om)) / 60;
+  }
 
-  // A short whitelist of common IANA zones; the API accepts any valid zone but
-  // a real picker isn't worth it here.
-  const TIMEZONES = [
-    'UTC',
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'Europe/London',
-    'Europe/Paris',
-    'Europe/Berlin',
-    'Asia/Tokyo',
-    'Asia/Singapore',
-    'Asia/Kolkata',
-    'Australia/Sydney'
-  ];
-
-  /** @param {string|null|undefined} t */
-  const trimSeconds = (t) => (t ? String(t).slice(0, 5) : '');
-
-  let timezone = $state('UTC');
-  let name = $state('Default');
-  /** @type {Record<string, { open: string, close: string, closed: boolean }>} */
-  let days = $state({});
-  let saving = $state(false);
-
-  let newHolidayDate = $state('');
-  let newHolidayName = $state('');
-
-  $effect(() => {
-    timezone = calendar.timezone || 'UTC';
-    name = calendar.name || 'Default';
-    /** @type {Record<string, { open: string, close: string, closed: boolean }>} */
-    const next = {};
-    for (const d of WEEKDAYS) {
-      const open = trimSeconds(calendar[`${d.key}_open`]);
-      const close = trimSeconds(calendar[`${d.key}_close`]);
-      next[d.key] = {
-        open: open || '09:00',
-        close: close || '17:00',
-        closed: !open || !close
-      };
-    }
-    days = next;
-  });
+  let weekly = $derived(calendar.days.reduce((a, d) => a + hours(d), 0));
+  const todayName = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(new Date());
 </script>
 
-<svelte:head>
-  <title>Business Hours - Settings - BottleCRM</title>
-</svelte:head>
-
-<PageHeader
-  title="Business Hours"
-  subtitle="Working hours and holidays SLA timers honor"
->
+<PageHeader title="Business hours">
+  {#snippet crumb()}<SettingsCrumb />{/snippet}
+  {#snippet sub()}
+    {calendar.name} · {calendar.timezone} ·
+    <span class="v2-num">{weekly}</span> hours a week
+  {/snippet}
   {#snippet actions()}
-    <Button type="submit" form="business-hours-form" disabled={saving} class="gap-2">
-      {#if saving}
-        <Loader2 class="h-4 w-4 animate-spin" />
-        Saving…
-      {:else}
-        <Check class="h-4 w-4" />
-        Save changes
-      {/if}
-    </Button>
+    <button class="v2-btn v2-btn-primary">Edit hours</button>
   {/snippet}
 </PageHeader>
 
-<div class="flex-1 p-4 md:p-6 lg:p-8">
-  <form
-    id="business-hours-form"
-    method="POST"
-    action="?/update"
-    use:enhance={() => {
-      saving = true;
-      return async ({ result, update }) => {
-        await update();
-        saving = false;
-        if (result.type === 'success') {
-          toast.success('Business hours saved');
-          await invalidateAll();
-        } else if (result.type === 'failure') {
-          toast.error(form?.error || 'Failed to save');
-        }
-      };
-    }}
-    class="mx-auto max-w-3xl space-y-6"
-  >
-    <input type="hidden" name="id" value={calendarId} />
-    <input type="hidden" name="name" value={name} />
-
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-5"
-    >
-      <header class="flex items-start gap-3">
-        <div
-          class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-        >
-          <Clock class="h-4 w-4" />
-        </div>
-        <div>
-          <h2 class="text-base font-medium text-[var(--text-primary)]">
-            Working hours
-          </h2>
-          <p class="text-sm text-[var(--text-secondary)]">
-            Tickets opened outside these hours don't burn SLA. Holidays and customer-wait
-            time (status Pending) are excluded automatically.
-          </p>
-        </div>
-      </header>
-
-      <div class="space-y-2">
-        <Label for="timezone" class="text-sm">Timezone</Label>
-        <select
-          id="timezone"
-          name="timezone"
-          bind:value={timezone}
-          class="w-72 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary-default)]"
-        >
-          {#each TIMEZONES as tz (tz)}
-            <option value={tz}>{tz}</option>
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-top:18px;padding-bottom:32px">
+    <div class="v2-split">
+      <div>
+        <div class="v2-label" style="margin-bottom:10px">Open hours</div>
+        <div class="v2-card" style="overflow:hidden">
+          {#each calendar.days as d (d.day)}
+            <div class="v2-setting" style={d.day === todayName ? 'background:var(--v2-hover)' : ''}>
+              <div class="v2-setting-body">
+                <b>{d.day}</b>
+                {#if d.day === todayName}
+                  <span class="v2-sub" style="font-size:11px">today</span>
+                {/if}
+              </div>
+              {#if d.open && d.close}
+                <span class="v2-num" style="font-size:13px">{d.open} – {d.close}</span>
+              {:else}
+                <!-- Named, not blank. A blank cell reads as missing data. -->
+                <span class="v2-sub" style="font-size:12.5px">Closed</span>
+              {/if}
+            </div>
           {/each}
-        </select>
+        </div>
+
+        {#if calendar.is_default}
+          <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
+            This is the default calendar, so it applies to every ticket that does not have a more
+            specific one.
+          </p>
+        {/if}
       </div>
 
-      <div class="overflow-hidden rounded-md border border-[var(--border-default)]">
-        <table class="w-full text-sm">
-          <thead class="bg-[var(--surface-muted)] text-xs uppercase tracking-wide text-[var(--text-secondary)]">
-            <tr>
-              <th class="px-3 py-2 text-left">Day</th>
-              <th class="px-3 py-2 text-left">Closed</th>
-              <th class="px-3 py-2 text-left">Open</th>
-              <th class="px-3 py-2 text-left">Close</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each WEEKDAYS as d (d.key)}
-              <tr class="border-t border-[var(--border-default)]">
-                <td class="px-3 py-2">{d.label}</td>
-                <td class="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    bind:checked={days[d.key].closed}
-                    class="h-4 w-4 rounded border-[var(--border-default)]"
-                    aria-label={`Mark ${d.label} closed`}
-                  />
-                  <input
-                    type="hidden"
-                    name={`${d.key}_closed`}
-                    value={days[d.key].closed ? 'true' : 'false'}
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <Input
-                    type="time"
-                    name={`${d.key}_open`}
-                    bind:value={days[d.key].open}
-                    disabled={days[d.key].closed}
-                    class="w-32"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <Input
-                    type="time"
-                    name={`${d.key}_close`}
-                    bind:value={days[d.key].close}
-                    disabled={days[d.key].closed}
-                    class="w-32"
-                  />
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+      <div>
+        <div style="display:flex;align-items:baseline;margin-bottom:10px">
+          <div class="v2-label">Holidays</div>
+          <button class="v2-btn v2-btn-sm" style="margin-left:auto"><Plus size={12} />Add</button>
+        </div>
+        <div class="v2-card" style="overflow:hidden">
+          {#each calendar.holidays as h (h.id)}
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>{h.name}</b>
+                <span class="v2-sub" style="font-size:11.5px">{relativeDays(h.date)}</span>
+              </div>
+              <span class="v2-num" style="font-size:12.5px">{shortDate(h.date)}</span>
+            </div>
+          {:else}
+            <p class="v2-sub" style="padding:14px 16px;font-size:12.5px;margin:0">
+              No holidays set. Targets will keep running on public holidays.
+            </p>
+          {/each}
+        </div>
+
+        <div
+          style="display:flex;gap:10px;align-items:flex-start;margin-top:18px;padding:14px 16px;border:1px solid var(--v2-line);border-radius:var(--v2-radius)"
+        >
+          <Clock size={16} style="color:var(--v2-slate);flex:none;margin-top:1px" />
+          <div>
+            <div style="font-weight:600;font-size:13px">What this changes</div>
+            <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
+              Response and resolution targets count only the time inside these hours. A ticket
+              opened at 17:20 on Friday starts its clock at
+              <span class="v2-num">{calendar.days[0].open}</span> on Monday, so the weekend does not spend
+              a four-hour target.
+            </p>
+            <p class="v2-sub" style="font-size:12px;margin:8px 0 0">
+              <a href="/tickets/analytics" style="color:inherit">Service analytics</a> is measured on
+              this calendar.
+            </p>
+          </div>
+        </div>
       </div>
-    </section>
-
-    {#if form?.error}
-      <p class="text-sm text-[var(--color-danger-default)]">{form.error}</p>
-    {/if}
-  </form>
-
-  <section
-    class="mx-auto mt-6 max-w-3xl rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-6 space-y-4"
-  >
-    <header>
-      <h2 class="text-base font-medium text-[var(--text-primary)]">Holidays</h2>
-      <p class="text-sm text-[var(--text-secondary)]">
-        Full days off in the calendar's timezone. SLA timers skip them entirely.
-      </p>
-    </header>
-
-    <form
-      method="POST"
-      action="?/addHoliday"
-      use:enhance={() => async ({ result, update }) => {
-        await update();
-        if (result.type === 'success') {
-          newHolidayDate = '';
-          newHolidayName = '';
-          toast.success('Holiday added');
-          await invalidateAll();
-        } else if (result.type === 'failure') {
-          toast.error('Failed to add holiday');
-        }
-      }}
-      class="flex flex-wrap items-end gap-3"
-    >
-      <input type="hidden" name="id" value={calendarId} />
-      <div class="space-y-1">
-        <Label for="holiday_date" class="text-xs">Date</Label>
-        <Input
-          id="holiday_date"
-          name="date"
-          type="date"
-          bind:value={newHolidayDate}
-          required
-          class="w-48"
-        />
-      </div>
-      <div class="flex-1 space-y-1">
-        <Label for="holiday_name" class="text-xs">Name</Label>
-        <Input
-          id="holiday_name"
-          name="name"
-          type="text"
-          maxlength="100"
-          placeholder="e.g. Christmas Day"
-          bind:value={newHolidayName}
-          required
-        />
-      </div>
-      <Button type="submit" variant="outline" class="gap-1">
-        <Plus class="h-4 w-4" />
-        Add
-      </Button>
-    </form>
-
-    {#if (calendar.holidays || []).length === 0}
-      <p class="text-sm text-[var(--text-secondary)]">No holidays configured.</p>
-    {:else}
-      <ul class="divide-y divide-[var(--border-default)] rounded-md border border-[var(--border-default)]">
-        {#each calendar.holidays as h (h.id)}
-          <li class="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-            <span class="flex items-center gap-3">
-              <span class="font-mono text-xs text-[var(--text-secondary)]">{h.date}</span>
-              <span>{h.name}</span>
-            </span>
-            <form
-              method="POST"
-              action="?/removeHoliday"
-              use:enhance={() => async ({ result, update }) => {
-                await update();
-                if (result.type === 'success') {
-                  toast.success('Holiday removed');
-                  await invalidateAll();
-                } else if (result.type === 'failure') {
-                  toast.error('Failed to remove holiday');
-                }
-              }}
-            >
-              <input type="hidden" name="id" value={calendarId} />
-              <input type="hidden" name="hid" value={h.id} />
-              <Button
-                type="submit"
-                variant="ghost"
-                size="sm"
-                class="h-7 w-7 p-0 text-[var(--text-secondary)] hover:text-[var(--color-danger-default)]"
-                aria-label="Remove holiday"
-                title="Remove holiday"
-              >
-                <Trash2 class="h-4 w-4" />
-              </Button>
-            </form>
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </section>
+    </div>
+  </div>
 </div>

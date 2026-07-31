@@ -1,4 +1,4 @@
-import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
+import { handleErrorWithSentry, replayIntegration } from '@sentry/sveltekit';
 import * as Sentry from '@sentry/sveltekit';
 import { env } from '$env/dynamic/public';
 
@@ -12,7 +12,7 @@ Sentry.init({
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
   integrations: [replayIntegration()],
-  sendDefaultPii: true,
+  sendDefaultPii: true
 });
 
 export const handleError = handleErrorWithSentry();

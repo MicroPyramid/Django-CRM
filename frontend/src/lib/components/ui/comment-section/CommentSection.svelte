@@ -267,8 +267,7 @@
       }
       if (event.key === 'ArrowUp') {
         event.preventDefault();
-        mentionIndex =
-          (mentionIndex - 1 + mentionMatches().length) % mentionMatches().length;
+        mentionIndex = (mentionIndex - 1 + mentionMatches().length) % mentionMatches().length;
         return;
       }
       if (event.key === 'Enter' || event.key === 'Tab') {
@@ -322,7 +321,7 @@
         />
         {#if mentionOpen && mentionMatches().length > 0}
           <ul
-            class="absolute left-2 right-2 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] shadow-md"
+            class="absolute top-full right-2 left-2 z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] shadow-md"
           >
             {#each mentionMatches() as cand, i (cand.username)}
               <li>
@@ -332,7 +331,8 @@
                     ev.preventDefault();
                     applyMention(cand);
                   }}
-                  class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--surface-muted)] {i === mentionIndex
+                  class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--surface-muted)] {i ===
+                  mentionIndex
                     ? 'bg-[var(--surface-muted)]'
                     : ''}"
                 >

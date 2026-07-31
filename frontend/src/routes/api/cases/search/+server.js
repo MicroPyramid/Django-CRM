@@ -11,9 +11,13 @@ export async function GET({ url, cookies, locals }) {
     return json({ cases: [] });
   }
   const qs = new URLSearchParams({ search: q, limit });
-  const res = await apiRequest(`/cases/?${qs.toString()}`, {}, {
-    cookies,
-    org: locals?.org
-  });
+  const res = await apiRequest(
+    `/cases/?${qs.toString()}`,
+    {},
+    {
+      cookies,
+      org: locals?.org
+    }
+  );
   return json({ cases: res.cases || [] });
 }

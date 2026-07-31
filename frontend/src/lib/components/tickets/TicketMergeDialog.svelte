@@ -19,8 +19,7 @@
   let searching = $state(false);
   let submitting = $state(false);
 
-  const shortId = (/** @type {string} */ id) =>
-    (id || '').replace(/-/g, '').slice(0, 8);
+  const shortId = (/** @type {string} */ id) => (id || '').replace(/-/g, '').slice(0, 8);
 
   let searchTimer = /** @type {any} */ (null);
 
@@ -89,8 +88,8 @@
       </Dialog.Title>
       <Dialog.Description>
         All comments, attachments, and inbound emails on
-        <strong>{ticketSubject}</strong> will be moved to the primary. This ticket is
-        kept as a "Duplicate" pointing to the primary. <strong>Undo is not available.</strong>
+        <strong>{ticketSubject}</strong> will be moved to the primary. This ticket is kept as a
+        "Duplicate" pointing to the primary. <strong>Undo is not available.</strong>
       </Dialog.Description>
     </Dialog.Header>
 
@@ -126,9 +125,7 @@
       <input type="hidden" name="into_id" value={selected?.id || ''} />
 
       <div class="space-y-1">
-        <label for="merge-target-search" class="text-sm font-medium">
-          Search target ticket
-        </label>
+        <label for="merge-target-search" class="text-sm font-medium"> Search target ticket </label>
         <input
           id="merge-target-search"
           type="text"
@@ -163,13 +160,11 @@
               >
                 <span class="min-w-0 flex-1 truncate">{candidate.name}</span>
                 <span
-                  class="shrink-0 rounded bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]"
+                  class="shrink-0 rounded bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[10px] tracking-wide text-[var(--text-secondary)] uppercase"
                 >
                   {candidate.status}
                 </span>
-                <span
-                  class="shrink-0 font-mono text-[10px] text-[var(--text-secondary)]"
-                >
+                <span class="shrink-0 font-mono text-[10px] text-[var(--text-secondary)]">
                   #{shortId(candidate.id)}
                 </span>
               </button>
@@ -211,14 +206,8 @@
       {/if}
 
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (open = false)}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={!confirmOk || submitting}
-          class="gap-1"
-        >
+        <Button type="button" variant="outline" onclick={() => (open = false)}>Cancel</Button>
+        <Button type="submit" disabled={!confirmOk || submitting} class="gap-1">
           {#if submitting}
             <Loader2 class="h-3 w-3 animate-spin" />
           {/if}

@@ -1,5 +1,5 @@
 /**
- * Settings hub — the wiring behind `/v2/settings`.
+ * Settings hub — the wiring behind `/settings`.
  *
  * Server-only. The hub summarises every settings destination, so it needs a
  * number from each. Rather than a bespoke `/settings/summary/` endpoint — which

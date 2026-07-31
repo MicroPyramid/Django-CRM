@@ -1,23 +1,26 @@
 import adapter from '@sveltejs/adapter-node';
 
-const config = { vitePlugin: {
-  prebundleSvelteLibraries: false
-}, kit: {
-  adapter: adapter(),
-
-  version: {
-    pollInterval: 60000
+const config = {
+  vitePlugin: {
+    prebundleSvelteLibraries: false
   },
+  kit: {
+    adapter: adapter(),
 
-  experimental: {
-    tracing: {
-      server: true
+    version: {
+      pollInterval: 60000
     },
 
-    instrumentation: {
-      server: true
+    experimental: {
+      tracing: {
+        server: true
+      },
+
+      instrumentation: {
+        server: true
+      }
     }
   }
-} };
+};
 
 export default config;

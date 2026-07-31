@@ -312,7 +312,7 @@
 {:else}
   <div class="flex h-full flex-col">
     <!-- Desktop -->
-    <div class="hidden md:flex md:flex-1 md:flex-col md:min-h-0">
+    <div class="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
       <!-- Pipeline stats bar (only when monetary value > 0) -->
       {#if pipelineStats.totalValue > 0}
         <div
@@ -321,7 +321,7 @@
           <div class="flex items-center gap-2">
             <TrendingUp class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             <span
-              class="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="text-[11px] font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
             >
               Pipeline
             </span>
@@ -335,7 +335,7 @@
           <div class="flex items-center gap-2">
             <Flame class="h-4 w-4 text-rose-500 dark:text-rose-400" />
             <span
-              class="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="text-[11px] font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
             >
               Hot
             </span>
@@ -349,7 +349,7 @@
           <div class="flex items-center gap-2">
             <Users class="h-4 w-4 text-gray-500 dark:text-gray-400" />
             <span
-              class="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="text-[11px] font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
             >
               Total {itemNamePlural}
             </span>

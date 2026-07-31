@@ -7,8 +7,8 @@
  * claim inside the JWT and the backend reads it from there.
  *
  * WHY THIS MODULE, AND WHY NOW
- * `/v2/pipeline` went live linking each deal to `/v2/accounts/{uuid}`, and
- * `/v2/accounts` was still fixtures keyed by slugs like `acc-northwind`. So
+ * `/pipeline` went live linking each deal to `/accounts/{uuid}`, and
+ * `/accounts` was still fixtures keyed by slugs like `acc-northwind`. So
  * every account link on a live page answered 404. A module is not finished
  * when its own pages work; it is finished when the pages it points at do.
  *

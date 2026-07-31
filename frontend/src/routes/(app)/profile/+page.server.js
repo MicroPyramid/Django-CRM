@@ -1,119 +1,103 @@
-/**
- * Profile Page - API Version
- *
- * Migrated from Prisma to Django REST API
- * Django endpoint: GET/PATCH /api/profile/
- *
- * To activate:
- *   mv +page.server.js +page.server.prisma.js
- *   mv +page.server.api.js +page.server.js
- */
-
 import { fail, redirect } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
-import { validatePhoneNumber, formatPhoneForStorage } from '$lib/utils/phone.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
+import { getProfile } from '$lib/server/v2/profile.js';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ locals, cookies }) {
-  if (!locals.user) {
-    throw redirect(307, '/login');
-  }
-
-  const org = locals.org;
-
-  try {
-    // Fetch user profile from Django API
-    const response = await apiRequest('/profile/', {}, { cookies, org });
-
-    // Django profile response structure may vary
-    const profileData = response.user_obj || response;
-
-    // Get user details
-    const userDetails = profileData.user_details || profileData.user || {};
-
-    // Transform to Prisma structure
-    const user = {
-      id: profileData.id || locals.user.id,
-      user_id: profileData.user_id || userDetails.id,
-      email: userDetails.email || profileData.email || locals.user.email,
-      name: userDetails.name || profileData.name || userDetails.email,
-      profilePhoto:
-        profileData.profile_photo || userDetails.profile_photo || userDetails.profile_pic || null,
-      phone: profileData.phone || userDetails.phone || null,
-      isActive: profileData.is_active !== undefined ? profileData.is_active : true,
-      lastLogin: userDetails.last_login || null,
-      createdAt:
-        profileData.created_at || profileData.created_on || userDetails.date_joined || null,
-      organizations: [] // Django might not return this in profile endpoint
-    };
-
-    return { user };
-  } catch (err) {
-    console.error('Error loading profile:', err);
-    throw redirect(307, '/login');
-  }
+export async function load({ cookies }) {
+  return await getProfile({ cookies });
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  updateProfile: async ({ request, locals, cookies }) => {
-    if (!locals.user) {
-      throw redirect(307, '/login');
-    }
-
-    const org = locals.org;
-    const formData = await request.formData();
-    const phone = formData.get('phone')?.toString();
-    const name = formData.get('name')?.toString() ?? '';
-
-    // Validation
-    const errors = {};
-
-    // Validate phone if provided
-    let formattedPhone = null;
-    if (phone && phone.trim().length > 0) {
-      const phoneValidation = await validatePhoneNumber(phone.trim());
-      if (!phoneValidation.isValid) {
-        errors.phone = phoneValidation.error || 'Please enter a valid phone number';
-      } else {
-        formattedPhone = await formatPhoneForStorage(phone.trim());
-      }
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return fail(400, {
-        errors,
-        data: { name, phone }
-      });
+  /**
+   * Edit your own name and phone. Only those two are read out of the form — the
+   * page shows role, org and access, but they are never posted, and the API
+   * would refuse them anyway (ProfileSelfUpdateSerializer names only name and
+   * phone). A field appended to the body by hand is not forwarded.
+   */
+  edit: async ({ cookies, request }) => {
+    const form = await request.formData();
+    /** @type {Record<string, string>} */
+    const body = {};
+    for (const field of ['name', 'phone']) {
+      if (form.has(field)) body[field] = form.get(field)?.toString().trim() ?? '';
     }
 
     try {
-      const djangoData = {
-        name: name.trim().slice(0, 255),
-        phone: formattedPhone
-      };
-
-      // Update profile via API
-      await apiRequest(
-        '/profile/',
-        {
-          method: 'PATCH',
-          body: djangoData
-        },
-        { cookies, org }
-      );
-
-      return {
-        success: true,
-        message: 'Profile updated successfully'
-      };
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      return fail(500, {
-        error:
-          'Failed to update profile: ' + (err instanceof Error ? err.message : 'Unknown error'),
-        data: { name, phone }
+      await apiRequest('/profile/', { method: 'PATCH', body }, { cookies });
+    } catch (/** @type {any} */ err) {
+      return fail(err?.status === 400 ? 400 : 500, {
+        values: body,
+        message: readableError(err, 'Could not save your profile.')
       });
     }
+
+    return { saved: true };
+  },
+
+  /**
+   * Switch to another organisation you belong to. This is not a field edit: the
+   * backend re-issues the JWT with the new org claim (and only if you have an
+   * active profile there — else 403), and we swap the httpOnly cookies the shell
+   * reads so every later request is scoped to the new org. Mirrors the v1 /org
+   * picker so the two behave the same.
+   */
+  switchOrg: async ({ cookies, request }) => {
+    const form = await request.formData();
+    const orgId = form.get('org_id')?.toString() ?? '';
+
+    if (!UUID_RE.test(orgId)) {
+      return fail(400, { scope: 'switch', message: 'Invalid organisation.' });
+    }
+
+    // Sent so the backend retires the token we are replacing; it belongs to the
+    // caller (the API checks) or is ignored.
+    const outgoingRefresh = cookies.get('jwt_refresh');
+    const payload = outgoingRefresh
+      ? { org_id: orgId, refresh: outgoingRefresh }
+      : { org_id: orgId };
+
+    /** @type {any} */
+    let result;
+    try {
+      result = await apiRequest(
+        '/auth/switch-org/',
+        { method: 'POST', body: payload },
+        { cookies }
+      );
+    } catch (/** @type {any} */ err) {
+      // 403 is the honest one: you asked for an org you are not a member of.
+      const message =
+        err?.status === 403
+          ? 'You are not a member of that organisation.'
+          : readableError(err, 'Could not switch organisation.');
+      return fail(err?.status === 403 ? 403 : 500, { scope: 'switch', message });
+    }
+
+    const secure = process.env.NODE_ENV === 'production';
+    cookies.set('jwt_access', result.access_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      maxAge: 60 * 60 * 24
+    });
+    cookies.set('jwt_refresh', result.refresh_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      maxAge: 60 * 60 * 24 * 365
+    });
+    cookies.set('org', orgId, {
+      path: '/',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24 * 365
+    });
+
+    throw redirect(303, '/profile');
   }
 };

@@ -16,7 +16,7 @@
  *
  * WHAT CHANGED WHEN THE FIXTURES CAME OFF
  * - **A task cannot be attached to an invoice.** The mock had one — `related:
- *   { kind: 'invoice', … }` linking to `/v2/invoices/INV-2025-0142`. `Task`
+ *   { kind: 'invoice', … }` linking to `/invoices/INV-2025-0142`. `Task`
  *   has four optional parents: account, opportunity, case, lead. There is no
  *   invoice FK and no endpoint that would populate one, so that kind is gone.
  * - **"Done this week" is not computable.** It was the fourth stat card.
@@ -65,14 +65,14 @@ function fileUrl(path) {
 
 /** The four parent columns, and where each one's record lives in v2. */
 const PARENTS = [
-  { field: 'account', kind: 'account', href: (/** @type {string} */ id) => `/v2/accounts/${id}` },
+  { field: 'account', kind: 'account', href: (/** @type {string} */ id) => `/accounts/${id}` },
   {
     field: 'opportunity',
     kind: 'deal',
-    href: (/** @type {string} */ id) => `/v2/pipeline/${id}`
+    href: (/** @type {string} */ id) => `/pipeline/${id}`
   },
-  { field: 'case', kind: 'ticket', href: (/** @type {string} */ id) => `/v2/tickets/${id}` },
-  { field: 'lead', kind: 'lead', href: (/** @type {string} */ id) => `/v2/leads/${id}` }
+  { field: 'case', kind: 'ticket', href: (/** @type {string} */ id) => `/tickets/${id}` },
+  { field: 'lead', kind: 'lead', href: (/** @type {string} */ id) => `/leads/${id}` }
 ];
 
 /**

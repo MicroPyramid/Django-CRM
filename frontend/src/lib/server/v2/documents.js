@@ -7,7 +7,7 @@
  * parameter here.
  *
  * WHY THIS MODULE
- * `/v2/documents` is a top-of-sidebar destination that still read a fixture:
+ * `/documents` is a top-of-sidebar destination that still read a fixture:
  * its list rendered mock rows and its "Upload" button wrote nowhere. `Document`
  * has had a full API (`common/views/document_views.py`) since the first
  * migration and neither v1 nor Flutter ever drew it, so its access rules had

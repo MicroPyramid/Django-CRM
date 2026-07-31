@@ -1,288 +1,219 @@
 <script>
-  import { invalidateAll } from '$app/navigation';
-  import { enhance } from '$app/forms';
-  import { untrack } from 'svelte';
-  import { toast } from 'svelte-sonner';
+  /**
+   * An article, and where it is in the workflow.
+   *
+   * Two changes from the mock, both because the real model says so:
+   *
+   * 1. The crumb printed `solution.id`. That is a UUID — 36 characters of
+   *    nothing, in the position where a reader looks for what they are
+   *    reading. The status goes there instead.
+   * 2. "Related articles" is gone. The mock listed three under that heading
+   *    with no stated relation, and nothing in the schema computes one. What
+   *    the database does hold is the **tickets this article is filed
+   *    against**, which is the same rail pointing the other way: the ticket
+   *    page already links here.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import NextAction from '$lib/v2/components/NextAction.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import { relativeDays, longDate } from '$lib/v2/format.js';
   import {
-    Eye,
-    EyeOff,
-    Trash2,
-    Loader2,
-    CheckCircle2,
-    Briefcase
-  } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
+    SOLUTION_STATUS_LABEL,
+    SOLUTION_STATUS_TONE,
+    PRIORITY_TONE,
+    CASE_STATUS_TONE
+  } from '$lib/v2/enums.js';
+  import { enhance } from '$app/forms';
+  import { ChevronRight, Eye, EyeOff } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
-  const sol = $derived(data.solution);
+  let { article, tickets, hidden_ticket_count, canRelease } = $derived(data);
 
-  let title = $state(untrack(() => sol.title));
-  let description = $state(untrack(() => sol.description || ''));
-  let statusVal = $state(untrack(() => sol.status));
-  let saving = $state(false);
-
-  // Re-seed local form state if the server-loaded solution changes (after a
-  // status change via publish/unpublish actions, invalidateAll re-runs load
-  // and we want the form to reflect the fresh values).
-  $effect(() => {
-    title = sol.title;
-    description = sol.description || '';
-    statusVal = sol.status;
+  /**
+   * What is standing between this article and a customer, said as the next
+   * single step rather than as a description of the state.
+   *
+   * The action is dropped for anyone who cannot take it — the API answers 403
+   * — but the sentence stays, because "an admin has to approve this" is the
+   * useful half and the half a writer needs to know.
+   */
+  let gate = $derived.by(() => {
+    if (article.is_published) return null;
+    if (article.status === 'approved') {
+      return {
+        // Without the button, "publishing is the last step" leaves a reader
+        // hunting for a control that is not theirs. Naming who does it is the
+        // whole value of the sentence for everybody else.
+        text: canRelease
+          ? 'Approved, but customers still cannot see this. Publishing is the last step.'
+          : 'Approved, but customers still cannot see this. An admin has to publish it.',
+        action: canRelease ? 'Publish' : null,
+        form: 'setPublished',
+        value: 'true'
+      };
+    }
+    if (article.status === 'reviewed') {
+      return {
+        text: canRelease
+          ? 'Someone has read this. Approving it is what lets it be published.'
+          : 'Waiting on an admin to approve it. Until then it stays internal.',
+        action: canRelease ? 'Approve' : null,
+        form: 'setStatus',
+        value: 'approved'
+      };
+    }
+    return {
+      text: 'This is a draft. Send it for review when the answer is right — somebody other than you has to approve it before customers see it.',
+      action: 'Send for review',
+      form: 'setStatus',
+      value: 'reviewed'
+    };
   });
-
-  const dirty = $derived(
-    title !== sol.title ||
-      (description || '') !== (sol.description || '') ||
-      statusVal !== sol.status
-  );
-
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
-  function handleSave() {
-    saving = true;
-    return async ({ result, update }) => {
-      saving = false;
-      await update();
-      if (result.type === 'success') {
-        toast.success('Saved');
-        await invalidateAll();
-      } else if (result.type === 'failure') {
-        toast.error(/** @type {any} */ (result.data)?.error || 'Save failed');
-      }
-    };
-  }
-
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
-  function handlePublish() {
-    return async ({ result, update }) => {
-      await update();
-      if (result.type === 'success') {
-        toast.success('Published');
-        await invalidateAll();
-      } else if (result.type === 'failure') {
-        toast.error(/** @type {any} */ (result.data)?.error || 'Publish failed');
-      }
-    };
-  }
-
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
-  function handleUnpublish() {
-    return async ({ result, update }) => {
-      await update();
-      if (result.type === 'success') {
-        toast.success('Unpublished');
-        await invalidateAll();
-      } else if (result.type === 'failure') {
-        toast.error(/** @type {any} */ (result.data)?.error || 'Unpublish failed');
-      }
-    };
-  }
-
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
-  function handleDelete({ cancel }) {
-    if (
-      !window.confirm(
-        'Delete this solution? Linked tickets will lose their reference. This cannot be undone.'
-      )
-    ) {
-      cancel();
-      return;
-    }
-    return async ({ result }) => {
-      if (result.type === 'redirect') {
-        toast.success('Solution deleted');
-      } else if (result.type === 'failure') {
-        toast.error(/** @type {any} */ (result.data)?.error || 'Delete failed');
-      }
-    };
-  }
-
-  /** @param {string} state */
-  function statusBadgeClass(state) {
-    switch (state) {
-      case 'draft':
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200';
-      case 'reviewed':
-        return 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200';
-      case 'approved':
-        return 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200';
-      default:
-        return 'bg-[var(--surface-muted)] text-[var(--text-secondary)]';
-    }
-  }
-
-  /** @param {string | null | undefined} d */
-  const formatDate = (d) => (d ? new Date(d).toLocaleString() : '—');
 </script>
 
-<svelte:head>
-  <title>{sol.title} - Knowledge Base - BottleCRM</title>
-</svelte:head>
-
-<PageHeader
-  title={sol.title}
-  breadcrumb={[{ label: 'Knowledge Base', href: '/solutions' }, { label: sol.title }]}
->
-  {#snippet meta()}
-    <span class={`rounded px-2 py-0.5 text-[10px] font-medium uppercase ${statusBadgeClass(sol.status)}`}>
-      {sol.status}
-    </span>
-    {#if sol.is_published}
-      <span class="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase text-green-900 dark:bg-green-900/30 dark:text-green-200">
-        <CheckCircle2 class="h-3 w-3" />
-        Live
-      </span>
-    {/if}
+<PageHeader title={article.title} record>
+  {#snippet crumb()}
+    <a href="/solutions">Knowledge base</a>
+    <ChevronRight size={12} />
+    <span>{SOLUTION_STATUS_LABEL[article.status]}</span>
+  {/snippet}
+  {#snippet sub()}
+    {[
+      article.author || 'Unknown author',
+      `edited ${relativeDays(article.updated_at)}`,
+      article.use_count
+        ? `filed on ${article.use_count} ticket${article.use_count === 1 ? '' : 's'}`
+        : 'not linked to a ticket yet'
+    ].join(' · ')}
   {/snippet}
   {#snippet actions()}
-    {#if sol.is_published}
-      <form method="POST" action="?/unpublish" use:enhance={handleUnpublish}>
-        <Button type="submit" variant="outline" size="sm" class="gap-1">
-          <EyeOff class="h-4 w-4" />
-          Unpublish
-        </Button>
-      </form>
-    {:else}
-      <form method="POST" action="?/publish" use:enhance={handlePublish}>
-        <Button
-          type="submit"
-          size="sm"
-          class="gap-1"
-          disabled={sol.status !== 'approved'}
-          title={sol.status !== 'approved'
-            ? 'Set status to Approved first'
-            : 'Publish to the knowledge base'}
-        >
-          <Eye class="h-4 w-4" />
-          Publish
-        </Button>
+    <a class="v2-btn" href="/solutions/{article.id}/edit">Edit</a>
+    {#if article.is_published && canRelease}
+      <form method="POST" action="?/setPublished" use:enhance>
+        <input type="hidden" name="published" value="false" />
+        <button class="v2-btn" type="submit">Unpublish</button>
       </form>
     {/if}
-    <form method="POST" action="?/delete" use:enhance={handleDelete}>
-      <Button type="submit" variant="ghost" size="sm" class="gap-1">
-        <Trash2 class="h-4 w-4 text-red-600" />
-        Delete
-      </Button>
-    </form>
   {/snippet}
 </PageHeader>
 
-<div class="flex flex-col gap-4 p-4">
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-    <form
-      method="POST"
-      action="?/update"
-      use:enhance={handleSave}
-      class="flex flex-col gap-4 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
-    >
-      <label class="flex flex-col gap-1 text-sm">
-        <span class="font-medium">Title</span>
-        <input
-          type="text"
-          name="title"
-          required
-          maxlength="255"
-          bind:value={title}
-          class="rounded border border-[var(--border-default)] bg-[var(--surface-default)] px-2 py-1.5 text-sm"
-        />
-      </label>
-
-      <label class="flex flex-col gap-1 text-sm">
-        <span class="font-medium">Description</span>
-        <textarea
-          name="description"
-          rows="14"
-          bind:value={description}
-          class="resize-y rounded border border-[var(--border-default)] bg-[var(--surface-default)] p-2 text-sm font-mono"
-        ></textarea>
-      </label>
-
-      <label class="flex max-w-xs flex-col gap-1 text-sm">
-        <span class="font-medium">Status</span>
-        <select
-          name="status"
-          bind:value={statusVal}
-          class="rounded border border-[var(--border-default)] bg-[var(--surface-default)] px-2 py-1.5 text-sm"
-        >
-          <option value="draft">Draft</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="approved">Approved</option>
-        </select>
-        {#if sol.is_published && statusVal !== 'approved'}
-          <span class="text-xs text-amber-700 dark:text-amber-300">
-            Saving will not auto-unpublish — use Unpublish above first.
-          </span>
+<div style="display:flex;flex:1;min-height:0;overflow:hidden">
+  <div class="v2-main">
+    <div class="v2-scroll">
+      <div class="v2-pad" style="padding-top:16px;padding-bottom:32px">
+        {#if form?.error}
+          <p style="color:var(--v2-rust);font-size:12.5px;margin:0 0 14px">{form.error}</p>
         {/if}
-      </label>
 
-      <div class="flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={!dirty || saving}
-          onclick={() => {
-            title = sol.title;
-            description = sol.description || '';
-            statusVal = sol.status;
-          }}
+        {#if gate}
+          <div style="margin-bottom:20px">
+            {#if gate.action}
+              <!-- NextAction renders a plain `<button>` with no `type` when it
+                   has no `href`, so inside a form it submits. That is the
+                   whole mechanism: the component did not need a new prop, and
+                   the one place it was a dead button is now the one place it
+                   does something. -->
+              <form method="POST" action="?/{gate.form}" use:enhance>
+                <input
+                  type="hidden"
+                  name={gate.form === 'setPublished' ? 'published' : 'status'}
+                  value={gate.value}
+                />
+                <NextAction label="Not visible yet" text={gate.text} action={gate.action} />
+              </form>
+            {:else}
+              <NextAction label="Not visible yet" text={gate.text} />
+            {/if}
+          </div>
+        {/if}
+
+        <article
+          class="v2-card"
+          style="padding:18px 20px;max-width:70ch;font-size:14px;line-height:1.65;white-space:pre-wrap"
         >
-          Reset
-        </Button>
-        <Button type="submit" disabled={!dirty || saving}>
-          {#if saving}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
-          Save changes
-        </Button>
-      </div>
-    </form>
+          {article.description}
+        </article>
 
-    <aside class="flex flex-col gap-4">
-      <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
-        <h3 class="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
-          Metadata
-        </h3>
-        <dl class="space-y-1 text-xs">
-          <div class="flex justify-between gap-2">
-            <dt class="text-[var(--text-secondary)]">Created</dt>
-            <dd>{formatDate(sol.created_at)}</dd>
-          </div>
-          <div class="flex justify-between gap-2">
-            <dt class="text-[var(--text-secondary)]">Updated</dt>
-            <dd>{formatDate(sol.updated_at)}</dd>
-          </div>
-          <div class="flex justify-between gap-2">
-            <dt class="text-[var(--text-secondary)]">Linked tickets</dt>
-            <dd>{(sol.linked_cases || []).length}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm">
-        <h3 class="mb-2 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
-          <Briefcase class="h-3 w-3" />
-          Linked tickets
-        </h3>
-        {#if !sol.linked_cases || sol.linked_cases.length === 0}
-          <p class="text-xs text-[var(--text-secondary)]">No tickets reference this solution yet.</p>
-        {:else}
-          <ul class="space-y-1">
-            {#each sol.linked_cases as c (c.id)}
-              <li>
-                <a
-                  href={`/tickets/${c.id}`}
-                  class="block truncate rounded px-1 py-0.5 text-xs hover:bg-[var(--surface-sunken)]"
-                >
-                  {c.name || c.subject || 'Untitled ticket'}
-                </a>
-              </li>
+        <!-- The tickets this article was filed against. Real rows, and the
+             other direction of the link the ticket page already draws. -->
+        <div class="v2-label" style="margin:26px 0 10px">
+          {tickets.length || hidden_ticket_count ? 'Filed against' : 'Not used yet'}
+        </div>
+        {#if tickets.length}
+          <div class="v2-card" style="overflow:hidden;max-width:70ch">
+            {#each tickets as t (t.id)}
+              <a
+                href="/tickets/{t.id}"
+                style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+              >
+                <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
+                <Pill tone={CASE_STATUS_TONE[t.status]}>{t.status}</Pill>
+                <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
+              </a>
             {/each}
-          </ul>
-          <p class="mt-2 text-[10px] text-[var(--text-secondary)]">
-            Showing up to 10. The status of this solution doesn't affect existing links.
+          </div>
+        {:else if !hidden_ticket_count}
+          <p class="v2-sub" style="font-size:12.5px;max-width:70ch">
+            Nobody has attached this to a ticket. Either the question has stopped being asked, or
+            the article is hard to find while somebody is typing a reply.
           </p>
         {/if}
-      </section>
-    </aside>
+
+        {#if hidden_ticket_count}
+          <!-- The API filters this rail to tickets the reader may open, while
+               the count stays the article's real usage. Saying so is better
+               than a number that quietly means something different per
+               reader. -->
+          <p class="v2-sub" style="font-size:12px;margin-top:10px;max-width:70ch">
+            {hidden_ticket_count}
+            {hidden_ticket_count === 1 ? 'other ticket uses' : 'other tickets use'} this article and
+            {hidden_ticket_count === 1 ? 'is' : 'are'} not yours to open.
+          </p>
+        {/if}
+      </div>
+    </div>
   </div>
+
+  <aside class="v2-rail">
+    <div class="v2-label v2-rail-head">Article</div>
+    <dl class="v2-kv">
+      <dt>Status</dt>
+      <dd>
+        <Pill tone={SOLUTION_STATUS_TONE[article.status]}>
+          {SOLUTION_STATUS_LABEL[article.status]}
+        </Pill>
+      </dd>
+      <dt>Visibility</dt>
+      <dd>
+        {#if article.is_published}
+          <span style="display:inline-flex;gap:5px;align-items:center">
+            <Eye size={13} />Published
+          </span>
+        {:else}
+          <span
+            style="display:inline-flex;gap:5px;align-items:center"
+            style:color={article.awaiting_release ? 'var(--v2-clay)' : 'inherit'}
+          >
+            <EyeOff size={13} />Internal only
+          </span>
+        {/if}
+      </dd>
+      <dt>Author</dt>
+      <dd>{article.author || '—'}</dd>
+      <dt>Used on</dt>
+      <dd class="v2-num">{article.use_count} tickets</dd>
+      <dt>Written</dt>
+      <dd>{longDate(article.created_at)}</dd>
+      <dt>Edited</dt>
+      <dd>{longDate(article.updated_at)}</dd>
+    </dl>
+
+    <div class="v2-label v2-rail-head">How this gets used</div>
+    <div class="v2-card" style="padding:11px 12px;font-size:12px;line-height:1.55">
+      Published articles are offered on the ticket screen while somebody is typing a reply. An
+      article nobody has linked to a ticket is usually one that answers a question nobody asked.
+    </div>
+  </aside>
 </div>

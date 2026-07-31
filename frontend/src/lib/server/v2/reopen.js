@@ -1,5 +1,5 @@
 /**
- * Reopen policy — the wiring behind `/v2/settings/reopen`.
+ * Reopen policy — the wiring behind `/settings/reopen`.
  *
  * Server-only. Reads `GET /cases/reopen-policy/`, the per-org singleton
  * (admin-only, auto-created on first read). The endpoint returns the four

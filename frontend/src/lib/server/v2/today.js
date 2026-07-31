@@ -1,5 +1,5 @@
 /**
- * The Today queue — the wiring behind the v2 home (`/v2`).
+ * The Today queue — the wiring behind the v2 home (`/`).
  *
  * Server-only. Reads one endpoint, `GET /dashboard/today/`, which rolls four
  * sources into a single prioritised action list: support cases still awaiting a
@@ -13,7 +13,7 @@
  *
  * The response shape IS the page's shape — `{ queue, summary, later }` — so
  * there is nothing to reshape; the fixture that preceded it was built to match
- * this contract. `queue[].href` is always an internal `/v2/...` path the server
+ * this contract. `queue[].href` is always an internal `/...` path the server
  * built (never a stored value), so there is no untrusted-link concern here.
  */
 import { apiRequest } from '$lib/api-helpers.js';

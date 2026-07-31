@@ -10,9 +10,9 @@
  */
 export const TAB_SETS = {
   tickets: [
-    { href: '/v2/tickets', label: 'Queue', exact: true, count: 'tickets' },
-    { href: '/v2/tickets/approvals', label: 'Approvals', count: 'approvals' },
-    { href: '/v2/tickets/analytics', label: 'Analytics' }
+    { href: '/tickets', label: 'Queue', exact: true, count: 'tickets' },
+    { href: '/tickets/approvals', label: 'Approvals', count: 'approvals' },
+    { href: '/tickets/analytics', label: 'Analytics' }
   ],
   /**
    * These two are NOT two views of one list. `tasks.Task` and
@@ -22,17 +22,17 @@ export const TAB_SETS = {
    * says the rest out loud, because nothing about the word suggests it.
    */
   tasks: [
-    { href: '/v2/tasks', label: 'Task list', exact: true, count: 'tasks' },
-    { href: '/v2/tasks/board', label: 'Boards' },
-    { href: '/v2/tasks/calendar', label: 'Calendar' }
+    { href: '/tasks', label: 'Task list', exact: true, count: 'tasks' },
+    { href: '/tasks/board', label: 'Boards' },
+    { href: '/tasks/calendar', label: 'Calendar' }
   ],
   invoices: [
-    { href: '/v2/invoices', label: 'Invoices', exact: true, count: 'invoices' },
-    { href: '/v2/invoices/estimates', label: 'Estimates' },
-    { href: '/v2/invoices/recurring', label: 'Recurring' },
-    { href: '/v2/invoices/products', label: 'Products' },
-    { href: '/v2/invoices/reports', label: 'Reports' },
-    { href: '/v2/invoices/templates', label: 'Templates' }
+    { href: '/invoices', label: 'Invoices', exact: true, count: 'invoices' },
+    { href: '/invoices/estimates', label: 'Estimates' },
+    { href: '/invoices/recurring', label: 'Recurring' },
+    { href: '/invoices/products', label: 'Products' },
+    { href: '/invoices/reports', label: 'Reports' },
+    { href: '/invoices/templates', label: 'Templates' }
   ]
 };
 

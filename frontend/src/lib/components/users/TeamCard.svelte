@@ -57,7 +57,7 @@
         <Users class="h-5 w-5 text-purple-600 dark:text-purple-400" />
       </div>
       <div>
-        <h3 class="text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
+        <h3 class="text-[16px] leading-[1.3] font-medium text-[color:var(--text-primary)]">
           {team.name}
         </h3>
         <p class="text-[12px] text-[color:var(--text-muted)]">
@@ -82,8 +82,8 @@
           <AlertDialog.Header>
             <AlertDialog.Title>Delete Team</AlertDialog.Title>
             <AlertDialog.Description>
-              Are you sure you want to delete <strong>{team.name}</strong>? This will remove the team
-              from all assigned records. This action cannot be undone.
+              Are you sure you want to delete <strong>{team.name}</strong>? This will remove the
+              team from all assigned records. This action cannot be undone.
             </AlertDialog.Description>
           </AlertDialog.Header>
           <AlertDialog.Footer>
@@ -106,9 +106,7 @@
           {#if getMemberAvatar(member)}
             <Avatar.Image class="" src={getMemberAvatar(member)} alt={getMemberName(member)} />
           {/if}
-          <Avatar.Fallback
-            class="bg-gradient-to-br from-blue-500 to-purple-600 text-xs text-white"
-          >
+          <Avatar.Fallback class="bg-gradient-to-br from-blue-500 to-purple-600 text-xs text-white">
             {getInitials(getMemberName(member))}
           </Avatar.Fallback>
         </Avatar.Root>

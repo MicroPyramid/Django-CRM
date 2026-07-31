@@ -1,5 +1,5 @@
 /**
- * Tags — the wiring behind `/v2/settings/tags`.
+ * Tags — the wiring behind `/settings/tags`.
  *
  * Server-only. Reads `GET /tags/?include_archived=true`, which returns every
  * tag in the org (active and archived — the page shows the "Off" ones so an

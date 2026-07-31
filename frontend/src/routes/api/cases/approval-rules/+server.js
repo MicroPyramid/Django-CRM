@@ -27,9 +27,6 @@ export async function POST({ request, cookies, locals }) {
     );
     return json(data, { status: 201 });
   } catch (err) {
-    return json(
-      { error: err?.message || 'Rule create failed' },
-      { status: 400 }
-    );
+    return json({ error: err?.message || 'Rule create failed' }, { status: 400 });
   }
 }

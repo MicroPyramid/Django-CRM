@@ -1,5 +1,5 @@
 /**
- * Macros — the wiring behind `/v2/settings/macros`.
+ * Macros — the wiring behind `/settings/macros`.
  *
  * Server-only. Reads one endpoint, `GET /macros/`, which returns the macros
  * visible to the requester (every org-scope row plus their own personal ones),

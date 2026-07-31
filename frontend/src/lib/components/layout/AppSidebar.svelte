@@ -177,14 +177,49 @@
   // Five-section IA per spec §4
   const workspaceItems = [
     { href: '/', label: 'Home', icon: Home, type: 'link', preload: 'off', count: undefined },
-    { href: '/leads', label: 'Pipeline', icon: Activity, type: 'link', preload: 'off', count: undefined }
+    {
+      href: '/leads',
+      label: 'Pipeline',
+      icon: Activity,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    }
   ];
 
   const recordsItems = [
-    { href: '/leads', label: 'Leads', icon: Target, type: 'link', preload: 'off', count: undefined },
-    { href: '/contacts', label: 'Contacts', icon: Users, type: 'link', preload: 'off', count: undefined },
-    { href: '/accounts', label: 'Accounts', icon: Building, type: 'link', preload: 'off', count: undefined },
-    { href: '/opportunities', label: 'Deals', icon: Sparkles, type: 'link', preload: 'off', count: undefined }
+    {
+      href: '/leads',
+      label: 'Leads',
+      icon: Target,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    },
+    {
+      href: '/contacts',
+      label: 'Contacts',
+      icon: Users,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    },
+    {
+      href: '/accounts',
+      label: 'Accounts',
+      icon: Building,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    },
+    {
+      href: '/opportunities',
+      label: 'Deals',
+      icon: Sparkles,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    }
   ];
 
   const workItems = [
@@ -195,14 +230,52 @@
       type: 'dropdown',
       count: undefined,
       children: [
-        { href: '/tickets', label: 'All tickets', icon: Briefcase, preload: 'off', count: undefined },
-        { href: '/tickets/approvals', label: 'Approvals', icon: ShieldCheck, preload: 'off', count: undefined },
-        { href: '/tickets/analytics', label: 'Analytics', icon: BarChart3, preload: 'off', count: undefined },
-        { href: '/solutions', label: 'Knowledge base', icon: BookOpen, preload: 'off', count: undefined }
+        {
+          href: '/tickets',
+          label: 'All tickets',
+          icon: Briefcase,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/tickets/approvals',
+          label: 'Approvals',
+          icon: ShieldCheck,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/tickets/analytics',
+          label: 'Analytics',
+          icon: BarChart3,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/solutions',
+          label: 'Knowledge base',
+          icon: BookOpen,
+          preload: 'off',
+          count: undefined
+        }
       ]
     },
-    { href: '/tasks', label: 'Tasks', icon: CheckSquare, type: 'link', preload: 'off', count: undefined },
-    { href: '/timesheet', label: 'Timesheet', icon: Clock, type: 'link', preload: 'off', count: undefined },
+    {
+      href: '/tasks',
+      label: 'Tasks',
+      icon: CheckSquare,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    },
+    {
+      href: '/timesheet',
+      label: 'Timesheet',
+      icon: Clock,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    },
     { href: '/goals', label: 'Goals', icon: Trophy, type: 'link', preload: 'off', count: undefined }
   ];
 
@@ -214,22 +287,71 @@
       type: 'dropdown',
       count: undefined,
       children: [
-        { href: '/invoices', label: 'All Invoices', icon: FileText, preload: 'off', count: undefined },
-        { href: '/invoices/estimates', label: 'Estimates', icon: FileEdit, preload: 'off', count: undefined },
-        { href: '/invoices/products', label: 'Products', icon: Package, preload: 'off', count: undefined },
-        { href: '/invoices/recurring', label: 'Recurring', icon: RefreshCw, preload: 'off', count: undefined },
-        { href: '/invoices/templates', label: 'Templates', icon: FileCode, preload: 'off', count: undefined },
-        { href: '/invoices/reports', label: 'Reports', icon: BarChart3, preload: 'off', count: undefined }
+        {
+          href: '/invoices',
+          label: 'All Invoices',
+          icon: FileText,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/invoices/estimates',
+          label: 'Estimates',
+          icon: FileEdit,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/invoices/products',
+          label: 'Products',
+          icon: Package,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/invoices/recurring',
+          label: 'Recurring',
+          icon: RefreshCw,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/invoices/templates',
+          label: 'Templates',
+          icon: FileCode,
+          preload: 'off',
+          count: undefined
+        },
+        {
+          href: '/invoices/reports',
+          label: 'Reports',
+          icon: BarChart3,
+          preload: 'off',
+          count: undefined
+        }
       ]
     }
   ];
 
   const supportItems = [
-    { href: '/support', label: 'Help desk', icon: HelpCircle, type: 'link', preload: 'off', count: undefined }
+    {
+      href: '/support',
+      label: 'Help desk',
+      icon: HelpCircle,
+      type: 'link',
+      preload: 'off',
+      count: undefined
+    }
   ];
 
   // Combine for the auto-open-on-active effect (which scans dropdown items)
-  const navigationItems = [...workspaceItems, ...recordsItems, ...workItems, ...revenueItems, ...supportItems];
+  const navigationItems = [
+    ...workspaceItems,
+    ...recordsItems,
+    ...workItems,
+    ...revenueItems,
+    ...supportItems
+  ];
 
   /**
    * Check if any child route is active
@@ -262,7 +384,7 @@
       <a
         href="/org"
         data-sveltekit-preload-data="off"
-        class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--sidebar-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sidebar-ring)]"
+        class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--sidebar-accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--sidebar-ring)] focus-visible:outline-none"
       >
         <Avatar class="size-[26px] shrink-0 rounded-md">
           <AvatarFallback workspace class="rounded-md text-[13px] font-semibold">
@@ -276,7 +398,7 @@
             </span>
             {#if tier}
               <span
-                class="inline-flex shrink-0 items-center rounded-[4px] border border-[color:var(--sidebar-border)] px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-[color:var(--sidebar-subtle)]"
+                class="inline-flex shrink-0 items-center rounded-[4px] border border-[color:var(--sidebar-border)] px-1 py-px text-[10px] font-semibold tracking-wide text-[color:var(--sidebar-subtle)] uppercase"
               >
                 {tier}
               </span>
@@ -297,7 +419,7 @@
     <!-- Workspace Section -->
     <Sidebar.Group>
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] leading-none font-semibold text-[color:var(--sidebar-subtle)] [text-transform:lowercase] [font-variant:small-caps] group-data-[collapsible=icon]:hidden"
       >
         Workspace
       </Sidebar.GroupLabel>
@@ -319,7 +441,7 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                        class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                           group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                           {hasActiveChild(item.children ?? [])
                           ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -330,20 +452,27 @@
                             {#if hasActiveChild(item.children ?? [])}
                               <span
                                 aria-hidden="true"
-                                class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                                class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                               ></span>
                             {/if}
                             <item.icon
-                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? []) ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? [])
+                                ? 'text-[color:var(--sidebar-foreground)]'
+                                : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                               strokeWidth={1.6}
                             />
                             <span
-                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}"
-                            >{item.label}</span>
+                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(
+                                item.children ?? []
+                              )
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                              >{item.count}</span>
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                                >{item.count}</span
+                              >
                             {/if}
                             <ChevronDown
                               class="ml-1 size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] transition-transform duration-150 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
@@ -354,14 +483,12 @@
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub
-                      class="ml-0 mt-0.5 mb-1 space-y-px border-none p-0"
-                    >
+                    <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="group/subitem relative h-[26px] rounded-md pl-[38px] pr-[10px] transition-colors duration-150
+                            class="group/subitem relative h-[26px] rounded-md pr-[10px] pl-[38px] transition-colors duration-150
                               {currentPath === navChild.href
                               ? 'text-[color:var(--sidebar-foreground)]'
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
@@ -371,16 +498,19 @@
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
-                                    class="absolute left-[27px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
+                                    class="absolute top-1/2 left-[27px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
-                                >{navChild.label}</span>
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
-                                  >{navChild.count}</span>
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums"
+                                    >{navChild.count}</span
+                                  >
                                 {/if}
                               </a>
                             {/snippet}
@@ -396,7 +526,7 @@
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href}
                   tooltipContent={item.label}
-                  class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                  class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                     group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                     {currentPath === item.href
                     ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -407,25 +537,30 @@
                       href={item.href}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
-                     
                     >
                       {#if currentPath === item.href}
                         <span
                           aria-hidden="true"
-                          class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                          class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                         ></span>
                       {/if}
                       <item.icon
-                        class="size-[15px] shrink-0 {currentPath === item.href ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                        class="size-[15px] shrink-0 {currentPath === item.href
+                          ? 'text-[color:var(--sidebar-foreground)]'
+                          : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                         strokeWidth={1.6}
                       />
                       <span
-                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath === item.href ? 'font-semibold' : 'font-medium'}"
-                      >{item.label}</span>
+                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath ===
+                        item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                        >{item.count}</span>
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                          >{item.count}</span
+                        >
                       {/if}
                     </a>
                   {/snippet}
@@ -440,7 +575,7 @@
     <!-- Records Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] leading-none font-semibold text-[color:var(--sidebar-subtle)] [text-transform:lowercase] [font-variant:small-caps] group-data-[collapsible=icon]:hidden"
       >
         Records
       </Sidebar.GroupLabel>
@@ -462,7 +597,7 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                        class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                           group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                           {hasActiveChild(item.children ?? [])
                           ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -473,20 +608,27 @@
                             {#if hasActiveChild(item.children ?? [])}
                               <span
                                 aria-hidden="true"
-                                class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                                class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                               ></span>
                             {/if}
                             <item.icon
-                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? []) ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? [])
+                                ? 'text-[color:var(--sidebar-foreground)]'
+                                : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                               strokeWidth={1.6}
                             />
                             <span
-                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}"
-                            >{item.label}</span>
+                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(
+                                item.children ?? []
+                              )
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                              >{item.count}</span>
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                                >{item.count}</span
+                              >
                             {/if}
                             <ChevronDown
                               class="ml-1 size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] transition-transform duration-150 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
@@ -497,14 +639,12 @@
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub
-                      class="ml-0 mt-0.5 mb-1 space-y-px border-none p-0"
-                    >
+                    <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="group/subitem relative h-[26px] rounded-md pl-[38px] pr-[10px] transition-colors duration-150
+                            class="group/subitem relative h-[26px] rounded-md pr-[10px] pl-[38px] transition-colors duration-150
                               {currentPath === navChild.href
                               ? 'text-[color:var(--sidebar-foreground)]'
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
@@ -514,16 +654,19 @@
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
-                                    class="absolute left-[27px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
+                                    class="absolute top-1/2 left-[27px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
-                                >{navChild.label}</span>
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
-                                  >{navChild.count}</span>
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums"
+                                    >{navChild.count}</span
+                                  >
                                 {/if}
                               </a>
                             {/snippet}
@@ -539,7 +682,7 @@
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href}
                   tooltipContent={item.label}
-                  class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                  class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                     group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                     {currentPath === item.href
                     ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -550,25 +693,30 @@
                       href={item.href}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
-                     
                     >
                       {#if currentPath === item.href}
                         <span
                           aria-hidden="true"
-                          class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                          class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                         ></span>
                       {/if}
                       <item.icon
-                        class="size-[15px] shrink-0 {currentPath === item.href ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                        class="size-[15px] shrink-0 {currentPath === item.href
+                          ? 'text-[color:var(--sidebar-foreground)]'
+                          : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                         strokeWidth={1.6}
                       />
                       <span
-                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath === item.href ? 'font-semibold' : 'font-medium'}"
-                      >{item.label}</span>
+                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath ===
+                        item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                        >{item.count}</span>
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                          >{item.count}</span
+                        >
                       {/if}
                     </a>
                   {/snippet}
@@ -583,7 +731,7 @@
     <!-- Work Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] leading-none font-semibold text-[color:var(--sidebar-subtle)] [text-transform:lowercase] [font-variant:small-caps] group-data-[collapsible=icon]:hidden"
       >
         Work
       </Sidebar.GroupLabel>
@@ -605,7 +753,7 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                        class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                           group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                           {hasActiveChild(item.children ?? [])
                           ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -616,20 +764,27 @@
                             {#if hasActiveChild(item.children ?? [])}
                               <span
                                 aria-hidden="true"
-                                class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                                class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                               ></span>
                             {/if}
                             <item.icon
-                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? []) ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? [])
+                                ? 'text-[color:var(--sidebar-foreground)]'
+                                : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                               strokeWidth={1.6}
                             />
                             <span
-                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}"
-                            >{item.label}</span>
+                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(
+                                item.children ?? []
+                              )
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                              >{item.count}</span>
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                                >{item.count}</span
+                              >
                             {/if}
                             <ChevronDown
                               class="ml-1 size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] transition-transform duration-150 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
@@ -640,14 +795,12 @@
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub
-                      class="ml-0 mt-0.5 mb-1 space-y-px border-none p-0"
-                    >
+                    <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="group/subitem relative h-[26px] rounded-md pl-[38px] pr-[10px] transition-colors duration-150
+                            class="group/subitem relative h-[26px] rounded-md pr-[10px] pl-[38px] transition-colors duration-150
                               {currentPath === navChild.href
                               ? 'text-[color:var(--sidebar-foreground)]'
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
@@ -657,16 +810,19 @@
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
-                                    class="absolute left-[27px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
+                                    class="absolute top-1/2 left-[27px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
-                                >{navChild.label}</span>
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
-                                  >{navChild.count}</span>
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums"
+                                    >{navChild.count}</span
+                                  >
                                 {/if}
                               </a>
                             {/snippet}
@@ -682,7 +838,7 @@
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href}
                   tooltipContent={item.label}
-                  class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                  class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                     group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                     {currentPath === item.href
                     ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -693,25 +849,30 @@
                       href={item.href}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
-                     
                     >
                       {#if currentPath === item.href}
                         <span
                           aria-hidden="true"
-                          class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                          class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                         ></span>
                       {/if}
                       <item.icon
-                        class="size-[15px] shrink-0 {currentPath === item.href ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                        class="size-[15px] shrink-0 {currentPath === item.href
+                          ? 'text-[color:var(--sidebar-foreground)]'
+                          : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                         strokeWidth={1.6}
                       />
                       <span
-                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath === item.href ? 'font-semibold' : 'font-medium'}"
-                      >{item.label}</span>
+                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath ===
+                        item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                        >{item.count}</span>
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                          >{item.count}</span
+                        >
                       {/if}
                     </a>
                   {/snippet}
@@ -726,7 +887,7 @@
     <!-- Revenue Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] leading-none font-semibold text-[color:var(--sidebar-subtle)] [text-transform:lowercase] [font-variant:small-caps] group-data-[collapsible=icon]:hidden"
       >
         Revenue
       </Sidebar.GroupLabel>
@@ -748,7 +909,7 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                        class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                           group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                           {hasActiveChild(item.children ?? [])
                           ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -759,20 +920,27 @@
                             {#if hasActiveChild(item.children ?? [])}
                               <span
                                 aria-hidden="true"
-                                class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                                class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                               ></span>
                             {/if}
                             <item.icon
-                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? []) ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? [])
+                                ? 'text-[color:var(--sidebar-foreground)]'
+                                : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                               strokeWidth={1.6}
                             />
                             <span
-                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}"
-                            >{item.label}</span>
+                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(
+                                item.children ?? []
+                              )
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                              >{item.count}</span>
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                                >{item.count}</span
+                              >
                             {/if}
                             <ChevronDown
                               class="ml-1 size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] transition-transform duration-150 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
@@ -783,14 +951,12 @@
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub
-                      class="ml-0 mt-0.5 mb-1 space-y-px border-none p-0"
-                    >
+                    <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="group/subitem relative h-[26px] rounded-md pl-[38px] pr-[10px] transition-colors duration-150
+                            class="group/subitem relative h-[26px] rounded-md pr-[10px] pl-[38px] transition-colors duration-150
                               {currentPath === navChild.href
                               ? 'text-[color:var(--sidebar-foreground)]'
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
@@ -800,16 +966,19 @@
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
-                                    class="absolute left-[27px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
+                                    class="absolute top-1/2 left-[27px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
-                                >{navChild.label}</span>
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
-                                  >{navChild.count}</span>
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums"
+                                    >{navChild.count}</span
+                                  >
                                 {/if}
                               </a>
                             {/snippet}
@@ -825,7 +994,7 @@
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href}
                   tooltipContent={item.label}
-                  class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                  class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                     group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                     {currentPath === item.href
                     ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -836,25 +1005,30 @@
                       href={item.href}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
-                     
                     >
                       {#if currentPath === item.href}
                         <span
                           aria-hidden="true"
-                          class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                          class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                         ></span>
                       {/if}
                       <item.icon
-                        class="size-[15px] shrink-0 {currentPath === item.href ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                        class="size-[15px] shrink-0 {currentPath === item.href
+                          ? 'text-[color:var(--sidebar-foreground)]'
+                          : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                         strokeWidth={1.6}
                       />
                       <span
-                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath === item.href ? 'font-semibold' : 'font-medium'}"
-                      >{item.label}</span>
+                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath ===
+                        item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                        >{item.count}</span>
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                          >{item.count}</span
+                        >
                       {/if}
                     </a>
                   {/snippet}
@@ -869,7 +1043,7 @@
     <!-- Support Section -->
     <Sidebar.Group class="mt-1.5">
       <Sidebar.GroupLabel
-        class="mb-1 h-auto px-3 text-[10px] font-semibold leading-none text-[color:var(--sidebar-subtle)] [font-variant:small-caps] [text-transform:lowercase] group-data-[collapsible=icon]:hidden"
+        class="mb-1 h-auto px-3 text-[10px] leading-none font-semibold text-[color:var(--sidebar-subtle)] [text-transform:lowercase] [font-variant:small-caps] group-data-[collapsible=icon]:hidden"
       >
         Support
       </Sidebar.GroupLabel>
@@ -891,7 +1065,7 @@
                         {...props}
                         isActive={hasActiveChild(item.children ?? [])}
                         tooltipContent={item.label}
-                        class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                        class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                           group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                           {hasActiveChild(item.children ?? [])
                           ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -902,20 +1076,27 @@
                             {#if hasActiveChild(item.children ?? [])}
                               <span
                                 aria-hidden="true"
-                                class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                                class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                               ></span>
                             {/if}
                             <item.icon
-                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? []) ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                              class="size-[15px] shrink-0 {hasActiveChild(item.children ?? [])
+                                ? 'text-[color:var(--sidebar-foreground)]'
+                                : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                               strokeWidth={1.6}
                             />
                             <span
-                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(item.children ?? []) ? 'font-semibold' : 'font-medium'}"
-                            >{item.label}</span>
+                              class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {hasActiveChild(
+                                item.children ?? []
+                              )
+                                ? 'font-semibold'
+                                : 'font-medium'}">{item.label}</span
+                            >
                             {#if item.count !== undefined && item.count !== null}
                               <span
-                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                              >{item.count}</span>
+                                class="inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                                >{item.count}</span
+                              >
                             {/if}
                             <ChevronDown
                               class="ml-1 size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] transition-transform duration-150 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-180"
@@ -926,14 +1107,12 @@
                     {/snippet}
                   </Collapsible.Trigger>
                   <Collapsible.Content>
-                    <Sidebar.MenuSub
-                      class="ml-0 mt-0.5 mb-1 space-y-px border-none p-0"
-                    >
+                    <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
                       {#each item.children as navChild}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
-                            class="group/subitem relative h-[26px] rounded-md pl-[38px] pr-[10px] transition-colors duration-150
+                            class="group/subitem relative h-[26px] rounded-md pr-[10px] pl-[38px] transition-colors duration-150
                               {currentPath === navChild.href
                               ? 'text-[color:var(--sidebar-foreground)]'
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
@@ -943,16 +1122,19 @@
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
-                                    class="absolute left-[27px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
+                                    class="absolute top-1/2 left-[27px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)]"
                                   ></span>
                                 {/if}
                                 <span
-                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href ? 'font-semibold' : 'font-medium'}"
-                                >{navChild.label}</span>
+                                  class="flex-1 truncate text-[13px] {currentPath === navChild.href
+                                    ? 'font-semibold'
+                                    : 'font-medium'}">{navChild.label}</span
+                                >
                                 {#if navChild.count !== undefined && navChild.count !== null}
                                   <span
-                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)]"
-                                  >{navChild.count}</span>
+                                    class="ml-auto inline-flex shrink-0 items-center rounded-[4px] bg-[color:var(--sidebar-accent)] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums"
+                                    >{navChild.count}</span
+                                  >
                                 {/if}
                               </a>
                             {/snippet}
@@ -968,7 +1150,7 @@
                 <Sidebar.MenuButton
                   isActive={currentPath === item.href}
                   tooltipContent={item.label}
-                  class="nav-item group/item relative h-[30px] rounded-md pl-[18px] pr-[10px] transition-colors duration-150
+                  class="nav-item group/item relative h-[30px] rounded-md pr-[10px] pl-[18px] transition-colors duration-150
                     group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0
                     {currentPath === item.href
                     ? 'text-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:bg-[color:var(--sidebar-active-fill)]'
@@ -979,25 +1161,30 @@
                       href={item.href}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
-                     
                     >
                       {#if currentPath === item.href}
                         <span
                           aria-hidden="true"
-                          class="absolute left-[7px] top-1/2 size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
+                          class="absolute top-1/2 left-[7px] size-1 -translate-y-1/2 rounded-full bg-[color:var(--sidebar-foreground)] group-data-[collapsible=icon]:hidden"
                         ></span>
                       {/if}
                       <item.icon
-                        class="size-[15px] shrink-0 {currentPath === item.href ? 'text-[color:var(--sidebar-foreground)]' : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
+                        class="size-[15px] shrink-0 {currentPath === item.href
+                          ? 'text-[color:var(--sidebar-foreground)]'
+                          : 'text-[color:var(--sidebar-subtle)] group-hover/item:text-[color:var(--sidebar-foreground)]'}"
                         strokeWidth={1.6}
                       />
                       <span
-                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath === item.href ? 'font-semibold' : 'font-medium'}"
-                      >{item.label}</span>
+                        class="flex-1 truncate text-[14px] group-data-[collapsible=icon]:hidden {currentPath ===
+                        item.href
+                          ? 'font-semibold'
+                          : 'font-medium'}">{item.label}</span
+                      >
                       {#if item.count !== undefined && item.count !== null}
                         <span
-                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium tabular-nums text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
-                        >{item.count}</span>
+                          class="ml-auto inline-flex shrink-0 items-center rounded-[4px] px-1.5 text-[11px] font-medium text-[color:var(--sidebar-subtle)] tabular-nums group-data-[collapsible=icon]:hidden"
+                          >{item.count}</span
+                        >
                       {/if}
                     </a>
                   {/snippet}
@@ -1016,8 +1203,8 @@
       <Sidebar.MenuItem>
         <Sidebar.MenuButton
           tooltipContent="Download mobile app"
-          class="h-[30px] rounded-md pl-[18px] pr-[10px] text-[color:var(--sidebar-muted)] transition-colors duration-150 hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]
-            group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0"
+          class="h-[30px] rounded-md pr-[10px] pl-[18px] text-[color:var(--sidebar-muted)] transition-colors duration-150 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md
+            group-data-[collapsible=icon]:px-0 hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]"
         >
           {#snippet child({ props })}
             <a
@@ -1032,8 +1219,10 @@
                   strokeWidth={1.6}
                   aria-hidden="true"
                 />
-                <span class="pointer-events-none absolute -right-0.5 -top-0.5 inline-flex size-1.5">
-                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="pointer-events-none absolute -top-0.5 -right-0.5 inline-flex size-1.5">
+                  <span
+                    class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+                  ></span>
                   <span class="relative inline-flex size-1.5 rounded-full bg-emerald-500"></span>
                 </span>
               </span>
@@ -1050,15 +1239,21 @@
         <Sidebar.MenuButton
           onclick={() => sidebar.toggle()}
           tooltipContent={sidebar.state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}
-          class="h-[30px] rounded-md pl-[18px] pr-[10px] text-[color:var(--sidebar-muted)] transition-colors duration-150 hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]
-            group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0"
+          class="h-[30px] rounded-md pr-[10px] pl-[18px] text-[color:var(--sidebar-muted)] transition-colors duration-150 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md
+            group-data-[collapsible=icon]:px-0 hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]"
         >
           {#snippet child({ props })}
             <button {...props}>
               {#if sidebar.state === 'collapsed'}
-                <PanelLeft class="size-[15px] shrink-0 text-[color:var(--sidebar-subtle)]" strokeWidth={1.6} />
+                <PanelLeft
+                  class="size-[15px] shrink-0 text-[color:var(--sidebar-subtle)]"
+                  strokeWidth={1.6}
+                />
               {:else}
-                <PanelLeftClose class="size-[15px] shrink-0 text-[color:var(--sidebar-subtle)]" strokeWidth={1.6} />
+                <PanelLeftClose
+                  class="size-[15px] shrink-0 text-[color:var(--sidebar-subtle)]"
+                  strokeWidth={1.6}
+                />
               {/if}
               <span class="flex-1 text-[13px] font-medium group-data-[collapsible=icon]:hidden">
                 Collapse
@@ -1076,8 +1271,8 @@
               <Sidebar.MenuButton
                 size="lg"
                 {...props}
-                class="group/user h-11 rounded-md px-2 transition-colors duration-150 hover:bg-[color:var(--sidebar-accent)] data-[state=open]:bg-[color:var(--sidebar-accent)]
-                  group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md group-data-[collapsible=icon]:px-0"
+                class="group/user h-11 rounded-md px-2 transition-colors duration-150 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-md
+                  group-data-[collapsible=icon]:px-0 hover:bg-[color:var(--sidebar-accent)] data-[state=open]:bg-[color:var(--sidebar-accent)]"
               >
                 {#if user.profilePhoto && !profileImageError}
                   <img
@@ -1088,16 +1283,29 @@
                   />
                 {:else}
                   <Avatar class="size-6 shrink-0 rounded-full">
-                    <AvatarFallback gradientSeed={user.email ?? user.name ?? 'user'} class="rounded-full text-[10px] font-semibold">
+                    <AvatarFallback
+                      gradientSeed={user.email ?? user.name ?? 'user'}
+                      class="rounded-full text-[10px] font-semibold"
+                    >
                       {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
                 {/if}
-                <div class="flex min-w-0 flex-1 flex-col leading-tight group-data-[collapsible=icon]:hidden">
-                  <span class="truncate text-[14px] font-semibold text-[color:var(--sidebar-foreground)]">{user.name}</span>
-                  <span class="truncate text-[11px] text-[color:var(--sidebar-subtle)]">{user.email}</span>
+                <div
+                  class="flex min-w-0 flex-1 flex-col leading-tight group-data-[collapsible=icon]:hidden"
+                >
+                  <span
+                    class="truncate text-[14px] font-semibold text-[color:var(--sidebar-foreground)]"
+                    >{user.name}</span
+                  >
+                  <span class="truncate text-[11px] text-[color:var(--sidebar-subtle)]"
+                    >{user.email}</span
+                  >
                 </div>
-                <ChevronsUpDown class="ml-auto size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden" strokeWidth={1.6} />
+                <ChevronsUpDown
+                  class="ml-auto size-3.5 shrink-0 text-[color:var(--sidebar-subtle)] group-data-[collapsible=icon]:hidden"
+                  strokeWidth={1.6}
+                />
               </Sidebar.MenuButton>
             {/snippet}
           </DropdownMenu.Trigger>

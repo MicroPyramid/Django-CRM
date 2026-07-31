@@ -11,7 +11,7 @@
  * *client* path a reader navigates to, and it comes in two shapes: old rows from
  * before the producer fix carry `/cases/<id>` (which no client serves), new rows
  * carry `/tickets/<id>`. Both point at the same ticket, and on a v2 page both
- * must land inside v2. `resolvedLink` rebuilds a fresh `/v2/tickets/<id>` from a
+ * must land inside v2. `resolvedLink` rebuilds a fresh `/tickets/<id>` from a
  * recognised prefix and returns '' for anything else — so a stored value can
  * never be rendered as an arbitrary href (an `http(s)://…` or `javascript:` link
  * that slipped into the column can't become a live link or an open redirect),
@@ -26,7 +26,7 @@ export const PRODUCED_VERBS = ['case.mentioned', 'case.commented'];
 /**
  * A stored notification link → a safe internal ticket path, or '' if it is not
  * a ticket link we recognise. Both `/cases/<id>` (pre-fix rows) and
- * `/tickets/<id>` (current rows) normalise to `/v2/tickets/<id>`.
+ * `/tickets/<id>` (current rows) normalise to `/tickets/<id>`.
  *
  * @param {unknown} link
  * @returns {string}
@@ -34,7 +34,7 @@ export const PRODUCED_VERBS = ['case.mentioned', 'case.commented'];
 export function resolvedLink(link) {
   if (typeof link !== 'string') return '';
   const m = link.match(/^\/(?:cases|tickets)\/([^/?#]+)\/?$/);
-  return m ? `/v2/tickets/${encodeURIComponent(m[1])}` : '';
+  return m ? `/tickets/${encodeURIComponent(m[1])}` : '';
 }
 
 /** One API notification → the row shape the page renders. */

@@ -31,10 +31,7 @@
   async function fetchSuggestions(/** @type {string} */ q) {
     loading = true;
     try {
-      const u = new URL(
-        `/api/cases/${ticketId}/solution-suggestions/`,
-        window.location.origin
-      );
+      const u = new URL(`/api/cases/${ticketId}/solution-suggestions/`, window.location.origin);
       if (q) u.searchParams.set('q', q);
       const res = await fetch(u);
       if (!res.ok) throw new Error('Failed to load solutions');
@@ -134,9 +131,7 @@
                   <div class="text-sm font-medium text-[var(--text-primary)]">
                     {s.title}
                   </div>
-                  <div
-                    class="mt-0.5 line-clamp-3 text-xs text-[var(--text-secondary)]"
-                  >
+                  <div class="mt-0.5 line-clamp-3 text-xs text-[var(--text-secondary)]">
                     {s.snippet}
                   </div>
                 </div>

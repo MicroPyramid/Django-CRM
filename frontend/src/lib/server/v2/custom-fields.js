@@ -1,5 +1,5 @@
 /**
- * Custom fields — the wiring behind `/v2/settings/custom-fields`.
+ * Custom fields — the wiring behind `/settings/custom-fields`.
  *
  * Server-only. Reads `GET /custom-fields/` (no filter, so it returns every
  * definition including the turned-off ones the page dims). Each row carries the

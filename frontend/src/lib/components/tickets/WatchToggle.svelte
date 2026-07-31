@@ -25,9 +25,7 @@
   let busy = $state(false);
   let popoverOpen = $state(false);
 
-  const isWatching = $derived(
-    !!currentUserId && watchers.some((w) => w.user_id === currentUserId)
-  );
+  const isWatching = $derived(!!currentUserId && watchers.some((w) => w.user_id === currentUserId));
 
   async function refresh() {
     try {
@@ -105,7 +103,9 @@
       {/snippet}
     </Popover.Trigger>
     <Popover.Content align="end" class="w-72 p-0">
-      <div class="border-b border-[var(--border-default)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+      <div
+        class="border-b border-[var(--border-default)] px-3 py-2 text-xs font-semibold tracking-wide text-[var(--text-secondary)] uppercase"
+      >
         Watchers ({watchers.length})
       </div>
       {#if watchers.length === 0}
@@ -117,7 +117,9 @@
           {#each watchers as w (w.id)}
             <li class="flex items-center justify-between gap-2 px-3 py-2 text-sm">
               <span class="min-w-0 truncate">{w.email}</span>
-              <span class="shrink-0 rounded-full bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+              <span
+                class="shrink-0 rounded-full bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+              >
                 {viaLabel(w.subscribed_via)}
               </span>
             </li>

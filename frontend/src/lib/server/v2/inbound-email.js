@@ -1,5 +1,5 @@
 /**
- * Inbound mailboxes — the wiring behind `/v2/settings/inbound-email`.
+ * Inbound mailboxes — the wiring behind `/settings/inbound-email`.
  *
  * Server-only. Reads `GET /cases/mailboxes/`, the addresses that turn email
  * into tickets. Each row carries its defaults (priority, case type, assignee)

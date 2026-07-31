@@ -1,5 +1,5 @@
 /**
- * Ticket routing rules — the wiring behind `/v2/settings/routing`.
+ * Ticket routing rules — the wiring behind `/settings/routing`.
  *
  * Server-only. Reads `GET /cases/routing-rules/`, ordered by priority (the
  * order IS the behaviour: the engine runs rules top-down and takes the first

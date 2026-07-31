@@ -1,5 +1,5 @@
 /**
- * Escalation policies — the wiring behind `/v2/settings/escalation`.
+ * Escalation policies — the wiring behind `/settings/escalation`.
  *
  * Server-only. Reads `GET /cases/escalation-policies/`, at most one row per
  * priority. Each row carries the policy's two halves (first_response /

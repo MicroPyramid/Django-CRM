@@ -7,7 +7,7 @@
  * parameter here.
  *
  * WHY THIS MODULE
- * `/v2/invoices/products` sat under a migrated prefix (`/v2/invoices`) but was
+ * `/invoices/products` sat under a migrated prefix (`/invoices`) but was
  * excluded in `migrated.js`: it listed mock rows and its "New product" button
  * wrote nowhere. `Product` (`invoices/models.py`) has had a full CRUD API
  * (`ProductListView`/`ProductDetailView`) that no v2 page drew, so its write

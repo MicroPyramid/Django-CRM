@@ -9,6 +9,10 @@ export async function GET({ url, cookies, locals }) {
   const qs = new URLSearchParams({ limit });
   if (unread) qs.set('unread', unread);
   if (since) qs.set('since', since);
-  const data = await apiRequest(`/notifications/?${qs.toString()}`, {}, { cookies, org: locals?.org });
+  const data = await apiRequest(
+    `/notifications/?${qs.toString()}`,
+    {},
+    { cookies, org: locals?.org }
+  );
   return json(data);
 }

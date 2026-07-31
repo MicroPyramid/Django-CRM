@@ -29,7 +29,7 @@
       'rounded-full border border-transparent',
       'bg-[color:var(--border)] data-[state=checked]:bg-[color:var(--text)]',
       'transition-colors duration-150',
-      'focus-visible:shadow-[0_0_0_3px_var(--focus-ring)] outline-none',
+      'outline-none focus-visible:shadow-[0_0_0_3px_var(--focus-ring)]',
       'disabled:cursor-not-allowed disabled:opacity-50'
     ].join(' '),
     className

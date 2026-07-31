@@ -2,14 +2,7 @@
   import { invalidateAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
   import { toast } from 'svelte-sonner';
-  import {
-    Loader2,
-    Upload,
-    FileText,
-    Download,
-    CheckCircle2,
-    AlertCircle
-  } from '@lucide/svelte';
+  import { Loader2, Upload, FileText, Download, CheckCircle2, AlertCircle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
 
@@ -221,8 +214,8 @@
         Import contacts from CSV
       </Dialog.Title>
       <Dialog.Description>
-        Upload a CSV of contacts. We'll validate every row — including duplicates
-        by email, phone, and name — before writing anything.
+        Upload a CSV of contacts. We'll validate every row — including duplicates by email, phone,
+        and name — before writing anything.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -230,7 +223,9 @@
       <div class="space-y-4">
         <button
           type="button"
-          class="block w-full rounded-lg border-2 border-dashed border-[var(--border-default)] bg-[var(--surface-muted)] p-6 text-left transition-colors hover:bg-[var(--surface-default)] {dragOver ? 'border-[var(--color-primary-default)] bg-[var(--surface-default)]' : ''}"
+          class="block w-full rounded-lg border-2 border-dashed border-[var(--border-default)] bg-[var(--surface-muted)] p-6 text-left transition-colors hover:bg-[var(--surface-default)] {dragOver
+            ? 'border-[var(--color-primary-default)] bg-[var(--surface-default)]'
+            : ''}"
           ondragover={(e) => {
             e.preventDefault();
             dragOver = true;
@@ -263,20 +258,23 @@
           onchange={onFileChange}
         />
 
-        <div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] p-3 text-xs">
+        <div
+          class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] p-3 text-xs"
+        >
           <p class="font-medium">CSV format</p>
           <p class="mt-1 text-[var(--text-secondary)]">
-            Required headers: <code class="rounded bg-[var(--surface-default)] px-1">first_name</code>,
-            <code class="rounded bg-[var(--surface-default)] px-1">last_name</code>.
-            Optional: email, phone, organization, title, department, do_not_call (yes/no),
-            linkedin_url, address_line, city, state, postcode, country (2-letter code),
-            description, account_name, assigned_emails, team_names, tags
-            (semicolon-separated for the last three).
+            Required headers: <code class="rounded bg-[var(--surface-default)] px-1"
+              >first_name</code
+            >,
+            <code class="rounded bg-[var(--surface-default)] px-1">last_name</code>. Optional:
+            email, phone, organization, title, department, do_not_call (yes/no), linkedin_url,
+            address_line, city, state, postcode, country (2-letter code), description, account_name,
+            assigned_emails, team_names, tags (semicolon-separated for the last three).
           </p>
           <p class="mt-1 text-[var(--text-secondary)]">
-            Duplicates: rows with a previously-used email or phone (in your org or earlier in
-            the file) are flagged. Two people with the same name are allowed only if at least
-            one has an email or phone to tell them apart.
+            Duplicates: rows with a previously-used email or phone (in your org or earlier in the
+            file) are flagged. Two people with the same name are allowed only if at least one has an
+            email or phone to tell them apart.
           </p>
           <button
             type="button"
@@ -288,7 +286,9 @@
         </div>
 
         {#if formError}
-          <div class="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          <div
+            class="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+          >
             <AlertCircle class="h-4 w-4 shrink-0" />
             <span>{formError}</span>
           </div>
@@ -296,9 +296,7 @@
       </div>
 
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (open = false)}>
-          Cancel
-        </Button>
+        <Button type="button" variant="outline" onclick={() => (open = false)}>Cancel</Button>
         <Button type="button" disabled={!file || busy} onclick={submitPreview}>
           {#if busy}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
           Preview
@@ -308,14 +306,20 @@
       {@const hasErrors = preview.errors.length > 0}
       <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium"
+          >
             Total: {preview.summary.total}
           </span>
-          <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800"
+          >
             <CheckCircle2 class="h-3.5 w-3.5" />Valid: {preview.summary.valid}
           </span>
           {#if preview.summary.invalid > 0}
-            <span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-800">
+            <span
+              class="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-800"
+            >
               <AlertCircle class="h-3.5 w-3.5" />Invalid: {preview.summary.invalid}
             </span>
           {/if}
@@ -338,7 +342,8 @@
                   <tr class="border-t border-[var(--border-default)]">
                     <td class="px-2 py-1 text-[var(--text-secondary)]">{row.row}</td>
                     <td class="max-w-[160px] truncate px-2 py-1">
-                      {row.first_name} {row.last_name}
+                      {row.first_name}
+                      {row.last_name}
                     </td>
                     <td class="max-w-[180px] truncate px-2 py-1 text-[var(--text-secondary)]">
                       {row.email || '—'}
@@ -354,7 +359,9 @@
               </tbody>
             </table>
             {#if preview.valid.length > 20}
-              <div class="border-t border-[var(--border-default)] bg-[var(--surface-muted)] px-2 py-1 text-center text-[10px] text-[var(--text-secondary)]">
+              <div
+                class="border-t border-[var(--border-default)] bg-[var(--surface-muted)] px-2 py-1 text-center text-[10px] text-[var(--text-secondary)]"
+              >
                 Showing first 20 of {preview.valid.length} valid rows
               </div>
             {/if}
@@ -365,7 +372,8 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-red-800">
-                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'} — fix the CSV before importing
+                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'} — fix the CSV before
+                importing
               </p>
               <button
                 type="button"
@@ -402,7 +410,8 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-red-800">
-                Server rejected {commitErrors.length} row{commitErrors.length === 1 ? '' : 's'} during import — the file may have changed since preview
+                Server rejected {commitErrors.length} row{commitErrors.length === 1 ? '' : 's'} during
+                import — the file may have changed since preview
               </p>
               <button
                 type="button"
@@ -436,7 +445,9 @@
         {/if}
 
         {#if formError}
-          <div class="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          <div
+            class="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+          >
             <AlertCircle class="h-4 w-4 shrink-0" />
             <span>{formError}</span>
           </div>
@@ -444,9 +455,7 @@
       </div>
 
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => reset()}>
-          Back
-        </Button>
+        <Button type="button" variant="outline" onclick={() => reset()}>Back</Button>
         <Button
           type="button"
           disabled={hasErrors || preview.summary.valid === 0 || busy}
@@ -464,9 +473,7 @@
             <p class="text-sm font-medium text-green-900">
               Imported {commitResult.created} contact{commitResult.created === 1 ? '' : 's'}
             </p>
-            <p class="text-xs text-green-800">
-              The contacts list has been refreshed.
-            </p>
+            <p class="text-xs text-green-800">The contacts list has been refreshed.</p>
           </div>
         </div>
       </div>

@@ -18,12 +18,7 @@
    *   onLinked?: (parent: { id: string, name: string }) => void
    * }}
    */
-  let {
-    ticketId,
-    open = $bindable(false),
-    onOpenChange,
-    onLinked
-  } = $props();
+  let { ticketId, open = $bindable(false), onOpenChange, onLinked } = $props();
 
   let query = $state('');
   /** @type {Array<{id: string, name: string, status: string, priority: string}>} */
@@ -81,10 +76,7 @@
       }
       const data = await res.json();
       candidates = (data.cases || [])
-        .filter(
-          (/** @type {any} */ c) =>
-            !descendantIds.has(c.id) && c.status !== 'Duplicate'
-        )
+        .filter((/** @type {any} */ c) => !descendantIds.has(c.id) && c.status !== 'Duplicate')
         .map((/** @type {any} */ c) => ({
           id: c.id,
           name: c.name,
@@ -125,10 +117,7 @@
   }
 </script>
 
-<Dialog.Root
-  bind:open
-  onOpenChange={(v) => onOpenChange?.(v)}
->
+<Dialog.Root bind:open onOpenChange={(v) => onOpenChange?.(v)}>
   <Dialog.Content class="sm:max-w-lg">
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
@@ -136,16 +125,14 @@
         Link this ticket under a parent
       </Dialog.Title>
       <Dialog.Description>
-        Pick the umbrella problem ticket. Tree depth is limited to three levels;
-        descendants of the current ticket are not selectable.
+        Pick the umbrella problem ticket. Tree depth is limited to three levels; descendants of the
+        current ticket are not selectable.
       </Dialog.Description>
     </Dialog.Header>
 
     <div class="space-y-3">
       <div class="space-y-1">
-        <label for="parent-search" class="text-sm font-medium">
-          Search candidate parents
-        </label>
+        <label for="parent-search" class="text-sm font-medium"> Search candidate parents </label>
         <input
           id="parent-search"
           type="text"
@@ -168,7 +155,10 @@
             <li>
               <button
                 type="button"
-                class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-muted)] {selected?.id === c.id ? 'bg-[var(--surface-muted)] font-medium' : ''}"
+                class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-muted)] {selected?.id ===
+                c.id
+                  ? 'bg-[var(--surface-muted)] font-medium'
+                  : ''}"
                 onclick={() => (selected = c)}
               >
                 <span class="min-w-0 truncate">{c.name}</span>
@@ -183,19 +173,10 @@
     </div>
 
     <Dialog.Footer>
-      <Button
-        type="button"
-        variant="outline"
-        onclick={() => (open = false)}
-        disabled={submitting}
-      >
+      <Button type="button" variant="outline" onclick={() => (open = false)} disabled={submitting}>
         Cancel
       </Button>
-      <Button
-        type="button"
-        disabled={!selected || submitting}
-        onclick={submit}
-      >
+      <Button type="button" disabled={!selected || submitting} onclick={submit}>
         {#if submitting}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}
         Link parent
       </Button>

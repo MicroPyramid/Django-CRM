@@ -277,9 +277,7 @@ export const auth = {
     /** @type {any} */
     const data = await apiRequest('/auth/switch-org/', {
       method: 'POST',
-      body: outgoingRefresh
-        ? { org_id: orgId, refresh: outgoingRefresh }
-        : { org_id: orgId }
+      body: outgoingRefresh ? { org_id: orgId, refresh: outgoingRefresh } : { org_id: orgId }
     });
 
     // Update tokens with new org context

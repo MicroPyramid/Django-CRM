@@ -95,7 +95,7 @@
 <div
   class="lead-card group cursor-pointer rounded-lg border bg-white p-2.5 text-left shadow-[0_1px_0_rgba(9,30,66,0.12)] hover:border-black/10 dark:bg-white/[0.05] dark:hover:border-white/[0.1]
     {isOverdue
-    ? 'border-rose-300 border-l-[3px] border-l-rose-500 dark:border-rose-500/40'
+    ? 'border-l-[3px] border-rose-300 border-l-rose-500 dark:border-rose-500/40'
     : 'border-black/[0.04] dark:border-white/[0.06]'}"
   draggable="true"
   {onclick}

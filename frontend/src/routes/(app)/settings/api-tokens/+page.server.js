@@ -1,64 +1,121 @@
 import { fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-import { apiRequest } from '$lib/api-helpers.js';
+import { listOrgTokens, createToken, revokeToken } from '$lib/server/v2/tokens.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 
-// The MCP server runs on the user's own machine, so BCRM_BASE_URL must be the
-// PUBLIC API host (e.g. https://api.bottlecrm.io) — the same base the browser
-// talks to. PUBLIC_DJANGO_API_URL is that host with no /api suffix, which is
-// exactly what the MCP client expects (it appends /api/... itself).
-const apiBaseUrl = env.PUBLIC_DJANGO_API_URL || 'https://api.bottlecrm.io';
+/**
+ * API tokens (admin oversight).
+ *
+ * Server load, so the JWT cookie stays server-side and the raw token value —
+ * returned once on create — is handled here, never fetched from the browser.
+ * The list is admin-only; a non-admin gets `forbidden` back, not a broken page.
+ *
+ * @type {import('./$types').PageServerLoad}
+ */
+export async function load({ cookies }) {
+  return await listOrgTokens({ cookies });
+}
 
-/** @type {import('./$types').PageServerLoad} */
-export async function load({ cookies, locals }) {
-  try {
-    const data = await apiRequest('/profile/tokens/', {}, { cookies, org: locals?.org });
-    return { tokens: data.tokens || [], baseUrl: apiBaseUrl };
-  } catch (err) {
-    console.error('Failed to load API tokens:', err);
-    return { tokens: [], baseUrl: apiBaseUrl, loadError: err?.message || 'Failed to load tokens' };
-  }
+/**
+ * Turn a coarse expiry choice into an ISO datetime the API will accept, or null
+ * for "never". Kept coarse on purpose — a date picker is more precision than a
+ * token expiry needs, and "never" is named rather than left as an empty field
+ * so the riskiest choice is a deliberate one.
+ *
+ * @param {string | undefined} choice
+ * @returns {string | null}
+ */
+function expiryFromChoice(choice) {
+  const days = { 30: 30, 90: 90, 365: 365 }[choice ?? ''];
+  if (!days) return null;
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  create: async ({ request, cookies, locals }) => {
+  /**
+   * Create a token for the signed-in admin. The server owns the owner (from the
+   * JWT) and returns the raw value once — the page shows it a single time and
+   * it is unrecoverable after. We never log it.
+   */
+  create: async ({ cookies, request }) => {
     const form = await request.formData();
-    const name = String(form.get('name') || '').trim();
-    if (!name) return fail(400, { error: 'Name is required' });
-
-    const expiresRaw = String(form.get('expires_at') || '').trim();
-    /** @type {{ name: string, expires_at?: string }} */
-    const body = { name };
-    if (expiresRaw) body.expires_at = expiresRaw;
+    const name = form.get('name')?.toString().trim();
+    const expires_at = expiryFromChoice(form.get('expiry')?.toString());
+    if (!name) return fail(400, { create: { error: 'Give the token a name.' } });
 
     try {
-      const created = await apiRequest(
-        '/profile/tokens/',
-        { method: 'POST', body },
-        { cookies, org: locals?.org }
-      );
-      // Return the raw token ONCE so the page can show a copy-once panel.
-      return { created: { token: created.token, name: created.name } };
-    } catch (err) {
-      console.error('Failed to create API token:', err);
-      return fail(400, { error: err?.message || 'Failed to create token' });
+      const res = await createToken({ cookies }, { name, expires_at });
+      // Shown once. `token` is the raw value; the list will only ever have the
+      // prefix after this response is gone.
+      return {
+        created: {
+          name: res.name ?? name,
+          token_prefix: res.token_prefix,
+          token: res.token,
+          expires_at: res.expires_at ?? null
+        }
+      };
+    } catch (/** @type {any} */ err) {
+      return fail(err?.status === 403 ? 403 : 400, {
+        create: {
+          error:
+            err?.status === 403
+              ? 'You do not have permission to create tokens here.'
+              : readableError(err, 'Could not create that token.')
+        }
+      });
     }
   },
 
-  revoke: async ({ request, cookies, locals }) => {
+  /** Revoke one token by id. Admin + org-scoped server-side. */
+  revoke: async ({ cookies, request }) => {
     const form = await request.formData();
-    const id = String(form.get('id') || '');
-    if (!id) return fail(400, { error: 'Missing token id' });
+    const id = form.get('id')?.toString();
+    if (!id) return fail(400, { error: 'Which token?' });
     try {
-      await apiRequest(
-        `/profile/tokens/${id}/`,
-        { method: 'DELETE' },
-        { cookies, org: locals?.org }
-      );
-      return { revoked: id };
-    } catch (err) {
-      console.error('Failed to revoke API token:', err);
-      return fail(400, { error: err?.message || 'Failed to revoke token' });
+      await revokeToken({ cookies }, id);
+    } catch (/** @type {any} */ err) {
+      return fail(err?.status === 403 ? 403 : 400, {
+        error:
+          err?.status === 403
+            ? 'Only an admin can revoke tokens.'
+            : readableError(err, 'Could not revoke that token.')
+      });
     }
+    return { revoked: id };
+  },
+
+  /**
+   * Revoke every live token on a deactivated owner in one go. The id list is
+   * re-derived from the server, not read from the form — the page cannot ask us
+   * to revoke an arbitrary set, only the orphaned rows the API itself reports.
+   */
+  revokeOrphaned: async ({ cookies }) => {
+    let ids;
+    try {
+      ({ orphaned_ids: ids } = await listOrgTokens({ cookies }));
+    } catch (/** @type {any} */ err) {
+      return fail(err?.status === 403 ? 403 : 400, {
+        error:
+          err?.status === 403
+            ? 'Only an admin can revoke tokens.'
+            : readableError(err, 'Could not load tokens to revoke.')
+      });
+    }
+    if (!ids?.length) return { revokedOrphaned: 0 };
+
+    let done = 0;
+    for (const id of ids) {
+      try {
+        await revokeToken({ cookies }, id);
+        done += 1;
+      } catch {
+        // Best effort: one failure should not strand the rest. The reload
+        // reflects whatever actually got revoked.
+      }
+    }
+    return { revokedOrphaned: done };
   }
 };

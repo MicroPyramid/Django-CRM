@@ -7,7 +7,7 @@
  * parameter here.
  *
  * WHY THIS MODULE
- * `/v2/goals` is a sidebar dead rail: every live page links to it and it still
+ * `/goals` is a sidebar dead rail: every live page links to it and it still
  * read a fixture, its "New goal" button writing nowhere. Wiring it drove
  * `SalesGoalListView`, `SalesGoalLeaderboardView` and `SalesGoalDetailView`
  * (`/api/opportunities/goals/…`) for real — reads *and* the admin-only
@@ -218,7 +218,7 @@ async function targetOptions(cookies) {
 
 /**
  * What the create form needs. `can_edit` gates the whole route: creating a goal
- * is admin-only server-side, and a non-admin who reaches `/v2/goals/new` gets
+ * is admin-only server-side, and a non-admin who reaches `/goals/new` gets
  * an "admins only" state rather than a form that would 403 on submit.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

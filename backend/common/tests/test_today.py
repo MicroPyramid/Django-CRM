@@ -89,7 +89,7 @@ class TestTodayView:
         assert item is not None
         assert item["due"] == "Overdue"
         assert item["action"] == "Send a reminder"
-        assert item["href"] == f"/v2/invoices/{inv.id}"
+        assert item["href"] == f"/invoices/{inv.id}"
 
     def test_future_invoice_is_later_not_queue(self, admin_client, org_a):
         _set_rls(org_a)
@@ -136,7 +136,7 @@ class TestTodayView:
         )
         assert item is not None
         assert item["action"] == "Reply"
-        assert item["href"] == f"/v2/tickets/{case.id}"
+        assert item["href"] == f"/tickets/{case.id}"
 
     def test_answered_case_absent(self, admin_client, org_a, admin_user):
         _set_rls(org_a)
@@ -172,7 +172,7 @@ class TestTodayView:
         assert item is not None
         # 40 days in a 14-day stage is past 1.5x expected → rotten (red/rust).
         assert item["tone"] == "rust"
-        assert item["href"] == f"/v2/pipeline/{opp.id}"
+        assert item["href"] == f"/pipeline/{opp.id}"
 
     def test_fresh_deal_not_quiet(self, admin_client, org_a):
         _set_rls(org_a)

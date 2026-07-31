@@ -8,7 +8,7 @@
  *
  * WHY THIS MODULE, AND WHY NOW
  * The ticket page shipped last with a rail of **linked articles**, each one an
- * `<a href="/v2/solutions/<uuid>">` built from a real `Case.solutions` row —
+ * `<a href="/solutions/<uuid>">` built from a real `Case.solutions` row —
  * pointing at a page whose fixtures were keyed `'SOL-01'`. Every one of those
  * links was a 404 waiting for the first org that filed an article against a
  * ticket. The link crawl did not catch it because no seeded case has a linked

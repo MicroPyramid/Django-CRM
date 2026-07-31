@@ -1,430 +1,350 @@
 <script>
+  /**
+   * Personal access tokens — the org-wide oversight view.
+   *
+   * THE ONE RULE THIS PAGE EXISTS TO KEEP
+   * A token value is shown once, in the response to the request that created
+   * it, and never again. The server stores a SHA-256 hash plus a 13-character
+   * prefix, so there is nothing to re-display even if someone asks. Every row
+   * here shows the prefix and stops. The one-time reveal below is the only
+   * place a full value ever appears, and it is gone on the next reload.
+   *
+   * WHO SEES THIS
+   * This lists every token across the org, so it is admin-only: `/api/org/tokens/`
+   * returns 403 to a member and the page renders "Admins only" rather than a
+   * broken table. Managing your own tokens is a separate, self-scoped surface.
+   *
+   * "OWNER DEACTIVATED" IS A DORMANT ROW, NOT A LIVE ONE
+   * The mock this page replaced claimed such a token "keeps working with the
+   * role they had". It does not: deactivating an account sets profile.is_active
+   * false, and that is exactly the flag the token authenticator checks, so the
+   * token is refused at login today. It is worth revoking anyway — it would come
+   * back if the account were reactivated — which is why it is surfaced in clay
+   * (a loose end) rather than rust (a live breach).
+   *
+   * `scopes` is not shown as a permission list, and that is deliberate. The
+   * model stores scopes for forward-compatibility but nothing enforces them:
+   * a token inherits the owning profile's full role, org and RLS scope. A UI
+   * that draws a tidy list of scopes would describe a boundary that does not
+   * exist. The page says what is actually true instead.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import StatCard from '$lib/v2/components/StatCard.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import NextAction from '$lib/v2/components/NextAction.svelte';
+  import { count, relativeDays, shortDate, daysSince } from '$lib/v2/format.js';
+  import { ROLE_LABEL } from '$lib/v2/enums.js';
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
-  import {
-    Plus,
-    Copy,
-    Check,
-    Trash2,
-    KeyRound,
-    ChevronDown,
-    ChevronRight,
-    TriangleAlert
-  } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
-  import * as Table from '$lib/components/ui/table/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
+  import { Plus, ShieldAlert, Copy, Check } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
-  const tokens = $derived(data.tokens || []);
-  // Real, ready-to-paste API host (e.g. https://api.bottlecrm.io). The MCP
-  // client appends /api/... itself, so this is exactly BCRM_BASE_URL.
-  const baseUrl = $derived(data.baseUrl || 'https://api.bottlecrm.io');
+  let totals = $derived(data.totals);
 
-  let formName = $state('');
-  let formExpiresAt = $state('');
   let creating = $state(false);
-
-  // Copy-once panel state — populated only from the create action result.
+  let busy = $state(false);
   let copied = $state(false);
-  /** @type {string} */
-  let confirmingId = $state('');
-  let helpOpen = $state(false);
-  let configCopied = $state(false);
-  let selectedClient = $state('claude');
 
-  // The just-created raw token if we have it, else a paste-your-token hint. We
-  // can only ever show the real token in the same response that created it.
-  const tokenValue = $derived(form?.created?.token || 'bcrm_pat_…paste-your-token');
+  /** A submit handler that flips `busy` while the action runs. */
+  const working = () => {
+    busy = true;
+    return async (/** @type {any} */ { update }) => {
+      await update();
+      busy = false;
+    };
+  };
 
-  /**
-   * MCP clients we give a ready-to-paste config for. Claude Desktop, Cursor and
-   * Gemini CLI share the identical `mcpServers` JSON schema (only the config
-   * file differs); Codex CLI uses TOML.
-   */
-  const CLIENTS = [
-    { id: 'claude', label: 'Claude Desktop', lang: 'json', file: 'claude_desktop_config.json — Settings → Developer → Edit Config' },
-    { id: 'cursor', label: 'Cursor', lang: 'json', file: '~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)' },
-    { id: 'codex', label: 'Codex CLI', lang: 'toml', file: '~/.codex/config.toml' },
-    { id: 'gemini', label: 'Gemini CLI', lang: 'json', file: '~/.gemini/settings.json' }
-  ];
-
-  /** @param {string} base @param {string} token */
-  function jsonConfig(base, token) {
-    return `{
-  "mcpServers": {
-    "bottlecrm": {
-      "command": "uvx",
-      "args": ["bcrm-mcp"],
-      "env": {
-        "BCRM_BASE_URL": "${base}",
-        "BCRM_TOKEN": "${token}"
-      }
-    }
-  }
-}`;
-  }
-
-  /** @param {string} base @param {string} token */
-  function tomlConfig(base, token) {
-    return `[mcp_servers.bottlecrm]
-command = "uvx"
-args = ["bcrm-mcp"]
-
-[mcp_servers.bottlecrm.env]
-BCRM_BASE_URL = "${base}"
-BCRM_TOKEN = "${token}"`;
-  }
-
-  const selectedClientMeta = $derived(
-    CLIENTS.find((c) => c.id === selectedClient) || CLIENTS[0]
-  );
-  const configSnippet = $derived(
-    selectedClientMeta.lang === 'toml'
-      ? tomlConfig(baseUrl, tokenValue)
-      : jsonConfig(baseUrl, tokenValue)
-  );
-
-  $effect(() => {
-    if (form?.created?.token) {
-      // Reset the create form after a successful creation.
-      formName = '';
-      formExpiresAt = '';
-      copied = false;
-      // Surface the connect instructions immediately — the config now carries
-      // the real token, which the user can only copy from this one response.
-      helpOpen = true;
-    } else if (form?.revoked) {
-      toast.success('Token revoked');
-      confirmingId = '';
-    } else if (form?.error) {
-      const message = typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
-      toast.error(message);
-    }
-  });
+  /** Create both submits and, on success, closes its own form. */
+  const createSubmit = () => {
+    busy = true;
+    return async (/** @type {any} */ { update, result }) => {
+      await update();
+      busy = false;
+      if (result?.type === 'success' && result?.data?.created) creating = false;
+    };
+  };
 
   /** @param {string} value */
-  async function copyToClipboard(value) {
+  async function copyToken(value) {
     try {
       await navigator.clipboard.writeText(value);
       copied = true;
-      toast.success('Token copied to clipboard');
-      setTimeout(() => (copied = false), 2000);
+      setTimeout(() => (copied = false), 1600);
     } catch {
-      toast.error('Could not copy — select and copy manually');
+      // Clipboard blocked (no https / no permission). The value is on screen to
+      // select by hand — nothing else to do, and no error worth alarming over.
     }
   }
 
-  /** @param {string} value */
-  async function copyConfig(value) {
-    try {
-      await navigator.clipboard.writeText(value);
-      configCopied = true;
-      toast.success('Config copied to clipboard');
-      setTimeout(() => (configCopied = false), 2000);
-    } catch {
-      toast.error('Could not copy — select and copy manually');
-    }
+  /**
+   * Revoked and expired are different reasons for the same outcome, so they
+   * read differently but tone the same — neither is a live credential.
+   *
+   * @param {any} t
+   * @returns {{ label: string, tone: 'ink'|'slate'|'clay'|'rust'|'moss' }}
+   */
+  function statusOf(t) {
+    if (t.revoked_at) return { label: 'Revoked', tone: 'slate' };
+    if (!t.is_live) return { label: 'Expired', tone: 'slate' };
+    return { label: 'Live', tone: 'moss' };
   }
 
-  /** @param {string | null | undefined} value */
-  function formatDate(value) {
-    if (!value) return 'Never';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return 'Never';
-    return d.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-
-  /** @param {any} token */
-  function isRevoked(token) {
-    return !!token.revoked_at;
+  /** Never used, or not for a long time. Either way it is a key under a mat. */
+  function staleness(t) {
+    if (!t.is_live) return null;
+    if (!t.last_used_at) return 'never used';
+    const n = daysSince(t.last_used_at) ?? 0;
+    return n > 90 ? `unused for ${n} days` : null;
   }
 </script>
 
-<svelte:head>
-  <title>API Tokens - Settings - BottleCRM</title>
-</svelte:head>
-
-<PageHeader
-  title="API Tokens"
-  subtitle="Connect your AI agent to BottleCRM. Tokens act as you and inherit your role."
-/>
-
-<div class="flex-1 p-4 md:p-6 lg:p-8">
-  <div class="mx-auto max-w-4xl space-y-6">
-    {#if data.loadError}
-      <div
-        class="rounded-lg border border-[var(--color-danger-default)] bg-[var(--color-danger-light)] p-4 text-sm text-[var(--color-danger-default)]"
-      >
-        {data.loadError}
-      </div>
-    {/if}
-
-    <!-- Copy-once panel: only shown immediately after a create action. -->
-    {#if form?.created?.token}
-      <section
-        class="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/30"
-      >
-        <div class="flex items-start gap-2">
-          <TriangleAlert class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div class="min-w-0 flex-1 space-y-2">
-            <h2 class="text-sm font-medium text-amber-900 dark:text-amber-200">
-              Token “{form.created.name}” created
-            </h2>
-            <p class="text-sm text-amber-800 dark:text-amber-300">
-              Copy this token now — you won't be able to see it again.
-            </p>
-            <div class="flex items-center gap-2">
-              <code
-                class="min-w-0 flex-1 overflow-x-auto rounded-md border border-amber-300 bg-white px-3 py-2 font-mono text-xs text-[var(--text-primary)] dark:border-amber-700 dark:bg-slate-900"
-              >
-                {form.created.token}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                class="gap-1"
-                onclick={() => copyToClipboard(form.created.token)}
-              >
-                {#if copied}
-                  <Check class="h-4 w-4" />
-                  Copied
-                {:else}
-                  <Copy class="h-4 w-4" />
-                  Copy
-                {/if}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-    {/if}
-
-    <!-- Create token -->
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]">
-      <header class="border-b border-[var(--border-default)] p-4">
-        <h2 class="text-base font-medium text-[var(--text-primary)]">Create token</h2>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Give the token a recognisable name. Set an optional expiry, or leave it blank for a token
-          that never expires.
-        </p>
-      </header>
-      <form
-        method="POST"
-        action="?/create"
-        use:enhance={() => {
-          creating = true;
-          return async ({ update }) => {
-            await update({ reset: false });
-            creating = false;
-            await invalidateAll();
-          };
-        }}
-        class="flex flex-col gap-4 p-4 sm:flex-row sm:items-end"
-      >
-        <div class="flex-1 space-y-1.5">
-          <Label for="name">Name *</Label>
-          <Input id="name" name="name" required bind:value={formName} placeholder="My AI agent" />
-        </div>
-        <div class="space-y-1.5">
-          <Label for="expires_at">Expires (optional)</Label>
-          <Input id="expires_at" name="expires_at" type="date" bind:value={formExpiresAt} />
-        </div>
-        <Button type="submit" class="gap-2" disabled={creating}>
-          <Plus class="h-4 w-4" />
-          {creating ? 'Creating…' : 'Create token'}
-        </Button>
-      </form>
-    </section>
-
-    <!-- Existing tokens -->
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]">
-      <header class="border-b border-[var(--border-default)] p-4">
-        <h2 class="text-base font-medium text-[var(--text-primary)]">Your tokens</h2>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Tokens you have created. Revoke any token you no longer use.
-        </p>
-      </header>
-
-      {#if tokens.length === 0}
-        <div class="p-6 text-center text-sm text-[var(--text-secondary)]">
-          No tokens yet. Create one above to connect your AI agent.
-        </div>
-      {:else}
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head>Name</Table.Head>
-              <Table.Head>Prefix</Table.Head>
-              <Table.Head>Last used</Table.Head>
-              <Table.Head>Expires</Table.Head>
-              <Table.Head>Created</Table.Head>
-              <Table.Head>Status</Table.Head>
-              <Table.Head class="text-right">Actions</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {#each tokens as token (token.id)}
-              <Table.Row>
-                <Table.Cell class="font-medium text-[var(--text-primary)]">
-                  {token.name}
-                </Table.Cell>
-                <Table.Cell>
-                  <code class="font-mono text-xs text-[var(--text-secondary)]">
-                    {token.token_prefix}
-                  </code>
-                </Table.Cell>
-                <Table.Cell class="text-sm text-[var(--text-secondary)]">
-                  {formatDate(token.last_used_at)}
-                </Table.Cell>
-                <Table.Cell class="text-sm text-[var(--text-secondary)]">
-                  {formatDate(token.expires_at)}
-                </Table.Cell>
-                <Table.Cell class="text-sm text-[var(--text-secondary)]">
-                  {formatDate(token.created_at)}
-                </Table.Cell>
-                <Table.Cell>
-                  {#if isRevoked(token)}
-                    <Badge variant="secondary">Revoked</Badge>
-                  {:else}
-                    <Badge variant="outline">Active</Badge>
-                  {/if}
-                </Table.Cell>
-                <Table.Cell class="text-right">
-                  {#if !isRevoked(token)}
-                    {#if confirmingId === token.id}
-                      <form
-                        method="POST"
-                        action="?/revoke"
-                        use:enhance={() => {
-                          return async ({ update }) => {
-                            await update({ reset: false });
-                            await invalidateAll();
-                          };
-                        }}
-                        class="inline-flex items-center gap-1"
-                      >
-                        <input type="hidden" name="id" value={token.id} />
-                        <Button type="submit" variant="destructive" size="sm" class="gap-1">
-                          <Check class="h-3.5 w-3.5" />
-                          Confirm
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onclick={() => (confirmingId = '')}
-                        >
-                          Cancel
-                        </Button>
-                      </form>
-                    {:else}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        class="gap-1 text-[var(--color-danger-default)]"
-                        onclick={() => (confirmingId = token.id)}
-                      >
-                        <Trash2 class="h-3.5 w-3.5" />
-                        Revoke
-                      </Button>
-                    {/if}
-                  {:else}
-                    <span class="text-xs text-[var(--text-secondary)]">—</span>
-                  {/if}
-                </Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-      {/if}
-    </section>
-
-    <!-- Help: connect your AI -->
-    <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]">
-      <button
-        type="button"
-        onclick={() => (helpOpen = !helpOpen)}
-        class="flex w-full items-center gap-2 p-4 text-left"
-      >
-        {#if helpOpen}
-          <ChevronDown class="h-4 w-4 text-[var(--text-secondary)]" />
-        {:else}
-          <ChevronRight class="h-4 w-4 text-[var(--text-secondary)]" />
-        {/if}
-        <KeyRound class="h-4 w-4 text-[var(--text-secondary)]" />
-        <span class="text-base font-medium text-[var(--text-primary)]"> Connect your AI </span>
-      </button>
-      {#if helpOpen}
-        <div class="space-y-3 border-t border-[var(--border-default)] p-4">
-          <!-- Client picker -->
-          <div class="flex flex-wrap gap-2">
-            {#each CLIENTS as client (client.id)}
-              <Button
-                type="button"
-                size="sm"
-                variant={selectedClient === client.id ? 'default' : 'outline'}
-                onclick={() => (selectedClient = client.id)}
-              >
-                {client.label}
-              </Button>
-            {/each}
-          </div>
-
-          <p class="text-sm text-[var(--text-secondary)]">
-            Add this to
-            <code class="font-mono text-xs text-[var(--text-primary)]">{selectedClientMeta.file}</code
-            >, then restart {selectedClientMeta.label}.
-            {#if form?.created?.token}
-              The token below is yours — it's shown only this once.
-            {:else}
-              Replace <code class="font-mono text-xs">BCRM_TOKEN</code> with a token you created above.
-            {/if}
-          </p>
-
-          <div class="relative">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              class="absolute right-2 top-2 gap-1"
-              onclick={() => copyConfig(configSnippet)}
-            >
-              {#if configCopied}
-                <Check class="h-3.5 w-3.5" />
-                Copied
-              {:else}
-                <Copy class="h-3.5 w-3.5" />
-                Copy
-              {/if}
-            </Button>
-            <pre
-              class="overflow-x-auto rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-3 pr-20 font-mono text-xs text-[var(--text-primary)]">{configSnippet}</pre>
-          </div>
-
-          <p class="text-xs text-[var(--text-secondary)]">
-            Requires <a
-              href="https://docs.astral.sh/uv/"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline">uv</a
-            >
-            (provides <code class="font-mono">uvx</code>) on your machine. The agent acts as you and
-            inherits your role — it can't see or do anything you can't.
-          </p>
-        </div>
-      {/if}
-    </section>
+{#if data.forbidden}
+  <PageHeader title="API tokens">
+    {#snippet crumb()}<SettingsCrumb />{/snippet}
+  </PageHeader>
+  <div class="v2-pad" style="padding-top:40px">
+    <NextAction
+      label="Admins only"
+      text="Reviewing every token in the organization is limited to admins, because a token authenticates as its owner. Ask an admin if one needs issuing or revoking."
+    />
   </div>
-</div>
+{:else}
+  <PageHeader title="API tokens">
+    {#snippet crumb()}<SettingsCrumb />{/snippet}
+    {#snippet sub()}
+      <span class="v2-num">{count(totals.live)}</span> live of
+      <span class="v2-num">{count(totals.count)}</span> ever issued
+    {/snippet}
+    {#snippet actions()}
+      <button class="v2-btn v2-btn-primary" onclick={() => (creating = !creating)}>
+        <Plus />New token
+      </button>
+    {/snippet}
+  </PageHeader>
+
+  <div class="v2-pad" style="padding-top:16px;flex:none">
+    <div class="v2-stats">
+      <StatCard label="Live tokens" value={count(totals.live)} tone="ink" />
+      <StatCard
+        label="Owner deactivated"
+        value={count(totals.orphaned)}
+        tone={totals.orphaned ? 'clay' : 'slate'}
+        detail={totals.orphaned ? 'Rejected at login, not revoked' : 'None'}
+      />
+      <StatCard
+        label="Unused 90+ days"
+        value={count(totals.unused_90d)}
+        tone={totals.unused_90d ? 'clay' : 'slate'}
+      />
+      <StatCard label="Issued in total" value={count(totals.count)} tone="slate" />
+    </div>
+  </div>
+
+  <div class="v2-scroll">
+    <div class="v2-pad" style="padding-bottom:32px">
+      {#if form?.created?.token}
+        <!-- The one and only time this value is shown. On the next reload it is
+             gone; the list will have the prefix and nothing more. -->
+        <div
+          class="v2-card"
+          style="padding:15px 16px;margin-bottom:18px;border-color:color-mix(in srgb, var(--v2-moss) 40%, var(--v2-line))"
+        >
+          <div style="font-weight:650;font-size:13px">
+            “{form.created.name}” created — copy it now
+          </div>
+          <p class="v2-sub" style="font-size:12px;margin:4px 0 10px">
+            This is the only time the full token is shown. Store it somewhere safe; it cannot be
+            retrieved again.
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <code
+              class="v2-num"
+              style="flex:1;min-width:220px;background:var(--v2-bg-sunk);border:1px solid var(--v2-line);border-radius:var(--v2-radius);padding:9px 11px;font-size:12.5px;word-break:break-all"
+            >
+              {form.created.token}
+            </code>
+            <button class="v2-btn v2-btn-sm" onclick={() => copyToken(form.created.token)}>
+              {#if copied}<Check size={13} />Copied{:else}<Copy size={13} />Copy{/if}
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      {#if form?.revokedOrphaned}
+        <p
+          class="v2-sub"
+          style="color:var(--v2-moss);font-size:12.5px;margin:0 0 16px;font-weight:550"
+        >
+          Revoked {form.revokedOrphaned}
+          {form.revokedOrphaned === 1 ? 'token' : 'tokens'} on deactivated accounts.
+        </p>
+      {:else if form?.error}
+        <div style="margin-bottom:16px">
+          <NextAction label="That did not work" text={form.error} tone="rust" />
+        </div>
+      {/if}
+
+      {#if creating}
+        <form
+          method="POST"
+          action="?/create"
+          use:enhance={createSubmit}
+          class="v2-card"
+          style="padding:14px 15px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"
+        >
+          <div style="flex:1;min-width:220px">
+            <label class="v2-label" for="token-name" style="display:block;margin-bottom:4px">
+              What is this token for?
+            </label>
+            <input
+              id="token-name"
+              name="name"
+              required
+              maxlength="255"
+              class="v2-input"
+              style="width:100%"
+              placeholder="e.g. Nightly export job"
+            />
+          </div>
+          <div>
+            <label class="v2-label" for="token-expiry" style="display:block;margin-bottom:4px">
+              Expires
+            </label>
+            <select id="token-expiry" name="expiry" class="v2-input" style="width:150px">
+              <option value="90" selected>In 90 days</option>
+              <option value="30">In 30 days</option>
+              <option value="365">In 1 year</option>
+              <option value="never">Never</option>
+            </select>
+          </div>
+          <button class="v2-btn v2-btn-primary" disabled={busy}>Create token</button>
+          <button type="button" class="v2-btn" disabled={busy} onclick={() => (creating = false)}>
+            Cancel
+          </button>
+          {#if form?.create?.error}
+            <p
+              class="v2-sub"
+              style="color:var(--v2-rust);font-size:12px;flex-basis:100%;margin:2px 0 0"
+            >
+              {form.create.error}
+            </p>
+          {/if}
+        </form>
+      {/if}
+
+      {#if totals.orphaned}
+        <div style="margin-bottom:18px">
+          <NextAction
+            label="Loose end"
+            text={`${totals.orphaned} live ${totals.orphaned === 1 ? 'token belongs' : 'tokens belong'} to a deactivated account. Deactivating already stops them at login, but they are not revoked — reactivating the account would bring them back.`}
+          />
+          <form
+            method="POST"
+            action="?/revokeOrphaned"
+            use:enhance={working}
+            style="margin-top:10px"
+          >
+            <button class="v2-btn v2-btn-primary" disabled={busy}>
+              Revoke {totals.orphaned === 1 ? 'it' : 'them all'}
+            </button>
+          </form>
+        </div>
+      {/if}
+
+      <div class="v2-table-wrap">
+        <table class="v2-table">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Owner</th>
+              <th data-m="hide">Can do</th>
+              <th data-m="hide">Last used</th>
+              <th data-m="hide">Expires</th>
+              <th class="v2-r">State</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each data.tokens as t (t.id)}
+              {@const s = statusOf(t)}
+              {@const stale = staleness(t)}
+              {@const owner = t.owner ?? {}}
+              <tr style={t.is_live ? '' : 'opacity:.55'}>
+                <td>
+                  <span class="v2-table-primary">{t.name}</span>
+                  <!-- The prefix, and only the prefix. There is no full value to
+                       show: the server keeps a hash. -->
+                  <span class="v2-table-secondary v2-num" style="display:block">
+                    {t.token_prefix}…
+                  </span>
+                </td>
+                <td data-m="meta">
+                  {owner.name}
+                  <span class="v2-table-secondary" style="display:block">
+                    {ROLE_LABEL[owner.role] ?? owner.role}{owner.is_active === false
+                      ? ' · deactivated'
+                      : ''}
+                  </span>
+                </td>
+                <td data-m="hide">
+                  <span class="v2-sub" style="font-size:12px">
+                    Everything {(owner.name ?? '').split(' ')[0]} can
+                  </span>
+                </td>
+                <td data-m="hide">
+                  {#if t.last_used_at}
+                    {relativeDays(t.last_used_at)}
+                  {:else}
+                    <span class="v2-muted">never</span>
+                  {/if}
+                  {#if stale}
+                    <span
+                      class="v2-table-secondary"
+                      style="display:block;color:var(--v2-clay);font-weight:600"
+                    >
+                      {stale}
+                    </span>
+                  {/if}
+                </td>
+                <td data-m="hide">
+                  {#if t.expires_at}
+                    {shortDate(t.expires_at)}
+                  {:else}
+                    <span class="v2-sub">never expires</span>
+                  {/if}
+                </td>
+                <td class="v2-r">
+                  <span style="display:inline-flex;gap:7px;align-items:center">
+                    <Pill tone={s.tone}>{s.label}</Pill>
+                    {#if t.is_live}
+                      <form method="POST" action="?/revoke" use:enhance={working}>
+                        <input type="hidden" name="id" value={t.id} />
+                        <button class="v2-btn v2-btn-sm" disabled={busy}>Revoke</button>
+                      </form>
+                    {/if}
+                  </span>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        style="display:flex;gap:10px;align-items:flex-start;margin-top:20px;padding:14px 16px;border:1px solid var(--v2-line);border-radius:var(--v2-radius)"
+      >
+        <ShieldAlert size={16} style="color:var(--v2-clay);flex:none;margin-top:1px" />
+        <div>
+          <div style="font-weight:600;font-size:13px">A token is the whole account</div>
+          <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
+            A token authenticates as its owner and inherits their role and organisation — there is
+            no narrower permission to give it. Issue one per integration so a single revocation
+            stops a single thing, set an expiry, and revoke anything you cannot name a use for. The
+            value is shown once when the token is created and cannot be recovered afterwards.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}

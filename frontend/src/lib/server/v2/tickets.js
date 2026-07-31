@@ -8,9 +8,9 @@
  * it from there.
  *
  * WHY THIS MODULE, AND WHY NOW
- * `/v2/tickets` is the most-linked unwired prefix in the app. The account page
+ * `/tickets` is the most-linked unwired prefix in the app. The account page
  * and the contact page both list a customer's tickets, and both had to render
- * them as plain text because `/v2/tickets/<uuid>` answered 404 — the fixtures
+ * them as plain text because `/tickets/<uuid>` answered 404 — the fixtures
  * were keyed on `'421'`. Timesheet rows, the approvals queue and every
  * notification about a case point here too.
  *
@@ -512,7 +512,7 @@ async function fetchDetail(cookies, id) {
     throw err;
   }
   if (response?.redirect_to) {
-    redirect(307, `/v2/tickets/${response.redirect_to}`);
+    redirect(307, `/tickets/${response.redirect_to}`);
   }
   return response;
 }

@@ -19,9 +19,7 @@
     Bell,
     SlidersHorizontal,
     Search,
-    Smartphone,
-    Palette,
-    ArrowLeft
+    Smartphone
   } from '@lucide/svelte';
 
   /**
@@ -45,31 +43,31 @@
     {
       label: 'Sell',
       items: [
-        { href: '/v2', label: 'Today', icon: Sun, exact: true },
-        { href: '/v2/pipeline', label: 'Pipeline', icon: Columns3, count: 'pipeline' },
-        { href: '/v2/leads', label: 'Leads', icon: Target, count: 'leads' },
-        { href: '/v2/accounts', label: 'Accounts', icon: Building2 },
-        { href: '/v2/contacts', label: 'Contacts', icon: Users },
-        { href: '/v2/goals', label: 'Goals', icon: Trophy }
+        { href: '/', label: 'Today', icon: Sun, exact: true },
+        { href: '/pipeline', label: 'Pipeline', icon: Columns3, count: 'pipeline' },
+        { href: '/leads', label: 'Leads', icon: Target, count: 'leads' },
+        { href: '/accounts', label: 'Accounts', icon: Building2 },
+        { href: '/contacts', label: 'Contacts', icon: Users },
+        { href: '/goals', label: 'Goals', icon: Trophy }
       ]
     },
     {
       label: 'Serve',
       items: [
-        { href: '/v2/tasks', label: 'Tasks', icon: CircleCheck, count: 'tasks' },
+        { href: '/tasks', label: 'Tasks', icon: CircleCheck, count: 'tasks' },
         // Approvals and Analytics live under Tickets as section tabs. They are
         // not separate destinations, so they do not get separate nav entries —
         // one level of navigation, and the tab strip carries the rest.
-        { href: '/v2/tickets', label: 'Tickets', icon: LifeBuoy, count: 'tickets' },
-        { href: '/v2/solutions', label: 'Knowledge base', icon: BookOpen },
-        { href: '/v2/documents', label: 'Documents', icon: FileText }
+        { href: '/tickets', label: 'Tickets', icon: LifeBuoy, count: 'tickets' },
+        { href: '/solutions', label: 'Knowledge base', icon: BookOpen },
+        { href: '/documents', label: 'Documents', icon: FileText }
       ]
     },
     {
       label: 'Bill',
       items: [
-        { href: '/v2/invoices', label: 'Invoices', icon: Receipt, count: 'invoices' },
-        { href: '/v2/timesheet', label: 'Timesheet', icon: Clock }
+        { href: '/invoices', label: 'Invoices', icon: Receipt, count: 'invoices' },
+        { href: '/timesheet', label: 'Timesheet', icon: Clock }
       ]
     },
     {
@@ -77,8 +75,8 @@
       // these should not read past them four times a day.
       label: 'Run',
       items: [
-        { href: '/v2/team', label: 'Team and access', icon: UserCog },
-        { href: '/v2/settings', label: 'Settings', icon: SlidersHorizontal }
+        { href: '/team', label: 'Team and access', icon: UserCog },
+        { href: '/settings', label: 'Settings', icon: SlidersHorizontal }
       ]
     }
   ];
@@ -125,8 +123,8 @@
          than in Serve, where it would read as a queue the team shares. -->
     <a
       class="v2-link"
-      href="/v2/notifications"
-      aria-current={isActive('/v2/notifications', false) ? 'page' : undefined}
+      href="/notifications"
+      aria-current={isActive('/notifications', false) ? 'page' : undefined}
     >
       <Bell />
       Notifications
@@ -134,11 +132,11 @@
         <span class="v2-count">{counts.notifications}</span>
       {/if}
     </a>
-    <a class="v2-link" href="/v2/profile">
+    <a class="v2-link" href="/profile">
       <CircleUser />
       Your profile
     </a>
-    <a class="v2-link" href="/v2/support">
+    <a class="v2-link" href="/support">
       <CircleHelp />
       Help
     </a>
@@ -153,14 +151,6 @@
     >
       <Smartphone />
       Download app
-    </a>
-    <a class="v2-link" href="/v2/design">
-      <Palette />
-      Design system
-    </a>
-    <a class="v2-link" href="/">
-      <ArrowLeft />
-      Back to v1
     </a>
   </div>
 </nav>

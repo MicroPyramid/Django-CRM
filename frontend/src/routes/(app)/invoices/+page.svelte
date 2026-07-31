@@ -1,479 +1,164 @@
 <script>
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
+  import FilterBar from '$lib/v2/components/FilterBar.svelte';
+  import StatCard from '$lib/v2/components/StatCard.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import EmptyState from '$lib/v2/components/EmptyState.svelte';
+  import { money, count, shortDate, daysSince } from '$lib/v2/format.js';
+  import { INVOICE_STATUS_TONE, invoiceStatusLabel } from '$lib/v2/enums.js';
+  import { enhance } from '$app/forms';
+  import { Plus, Receipt } from '@lucide/svelte';
 
-  import { PageHeader, FilterStrip, ViewTabs, FilterPill } from '$lib/components/layout';
-  import { CrmTable } from '$lib/components/ui/crm-table';
-  import { SearchInput, DateRangeFilter, SelectFilter } from '$lib/components/ui/filter';
-  import { Pagination } from '$lib/components/ui/pagination';
-  import { Button } from '$lib/components/ui/button';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { InvoiceFromTimeEntriesDialog } from '$lib/components/invoices';
-  import { formatCurrency, formatDate } from '$lib/utils/formatting.js';
-  import { Plus, Columns3, Clock } from '@lucide/svelte';
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
-  let fromTimeEntriesOpen = $state(false);
+  let invoices = $derived(data.invoices);
+  let totals = $derived(data.totals);
 
-  /** @type {{ data: import('./$types').PageData }} */
-  let { data } = $props();
-
-  // Invoice status options - using design system tokens
-  const INVOICE_STATUSES = [
-    {
-      value: 'Draft',
-      label: 'Draft',
-      color: 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]'
-    },
-    {
-      value: 'Sent',
-      label: 'Sent',
-      color:
-        'bg-[var(--stage-contacted-bg)] text-[var(--stage-contacted)] dark:bg-[var(--stage-contacted)]/15'
-    },
-    {
-      value: 'Viewed',
-      label: 'Viewed',
-      color:
-        'bg-[var(--stage-qualified-bg)] text-[var(--stage-qualified)] dark:bg-[var(--stage-qualified)]/15'
-    },
-    {
-      value: 'Partially_Paid',
-      label: 'Partially Paid',
-      color:
-        'bg-[var(--stage-negotiation-bg)] text-[var(--stage-negotiation)] dark:bg-[var(--stage-negotiation)]/15'
-    },
-    {
-      value: 'Paid',
-      label: 'Paid',
-      color:
-        'bg-[var(--color-success-light)] text-[var(--color-success-default)] dark:bg-[var(--color-success-default)]/15'
-    },
-    {
-      value: 'Overdue',
-      label: 'Overdue',
-      color:
-        'bg-[var(--color-negative-light)] text-[var(--color-negative-default)] dark:bg-[var(--color-negative-default)]/15'
-    },
-    {
-      value: 'Cancelled',
-      label: 'Cancelled',
-      color: 'bg-[var(--surface-sunken)] text-[var(--text-tertiary)]'
-    }
-  ];
+  /** Rows with a send in flight, so the button can show it is working. */
+  let sending = $state(/** @type {Record<string, boolean>} */ ({}));
 
   /**
-   * @typedef {'text' | 'email' | 'number' | 'date' | 'select' | 'checkbox' | 'relation'} ColumnType
-   * @typedef {{ key: string, label: string, type?: ColumnType, width?: string, editable?: boolean, canHide?: boolean, getValue?: (row: any) => any, emptyText?: string, relationIcon?: string, options?: Array<{value: string, label: string, color: string}> }} ColumnDef
+   * Days past due, or days remaining. A settled invoice has no age — once it
+   * is Paid or Cancelled the due date stops meaning anything, and showing
+   * "4d late" against a paid invoice is just wrong.
    */
+  const SETTLED = ['Paid', 'Cancelled'];
 
-  /** @type {ColumnDef[]} */
-  const columns = [
-    {
-      key: 'invoiceNumber',
-      label: 'Invoice #',
-      type: 'text',
-      width: 'w-28',
-      editable: false,
-      canHide: false
-    },
-    {
-      key: 'clientName',
-      label: 'Client',
-      type: 'text',
-      width: 'w-40',
-      editable: false,
-      canHide: false
-    },
-    {
-      key: 'account',
-      label: 'Account',
-      type: 'relation',
-      width: 'w-36',
-      relationIcon: 'building',
-      canHide: true,
-      getValue: (row) => row.account?.name
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select',
-      width: 'w-28',
-      options: INVOICE_STATUSES,
-      canHide: true,
-      getValue: (row) => row.status
-    },
-    {
-      key: 'issueDate',
-      label: 'Issue Date',
-      type: 'date',
-      width: 'w-28',
-      canHide: true,
-      getValue: (row) => row.issueDate
-    },
-    {
-      key: 'dueDate',
-      label: 'Due Date',
-      type: 'date',
-      width: 'w-28',
-      canHide: true,
-      getValue: (row) => row.dueDate
-    },
-    {
-      key: 'totalAmount',
-      label: 'Total',
-      type: 'number',
-      width: 'w-28',
-      canHide: false
-    },
-    {
-      key: 'amountDue',
-      label: 'Amount Due',
-      type: 'number',
-      width: 'w-28',
-      canHide: true
-    }
-  ];
-
-  // Default visible columns
-  const DEFAULT_VISIBLE_COLUMNS = [
-    'invoiceNumber',
-    'clientName',
-    'status',
-    'issueDate',
-    'dueDate',
-    'totalAmount'
-  ];
-
-  // Status chip filter definitions
-  const STATUS_CHIPS = [
-    { key: 'ALL', label: 'All' },
-    { key: 'OPEN', label: 'Open', statuses: ['Draft', 'Sent', 'Viewed'] },
-    { key: 'PAID', label: 'Paid', statuses: ['Paid', 'Partially_Paid'] },
-    { key: 'OVERDUE', label: 'Overdue', statuses: ['Overdue'] },
-    { key: 'CANCELLED', label: 'Cancelled', statuses: ['Cancelled'] }
-  ];
-
-  // State
-  let visibleColumns = $state([...DEFAULT_VISIBLE_COLUMNS]);
-  let statusChipFilter = $state('ALL');
-
-  // Derived values
-  const filters = $derived(data.filters);
-  const pagination = $derived(data.pagination);
-  const allInvoices = $derived(data.invoices);
-
-  // Filter invoices by chip selection (client-side filtering)
-  const invoices = $derived.by(() => {
-    if (statusChipFilter === 'ALL') {
-      return allInvoices;
-    }
-    const chip = STATUS_CHIPS.find((c) => c.key === statusChipFilter);
-    if (!chip?.statuses) return allInvoices;
-    return allInvoices.filter((inv) => chip.statuses.includes(inv.status));
-  });
-
-  // Count invoices per chip category
-  const chipCounts = $derived.by(() => {
-    const counts = { ALL: allInvoices.length };
-    STATUS_CHIPS.forEach((chip) => {
-      if (chip.statuses) {
-        counts[chip.key] = allInvoices.filter((inv) => chip.statuses.includes(inv.status)).length;
-      }
-    });
-    return counts;
-  });
-
-  // Count active filters
-  const activeFiltersCount = $derived.by(() => {
-    let count = 0;
-    if (filters.search) count++;
-    if (filters.status) count++;
-    if (filters.account) count++;
-    if (filters.issue_date_gte || filters.issue_date_lte) count++;
-    if (filters.due_date_gte || filters.due_date_lte) count++;
-    return count;
-  });
-
-  // Filter handlers
-  async function updateFilters(newFilters) {
-    const url = new URL($page.url);
-
-    // Clear existing filter params
-    [
-      'search',
-      'status',
-      'account',
-      'contact',
-      'assigned_to',
-      'issue_date_gte',
-      'issue_date_lte',
-      'due_date_gte',
-      'due_date_lte'
-    ].forEach((key) => url.searchParams.delete(key));
-
-    // Set new params
-    Object.entries(newFilters).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => url.searchParams.append(key, v));
-      } else if (value) {
-        url.searchParams.set(key, value);
-      }
-    });
-
-    // Reset to page 1 when filters change
-    url.searchParams.set('page', '1');
-
-    await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
+  function ageLabel(inv) {
+    if (SETTLED.includes(inv.status)) return '—';
+    if (!inv.due_date) return '—';
+    const n = daysSince(inv.due_date);
+    if (n > 0) return `${n}d late`;
+    if (n === 0) return 'due today';
+    return `${Math.abs(n)}d left`;
   }
 
-  async function clearFilters() {
-    await updateFilters({});
-  }
-
-  // Pagination handlers
-  async function handlePageChange(newPage) {
-    const url = new URL($page.url);
-    url.searchParams.set('page', newPage.toString());
-    await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
-  }
-
-  async function handleLimitChange(newLimit) {
-    const url = new URL($page.url);
-    url.searchParams.set('limit', newLimit.toString());
-    url.searchParams.set('page', '1');
-    await goto(url.toString(), { replaceState: true, noScroll: true, invalidateAll: true });
-  }
-
-  // Row click - navigate to invoice detail
-  function handleRowClick(invoice) {
-    goto(`/invoices/${invoice.id}`);
-  }
-
-  // Create new invoice - navigate to new page
-  function createNewInvoice() {
-    goto('/invoices/new');
-  }
-
-  // Status badge color
-  function getStatusColor(status) {
-    const statusObj = INVOICE_STATUSES.find((s) => s.value === status);
-    return statusObj?.color || 'bg-gray-100 text-gray-700';
-  }
-
-  // Column visibility
-  function loadColumnConfig() {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('invoices-column-config');
-      if (saved) {
-        try {
-          visibleColumns = JSON.parse(saved);
-        } catch (e) {
-          visibleColumns = [...DEFAULT_VISIBLE_COLUMNS];
-        }
-      }
-    }
-  }
-
-  function saveColumnConfig() {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('invoices-column-config', JSON.stringify(visibleColumns));
-    }
-  }
-
-  function toggleColumn(key) {
-    const column = columns.find((c) => c.key === key);
-    if (column && !column.canHide) return;
-
-    if (visibleColumns.includes(key)) {
-      visibleColumns = visibleColumns.filter((k) => k !== key);
-    } else {
-      visibleColumns = [...visibleColumns, key];
-    }
-    saveColumnConfig();
-  }
-
-  // Load column config on mount
-  $effect(() => {
-    loadColumnConfig();
-  });
+  const isLate = (inv) =>
+    !SETTLED.includes(inv.status) && inv.due_date && daysSince(inv.due_date) > 0;
 </script>
 
-<svelte:head>
-  <title>Invoices | BottleCRM</title>
-</svelte:head>
+<PageHeader title="Invoices">
+  {#snippet sub()}
+    <!--
+      These aggregates come from the API over the whole result set. v1 summed
+      the loaded page, so a 50-row list showed pills adding up to 10.
+    -->
+    <span class="v2-num">{count(totals.count)}</span> invoices ·
+    <span class="v2-num">{money(totals.outstanding)}</span> outstanding
+  {/snippet}
+  {#snippet actions()}
+    <a class="v2-btn v2-btn-primary" href="/invoices/new"><Plus />New invoice</a>
+  {/snippet}
+</PageHeader>
 
-<!-- Page Content -->
-<div class="flex flex-col">
-  <!-- Header -->
-  <PageHeader title="Invoices" subtitle="{invoices.length} of {pagination.total} invoices">
-    {#snippet actions()}
-      <div class="flex items-center gap-2">
-        <!-- Status Filter Chips -->
-        <div class="flex gap-1">
-          {#each STATUS_CHIPS as chip}
-            <button
-              type="button"
-              onclick={() => (statusChipFilter = chip.key)}
-              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors {statusChipFilter ===
-              chip.key
-                ? 'bg-[var(--color-primary-default)] text-white'
-                : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]'}"
-            >
-              {chip.label}
-              <span
-                class="rounded-full px-1.5 py-0.5 text-xs {statusChipFilter === chip.key
-                  ? 'bg-[var(--color-primary-dark)] text-white/90'
-                  : 'bg-[var(--border-default)] text-[var(--text-tertiary)]'}"
-              >
-                {chipCounts[chip.key] || 0}
-              </span>
-            </button>
-          {/each}
-        </div>
+<!-- Estimates and Recurring were buttons in this header that went nowhere,
+     while /invoices/estimates existed in v1 and was reachable only from a
+     dropdown elsewhere. They are sibling pages; a tab strip says so. -->
+<SectionTabs set="invoices" />
 
-        <div class="bg-border mx-1 h-6 w-px"></div>
-
-        <!-- Column Visibility -->
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Button {...props} variant="outline" size="sm" class="gap-2">
-                <Columns3 class="size-4" />
-                Columns
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" class="w-48">
-            {#each columns as column}
-              <DropdownMenu.CheckboxItem
-                class=""
-                checked={visibleColumns.includes(column.key)}
-                disabled={!column.canHide}
-                onCheckedChange={() => toggleColumn(column.key)}
-              >
-                {column.label}
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        <Button
-          variant="outline"
-          onclick={() => (fromTimeEntriesOpen = true)}
-          class="gap-2"
-        >
-          <Clock class="size-4" />
-          From time entries
-        </Button>
-
-        <!-- New Invoice -->
-        <Button onclick={createNewInvoice} class="gap-2">
-          <Plus class="size-4" />
-          New Invoice
-        </Button>
-      </div>
-    {/snippet}
-    {#snippet tabs()}
-      <ViewTabs views={[{ id: 'all', label: 'All', count: pagination.total }]} active="all" />
-    {/snippet}
-  </PageHeader>
-
-  <InvoiceFromTimeEntriesDialog bind:open={fromTimeEntriesOpen} />
-
-  <!-- Filter Strip -->
-  <FilterStrip>
-    <SearchInput
-      value={filters.search}
-      placeholder="Search invoices..."
-      onchange={(value) => updateFilters({ ...filters, search: value })}
+<div class="v2-pad" style="padding-top:16px;flex:none">
+  <div class="v2-stats">
+    <StatCard
+      label="Overdue"
+      value={money(totals.overdue)}
+      tone="rust"
+      detail="Chase these first"
     />
-
-    <SelectFilter
-      label="Status"
-      value={filters.status}
-      options={INVOICE_STATUSES}
-      onchange={(value) => updateFilters({ ...filters, status: value })}
-    />
-
-    <DateRangeFilter
-      label="Issue Date"
-      startDate={filters.issue_date_gte}
-      endDate={filters.issue_date_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, issue_date_gte: start, issue_date_lte: end })}
-    />
-
-    <DateRangeFilter
-      label="Due Date"
-      startDate={filters.due_date_gte}
-      endDate={filters.due_date_lte}
-      onchange={(start, end) =>
-        updateFilters({ ...filters, due_date_gte: start, due_date_lte: end })}
-    />
-    {#if activeFiltersCount > 0}
-      <FilterPill label="Clear all" dashed onclick={clearFilters} />
-    {/if}
-    {#snippet meta()}
-      <span>{invoices.length} of {pagination.total} invoices</span>
-    {/snippet}
-  </FilterStrip>
-
-  <!-- Invoice Table -->
-  <CrmTable data={invoices} {columns} bind:visibleColumns onRowClick={handleRowClick}>
-    {#snippet emptyState()}
-      <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div
-          class="mb-4 flex size-16 items-center justify-center rounded-[var(--radius-xl)] bg-[var(--surface-sunken)]"
-        >
-          <span class="text-4xl">📄</span>
-        </div>
-        <h3 class="text-lg font-medium text-[var(--text-primary)]">No invoices yet</h3>
-        <p class="mb-4 text-sm text-[var(--text-secondary)]">
-          Create your first invoice to get started
-        </p>
-        <Button onclick={createNewInvoice} class="gap-2">
-          <Plus class="size-4" />
-          Create Invoice
-        </Button>
-      </div>
-    {/snippet}
-    {#snippet cellContent(row, column)}
-      {#if column.key === 'status'}
-        <span
-          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {getStatusColor(
-            row.status
-          )}"
-        >
-          {row.status.replace('_', ' ')}
-        </span>
-      {:else if column.key === 'issueDate' || column.key === 'dueDate'}
-        {row[column.key] ? formatDate(row[column.key]) : '-'}
-      {:else if column.key === 'totalAmount' || column.key === 'amountDue'}
-        <span
-          class={column.key === 'amountDue' && parseFloat(row.amountDue || 0) > 0
-            ? 'font-medium text-[var(--color-primary-default)]'
-            : ''}
-        >
-          {formatCurrency(row[column.key], row.currency)}
-        </span>
-      {:else if column.key === 'account' || column.key === 'contact'}
-        {row[column.key]?.name || '-'}
-      {:else}
-        {row[column.key] || '-'}
-      {/if}
-    {/snippet}
-  </CrmTable>
-
-  <!-- Pagination -->
-  {#if invoices.length > 0}
-    <Pagination
-      page={pagination.page}
-      limit={pagination.limit}
-      total={pagination.total}
-      limitOptions={[10, 25, 50, 100]}
-      onPageChange={handlePageChange}
-      onLimitChange={handleLimitChange}
-    />
-  {/if}
+    <StatCard label="Due this month" value={money(totals.due_this_month)} tone="clay" />
+    <StatCard label="Paid this quarter" value={money(totals.paid_this_quarter)} tone="moss" />
+    <StatCard label="Draft" value={money(totals.draft)} tone="slate" detail="Not sent yet" />
+  </div>
 </div>
 
+<FilterBar view="All invoices" filters={[]} meta="Oldest due first" />
+
+{#if form?.error}
+  <p class="v2-sub v2-pad" style="color:var(--v2-rust);font-size:12.5px;padding-top:10px">
+    {form.error}
+  </p>
+{/if}
+
+<div class="v2-scroll">
+  {#if invoices.length === 0}
+    <EmptyState
+      title="Nothing billed yet"
+      body="Invoices show up here once you raise one. A won deal is usually the place to start — the amount and the account are already there."
+    >
+      {#snippet icon()}<Receipt size={21} />{/snippet}
+      {#snippet actions()}
+        <a class="v2-btn v2-btn-primary" href="/invoices/new">New invoice</a>
+        <a class="v2-btn" href="/pipeline">Go to pipeline</a>
+      {/snippet}
+    </EmptyState>
+  {:else}
+    <div class="v2-table-wrap">
+      <table class="v2-table">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Account</th>
+            <th>Status</th>
+            <th class="v2-r">Amount</th>
+            <th>Due</th>
+            <th class="v2-r">Age</th>
+            <th style="width:130px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each invoices as inv (inv.id)}
+            {@const late = isLate(inv)}
+            <tr>
+              <td>
+                <a class="v2-row-link" href="/invoices/{inv.id}">
+                  <span class="v2-table-primary v2-num" style="font-size:13px"
+                    >{inv.invoice_number}</span
+                  >
+                </a>
+              </td>
+              <td>{inv.account.name}</td>
+              <td>
+                <Pill tone={INVOICE_STATUS_TONE[inv.status]}>{invoiceStatusLabel(inv.status)}</Pill>
+              </td>
+              <td class="v2-r v2-num" style="font-weight:600">{money(inv.total_amount)}</td>
+              <td>{shortDate(inv.due_date)}</td>
+              <td
+                class="v2-r v2-num"
+                class:v2-muted={!late}
+                style={late ? 'color:var(--v2-rust);font-weight:600' : ''}
+              >
+                {ageLabel(inv)}
+              </td>
+              <td>
+                {#if inv.status === 'Overdue' || inv.status === 'Draft'}
+                  <form
+                    method="POST"
+                    action="?/send"
+                    use:enhance={() => {
+                      sending[inv.id] = true;
+                      return async ({ update }) => {
+                        await update();
+                        sending[inv.id] = false;
+                      };
+                    }}
+                  >
+                    <input type="hidden" name="id" value={inv.id} />
+                    <button class="v2-btn v2-btn-sm" disabled={sending[inv.id]}>
+                      {#if sending[inv.id]}Sending…{:else if inv.status === 'Overdue'}Send a
+                        reminder{:else}Send{/if}
+                    </button>
+                  </form>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+    <p class="v2-sub v2-pad" style="font-size:12px;padding-bottom:24px">
+      Showing <span class="v2-num">{invoices.length}</span> of
+      <span class="v2-num">{count(totals.count)}</span>
+    </p>
+  {/if}
+</div>

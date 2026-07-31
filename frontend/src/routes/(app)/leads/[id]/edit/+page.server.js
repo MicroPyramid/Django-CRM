@@ -1,92 +1,66 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { fail } from '@sveltejs/kit';
+import { EDITABLE_FIELDS, getLeadForEdit, updateLead } from '$lib/server/v2/leads.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ params, locals, cookies }) {
-  if (!locals.org) throw error(401, 'Organization context required');
-  try {
-    const response = await apiRequest(`/leads/${params.id}/`, {}, { cookies, org: locals.org });
-    if (response?.error) throw error(404, response.errors || 'Lead not found');
-    return {
-      lead: response.lead_obj || null,
-      users: response.users || [],
-      tags: response.tags || []
-    };
-  } catch (err) {
-    if (err?.status) throw err;
-    throw error(500, 'Failed to load lead');
-  }
+export async function load({ cookies, params }) {
+  return await getLeadForEdit({ cookies }, params.id);
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  default: async ({ request, params, locals, cookies }) => {
+  /**
+   * The form posts here. The client-side checks in `+page.svelte` mirror the
+   * API's rules so somebody finds out before they press save — they are not
+   * the thing that enforces them. Anything reaching this action is validated
+   * again by the DRF serializer, and a request that skips the page entirely
+   * meets exactly the same rules.
+   *
+   * Note what is *not* read out of the form: `org`, `created_by`, and the
+   * conversion side-effects. Only the fields the form owns are picked out by
+   * name, so a field appended to the POST body by hand is not forwarded.
+   */
+  save: async ({ cookies, params, request }) => {
     const form = await request.formData();
-    const get = /** @param {string} k */ (k) => form.get(k)?.toString().trim() || '';
 
-    const title = get('title');
-    if (!title) {
-      return fail(400, { error: 'Title is required', values: Object.fromEntries(form) });
-    }
-
+    // Only fields the form actually submitted. A field that is absent stays
+    // absent all the way to the PATCH, where absent means "leave it alone" —
+    // which is how the disabled status select on a converted lead avoids
+    // sending a value that `validate_status` would reject.
     /** @type {Record<string, any>} */
-    const body = {
-      title,
-      description: get('description') || '',
-      org: locals.org.id
-    };
-
-    const map = {
-      salutation: 'salutation',
-      firstName: 'first_name',
-      lastName: 'last_name',
-      email: 'email',
-      phone: 'phone',
-      jobTitle: 'job_title',
-      website: 'website',
-      linkedinUrl: 'linkedin_url',
-      industry: 'industry',
-      company: 'company_name',
-      source: 'source',
-      status: 'status',
-      rating: 'rating',
-      currency: 'currency',
-      addressLine: 'address_line',
-      city: 'city',
-      state: 'state',
-      postcode: 'postcode',
-      country: 'country'
-    };
-    for (const [formKey, apiKey] of Object.entries(map)) {
-      const v = get(formKey);
-      if (v) body[apiKey] = v;
+    const values = {};
+    for (const field of EDITABLE_FIELDS) {
+      if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
 
-    const amount = get('opportunityAmount');
-    if (amount) body.opportunity_amount = parseFloat(amount);
-    const probability = get('probability');
-    if (probability) body.probability = parseInt(probability, 10);
-    const closeDate = get('closeDate');
-    if (closeDate) body.close_date = closeDate;
-    const lastContacted = get('lastContacted');
-    if (lastContacted) body.last_contacted = lastContacted;
-    const nextFollowUp = get('nextFollowUp');
-    if (nextFollowUp) body.next_follow_up = nextFollowUp;
+    /*
+     * The owner is only sent when somebody actually changed it.
+     *
+     * `assigned_to` is many-to-many and this form offers a single select, so
+     * sending it unconditionally rewrites the whole list from one value — a
+     * lead with two people on it loses one every time anybody edits a phone
+     * number. Found while wiring the pipeline, which has the same shape; the
+     * two forms should keep behaving the same way.
+     */
+    const owner = form.get('assigned_to')?.toString().trim() ?? '';
+    const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
+    if (owner !== ownerWas) values.assigned_to = owner;
 
-    try {
-      await apiRequest(
-        `/leads/${params.id}/`,
-        { method: 'PATCH', body },
-        { cookies, org: locals.org }
-      );
-    } catch (err) {
-      console.error('Update lead error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to update lead',
-        values: Object.fromEntries(form)
+    if (!values.first_name && !values.last_name) {
+      return fail(400, {
+        values,
+        errors: { last_name: 'A lead needs a name to be findable. First or last will do.' }
       });
     }
 
-    throw redirect(303, `/leads/${params.id}`);
+    try {
+      await updateLead({ cookies }, params.id, values);
+    } catch (/** @type {any} */ err) {
+      // `api-helpers` flattens DRF's field errors into one string. Surface it
+      // rather than a generic failure — "email: lead with this email already
+      // exists" tells somebody what to change; "Could not save" does not.
+      return fail(400, { values, message: String(err?.message ?? 'Could not save this lead.') });
+    }
+
+    return { saved: true };
   }
 };

@@ -13,11 +13,7 @@ const PANEL_LIMIT = 20;
 // Verbs that should fire an in-page toast in addition to bumping the badge.
 // Keep this conservative — too noisy and users mute the channel.
 // NOTE: `case.*` keys are backend wire-format strings — do not rename.
-const TOAST_VERBS = new Set([
-  'case.mentioned',
-  'case.assigned',
-  'case.sla_breached'
-]);
+const TOAST_VERBS = new Set(['case.mentioned', 'case.assigned', 'case.sla_breached']);
 
 class NotificationsStore {
   notifications = $state([]);
@@ -73,9 +69,7 @@ class NotificationsStore {
     const now = new Date().toISOString();
     const snapshot = this.notifications.map((n) => ({ ...n }));
     const prevUnread = this.unread_count;
-    this.notifications = this.notifications.map((n) =>
-      n.read_at ? n : { ...n, read_at: now }
-    );
+    this.notifications = this.notifications.map((n) => (n.read_at ? n : { ...n, read_at: now }));
     this.unread_count = 0;
     try {
       const res = await window.fetch('/api/notifications/read-all/', {
@@ -151,9 +145,7 @@ class NotificationsStore {
     this.total_count += 1;
     if (!row.read_at) this.unread_count += 1;
     if (TOAST_VERBS.has(row.verb)) {
-      const message = row.entity_name
-        ? `${row.verb}: ${row.entity_name}`
-        : row.verb;
+      const message = row.entity_name ? `${row.verb}: ${row.entity_name}` : row.verb;
       toast(message, {
         description: row.data?.comment_excerpt || undefined,
         action: row.link

@@ -1,5 +1,5 @@
 /**
- * Business hours — the wiring behind `/v2/settings/business-hours`.
+ * Business hours — the wiring behind `/settings/business-hours`.
  *
  * Server-only. Reads `GET /business-hours/calendar/`, the org's default
  * calendar (created on first read if missing). This is the calendar every SLA

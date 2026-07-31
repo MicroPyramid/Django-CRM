@@ -7,7 +7,7 @@
   bind:this={ref}
   data-slot="card-title"
   class={cn(
-    'text-[10px] font-medium uppercase tracking-[0.06em] leading-none text-[color:var(--text-muted)]',
+    'text-[10px] leading-none font-medium tracking-[0.06em] text-[color:var(--text-muted)] uppercase',
     className
   )}
   {...restProps}

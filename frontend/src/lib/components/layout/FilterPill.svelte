@@ -12,7 +12,16 @@
    *   class?: string,
    * }}
    */
-  let { label, active = false, value = '', icon, onclick, onclear, dashed = false, class: className = '' } = $props();
+  let {
+    label,
+    active = false,
+    value = '',
+    icon,
+    onclick,
+    onclear,
+    dashed = false,
+    class: className = ''
+  } = $props();
 
   const base =
     'inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] px-[9px] text-[13px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ring)]';
@@ -30,14 +39,24 @@
   class="{base} {dashed ? dashedCls : active ? activeCls : neutral} {className}"
 >
   {#if icon}<span class="flex shrink-0 items-center">{@render icon()}</span>{/if}
-  <span class="truncate">{label}{#if value}<span class="ml-1 opacity-80">: {value}</span>{/if}</span>
+  <span class="truncate"
+    >{label}{#if value}<span class="ml-1 opacity-80">: {value}</span>{/if}</span
+  >
   {#if active && onclear}
     <span
       role="button"
       tabindex="-1"
       class="-mr-1 ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm hover:bg-[color:var(--violet)]/15"
-      onclick={(e) => { e.stopPropagation(); onclear(e); }}
-      onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onclear(/** @type {any} */ (e)); } }}
+      onclick={(e) => {
+        e.stopPropagation();
+        onclear(e);
+      }}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') {
+          e.stopPropagation();
+          onclear(/** @type {any} */ (e));
+        }
+      }}
       aria-label="Clear filter"
     >
       <X class="size-3 stroke-[2]" />

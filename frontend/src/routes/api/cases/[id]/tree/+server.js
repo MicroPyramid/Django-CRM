@@ -9,10 +9,6 @@ export async function GET({ params, cookies, locals }) {
   if (!UUID_RE.test(params.id)) {
     return json({ error: 'invalid case id' }, { status: 400 });
   }
-  const data = await apiRequest(
-    `/cases/${params.id}/tree/`,
-    {},
-    { cookies, org: locals?.org }
-  );
+  const data = await apiRequest(`/cases/${params.id}/tree/`, {}, { cookies, org: locals?.org });
   return json(data);
 }

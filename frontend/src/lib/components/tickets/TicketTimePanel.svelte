@@ -2,15 +2,7 @@
   import { invalidateAll } from '$app/navigation';
   import { onDestroy, onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
-  import {
-    Clock,
-    Pause,
-    Play,
-    Plus,
-    Trash2,
-    DollarSign,
-    Loader2
-  } from '@lucide/svelte';
+  import { Clock, Pause, Play, Plus, Trash2, DollarSign, Loader2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import ManualTimeEntryDialog from './ManualTimeEntryDialog.svelte';
 
@@ -39,19 +31,14 @@
   // Match by the embedded User.id; the JWT exposes the user id but not the
   // profile id, so this is the cheapest way to know "is this my running timer".
   const myRunningEntry = $derived(
-    entries.find(
-      (e) => e.profile?.user_details?.id === currentUserId && !e.ended_at
-    )
+    entries.find((e) => e.profile?.user_details?.id === currentUserId && !e.ended_at)
   );
   const totalMinutes = $derived(
-    timeSummary?.total_minutes ??
-      entries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+    timeSummary?.total_minutes ?? entries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
   );
   const billableMinutes = $derived(
     timeSummary?.billable_minutes ??
-      entries
-        .filter((e) => e.billable)
-        .reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+      entries.filter((e) => e.billable).reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
   );
 
   onMount(async () => {
@@ -169,10 +156,7 @@
 
   function runningMinutes(/** @type {any} */ entry) {
     if (!entry || entry.ended_at) return 0;
-    return Math.max(
-      Math.floor((tick - new Date(entry.started_at).getTime()) / 60000),
-      0
-    );
+    return Math.max(Math.floor((tick - new Date(entry.started_at).getTime()) / 60000), 0);
   }
 
   function ownerLabel(/** @type {any} */ entry) {
@@ -191,7 +175,7 @@
       <Clock class="h-4 w-4" />
       Time
       <span
-        class="ml-2 rounded bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] uppercase text-[var(--text-secondary)]"
+        class="ml-2 rounded bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] uppercase"
       >
         {formatMinutes(totalMinutes)}
         {#if billableMinutes > 0}
@@ -212,22 +196,12 @@
           Stop ({formatMinutes(runningMinutes(myRunningEntry))})
         </Button>
       {:else}
-        <Button
-          size="sm"
-          class="gap-1"
-          onclick={startTimer}
-          disabled={actionPending}
-        >
+        <Button size="sm" class="gap-1" onclick={startTimer} disabled={actionPending}>
           <Play class="h-3.5 w-3.5" />
           Start timer
         </Button>
       {/if}
-      <Button
-        size="sm"
-        variant="outline"
-        class="gap-1"
-        onclick={() => (manualOpen = true)}
-      >
+      <Button size="sm" variant="outline" class="gap-1" onclick={() => (manualOpen = true)}>
         <Plus class="h-3.5 w-3.5" />
         Log time
       </Button>
@@ -239,9 +213,7 @@
       <Loader2 class="h-3.5 w-3.5 animate-spin" /> Loading entries…
     </div>
   {:else if entries.length === 0}
-    <p class="py-3 text-sm text-[var(--text-secondary)]">
-      No time logged on this ticket yet.
-    </p>
+    <p class="py-3 text-sm text-[var(--text-secondary)]">No time logged on this ticket yet.</p>
   {:else}
     <ul class="divide-y divide-[var(--border-muted)]">
       {#each entries as e (e.id)}
@@ -255,7 +227,7 @@
               </span>
             {:else}
               <span
-                class="inline-flex h-6 min-w-[3rem] items-center justify-center rounded bg-emerald-100 px-1.5 text-[11px] font-medium tabular-nums text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+                class="inline-flex h-6 min-w-[3rem] items-center justify-center rounded bg-emerald-100 px-1.5 text-[11px] font-medium text-emerald-900 tabular-nums dark:bg-emerald-900/40 dark:text-emerald-100"
               >
                 <Loader2 class="mr-1 h-3 w-3 animate-spin" />
                 {formatMinutes(runningMinutes(e))}
@@ -272,14 +244,14 @@
               </span>
               {#if e.auto_stopped}
                 <span
-                  class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                  class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-900 uppercase dark:bg-amber-900/40 dark:text-amber-100"
                 >
                   Auto-stopped
                 </span>
               {/if}
               {#if e.invoice}
                 <span
-                  class="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] uppercase text-blue-900 dark:bg-blue-900/40 dark:text-blue-100"
+                  class="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-900 uppercase dark:bg-blue-900/40 dark:text-blue-100"
                 >
                   Invoiced
                 </span>

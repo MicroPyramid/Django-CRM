@@ -199,10 +199,7 @@
           </div>
         {:else if error}
           <div class="flex items-start gap-2 px-2 py-3 text-xs" role="alert">
-            <AlertCircle
-              class="text-destructive mt-0.5 h-4 w-4 shrink-0"
-              aria-hidden="true"
-            />
+            <AlertCircle class="text-destructive mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <div class="flex-1 space-y-1.5">
               <p class="text-destructive font-medium">{error}</p>
               {#if onRetry}
@@ -226,7 +223,7 @@
             No matches for "{query}"
           </div>
         {:else}
-          <DropdownMenu.CheckboxGroup value={value}>
+          <DropdownMenu.CheckboxGroup {value}>
             {#each filteredOptions as opt (opt.id)}
               <DropdownMenu.CheckboxItem
                 checked={value.includes(opt.id)}

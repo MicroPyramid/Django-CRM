@@ -1514,26 +1514,6 @@ a.v2-setting:hover {
   outline-offset: 2px;
   border-radius: 4px;
 }
-.v2-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px var(--v2-pad);
-  background: var(--v2-ink);
-  color: var(--v2-paper);
-  font-size: 12px;
-  flex: none;
-}
-.v2-banner a {
-  color: inherit;
-  text-decoration: underline;
-}
-/* The live banner has to read as a different statement from the preview one at
-   a glance, not as the same bar with different words. Rust is the strongest
-   thing here that is not Ember — Ember stays action-only. */
-.v2-banner-live {
-  background: var(--v2-rust);
-}
 .v2-sr-only {
   position: absolute;
   width: 1px;
