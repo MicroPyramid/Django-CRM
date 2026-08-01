@@ -82,11 +82,11 @@ mcp = ["bcrm-mcp"]
 bcrm-mcp = { path = "../mcp_server", editable = true }
 
 [project.urls]
-Homepage = "https://github.com/MicroPyramid/Django-CRM"
-Repository = "https://github.com/MicroPyramid/Django-CRM"
-Documentation = "https://github.com/MicroPyramid/Django-CRM#readme"
-Issues = "https://github.com/MicroPyramid/Django-CRM/issues"
-Changelog = "https://github.com/MicroPyramid/Django-CRM/releases"
+Homepage = "https://github.com/django-crm/Django-CRM"
+Repository = "https://github.com/django-crm/Django-CRM"
+Documentation = "https://github.com/django-crm/Django-CRM#readme"
+Issues = "https://github.com/django-crm/Django-CRM/issues"
+Changelog = "https://github.com/django-crm/Django-CRM/releases"
 
 [dependency-groups]
 dev = [
