@@ -7,7 +7,7 @@ See docs/cases/tier1/reopen.md.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
@@ -195,9 +195,7 @@ class TestReopenPolicyAPI:
         assert response.status_code == 400
 
     def test_put_rejects_out_of_range_window(self, admin_client):
-        response = admin_client.put(
-            self.URL, {"reopen_window_days": 0}, format="json"
-        )
+        response = admin_client.put(self.URL, {"reopen_window_days": 0}, format="json")
         assert response.status_code == 400
 
         response = admin_client.put(
@@ -218,3 +216,66 @@ class TestReopenPolicyAPI:
         body = response.json()
         assert body["is_enabled"] is True
         assert body["reopen_window_days"] == 7
+
+
+@pytest.mark.django_db
+class TestReopenAnalytics:
+    """The three settings-page metrics returned alongside the policy — all built
+    from the real reopen path (create a comment, let the signal fire)."""
+
+    URL = "/api/cases/reopen-policy/"
+
+    def _make_case(self, org):
+        return Case.objects.create(org=org, name="C", status="New", priority="Normal")
+
+    def test_reopened_last_30d_counts_reopens(self, admin_client, org_a):
+        case = self._make_case(org_a)
+        _close_case(case, days_ago=2)  # within the default 7-day window
+        _post_external_comment(case)  # → reopens, emits a REOPENED activity
+        case.refresh_from_db()
+        assert case.status != "Closed"  # sanity: it actually reopened
+
+        data = admin_client.get(self.URL).json()
+        assert data["reopened_last_30d"] == 1
+        assert data["replies_after_window_30d"] == 0
+
+    def test_replies_after_window_uses_the_signal_flag(self, admin_client, org_a):
+        case = self._make_case(org_a)
+        _close_case(case, days_ago=30)  # past the window
+        _post_external_comment(case)  # → out_of_window, flags the COMMENT row
+        case.refresh_from_db()
+        assert case.status == "Closed"  # sanity: it did NOT reopen
+
+        data = admin_client.get(self.URL).json()
+        assert data["replies_after_window_30d"] == 1
+        assert data["reopened_last_30d"] == 0
+
+    def test_median_unions_reopened_and_still_closed(self, admin_client, org_a):
+        reopened = self._make_case(org_a)
+        _close_case(reopened, days_ago=2)
+        _post_external_comment(reopened)  # reopened → delta 2 (activity metadata)
+
+        stale = self._make_case(org_a)
+        _close_case(stale, days_ago=10)
+        _post_external_comment(stale)  # out of window, still Closed → delta 10
+
+        data = admin_client.get(self.URL).json()
+        assert data["median_days_to_reply"] == 6  # median([2, 10])
+        assert data["reopened_last_30d"] == 1
+        assert data["replies_after_window_30d"] == 1
+
+    def test_analytics_are_org_scoped(self, admin_client, org_a, org_b):
+        # A reopen in org_b must not bleed into org_a's numbers.
+        case = self._make_case(org_b)
+        _close_case(case, days_ago=2)
+        _post_external_comment(case)
+
+        data = admin_client.get(self.URL).json()
+        assert data["reopened_last_30d"] == 0
+        assert data["median_days_to_reply"] == 0
+
+    def test_no_activity_yields_zeroes(self, admin_client, org_a):
+        data = admin_client.get(self.URL).json()
+        assert data["reopened_last_30d"] == 0
+        assert data["replies_after_window_30d"] == 0
+        assert data["median_days_to_reply"] == 0

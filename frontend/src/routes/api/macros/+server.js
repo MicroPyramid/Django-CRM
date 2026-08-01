@@ -9,10 +9,6 @@ export async function GET({ url, cookies, locals }) {
   params.set('active', 'true');
   const search = url.searchParams.get('search');
   if (search) params.set('search', search);
-  const data = await apiRequest(
-    `/macros/?${params.toString()}`,
-    {},
-    { cookies, org: locals?.org }
-  );
+  const data = await apiRequest(`/macros/?${params.toString()}`, {}, { cookies, org: locals?.org });
   return json(data);
 }

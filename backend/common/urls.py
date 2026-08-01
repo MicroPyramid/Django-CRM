@@ -14,7 +14,8 @@ from common.views.custom_field_views import (
     CustomFieldDefinitionDetailView,
     CustomFieldDefinitionListCreateView,
 )
-from common.views.dashboard_views import ActivityListView, ApiHomeView
+from common.views.dashboard_views import ActivityListView, ApiHomeView, ApiTodayView
+from common.views.document_views import DocumentDetailView, DocumentListView
 from common.views.notification_views import (
     NotificationDetailView,
     NotificationListView,
@@ -22,19 +23,21 @@ from common.views.notification_views import (
     NotificationReadView,
     NotificationStreamView,
 )
-from common.views.document_views import DocumentDetailView, DocumentListView
+from common.views.org_settings_views import OrgSettingsView
 from common.views.organization_views import (
+    OrgApiKeyView,
     OrgProfileCreateView,
     OrgUpdateView,
     ProfileDetailView,
     ProfileView,
 )
-from common.views.settings_views import DomainDetailView, DomainList
-from common.views.org_settings_views import OrgSettingsView
 from common.views.pat_views import (
+    OrgAccessTokenDetailView,
+    OrgAccessTokenListView,
     PersonalAccessTokenDetailView,
     PersonalAccessTokenListCreateView,
 )
+from common.views.settings_views import DomainDetailView, DomainList
 from common.views.tags_views import TagsDetailView, TagsListView, TagsRestoreView
 from common.views.team_views import TeamsDetailView, TeamsListView
 from common.views.user_views import (
@@ -49,6 +52,7 @@ app_name = "api_common"
 
 urlpatterns = [
     path("dashboard/", ApiHomeView.as_view()),
+    path("dashboard/today/", ApiTodayView.as_view()),
     # JWT Authentication endpoints for SvelteKit integration
     path(
         "auth/refresh-token/",
@@ -63,12 +67,37 @@ urlpatterns = [
     # Google ID token auth for mobile apps
     path("auth/google/", GoogleIdTokenView.as_view(), name="google_id_token"),
     # Magic link (passwordless) authentication
-    path("auth/magic-link/request/", MagicLinkRequestView.as_view(), name="magic_link_request"),
-    path("auth/magic-link/verify/", MagicLinkVerifyView.as_view(), name="magic_link_verify"),
-    path("auth/magic-link/verify-code/", MagicLinkVerifyCodeView.as_view(), name="magic_link_verify_code"),
+    path(
+        "auth/magic-link/request/",
+        MagicLinkRequestView.as_view(),
+        name="magic_link_request",
+    ),
+    path(
+        "auth/magic-link/verify/",
+        MagicLinkVerifyView.as_view(),
+        name="magic_link_verify",
+    ),
+    path(
+        "auth/magic-link/verify-code/",
+        MagicLinkVerifyCodeView.as_view(),
+        name="magic_link_verify_code",
+    ),
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
+    # These literal org/… paths must precede org/<str:pk>/ so they are not
+    # captured as a pk (org/tokens/ would otherwise resolve to OrgUpdateView
+    # with pk="tokens"). org/tokens/ is ADMIN-only token oversight — separate
+    # from profile/tokens/ (self-scoped) so the self guard is never widened; an
+    # admin sees and can revoke any token in their own org, a deactivated
+    # colleague's included.
+    path("org/api-key/", OrgApiKeyView.as_view(), name="org_api_key"),
+    path("org/tokens/", OrgAccessTokenListView.as_view(), name="org_pat_list"),
+    path(
+        "org/tokens/<uuid:pk>/",
+        OrgAccessTokenDetailView.as_view(),
+        name="org_pat_detail",
+    ),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
     # Personal Access Tokens (MCP server) — a user manages ONLY their own

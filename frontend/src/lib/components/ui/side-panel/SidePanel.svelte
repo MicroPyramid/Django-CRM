@@ -29,18 +29,20 @@
     type="button"
     onclick={reopen}
     aria-label="Show side panel"
-    class="fixed right-0 top-1/2 z-30 hidden h-16 w-3 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-[color:var(--border)] bg-[color:var(--bg-card)] text-[color:var(--text-subtle)] hover:text-[color:var(--text)] hover:bg-[color:var(--bg-hover)] xl:flex"
+    class="fixed top-1/2 right-0 z-30 hidden h-16 w-3 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-[color:var(--border)] bg-[color:var(--bg-card)] text-[color:var(--text-subtle)] hover:bg-[color:var(--bg-hover)] hover:text-[color:var(--text)] xl:flex"
   >
     <ChevronLeft class="size-3.5" />
   </button>
 {:else}
   <aside
     class={cn(
-      'fixed right-0 top-0 z-20 hidden h-screen w-[380px] flex-col border-l border-[color:var(--border-faint)] bg-[color:var(--bg-card)] xl:flex',
+      'fixed top-0 right-0 z-20 hidden h-screen w-[380px] flex-col border-l border-[color:var(--border-faint)] bg-[color:var(--bg-card)] xl:flex',
       className
     )}
   >
-    <div class="flex items-start justify-between gap-2 border-b border-[color:var(--border-faint)] px-[22px] pt-5 pb-4">
+    <div
+      class="flex items-start justify-between gap-2 border-b border-[color:var(--border-faint)] px-[22px] pt-5 pb-4"
+    >
       <div class="min-w-0 flex-1">
         {#if hasActive && head}
           {@render head()}

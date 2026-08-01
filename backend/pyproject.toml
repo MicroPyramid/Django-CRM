@@ -61,6 +61,9 @@ dependencies = [
     "faker>=40.36.0",
     "python-dateutil>=2.9.0.post0",
     "google-auth>=2.56.2",
+    # X.509 handling for inbound SNS webhook signature verification
+    # (cases/inbound/sns.py). Needs >=42 for the not_valid_*_utc accessors.
+    "cryptography>=49.0.0",
     # PDF generation (also needs system libs: cairo, pango, gdk-pixbuf, libffi, shared-mime-info)
     "weasyprint>=69.0",
     "cairocffi>=1.7.1",

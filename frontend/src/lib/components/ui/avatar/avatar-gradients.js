@@ -5,7 +5,7 @@ export const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #60a5fa, #2563eb)', // 3 blue
   'linear-gradient(135deg, #fbbf24, #ef4444)', // 4 orange-red
   'linear-gradient(135deg, #67e8f9, #0891b2)', // 5 cyan
-  'linear-gradient(135deg, #fcd34d, #d97706)'  // 6 amber
+  'linear-gradient(135deg, #fcd34d, #d97706)' // 6 amber
 ];
 
 export const WORKSPACE_GRADIENT = 'linear-gradient(135deg, #ea580c, #c2410c)';

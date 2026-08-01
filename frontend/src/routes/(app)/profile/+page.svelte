@@ -1,362 +1,244 @@
 <script>
+  /**
+   * Your own account.
+   *
+   * The fields that are NOT editable here are the interesting ones. Role is
+   * shown and cannot be changed from this page — the API refuses to let anyone
+   * change their own role (ProfileSelfUpdateSerializer names only name and
+   * phone), and an input that always fails is worse than no input. Same for the
+   * organisation: which org you are in decides which rows you can see at all,
+   * and it comes from the JWT, not from a form.
+   *
+   * Two things you CAN do: edit your name and phone (PATCH /profile/), and
+   * switch org — a real action that re-issues the token rather than editing a
+   * field, so it goes through its own action and the copy says so.
+   */
   import { enhance } from '$app/forms';
-  import { User, Mail, Phone, Building2, Calendar, Edit, Save, X, Check } from '@lucide/svelte';
-  import { validatePhoneNumber, formatPhoneNumber } from '$lib/utils/phone.js';
-  import { formatDate, getInitials } from '$lib/utils/formatting.js';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import { Separator } from '$lib/components/ui/separator/index.js';
-  import { SectionCard } from '$lib/components/ui/section-card/index.js';
-  import * as Avatar from '$lib/components/ui/avatar/index.js';
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import Avatar from '$lib/v2/components/Avatar.svelte';
+  import { relativeDays, shortDate, count } from '$lib/v2/format.js';
+  import { ROLE_LABEL, ROLE_TONE } from '$lib/v2/enums.js';
+  import { KeyRound, Lock, ArrowLeftRight } from '@lucide/svelte';
 
-  /** @type {{ data: import('./$types').PageData, form: import('./$types').ActionData }} */
+  /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
-  let isEditing = $state(false);
-  let isSubmitting = $state(false);
-  let phoneError = $state('');
-  let formattedDisplayPhone = $state('');
+  let p = $derived(data.profile);
+  let name = $derived(`${p.user_details.first_name} ${p.user_details.last_name}`.trim());
 
-  // Form data state - initialized by $effect below
-  let formData = $state({
-    name: '',
-    phone: ''
-  });
+  // Editing name + phone. The backend stores one `name` on User, so the form
+  // offers a single full-name field rather than the split the header renders.
+  let editing = $state(false);
+  let editName = $state('');
+  let editPhone = $state('');
 
-  // Reset form data when not editing or when data changes
-  $effect(() => {
-    if (!isEditing) {
-      formData = {
-        name: data.user.name || '',
-        phone: data.user.phone || ''
-      };
-      phoneError = '';
-    }
-  });
-
-  // Format phone for display (async, resolved into state)
-  $effect(() => {
-    if (data.user.phone) {
-      formatPhoneNumber(data.user.phone).then((f) => (formattedDisplayPhone = f));
-    } else {
-      formattedDisplayPhone = '';
-    }
-  });
-
-  // Validate phone number on input
-  async function validatePhone() {
-    if (!formData.phone.trim()) {
-      phoneError = '';
-      return;
-    }
-
-    const validation = await validatePhoneNumber(formData.phone);
-    if (!validation.isValid) {
-      phoneError = validation.error || 'Invalid phone number';
-    } else {
-      phoneError = '';
-    }
+  function openEdit() {
+    editName = name;
+    editPhone = p.phone || '';
+    editing = true;
   }
 
-  function toggleEdit() {
-    isEditing = !isEditing;
-    if (!isEditing) {
-      // Reset form data when canceling edit
-      formData = {
-        name: data.user.name || '',
-        phone: data.user.phone || ''
-      };
-      phoneError = '';
-    }
-  }
+  const onEdit = (/** @type {any} */ { formData }) => {
+    // Only send the field the person actually changed. The PATCH treats an
+    // absent field as "leave it alone", so an untouched phone is not
+    // re-validated — which matters because some seeded numbers carry an
+    // extension the validator rejects, and re-sending one would block a plain
+    // name change. Same rule the leads form uses for its owner select.
+    if ((formData.get('name') ?? '') === name) formData.delete('name');
+    if ((formData.get('phone') ?? '') === (p.phone || '')) formData.delete('phone');
 
-  // Handle form submission
-  function handleSubmit() {
-    isSubmitting = true;
-    return async (
-      /** @type {{ result: any, update: () => Promise<void> }} */ { result, update }
-    ) => {
-      isSubmitting = false;
+    return async (/** @type {any} */ { result, update }) => {
       if (result.type === 'success') {
-        isEditing = false;
+        editing = false;
+        await update(); // reloads the profile with the saved values
+      } else {
+        await update({ reset: false }); // keep what they typed, show the message
       }
-      await update();
     };
-  }
+  };
+
+  // `form` is shared by both actions; the switch action tags its failures.
+  let editError = $derived(form?.scope === 'switch' ? '' : (form?.message ?? ''));
+  let switchError = $derived(form?.scope === 'switch' ? (form?.message ?? '') : '');
 </script>
 
-<svelte:head>
-  <title>Profile - BottleCRM</title>
-</svelte:head>
-
-<PageHeader title="Profile" subtitle="Manage your personal information">
+<PageHeader title={name} record>
+  {#snippet sub()}
+    {ROLE_LABEL[p.role]} · {data.org.name} · joined {shortDate(p.joined_at)}
+  {/snippet}
   {#snippet actions()}
-    <Button
-      variant={isEditing ? 'outline' : 'default'}
-      onclick={toggleEdit}
-      disabled={isSubmitting}
-    >
-      {#if isEditing}
-        <X class="mr-2 h-4 w-4" />
-        Cancel
-      {:else}
-        <Edit class="mr-2 h-4 w-4" />
-        Edit Profile
-      {/if}
-    </Button>
+    {#if !editing}
+      <button class="v2-btn v2-btn-primary" onclick={openEdit}>Edit details</button>
+    {/if}
   {/snippet}
 </PageHeader>
 
-<div class="flex-1 space-y-6 p-4 md:p-6">
-  <!-- Success/Error Messages -->
-  {#if form?.success}
-    <SectionCard
-      padded={false}
-      class="border-[var(--color-success-default)]/20 bg-[var(--color-success-light)] p-4"
-    >
-      <div class="flex items-center gap-3">
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-light)] dark:bg-[var(--color-success-default)]/20"
-        >
-          <Check class="h-4 w-4 text-[var(--color-success-default)]" />
-        </div>
-        <p class="text-sm font-medium text-[var(--color-success-default)]">
-          {form.message}
-        </p>
-      </div>
-    </SectionCard>
-  {/if}
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-top:18px;padding-bottom:32px">
+    <div class="v2-split">
+      <div>
+        <div class="v2-label" style="margin-bottom:10px">You</div>
 
-  {#if form?.error}
-    <SectionCard
-      padded={false}
-      class="border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-4"
-    >
-      <div class="flex items-center gap-3">
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20"
-        >
-          <X class="h-4 w-4 text-[var(--color-negative-default)]" />
-        </div>
-        <p class="text-sm font-medium text-[var(--color-negative-default)]">
-          {form.error}
-        </p>
-      </div>
-    </SectionCard>
-  {/if}
-
-  <div class="mx-auto max-w-3xl space-y-6">
-    <!-- Profile Header Card -->
-    <SectionCard padded={false} class="p-6">
-      <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-          <!-- Avatar -->
-          <Avatar.Root class="h-20 w-20 text-xl">
-            {#if data.user.profilePhoto}
-              <Avatar.Image
-                src={data.user.profilePhoto}
-                alt={data.user.name || 'Profile'}
-                class=""
+        {#if editing}
+          <form
+            class="v2-card"
+            method="POST"
+            action="?/edit"
+            use:enhance={onEdit}
+            style="padding:17px 18px;margin-bottom:20px"
+          >
+            <div class="v2-field">
+              <label for="f-name">Full name</label>
+              <input
+                id="f-name"
+                name="name"
+                class="v2-input"
+                bind:value={editName}
+                maxlength="255"
               />
+            </div>
+            <div class="v2-field" style="margin-top:12px">
+              <label for="f-phone">Phone</label>
+              <input
+                id="f-phone"
+                name="phone"
+                class="v2-input"
+                bind:value={editPhone}
+                placeholder="+44 20 7946 0100"
+              />
+              <p class="v2-hint">Digits and separators only. Leave blank to remove it.</p>
+            </div>
+            {#if editError}
+              <p class="v2-error" style="margin-top:10px">{editError}</p>
             {/if}
-            <Avatar.Fallback class="bg-[var(--color-primary-default)] text-white">
-              {getInitials(data.user.name)}
-            </Avatar.Fallback>
-          </Avatar.Root>
-
-          <!-- User Info -->
-          <div class="flex-1 text-center sm:text-left">
-            <h2 class="text-foreground text-xl font-semibold">
-              {data.user.name || 'Unnamed User'}
-            </h2>
-            <p class="text-muted-foreground">{data.user.email}</p>
-            <div class="mt-3">
-              <Badge variant={data.user.isActive ? 'default' : 'destructive'}>
-                {data.user.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </div>
-        </div>
-    </SectionCard>
-
-    <!-- Profile Information Card -->
-    <SectionCard>
-      {#snippet title()}
-        <div class="flex min-w-0 flex-col gap-0.5">
-          <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
-            Profile Information
-          </h3>
-          <p class="text-[12px] text-[color:var(--text-muted)]">
-            {isEditing
-              ? 'Update your personal details below'
-              : 'Your personal details and account information'}
-          </p>
-        </div>
-      {/snippet}
-        {#if isEditing}
-          <!-- Edit Form -->
-          <form method="POST" action="?/updateProfile" use:enhance={handleSubmit} class="space-y-6">
-            <div class="grid gap-6 sm:grid-cols-2">
-              <!-- Name -->
-              <div class="sm:col-span-2">
-                <Label for="name" class="">Full Name</Label>
-                <Input
-                  type="text"
-                  id="name"
-                  name="name"
-                  bind:value={formData.name}
-                  placeholder="Enter your full name"
-                  maxlength={255}
-                  class="mt-1.5"
-                />
-              </div>
-
-              <!-- Email (read-only) -->
-              <div>
-                <Label for="email" class="">Email Address</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={data.user.email}
-                  disabled
-                  class="bg-muted mt-1.5"
-                />
-                <p class="text-muted-foreground mt-1 text-xs">Email cannot be changed</p>
-              </div>
-
-              <!-- Phone -->
-              <div>
-                <Label for="phone" class="">Phone Number</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  bind:value={formData.phone}
-                  oninput={validatePhone}
-                  placeholder="Enter your phone number"
-                  class="mt-1.5"
-                />
-                {#if phoneError}
-                  <p class="text-destructive mt-1 text-sm">{phoneError}</p>
-                {/if}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div class="flex justify-end gap-3">
-              <Button type="button" variant="outline" onclick={toggleEdit} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting || !!phoneError}>
-                {#if isSubmitting}
-                  <svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Saving...
-                {:else}
-                  <Save class="mr-2 h-4 w-4" />
-                  Save Changes
-                {/if}
-              </Button>
+            <div style="display:flex;gap:8px;margin-top:16px">
+              <button class="v2-btn v2-btn-primary" type="submit">Save</button>
+              <button class="v2-btn" type="button" onclick={() => (editing = false)}>Cancel</button>
             </div>
           </form>
         {:else}
-          <!-- View Mode -->
-          <div class="grid gap-6 sm:grid-cols-2">
-            <!-- Email -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Mail class="h-4 w-4" />
-                Email Address
+          <div class="v2-card" style="padding:17px 18px;margin-bottom:20px">
+            <div style="display:flex;gap:13px;align-items:center;margin-bottom:16px">
+              <Avatar {name} size={46} />
+              <div style="min-width:0">
+                <div style="font-weight:640;font-size:15px">{name}</div>
+                <div class="v2-sub" style="font-size:12.5px">{p.user_details.email}</div>
               </div>
-              <p class="text-foreground">{data.user.email}</p>
             </div>
-
-            <!-- Phone -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Phone class="h-4 w-4" />
-                Phone Number
-              </div>
-              <p class="text-foreground">
-                {formattedDisplayPhone || data.user.phone || 'Not provided'}
-              </p>
-            </div>
-
-            <!-- Last Login -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Calendar class="h-4 w-4" />
-                Last Login
-              </div>
-              <p class="text-foreground">{formatDate(data.user.lastLogin)}</p>
-            </div>
-
-            <!-- Member Since -->
-            <div class="space-y-1">
-              <div class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                <Calendar class="h-4 w-4" />
-                Member Since
-              </div>
-              <p class="text-foreground">{formatDate(data.user.createdAt)}</p>
-            </div>
+            <dl class="v2-kv">
+              <dt>Phone</dt>
+              <dd class="v2-num" style="font-size:12px">{p.phone || '—'}</dd>
+              <dt>Teams</dt>
+              <dd>{p.teams.join(', ') || '—'}</dd>
+              <dt>Joined</dt>
+              <dd>{shortDate(p.joined_at)}</dd>
+              <dt>Last signed in</dt>
+              <dd>{relativeDays(p.last_login)}</dd>
+            </dl>
           </div>
         {/if}
-    </SectionCard>
 
-    <!-- Organizations Card -->
-    {#if data.user.organizations && data.user.organizations.length > 0}
-      <SectionCard>
-        {#snippet title()}
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <h3 class="truncate text-[16px] font-medium leading-[1.3] text-[color:var(--text-primary)]">
-              Organizations
-            </h3>
-            <p class="text-[12px] text-[color:var(--text-muted)]">
-              Organizations you are a member of
-            </p>
-          </div>
-        {/snippet}
-        <div class="space-y-4">
-          {#each data.user.organizations as userOrg}
-            <div class="bg-muted/30 flex items-center justify-between rounded-lg border p-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-default)]"
-                >
-                  <Building2 class="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h4 class="text-foreground font-medium">
-                    {userOrg.organization.name}
-                  </h4>
-                  <p class="text-muted-foreground text-sm">
-                    Joined {formatDate(userOrg.joinedAt)}
-                  </p>
-                </div>
+        <div class="v2-label" style="margin-bottom:10px">Organisations</div>
+        <div class="v2-card" style="overflow:hidden">
+          {#each p.orgs as o (o.id)}
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>{o.name}</b>
+                <span class="v2-sub" style="font-size:11.5px">
+                  You are {ROLE_LABEL[o.role] === 'Admin' ? 'an admin' : 'a member'} here
+                </span>
               </div>
-              <Badge variant={userOrg.role === 'ADMIN' ? 'default' : 'secondary'}>
-                {userOrg.role}
-              </Badge>
+              {#if o.is_current}
+                <Pill tone="ink" dot>Current</Pill>
+              {:else}
+                <!-- Switching org re-issues the token; it does not edit a field
+                     on this page. The action swaps the cookies and reloads. -->
+                <form method="POST" action="?/switchOrg" use:enhance class="v2-inline-form">
+                  <input type="hidden" name="org_id" value={o.id} />
+                  <button class="v2-btn v2-btn-sm" type="submit">
+                    <ArrowLeftRight size={12} />Switch
+                  </button>
+                </form>
+              {/if}
             </div>
           {/each}
         </div>
-      </SectionCard>
-    {/if}
+        {#if switchError}
+          <p class="v2-error" style="margin-top:9px">{switchError}</p>
+        {/if}
+        <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
+          Switching organisation signs you in again with a new token. Which org you are in decides
+          which records exist for you at all, so it is not a filter you can toggle.
+        </p>
+      </div>
+
+      <div>
+        <div class="v2-label" style="margin-bottom:10px">Access</div>
+        <div class="v2-card" style="overflow:hidden;margin-bottom:20px">
+          <div class="v2-setting">
+            <div class="v2-setting-body">
+              <b>Role</b>
+              <!-- Displayed, never editable from here. -->
+              <span class="v2-sub" style="font-size:11.5px">
+                Set by an admin. You cannot change your own role.
+              </span>
+            </div>
+            <Lock size={14} style="color:var(--v2-slate);flex:none" />
+            <Pill tone={ROLE_TONE[p.role]}>{ROLE_LABEL[p.role]}</Pill>
+          </div>
+          <a class="v2-setting" href="/settings/api-tokens">
+            <div class="v2-setting-body">
+              <b>API tokens</b>
+              <span class="v2-sub" style="font-size:11.5px">
+                Each one signs in as you, with your role.
+              </span>
+            </div>
+            <KeyRound size={14} style="color:var(--v2-slate);flex:none" />
+            <span class="v2-num" style="font-size:13px;font-weight:600">
+              {count(p.active_token_count)}
+            </span>
+          </a>
+          <div class="v2-setting">
+            <div class="v2-setting-body">
+              <b>Sign-in method</b>
+              <span class="v2-sub" style="font-size:11.5px">
+                Google, on {p.user_details.email}. There is no password to change.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="v2-label" style="margin-bottom:10px">Where your work shows up</div>
+        <div class="v2-card" style="overflow:hidden">
+          <a class="v2-setting" href="/goals">
+            <div class="v2-setting-body">
+              <b>Goals</b>
+              <span class="v2-sub" style="font-size:11.5px">Your quota and how it is pacing</span>
+            </div>
+          </a>
+          <a class="v2-setting" href="/timesheet">
+            <div class="v2-setting-body">
+              <b>Timesheet</b>
+              <span class="v2-sub" style="font-size:11.5px">Hours you have logged this week</span>
+            </div>
+          </a>
+          <a class="v2-setting" href="/tasks">
+            <div class="v2-setting-body">
+              <b>Tasks</b>
+              <span class="v2-sub" style="font-size:11.5px">What is assigned to you</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
+<style>
+  /* The Switch button sits in a form so it can POST; keep it laid out exactly
+     as the bare button was (the row uses flex; the form must not add a box). */
+  .v2-inline-form {
+    display: contents;
+  }
+</style>

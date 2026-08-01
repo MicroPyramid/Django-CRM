@@ -29,12 +29,8 @@
   let loadingEntries = $state(false);
   let submitting = $state(false);
 
-  const selectedEntries = $derived(
-    entries.filter((e) => selectedIds.has(e.id))
-  );
-  const selectedCurrencies = $derived(
-    new Set(selectedEntries.map((e) => e.currency))
-  );
+  const selectedEntries = $derived(entries.filter((e) => selectedIds.has(e.id)));
+  const selectedCurrencies = $derived(new Set(selectedEntries.map((e) => e.currency)));
   const selectionMixed = $derived(selectedCurrencies.size > 1);
 
   $effect(() => {
@@ -57,11 +53,7 @@
       const res = await fetch('/api/accounts');
       if (!res.ok) return;
       const body = await res.json();
-      accounts =
-        body?.active_accounts?.open_accounts ||
-        body?.results ||
-        body?.accounts ||
-        [];
+      accounts = body?.active_accounts?.open_accounts || body?.results || body?.accounts || [];
     } catch (err) {
       console.warn('Failed to load accounts', err);
     }
@@ -141,8 +133,8 @@
     <Dialog.Header>
       <Dialog.Title>Create invoice from time entries</Dialog.Title>
       <Dialog.Description>
-        Pick an account, then select billable, unbilled time entries. We'll
-        create a new draft invoice with one line per entry.
+        Pick an account, then select billable, unbilled time entries. We'll create a new draft
+        invoice with one line per entry.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -166,7 +158,9 @@
             <Loader2 class="h-3.5 w-3.5 animate-spin" /> Loading unbilled entries…
           </div>
         {:else if entries.length === 0}
-          <p class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900/40 dark:bg-amber-900/20">
+          <p
+            class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900/40 dark:bg-amber-900/20"
+          >
             No unbilled, billable time entries on cases under this account.
           </p>
         {:else}
@@ -176,7 +170,9 @@
           )}
           <div class="space-y-3">
             {#each Object.entries(grouped) as [currency, group] (currency)}
-              <section class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3">
+              <section
+                class="rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] p-3"
+              >
                 <header class="mb-2 flex items-center justify-between">
                   <span class="text-sm font-medium">{currency} ({group.length})</span>
                   <button
@@ -215,7 +211,9 @@
         {/if}
 
         {#if selectionMixed}
-          <p class="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
+          <p
+            class="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200"
+          >
             Selection contains multiple currencies. Pick entries from a single currency.
           </p>
         {/if}
@@ -223,18 +221,12 @@
     </div>
 
     <Dialog.Footer>
-      <Button
-        type="button"
-        variant="outline"
-        onclick={() => (open = false)}
-        disabled={submitting}>Cancel</Button
+      <Button type="button" variant="outline" onclick={() => (open = false)} disabled={submitting}
+        >Cancel</Button
       >
       <Button
         type="button"
-        disabled={submitting ||
-          !accountId ||
-          selectedIds.size === 0 ||
-          selectionMixed}
+        disabled={submitting || !accountId || selectedIds.size === 0 || selectionMixed}
         onclick={submit}
       >
         {#if submitting}<Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />{/if}

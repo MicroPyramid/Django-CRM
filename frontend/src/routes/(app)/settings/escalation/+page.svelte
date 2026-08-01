@@ -1,344 +1,200 @@
 <script>
-  import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
-  import { Plus, Trash2, AlertTriangle, Save } from '@lucide/svelte';
-  import { PageHeader } from '$lib/components/layout';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
-  import * as Dialog from '$lib/components/ui/dialog/index.js';
+  /**
+   * What happens when a ticket blows its target.
+   *
+   * One EscalationPolicy per priority, enforced by a unique constraint. The
+   * useful question is not "is there a policy" — there always is — but "does
+   * it do anything", and the model allows three separate ways for the answer
+   * to be no:
+   *
+   *   · the action is `reassign` but the target FK is null (SET_NULL empties
+   *     it when a profile is removed, silently)
+   *   · the action is `notify` with no individual and no team to notify
+   *   · is_active is false
+   *
+   * All three look identical in v1's form — a row of selects with something
+   * chosen. Here the breach count sits next to the outcome, so "11 breaches,
+   * nobody told" is one line rather than two screens.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import EmptyState from '$lib/v2/components/EmptyState.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import { count } from '$lib/v2/format.js';
+  import { ESCALATION_ACTION_LABEL, PRIORITY_TONE } from '$lib/v2/enums.js';
+  import { TriangleAlert, BellOff } from '@lucide/svelte';
 
-  /** @type {{ data: any, form: any }} */
-  let { data, form } = $props();
+  /** @type {{ data: any }} */
+  let { data } = $props();
 
-  const priorities = $derived(data.priorities || []);
-  const actions = $derived(data.actions || []);
-  const policies = $derived(data.policies || []);
-  const profiles = $derived(data.profiles || []);
-  const teams = $derived(data.teams || []);
-
-  const ACTION_LABELS = {
-    notify: 'Notify',
-    reassign: 'Reassign',
-    notify_and_reassign: 'Notify & reassign'
-  };
-
-  const policiesByPriority = $derived(
-    Object.fromEntries(policies.map((/** @type {any} */ p) => [p.priority, p]))
+  /**
+   * By severity, not by the model's `ordering = ("priority",)` — that sorts
+   * the CharField alphabetically and puts Low between High and Normal, which
+   * reads as a mistake every single time.
+   */
+  const SEVERITY = ['Urgent', 'High', 'Normal', 'Low'];
+  let policies = $derived(
+    [...data.policies].sort((a, b) => SEVERITY.indexOf(a.priority) - SEVERITY.indexOf(b.priority))
   );
 
-  const missingPriorities = $derived(
-    priorities.filter((/** @type {string} */ p) => !policiesByPriority[p])
-  );
+  /**
+   * What one half of a policy actually does, and whether that is nothing.
+   * @returns {{ text: string, dead: boolean }}
+   */
+  function outcome(policy, kind) {
+    const action = policy[`${kind}_action`];
+    const target = policy[`${kind}_target`];
+    const team = policy.notify_team;
 
-  let dialogOpen = $state(false);
-  let dialogPriority = $state('');
-  let dialogFirstAction = $state('notify');
-  let dialogResolutionAction = $state('notify');
-  let dialogFirstTargetId = $state('');
-  let dialogResolutionTargetId = $state('');
-  let dialogNotifyTeamId = $state('');
+    if (!policy.is_active) return { text: 'Nothing — the policy is off', dead: true };
 
-  /** @param {string} priority */
-  function openCreate(priority) {
-    dialogPriority = priority;
-    dialogFirstAction = 'notify';
-    dialogResolutionAction = 'notify';
-    dialogFirstTargetId = '';
-    dialogResolutionTargetId = '';
-    dialogNotifyTeamId = '';
-    dialogOpen = true;
+    if (action === 'reassign' && !target)
+      return { text: 'Reassign to nobody — no target is set', dead: true };
+
+    if (action === 'notify' && !target && !team)
+      return { text: 'Notify nobody — no person and no team', dead: true };
+
+    const who = [target?.name, team ? `the ${team.name} team` : null].filter(Boolean).join(' and ');
+    return { text: `${ESCALATION_ACTION_LABEL[action]} ${who}`, dead: false };
   }
 
-  $effect(() => {
-    if (form?.success) {
-      toast.success('Escalation policy saved');
-      dialogOpen = false;
-      invalidateAll();
-    } else if (form?.error) {
-      const message =
-        typeof form.error === 'string' ? form.error : JSON.stringify(form.error);
-      toast.error(message);
-    }
-  });
+  let deadCount = $derived(
+    policies.filter((p) => outcome(p, 'first_response').dead && outcome(p, 'resolution').dead)
+      .length
+  );
+  let breachesGoingNowhere = $derived(
+    policies.reduce(
+      (a, p) =>
+        a +
+        (outcome(p, 'first_response').dead ? p.breaches_last_30d.first_response : 0) +
+        (outcome(p, 'resolution').dead ? p.breaches_last_30d.resolution : 0),
+      0
+    )
+  );
 </script>
 
-<svelte:head>
-  <title>Escalation Policies - Settings - BottleCRM</title>
-</svelte:head>
+<PageHeader title="Escalation">
+  {#snippet crumb()}<SettingsCrumb />{/snippet}
+  {#snippet sub()}
+    One policy per priority · <span class="v2-num">{count(policies.length)}</span> configured
+  {/snippet}
+</PageHeader>
 
-<PageHeader
-  title="Escalation"
-  subtitle="When a ticket breaches its first-response or resolution SLA, the configured policy fires once per cooldown window"
-/>
-
-<div class="flex-1 p-4 md:p-6 lg:p-8">
-  <div class="mx-auto max-w-4xl space-y-6">
-    <section
-      class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200"
-    >
-      <div class="flex gap-2">
-        <AlertTriangle class="h-4 w-4 flex-shrink-0" />
-        <div>
-          The escalation scanner runs every 5 minutes via Celery beat. A ticket is
-          escalated at most once every 60 minutes and at most 3 times total.
-          Tickets without a configured policy for their priority are skipped.
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-top:18px;padding-bottom:32px">
+    {#if policies.length === 0}
+      <!-- No policy for any priority. Without this the page falls to a header
+           over a blank column — the each-block renders nothing and the trailing
+           note hangs alone. The empty state says what a policy is and what its
+           absence means, and centres itself like every other empty state. -->
+      <EmptyState
+        title="No escalation policies yet"
+        body="An escalation policy decides what happens when a ticket misses its first-response or resolution target — one per priority. None are set for this organisation, so a breach currently escalates to nobody."
+      >
+        {#snippet icon()}<BellOff size={21} />{/snippet}
+      </EmptyState>
+    {:else}
+      {#if breachesGoingNowhere > 0}
+        <!-- The headline fact, above the table, because it is the reason to be
+           on this page. Derived from the same rows shown below, not a
+           separate figure that could disagree with them. -->
+        <div class="v2-escalation-banner">
+          <BellOff size={17} style="color:var(--v2-clay);flex:none;margin-top:1px" />
+          <div>
+            <div style="font-weight:600;font-size:13px">
+              <span class="v2-num">{count(breachesGoingNowhere)}</span> breaches in the last 30 days told
+              nobody
+            </div>
+            <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
+              {deadCount === 0
+                ? 'Some halves of these policies resolve to no recipient.'
+                : `${deadCount} of ${policies.length} policies do nothing at all when a ticket breaches.`}
+              A policy that exists is not the same as a policy that fires.
+            </p>
+          </div>
         </div>
+      {/if}
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        {#each policies as p (p.id)}
+          {@const first = outcome(p, 'first_response')}
+          {@const res = outcome(p, 'resolution')}
+          <div class="v2-card" style="padding:15px 16px;opacity:{p.is_active ? 1 : 0.62}">
+            <div style="display:flex;gap:9px;align-items:center;margin-bottom:12px">
+              <Pill tone={PRIORITY_TONE[p.priority]}>{p.priority}</Pill>
+              {#if !p.is_active}<Pill tone="slate">Off</Pill>{/if}
+            </div>
+
+            <div class="v2-escalation-halves">
+              {#each [{ label: 'Missed first response', o: first, n: p.breaches_last_30d.first_response }, { label: 'Missed resolution', o: res, n: p.breaches_last_30d.resolution }] as half (half.label)}
+                <div class="v2-escalation-half">
+                  <div class="v2-label" style="font-size:10px;margin-bottom:5px">{half.label}</div>
+                  <div style="display:flex;gap:7px;align-items:flex-start">
+                    {#if half.o.dead}
+                      <TriangleAlert
+                        size={14}
+                        style="color:var(--v2-clay);flex:none;margin-top:2px"
+                      />
+                    {/if}
+                    <span style="font-size:13px;{half.o.dead ? 'color:var(--v2-slate)' : ''}">
+                      {half.o.text}
+                    </span>
+                  </div>
+                  <div class="v2-sub" style="font-size:11.5px;margin-top:6px">
+                    <span class="v2-num">{count(half.n)}</span>
+                    in the last 30 days{half.o.dead && half.n > 0 ? ' — none of them acted on' : ''}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
       </div>
-    </section>
 
-    <section
-      class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)]"
-    >
-      <header class="flex items-center justify-between border-b border-[var(--border-default)] p-4">
-        <div>
-          <h2 class="text-base font-medium text-[var(--text-primary)]">
-            Policies by priority
-          </h2>
-          <p class="text-sm text-[var(--text-secondary)]">
-            One policy per priority. Each policy chooses what happens on a
-            first-response breach and a resolution breach independently.
-          </p>
-        </div>
-      </header>
-
-      {#if policies.length === 0 && missingPriorities.length === priorities.length}
-        <div class="p-6 text-center text-sm text-[var(--text-secondary)]">
-          No policies configured yet. Add one for each priority you want to
-          escalate.
-        </div>
-      {/if}
-
-      {#each policies as policy (policy.id)}
-        <form
-          method="POST"
-          action="?/update"
-          use:enhance={() => {
-            return async ({ update }) => {
-              await update();
-            };
-          }}
-          class="border-b border-[var(--border-default)] p-4 last:border-b-0"
-        >
-          <input type="hidden" name="id" value={policy.id} />
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-xs font-medium text-[var(--color-primary-default)]">
-                {policy.priority}
-              </span>
-              <input
-                type="hidden"
-                name="is_active"
-                value={policy.is_active === false ? 'false' : 'true'}
-              />
-              {#if policy.is_active === false}
-                <span class="text-xs text-[var(--text-secondary)]">(Inactive)</span>
-              {/if}
-            </div>
-            <div class="flex items-center gap-1">
-              <Button type="submit" size="sm" class="gap-1">
-                <Save class="h-3.5 w-3.5" />
-                Save
-              </Button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs">First-response breach</Label>
-              <select
-                name="first_response_action"
-                value={policy.first_response_action}
-                class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-              >
-                {#each actions as a (a)}
-                  <option value={a}>{ACTION_LABELS[a]}</option>
-                {/each}
-              </select>
-              <select
-                name="first_response_target_id"
-                value={policy.first_response_target?.id || ''}
-                class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-              >
-                <option value="">— Target user —</option>
-                {#each profiles as p (p.id)}
-                  <option value={p.id}>{p.name}</option>
-                {/each}
-              </select>
-            </div>
-
-            <div class="space-y-1.5">
-              <Label class="text-xs">Resolution breach</Label>
-              <select
-                name="resolution_action"
-                value={policy.resolution_action}
-                class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-              >
-                {#each actions as a (a)}
-                  <option value={a}>{ACTION_LABELS[a]}</option>
-                {/each}
-              </select>
-              <select
-                name="resolution_target_id"
-                value={policy.resolution_target?.id || ''}
-                class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-              >
-                <option value="">— Target user —</option>
-                {#each profiles as p (p.id)}
-                  <option value={p.id}>{p.name}</option>
-                {/each}
-              </select>
-            </div>
-
-            <div class="space-y-1.5 md:col-span-2">
-              <Label class="text-xs">CC team (optional)</Label>
-              <select
-                name="notify_team_id"
-                value={policy.notify_team?.id || ''}
-                class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-              >
-                <option value="">— None —</option>
-                {#each teams as t (t.id)}
-                  <option value={t.id}>{t.name}</option>
-                {/each}
-              </select>
-            </div>
-          </div>
-        </form>
-      {/each}
-
-      {#if missingPriorities.length > 0}
-        <div class="border-t border-[var(--border-default)] p-4">
-          <p class="mb-2 text-xs text-[var(--text-secondary)]">Missing policies:</p>
-          <div class="flex flex-wrap gap-2">
-            {#each missingPriorities as priority (priority)}
-              <Button
-                variant="outline"
-                size="sm"
-                onclick={() => openCreate(priority)}
-                class="gap-1"
-              >
-                <Plus class="h-3.5 w-3.5" />
-                {priority}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-    </section>
-
-    {#if policies.length > 0}
-      <section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
-        <h3 class="mb-3 text-sm font-medium text-[var(--text-primary)]">Delete a policy</h3>
-        <div class="flex flex-wrap gap-2">
-          {#each policies as policy (policy.id)}
-            <form method="POST" action="?/delete" use:enhance class="inline">
-              <input type="hidden" name="id" value={policy.id} />
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                class="gap-1 text-[var(--color-danger-default)]"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-                {policy.priority}
-              </Button>
-            </form>
-          {/each}
-        </div>
-      </section>
+      <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
+        Targets are measured on
+        <a href="/settings/business-hours" style="color:inherit">business hours</a>, so a breach
+        counts working time only. What counts as breached for each priority is set with the target
+        itself, not here.
+      </p>
     {/if}
   </div>
 </div>
 
-<Dialog.Root bind:open={dialogOpen}>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>New escalation policy</Dialog.Title>
-      <Dialog.Description>
-        Add an escalation policy for {dialogPriority} tickets.
-      </Dialog.Description>
-    </Dialog.Header>
+<style>
+  .v2-escalation-banner {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--v2-line);
+    border-radius: var(--v2-radius);
+    background: var(--v2-card);
+  }
+  .v2-escalation-halves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .v2-escalation-half + .v2-escalation-half {
+    border-left: 1px solid var(--v2-line-soft);
+    padding-left: 18px;
+  }
 
-    <form
-      method="POST"
-      action="?/create"
-      use:enhance={() => {
-        return async ({ update }) => {
-          await update();
-        };
-      }}
-      class="space-y-4"
-    >
-      <input type="hidden" name="priority" value={dialogPriority} />
-      <input type="hidden" name="is_active" value="true" />
-
-      <div class="space-y-1.5">
-        <Label class="text-xs">First-response action</Label>
-        <select
-          name="first_response_action"
-          bind:value={dialogFirstAction}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-        >
-          {#each actions as a (a)}
-            <option value={a}>{ACTION_LABELS[a]}</option>
-          {/each}
-        </select>
-        <select
-          name="first_response_target_id"
-          bind:value={dialogFirstTargetId}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-        >
-          <option value="">— Target user —</option>
-          {#each profiles as p (p.id)}
-            <option value={p.id}>{p.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label class="text-xs">Resolution action</Label>
-        <select
-          name="resolution_action"
-          bind:value={dialogResolutionAction}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-        >
-          {#each actions as a (a)}
-            <option value={a}>{ACTION_LABELS[a]}</option>
-          {/each}
-        </select>
-        <select
-          name="resolution_target_id"
-          bind:value={dialogResolutionTargetId}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-        >
-          <option value="">— Target user —</option>
-          {#each profiles as p (p.id)}
-            <option value={p.id}>{p.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label class="text-xs">CC team (optional)</Label>
-        <select
-          name="notify_team_id"
-          bind:value={dialogNotifyTeamId}
-          class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm"
-        >
-          <option value="">— None —</option>
-          {#each teams as t (t.id)}
-            <option value={t.id}>{t.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>
-          Cancel
-        </Button>
-        <Button type="submit">Create</Button>
-      </Dialog.Footer>
-    </form>
-  </Dialog.Content>
-</Dialog.Root>
+  /* Class, not an inline grid — an inline grid-template-columns cannot be
+     overridden here, which is how four earlier pages stayed two-column on a
+     phone. */
+  @media (max-width: 768px) {
+    .v2-escalation-halves {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .v2-escalation-half + .v2-escalation-half {
+      border-left: 0;
+      padding-left: 0;
+      border-top: 1px solid var(--v2-line-soft);
+      padding-top: 14px;
+    }
+  }
+</style>

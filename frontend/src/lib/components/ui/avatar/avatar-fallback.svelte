@@ -32,7 +32,7 @@
   data-slot="avatar-fallback"
   class={cn(
     'flex size-full items-center justify-center rounded-full',
-    'text-white font-semibold leading-none',
+    'leading-none font-semibold text-white',
     className
   )}
   style={styleValue}

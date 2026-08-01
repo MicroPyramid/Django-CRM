@@ -1,10 +1,26 @@
 import json
+from decimal import Decimal
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import (
+    Count,
+    DateField,
+    DecimalField,
+    IntegerField,
+    Min,
+    OuterRef,
+    Q,
+    Subquery,
+    Sum,
+)
+from django.db.models.functions import Coalesce
+from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +31,10 @@ from rest_framework.views import APIView
 
 from accounts import swagger_params
 from accounts.models import Account
+from cases.models import Case
+from cases.workflow import TERMINAL_STATUSES
+from invoices.models import UNPAID_STATUSES, Invoice
+from opportunity.workflow import CLOSED_STAGES
 from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     AccountCreateSerializer,
@@ -28,7 +48,14 @@ from accounts.serializer import (
 from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -53,6 +80,107 @@ from opportunity.models import SOURCES, STAGES, Opportunity
 from opportunity.serializer import OpportunitySerializer
 from tasks.serializer import TaskSerializer
 
+# Money and counts the account page shows about an account: what it has been
+# worth, what is still in play, what it owes, and what is on fire.
+#
+# These are annotations, never stored columns. A stored total is a total that
+# can be wrong — it goes stale the moment a deal moves or an invoice is paid,
+# and then the header disagrees with the very rows printed underneath it.
+ROLLUP_FIELDS = (
+    "won_amount",
+    "won_count",
+    "open_pipeline",
+    "open_deal_count",
+    "overdue_amount",
+    "open_tickets",
+    "first_won_on",
+)
+
+
+def _per_account(model, aggregate, output_field, **filters):
+    """One aggregate over one account's related rows, as a correlated subquery.
+
+    Not `.annotate(Sum(...), Count(...))` on the outer queryset: two aggregates
+    over two different relations join both tables at once, so every deal is
+    counted once per invoice and every total comes back multiplied. Each
+    aggregate therefore gets its own subquery, and the joins never meet.
+
+    `.values("account").annotate(...)` groups inside the subquery so it yields
+    at most one row. When an account has no matching rows it yields *none*, and
+    an empty subquery is NULL rather than zero — which is why every caller
+    wraps this in a `Coalesce`. Zero and "no invoices at all" look identical to
+    a reader of the page, and should.
+    """
+    return Subquery(
+        model.objects.filter(account=OuterRef("pk"), **filters)
+        .values("account")
+        .annotate(value=aggregate)
+        .values("value")[:1],
+        output_field=output_field,
+    )
+
+
+# Both derived from the definitions the deal and ticket modules already use, so
+# "open pipeline" here means what /opportunities means by it and "open tickets"
+# means what /tickets means by it. Spelling either list out again by hand is how
+# two pages end up disagreeing about the same account.
+OPEN_STAGES = [stage for stage, _label in STAGES if stage not in CLOSED_STAGES]
+OPEN_CASE_STATUSES = [
+    value for value, _label in STATUS_CHOICE if value not in TERMINAL_STATUSES
+]
+
+MONEY = DecimalField(max_digits=15, decimal_places=2)
+
+
+def annotate_rollups(queryset):
+    """Attach `ROLLUP_FIELDS` to an Account queryset.
+
+    Used by both the list and the detail endpoint, so a number cannot change
+    meaning depending on which page you read it from.
+    """
+    zero = Decimal("0")
+    won = {"stage": "CLOSED_WON"}
+    unclosed = {"stage__in": OPEN_STAGES}
+    past_due = {
+        "status__in": UNPAID_STATUSES,
+        "due_date__lt": timezone.now().date(),
+        "amount_due__gt": 0,
+    }
+
+    return queryset.annotate(
+        # Booked revenue — deals actually won. Not cash collected; the invoices
+        # tell that story and are counted separately below.
+        won_amount=Coalesce(
+            _per_account(Opportunity, Sum("amount"), MONEY, **won), zero
+        ),
+        won_count=Coalesce(
+            _per_account(Opportunity, Count("id"), IntegerField(), **won), 0
+        ),
+        open_pipeline=Coalesce(
+            _per_account(Opportunity, Sum("amount"), MONEY, **unclosed), zero
+        ),
+        open_deal_count=Coalesce(
+            _per_account(Opportunity, Count("id"), IntegerField(), **unclosed), 0
+        ),
+        # Past due and still owed. The due date is the fact; the "Overdue"
+        # status is a nightly task's opinion about that fact, and can be a day
+        # behind it — see UNPAID_STATUSES.
+        overdue_amount=Coalesce(
+            _per_account(Invoice, Sum("amount_due"), MONEY, **past_due), zero
+        ),
+        open_tickets=Coalesce(
+            _per_account(
+                Case, Count("id"), IntegerField(), status__in=OPEN_CASE_STATUSES
+            ),
+            0,
+        ),
+        # The day this company stopped being a prospect: the close date of the
+        # first deal won against them. There is no contract or subscription
+        # model to ask, so this is derived from what the CRM actually knows
+        # rather than presented as a stored fact.
+        first_won_on=_per_account(Opportunity, Min("closed_on"), DateField(), **won),
+    )
+
 
 class AccountsListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
@@ -61,9 +189,9 @@ class AccountsListView(APIView, LimitOffsetPagination):
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
-            "-id"
-        )
+        queryset = annotate_rollups(
+            self.model.objects.filter(org=self.request.profile.org)
+        ).order_by("-id")
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
@@ -256,7 +384,14 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 str(request.profile.org.id),
             )
             return Response(
-                {"error": False, "message": "Account Created Successfully"},
+                {
+                    "error": False,
+                    "message": "Account Created Successfully",
+                    # Without this a client cannot open what it just created.
+                    # The alternative is searching for it by name, which is a
+                    # race and a guess. Additive; nothing reads it positionally.
+                    "id": str(account_object.id),
+                },
                 status=status.HTTP_200_OK,
             )
         return Response(
@@ -270,7 +405,44 @@ class AccountDetailView(APIView):
     serializer_class = AccountSerializer
 
     def get_object(self, pk):
-        return get_object_or_404(Account, id=pk, org=self.request.profile.org)
+        # A malformed id is 404, not 500. The URL pattern is `<str:pk>`, so an
+        # old bookmark or a typo reaches the UUID field as text, and
+        # `UUIDField.to_python` raises `ValidationError` — which
+        # `get_object_or_404` does not catch, because it only knows about
+        # `DoesNotExist`. "That is not an id" and "no such account" are the
+        # same answer to whoever asked.
+        try:
+            return get_object_or_404(
+                annotate_rollups(Account.objects.all()),
+                id=pk,
+                org=self.request.profile.org,
+            )
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such account.")
+
+    def assert_account_access(self, account):
+        """Admins, the person who created it, and anyone assigned. Else 403.
+
+        One check, because there were four and they disagreed. `get`, `put`,
+        `patch` and comment `post` each compared `request.profile` — a Profile —
+        against `account.created_by`, which is a FK to `User`. Those are never
+        equal, so the creator branch could not fire and creators were locked out
+        of their own accounts.
+
+        `delete()` and the list filter got the same comparison *right*. That is
+        the tell that this was a mistake and not a policy: the same non-admin
+        could watch an account sit in their list, be refused permission to open
+        it, and still delete it outright.
+        """
+        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+            return
+        if self.request.profile.user_id == account.created_by_id:
+            return
+        if self.request.profile.id in {
+            profile.id for profile in account.assigned_to.all()
+        }:
+            return
+        raise PermissionDenied("You do not have Permission to perform this action")
 
     @extend_schema(
         tags=["Accounts"],
@@ -281,31 +453,15 @@ class AccountDetailView(APIView):
     def put(self, request, pk, format=None):
         data = request.data
         account_object = self.get_object(pk=pk)
-        if account_object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # Authorise before validating. The check used to sit inside
+        # `is_valid()`, so somebody with no right to touch the account learned
+        # whether their payload was well-formed before being turned away.
+        self.assert_account_access(account_object)
         serializer = AccountCreateSerializer(
             account_object, data=data, request_obj=request, account=True
         )
 
         if serializer.is_valid():
-            if (
-                self.request.profile.role != "ADMIN"
-                and not self.request.profile.is_admin
-            ):
-                if not (
-                    (self.request.profile == account_object.created_by)
-                    or (self.request.profile in account_object.assigned_to.all())
-                ):
-                    return Response(
-                        {
-                            "error": True,
-                            "errors": "You do not have Permission to perform this action",
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
             save_kwargs = {}
             if "custom_fields" in data:
                 cf_payload = data.get("custom_fields")
@@ -354,8 +510,7 @@ class AccountDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
@@ -426,13 +581,8 @@ class AccountDetailView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.object.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile.user != self.object.created_by:
+            if self.request.profile.user_id != self.object.created_by_id:
                 return Response(
                     {
                         "error": True,
@@ -453,33 +603,15 @@ class AccountDetailView(APIView):
     )
     def get(self, request, pk, format=None):
         self.account = self.get_object(pk=pk)
-        if self.account.org != request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        self.assert_account_access(self.account)
         context = {}
         context["account_obj"] = AccountSerializer(self.account).data
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.account.created_by)
-                or (self.request.profile in self.account.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
 
-        comment_permission = False
-        if (
-            self.request.profile == self.account.created_by
+        comment_permission = (
+            self.request.profile.user_id == self.account.created_by_id
             or self.request.profile.is_admin
             or self.request.profile.role == "ADMIN"
-        ):
-            comment_permission = True
+        )
 
         if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
             users_mention = list(
@@ -487,9 +619,17 @@ class AccountDetailView(APIView):
                     is_active=True, org=self.request.profile.org
                 ).values("user__email")
             )
-        elif self.request.profile != self.account.created_by:
+        elif self.request.profile.user_id != self.account.created_by_id:
+            # `created_by` IS the User. Reading `created_by.user.email` raised
+            # AttributeError and returned a 500 to every non-admin assignee who
+            # opened an account — and the branch was reached every time, because
+            # the Profile-vs-User comparison above it was never equal.
+            #
+            # The key is `user__email`, matching the admin branch. It used to be
+            # `username` here, so the same endpoint described the same list two
+            # different ways depending on who asked.
             if self.account.created_by:
-                users_mention = [{"username": self.account.created_by.user.email}]
+                users_mention = [{"user__email": self.account.created_by.email}]
             else:
                 users_mention = []
         else:
@@ -572,27 +712,11 @@ class AccountDetailView(APIView):
     def post(self, request, pk, **kwargs):
         data = request.data
         context = {}
-        self.account_obj = Account.objects.get(pk=pk, org=request.profile.org)
-        if self.account_obj.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.account_obj.created_by)
-                or (self.request.profile in self.account_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # `Account.objects.get()` raised DoesNotExist — a 500 — for an id that
+        # simply is not there, while GET on the same id answered 404. Commenting
+        # on a deleted account is a normal race, not a server fault.
+        self.account_obj = self.get_object(pk=pk)
+        self.assert_account_access(self.account_obj)
         comment_serializer = CommentSerializer(data=data)
         if comment_serializer.is_valid():
             if data.get("comment"):
@@ -640,26 +764,7 @@ class AccountDetailView(APIView):
         """Handle partial updates to an account."""
         data = request.data
         account_object = self.get_object(pk=pk)
-        if account_object.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == account_object.created_by)
-                or (self.request.profile in account_object.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_account_access(account_object)
 
         serializer = AccountCreateSerializer(
             account_object,
@@ -717,8 +822,7 @@ class AccountDetailView(APIView):
                         tags = json.loads(tags)
                     # Extract IDs if tags contains objects with 'id' field
                     tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags
+                        tag.get("id") if isinstance(tag, dict) else tag for tag in tags
                     ]
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
@@ -871,11 +975,26 @@ class AccountAttachmentView(APIView):
 
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        # Scoped to the caller's org. `Attachments` is one generic table shared
+        # by every module, and this looked the row up by primary key alone — so
+        # the endpoint would delete any attachment in the database, belonging to
+        # any organisation, hanging off any kind of record. RLS is the only
+        # thing that stood between that and a cross-tenant delete, and RLS is
+        # the safety net, not the check.
+        #
+        # `created_by` is a User FK, so the ownership branch compares against
+        # `profile.user_id`; comparing the Profile itself was never true, which
+        # made this admin-only by accident.
+        try:
+            self.object = get_object_or_404(
+                self.model, pk=pk, org=self.request.profile.org
+            )
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such attachment.")
         if (
             request.profile.role == "ADMIN"
             or request.profile.is_admin
-            or request.profile == self.object.created_by
+            or request.profile.user_id == self.object.created_by_id
         ):
             self.object.delete()
             return Response(
@@ -905,7 +1024,15 @@ class AccountCreateMailView(APIView):
         data = request.data
         scheduled_later = data.get("scheduled_later")
         scheduled_date_time = data.get("scheduled_date_time")
-        account = Account.objects.filter(id=pk).first()
+        # Org-scoped: unscoped, this would let anyone send mail recorded as
+        # coming *from* another organisation's account.
+        #
+        # Note this endpoint cannot currently succeed at all — `EmailSerializer`
+        # does not accept the `request_obj` kwarg the line below passes it, so
+        # every request dies with a TypeError before reaching any of this. The
+        # scoping is here so it is not missing when somebody revives the
+        # feature; see the report accompanying this change.
+        account = Account.objects.filter(id=pk, org=request.profile.org).first()
         serializer = EmailSerializer(
             data=data,
             request_obj=request,  # account=account,

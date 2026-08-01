@@ -668,9 +668,7 @@ class Notification(BaseModel):
     data = models.JSONField(default=dict, blank=True)
     link = models.CharField(max_length=500, blank=True, default="")
     read_at = models.DateTimeField(null=True, blank=True)
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="notifications"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="notifications")
 
     class Meta:
         verbose_name = "Notification"
@@ -895,5 +893,64 @@ class PersonalAccessToken(BaseOrgModel):
         return True
 
 
+class PortalAccessToken(models.Model):
+    """Unscoped ``token_hash → org`` lookup for anonymous portal requests.
+
+    The public portal endpoints — the invoice and estimate links emailed to
+    customers, and the CSAT survey link — arrive with no auth and no org
+    context. RLS is keyed on ``app.current_org``, so with an empty context the
+    isolation policy hides the very row (invoice / estimate / csat_survey) that
+    would tell us which org the token belongs to. That is a chicken-and-egg:
+    you cannot set the context until you know the org, and you cannot read the
+    org until the context is set.
+
+    This table breaks it. It is deliberately **not** org-scoped — it is absent
+    from ``common.rls.ORG_SCOPED_TABLES`` and carries no RLS policy, so it is
+    readable with an empty context. A public view hashes the URL token, looks
+    up the org here, calls ``set_rls_context(org_id)``, and only then reads the
+    resource under full RLS. That is the same sanctioned pattern Celery tasks
+    and the CSAT view already use; it adds a surface rather than weakening one.
+
+    The key is ``sha256(url_token)``. For invoices and estimates the URL token
+    is the raw ``public_token``; for CSAT it is the signed token whose SHA-256
+    is already the stored ``csat_survey.token_hash`` — so a single hash resolves
+    all three. The row leaks only the *existence* of a token to somebody who
+    already holds it; the resource contents stay behind RLS, and a disabled or
+    deleted resource still 404s because the view's own scoped query re-checks
+    ``public_link_enabled`` / existence after the context is set.
+
+    See ``docs/PORTAL_RLS.md``.
+    """
+
+    INVOICE = "invoice"
+    ESTIMATE = "estimate"
+    CSAT = "csat"
+    RESOURCE_CHOICES = (
+        (INVOICE, "Invoice"),
+        (ESTIMATE, "Estimate"),
+        (CSAT, "CSAT survey"),
+    )
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    org = models.ForeignKey(
+        "common.Org", on_delete=models.CASCADE, related_name="portal_access_tokens"
+    )
+    resource_type = models.CharField(max_length=16, choices=RESOURCE_CHOICES)
+    resource_id = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "portal_access_token"
+        indexes = [
+            models.Index(fields=["resource_type", "resource_id"]),
+        ]
+
+    def __str__(self):
+        return f"PortalAccessToken({self.resource_type}:{self.token_hash[:8]}…)"
+
+
 # Import SecurityAuditLog so Django discovers it for migrations
-from common.audit_log import SecurityAuditLog  # noqa: F401,E402  # pylint: disable=unused-import
+from common.audit_log import (
+    SecurityAuditLog,
+)  # noqa: F401,E402  # pylint: disable=unused-import

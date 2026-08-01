@@ -1,14 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
 
-const ALLOWED = new Set([
-  'frt',
-  'mttr',
-  'backlog',
-  'agents',
-  'sla',
-  'drilldown'
-]);
+const ALLOWED = new Set(['frt', 'mttr', 'backlog', 'agents', 'sla', 'drilldown']);
 
 /** Generic GET proxy for the analytics endpoints — passes the query string
  * through verbatim so filter handling stays on the backend. */

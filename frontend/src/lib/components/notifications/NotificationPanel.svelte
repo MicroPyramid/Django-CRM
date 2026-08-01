@@ -66,11 +66,7 @@
   }
 </script>
 
-<div
-  class="flex w-[360px] max-w-[90vw] flex-col"
-  role="dialog"
-  aria-label="Notifications"
->
+<div class="flex w-[360px] max-w-[90vw] flex-col" role="dialog" aria-label="Notifications">
   <header
     class="flex items-center justify-between border-b border-[var(--border-default)] px-3 py-2"
   >
@@ -102,7 +98,9 @@
         <Loader2 class="mr-2 h-4 w-4 animate-spin" /> Loading…
       </div>
     {:else if notifications.notifications.length === 0}
-      <div class="flex flex-col items-center justify-center gap-1 py-8 text-sm text-[var(--text-secondary)]">
+      <div
+        class="flex flex-col items-center justify-center gap-1 py-8 text-sm text-[var(--text-secondary)]"
+      >
         <History class="h-5 w-5 opacity-60" />
         <span>You're all caught up.</span>
       </div>
@@ -149,7 +147,7 @@
             </button>
             <button
               type="button"
-              class="invisible absolute top-2 right-2 rounded-md p-1 text-[var(--text-secondary)] hover:bg-[var(--surface-default)] group-hover:visible"
+              class="invisible absolute top-2 right-2 rounded-md p-1 text-[var(--text-secondary)] group-hover:visible hover:bg-[var(--surface-default)]"
               aria-label="Delete notification"
               onclick={() => notifications.remove(n.id)}
             >
@@ -162,7 +160,9 @@
   </div>
 
   {#if notifications.error}
-    <div class="border-t border-[var(--border-default)] px-3 py-1.5 text-xs text-[var(--color-danger-default)]">
+    <div
+      class="border-t border-[var(--border-default)] px-3 py-1.5 text-xs text-[var(--color-danger-default)]"
+    >
       {notifications.error}
     </div>
   {/if}

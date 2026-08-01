@@ -7,5 +7,5 @@ Sentry.init({
   dsn,
   enabled: !!dsn,
   tracesSampleRate: 1.0,
-  enableLogs: true,
+  enableLogs: true
 });

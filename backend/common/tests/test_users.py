@@ -498,6 +498,48 @@ class TestUserStatusView:
         assert "active_profiles" in response.data
         assert "inactive_profiles" in response.data
 
+    def test_cannot_deactivate_last_admin(
+        self, admin_client, org_a, admin_user, admin_profile
+    ):
+        """Deactivating the org's only admin is refused — no admin, no recovery."""
+        response = admin_client.post(
+            self._url(admin_user.id),
+            {"status": "Inactive"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        admin_profile.refresh_from_db()
+        assert admin_profile.is_active is True
+
+    def test_can_deactivate_admin_when_another_admin_exists(
+        self, admin_client, org_a, admin_user, admin_profile
+    ):
+        """With a second admin present, deactivating one is allowed."""
+        from common.models import User
+
+        second = User.objects.create_user(
+            email="second-admin@test.com", password="pass123"
+        )
+        Profile.objects.create(user=second, org=org_a, role="ADMIN", is_active=True)
+
+        response = admin_client.post(
+            self._url(admin_user.id),
+            {"status": "Inactive"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        admin_profile.refresh_from_db()
+        assert admin_profile.is_active is False
+
+    def test_status_unknown_user_is_404_not_500(self, admin_client, org_a):
+        """An unknown user id is a clean 404, not a 500 from an unguarded .get()."""
+        response = admin_client.post(
+            self._url("00000000-0000-0000-0000-000000000000"),
+            {"status": "Active"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
 
 @pytest.mark.django_db
 class TestGetTeamsAndUsersView:
@@ -511,3 +553,112 @@ class TestGetTeamsAndUsersView:
         assert response.status_code == status.HTTP_200_OK
         assert "teams" in response.data
         assert "profiles" in response.data
+
+
+@pytest.mark.django_db
+class TestProfilePrivilegeEscalation:
+    """`role` and the access flags are grantable only by an admin acting on
+    someone else. A member editing their own profile was able to PATCH
+    themselves to role="ADMIN" — a live org-admin escalation. These pin both
+    the block and the legitimate admin path so neither drifts.
+    """
+
+    def _url(self, user_id):
+        return f"/api/user/{user_id}/"
+
+    def test_member_cannot_self_escalate_role_via_patch(
+        self, user_client, regular_user, user_profile
+    ):
+        response = user_client.patch(
+            self._url(regular_user.id),
+            {"role": "ADMIN"},
+            format="json",
+        )
+        # read_only means the field is ignored, not rejected: 200, role unchanged.
+        assert response.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.role == "USER"
+
+    def test_member_cannot_self_escalate_admin_flag_via_patch(
+        self, user_client, regular_user, user_profile
+    ):
+        response = user_client.patch(
+            self._url(regular_user.id),
+            {"is_organization_admin": True},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.is_organization_admin is False
+
+    def test_member_cannot_self_escalate_role_via_put(
+        self, user_client, regular_user, user_profile
+    ):
+        response = user_client.put(
+            self._url(regular_user.id),
+            {"email": regular_user.email, "role": "ADMIN", "phone": "+15550001111"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.role == "USER"
+
+    def test_self_escalation_attempt_grants_no_admin_access(
+        self, user_client, regular_user, user_profile
+    ):
+        """End-to-end: the attempt must not unlock the admin-only roster."""
+        user_client.patch(
+            self._url(regular_user.id),
+            {"role": "ADMIN"},
+            format="json",
+        )
+        after = user_client.get("/api/users/")
+        assert after.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_member_can_still_edit_own_safe_fields(
+        self, user_client, regular_user, user_profile
+    ):
+        """The fix must not lock members out of their own contact details."""
+        response = user_client.patch(
+            self._url(regular_user.id),
+            {"phone": "+15559998888"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.phone == "+15559998888"
+        assert user_profile.role == "USER"
+
+    def test_admin_can_promote_and_demote_another_member(
+        self, admin_client, regular_user, user_profile
+    ):
+        promote = admin_client.patch(
+            self._url(regular_user.id),
+            {"role": "ADMIN"},
+            format="json",
+        )
+        assert promote.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.role == "ADMIN"
+
+        demote = admin_client.patch(
+            self._url(regular_user.id),
+            {"role": "USER"},
+            format="json",
+        )
+        assert demote.status_code == status.HTTP_200_OK
+        user_profile.refresh_from_db()
+        assert user_profile.role == "USER"
+
+    def test_admin_cannot_change_their_own_role(
+        self, admin_client, admin_user, admin_profile
+    ):
+        """Even an admin cannot self-demote here — anti self-lockout."""
+        response = admin_client.patch(
+            self._url(admin_user.id),
+            {"role": "USER"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        admin_profile.refresh_from_db()
+        assert admin_profile.role == "ADMIN"

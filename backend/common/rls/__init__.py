@@ -37,6 +37,13 @@ ORG_SCOPED_TABLES = [
     "accounts",  # Note: plural
     "contacts",  # Note: plural
     "opportunity",
+    "sales_goal",  # SalesGoal quota/target — org-scoped, see opportunity/0012
+    # Both org-scoped opportunity children were live but unregistered — the
+    # policy tooling (manage_rls --status, audits) could not see them. RLS is
+    # stamped from source by common/0011 (line items) and opportunity/0013
+    # (stage aging); these entries put them back under central governance.
+    "opportunity_line_item",
+    "stage_aging_config",
     "case",  # Note: singular
     "task",
     "invoice",

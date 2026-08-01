@@ -8,7 +8,7 @@
   data-slot="card-header"
   class={cn(
     '@container/card-header flex items-center justify-between gap-2',
-    'px-4 py-3 border-b border-[color:var(--border-faint)]',
+    'border-b border-[color:var(--border-faint)] px-4 py-3',
     'has-data-[slot=card-action]:grid-cols-[1fr_auto]',
     className
   )}

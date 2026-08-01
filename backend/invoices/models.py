@@ -13,7 +13,6 @@ from common.utils import COUNTRIES, CURRENCY_CODES
 from contacts.models import Contact
 from opportunity.models import Opportunity
 
-
 # =============================================================================
 # CONSTANTS
 # =============================================================================
@@ -28,6 +27,17 @@ INVOICE_STATUS = (
     ("Pending", "Pending"),
     ("Cancelled", "Cancelled"),
 )
+
+# Statuses where the money is still owed: billed to the customer, not yet
+# settled and not written off. Draft is excluded because nobody has been asked
+# to pay yet, Pending because it is not billed either.
+#
+# Shared so that "what this account owes us" on an account page and the
+# accounts-receivable aging report cannot answer the same question differently.
+# Note this deliberately includes "Overdue" — `mark_overdue_invoices` flips the
+# status on a daily schedule, so anything that only looked for "Overdue" would
+# report nothing at all on a day the task has not run yet.
+UNPAID_STATUSES = ("Sent", "Viewed", "Partially_Paid", "Overdue")
 
 PAYMENT_TERMS = (
     ("DUE_ON_RECEIPT", "Due on Receipt"),
@@ -391,6 +401,12 @@ class Invoice(AssignableMixin, BaseModel):
         self.recalculate_totals()
 
         super().save(*args, **kwargs)
+
+        # Keep the unscoped token→org lookup in step with the token we just
+        # minted, so the anonymous portal view can resolve the org under RLS.
+        from common.portal_tokens import register_portal_token
+
+        register_portal_token(self.public_token, self.org_id, "invoice", self.id)
 
     def generate_invoice_number(self):
         """Generate unique invoice number: INV-YYYYMMDD-XXXX"""
@@ -766,6 +782,22 @@ class Estimate(AssignableMixin, BaseModel):
     accepted_at = models.DateTimeField(_("Accepted At"), null=True, blank=True)
     declined_at = models.DateTimeField(_("Declined At"), null=True, blank=True)
 
+    # Acceptance audit trail. Accepting authorises the quote's price, so we
+    # record who did it — the anonymous accept endpoint captures the name and
+    # email they entered plus the request IP/user-agent as best-effort evidence.
+    accepted_by_name = models.CharField(
+        _("Accepted By Name"), max_length=255, blank=True, default=""
+    )
+    accepted_by_email = models.EmailField(
+        _("Accepted By Email"), blank=True, default=""
+    )
+    accepted_ip = models.GenericIPAddressField(
+        _("Accepted From IP"), null=True, blank=True
+    )
+    accepted_user_agent = models.TextField(
+        _("Accepted User Agent"), blank=True, default=""
+    )
+
     # Conversion
     converted_to_invoice = models.ForeignKey(
         Invoice,
@@ -827,6 +859,12 @@ class Estimate(AssignableMixin, BaseModel):
 
         self.recalculate_totals()
         super().save(*args, **kwargs)
+
+        # Keep the unscoped token→org lookup in step with the token we just
+        # minted, so the anonymous portal view can resolve the org under RLS.
+        from common.portal_tokens import register_portal_token
+
+        register_portal_token(self.public_token, self.org_id, "estimate", self.id)
 
     def generate_estimate_number(self):
         """Generate unique estimate number: EST-YYYYMMDD-XXXX"""

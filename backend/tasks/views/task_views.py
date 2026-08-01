@@ -1,8 +1,11 @@
 import json
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count, Q
+from django.http import Http404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
@@ -10,8 +13,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import Account
+from accounts.serializer import AccountSerializer
 from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
 from common.permissions import HasOrgContext
 from common.serializer import (
     AttachmentsSerializer,
@@ -21,10 +33,15 @@ from common.serializer import (
     TeamsSerializer,
 )
 from contacts.models import Contact
-from cases.models import Case
-from leads.models import Lead
-from opportunity.models import Opportunity
+from contacts.serializer import ContactSerializer
 from tasks import swagger_params
+from tasks.access import (
+    assert_task_access,
+    assert_task_delete_access,
+    get_task_or_404,
+    is_org_admin,
+    visible_tasks_qs,
+)
 from tasks.models import Task
 from tasks.serializer import (
     TaskCommentEditSwaggerSerializer,
@@ -36,23 +53,35 @@ from tasks.serializer import (
 )
 
 
+def _model_errors(exc):
+    """Django's ``ValidationError`` in the shape this API answers 400 with.
+
+    ``Task.save()`` calls ``full_clean()``, so a model-level rule — today, "one
+    parent entity" — fires on the way to the database. Django's exception is
+    not DRF's, so nothing caught it and the client got a 500 for breaking a
+    documented rule. Same rule, same wording, now with the right status.
+    """
+    return (
+        exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
+    )
+
+
 class TaskListView(APIView, LimitOffsetPagination):
     model = Task
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
+        # `visible_tasks_qs` is the same rule the detail view enforces. It used
+        # to be spelled out here and spelled differently there, which is how a
+        # member came to have tasks in their list that answered 403 — or, once
+        # the creator clause is live, tasks they created and could not open.
         queryset = (
-            self.model.objects.filter(org=self.request.profile.org)
+            visible_tasks_qs(self.request.profile)
             .select_related("account", "opportunity", "case", "lead")
             .prefetch_related("assigned_to__user", "tags")
             .order_by("-id")
         )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            queryset = queryset.filter(
-                Q(assigned_to__in=[self.request.profile])
-                | Q(created_by=self.request.profile.user)
-            )
 
         if params:
             if params.get("title"):
@@ -99,9 +128,46 @@ class TaskListView(APIView, LimitOffsetPagination):
                             custom_fields__contains={cf_key: raw_value}
                         )
         context = {}
-        results_tasks = self.paginate_queryset(
-            queryset.distinct(), self.request, view=self
+        queryset = queryset.distinct()
+
+        # Totals over the whole filtered queryset, not the page, so a header
+        # that says "6 overdue" is not really saying "6 on this screen".
+        # `overdue` counts only tasks still open: a completed task that
+        # happened to finish late is not something anyone can act on, which is
+        # the same line the mock's `taskTotals` drew and the right one.
+        today = timezone.localdate()
+        week_out = today + timedelta(days=7)
+        # One aggregate, not seven `.count()` calls: written the obvious way
+        # this was eight COUNT(*) round trips per page load, all scanning the
+        # same rows. `distinct=True` because a non-admin's queryset joins the
+        # assignee many-to-many and would otherwise count a task once per
+        # assignee.
+        still_open = ~Q(status="Completed")
+        totals = queryset.aggregate(
+            count=Count("id", distinct=True),
+            open=Count("id", distinct=True, filter=still_open),
+            overdue=Count(
+                "id", distinct=True, filter=still_open & Q(due_date__lt=today)
+            ),
+            due_today=Count("id", distinct=True, filter=still_open & Q(due_date=today)),
+            due_this_week=Count(
+                "id",
+                distinct=True,
+                filter=still_open & Q(due_date__gte=today, due_date__lte=week_out),
+            ),
+            # A task with no due date is never overdue and never due this week,
+            # so it falls off both of the numbers above and out of anybody's
+            # attention. That is the one worth counting on its own.
+            no_due_date=Count(
+                "id", distinct=True, filter=still_open & Q(due_date__isnull=True)
+            ),
+            unassigned=Count(
+                "id", distinct=True, filter=still_open & Q(assigned_to__isnull=True)
+            ),
         )
+        context["totals"] = totals
+
+        results_tasks = self.paginate_queryset(queryset, self.request, view=self)
         # Slim serializer: drops comments/attachments/contacts/teams from list
         # rows and renders FKs as {id, name}. Detail view still uses
         # TaskSerializer for the full nested payload.
@@ -119,6 +185,28 @@ class TaskListView(APIView, LimitOffsetPagination):
                 "tasks": tasks,
             }
         )
+
+        # What a task *form* needs, from the endpoint that already knows the
+        # answer — the same keys `cases` and `opportunity` publish, because a
+        # second name for the same list is how clients end up with two.
+        context["status"] = Task.STATUS_CHOICES
+        context["priority"] = Task.PRIORITY_CHOICES
+        profiles = Profile.objects.filter(
+            is_active=True, org=self.request.profile.org
+        ).order_by("user__email")
+        if not is_org_admin(self.request.profile):
+            profiles = profiles.filter(role="ADMIN")
+        context["users"] = list(profiles.values("id", "user__email"))
+        # The catalogues are for the parent picker and grow with the org, not
+        # with the page — `?slim=true` omits them for callers that only want
+        # the list. Default unchanged, so v1 and mobile see what they saw.
+        if params.get("slim") != "true":
+            context["accounts_list"] = AccountSerializer(
+                Account.objects.filter(org=self.request.profile.org), many=True
+            ).data
+            context["contacts_list"] = ContactSerializer(
+                Contact.objects.filter(org=self.request.profile.org), many=True
+            ).data
         return context
 
     @extend_schema(
@@ -132,6 +220,12 @@ class TaskListView(APIView, LimitOffsetPagination):
                     "tasks_count": serializers.IntegerField(),
                     "offset": serializers.IntegerField(allow_null=True),
                     "tasks": TaskListSerializer(many=True),
+                    "totals": serializers.DictField(),
+                    "status": serializers.ListField(),
+                    "priority": serializers.ListField(),
+                    "users": serializers.ListField(),
+                    "accounts_list": AccountSerializer(many=True),
+                    "contacts_list": ContactSerializer(many=True),
                 },
             )
         },
@@ -173,12 +267,18 @@ class TaskListView(APIView, LimitOffsetPagination):
                     {"error": True, "errors": {"custom_fields": cf_errors}},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            task_obj = serializer.save(
-                created_by=request.profile.user,
-                due_date=params.get("due_date"),
-                org=request.profile.org,
-                custom_fields=cleaned_cf,
-            )
+            try:
+                task_obj = serializer.save(
+                    created_by=request.profile.user,
+                    due_date=params.get("due_date"),
+                    org=request.profile.org,
+                    custom_fields=cleaned_cf,
+                )
+            except DjangoValidationError as exc:
+                return Response(
+                    {"error": True, "errors": _model_errors(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
                 if isinstance(contacts_list, str):
@@ -225,39 +325,20 @@ class TaskListView(APIView, LimitOffsetPagination):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
                 )
                 task_obj.tags.add(*tag_objs)
 
-            # Handle new FK relationships with org validation
-            if params.get("opportunity"):
-                opp = Opportunity.objects.filter(
-                    id=params.get("opportunity"), org=request.profile.org
-                ).first()
-                if opp:
-                    task_obj.opportunity = opp
-                    task_obj.save()
-
-            if params.get("case"):
-                case = Case.objects.filter(
-                    id=params.get("case"), org=request.profile.org
-                ).first()
-                if case:
-                    task_obj.case = case
-                    task_obj.save()
-
-            if params.get("lead"):
-                lead = Lead.objects.filter(
-                    id=params.get("lead"), org=request.profile.org
-                ).first()
-                if lead:
-                    task_obj.lead = lead
-                    task_obj.save()
-
+            # The parent FKs used to be re-read from `params` and re-saved here
+            # with an org filter, *after* the serializer had already written
+            # whatever the client sent. On create that second pass only ever
+            # assigned — it never cleared — so another org's lead survived it
+            # and the list rendered that org's name back. The serializer now
+            # scopes the four querysets itself, which is one place instead of
+            # three and refuses out-of-org ids instead of quietly dropping them.
             return Response(
                 {"error": False, "message": "Task Created Successfully"},
                 status=status.HTTP_200_OK,
@@ -273,24 +354,15 @@ class TaskDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return get_object_or_404(Task, pk=pk, org=self.request.profile.org)
+        return get_task_or_404(self.request.profile, pk)
 
     def get_context_data(self, **kwargs):
         context = {}
-        user_assgn_list = [
-            assigned_to.id for assigned_to in self.task_obj.assigned_to.all()
-        ]
-        if self.request.profile == self.task_obj.created_by:
-            user_assgn_list.append(self.request.profile.id)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if self.request.profile.id not in user_assgn_list:
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # Raise, don't return. This used to hand a `Response` back to `get()`,
+        # which wrapped it in a second `Response` — so the one path that was
+        # supposed to say 403 answered `TypeError: Object of type Response is
+        # not JSON serializable` and a 500 instead.
+        assert_task_access(self.request.profile, self.task_obj)
 
         task_content_type = ContentType.objects.get_for_model(Task)
         comments = Comment.objects.filter(
@@ -306,17 +378,27 @@ class TaskDetailView(APIView):
 
         assigned_data = self.task_obj.assigned_to.values("id", "user__email")
 
-        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
+        # `created_by` is a `User`, so `created_by.user` does not exist. The
+        # branch guarding it compared a `Profile` to that `User` and was
+        # therefore always true, which made this line unreachable-by-intent and
+        # unavoidable-in-practice: every non-admin who opened any task got an
+        # AttributeError and a 500. Not "a member cannot open someone else's
+        # task" — a member could not open *their own*.
+        if is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True, org=self.request.profile.org
                 ).values("user__email")
             )
-        elif self.request.profile != self.task_obj.created_by:
-            users_mention = [{"username": self.task_obj.created_by.user.email}]
+        elif self.request.profile.user_id != self.task_obj.created_by_id:
+            users_mention = (
+                [{"username": self.task_obj.created_by.email}]
+                if self.task_obj.created_by_id
+                else []
+            )
         else:
             users_mention = list(self.task_obj.assigned_to.all().values("user__email"))
-        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+        if is_org_admin(self.request.profile):
             users = Profile.objects.filter(
                 is_active=True, org=self.request.profile.org
             ).order_by("user__email")
@@ -399,19 +481,8 @@ class TaskDetailView(APIView):
     def post(self, request, pk, **kwargs):
         params = request.data
         context = {}
-        self.task_obj = get_object_or_404(Task, pk=pk, org=request.profile.org)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.task_obj.created_by)
-                or (self.request.profile in self.task_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.task_obj = self.get_object(pk)
+        assert_task_access(request.profile, self.task_obj)
         task_content_type = ContentType.objects.get_for_model(Task)
         comment_text = params.get("comment")
         if comment_text:
@@ -474,21 +545,7 @@ class TaskDetailView(APIView):
     def put(self, request, pk, **kwargs):
         params = request.data
         self.task_obj = self.get_object(pk)
-        # Match the role gate used by GET/POST/PATCH/DELETE — without this,
-        # any authenticated user in the org could PUT to any task UUID even
-        # though they can't read it.
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.task_obj.created_by)
-                or (self.request.profile in self.task_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        assert_task_access(request.profile, self.task_obj)
         serializer = TaskCreateSerializer(
             data=params,
             instance=self.task_obj,
@@ -515,7 +572,13 @@ class TaskDetailView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 save_kwargs["custom_fields"] = cleaned_cf
-            task_obj = serializer.save(**save_kwargs)
+            try:
+                task_obj = serializer.save(**save_kwargs)
+            except DjangoValidationError as exc:
+                return Response(
+                    {"error": True, "errors": _model_errors(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
@@ -566,41 +629,17 @@ class TaskDetailView(APIView):
                     tags = json.loads(tags)
                 # Extract IDs if tags contains objects with 'id' field
                 tag_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in tags
+                    item.get("id") if isinstance(item, dict) else item for item in tags
                 ]
                 tag_objs = Tags.objects.filter(
                     id__in=tag_ids, org=request.profile.org, is_active=True
                 )
                 task_obj.tags.add(*tag_objs)
 
-            # Handle FK relationships with org validation
-            if params.get("opportunity"):
-                opp = Opportunity.objects.filter(
-                    id=params.get("opportunity"), org=request.profile.org
-                ).first()
-                task_obj.opportunity = opp
-            elif "opportunity" in params:
-                task_obj.opportunity = None
-
-            if params.get("case"):
-                case = Case.objects.filter(
-                    id=params.get("case"), org=request.profile.org
-                ).first()
-                task_obj.case = case
-            elif "case" in params:
-                task_obj.case = None
-
-            if params.get("lead"):
-                lead = Lead.objects.filter(
-                    id=params.get("lead"), org=request.profile.org
-                ).first()
-                task_obj.lead = lead
-            elif "lead" in params:
-                task_obj.lead = None
-
-            task_obj.save()
-
+            # The parent FKs are the serializer's job now — it scopes all four
+            # querysets to the org, so an id from somewhere else is a 400 here
+            # instead of a silent `None`. A form that says "link this to Acme"
+            # and gets a 200 back should not have unlinked it.
             return Response(
                 {"error": False, "message": "Task updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -629,18 +668,7 @@ class TaskDetailView(APIView):
         """Handle partial updates to a task."""
         params = request.data
         self.task_obj = self.get_object(pk)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
-            if not (
-                (self.request.profile == self.task_obj.created_by)
-                or (self.request.profile in self.task_obj.assigned_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You don't have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        assert_task_access(request.profile, self.task_obj)
 
         serializer = TaskCreateSerializer(
             data=params,
@@ -669,7 +697,13 @@ class TaskDetailView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 save_kwargs["custom_fields"] = cleaned_cf
-            task_obj = serializer.save(**save_kwargs)
+            try:
+                task_obj = serializer.save(**save_kwargs)
+            except DjangoValidationError as exc:
+                return Response(
+                    {"error": True, "errors": _model_errors(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Handle M2M fields if present in request
             if "contacts" in params:
@@ -736,36 +770,7 @@ class TaskDetailView(APIView):
                     )
                     task_obj.tags.add(*tag_objs)
 
-            # Handle FK relationships with org validation
-            if "opportunity" in params:
-                if params.get("opportunity"):
-                    opp = Opportunity.objects.filter(
-                        id=params.get("opportunity"), org=request.profile.org
-                    ).first()
-                    task_obj.opportunity = opp
-                else:
-                    task_obj.opportunity = None
-
-            if "case" in params:
-                if params.get("case"):
-                    case = Case.objects.filter(
-                        id=params.get("case"), org=request.profile.org
-                    ).first()
-                    task_obj.case = case
-                else:
-                    task_obj.case = None
-
-            if "lead" in params:
-                if params.get("lead"):
-                    lead = Lead.objects.filter(
-                        id=params.get("lead"), org=request.profile.org
-                    ).first()
-                    task_obj.lead = lead
-                else:
-                    task_obj.lead = None
-
-            task_obj.save()
-
+            # Parent FKs: the serializer's job, org-scoped there. See PUT.
             return Response(
                 {"error": False, "message": "Task updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -791,19 +796,12 @@ class TaskDetailView(APIView):
     )
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.created_by
-        ):
-            self.object.delete()
-            return Response(
-                {"error": False, "message": "Task deleted Successfully"},
-                status=status.HTTP_200_OK,
-            )
+        # Narrower than `access`: an assignee may work the task, not erase it.
+        assert_task_delete_access(request.profile, self.object)
+        self.object.delete()
         return Response(
-            {"error": True, "errors": "you don't have permission to delete this task"},
-            status=status.HTTP_403_FORBIDDEN,
+            {"error": False, "message": "Task deleted Successfully"},
+            status=status.HTTP_200_OK,
         )
 
 
@@ -812,7 +810,21 @@ class TaskCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        """A comment in the requester's org, or 404.
+
+        Was `objects.get(...)`, so a comment id that had been deleted, belonged
+        to another org, or was not a UUID at all answered 500 rather than
+        "there is no such comment".
+        """
+        try:
+            comment = self.model.objects.filter(
+                pk=pk, org=self.request.profile.org
+            ).first()
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such comment.")
+        if comment is None:
+            raise Http404("No such comment.")
+        return comment
 
     @extend_schema(
         tags=["Tasks"],
@@ -952,21 +964,37 @@ class TaskAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.created_by
+        # `Attachments` is one generic table shared by every module, so a
+        # lookup by pk alone reaches every attachment in the database. Without
+        # `org=`, this endpoint was a "delete any attachment anywhere by UUID"
+        # primitive for any org admin: proven live, an admin of one org
+        # destroyed a file belonging to another org — and it was attached to a
+        # lead, not even to a task. The org filter is the fix; the uploader
+        # clause below is a separate bug in the same three lines.
+        try:
+            self.object = self.model.objects.filter(
+                pk=pk, org=request.profile.org
+            ).first()
+        except (DjangoValidationError, ValueError):
+            raise Http404("No such attachment.")
+        if self.object is None:
+            raise Http404("No such attachment.")
+        # `created_by` is a `User`; `request.profile` is a `Profile`. Comparing
+        # them is always False, so the person who uploaded the file could not
+        # remove it unless they were an admin.
+        if not (
+            is_org_admin(request.profile)
+            or request.profile.user_id == self.object.created_by_id
         ):
-            self.object.delete()
             return Response(
-                {"error": False, "message": "Attachment Deleted Successfully"},
-                status=status.HTTP_200_OK,
+                {
+                    "error": True,
+                    "errors": "You don't have Permission to perform this action",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
+        self.object.delete()
         return Response(
-            {
-                "error": True,
-                "errors": "You don't have Permission to perform this action",
-            },
-            status=status.HTTP_403_FORBIDDEN,
+            {"error": False, "message": "Attachment Deleted Successfully"},
+            status=status.HTTP_200_OK,
         )

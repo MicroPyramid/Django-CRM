@@ -6,6 +6,12 @@
  */
 
 import { error } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
+
+// The Django API, reached server-to-server. Absolute (not a relative `/api/...`
+// that only resolves behind a production reverse proxy) so the anonymous portal
+// works the same in dev and prod — the CSAT loader takes the same approach.
+const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ params, fetch }) {
@@ -17,7 +23,7 @@ export async function load({ params, fetch }) {
 
   try {
     // Fetch invoice from public API (no auth)
-    const response = await fetch(`/api/public/invoice/${token}/`);
+    const response = await fetch(`${API_BASE_URL}/public/invoice/${token}/`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -26,45 +32,11 @@ export async function load({ params, fetch }) {
       throw error(response.status, 'Failed to load invoice');
     }
 
+    // The v2 portal renders the Django shape directly (snake_case, template
+    // nested), so pass it through rather than re-mapping to camelCase.
     const invoice = await response.json();
 
-    return {
-      invoice: {
-        id: invoice.id,
-        invoiceNumber: invoice.invoice_number,
-        invoiceTitle: invoice.invoice_title,
-        status: invoice.status,
-        clientName: invoice.client_name,
-        clientEmail: invoice.client_email,
-        issueDate: invoice.issue_date,
-        dueDate: invoice.due_date,
-        subtotal: invoice.subtotal,
-        discountAmount: invoice.discount_amount,
-        taxAmount: invoice.tax_amount,
-        totalAmount: invoice.total_amount,
-        amountPaid: invoice.amount_paid,
-        amountDue: invoice.amount_due,
-        currency: invoice.currency,
-        notes: invoice.notes,
-        terms: invoice.terms,
-        billingAddress: invoice.billing_address,
-        lineItems: invoice.line_items || [],
-        payments: invoice.payments || [],
-        org: invoice.org
-      },
-      template: invoice.template
-        ? {
-            primaryColor: invoice.template.primary_color || '#3B82F6',
-            secondaryColor: invoice.template.secondary_color || '#1E40AF',
-            footerText: invoice.template.footer_text || ''
-          }
-        : {
-            primaryColor: '#3B82F6',
-            secondaryColor: '#1E40AF',
-            footerText: ''
-          },
-      token
-    };
+    return { invoice, token };
   } catch (err) {
     if (err.status) throw err;
     console.error('Error loading public invoice:', err);

@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import pytest
 
+from cases.models import Case
 from common.custom_fields import validate_definition_options, validate_payload
 from common.models import CustomFieldDefinition
+from leads.models import Lead
 
 
 @pytest.mark.django_db
@@ -29,9 +31,7 @@ class TestValidatorHelpers:
 
     def test_options_forbidden_for_non_dropdown(self):
         with pytest.raises(Exception):
-            validate_definition_options(
-                "text", [{"value": "x", "label": "y"}]
-            )
+            validate_definition_options("text", [{"value": "x", "label": "y"}])
 
     def test_options_none_ok_for_non_dropdown(self):
         validate_definition_options("text", None)
@@ -92,16 +92,12 @@ class TestValidatePayload:
         assert cleaned == {"hours": 3.5}
 
     def test_number_invalid_errors(self, org_a):
-        self._defn(
-            org_a, key="hours", field_type="number", options=None
-        )
+        self._defn(org_a, key="hours", field_type="number", options=None)
         cleaned, errors = validate_payload("Case", {"hours": "abc"}, org_a)
         assert "hours" in errors
 
     def test_checkbox_string_coercion(self, org_a):
-        self._defn(
-            org_a, key="vip", field_type="checkbox", options=None
-        )
+        self._defn(org_a, key="vip", field_type="checkbox", options=None)
         cleaned, errors = validate_payload("Case", {"vip": "true"}, org_a)
         assert errors == {}
         assert cleaned == {"vip": True}
@@ -168,7 +164,9 @@ class TestCustomFieldDefinitionAPI:
         assert response.status_code == 201, response.content
         body = response.json()
         assert body["key"] == "severity"
-        assert CustomFieldDefinition.objects.filter(org=org_a, key="severity").count() == 1
+        assert (
+            CustomFieldDefinition.objects.filter(org=org_a, key="severity").count() == 1
+        )
 
     def test_post_non_admin_forbidden(self, user_client):
         response = user_client.post(self.URL, self._payload(), format="json")
@@ -193,7 +191,11 @@ class TestCustomFieldDefinitionAPI:
             org=org_a, target_model="Case", key="a", label="A", field_type="text"
         )
         CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="b", label="B", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="b",
+            label="B",
+            field_type="text",
             is_active=False,
         )
         response = admin_client.get(self.URL + "?target_model=Case&active_only=true")
@@ -203,7 +205,11 @@ class TestCustomFieldDefinitionAPI:
     def test_get_allowed_for_non_admin(self, user_client, org_a):
         # Non-admins read definitions so the case detail page can render fields.
         CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = user_client.get(self.URL + "?target_model=Case")
         assert response.status_code == 200
@@ -219,7 +225,13 @@ class TestCustomFieldDefinitionAPI:
         )
         response = admin_client.put(
             f"{self.URL}{defn.id}/",
-            {"label": "Severity Level", "options": [{"value": "S1", "label": "S1"}, {"value": "S2", "label": "S2"}]},
+            {
+                "label": "Severity Level",
+                "options": [
+                    {"value": "S1", "label": "S1"},
+                    {"value": "S2", "label": "S2"},
+                ],
+            },
             format="json",
         )
         assert response.status_code == 200, response.content
@@ -229,7 +241,11 @@ class TestCustomFieldDefinitionAPI:
 
     def test_put_rejects_key_change(self, admin_client, org_a):
         defn = CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = admin_client.put(
             f"{self.URL}{defn.id}/", {"key": "severity_new"}, format="json"
@@ -239,7 +255,11 @@ class TestCustomFieldDefinitionAPI:
 
     def test_put_rejects_field_type_change(self, admin_client, org_a):
         defn = CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = admin_client.put(
             f"{self.URL}{defn.id}/", {"field_type": "number"}, format="json"
@@ -248,7 +268,11 @@ class TestCustomFieldDefinitionAPI:
 
     def test_delete_soft_deactivates(self, admin_client, org_a):
         defn = CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = admin_client.delete(f"{self.URL}{defn.id}/")
         assert response.status_code == 200
@@ -257,7 +281,11 @@ class TestCustomFieldDefinitionAPI:
 
     def test_delete_non_admin_forbidden(self, user_client, org_a):
         defn = CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = user_client.delete(f"{self.URL}{defn.id}/")
         assert response.status_code == 403
@@ -273,7 +301,11 @@ class TestCustomFieldDefinitionAPI:
 
     def test_duplicate_key_per_target_rejected(self, admin_client, org_a):
         CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Case", key="severity", label="Severity", field_type="text",
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
         )
         response = admin_client.post(self.URL, self._payload(), format="json")
         assert response.status_code == 400
@@ -297,3 +329,119 @@ class TestCustomFieldDefinitionAPI:
         org_b_response = org_b_client.get(self.URL + "?target_model=Case")
         assert org_b_response.status_code == 200
         assert org_b_response.json()["definitions"] == []
+
+
+@pytest.mark.django_db
+class TestCustomFieldAnalytics:
+    """records_missing_value + totals — the settings/custom-fields stat cards."""
+
+    URL = "/api/custom-fields/"
+
+    def _case(self, org, custom_fields):
+        return Case.objects.create(
+            org=org,
+            name="C",
+            status="New",
+            priority="Normal",
+            custom_fields=custom_fields,
+        )
+
+    def _row(self, response, key):
+        return next(d for d in response.json()["definitions"] if d["key"] == key)
+
+    def test_records_missing_value_counts_rows_without_the_key(
+        self, admin_client, org_a
+    ):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
+            is_required=True,
+        )
+        self._case(org_a, {"severity": "S1"})  # has a value
+        self._case(org_a, {})  # missing
+        self._case(org_a, {"other": "x"})  # missing (different key)
+
+        row = self._row(admin_client.get(self.URL), "severity")
+        assert row["records_missing_value"] == 2
+
+    def test_totals_count_active_models_and_gaps(self, admin_client, org_a):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="S",
+            field_type="text",
+            is_required=True,
+        )
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="region",
+            label="R",
+            field_type="text",
+            is_required=False,
+        )
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Lead",
+            key="score",
+            label="Sc",
+            field_type="text",
+            is_required=True,
+        )
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="legacy",
+            label="L",
+            field_type="text",
+            is_active=False,
+        )
+        self._case(org_a, {})  # missing severity + region
+        self._case(org_a, {"severity": "S1", "region": "eu"})  # has both
+        Lead.objects.create(org=org_a, custom_fields={})  # missing score
+
+        totals = admin_client.get(self.URL).json()["totals"]
+        assert totals == {
+            "count": 4,  # includes the inactive legacy field
+            "active": 3,
+            "models_extended": 2,  # Case + Lead have active fields
+            # severity (1 case missing) + score (1 lead missing); region isn't
+            # required, legacy is inactive & not required.
+            "required_with_gaps": 2,
+        }
+
+    def test_records_missing_value_is_org_scoped(self, admin_client, org_a, org_b):
+        """The record count must not include another org's rows — proven on
+        SQLite where RLS is inert, so only the explicit org filter scopes it."""
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="S",
+            field_type="text",
+            is_required=True,
+        )
+        self._case(org_a, {})  # one org_a case, missing the value
+        for _ in range(3):
+            self._case(org_b, {})  # foreign-org cases must not be counted
+
+        row = self._row(admin_client.get(self.URL), "severity")
+        assert row["records_missing_value"] == 1  # not 4
+
+    def test_non_admin_sees_analytics(self, user_client, org_a):
+        # Reads are open to members (shared config), analytics included.
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="S",
+            field_type="text",
+        )
+        resp = user_client.get(self.URL)
+        assert resp.status_code == 200
+        assert "totals" in resp.json()
+        assert resp.json()["definitions"][0]["records_missing_value"] == 0

@@ -18,9 +18,6 @@ export async function POST({ params, request, cookies, locals }) {
     );
     return json(data);
   } catch (err) {
-    return json(
-      { error: err?.message || 'Approval request failed' },
-      { status: 400 }
-    );
+    return json({ error: err?.message || 'Approval request failed' }, { status: 400 });
   }
 }

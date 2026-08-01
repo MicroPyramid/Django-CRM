@@ -7,10 +7,7 @@
 <div
   bind:this={ref}
   data-slot="card-content"
-  class={cn(
-    'px-4 py-3.5 text-[13px] leading-[1.55] text-[color:var(--text-muted)]',
-    className
-  )}
+  class={cn('px-4 py-3.5 text-[13px] leading-[1.55] text-[color:var(--text-muted)]', className)}
   {...restProps}
 >
   {@render children?.()}

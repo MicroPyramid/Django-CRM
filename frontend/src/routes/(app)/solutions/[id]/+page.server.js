@@ -1,94 +1,60 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { fail } from '@sveltejs/kit';
+import { getArticle, setPublished, updateArticle } from '$lib/server/v2/solutions.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ params, locals, cookies }) {
-  if (!locals.org) throw error(401, 'Organization context required');
-
-  try {
-    const detail = await apiRequest(
-      `/cases/solutions/${params.id}/`,
-      {},
-      { cookies, org: locals.org }
-    );
-    if (!detail || !detail.id) throw error(404, 'Solution not found');
-    return { solution: detail };
-  } catch (err) {
-    if (err?.status) throw err;
-    console.error('Load solution error:', err);
-    throw error(500, `Failed to load solution: ${err?.message || 'unknown error'}`);
-  }
+export async function load({ cookies, locals, params }) {
+  const article = await getArticle({ cookies }, params.id);
+  return {
+    ...article,
+    // See the list loader: this decides what renders, never what is allowed.
+    canRelease: /** @type {any} */ (locals).profile?.role === 'ADMIN'
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  update: async ({ request, params, locals, cookies }) => {
+  /**
+   * Move the article along the review workflow.
+   *
+   * Only the status — the body is not in this form, so a PATCH carrying one
+   * field is exactly what should go. `draft → reviewed` is anyone's to press;
+   * anything → `approved` is an admin's, and the API is what says so.
+   */
+  setStatus: async ({ cookies, params, request }) => {
     const form = await request.formData();
-    const title = form.get('title')?.toString().trim();
-    const description = form.get('description')?.toString() || '';
-    const status = form.get('status')?.toString() || 'draft';
-    if (!title) return fail(400, { error: 'Title is required' });
+    const status = form.get('status')?.toString() ?? '';
+    if (!status) return fail(400, { error: 'No status to set.' });
 
     try {
-      await apiRequest(
-        `/cases/solutions/${params.id}/`,
-        { method: 'PATCH', body: { title, description, status } },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Update solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to update solution'
-      });
+      await updateArticle({ cookies }, params.id, { status });
+    } catch (/** @type {any} */ err) {
+      return fail(400, { error: readableError(err, 'Could not change the status.') });
     }
+    return { status };
   },
 
-  publish: async ({ params, locals, cookies }) => {
-    try {
-      await apiRequest(
-        `/cases/solutions/${params.id}/publish/`,
-        { method: 'POST', body: {} },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Publish solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to publish solution'
-      });
-    }
-  },
+  /**
+   * Give the article to customers, or take it back.
+   *
+   * The two verbs are one action with a flag rather than two nearly identical
+   * ones, because the thing they have in common — both are admin-only, both
+   * are the same switch — is the part worth keeping in one place.
+   */
+  setPublished: async ({ cookies, params, request }) => {
+    const form = await request.formData();
+    const published = form.get('published') === 'true';
 
-  unpublish: async ({ params, locals, cookies }) => {
     try {
-      await apiRequest(
-        `/cases/solutions/${params.id}/unpublish/`,
-        { method: 'POST', body: {} },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Unpublish solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to unpublish solution'
+      await setPublished({ cookies }, params.id, published);
+    } catch (/** @type {any} */ err) {
+      return fail(400, {
+        error: readableError(
+          err,
+          published ? 'Could not publish this article.' : 'Could not unpublish this article.'
+        )
       });
     }
-  },
-
-  delete: async ({ params, locals, cookies }) => {
-    try {
-      await apiRequest(
-        `/cases/solutions/${params.id}/`,
-        { method: 'DELETE' },
-        { cookies, org: locals.org }
-      );
-    } catch (err) {
-      console.error('Delete solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to delete solution'
-      });
-    }
-    throw redirect(303, '/solutions');
+    return { published };
   }
 };

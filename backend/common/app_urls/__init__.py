@@ -1,11 +1,15 @@
 from django.urls import include, path
 
 from cases.csat_views import PublicCsatView
+from common.search_views import GlobalSearchView
 from tasks.urls import board_urlpatterns
 
 app_name = "common_urls"
 urlpatterns = [
     path("", include(("common.urls"))),
+    # Org-scoped global search for the ⌘K palette (spans every module, so it
+    # lives here rather than in any one app).
+    path("search/", GlobalSearchView.as_view(), name="global_search"),
     path("accounts/", include("accounts.urls", namespace="api_accounts")),
     path("contacts/", include("contacts.urls", namespace="api_contacts")),
     path("leads/", include("leads.urls", namespace="api_leads")),

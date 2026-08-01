@@ -1,108 +1,58 @@
-import { error, fail } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { fail } from '@sveltejs/kit';
+import { listArticles, setPublished } from '$lib/server/v2/solutions.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 
-const PAGE_SIZE = 20;
-
-/** @type {import('./$types').PageServerLoad} */
-export async function load({ url, cookies, locals }) {
-  if (!locals.org) throw error(401, 'Organization context required');
-
-  const statusFilter = url.searchParams.get('status') || '';
-  const publishedFilter = url.searchParams.get('published') || '';
-  const search = url.searchParams.get('q') || '';
-  const pageNum = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-  const offset = (pageNum - 1) * PAGE_SIZE;
-
-  const qs = new URLSearchParams();
-  qs.set('limit', String(PAGE_SIZE));
-  qs.set('offset', String(offset));
-  if (statusFilter) qs.set('status', statusFilter);
-  if (publishedFilter === 'yes') qs.set('is_published', 'true');
-  if (publishedFilter === 'no') qs.set('is_published', 'false');
-  if (search) qs.set('search', search);
-
-  try {
-    const data = await apiRequest(
-      `/cases/solutions/?${qs.toString()}`,
-      {},
-      { cookies, org: locals.org }
-    );
-    return {
-      solutions: data?.results || [],
-      total: data?.count || 0,
-      pageNum,
-      pageSize: PAGE_SIZE,
-      filters: { status: statusFilter, published: publishedFilter, search }
-    };
-  } catch (err) {
-    console.error('Solutions list load failed:', err);
-    return {
-      solutions: [],
-      total: 0,
-      pageNum,
-      pageSize: PAGE_SIZE,
-      filters: { status: statusFilter, published: publishedFilter, search },
-      loadError: err?.message || 'Could not load solutions'
-    };
+/**
+ * Only filters the API actually applies are forwarded. A parameter that
+ * changes the URL and nothing else teaches people the filter bar is decorative.
+ *
+ * @type {import('./$types').PageServerLoad}
+ */
+export async function load({ cookies, locals, url }) {
+  const params = new URLSearchParams();
+  for (const key of ['search', 'status', 'limit']) {
+    const value = url.searchParams.get(key);
+    if (value) params.set(key, value);
   }
+
+  // Three states, not two: unset means "everything".
+  const visibility = url.searchParams.get('visibility') ?? '';
+  if (visibility === 'published') params.set('is_published', 'true');
+  if (visibility === 'internal') params.set('is_published', 'false');
+
+  const { results, totals } = await listArticles({ cookies }, params);
+
+  return {
+    articles: results,
+    totals,
+    search: params.get('search') ?? '',
+    status: params.get('status') ?? '',
+    visibility,
+    // From the JWT's own claim, so it costs no round trip. It decides which
+    // buttons render and nothing else — `assert_solution_release_access` is
+    // the control, and it answers 403 whatever this says.
+    canRelease: /** @type {any} */ (locals).profile?.role === 'ADMIN'
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  delete: async ({ request, locals, cookies }) => {
+  /**
+   * Release an article from the row it is on. The list is where somebody
+   * notices the approved-and-invisible pile, so it is where the button
+   * belongs — walking into the article to press it is the step that leaves
+   * those rows sitting there.
+   */
+  publish: async ({ cookies, request }) => {
     const form = await request.formData();
     const id = form.get('id')?.toString();
-    if (!id) return fail(400, { error: 'id required' });
-    try {
-      await apiRequest(
-        `/cases/solutions/${id}/`,
-        { method: 'DELETE' },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Delete solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to delete solution'
-      });
-    }
-  },
+    if (!id) return fail(400, { error: 'No article to publish.' });
 
-  publish: async ({ request, locals, cookies }) => {
-    const form = await request.formData();
-    const id = form.get('id')?.toString();
-    if (!id) return fail(400, { error: 'id required' });
     try {
-      await apiRequest(
-        `/cases/solutions/${id}/publish/`,
-        { method: 'POST', body: {} },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Publish solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to publish solution'
-      });
+      await setPublished({ cookies }, id, true);
+    } catch (/** @type {any} */ err) {
+      return fail(400, { error: readableError(err, 'Could not publish this article.') });
     }
-  },
-
-  unpublish: async ({ request, locals, cookies }) => {
-    const form = await request.formData();
-    const id = form.get('id')?.toString();
-    if (!id) return fail(400, { error: 'id required' });
-    try {
-      await apiRequest(
-        `/cases/solutions/${id}/unpublish/`,
-        { method: 'POST', body: {} },
-        { cookies, org: locals.org }
-      );
-      return { success: true };
-    } catch (err) {
-      console.error('Unpublish solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to unpublish solution'
-      });
-    }
+    return { published: true };
   }
 };

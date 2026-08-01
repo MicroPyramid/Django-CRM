@@ -50,8 +50,7 @@
     const q = query.trim().toLowerCase();
     if (!q) return macros;
     return macros.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) || m.body.toLowerCase().includes(q)
+      (m) => m.title.toLowerCase().includes(q) || m.body.toLowerCase().includes(q)
     );
   });
 
@@ -129,7 +128,9 @@
         </div>
       {:else}
         {#if personalGroup.length > 0}
-          <div class="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
+          <div
+            class="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wider text-[var(--text-secondary)] uppercase"
+          >
             My macros
           </div>
           <ul>
@@ -143,9 +144,7 @@
                 >
                   <span class="min-w-0 flex-1">
                     <span class="block truncate font-medium">{m.title}</span>
-                    <span
-                      class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]"
-                    >
+                    <span class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]">
                       {m.body}
                     </span>
                   </span>
@@ -158,7 +157,9 @@
           </ul>
         {/if}
         {#if orgGroup.length > 0}
-          <div class="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wider text-[var(--text-secondary)] uppercase">
+          <div
+            class="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wider text-[var(--text-secondary)] uppercase"
+          >
             Org macros
           </div>
           <ul>
@@ -172,9 +173,7 @@
                 >
                   <span class="min-w-0 flex-1">
                     <span class="block truncate font-medium">{m.title}</span>
-                    <span
-                      class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]"
-                    >
+                    <span class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]">
                       {m.body}
                     </span>
                   </span>

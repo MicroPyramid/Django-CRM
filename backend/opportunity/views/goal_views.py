@@ -73,7 +73,9 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        serializer = SalesGoalCreateSerializer(data=request.data)
+        serializer = SalesGoalCreateSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save(
                 org=request.profile.org,
@@ -129,7 +131,7 @@ class SalesGoalDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         serializer = SalesGoalCreateSerializer(
-            goal, data=request.data, partial=True
+            goal, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()

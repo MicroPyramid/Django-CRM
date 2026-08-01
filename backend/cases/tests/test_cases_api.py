@@ -14,13 +14,11 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from cases.models import Case, CasePipeline, CaseStage, Solution
 from common.models import Attachments, Comment, Org, Tags, Teams
 from contacts.models import Contact
-
 
 CASES_LIST_URL = "/api/cases/"
 
@@ -73,16 +71,24 @@ class TestCaseListView:
         assert "id" in response.data
 
     def test_create_case_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                CASES_LIST_URL,
-                {
-                    "name": "Should fail",
-                    "status": "New",
-                    "priority": "Normal",
-                },
-                format="json",
-            )
+        """Asserted `pytest.raises(PermissionDenied)`, which can never hold
+        through an APIClient — DRF renders an APIException as a response
+        rather than letting it escape — so this had always failed. It now
+        checks the response the client actually receives."""
+        response = unauthenticated_client.post(
+            CASES_LIST_URL,
+            {
+                "name": "Should fail",
+                "status": "New",
+                "priority": "Normal",
+            },
+            format="json",
+        )
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+        assert not Case.objects.filter(name="Should fail").exists()
 
     def test_org_isolation(self, org_b_client, case_a):
         """org_b_client must not see cases belonging to org_a."""
@@ -293,9 +299,7 @@ class TestCaseListView:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            f"{CASES_LIST_URL}?assigned_to={admin_profile.id}"
-        )
+        response = admin_client.get(f"{CASES_LIST_URL}?assigned_to={admin_profile.id}")
         assert response.status_code == status.HTTP_200_OK
         names = [c["name"] for c in response.data["cases"]]
         assert "Assigned Case" in names
@@ -458,9 +462,7 @@ class TestCaseDetailView:
             org=org_a,
             created_by=admin_user,
         )
-        team = Teams.objects.create(
-            name="Support", org=org_a, created_by=admin_user
-        )
+        team = Teams.objects.create(name="Support", org=org_a, created_by=admin_user)
         response = admin_client.put(
             _detail_url(case_a.pk),
             {
@@ -503,9 +505,7 @@ class TestCaseDetailView:
         assert case_a.tags.count() == 0
 
     @patch("cases.views.send_email_to_assigned_user")
-    def test_update_case_invalid_returns_400(
-        self, mock_email, admin_client, case_a
-    ):
+    def test_update_case_invalid_returns_400(self, mock_email, admin_client, case_a):
         """PUT with invalid data should return 400."""
         response = admin_client.put(
             _detail_url(case_a.pk),
@@ -514,9 +514,7 @@ class TestCaseDetailView:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_update_case_non_admin_forbidden(
-        self, user_client, case_a
-    ):
+    def test_update_case_non_admin_forbidden(self, user_client, case_a):
         """Non-admin who is not creator/assignee should get 403."""
         response = user_client.put(
             _detail_url(case_a.pk),
@@ -525,24 +523,22 @@ class TestCaseDetailView:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_delete_case_non_admin_not_creator(
-        self, user_client, case_a
-    ):
+    def test_delete_case_non_admin_not_creator(self, user_client, case_a):
         """Non-admin who is not creator should get 403 on delete."""
         response = user_client.delete(_detail_url(case_a.pk))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_get_detail_non_admin_forbidden(
-        self, user_client, case_a
-    ):
-        """Non-admin who is not creator/assignee should get 403.
+    def test_get_detail_non_admin_forbidden(self, user_client, case_a):
+        """Non-admin who is not creator/assignee/watcher should get 403.
 
-        Note: The case view returns HTTP 403 when a non-admin user
-        does not have permission (unlike the task view which has a bug).
+        The status is unchanged; the body is now DRF's standard
+        `{"detail": ...}` because the view raises `PermissionDenied` from the
+        one rule in `cases.access` instead of hand-building an envelope in
+        five places. Same shape as leads, opportunity, accounts and contacts.
         """
         response = user_client.get(_detail_url(case_a.pk))
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.data.get("error") is True
+        assert "Permission" in response.data["detail"]
 
     def test_get_detail_non_admin_as_assignee(
         self, user_client, admin_user, user_profile, org_a
@@ -609,9 +605,7 @@ class TestCaseDetailView:
         assert case_a.tags.count() == 1
         assert case_a.assigned_to.count() == 1
 
-    def test_patch_case_clear_m2m(
-        self, admin_client, admin_profile, case_a
-    ):
+    def test_patch_case_clear_m2m(self, admin_client, admin_profile, case_a):
         """PATCH with empty list for M2M should clear them."""
         case_a.assigned_to.add(admin_profile)
         response = admin_client.patch(
@@ -624,9 +618,7 @@ class TestCaseDetailView:
         assert case_a.assigned_to.count() == 0
         assert case_a.tags.count() == 0
 
-    def test_patch_case_non_admin_forbidden(
-        self, user_client, case_a
-    ):
+    def test_patch_case_non_admin_forbidden(self, user_client, case_a):
         """Non-admin who is not creator/assignee should get 403 on PATCH."""
         response = user_client.patch(
             _detail_url(case_a.pk),
@@ -635,9 +627,7 @@ class TestCaseDetailView:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_post_comment_non_admin_forbidden(
-        self, user_client, case_a
-    ):
+    def test_post_comment_non_admin_forbidden(self, user_client, case_a):
         """Non-admin who is not creator/assignee should get 403 on POST (comment)."""
         response = user_client.post(
             _detail_url(case_a.pk),
@@ -709,9 +699,7 @@ class TestCaseCommentView:
         # are required in non-partial mode
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_update_comment_patch(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_update_comment_patch(self, admin_client, admin_user, admin_profile, org_a):
         """Admin should be able to partially update via PATCH."""
         _case, comment = self._create_case_with_comment(
             admin_user, admin_profile, org_a
@@ -725,9 +713,7 @@ class TestCaseCommentView:
         assert response.json()["error"] is False
         assert response.json()["message"] == "Comment Updated"
 
-    def test_delete_comment(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_delete_comment(self, admin_client, admin_user, admin_profile, org_a):
         """Admin should be able to delete a comment."""
         _case, comment = self._create_case_with_comment(
             admin_user, admin_profile, org_a
@@ -1025,9 +1011,7 @@ class TestCaseCreateCoverage:
         assert response.status_code == status.HTTP_200_OK
         case = Case.objects.get(name="Attach Create Case")
         ct = ContentType.objects.get_for_model(Case)
-        assert Attachments.objects.filter(
-            content_type=ct, object_id=case.id
-        ).exists()
+        assert Attachments.objects.filter(content_type=ct, object_id=case.id).exists()
 
 
 @pytest.mark.django_db
@@ -1107,7 +1091,9 @@ class TestCaseUpdateCoverage:
         self, mock_email, admin_client, admin_user, case_a, org_a
     ):
         """PUT with tags as JSON string (covers line 364)."""
-        tag = Tags.objects.create(name="updjsoncasetag", slug="updjsoncasetag", org=org_a)
+        tag = Tags.objects.create(
+            name="updjsoncasetag", slug="updjsoncasetag", org=org_a
+        )
         response = admin_client.put(
             _detail_url(case_a.pk),
             {
@@ -1142,9 +1128,7 @@ class TestCaseUpdateCoverage:
         )
         assert response.status_code == status.HTTP_200_OK
         ct = ContentType.objects.get_for_model(Case)
-        assert Attachments.objects.filter(
-            content_type=ct, object_id=case_a.id
-        ).exists()
+        assert Attachments.objects.filter(content_type=ct, object_id=case_a.id).exists()
 
 
 @pytest.mark.django_db
@@ -1205,7 +1189,9 @@ class TestCasePatchCoverage:
         self, admin_client, admin_user, case_a, org_a
     ):
         """PATCH with tags as JSON string (covers line 719)."""
-        tag = Tags.objects.create(name="patchjsoncasetag", slug="patchjsoncasetag", org=org_a)
+        tag = Tags.objects.create(
+            name="patchjsoncasetag", slug="patchjsoncasetag", org=org_a
+        )
         response = admin_client.patch(
             _detail_url(case_a.pk),
             {"tags": json.dumps([str(tag.id)])},

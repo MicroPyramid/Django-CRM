@@ -15,7 +15,6 @@ from cases.models import (
     TimeEntry,
 )
 from common.models import Profile, Teams
-from common.utils import STATUS_CHOICE
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -23,8 +22,8 @@ from common.serializer import (
     TeamsSerializer,
     UserSerializer,
 )
+from common.utils import STATUS_CHOICE
 from contacts.serializer import ContactSerializer
-
 
 # Note: Removed unused serializer property:
 # - created_on_arrow (frontend computes its own humanized timestamps)
@@ -148,6 +147,87 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         # Make account read-only on updates (can only be set on creation)
         if self.instance:
             self.fields["account"].read_only = True
+
+    def validate_account(self, account):
+        """An account belonging to another org is not a valid link.
+
+        `account` is a plain model FK, so DRF built it with a queryset of
+        *every* Account row. Posting a stranger's account UUID stored the
+        link and — because the create response echoes `cases_obj` through
+        `CaseSerializer`, which nests `AccountSerializer` — handed the caller
+        that account's name, email, phone and website back. So the same hole
+        was both a cross-tenant write and a cross-tenant read. `validate_parent`
+        below already guarded the other FK on this serializer; this one had
+        been missed.
+        """
+        if account is not None and account.org_id != self.org.id:
+            raise serializers.ValidationError("No such account.")
+        return account
+
+    def validate(self, attrs):
+        """Guard the close transition.
+
+        `Case.clean()` states two rules about closing a case: it needs a
+        `closed_on` date, and where an active `pre_close` ApprovalRule matches
+        it needs a recorded approval. Neither was ever enforced through the
+        API, because DRF does not call `Model.clean()` and nothing on the save
+        path calls `full_clean()`. Proven live: with a matching rule armed,
+        `PATCH {"status": "Closed"}` returned 200, closed the case and
+        recorded zero approvals — the whole approval feature, its inbox and
+        its settings page were decoration.
+
+        Validating the *transition* rather than the target matters here: a
+        case that is already Closed can be edited without re-approving, which
+        is why this compares against the stored status instead of just looking
+        at the incoming one.
+        """
+        attrs = super().validate(attrs)
+
+        new_status = attrs.get("status", getattr(self.instance, "status", None))
+        if new_status != "Closed":
+            return attrs
+
+        old_status = getattr(self.instance, "status", None)
+        if old_status == "Closed":
+            return attrs
+
+        closed_on = attrs.get("closed_on", getattr(self.instance, "closed_on", None))
+        if not closed_on:
+            raise serializers.ValidationError(
+                {"closed_on": "Closed date is required when closing a case"}
+            )
+
+        if self.instance is not None:
+            from cases.approvals import Approval, find_matching_rule
+
+            # A rule matches on priority, case_type and team — so evaluate it
+            # against the values this request is setting, not the stored ones,
+            # or a caller could re-target the case out of the rule and close it
+            # in the same PATCH. The instance is restored either way; nothing
+            # here is saved.
+            probe = self.instance
+            saved = (probe.priority, probe.case_type)
+            probe.priority = attrs.get("priority", probe.priority)
+            probe.case_type = attrs.get("case_type", probe.case_type)
+            try:
+                rule = find_matching_rule(probe, trigger_event="pre_close")
+            finally:
+                probe.priority, probe.case_type = saved
+            if (
+                rule is not None
+                and not Approval.objects.filter(
+                    case_id=self.instance.pk, rule=rule, state="approved"
+                ).exists()
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "status": (
+                            "An approval is required before this case can be "
+                            f"closed (rule: {rule.name})."
+                        )
+                    }
+                )
+        return attrs
 
     def validate_name(self, name):
         if self.instance:
@@ -431,7 +511,9 @@ class EscalationPolicySerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get("request") if hasattr(self, "context") else None
-        org = getattr(getattr(request, "profile", None), "org", None) if request else None
+        org = (
+            getattr(getattr(request, "profile", None), "org", None) if request else None
+        )
         if org is None:
             org = self.context.get("org") if hasattr(self, "context") else None
         if org is not None:
@@ -447,7 +529,10 @@ class EscalationPolicySerializer(serializers.ModelSerializer):
         priority = attrs.get("priority", getattr(self.instance, "priority", None))
         if self.instance is None and priority is not None:
             org = self.context.get("org")
-            if org and EscalationPolicy.objects.filter(org=org, priority=priority).exists():
+            if (
+                org
+                and EscalationPolicy.objects.filter(org=org, priority=priority).exists()
+            ):
                 raise serializers.ValidationError(
                     {"priority": f"Policy already exists for priority {priority}."}
                 )
@@ -473,6 +558,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             "address",
             "provider",
             "webhook_secret",
+            "topic_arn",
             "default_priority",
             "default_case_type",
             "default_assignee",
@@ -506,6 +592,26 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
                     f"A mailbox with address {value!r} already exists for this org."
                 )
         return value
+
+    def to_representation(self, instance):
+        """`webhook_secret` is a per-org shared secret — the credential a sender
+        signs with. It is settable/rotatable by an admin, but it must never be
+        read back by a regular member, or every agent in the org can forge
+        inbound mail. `topic_arn` is the webhook's TopicArn pin and embeds the
+        AWS account id, so it is held to the same bar. Non-admins see the
+        mailbox config without either; both fields are only present for admins
+        (who manage the integration), and only when the view passes the request
+        in context."""
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        profile = getattr(request, "profile", None) if request else None
+        is_admin = bool(
+            profile and (profile.role == "ADMIN" or getattr(profile, "is_admin", False))
+        )
+        if not is_admin:
+            data.pop("webhook_secret", None)
+            data.pop("topic_arn", None)
+        return data
 
 
 class EmailMessageSerializer(serializers.ModelSerializer):
@@ -585,9 +691,7 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         request = self.context.get("request") if hasattr(self, "context") else None
         org = (
-            getattr(getattr(request, "profile", None), "org", None)
-            if request
-            else None
+            getattr(getattr(request, "profile", None), "org", None) if request else None
         )
         if org is None:
             org = self.context.get("org") if hasattr(self, "context") else None
@@ -604,15 +708,11 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("conditions must be a list of objects.")
         for i, cond in enumerate(value):
             if not isinstance(cond, dict):
-                raise serializers.ValidationError(
-                    f"conditions[{i}] must be an object."
-                )
+                raise serializers.ValidationError(f"conditions[{i}] must be an object.")
             field = cond.get("field")
             op = cond.get("op", "eq")
             if not isinstance(field, str) or not field:
-                raise serializers.ValidationError(
-                    f"conditions[{i}].field is required."
-                )
+                raise serializers.ValidationError(f"conditions[{i}].field is required.")
             if not (
                 field in self.SUPPORTED_FIELDS or field.startswith("custom_fields.")
             ):
@@ -624,9 +724,7 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
                     f"conditions[{i}].op {op!r} is not supported."
                 )
             if "value" not in cond:
-                raise serializers.ValidationError(
-                    f"conditions[{i}].value is required."
-                )
+                raise serializers.ValidationError(f"conditions[{i}].value is required.")
         return value
 
     def validate(self, attrs):
@@ -751,18 +849,14 @@ class TimeEntryUpdateSerializer(serializers.ModelSerializer):
         # Only blocks explicit attempts to clear the field; PATCH bodies that
         # omit `description` (e.g., toggling billable) skip this entirely.
         if value is not None and not value.strip():
-            raise serializers.ValidationError(
-                "Description cannot be empty."
-            )
+            raise serializers.ValidationError("Description cannot be empty.")
         return value.strip() if value else value
 
     def validate(self, attrs):
         started = attrs.get(
             "started_at", self.instance.started_at if self.instance else None
         )
-        ended = attrs.get(
-            "ended_at", self.instance.ended_at if self.instance else None
-        )
+        ended = attrs.get("ended_at", self.instance.ended_at if self.instance else None)
         if started and ended and ended < started:
             raise serializers.ValidationError(
                 {"ended_at": "ended_at must be on or after started_at."}
@@ -852,14 +946,41 @@ class ApprovalRuleSerializer(serializers.ModelSerializer):
             return None
         return {"id": str(obj.match_team_id), "name": obj.match_team.name}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request") if hasattr(self, "context") else None
+        org = (
+            getattr(getattr(request, "profile", None), "org", None) if request else None
+        )
+        if org is None:
+            org = self.context.get("org") if hasattr(self, "context") else None
+        if org is not None:
+            # Scope the relational querysets to the caller's org — the same
+            # __init__ scoping RoutingRule/Escalation serializers do. Without it
+            # approver_ids/match_team_id accept ANY org's rows, so a PUT (whose
+            # view does not re-run the POST's manual org check) could attach a
+            # foreign-tenant Profile or Team to the rule.
+            self.fields["approver_ids"].child_relation.queryset = (
+                Profile.objects.filter(org=org)
+            )
+            self.fields["match_team_id"].queryset = Teams.objects.filter(org=org)
+
 
 class ApprovalSerializer(serializers.ModelSerializer):
-    """Read serializer used by the inbox + case pane."""
+    """Read serializer used by the inbox + case pane.
+
+    ``can_act`` and ``is_own_request`` are viewer-relative and need the request
+    in serializer context; without it (e.g. the single-object action responses)
+    they default to False, which is safe — the queue re-reads the list after any
+    action, and that read carries the context.
+    """
 
     case_summary = serializers.SerializerMethodField()
     rule_summary = serializers.SerializerMethodField()
     requested_by = serializers.SerializerMethodField()
     approver = serializers.SerializerMethodField()
+    can_act = serializers.SerializerMethodField()
+    is_own_request = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -873,17 +994,23 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "rule_summary",
             "requested_by",
             "approver",
+            "can_act",
+            "is_own_request",
             "created_at",
             "updated_at",
         )
 
     def get_case_summary(self, obj):
         c = obj.case
+        account = None
+        if c.account_id:
+            account = {"id": str(c.account_id), "name": c.account.name}
         return {
             "id": str(c.id),
             "name": c.name,
             "status": c.status,
             "priority": c.priority,
+            "account": account,
         }
 
     def get_rule_summary(self, obj):
@@ -893,6 +1020,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "name": r.name,
             "trigger_event": r.trigger_event,
             "approver_role": r.approver_role,
+            "approvers": [
+                {"id": str(p.id), "email": getattr(p.user, "email", "") or ""}
+                for p in r.approvers.all()
+            ],
         }
 
     def _profile_label(self, profile):
@@ -906,6 +1037,29 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_approver(self, obj):
         return self._profile_label(obj.approver)
+
+    def _viewer_profile(self):
+        request = self.context.get("request")
+        return getattr(request, "profile", None) if request else None
+
+    def get_can_act(self, obj):
+        """True when the viewer may approve/reject this row right now.
+
+        Mirrors ``ApprovalApproveView`` exactly: still pending, the viewer is in
+        the rule's approver pool, and the viewer is not the requester (a
+        requester cannot decide their own request). The button guard and the
+        endpoint therefore agree by construction.
+        """
+        profile = self._viewer_profile()
+        if profile is None or obj.state != "pending":
+            return False
+        if obj.requested_by_id == profile.id:
+            return False
+        return obj.can_be_acted_on_by(profile)
+
+    def get_is_own_request(self, obj):
+        profile = self._viewer_profile()
+        return bool(profile and obj.requested_by_id == profile.id)
 
 
 class ApprovalRequestSerializer(serializers.Serializer):

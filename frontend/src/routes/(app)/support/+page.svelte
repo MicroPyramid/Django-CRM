@@ -1,647 +1,243 @@
 <script>
+  /**
+   * Help.
+   *
+   * ── WHAT THIS PAGE IS NOT ────────────────────────────────────────────────
+   * v1's support page is 647 lines of mission statement, pricing rationale and
+   * "join thousands of businesses" — marketing copy shown to people who have
+   * ALREADY BOUGHT and are, by the fact of being here, stuck. Somebody who
+   * opens Help is not deciding whether to adopt the product; they are trying
+   * to get out of a hole, and every paragraph between them and the way out is
+   * a paragraph that makes them angrier.
+   *
+   * So the ordering is: things you can fix yourself, then how to reach a
+   * person, then what that person will need from you. Sales copy belongs on
+   * the marketing site, which is a different repo.
+   *
+   * ── THE LAST SECTION IS THE POINT ────────────────────────────────────────
+   * "What to include" exists because the first reply to almost every support
+   * email is a request for the same four facts. Printing them on the page —
+   * and only the ones the browser already knows — turns a two-day round trip
+   * into one message. Nothing here is fetched, and nothing identifying is
+   * displayed: no org id, no token, no email, no user id. A support page that
+   * renders an identifier is a support page that puts it in screenshots.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import {
-    Mail,
+    BookOpen,
+    LifeBuoy,
     Bug,
-    Lightbulb,
-    Shield,
-    Wrench,
-    Heart,
-    Users,
-    ExternalLink,
-    ArrowRight,
-    Zap,
-    Code2,
-    MessageSquareHeart
+    Mail,
+    Activity,
+    ArrowUpRight,
+    ClipboardList
   } from '@lucide/svelte';
-  import { GithubIcon as Github } from '$lib/components/icons';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
 
-  /** @type {{ data: import('./$types').PageData }} */
-  let { data } = $props();
+  const SELF_SERVE = [
+    {
+      href: '/solutions',
+      icon: BookOpen,
+      title: 'Knowledge base',
+      body: 'The answers your team has already written down, including the ones customers can read.'
+    },
+    {
+      href: '/tickets',
+      icon: LifeBuoy,
+      title: 'Your tickets',
+      body: 'Everything open, and who it is waiting on. Most "no one replied" turns out to be a ticket assigned to nobody.'
+    },
+    {
+      href: '/settings',
+      icon: ClipboardList,
+      title: 'Settings',
+      body: 'Routing, escalation, business hours and inbound email. Each page reports what its rules are actually doing, not just what they are set to.'
+    }
+  ];
+
+  const CONTACT = [
+    {
+      href: 'https://github.com/MicroPyramid/Django-CRM/issues',
+      icon: Bug,
+      title: 'Report a bug',
+      body: 'Public issue tracker. Fastest route for anything reproducible.',
+      external: true
+    },
+    {
+      href: 'mailto:support@bottlecrm.example',
+      icon: Mail,
+      title: 'Email support',
+      body: 'For anything involving your data, billing or an account you cannot get into.'
+    },
+    {
+      href: 'https://status.bottlecrm.example',
+      icon: Activity,
+      title: 'Service status',
+      body: 'Check here first if something that worked this morning stopped working this afternoon.',
+      external: true
+    }
+  ];
+
+  /**
+   * The four facts a first reply always asks for. Browser and screen come from
+   * the client; the other two are things only the person writing can supply,
+   * and they are phrased as prompts rather than pre-filled — this page is not
+   * going to quietly ship an org identifier into an email body.
+   */
+  let browser = $state('—');
+  let screen = $state('—');
+  $effect(() => {
+    const ua = navigator.userAgent;
+    const m = ua.match(/(Firefox|Edg|Chrome|Safari)\/([\d.]+)/);
+    browser = m ? `${m[1] === 'Edg' ? 'Edge' : m[1]} ${m[2].split('.')[0]}` : 'Unknown browser';
+    screen = `${window.innerWidth}×${window.innerHeight}`;
+  });
 </script>
 
-<svelte:head>
-  <title>Support - BottleCRM</title>
-</svelte:head>
+<PageHeader title="Help" center width="840px">
+  {#snippet sub()}
+    Fix it yourself, or reach someone who can
+  {/snippet}
+</PageHeader>
 
-<PageHeader
-  title="Help & Support"
-  subtitle="Join thousands of businesses using BottleCRM to manage customer relationships without the enterprise price tag."
-  size="display"
-/>
-
-<div class="support-page">
-  <!-- Mission Card - Featured -->
-  <section class="content-area">
-    <div class="mission-card glass-card animate-in-up stagger-3">
-      <div class="mission-icon-wrap">
-        <Heart class="h-7 w-7" />
-      </div>
-      <div class="mission-content">
-        <h2>Our Mission</h2>
-        <p>
-          BottleCRM addresses the high subscription costs of commercial CRM alternatives by
-          providing a
-          <strong>completely free, open-source, and highly customizable</strong> solution. Clone it, self-host
-          it, and make it yours — forever free.
-        </p>
-      </div>
-      <div class="mission-pattern"></div>
+<div class="v2-scroll">
+  <!-- Centred column, not left-hugging: on a wide screen the header and body
+       share one 840px column down the middle (same pattern as the form pages).
+       max-width caps it; margin-inline centres it. -->
+  <div class="v2-pad" style="padding-top:18px;padding-bottom:32px;max-width:840px;margin-inline:auto">
+    <div class="v2-label" style="margin-bottom:10px">Start here</div>
+    <div class="cards">
+      {#each SELF_SERVE as c (c.href)}
+        <a class="v2-card card" href={c.href}>
+          <c.icon size={17} />
+          <div>
+            <b>{c.title}</b>
+            <p>{c.body}</p>
+          </div>
+        </a>
+      {/each}
     </div>
 
-    <!-- Bento Grid -->
-    <div class="bento-grid">
-      <!-- Community Support - Large Card -->
-      <article class="bento-card bento-featured hover-lift animate-in-up stagger-4">
-        <div class="card-header">
-          <div class="icon-box icon-github">
-            <Github class="h-6 w-6" />
-          </div>
-          <div class="card-badge">Community</div>
-        </div>
-        <h3>Join the Community</h3>
-        <p>
-          Collaborate with developers worldwide. Get free support, share ideas, and help shape the
-          future of open-source CRM.
-        </p>
-        <div class="card-stats">
-          <div class="stat">
-            <Code2 class="h-4 w-4" />
-            <span>Open Source</span>
-          </div>
-          <div class="stat">
-            <Users class="h-4 w-4" />
-            <span>Active Community</span>
-          </div>
-        </div>
-        <Button
-          class="card-action"
-          onclick={() => window.open('https://github.com/MicroPyramid/Django-CRM', '_blank')}
+    <div class="v2-label" style="margin:26px 0 10px">If that did not do it</div>
+    <div class="cards">
+      {#each CONTACT as c (c.href)}
+        <a
+          class="v2-card card"
+          href={c.href}
+          rel={c.external ? 'noreferrer noopener' : undefined}
+          target={c.external ? '_blank' : undefined}
         >
-          <Github class="h-4 w-4" />
-          Visit GitHub
-          <ArrowRight class="ml-auto h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Button>
-      </article>
-
-      <!-- Professional Support -->
-      <article class="bento-card hover-lift animate-in-up stagger-5">
-        <div class="card-header">
-          <div class="icon-box icon-pro">
-            <Zap class="h-5 w-5" />
+          <c.icon size={17} />
+          <div>
+            <b>
+              {c.title}{#if c.external}<ArrowUpRight size={12} class="ext" />{/if}
+            </b>
+            <p>{c.body}</p>
           </div>
-        </div>
-        <h3>Professional Support</h3>
-        <p>
-          Priority support, hosting assistance, and custom development services from the core team.
-        </p>
-        <Button
-          variant="outline"
-          class="card-action-outline"
-          onclick={() => (window.location.href = 'mailto:ashwin@micropyramid.com')}
-        >
-          <Mail class="h-4 w-4" />
-          Contact Team
-        </Button>
-      </article>
-
-      <!-- Feature Requests -->
-      <article class="bento-card hover-lift animate-in-up stagger-5">
-        <div class="card-header">
-          <div class="icon-box icon-idea">
-            <Lightbulb class="h-5 w-5" />
-          </div>
-        </div>
-        <h3>Feature Requests</h3>
-        <p>Have an idea? Share your requests and help shape the future of BottleCRM.</p>
-        <Button
-          variant="outline"
-          class="card-action-outline"
-          onclick={() =>
-            window.open(
-              'https://github.com/MicroPyramid/Django-CRM/issues/new?template=feature_request.md',
-              '_blank'
-            )}
-        >
-          <Lightbulb class="h-4 w-4" />
-          Request Feature
-          <ExternalLink class="h-3 w-3" />
-        </Button>
-      </article>
-
-      <!-- Bug Reports -->
-      <article class="bento-card hover-lift animate-in-up stagger-6">
-        <div class="card-header">
-          <div class="icon-box icon-bug">
-            <Bug class="h-5 w-5" />
-          </div>
-        </div>
-        <h3>Bug Reports</h3>
-        <p>Found an issue? Your feedback helps make the platform more stable for everyone.</p>
-        <Button
-          variant="outline"
-          class="card-action-outline"
-          onclick={() =>
-            window.open(
-              'https://github.com/MicroPyramid/Django-CRM/issues/new?template=bug_report.md',
-              '_blank'
-            )}
-        >
-          <Bug class="h-4 w-4" />
-          Report Bug
-          <ExternalLink class="h-3 w-3" />
-        </Button>
-      </article>
-
-      <!-- Security - Emphasized -->
-      <article class="bento-card bento-security hover-lift animate-in-up stagger-6">
-        <div class="security-glow"></div>
-        <div class="card-header">
-          <div class="icon-box icon-security">
-            <Shield class="h-5 w-5" />
-          </div>
-          <div class="card-badge badge-security">Critical</div>
-        </div>
-        <h3>Security Issues</h3>
-        <p>
-          <strong>Security is our priority.</strong> Report vulnerabilities privately. Never create public
-          issues for security concerns.
-        </p>
-        <Button
-          variant="destructive"
-          class="card-action-security"
-          onclick={() =>
-            (window.location.href =
-              'mailto:ashwin@micropyramid.com?subject=Security%20Issue%20-%20BottleCRM')}
-        >
-          <Shield class="h-4 w-4" />
-          Report Privately
-        </Button>
-      </article>
+        </a>
+      {/each}
     </div>
 
-    <!-- Custom Development Banner -->
-    <div class="custom-dev-banner animate-in-up stagger-6">
-      <div class="banner-content">
-        <div class="banner-icon">
-          <Wrench class="h-8 w-8" />
-        </div>
-        <div class="banner-text">
-          <h3>Need Custom CRM Development?</h3>
-          <p>
-            Tailored solutions including hosting, custom features, integrations, and ongoing support
-            for your specific business needs.
-          </p>
-        </div>
-        <Button
-          size="lg"
-          class="banner-cta"
-          onclick={() =>
-            (window.location.href =
-              'mailto:ashwin@micropyramid.com?subject=Custom%20CRM%20Development%20Inquiry')}
-        >
-          <MessageSquareHeart class="h-4 w-4" />
-          Get Custom Quote
-          <ArrowRight class="h-4 w-4" />
-        </Button>
-      </div>
-      <div class="banner-pattern"></div>
+    <div class="v2-label" style="margin:26px 0 10px">What to include when you write</div>
+    <div class="v2-card" style="padding:16px 18px">
+      <p class="lead">
+        Four things turn a two-day exchange into one message. The first two are already known.
+      </p>
+      <dl class="facts">
+        <dt>Browser</dt>
+        <dd class="v2-num">{browser}</dd>
+        <dt>Window size</dt>
+        <dd class="v2-num">{screen}</dd>
+        <dt>What you expected</dt>
+        <dd>The thing you were trying to do, in one sentence.</dd>
+        <dt>What happened instead</dt>
+        <dd>
+          The exact wording of any error. "It didn't work" and "Something went wrong" are the same
+          message to us.
+        </dd>
+      </dl>
+      <p class="fine">
+        Please do not paste screenshots containing an invoice link, an API token or a survey URL —
+        each of those is a working credential for whoever ends up holding it.
+      </p>
     </div>
-
-    <!-- Version -->
-    <footer class="version-footer">
-      <span>BottleCRM</span>
-      <span class="version-divider">•</span>
-      <span>v1.0.0</span>
-    </footer>
-  </section>
+  </div>
 </div>
 
 <style>
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SUPPORT PAGE - Premium Knowledge Hub Aesthetic
-     ═══════════════════════════════════════════════════════════════════════════ */
-
-  .support-page {
-    min-height: 100vh;
-    background: var(--background);
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     CONTENT AREA
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .content-area {
-    padding: 0 1.5rem 3rem;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     MISSION CARD
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .mission-card {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    background: var(--card);
-    border: 1px solid var(--border);
-  }
-
-  .mission-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--accent-primary-subtle) 0%, transparent 50%);
-    pointer-events: none;
-  }
-
-  :global(.dark) .mission-card::before {
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
-  }
-
-  .mission-icon-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(
-      135deg,
-      var(--accent-primary) 0%,
-      color-mix(in oklch, var(--accent-primary) 80%, var(--accent-secondary)) 100%
-    );
-    color: white;
-    box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--accent-primary) 30%, transparent);
-  }
-
-  :global(.dark) .mission-icon-wrap {
-    box-shadow: 0 4px 20px -2px color-mix(in oklch, var(--accent-primary) 40%, transparent);
-  }
-
-  .mission-content {
-    position: relative;
-    flex: 1;
-  }
-
-  .mission-content h2 {
-    font-family: var(--font-sans);
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-  }
-
-  .mission-content p {
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    color: var(--text-secondary);
-  }
-
-  .mission-content strong {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  .mission-pattern {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 200px;
-    height: 100%;
-    background: radial-gradient(
-      circle at 100% 0%,
-      var(--accent-secondary-subtle) 0%,
-      transparent 50%
-    );
-    pointer-events: none;
-    opacity: 0.6;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     BENTO GRID
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .bento-grid {
+  .cards {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
   }
-
-  @media (max-width: 680px) {
-    .bento-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .bento-featured {
-      grid-column: 1;
-    }
-  }
-
-  .bento-card {
-    position: relative;
-    padding: 1.25rem;
-    border-radius: var(--radius-lg);
-    background: var(--card);
-    border: 1px solid var(--border);
+  .card {
     display: flex;
-    flex-direction: column;
-    transition: all var(--duration-normal) var(--ease-out);
+    gap: 11px;
+    align-items: flex-start;
+    padding: 15px 16px;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.12s;
   }
-
-  .bento-card:hover {
-    border-color: var(--border-strong);
+  .card:hover {
+    border-color: var(--v2-slate);
   }
-
-  :global(.dark) .bento-card:hover {
-    border-color: color-mix(in oklch, var(--accent-primary) 40%, var(--border));
+  .card :global(svg) {
+    flex: none;
+    margin-top: 1px;
+    color: var(--v2-slate);
   }
-
-  .bento-featured {
-    grid-column: span 2;
-    padding: 1.5rem;
-    background: linear-gradient(
-      145deg,
-      var(--card) 0%,
-      color-mix(in oklch, var(--card) 95%, var(--accent-primary)) 100%
-    );
-  }
-
-  @media (max-width: 680px) {
-    .bento-featured {
-      grid-column: span 1;
-    }
-  }
-
-  .bento-security {
-    grid-column: span 2;
-    background: color-mix(in oklch, var(--status-danger-bg) 50%, var(--card));
-    border-color: color-mix(in oklch, var(--status-danger) 20%, var(--border));
-  }
-
-  :global(.dark) .bento-security {
-    background: color-mix(in oklch, var(--status-danger-bg) 100%, var(--card));
-  }
-
-  .security-glow {
-    position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 120px;
-    height: 120px;
-    background: radial-gradient(circle, var(--status-danger) 0%, transparent 70%);
-    opacity: 0.06;
-    filter: blur(30px);
-    pointer-events: none;
-  }
-
-  @media (max-width: 680px) {
-    .bento-security {
-      grid-column: span 1;
-    }
-  }
-
-  /* Card Header */
-  .card-header {
+  .card b {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.875rem;
-  }
-
-  .icon-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-    transition: all var(--duration-normal) var(--ease-out);
-  }
-
-  .icon-github {
-    background: var(--bg-emphasis);
-    color: var(--text-primary);
-  }
-
-  :global(.dark) .icon-github {
-    background: color-mix(in oklch, var(--text-primary) 15%, transparent);
-  }
-
-  .icon-pro {
-    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-    color: white;
-  }
-
-  .icon-idea {
-    background: linear-gradient(135deg, var(--accent-secondary) 0%, #fcd34d 100%);
-    color: #78350f;
-  }
-
-  .icon-bug {
-    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-    color: white;
-  }
-
-  .icon-security {
-    background: linear-gradient(135deg, var(--status-danger) 0%, #f87171 100%);
-    color: white;
-  }
-
-  .card-badge {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-full);
-    background: var(--accent-primary-subtle);
-    color: var(--accent-primary);
-    margin-left: auto;
-  }
-
-  .badge-security {
-    background: var(--status-danger-bg);
-    color: var(--status-danger);
-  }
-
-  /* Card Content */
-  .bento-card h3 {
-    font-family: var(--font-sans);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.375rem;
-  }
-
-  .bento-card p {
-    font-size: 0.875rem;
-    line-height: 1.55;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-    flex: 1;
-  }
-
-  .bento-card strong {
-    color: var(--text-primary);
+    gap: 3px;
+    font-size: 13.5px;
     font-weight: 600;
   }
-
-  .card-stats {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-tertiary);
-  }
-
-  /* Card Actions */
-  .bento-card :global(.card-action) {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
-
-  .bento-card :global(.card-action-outline) {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
-
-  .bento-card :global(.card-action-security) {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     CUSTOM DEVELOPMENT BANNER
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .custom-dev-banner {
-    position: relative;
-    padding: 1.5rem;
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--accent-primary) 12%, var(--card)) 0%,
-      color-mix(in oklch, var(--accent-secondary) 8%, var(--card)) 100%
-    );
-    border: 1px solid color-mix(in oklch, var(--accent-primary) 20%, var(--border));
-  }
-
-  :global(.dark) .custom-dev-banner {
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--accent-primary) 8%, var(--card)) 0%,
-      color-mix(in oklch, var(--accent-secondary) 5%, var(--card)) 100%
-    );
-    border-color: color-mix(in oklch, var(--accent-primary) 30%, var(--border));
-  }
-
-  .banner-content {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex-wrap: wrap;
-  }
-
-  .banner-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    color: white;
-    flex-shrink: 0;
-  }
-
-  :global(.dark) .banner-icon {
-    box-shadow: 0 4px 20px -4px color-mix(in oklch, var(--accent-primary) 50%, transparent);
-  }
-
-  .banner-text {
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .banner-text h3 {
-    font-family: var(--font-sans);
-    font-size: 1.0625rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-  }
-
-  .banner-text p {
-    font-size: 0.875rem;
-    line-height: 1.5;
-    color: var(--text-secondary);
-  }
-
-  .custom-dev-banner :global(.banner-cta) {
-    gap: 0.5rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--accent-primary) 30%, transparent);
-  }
-
-  :global(.dark) .custom-dev-banner :global(.banner-cta) {
-    box-shadow: 0 4px 20px -4px color-mix(in oklch, var(--accent-primary) 40%, transparent);
-  }
-
-  .banner-pattern {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100%;
-    background: radial-gradient(
-      circle at 100% 50%,
-      var(--accent-secondary-subtle) 0%,
-      transparent 50%
-    );
-    pointer-events: none;
+  .card :global(.ext) {
     opacity: 0.5;
   }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     VERSION FOOTER
-     ───────────────────────────────────────────────────────────────────────── */
-
-  .version-footer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding-top: 2rem;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--text-tertiary);
+  .card p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--v2-slate);
+    line-height: 1.5;
   }
 
-  .version-divider {
-    opacity: 0.4;
+  .lead {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--v2-slate);
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 18px;
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .facts dt {
+    color: var(--v2-slate);
+    white-space: nowrap;
+  }
+  .facts dd {
+    margin: 0;
+  }
+  .fine {
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--v2-line);
+    font-size: 11.5px;
+    color: var(--v2-slate);
+    line-height: 1.55;
+  }
+  @media (max-width: 520px) {
+    .facts {
+      grid-template-columns: 1fr;
+      gap: 2px 0;
+    }
+    .facts dd {
+      margin-bottom: 8px;
+    }
   }
 </style>

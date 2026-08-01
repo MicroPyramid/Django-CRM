@@ -9,9 +9,7 @@
    */
   let { bars, format = (n) => String(Math.round(n)) } = $props();
 
-  const numericBars = $derived(
-    bars.filter((b) => b.value !== null && Number.isFinite(b.value))
-  );
+  const numericBars = $derived(bars.filter((b) => b.value !== null && Number.isFinite(b.value)));
   const maxValue = $derived(
     Math.max(1, ...numericBars.map((b) => /** @type {number} */ (b.value)))
   );
@@ -24,7 +22,7 @@
     <li>
       <div class="flex items-center justify-between text-xs">
         <span class="font-medium text-[var(--text-secondary)]">{bar.label}</span>
-        <span class="tabular-nums text-[var(--text-primary)]">
+        <span class="text-[var(--text-primary)] tabular-nums">
           {v === null ? '—' : format(v)}
         </span>
       </div>

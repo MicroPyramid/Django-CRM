@@ -1,25 +1,86 @@
+from django.db.models import Count, IntegerField, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.utils.text import slugify
 from drf_spectacular.utils import extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import Account
+from cases.models import Case
 from common import swagger_params
 from common.models import Tags
+from common.permissions import HasOrgContext
 from common.serializer import TagsSerializer
+from leads.models import Lead
+from opportunity.models import Opportunity
+
+# The models a tag can be applied to, paired with the usage key the settings
+# page shows. Each is org-scoped and carries a `tags` M2M back to Tags.
+_TAGGABLE = (
+    ("accounts", Account),
+    ("leads", Lead),
+    ("opportunities", Opportunity),
+    ("cases", Case),
+)
+
+
+def _usage_subquery(model, org):
+    """Per-tag count of `model` rows in `org` that carry the tag.
+
+    One correlated subquery per relation rather than four `Count`s on a single
+    query: joining all four M2M through-tables at once multiplies rows, and a
+    subquery keeps each count independent (the subquery-rollup rule). Filtered
+    by `org` explicitly — usage is a per-org fact and must not lean on RLS,
+    which is inert for the app's DB role in dev/test.
+    """
+    return Coalesce(
+        Subquery(
+            model.objects.filter(tags=OuterRef("pk"), org=org)
+            .order_by()
+            .values("tags")
+            .annotate(c=Count("pk"))
+            .values("c"),
+            output_field=IntegerField(),
+        ),
+        0,
+    )
+
+
+def _annotated_tags(org):
+    """Org tags annotated with a `_u_<key>` usage count per taggable model."""
+    return Tags.objects.filter(org=org).annotate(
+        **{f"_u_{key}": _usage_subquery(model, org) for key, model in _TAGGABLE}
+    )
+
+
+def _tag_totals(org):
+    """Counts over ALL org tags, independent of the list's active/name filters,
+    so the stat cards stay meaningful when the list is filtered."""
+    all_tags = list(_annotated_tags(org))
+    active = [t for t in all_tags if t.is_active]
+
+    def total_usage(tag):
+        return sum(getattr(tag, f"_u_{key}") for key, _ in _TAGGABLE)
+
+    return {
+        "count": len(all_tags),
+        "active": len(active),
+        # Active tags applied to nothing — the only ones safe to delete.
+        "unused": sum(1 for t in active if total_usage(t) == 0),
+    }
 
 
 class TagsListView(APIView, LimitOffsetPagination):
     model = Tags
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_queryset(self):
-        """Get tags queryset with optional filtering."""
+        """Get tags queryset (with usage annotations) and optional filtering."""
         params = self.request.query_params
-        queryset = self.model.objects.filter(org=self.request.profile.org)
+        queryset = _annotated_tags(self.request.profile.org)
 
         # By default, only show active tags
         # Admin can see archived tags with ?include_archived=true
@@ -43,15 +104,25 @@ class TagsListView(APIView, LimitOffsetPagination):
                 fields={
                     "tags_count": serializers.IntegerField(),
                     "tags": TagsSerializer(many=True),
+                    "totals": serializers.DictField(),
                 },
             )
         },
     )
     def get(self, request, *args, **kwargs):
-        """List all tags for the organization."""
-        queryset = self.get_queryset()
-        tags = TagsSerializer(queryset, many=True).data
-        return Response({"tags_count": len(tags), "tags": tags})
+        """List tags for the org, each with per-model usage counts, plus totals."""
+        tags_qs = list(self.get_queryset())
+        rows = TagsSerializer(tags_qs, many=True).data
+        # Attach usage from the annotations (serializer order matches the qs).
+        for row, obj in zip(rows, tags_qs):
+            row["usage"] = {key: getattr(obj, f"_u_{key}") for key, _ in _TAGGABLE}
+        return Response(
+            {
+                "tags_count": len(rows),
+                "tags": rows,
+                "totals": _tag_totals(request.profile.org),
+            }
+        )
 
     @extend_schema(
         tags=["Tags"],
@@ -145,7 +216,7 @@ class TagsListView(APIView, LimitOffsetPagination):
 
 class TagsDetailView(APIView):
     model = Tags
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         return self.model.objects.get(pk=pk, org=self.request.profile.org)
@@ -300,7 +371,7 @@ class TagsDetailView(APIView):
 class TagsRestoreView(APIView):
     """Restore an archived tag."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["Tags"],

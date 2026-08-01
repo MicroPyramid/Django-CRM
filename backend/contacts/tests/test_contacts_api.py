@@ -22,7 +22,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import Attachments, Comment, Profile, Tags, Teams
 from contacts.models import Contact
@@ -50,9 +49,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.fixture
@@ -106,16 +103,24 @@ class TestContactListView:
         assert response.data["error"] is False
 
     def test_create_contact_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated requests are rejected."""
+        """An anonymous POST is refused, and creates nothing.
+
+        This used to assert `pytest.raises(PermissionDenied)`, which can never
+        hold through an APIClient: DRF catches APIException and renders it as a
+        response, so the exception never reaches the test. The assertion worth
+        making is the one about the database.
+        """
         payload = {
             "first_name": "Nope",
             "last_name": "User",
             "email": "nope@example.com",
         }
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                CONTACTS_LIST_URL, payload, format="json"
-            )
+        response = unauthenticated_client.post(
+            CONTACTS_LIST_URL, payload, format="json"
+        )
+
+        assert response.status_code in (401, 403)
+        assert not Contact.objects.filter(email="nope@example.com").exists()
 
     @patch("contacts.views.send_email_to_assigned_user.delay")
     def test_org_isolation(
@@ -238,9 +243,7 @@ class TestContactListView:
         response = admin_client.get(CONTACTS_LIST_URL, {"name": "Alice"})
         assert response.status_code == status.HTTP_200_OK
 
-    def test_list_contacts_phone_filter(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_list_contacts_phone_filter(self, admin_client, admin_user, org_a):
         """Phone filter works."""
         _set_rls(org_a)
         Contact.objects.create(
@@ -321,9 +324,7 @@ class TestContactDetailView:
             "last_name": "Name",
             "email": "alice@example.com",
         }
-        response = admin_client.put(
-            _detail_url(contact_a.pk), payload, format="json"
-        )
+        response = admin_client.put(_detail_url(contact_a.pk), payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
         contact_a.refresh_from_db()
@@ -344,9 +345,7 @@ class TestContactDetailView:
     def test_add_comment_to_contact(self, admin_client, contact_a):
         """Admin can add a comment to a contact via POST to detail endpoint."""
         payload = {"comment": "This is a test comment"}
-        response = admin_client.post(
-            _detail_url(contact_a.pk), payload, format="json"
-        )
+        response = admin_client.post(_detail_url(contact_a.pk), payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert "comments" in response.data
 
@@ -424,9 +423,7 @@ class TestContactDetailView:
     ):
         """PUT with teams updates team associations."""
         _set_rls(org_a)
-        team = Teams.objects.create(
-            name="UpdateTeam", created_by=admin_user, org=org_a
-        )
+        team = Teams.objects.create(name="UpdateTeam", created_by=admin_user, org=org_a)
         response = admin_client.put(
             _detail_url(contact_a.pk),
             {
@@ -550,14 +547,10 @@ class TestContactDetailView:
         contact_a.refresh_from_db()
         assert admin_profile in contact_a.assigned_to.all()
 
-    def test_patch_contact_with_teams(
-        self, admin_client, contact_a, admin_user, org_a
-    ):
+    def test_patch_contact_with_teams(self, admin_client, contact_a, admin_user, org_a):
         """PATCH with teams updates team associations."""
         _set_rls(org_a)
-        team = Teams.objects.create(
-            name="PatchTeam", created_by=admin_user, org=org_a
-        )
+        team = Teams.objects.create(name="PatchTeam", created_by=admin_user, org=org_a)
         response = admin_client.patch(
             _detail_url(contact_a.pk),
             {"teams": [str(team.id)]},
@@ -621,7 +614,9 @@ class TestContactCommentView:
         )
         return contact, comment
 
-    def test_update_comment_put(self, admin_client, comment_fixture, admin_profile, org_a):
+    def test_update_comment_put(
+        self, admin_client, comment_fixture, admin_profile, org_a
+    ):
         """Admin can update a comment via PUT."""
         contact, comment = comment_fixture
         response = admin_client.put(
@@ -762,18 +757,17 @@ class TestContactListViewFilters:
         response = admin_client.get(CONTACTS_LIST_URL, {"name": "john"})
 
         assert response.status_code == status.HTTP_200_OK
-        returned_ids = {
-            contact["id"] for contact in response.data["contact_obj_list"]
-        }
+        returned_ids = {contact["id"] for contact in response.data["contact_obj_list"]}
         assert returned_ids == {str(first_name_match.id), str(last_name_match.id)}
 
     def test_filter_by_city(self, admin_client, admin_user, org_a):
-        """Filter by city (line 52).
-        Note: The view uses address__city__icontains but the model has flat 'city' field.
-        This exercises the branch but exposes a FieldError bug in the view.
-        """
-        from django.core.exceptions import FieldError
+        """Filter by city.
 
+        This case used to assert `pytest.raises(FieldError)` -- the view
+        traversed `address__city` on a model whose address is flat, so asking
+        for a city was a 500. The branch is still exercised; what it now says
+        is that the filter works.
+        """
         _set_rls(org_a)
         Contact.objects.create(
             first_name="CityFilter",
@@ -783,18 +777,20 @@ class TestContactListViewFilters:
             org=org_a,
             created_by=admin_user,
         )
-        with pytest.raises(FieldError):
-            admin_client.get(CONTACTS_LIST_URL, {"city": "Denver"})
+        response = admin_client.get(CONTACTS_LIST_URL, {"city": "Denver"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [row["first_name"] for row in response.data["results"]] == ["CityFilter"]
 
     def test_filter_by_assigned_to(
         self, admin_client, admin_user, admin_profile, org_a
     ):
-        """Filter by assigned_to (lines 57-60).
-        Note: The view uses params.get (returns string) with __in (iterates chars),
-        which causes a ValidationError for UUID fields. We verify the branch is entered.
-        """
-        from django.core.exceptions import ValidationError
+        """Filter by assigned_to.
 
+        Also once pinned as a bug: the view asked `getlist` whether the
+        parameter was there and then read it with `get`, handing `__in` a
+        string that Django iterates character by character.
+        """
         _set_rls(org_a)
         contact = Contact.objects.create(
             first_name="AssignFilter",
@@ -804,10 +800,22 @@ class TestContactListViewFilters:
             created_by=admin_user,
         )
         contact.assigned_to.add(admin_profile)
-        with pytest.raises(ValidationError):
-            admin_client.get(
-                CONTACTS_LIST_URL, {"assigned_to": str(admin_profile.id)}
-            )
+        unassigned = Contact.objects.create(
+            first_name="NotAssigned",
+            last_name="Contact",
+            email="notassignedc@example.com",
+            org=org_a,
+            created_by=admin_user,
+        )
+
+        response = admin_client.get(
+            CONTACTS_LIST_URL, {"assigned_to": str(admin_profile.id)}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = [row["id"] for row in response.data["results"]]
+        assert str(contact.id) in ids
+        assert str(unassigned.id) not in ids
 
     def test_filter_by_tags(self, admin_client, admin_user, org_a):
         """Filter by tags (lines 61-64)."""
@@ -901,9 +909,7 @@ class TestContactCreateM2MHandling:
         assert admin_profile.id in call_args[0][0]
 
     @patch("contacts.views.send_email_to_assigned_user.delay")
-    def test_create_contact_with_attachment(
-        self, mock_email, admin_client, org_a
-    ):
+    def test_create_contact_with_attachment(self, mock_email, admin_client, org_a):
         """Creating a contact with attachment (lines 208-215)."""
         test_file = SimpleUploadedFile(
             "contact_doc.txt", b"contact file content", content_type="text/plain"
@@ -918,7 +924,9 @@ class TestContactCreateM2MHandling:
         assert response.status_code == status.HTTP_200_OK
         contact = Contact.objects.get(email="attachedc@example.com")
         ct = ContentType.objects.get_for_model(Contact)
-        assert Attachments.objects.filter(content_type=ct, object_id=contact.id).exists()
+        assert Attachments.objects.filter(
+            content_type=ct, object_id=contact.id
+        ).exists()
 
 
 @pytest.mark.django_db
@@ -1037,9 +1045,7 @@ class TestContactDetailUpdateM2M:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @patch("contacts.views.send_email_to_assigned_user.delay")
-    def test_update_contact_invalid_data(
-        self, mock_email, admin_client, contact_a
-    ):
+    def test_update_contact_invalid_data(self, mock_email, admin_client, contact_a):
         """PUT with invalid data returns 400 (line 255-258)."""
         response = admin_client.put(
             _detail_url(contact_a.pk),
@@ -1076,12 +1082,16 @@ class TestContactDetailCommentAttachment:
         assert response.status_code == status.HTTP_200_OK
         assert "contact_obj" in response.data
 
-    def test_add_comment_with_serializer_fields_hits_save_bug(
+    def test_add_comment_ignores_client_supplied_target_and_org(
         self, admin_client, admin_user, admin_profile, org_a
     ):
-        """POST comment with object_id and org passes validation, but save(contact_id=...)
-        raises TypeError because contact_id is not a Comment field.
-        Exercises lines 516-517 (the save branch).
+        """A comment records against the contact in the URL, in the caller's org.
+
+        This case used to assert `pytest.raises(TypeError, match="contact_id")`
+        -- the view called `save(contact_id=...)` on a model with no such
+        field. Sending `object_id` and `org` was the only way to get past
+        validation at all, and doing so is what raised. Both are server facts
+        now, so sending them changes nothing.
         """
         _set_rls(org_a)
         contact = Contact.objects.create(
@@ -1091,16 +1101,21 @@ class TestContactDetailCommentAttachment:
             org=org_a,
             created_by=admin_user,
         )
-        with pytest.raises(TypeError, match="contact_id"):
-            admin_client.post(
-                _detail_url(contact.pk),
-                {
-                    "comment": "Bug test",
-                    "object_id": str(contact.id),
-                    "org": str(org_a.id),
-                },
-                format="json",
-            )
+        response = admin_client.post(
+            _detail_url(contact.pk),
+            {
+                "comment": "Bug test",
+                "object_id": str(contact.id),
+                "org": str(org_a.id),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        saved = Comment.objects.get(comment="Bug test")
+        assert saved.object_id == contact.id
+        assert saved.org_id == org_a.id
+        assert saved.commented_by_id == admin_profile.id
 
     def test_add_attachment_via_post(self, admin_client, admin_user, org_a):
         """POST with contact_attachment creates attachment (lines 523-530).
@@ -1140,12 +1155,16 @@ class TestContactDetailGetNonAdmin:
         contact.refresh_from_db()
         return contact
 
-    def test_detail_non_admin_assigned_exercises_non_creator_branch(
+    def test_detail_non_admin_assigned_names_the_creator(
         self, user_client, admin_user, org_a, user_profile
     ):
-        """Non-admin assigned non-creator exercises lines 402-403.
-        Line 403 has a bug: created_by is a User FK, not Profile, so .user is invalid.
-        This exercises the branch and verifies the bug.
+        """An assignee who did not create the contact can open it.
+
+        This case used to assert `pytest.raises(AttributeError, match="user")`:
+        the branch read `created_by.user.email` on a User. It was the only
+        branch a non-admin could reach, so what the test really recorded is
+        that the detail endpoint answered 500 for every non-admin who was
+        entitled to see the record.
         """
         _set_rls(org_a)
         contact = self._create_contact_with_creator(
@@ -1156,9 +1175,11 @@ class TestContactDetailGetNonAdmin:
             email="assigneddetailc@example.com",
         )
         contact.assigned_to.add(user_profile)
-        # Line 403: contact_obj.created_by.user.email raises AttributeError
-        with pytest.raises(AttributeError, match="user"):
-            user_client.get(_detail_url(contact.pk))
+
+        response = user_client.get(_detail_url(contact.pk))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["users_mention"] == [{"user__email": admin_user.email}]
 
     def test_detail_non_admin_not_assigned_not_creator_forbidden(
         self, user_client, admin_user, org_a, user_profile
@@ -1254,9 +1275,7 @@ class TestContactPatchM2M:
     ):
         """PATCH with empty teams list clears all teams."""
         _set_rls(org_a)
-        team = Teams.objects.create(
-            name="ClearTeamC", created_by=admin_user, org=org_a
-        )
+        team = Teams.objects.create(name="ClearTeamC", created_by=admin_user, org=org_a)
         contact_a.teams.add(team)
         response = admin_client.patch(
             _detail_url(contact_a.pk),

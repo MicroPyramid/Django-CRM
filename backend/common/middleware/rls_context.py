@@ -121,6 +121,26 @@ class RequireOrgContext:
         # Public CSAT survey link (Tier 2 csat) — anonymous, sets RLS
         # context manually inside the view from the survey's own org_id.
         "/api/public/csat/",
+        # Client portal — the invoice and estimate links emailed to customers.
+        # Anonymous by design: the view authorises on `public_token` alone
+        # (see invoices/public_views.py) and never reads request.user or
+        # request.org, so requiring org context here rejected every customer
+        # who clicked a link. Listed as two specific prefixes rather than a
+        # blanket "/api/public/" so that anything mounted there in future has
+        # to opt in deliberately.
+        #
+        # NOTE: this restores reachability, not readability. `_set_org_context`
+        # returns early when request.org is None, so these requests run with
+        # `app.current_org` empty — and the isolation policy from
+        # `get_enable_policy_sql` is `org_id::text = NULLIF(current_setting(
+        # 'app.current_org', true), '')`, which matches nothing when empty.
+        # Verified as `crm_user` (non-superuser, no BYPASSRLS): invoice,
+        # estimate and csat_survey all return 0 rows with empty context. So on
+        # a correctly-configured production database these endpoints now
+        # answer 404 rather than 403 until the view can resolve the org from
+        # the token before querying. See docs/PORTAL_RLS.md.
+        "/api/public/invoice/",
+        "/api/public/estimate/",
     ]
 
     def __init__(self, get_response):

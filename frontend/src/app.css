@@ -433,7 +433,7 @@
   --border-faint: #f0f0f0;
   --border: #e5e5e5;
   --border-strong: #c4c4c4;
-  --focus-ring: rgba(17, 17, 17, 0.10);
+  --focus-ring: rgba(17, 17, 17, 0.1);
 
   /* Text — aliases of canonical --text-primary/secondary/tertiary (defined above).
      Keep both names so the typography utilities (.t-body / .t-meta / etc.) can reference
@@ -447,9 +447,9 @@
   --green-soft: rgba(16, 185, 129, 0.12);
   --green-soft-text: #047857;
   --violet: #7c3aed;
-  --violet-soft: rgba(124, 58, 237, 0.10);
+  --violet-soft: rgba(124, 58, 237, 0.1);
   --violet-soft-text: #6d28d9;
-  --amber-soft: rgba(217, 119, 6, 0.10);
+  --amber-soft: rgba(217, 119, 6, 0.1);
   --amber-soft-text: #92400e;
   --red: #dc2626;
   --red-soft: rgba(220, 38, 38, 0.08);
@@ -527,7 +527,7 @@
   --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #fb923c;
-  --sidebar-active-fill: rgba(255, 255, 255, 0.10);
+  --sidebar-active-fill: rgba(255, 255, 255, 0.1);
   --sidebar-muted: #9ca3af;
   --sidebar-subtle: #6b7280;
 
@@ -653,8 +653,8 @@
 
   /* Border */
   --border-faint: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.20);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
   --focus-ring: rgba(237, 242, 245, 0.14);
 
   /* Text — aliases of canonical --text-primary/secondary/tertiary (dark theme defined above). */
@@ -672,7 +672,7 @@
   --amber-soft: rgba(217, 119, 6, 0.18);
   --amber-soft-text: #fcd34d;
   --red: #f87171;
-  --red-soft: rgba(248, 113, 113, 0.10);
+  --red-soft: rgba(248, 113, 113, 0.1);
   --orange: #ea580c;
 
   /* CTA (inverted) */

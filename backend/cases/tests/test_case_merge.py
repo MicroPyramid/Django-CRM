@@ -95,7 +95,11 @@ class TestCaseMergeHappyPath:
         assert response.status_code == 200, response.content
         body = response.json()
         assert body["error"] is False
-        assert body["redirected_url"] == f"/cases/{primary.id}"
+        # `/tickets/`, not `/cases/`: this is a path a client has to be able to
+        # route, and no client has ever served `/cases/`. Built by
+        # `cases.notifications.case_link`, which is also what the notification
+        # producer uses, so the two cannot drift apart again.
+        assert body["redirected_url"] == f"/tickets/{primary.id}"
         assert body["source_case_id"] == str(duplicate.id)
 
         case_ct = ContentType.objects.get_for_model(Case)

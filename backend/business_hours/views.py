@@ -25,6 +25,7 @@ from business_hours.serializers import (
     BusinessCalendarSerializer,
     BusinessHolidaySerializer,
 )
+from common.permissions import HasOrgContext
 
 
 def _is_admin(profile) -> bool:
@@ -72,7 +73,7 @@ def _get_or_create_default(org):
 class BusinessCalendarView(APIView):
     """GET (everyone) / PUT (admin) the org's default BusinessCalendar."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get(self, request, *args, **kwargs):
         cal = _get_or_create_default(request.profile.org)
@@ -84,12 +85,8 @@ class BusinessCalendarView(APIView):
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        cal = get_object_or_404(
-            BusinessCalendar, pk=pk, org=request.profile.org
-        )
-        serializer = BusinessCalendarSerializer(
-            cal, data=request.data, partial=True
-        )
+        cal = get_object_or_404(BusinessCalendar, pk=pk, org=request.profile.org)
+        serializer = BusinessCalendarSerializer(cal, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         # Re-fetch to include the prefetched holidays in the response.
@@ -100,7 +97,7 @@ class BusinessCalendarView(APIView):
 class BusinessHolidayListView(APIView):
     """POST a holiday for the calendar (admin-only)."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request, pk, *args, **kwargs):
         if not _is_admin(request.profile):
@@ -108,9 +105,7 @@ class BusinessHolidayListView(APIView):
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        cal = get_object_or_404(
-            BusinessCalendar, pk=pk, org=request.profile.org
-        )
+        cal = get_object_or_404(BusinessCalendar, pk=pk, org=request.profile.org)
         serializer = BusinessHolidaySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         # Idempotent on (calendar, date): swallow duplicate.
@@ -136,7 +131,7 @@ class BusinessHolidayListView(APIView):
 class BusinessHolidayDetailView(APIView):
     """DELETE a single holiday (admin-only)."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def delete(self, request, pk, hid, *args, **kwargs):
         if not _is_admin(request.profile):

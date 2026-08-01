@@ -18,6 +18,7 @@ from typing import Optional
 from django.db import transaction
 
 from cases.models import Case, EmailMessage, InboundMailbox
+
 from .contacts import resolve_contact
 from .parser import ParsedEmail
 from .spam import should_drop
@@ -47,6 +48,7 @@ def _record_email_message(
     """Create the audit row for this email. Idempotent on (org, message_id)."""
     defaults = {
         "case": case,
+        "mailbox": mailbox,
         "direction": "inbound",
         "in_reply_to": parsed.in_reply_to[:512],
         "references": " ".join(parsed.references)[:65535],
@@ -82,7 +84,11 @@ def ingest(parsed: ParsedEmail, mailbox: InboundMailbox) -> IngestResult:
                 parsed=parsed, mailbox=mailbox, case=None, drop_reason=reason
             )
         return IngestResult(
-            email_message=row, case=None, created_case=False, dropped=True, drop_reason=reason
+            email_message=row,
+            case=None,
+            created_case=False,
+            dropped=True,
+            drop_reason=reason,
         )
 
     if not parsed.message_id:
@@ -130,9 +136,10 @@ def ingest(parsed: ParsedEmail, mailbox: InboundMailbox) -> IngestResult:
             row = _record_email_message(
                 parsed=parsed, mailbox=mailbox, case=existing_case
             )
-            if contact is not None and not existing_case.contacts.filter(
-                pk=contact.pk
-            ).exists():
+            if (
+                contact is not None
+                and not existing_case.contacts.filter(pk=contact.pk).exists()
+            ):
                 existing_case.contacts.add(contact)
             from cases.signals import (
                 emit_email_received_activity,

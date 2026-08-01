@@ -232,7 +232,10 @@
           {/if}
           {#each visibleColumnDefs as column, colIndex (column.key)}
             <th
-              class="px-[14px] py-[9px] text-left text-[10px] font-medium uppercase tracking-[0.06em] text-[color:var(--text-subtle)] {colIndex === 0 ? 'pl-7 md:pl-8' : ''} {column.width || ''}"
+              class="px-[14px] py-[9px] text-left text-[10px] font-medium tracking-[0.06em] text-[color:var(--text-subtle)] uppercase {colIndex ===
+              0
+                ? 'pl-7 md:pl-8'
+                : ''} {column.width || ''}"
             >
               {column.label}
             </th>
@@ -242,9 +245,13 @@
       <tbody>
         {#each data as row (row.id)}
           <tr
-            class="border-b border-[color:var(--border-faint)] transition-colors {onRowClick ? 'cursor-pointer' : ''} {activeRowId === row[rowIdKey]
-  ? 'bg-[color:var(--bg-active)]'
-  : onRowClick ? 'hover:bg-[color:var(--bg-hover)]' : ''}"
+            class="border-b border-[color:var(--border-faint)] transition-colors {onRowClick
+              ? 'cursor-pointer'
+              : ''} {activeRowId === row[rowIdKey]
+              ? 'bg-[color:var(--bg-active)]'
+              : onRowClick
+                ? 'hover:bg-[color:var(--bg-hover)]'
+                : ''}"
             onclick={(e) => {
               if (!onRowClick) return;
               const target = /** @type {HTMLElement} */ (e.target);
@@ -280,7 +287,12 @@
               {@const value = getCellValue(row, column)}
               {@const formattedValue = formatValue(value, column, row)}
               <td
-                class="h-[37px] px-[14px] text-[12px] {colIndex === 0 ? 'pl-7 md:pl-8 font-medium text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'} {colIndex === 0 && activeRowId === row[rowIdKey] ? 'shadow-[inset_2.5px_0_0_var(--text)]' : ''} {column.width || ''}"
+                class="h-[37px] px-[14px] text-[12px] {colIndex === 0
+                  ? 'pl-7 font-medium text-[color:var(--text)] md:pl-8'
+                  : 'text-[color:var(--text-muted)]'} {colIndex === 0 &&
+                activeRowId === row[rowIdKey]
+                  ? 'shadow-[inset_2.5px_0_0_var(--text)]'
+                  : ''} {column.width || ''}"
               >
                 {#if cellContent}
                   {@render cellContent(row, column)}
@@ -307,7 +319,9 @@
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]"
+                          >{column.emptyText || 'Empty'}</span
+                        >
                       {/if}
                     </button>
                   {:else}
@@ -315,7 +329,9 @@
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]"
+                          >{column.emptyText || 'Empty'}</span
+                        >
                       {/if}
                     </span>
                   {/if}
@@ -338,7 +354,9 @@
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]"
+                          >{column.emptyText || 'Empty'}</span
+                        >
                       {/if}
                     </button>
                   {:else}
@@ -346,7 +364,9 @@
                       {#if formattedValue}
                         {formattedValue}
                       {:else}
-                        <span class="text-[color:var(--text-subtle)]">{column.emptyText || 'Empty'}</span>
+                        <span class="text-[color:var(--text-subtle)]"
+                          >{column.emptyText || 'Empty'}</span
+                        >
                       {/if}
                     </span>
                   {/if}
@@ -424,7 +444,10 @@
                 {:else if column.type === 'relation'}
                   <button
                     type="button"
-                    onclick={() => { activeRowId = row[rowIdKey]; onRowClick?.(row); }}
+                    onclick={() => {
+                      activeRowId = row[rowIdKey];
+                      onRowClick?.(row);
+                    }}
                     class="-mx-2 -my-1.5 w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors duration-75 hover:bg-[color:var(--bg-elevated)]"
                   >
                     {#if value}

@@ -1,307 +1,222 @@
 <script>
+  /**
+   * A week of logged time, one column per day — including the days with
+   * nothing on them, because an unlogged Wednesday is the thing this page
+   * exists to make visible. v1 rendered only the days that had entries, so a
+   * gap and a quiet day looked identical.
+   *
+   * The running timer ticks locally from the server's live_duration_minutes.
+   * The browser clock is a rendering detail, not a source of truth about how
+   * long somebody has been working — so the number starts from the server's
+   * and only the seconds since page load are added on top.
+   */
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
-  import { onDestroy, untrack } from 'svelte';
-  import { ChevronLeft, ChevronRight, Clock, User } from '@lucide/svelte';
-  import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import StatCard from '$lib/v2/components/StatCard.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import { money, count, shortDate } from '$lib/v2/format.js';
+  import { ChevronLeft, ChevronRight, Square, Receipt } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
   let { data } = $props();
 
-  const timesheet = $derived(data.timesheet || { days: [] });
-  const days = $derived(timesheet.days || []);
-  const totalMinutes = $derived(timesheet.total_minutes || 0);
-  const billableMinutes = $derived(timesheet.billable_minutes || 0);
-  const runningCount = $derived(timesheet.running_count || 0);
+  let week = $derived(data.week);
 
-  // Local form state so typing in date inputs doesn't fire a navigation per keystroke.
-  let startInput = $state(untrack(() => data.start));
-  let endInput = $state(untrack(() => data.end));
-  let profileInput = $state(untrack(() => data.profileFilter));
-  $effect(() => {
-    startInput = data.start;
-    endInput = data.end;
-    profileInput = data.profileFilter;
+  /** Minutes elapsed since this page loaded, added to the server's figure. */
+  let sinceLoad = $state(0);
+  onMount(() => {
+    const started = Date.now();
+    const id = setInterval(() => {
+      sinceLoad = Math.floor((Date.now() - started) / 60000);
+    }, 30000);
+    return () => clearInterval(id);
   });
 
-  // Tick once a second so running-timer durations refresh in the UI.
-  let nowMs = $state(Date.now());
-  const interval = setInterval(() => {
-    if (runningCount > 0) nowMs = Date.now();
-  }, 1000);
-  onDestroy(() => clearInterval(interval));
+  const liveMinutes = (e) =>
+    e.is_running ? e.live_duration_minutes + sinceLoad : e.duration_minutes;
 
-  function formatMinutes(/** @type {number} */ minutes) {
-    if (!minutes) return '0m';
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h && m) return `${h}h ${m}m`;
-    if (h) return `${h}h`;
-    return `${m}m`;
+  /** Minutes → "1h 48m". Timesheets are read in hours, never in minutes. */
+  function hm(mins) {
+    const m = Math.max(0, Math.round(mins));
+    const h = Math.floor(m / 60);
+    return h ? `${h}h ${m % 60}m` : `${m}m`;
   }
 
-  /**
-   * Live duration for a running entry, ticking from started_at.
-   * @param {string} startedAt - ISO timestamp
-   */
-  function liveMinutes(startedAt) {
-    const started = new Date(startedAt).getTime();
-    return Math.max(0, Math.floor((nowMs - started) / 60000));
-  }
+  const WEEKDAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const todayISO = new Date().toISOString().slice(0, 10);
 
-  /**
-   * Navigate to a new (start, end, profile) tuple. Empty profile clears the param.
-   * @param {{ start?: string, end?: string, profile?: string }} next
-   */
-  function applyRange(next) {
-    const url = new URL(page.url);
-    if (next.start) url.searchParams.set('start', next.start);
-    if (next.end) url.searchParams.set('end', next.end);
-    if (next.profile !== undefined) {
-      if (next.profile) url.searchParams.set('profile', next.profile);
-      else url.searchParams.delete('profile');
-    }
-    goto(url.pathname + '?' + url.searchParams.toString(), {
-      keepFocus: true,
-      noScroll: true
-    });
-  }
-
+  /** Jump `deltaDays` from the current week's Mon..Sun and reload. */
   function shiftWeek(/** @type {number} */ deltaDays) {
-    const startDate = new Date(`${data.start}T00:00:00Z`);
-    const endDate = new Date(`${data.end}T00:00:00Z`);
-    startDate.setUTCDate(startDate.getUTCDate() + deltaDays);
-    endDate.setUTCDate(endDate.getUTCDate() + deltaDays);
-    applyRange({
-      start: startDate.toISOString().slice(0, 10),
-      end: endDate.toISOString().slice(0, 10)
+    const s = new Date(`${week.start}T00:00:00Z`);
+    const e = new Date(`${week.end}T00:00:00Z`);
+    s.setUTCDate(s.getUTCDate() + deltaDays);
+    e.setUTCDate(e.getUTCDate() + deltaDays);
+    const qs = new URLSearchParams({
+      start: s.toISOString().slice(0, 10),
+      end: e.toISOString().slice(0, 10)
     });
+    goto(`/timesheet?${qs.toString()}`, { keepFocus: true, noScroll: true });
   }
 
-  function applyInputs() {
-    if (!startInput || !endInput) return;
-    if (endInput < startInput) {
-      // Swap silently rather than 400-ing later.
-      const tmp = startInput;
-      startInput = endInput;
-      endInput = tmp;
-    }
-    applyRange({ start: startInput, end: endInput, profile: profileInput });
+  /** Back to the current ISO week (no params → server default). */
+  function thisWeek() {
+    goto('/timesheet', { keepFocus: true, noScroll: true });
   }
+
+  let dayMinutes = $derived(
+    week.days.map((d) => d.entries.reduce((a, e) => a + liveMinutes(e), 0))
+  );
+  let weekMinutes = $derived(dayMinutes.reduce((a, n) => a + n, 0));
+  let billableMinutes = $derived(
+    week.days.reduce(
+      (a, d) => a + d.entries.filter((e) => e.billable).reduce((x, e) => x + liveMinutes(e), 0),
+      0
+    )
+  );
 
   /**
-   * Quick-pick a date range. Anchored to the local-zone "today" rather than UTC
-   * so the user's expectation of "this week" matches their calendar.
-   * @param {'this-week' | 'last-week' | 'this-month' | 'last-7' | 'last-30'} preset
+   * Billable value at the rate snapshotted on each entry, not at today's rate.
+   * hourly_rate is stored per entry precisely so a rate change next month does
+   * not silently rewrite what last month was worth.
    */
-  function applyPreset(preset) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    /** @param {Date} d */
-    const iso = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    /** @param {Date} base */
-    const monOf = (base) => {
-      const d = new Date(base);
-      const dow = (d.getDay() + 6) % 7; // Mon=0
-      d.setDate(d.getDate() - dow);
-      return d;
-    };
+  let billableValue = $derived(
+    week.days.reduce(
+      (a, d) =>
+        a +
+        d.entries
+          .filter((e) => e.billable && e.hourly_rate)
+          .reduce((x, e) => x + (liveMinutes(e) / 60) * e.hourly_rate, 0),
+      0
+    )
+  );
 
-    let start = new Date(today);
-    let end = new Date(today);
-    if (preset === 'this-week') {
-      start = monOf(today);
-      end = new Date(start);
-      end.setDate(end.getDate() + 6);
-    } else if (preset === 'last-week') {
-      start = monOf(today);
-      start.setDate(start.getDate() - 7);
-      end = new Date(start);
-      end.setDate(end.getDate() + 6);
-    } else if (preset === 'this-month') {
-      start = new Date(today.getFullYear(), today.getMonth(), 1);
-      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    } else if (preset === 'last-7') {
-      start = new Date(today);
-      start.setDate(start.getDate() - 6);
-      end = today;
-    } else if (preset === 'last-30') {
-      start = new Date(today);
-      start.setDate(start.getDate() - 29);
-      end = today;
-    }
-    applyRange({ start: iso(start), end: iso(end), profile: profileInput });
-  }
-
-  function fmtDate(/** @type {string} */ iso) {
-    return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-
-  const viewingLabel = $derived.by(() => {
-    if (!data.profileFilter || !data.isAdmin) return 'Your timesheet';
-    const u = data.users?.find(
-      /** @param {any} u */ (u) => u.id === data.profileFilter
-    );
-    if (!u) return 'Filtered timesheet';
-    return `${u.name || u.email}'s timesheet`;
-  });
+  let unbilled = $derived(
+    week.days.reduce((a, d) => a + d.entries.filter((e) => e.billable && !e.invoice).length, 0)
+  );
 </script>
 
-<svelte:head>
-  <title>Timesheet - BottleCRM</title>
-</svelte:head>
-
 <PageHeader title="Timesheet">
-  {#snippet titleIcon()}
-    <Clock class="size-4" />
+  {#snippet sub()}
+    {shortDate(week.start)} – {shortDate(week.end)} · {week.profile.name}
+  {/snippet}
+  {#snippet actions()}
+    <button class="v2-btn" aria-label="Previous week" onclick={() => shiftWeek(-7)}>
+      <ChevronLeft />
+    </button>
+    <button class="v2-btn" onclick={thisWeek}>This week</button>
+    <button class="v2-btn" aria-label="Next week" onclick={() => shiftWeek(7)}>
+      <ChevronRight />
+    </button>
   {/snippet}
 </PageHeader>
 
-<div class="flex flex-col gap-4 p-4">
-  <!-- Filter bar -->
-  <section
-    class="flex flex-wrap items-end gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3"
-  >
-    <div>
-      <Label for="start" class="text-xs">From</Label>
-      <Input
-        id="start"
-        type="date"
-        bind:value={startInput}
-        class="h-8 w-40 text-xs"
-      />
-    </div>
-    <div>
-      <Label for="end" class="text-xs">To</Label>
-      <Input
-        id="end"
-        type="date"
-        bind:value={endInput}
-        class="h-8 w-40 text-xs"
-      />
-    </div>
+<div class="v2-pad" style="padding-top:16px;flex:none">
+  <div class="v2-stats">
+    <StatCard label="Logged this week" value={hm(weekMinutes)} tone="ink" />
+    <StatCard
+      label="Billable"
+      value={hm(billableMinutes)}
+      tone="moss"
+      detail="{Math.round((billableMinutes / Math.max(1, weekMinutes)) * 100)}% of logged time"
+    />
+    <StatCard
+      label="Billable value"
+      value={money(billableValue)}
+      tone="slate"
+      detail="At the rate saved on each entry"
+    />
+    <StatCard
+      label="Not yet invoiced"
+      value={count(unbilled)}
+      tone={unbilled ? 'clay' : 'slate'}
+      detail={unbilled ? 'Billable entries with no invoice' : 'Everything billable is billed'}
+    />
+  </div>
+</div>
 
-    {#if data.isAdmin}
-      <div>
-        <Label for="profile" class="text-xs">Profile</Label>
-        <select
-          id="profile"
-          bind:value={profileInput}
-          class="h-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-2 text-xs"
-        >
-          <option value="">Me</option>
-          {#each data.users as u (u.id)}
-            <option value={u.id}>{u.name || u.email}</option>
-          {/each}
-        </select>
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-bottom:32px">
+    {#if week.running_count}
+      <!-- The one thing on this page that changes while you look at it. -->
+      <div class="v2-next" style="margin-bottom:16px">
+        <div class="v2-next-body">
+          <div class="v2-label" style="color:var(--v2-ember)">Timer running</div>
+          <div class="v2-next-text">
+            {#each week.days as d (d.date)}
+              {#each d.entries.filter((e) => e.is_running) as e (e.id)}
+                <span class="v2-num">{hm(liveMinutes(e))}</span> on
+                <a href="/tickets/{e.case.id}" style="color:inherit">{e.case.name}</a>
+              {/each}
+            {/each}
+          </div>
+        </div>
+        <button class="v2-btn v2-btn-primary"><Square size={13} />Stop timer</button>
       </div>
     {/if}
 
-    <Button size="sm" onclick={applyInputs}>Apply</Button>
+    <div class="v2-week">
+      {#each week.days as d, i (d.date)}
+        <div class="v2-day" data-today={d.date === todayISO} data-empty={d.entries.length === 0}>
+          <div class="v2-day-head">
+            <div>
+              <div style="font-size:11.5px;font-weight:650">{WEEKDAY[i]}</div>
+              <div class="v2-sub" style="font-size:11px">{shortDate(d.date)}</div>
+            </div>
+            {#if dayMinutes[i]}
+              <span class="v2-num" style="font-size:12px;font-weight:600">{hm(dayMinutes[i])}</span>
+            {/if}
+          </div>
 
-    <div class="ml-auto flex items-center gap-1">
-      <Button variant="outline" size="sm" onclick={() => shiftWeek(-7)} class="gap-1">
-        <ChevronLeft class="h-3.5 w-3.5" /> Prev
-      </Button>
-      <Button variant="outline" size="sm" onclick={() => shiftWeek(7)} class="gap-1">
-        Next <ChevronRight class="h-3.5 w-3.5" />
-      </Button>
-    </div>
-
-    <div class="flex w-full flex-wrap items-center gap-1.5 pt-1">
-      <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Quick select:</span>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('this-week')}>This week</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-week')}>Last week</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-7')}>Last 7d</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('last-30')}>Last 30d</Button>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => applyPreset('this-month')}>This month</Button>
-    </div>
-  </section>
-
-  <!-- Summary -->
-  <div
-    class="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3 text-sm"
-  >
-    <span class="flex items-center gap-1.5 text-[var(--text-secondary)]">
-      <User class="size-3.5" />
-      {viewingLabel}
-    </span>
-    <span><span class="text-[var(--text-secondary)]">Total:</span> <strong>{formatMinutes(totalMinutes)}</strong></span>
-    <span><span class="text-[var(--text-secondary)]">Billable:</span> <strong>{formatMinutes(billableMinutes)}</strong></span>
-    {#if runningCount > 0}
-      <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
-        <span class="size-1.5 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-300"></span>
-        {runningCount} running
-      </span>
-    {/if}
-  </div>
-
-  {#if data.loadError}
-    <p class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
-      {data.loadError}
-    </p>
-  {/if}
-
-  <div class="grid grid-cols-1 gap-3 lg:grid-cols-7">
-    {#each days as day (day.date)}
-      <section class="flex flex-col gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-3">
-        <header class="flex items-center justify-between">
-          <span class="text-sm font-medium">{fmtDate(day.date)}</span>
-          <span class="text-xs tabular-nums text-[var(--text-secondary)]">
-            {formatMinutes(day.total_minutes)}
-          </span>
-        </header>
-
-        {#if day.entries.length === 0}
-          <p class="text-xs text-[var(--text-secondary)]">No entries.</p>
-        {:else}
-          <ul class="space-y-1.5 text-xs">
-            {#each day.entries as e (e.id)}
-              {@const running = e.is_running || !e.ended_at}
-              {@const minutes = running ? liveMinutes(e.started_at) : e.duration_minutes}
-              <li
-                class="rounded border p-2 {running
-                  ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/10'
-                  : 'border-[var(--border-muted)] bg-[var(--surface-muted)]'}"
-              >
-                <div class="flex items-baseline justify-between gap-2">
+          {#each d.entries as e (e.id)}
+            <div class="v2-entry">
+              <div style="display:flex;gap:6px;align-items:baseline">
+                <span class="v2-num" style="font-weight:600;font-size:11.5px">
+                  {hm(liveMinutes(e))}
+                </span>
+                {#if e.is_running}
+                  <Pill tone="clay" dot>running</Pill>
+                {:else if !e.billable}
+                  <span class="v2-sub" style="font-size:10.5px">internal</span>
+                {:else if e.invoice}
+                  <!-- Already billed. Links out rather than offering to bill
+                       it again — double-billing an hour is a refund, not an
+                       edge case. -->
                   <a
-                    class="truncate font-medium hover:underline"
-                    href={`/tickets/${e.case}`}
+                    href="/invoices/{e.invoice.id}"
+                    class="v2-sub"
+                    style="font-size:10.5px;display:inline-flex;gap:3px;align-items:center;color:var(--v2-moss)"
+                    title="Billed on {e.invoice.invoice_number}"
                   >
-                    {e.description || 'Untitled session'}
+                    <Receipt size={10} />billed
                   </a>
-                  <span class="font-mono text-[10px] tabular-nums text-[var(--text-secondary)]">
-                    {formatMinutes(minutes)}
-                  </span>
+                {/if}
+              </div>
+              <a
+                href="/tickets/{e.case.id}"
+                style="color:inherit;text-decoration:none;display:block;margin-top:3px;white-space:normal;line-height:1.35"
+              >
+                {e.case.name}
+              </a>
+              {#if e.description}
+                <div class="v2-sub" style="font-size:11px;margin-top:3px;white-space:normal">
+                  {e.description}
                 </div>
-                <div class="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-[var(--text-secondary)]">
-                  <span>{new Date(e.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  <span class="flex items-center gap-1">
-                    {#if running}
-                      <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
-                        <span class="size-1 animate-pulse rounded-full bg-emerald-600 dark:bg-emerald-300"></span>
-                        Running
-                      </span>
-                    {/if}
-                    {#if e.billable}<span class="rounded bg-emerald-100 px-1 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">Billable</span>{/if}
-                    {#if e.invoice}<span class="rounded bg-blue-100 px-1 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100">Invoiced</span>{/if}
-                    {#if e.auto_stopped}<span class="rounded bg-amber-100 px-1 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">Auto</span>{/if}
-                  </span>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </section>
-    {/each}
+              {/if}
+            </div>
+          {:else}
+            <div style="flex:1;display:grid;place-items:center;padding:12px">
+              <span class="v2-sub" style="font-size:11px">Nothing logged</span>
+            </div>
+          {/each}
+        </div>
+      {/each}
+    </div>
+
+    <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
+      Time is logged against a ticket, so every hour here is attached to something a customer can be
+      shown. Rates are saved on each entry when it is logged — changing your rate does not rewrite
+      what past weeks were worth.
+    </p>
   </div>
 </div>

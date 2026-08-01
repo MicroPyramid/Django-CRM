@@ -1,4 +1,4 @@
-import {sequence} from '@sveltejs/kit/hooks';
+import { sequence } from '@sveltejs/kit/hooks';
 import * as Sentry from '@sentry/sveltekit';
 /**
  * SvelteKit Server Hooks with JWT Authentication
@@ -280,13 +280,15 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
 
           // Extract org info from switch result (no additional API call!)
           event.locals.org = switchResult.current_org;
+          // The freshly-issued token carries this org's role and settings, so
+          // read both from it. Assuming 'USER' here would drop an admin's
+          // admin-only nav for the one navigation right after an org switch.
+          const newPayload = decodeJwtPayload(switchResult.access_token);
           /** @type {any} */ (event.locals).profile = {
             org: switchResult.current_org,
-            role: 'USER' // Will be in new JWT
+            role: newPayload?.role || 'USER'
           };
           event.locals.org_name = switchResult.current_org?.name || 'Organization';
-          // Decode new token to get org_settings
-          const newPayload = decodeJwtPayload(switchResult.access_token);
           event.locals.org_settings = newPayload?.org_settings || {
             default_currency: 'USD',
             currency_symbol: '$',
@@ -304,8 +306,16 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
   // Route protection
   const pathname = event.url.pathname;
 
-  // Define public routes (no auth required)
-  const PUBLIC_ROUTES = ['/login', '/logout', '/bounce'];
+  // Define public routes (no auth required).
+  //
+  // `/portal` and `/csat` are the customer-facing pages reached from an emailed
+  // link — the invoice/estimate portals and the CSAT survey. They are anonymous
+  // by design: the only credential is the token in the URL, and the pages read
+  // nothing from the session or org (only the token-scoped public Django
+  // endpoints). Without them here the guard redirects every customer who clicks
+  // a link to /login, so the portal is unreachable. Server-side token→org
+  // resolution + RLS is what actually protects the data (see docs/PORTAL_RLS.md).
+  const PUBLIC_ROUTES = ['/login', '/logout', '/bounce', '/portal', '/csat'];
 
   // Define semi-protected routes (auth required, but no org)
   const AUTH_ONLY_ROUTES = ['/org'];

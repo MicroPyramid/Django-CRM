@@ -5,7 +5,7 @@ See docs/cases/tier1/auto-routing.md.
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from datetime import timedelta
 
 import pytest
 from django.utils import timezone
@@ -18,8 +18,8 @@ from cases.models import (
     RoutingRule,
     RoutingRuleState,
 )
-from cases.routing import RoutingDecision, _matches_all, evaluate
-from common.models import Activity, Profile, Tags, Teams, User
+from cases.routing import _matches_all
+from common.models import Activity, Profile, Teams, User
 
 RULES_URL = "/api/cases/routing-rules/"
 
@@ -69,8 +69,15 @@ def _case(org, **kwargs):
 
 class TestConditionMatching:
     def test_eq_priority(self):
-        data = {"priority": "Urgent", "case_type": None, "tags": [], "custom_fields": {}}
-        assert _matches_all(data, [{"field": "priority", "op": "eq", "value": "Urgent"}])
+        data = {
+            "priority": "Urgent",
+            "case_type": None,
+            "tags": [],
+            "custom_fields": {},
+        }
+        assert _matches_all(
+            data, [{"field": "priority", "op": "eq", "value": "Urgent"}]
+        )
         assert not _matches_all(
             data, [{"field": "priority", "op": "eq", "value": "Low"}]
         )
@@ -349,9 +356,7 @@ class TestConditionsAgainstCase:
             "S1 routes",
             strategy="direct",
             target_assignees=[agent],
-            conditions=[
-                {"field": "custom_fields.severity", "op": "eq", "value": "S1"}
-            ],
+            conditions=[{"field": "custom_fields.severity", "op": "eq", "value": "S1"}],
         )
         case = _case(
             org_a,
@@ -422,9 +427,7 @@ class TestInboundIntegration:
             "Mailbox routing",
             strategy="direct",
             target_assignees=[agent],
-            conditions=[
-                {"field": "mailbox_id", "op": "eq", "value": str(mailbox.id)}
-            ],
+            conditions=[{"field": "mailbox_id", "op": "eq", "value": str(mailbox.id)}],
         )
         result = ingest(self._parsed(mailbox), mailbox)
         assert result.created_case
@@ -451,9 +454,7 @@ class TestRoutingRuleAPI:
                 "name": "Urgent",
                 "priority_order": 10,
                 "strategy": "direct",
-                "conditions": [
-                    {"field": "priority", "op": "eq", "value": "Urgent"}
-                ],
+                "conditions": [{"field": "priority", "op": "eq", "value": "Urgent"}],
                 "target_assignee_ids": [str(agent.id)],
             },
             content_type="application/json",
@@ -512,9 +513,7 @@ class TestRoutingRuleAPI:
             "RR for dry-run",
             strategy="round_robin",
             target_assignees=[agent],
-            conditions=[
-                {"field": "priority", "op": "eq", "value": "Urgent"}
-            ],
+            conditions=[{"field": "priority", "op": "eq", "value": "Urgent"}],
         )
         # Build a Case the rule would match.
         case = _case(org_a, name="dryrun", priority="Urgent")
@@ -554,3 +553,113 @@ class TestRoutingRuleAPI:
         assert resp.status_code == 200
         names = [r["name"] for r in resp.json()["rules"]]
         assert "Other-org rule" not in names
+
+
+# ---------------------------------------------------------------------------
+# List analytics — matched_last_30d / unrouted_last_30d / round_robin state.
+# Driven through the real create-signal path so counts come from the ROUTED
+# activity log the engine writes.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestRoutingAnalytics:
+    def _list(self, client):
+        resp = client.get(RULES_URL)
+        assert resp.status_code == 200
+        return resp.json()
+
+    def _row(self, body, name):
+        return next((r for r in body["rules"] if r["name"] == name), None)
+
+    def test_matched_counts_a_firing_rule(self, admin_client, admin_profile, org_a):
+        agent = _profile(org_a, "m1@a.com")
+        _rule(org_a, "Catch all", strategy="direct", target_assignees=[agent])
+        _case(org_a, name="c1")
+        _case(org_a, name="c2")
+        body = self._list(admin_client)
+        assert self._row(body, "Catch all")["matched_last_30d"] == 2
+        assert body["totals"]["unrouted_last_30d"] == 0
+
+    def test_unmatched_case_is_unrouted(self, admin_client, admin_profile, org_a):
+        agent = _profile(org_a, "m2@a.com")
+        _rule(
+            org_a,
+            "Urgent only",
+            strategy="direct",
+            target_assignees=[agent],
+            conditions=[{"field": "priority", "op": "eq", "value": "Urgent"}],
+        )
+        _case(org_a, name="high", priority="High")  # does not match
+        body = self._list(admin_client)
+        assert self._row(body, "Urgent only")["matched_last_30d"] == 0
+        assert body["totals"]["unrouted_last_30d"] == 1
+
+    def test_matched_but_empty_pool_is_not_unrouted(
+        self, admin_client, admin_profile, org_a
+    ):
+        """A rule that matches but has nobody to assign still logs a ROUTED
+        row, so its case counts as matched, NOT unrouted — 'nobody assigned'
+        is not the same as 'no rule matched'."""
+        _rule(org_a, "Empty pool", strategy="direct", target_assignees=[])
+        _case(org_a, name="c1")
+        body = self._list(admin_client)
+        assert self._row(body, "Empty pool")["matched_last_30d"] == 1
+        assert body["totals"]["unrouted_last_30d"] == 0
+
+    def test_round_robin_state_surfaced(self, admin_client, admin_profile, org_a):
+        a1 = _profile(org_a, "rr1@a.com")
+        a2 = _profile(org_a, "rr2@a.com")
+        _rule(org_a, "RR", strategy="round_robin", target_assignees=[a1, a2])
+        _case(org_a, name="c1")  # advances the cursor 0 -> 1
+        row = self._row(self._list(admin_client), "RR")
+        assert row["state"] == {"last_assigned_index": 1}
+
+    def test_non_round_robin_has_no_state(self, admin_client, admin_profile, org_a):
+        agent = _profile(org_a, "d1@a.com")
+        _rule(org_a, "Direct", strategy="direct", target_assignees=[agent])
+        _case(org_a, name="c1")
+        assert self._row(self._list(admin_client), "Direct")["state"] is None
+
+    def test_totals_count_and_active(self, admin_client, admin_profile, org_a):
+        agent = _profile(org_a, "t1@a.com")
+        _rule(org_a, "A", target_assignees=[agent], priority_order=1)
+        _rule(org_a, "B", target_assignees=[agent], priority_order=2)
+        _rule(org_a, "Off", target_assignees=[agent], priority_order=3, is_active=False)
+        totals = self._list(admin_client)["totals"]
+        assert totals["count"] == 3
+        assert totals["active"] == 2
+
+    def test_old_unmatched_case_excluded_from_unrouted(
+        self, admin_client, admin_profile, org_a
+    ):
+        agent = _profile(org_a, "old@a.com")
+        _rule(
+            org_a,
+            "Urgent only",
+            strategy="direct",
+            target_assignees=[agent],
+            conditions=[{"field": "priority", "op": "eq", "value": "Urgent"}],
+        )
+        case = _case(org_a, name="old-high", priority="High")
+        Case.objects.filter(pk=case.pk).update(
+            created_at=timezone.now() - timedelta(days=40)
+        )
+        assert self._list(admin_client)["totals"]["unrouted_last_30d"] == 0
+
+    def test_cross_org_counts_isolated(self, admin_client, admin_profile, org_a, org_b):
+        b_agent = _profile(org_b, "b1@b.com")
+        _rule(org_b, "B rule", strategy="direct", target_assignees=[b_agent])
+        _case(org_b, name="b-case")  # fires in org_b
+        a_agent = _profile(org_a, "a1@a.com")
+        _rule(
+            org_a,
+            "A urgent",
+            strategy="direct",
+            target_assignees=[a_agent],
+            conditions=[{"field": "priority", "op": "eq", "value": "Urgent"}],
+        )
+        _case(org_a, name="a-high", priority="High")  # unrouted in org_a
+        body = self._list(admin_client)
+        assert body["totals"]["unrouted_last_30d"] == 1
+        assert "B rule" not in [r["name"] for r in body["rules"]]

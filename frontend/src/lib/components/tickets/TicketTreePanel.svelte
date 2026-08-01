@@ -1,13 +1,7 @@
 <script>
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
-  import {
-    Network,
-    Loader2,
-    Link as LinkIcon,
-    Unlink,
-    Asterisk
-  } from '@lucide/svelte';
+  import { Network, Loader2, Link as LinkIcon, Unlink, Asterisk } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import LinkParentDialog from './LinkParentDialog.svelte';
 
@@ -24,13 +18,7 @@
    *   onLinkChange?: () => void
    * }}
    */
-  let {
-    ticketId,
-    parentSummary,
-    isProblem,
-    childCount,
-    onLinkChange
-  } = $props();
+  let { ticketId, parentSummary, isProblem, childCount, onLinkChange } = $props();
 
   /** @type {{ root: any, focus_id: string } | null} */
   let tree = $state(null);
@@ -106,7 +94,9 @@
       <Network class="h-4 w-4" />
       Ticket tree
       {#if isProblem}
-        <span class="inline-flex items-center gap-1 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">
+        <span
+          class="inline-flex items-center gap-1 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700"
+        >
           <Asterisk class="h-2.5 w-2.5" /> PROBLEM
         </span>
       {/if}
@@ -141,8 +131,7 @@
 
   {#if !hasGraph}
     <p class="text-xs text-[var(--text-secondary)]">
-      This ticket is standalone. Link it under a parent to coordinate related
-      tickets together.
+      This ticket is standalone. Link it under a parent to coordinate related tickets together.
     </p>
   {:else if loading}
     <div class="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
@@ -158,7 +147,10 @@
 {#snippet node(n, depth, focusId)}
   <li>
     <div
-      class="flex items-center gap-2 rounded px-2 py-1 hover:bg-[var(--surface-muted)] {n.id === focusId ? 'bg-[var(--surface-muted)] font-medium' : ''}"
+      class="flex items-center gap-2 rounded px-2 py-1 hover:bg-[var(--surface-muted)] {n.id ===
+      focusId
+        ? 'bg-[var(--surface-muted)] font-medium'
+        : ''}"
       style="padding-left: {depth * 16 + 8}px"
     >
       <button
@@ -168,7 +160,10 @@
       >
         {n.name}
         {#if n.is_problem}
-          <span class="ml-1 inline-flex items-center rounded bg-purple-100 px-1 py-0.5 text-[9px] font-semibold text-purple-700">P</span>
+          <span
+            class="ml-1 inline-flex items-center rounded bg-purple-100 px-1 py-0.5 text-[9px] font-semibold text-purple-700"
+            >P</span
+          >
         {/if}
       </button>
       <span class="rounded px-1.5 py-0.5 text-[10px] font-medium {statusClass(n.status)}">
@@ -183,7 +178,7 @@
       </ul>
     {:else if n.truncated}
       <p
-        class="text-[11px] italic text-[var(--text-secondary)]"
+        class="text-[11px] text-[var(--text-secondary)] italic"
         style="padding-left: {(depth + 1) * 16 + 8}px"
       >
         Tree truncated at this depth.
@@ -192,9 +187,4 @@
   </li>
 {/snippet}
 
-<LinkParentDialog
-  ticketId={ticketId}
-  bind:open={linkOpen}
-  onOpenChange={(v) => (linkOpen = v)}
-  onLinked={onLinked}
-/>
+<LinkParentDialog {ticketId} bind:open={linkOpen} onOpenChange={(v) => (linkOpen = v)} {onLinked} />

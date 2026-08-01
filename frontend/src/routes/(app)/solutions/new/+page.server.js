@@ -1,40 +1,39 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { fail, redirect } from '@sveltejs/kit';
+import { createArticle } from '$lib/server/v2/solutions.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals }) {
-  if (!locals.org) throw error(401, 'Organization context required');
-  return {};
+  return {
+    // Decides whether the form offers "Approved" and the publish switch at
+    // all. The API refuses both for anyone else, so offering them would be a
+    // form that fails on submit for reasons the writer cannot see.
+    canRelease: /** @type {any} */ (locals).profile?.role === 'ADMIN'
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  default: async ({ request, locals, cookies }) => {
+  create: async ({ cookies, request }) => {
     const form = await request.formData();
-    const title = form.get('title')?.toString().trim();
-    const description = form.get('description')?.toString() || '';
-    const status = form.get('status')?.toString() || 'draft';
 
-    if (!title) return fail(400, { error: 'Title is required', title, description, status });
+    const values = {
+      title: form.get('title')?.toString().trim() ?? '',
+      description: form.get('description')?.toString().trim() ?? '',
+      status: form.get('status')?.toString() || 'draft',
+      // A checkbox that is off submits nothing at all, which on a *create* is
+      // unambiguous — there is no stored value for "unchanged" to mean.
+      is_published: form.get('is_published') === 'on'
+    };
 
+    /** @type {any} */
+    let created;
     try {
-      const created = await apiRequest(
-        '/cases/solutions/',
-        { method: 'POST', body: { title, description, status } },
-        { cookies, org: locals.org }
-      );
-      const id = created?.id;
-      if (!id) return fail(500, { error: 'Backend returned no id', title, description, status });
-      throw redirect(303, `/solutions/${id}`);
-    } catch (err) {
-      if (err?.status === 303) throw err;
-      console.error('Create solution error:', err);
-      return fail(err?.status || 500, {
-        error: err?.message || 'Failed to create solution',
-        title,
-        description,
-        status
-      });
+      created = await createArticle({ cookies }, values);
+    } catch (/** @type {any} */ err) {
+      return fail(400, { values, error: readableError(err, 'Could not save this article.') });
     }
+
+    redirect(303, `/solutions/${created.id}`);
   }
 };

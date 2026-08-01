@@ -26,8 +26,7 @@
 
   let description = $derived.by(() => {
     if (message) return message;
-    if (isNotFound)
-      return "The page you're looking for doesn't exist or may have been moved.";
+    if (isNotFound) return "The page you're looking for doesn't exist or may have been moved.";
     if (status === 403) return 'Your account does not have permission to view this resource.';
     if (status === 401) return 'Your session may have expired. Sign in again to continue.';
     if (status >= 500)

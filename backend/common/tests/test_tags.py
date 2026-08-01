@@ -6,9 +6,16 @@ Run with: pytest common/tests/test_tags.py -v
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
+from accounts.models import Account
+from cases.models import Case
 from common.models import Tags
+from leads.models import Lead
+from opportunity.models import Opportunity
+
+
+def _tag_row(response, tag_id):
+    return next(r for r in response.data["tags"] if r["id"] == str(tag_id))
 
 
 @pytest.mark.django_db
@@ -35,8 +42,14 @@ class TestTagsListView:
         assert response.data["tags_count"] >= 1
 
     def test_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        # DRF converts the auth failure into a 401/403 Response (it does not
+        # propagate the exception through the test client), so assert on the
+        # status — the endpoint still rejects an anonymous caller.
+        resp = unauthenticated_client.get(self.url)
+        assert resp.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
 
     def test_create_tag_non_admin_forbidden(self, user_client, org_a):
         """Non-admin user cannot create tags."""
@@ -137,6 +150,74 @@ class TestTagsListView:
         response = admin_client.get(self.url + "?name=Pri")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["tags_count"] == 1
+
+
+@pytest.mark.django_db
+class TestTagsUsageAndTotals:
+    """The settings/macros analytics: per-tag usage counts and the stat totals."""
+
+    url = "/api/tags/"
+
+    def test_usage_counts_per_model(self, admin_client, org_a):
+        tag = Tags.objects.create(name="Renewal", slug="renewal", org=org_a)
+        a = Account.objects.create(org=org_a, name="Acme")
+        a.tags.add(tag)
+        for _ in range(2):
+            Lead.objects.create(org=org_a).tags.add(tag)
+        Opportunity.objects.create(org=org_a, name="Deal").tags.add(tag)
+        Case.objects.create(
+            org=org_a, name="Ticket", status="New", priority="Normal"
+        ).tags.add(tag)
+
+        response = admin_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        row = _tag_row(response, tag.id)
+        assert row["usage"] == {
+            "accounts": 1,
+            "leads": 2,
+            "opportunities": 1,
+            "cases": 1,
+        }
+
+    def test_unused_tag_reports_zero_usage(self, admin_client, org_a):
+        tag = Tags.objects.create(name="Lonely", slug="lonely", org=org_a)
+        row = _tag_row(admin_client.get(self.url), tag.id)
+        assert row["usage"] == {
+            "accounts": 0,
+            "leads": 0,
+            "opportunities": 0,
+            "cases": 0,
+        }
+
+    def test_totals_count_active_unused(self, admin_client, org_a):
+        used = Tags.objects.create(name="Used", slug="used", org=org_a)
+        Account.objects.create(org=org_a, name="Acme").tags.add(used)
+        Tags.objects.create(name="Lonely", slug="lonely", org=org_a)  # active, unused
+        Tags.objects.create(
+            name="Archived", slug="archived", org=org_a, is_active=False
+        )
+        totals = admin_client.get(self.url).data["totals"]
+        # count spans archived too; active excludes it; unused = active w/ 0 usage.
+        assert totals == {"count": 3, "active": 2, "unused": 1}
+
+    def test_usage_excludes_other_orgs_records(self, admin_client, org_a, org_b):
+        """The usage subquery is explicitly org-scoped, so a foreign-org record
+        carrying the same tag row is not counted — proven here on SQLite where
+        RLS is inert, so only the ORM filter can be doing the scoping."""
+        tag = Tags.objects.create(name="Shared", slug="shared", org=org_a)
+        Account.objects.create(org=org_a, name="Ours").tags.add(tag)
+        # Attach the SAME tag row to an org_b account (DB allows it).
+        Account.objects.create(org=org_b, name="Theirs").tags.add(tag)
+
+        row = _tag_row(admin_client.get(self.url), tag.id)
+        assert row["usage"]["accounts"] == 1  # not 2
+
+    def test_totals_isolated_across_orgs(self, org_b_client, org_a):
+        # A tag in org_a must not appear in org_b's list or totals.
+        Tags.objects.create(name="OrgA only", slug="orga-only", org=org_a)
+        data = org_b_client.get(self.url).data
+        assert data["totals"]["count"] == 0
+        assert data["tags"] == []
 
 
 @pytest.mark.django_db

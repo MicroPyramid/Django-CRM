@@ -21,6 +21,40 @@ from common.serializer import (
 )
 
 
+def _visible_to(profile):
+    """Q() describing which documents a non-admin profile may see.
+
+    One definition, used by the list query and by every object-level check
+    below, because they disagreed before: the list matched on `shared_to`
+    while the detail view also tried to match the creator, so which documents
+    you could open did not line up with which ones you could find.
+
+    Three ways in, and each was broken in its own way:
+
+    * **Creator.** `Document.created_by` is a **User** FK — the create path
+      sets `created_by=request.profile.user`. The old checks compared it to
+      `request.profile`, a different model, so the expression was always
+      False and the uploader of a document could not open or delete it.
+      Compare against `profile.user`.
+
+    * **Shared with you.** Worked, and is unchanged.
+
+    * **Shared with a team you are in.** `Document.teams` was written by POST
+      and PUT and read by no query at all, so picking a team granted nobody
+      anything while the interface presented it as a share. Honouring it is
+      what makes the stored value mean what it says.
+
+    Scope: this only ever narrows within one org — the caller has already
+    filtered on `org=request.profile.org`, and RLS is underneath that. It is
+    not a substitute for either.
+    """
+    return (
+        Q(created_by=profile.user)
+        | Q(shared_to=profile)
+        | Q(teams__in=profile.user_teams.all())
+    )
+
+
 class DocumentListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Document
@@ -31,16 +65,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
             "-id"
         )
         if not (self.request.user.is_superuser or self.request.profile.role == "ADMIN"):
-            if self.request.profile.documents():
-                doc_ids = self.request.profile.documents().values_list("id", flat=True)
-                shared_ids = queryset.filter(
-                    Q(status="active") & Q(shared_to__id__in=[self.request.profile.id])
-                ).values_list("id", flat=True)
-                queryset = queryset.filter(Q(id__in=doc_ids) | Q(id__in=shared_ids))
-            else:
-                queryset = queryset.filter(
-                    Q(status="active") & Q(shared_to__id__in=[self.request.profile.id])
-                )
+            queryset = queryset.filter(_visible_to(self.request.profile)).distinct()
 
         request_post = params
         if request_post:
@@ -98,8 +123,15 @@ class DocumentListView(APIView, LimitOffsetPagination):
             results_documents_inactive, many=True
         ).data
         if results_documents_inactive:
+            # This block computes the *inactive* envelope's offset, so it must
+            # key off the last inactive row — not `results_documents_active[-1]`,
+            # a copy-paste from the active block above. When the org has archived
+            # documents but no active ones (e.g. the only document was just
+            # archived), `results_documents_active` is empty and `[-1]` raised
+            # IndexError -> 500 on the whole list. No client rendered this
+            # endpoint before, so the crash sat unhit.
             offset = queryset_documents_inactive.filter(
-                id__gte=results_documents_active[-1].id
+                id__gte=results_documents_inactive[-1].id
             ).count()
             if offset == queryset_documents_inactive.count():
                 offset = None
@@ -204,6 +236,60 @@ class DocumentDetailView(APIView):
         # Security fix: Filter by org to prevent cross-org enumeration
         return get_object_or_404(Document, id=pk, org=self.request.profile.org)
 
+    def _may_read(self, document):
+        """Admins, plus anyone `_visible_to` covers: creator, share, team.
+
+        Evaluated as a queryset filter rather than in Python so that it is
+        literally the same predicate the list uses. Doing it by hand was how
+        the two drifted apart in the first place.
+        """
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            return True
+        return (
+            Document.objects.filter(pk=document.pk)
+            .filter(_visible_to(self.request.profile))
+            .exists()
+        )
+
+    def _may_delete(self, document):
+        """Deleting is destructive and not covered by a share.
+
+        Being able to read a document does not imply being able to destroy it
+        for everyone else, so this stays narrower than `_may_read`: the person
+        who uploaded it, or an admin. `created_by` is a User FK — comparing it
+        to a Profile is the bug that made this branch unreachable.
+        """
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            return True
+        return document.created_by_id == self.request.profile.user_id
+
+    def _may_write(self, document):
+        """Editing is as consequential as deleting, so it is gated the same way.
+
+        PUT and PATCH used to authorise on `_may_read`, which meant anyone a
+        document was merely *shared with* — or a member of a team it was shared
+        with — could overwrite its file, rename it, flip its status to
+        `inactive` (hiding it from the org), and, on PUT, wipe its entire
+        `shared_to`/`teams` list and lock everyone else out. A share hands
+        someone a copy to work with; it does not hand them the original to
+        rewrite. Replacing the bytes behind a title is at least as destructive
+        as deleting the row, so mutation stays exactly as narrow as
+        `_may_delete`: the uploader or an admin. Reading (`_may_read`) remains
+        broad on purpose — creator, share, team, admin — because seeing a
+        document and changing it for everyone are different privileges.
+        """
+        return self._may_delete(document)
+
+    @staticmethod
+    def _forbidden():
+        return Response(
+            {
+                "error": True,
+                "errors": "You do not have Permission to perform this action",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     @extend_schema(
         tags=["documents"],
         operation_id="documents_retrieve",
@@ -222,18 +308,8 @@ class DocumentDetailView(APIView):
     def get(self, request, pk, format=None):
         # get_object_or_404 now handles org filtering - returns 404 if not found/wrong org
         self.object = self.get_object(pk)
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == self.object.created_by)
-                or (self.request.profile in self.object.shared_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if not self._may_read(self.object):
+            return self._forbidden()
         profile_list = Profile.objects.filter(org=self.request.profile.org)
         if request.profile.role == "ADMIN" or request.user.is_superuser:
             profiles = profile_list.order_by("user__email")
@@ -264,29 +340,12 @@ class DocumentDetailView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
+        # `get_object` already filters on org and raises 404 otherwise, so the
+        # falsy-document and org-mismatch branches that used to sit here were
+        # both unreachable.
         document = self.get_object(pk)
-        if not document:
-            return Response(
-                {"error": True, "errors": "Documdnt does not exist"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if document.org != self.request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if (
-                self.request.profile != document.created_by
-            ):  # or (self.request.profile not in document.shared_to.all()):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if not self._may_delete(document):
+            return self._forbidden()
         document.delete()
         return Response(
             {"error": False, "message": "Document deleted Successfully"},
@@ -311,28 +370,8 @@ class DocumentDetailView(APIView):
     def put(self, request, pk, format=None):
         self.object = self.get_object(pk)
         params = request.data
-        if not self.object:
-            return Response(
-                {"error": True, "errors": "Document does not exist"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.object.org != self.request.profile.org:
-            return Response(
-                {"error": True, "errors": "User company doesnot match with header...."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == self.object.created_by)
-                or (self.request.profile in self.object.shared_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if not self._may_write(self.object):
+            return self._forbidden()
         serializer = DocumentCreateSerializer(
             data=params, instance=self.object, request_obj=request, partial=True
         )
@@ -402,31 +441,8 @@ class DocumentDetailView(APIView):
         """Handle partial updates to a document."""
         self.object = self.get_object(pk)
         params = request.data
-        if not self.object:
-            return Response(
-                {"error": True, "errors": "Document does not exist"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.object.org != self.request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if not (
-                (self.request.profile == self.object.created_by)
-                or (self.request.profile in self.object.shared_to.all())
-            ):
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if not self._may_write(self.object):
+            return self._forbidden()
         serializer = DocumentCreateSerializer(
             data=params, instance=self.object, request_obj=request, partial=True
         )

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -13,7 +14,7 @@ from rest_framework.views import APIView
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common import swagger_params
-from common.models import Comment, Profile, Teams, User
+from common.models import Comment, PersonalAccessToken, Profile, Teams, User
 from common.serializer import (
     BillingAddressSerializer,
     CommentSerializer,
@@ -30,6 +31,23 @@ from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from opportunity.models import Opportunity
 from opportunity.serializer import OpportunitySerializer
+
+
+def _valid_token_counts_by_profile(org):
+    """{profile_id (str): count of non-revoked, non-expired PATs} for one org.
+
+    One query for the whole roster. A token is "valid" if it has not been
+    revoked and has not expired — the same test PersonalAccessToken.is_valid()
+    applies per row, expressed as a filter so the count is a single round trip.
+    """
+    now = timezone.now()
+    rows = (
+        PersonalAccessToken.objects.filter(org=org, revoked_at__isnull=True)
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+        .values("profile_id")
+        .annotate(n=Count("id"))
+    )
+    return {str(r["profile_id"]): r["n"] for r in rows}
 
 
 class GetTeamsAndUsersView(APIView):
@@ -90,7 +108,11 @@ class UsersListView(APIView, LimitOffsetPagination):
                 data=params, org=request.profile.org
             )
             address_serializer = BillingAddressSerializer(data=params)
-            profile_serializer = CreateProfileSerializer(data=params)
+            # This POST is already gated to admins above, and inviting someone
+            # inherently means choosing their role, so role is grantable here.
+            profile_serializer = CreateProfileSerializer(
+                data=params, can_grant_privileges=True
+            )
             data = {}
             if not user_serializer.is_valid():
                 data["user_errors"] = dict(user_serializer.errors)
@@ -184,12 +206,29 @@ class UsersListView(APIView, LimitOffsetPagination):
             if params.get("status"):
                 queryset = queryset.filter(is_active=params.get("status"))
 
+        # A not-yet-revoked, unexpired token on a deactivated account is a
+        # dormant liability the team page surfaces: it is rejected at login
+        # today (resolve_valid_pat checks profile.is_active — see
+        # test_pat_auth.py::test_inactive_profile_raises), but it would
+        # authenticate again the moment the account is reactivated, so it is
+        # worth revoking as part of offboarding. Count such tokens per profile
+        # once, here, rather than on ProfileSerializer (which many endpoints
+        # share and would each pay an extra query for a field only this reads).
+        token_counts = _valid_token_counts_by_profile(request.profile.org)
+
+        def _with_token_counts(rows):
+            for row in rows:
+                row["active_token_count"] = token_counts.get(str(row["id"]), 0)
+            return rows
+
         context = {}
         queryset_active_users = queryset.filter(is_active=True)
         results_active_users = self.paginate_queryset(
             queryset_active_users.distinct(), self.request, view=self
         )
-        active_users = ProfileSerializer(results_active_users, many=True).data
+        active_users = _with_token_counts(
+            ProfileSerializer(results_active_users, many=True).data
+        )
         if results_active_users:
             offset = queryset_active_users.filter(
                 id__gte=results_active_users[-1].id
@@ -208,7 +247,9 @@ class UsersListView(APIView, LimitOffsetPagination):
         results_inactive_users = self.paginate_queryset(
             queryset_inactive_users.distinct(), self.request, view=self
         )
-        inactive_users = ProfileSerializer(results_inactive_users, many=True).data
+        inactive_users = _with_token_counts(
+            ProfileSerializer(results_inactive_users, many=True).data
+        )
         if results_inactive_users:
             offset = queryset_inactive_users.filter(
                 id__gte=results_inactive_users[-1].id
@@ -236,6 +277,28 @@ class UserDetailView(APIView):
         # Security fix: Filter by org to prevent cross-org enumeration
         # Lookup by user ID since frontend sends user.id, not profile.id
         return get_object_or_404(Profile, user__id=pk, org=self.request.profile.org)
+
+    @staticmethod
+    def _may_grant_privileges(request, target_profile):
+        """May this request set role / admin / access flags on `target_profile`?
+
+        Two rules, both of which the /v2/team UI already advertises as enforced:
+
+        * only an admin (or superuser) may hand out access, and
+        * nobody may change their *own* role — an admin included, so the org
+          cannot be self-locked out of its last admin and a member cannot
+          promote themselves.
+
+        Editing your own profile for contact details stays allowed; only the
+        privileged fields are withheld, by making them read_only downstream.
+        """
+        actor_is_admin = (
+            request.profile.role == "ADMIN"
+            or request.profile.is_admin
+            or request.user.is_superuser
+        )
+        editing_self = request.profile.id == target_profile.id
+        return actor_is_admin and not editing_self
 
     @extend_schema(
         tags=["users"],
@@ -326,7 +389,16 @@ class UserDetailView(APIView):
             data=params, instance=profile.user, org=request.profile.org
         )
         address_serializer = BillingAddressSerializer(data=params, instance=address_obj)
-        profile_serializer = CreateProfileSerializer(data=params, instance=profile)
+        # Role and the access flags may be set only by an admin editing someone
+        # *other* than themselves. A member reaches this path only for their own
+        # profile (the guard above lets self through), so this denies them the
+        # privileged fields; and an admin cannot flip their own role here either,
+        # which keeps them from self-locking the org out of its last admin.
+        profile_serializer = CreateProfileSerializer(
+            data=params,
+            instance=profile,
+            can_grant_privileges=self._may_grant_privileges(request, profile),
+        )
         data = {}
         if not serializer.is_valid():
             data["contact_errors"] = serializer.errors
@@ -398,7 +470,10 @@ class UserDetailView(APIView):
             data=params, instance=profile.user, org=request.profile.org, partial=True
         )
         profile_serializer = CreateProfileSerializer(
-            data=params, instance=profile, partial=True
+            data=params,
+            instance=profile,
+            partial=True,
+            can_grant_privileges=self._may_grant_privileges(request, profile),
         )
         data = {}
         if not serializer.is_valid():
@@ -481,14 +556,36 @@ class UserStatusView(APIView):
             )
         params = request.data
         profiles = Profile.objects.filter(org=request.profile.org)
-        # Lookup by user ID since frontend sends user.id, not profile.id
-        profile = profiles.get(user__id=pk)
+        # Lookup by user ID since frontend sends user.id, not profile.id.
+        # get_object_or_404 (a 404), not .get() (a 500), on an unknown id.
+        profile = get_object_or_404(profiles, user__id=pk)
 
         if params.get("status"):
             user_status = params.get("status")
             if user_status == "Active":
                 profile.is_active = True
             elif user_status == "Inactive":
+                # Deactivating a profile is the one remaining way to strand an
+                # org with no admin (self role-change is blocked in the
+                # serializer), and an org with no admin can never invite,
+                # promote or reconfigure itself again. Refuse to deactivate the
+                # last active admin — the rule the /v2/team page advertises.
+                target_is_admin = (
+                    profile.role == "ADMIN" or profile.is_organization_admin
+                )
+                if target_is_admin and not (
+                    profiles.filter(is_active=True)
+                    .filter(Q(role="ADMIN") | Q(is_organization_admin=True))
+                    .exclude(pk=profile.pk)
+                    .exists()
+                ):
+                    return Response(
+                        {
+                            "error": True,
+                            "errors": "The organization must keep at least one active admin.",
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 profile.is_active = False
             else:
                 return Response(

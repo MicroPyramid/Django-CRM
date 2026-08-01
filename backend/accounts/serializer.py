@@ -32,10 +32,26 @@ class AccountSerializer(serializers.ModelSerializer):
     cases = serializers.SerializerMethodField()
     tasks = serializers.SerializerMethodField()
     opportunities = serializers.SerializerMethodField()
+    rollups = serializers.SerializerMethodField()
 
     @extend_schema_field(str)
     def get_country_display(self, obj):
         return obj.get_country_display() if obj.country else None
+
+    @extend_schema_field(dict)
+    def get_rollups(self, obj):
+        """What this account is worth, owes and is complaining about.
+
+        Computed by `accounts.views.annotate_rollups`, which is applied on the
+        list and detail endpoints. It is deliberately absent — `null` — rather
+        than zero-filled anywhere else: a page that was never given the numbers
+        should say nothing, not quietly claim every total is zero.
+        """
+        from accounts.views import ROLLUP_FIELDS
+
+        if not hasattr(obj, ROLLUP_FIELDS[0]):
+            return None
+        return {field: getattr(obj, field) for field in ROLLUP_FIELDS}
 
     @extend_schema_field(list)
     def get_cases(self, obj):
@@ -94,6 +110,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "cases",
             "tasks",
             "opportunities",
+            "rollups",
             # System
             "created_by",
             "created_at",
@@ -191,6 +208,20 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         if not Account.objects.filter(name__iexact=name, org=self.org).exists():
             return name
         raise serializers.ValidationError("Account already exists with this name")
+
+    def validate_annual_revenue(self, annual_revenue):
+        """Reject negative revenue here rather than letting the database do it.
+
+        `Account` carries a `account_revenue_non_negative` CheckConstraint, so
+        the value could never be stored — but with nothing in front of it the
+        constraint surfaced as an IntegrityError, i.e. a 500, with no indication
+        of which field was at fault. `number_of_employees` is a
+        PositiveIntegerField and DRF derives `min_value=0` from it for free,
+        which is why the sibling field already answered 400 and this one did not.
+        """
+        if annual_revenue is not None and annual_revenue < 0:
+            raise serializers.ValidationError("Annual revenue cannot be negative.")
+        return annual_revenue
 
     class Meta:
         model = Account

@@ -1,170 +1,102 @@
 <script>
-  import { DollarSign, TrendingUp, Target, Percent, AlertCircle } from '@lucide/svelte';
-  import {
-    KPICard,
-    FocusBar,
-    GoalProgress,
-    MiniPipeline,
-    PipelineChart,
-    TaskList,
-    HotLeadsPanel,
-    OpportunitiesTable,
-    ActivityFeed
-  } from '$lib/components/dashboard';
-  import { formatCurrency } from '$lib/utils/formatting.js';
-  import { orgSettings } from '$lib/stores/org.js';
-
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric'
-  });
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import { money } from '$lib/v2/format.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
 
-  const metrics = $derived(data.metrics || {});
-  const recentData = $derived(data.recentData || {});
-  const urgentCounts = $derived(data.urgentCounts || {});
-  const pipelineByStage = $derived(data.pipelineByStage || {});
-  const revenueMetrics = $derived(data.revenueMetrics || {});
-  const hotLeads = $derived(data.hotLeads || []);
-  const goalSummary = $derived(data.goalSummary || []);
+  const TONE_VAR = {
+    rust: 'var(--v2-rust)',
+    clay: 'var(--v2-clay)',
+    slate: 'var(--v2-slate)',
+    moss: 'var(--v2-moss)'
+  };
 
-  // Get org's default currency for KPI display
-  const orgCurrency = $derived($orgSettings.default_currency || 'USD');
-  const otherCurrencyCount = $derived(revenueMetrics.other_currency_count || 0);
-  const currencyNote = $derived(
-    otherCurrencyCount > 0
-      ? `${orgCurrency} only (${otherCurrencyCount} in other currencies)`
-      : `${orgCurrency} only`
+  let { queue, summary, later } = $derived(data);
+
+  const plural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) =>
+    `${n} ${n === 1 ? one : many}`;
+
+  // Built as one string rather than conditional markup: the "quiet deals"
+  // clause only makes sense when there are any, and the numbers are often zero
+  // in a real org, so the copy adapts instead of reading "0 deals … have gone
+  // quiet — those are first."
+  let subText = $derived(
+    summary.count === 0
+      ? 'Nothing needs you right now — you’re all clear for today.'
+      : summary.quiet_deals === 0
+        ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
+        : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
+          `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value)} ` +
+          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet — those are first.`
   );
-
 </script>
 
-<svelte:head>
-  <title>Dashboard - BottleCRM</title>
-</svelte:head>
+<PageHeader title="Today">
+  {#snippet sub()}{subText}{/snippet}
+</PageHeader>
 
-<div class="min-h-screen">
-  <div class="px-7 pt-6 md:px-8">
-    <p class="label-tiny">Today · {today}</p>
-  </div>
-
-  <div class="space-y-8 p-6 md:p-8">
-    {#if data.error}
-      <div
-        class="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-negative-default)]/20 bg-[var(--color-negative-light)] p-5 backdrop-blur-sm dark:border-[var(--color-negative-default)]/30 dark:bg-[var(--color-negative-default)]/10"
-      >
-        <div
-          class="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-negative-light)] dark:bg-[var(--color-negative-default)]/20"
-        >
-          <AlertCircle class="size-5 text-[var(--color-negative-default)]" />
-        </div>
-        <div>
-          <p class="text-sm font-medium text-[var(--color-negative-default)]">
-            Error loading dashboard
-          </p>
-          <p class="text-xs text-[var(--color-negative-default)]/80">{data.error}</p>
-        </div>
-      </div>
-    {:else}
-      <!-- Focus Bar - Urgent Items with premium styling -->
-      <div>
-        <FocusBar
-          overdueCount={urgentCounts.overdue_tasks || 0}
-          todayCount={urgentCounts.tasks_due_today || 0}
-          followupsCount={urgentCounts.followups_today || 0}
-          hotLeadsCount={urgentCounts.hot_leads || 0}
-        />
-      </div>
-
-      <!-- Pipeline Overview - Full Width with glass effect -->
-      <div
-        class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6 shadow-[var(--shadow-sm)] dark:bg-[var(--surface-raised)]/80 dark:shadow-lg dark:shadow-black/10 dark:backdrop-blur-sm"
-      >
-        <div class="mb-5 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-light)] dark:bg-[var(--color-primary-default)]/15"
-            >
-              <TrendingUp class="size-5 text-[var(--color-primary-default)]" />
-            </div>
-            <div>
-              <h2 class="text-base font-semibold tracking-tight text-[var(--text-primary)]">
-                Sales Pipeline
-              </h2>
-              <p class="text-xs text-[var(--text-tertiary)]">{currencyNote}</p>
-            </div>
+<div class="v2-scroll">
+  <div class="v2-pad" style="padding-top:14px;padding-bottom:26px">
+    <!--
+      Only the top item gets the ember button. Five ember buttons down a page
+      is v1's mistake in a new coat: if everything is the primary action then
+      nothing is, and the colour stops carrying information.
+    -->
+    {#each queue as item, i (item.id)}
+      <div class="v2-card" style="margin-bottom:8px">
+        <div class="v2-queue-item">
+          <span class="v2-queue-spine" style="background:{TONE_VAR[item.tone]}"></span>
+          <div class="v2-queue-body">
+            <a href={item.href} style="color:inherit;text-decoration:none">
+              <div style="font-weight:640;letter-spacing:-0.012em">{item.title}</div>
+            </a>
+            <div class="v2-sub" style="margin-top:2px">{item.detail}</div>
+          </div>
+          <!-- On a phone these drop to their own line rather than squeezing
+               the title into three words per row. -->
+          <div class="v2-queue-actions">
+            <Pill tone={item.tone}>{item.due}</Pill>
+            <a class="v2-btn" class:v2-btn-primary={i === 0} href={item.href}>{item.action}</a>
           </div>
         </div>
-        <MiniPipeline pipelineData={pipelineByStage} currency={orgCurrency} />
       </div>
+    {/each}
 
-      <!-- Revenue Metrics Grid - 4 columns with hover effects -->
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KPICard
-          label="Pipeline Value"
-          value={formatCurrency(revenueMetrics.pipeline_value || 0, orgCurrency, true)}
-          subtitle={currencyNote}
-          accentColor="orange"
-        >
-          {#snippet icon()}
-            <DollarSign class="size-5" />
-          {/snippet}
-        </KPICard>
-        <KPICard
-          label="Weighted Pipeline"
-          value={formatCurrency(revenueMetrics.weighted_pipeline || 0, orgCurrency, true)}
-          subtitle={currencyNote}
-          accentColor="violet"
-        >
-          {#snippet icon()}
-            <TrendingUp class="size-5" />
-          {/snippet}
-        </KPICard>
-        <KPICard
-          label="Won This Month"
-          value={formatCurrency(revenueMetrics.won_this_month || 0, orgCurrency, true)}
-          subtitle={currencyNote}
-          accentColor="emerald"
-        >
-          {#snippet icon()}
-            <Target class="size-5" />
-          {/snippet}
-        </KPICard>
-        <KPICard
-          label="Conversion Rate"
-          value="{revenueMetrics.conversion_rate || 0}%"
-          accentColor="amber"
-        >
-          {#snippet icon()}
-            <Percent class="size-5" />
-          {/snippet}
-        </KPICard>
-      </div>
-
-      <!-- Pipeline Chart + Hot Leads -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div class="lg:col-span-3">
-          <PipelineChart pipelineData={pipelineByStage} currency={orgCurrency} />
-        </div>
-        <div class="lg:col-span-2">
-          <HotLeadsPanel leads={hotLeads} />
+    {#if queue.length}
+      <p class="v2-sub" style="margin:15px 0 21px;font-size:12.5px">That’s everything due today.</p>
+    {:else}
+      <div class="v2-card" style="margin-bottom:8px">
+        <div class="v2-pad" style="padding:20px;text-align:center">
+          <div style="font-weight:640;letter-spacing:-0.012em">Inbox zero for today</div>
+          <div class="v2-sub" style="margin-top:3px">
+            No overdue tickets, invoices, quiet deals or tasks. Anything coming up is below.
+          </div>
         </div>
       </div>
+    {/if}
 
-      <!-- Tasks + Opportunities + Goals -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <TaskList tasks={recentData.tasks || []} />
-        <OpportunitiesTable opportunities={recentData.opportunities || []} />
-        <GoalProgress goals={goalSummary} />
-      </div>
+    {#if later.length}
+      <div class="v2-label" style="margin:6px 0 9px">Later this week</div>
+      {#each later as row (row.id)}
+        <div
+          style="display:flex;gap:13px;align-items:baseline;padding:9px 3px;border-bottom:1px solid var(--v2-line-soft)"
+        >
+          <!-- The day is a short word, not a label — sentence case, same as the mocks. -->
+          <span class="v2-muted" style="font-size:11.5px;font-weight:650;width:26px;flex:none"
+            >{row.day}</span
+          >
+          <span style="flex:1;font-size:13.5px">{row.title}</span>
+          <span class="v2-sub" style="font-size:11.5px">{row.meta}</span>
+        </div>
+      {/each}
+    {/if}
 
-      <!-- Activity Feed - Full Width -->
-      <div>
-        <ActivityFeed activities={recentData.activities || []} />
-      </div>
+    {#if summary.cleared_yesterday > 0}
+      <p class="v2-sub" style="margin-top:20px;font-size:12px">
+        Yesterday you cleared <span class="v2-num">{summary.cleared_yesterday}</span>.
+      </p>
     {/if}
   </div>
 </div>

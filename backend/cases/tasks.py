@@ -85,7 +85,9 @@ def _dispatch_breach(case, action, target_profile, team, org_id):
         if recipients:
             try:
                 send_email_to_assigned_user.delay(recipients, str(case.id), str(org_id))
-            except Exception:  # pragma: no cover — broker glitches shouldn't lose the escalation
+            except (
+                Exception
+            ):  # pragma: no cover — broker glitches shouldn't lose the escalation
                 logger.exception(
                     "Failed to enqueue escalation email for case=%s", case.pk
                 )
@@ -110,8 +112,7 @@ def _scan_org(org):
 
     fired = 0
     policies = {
-        p.priority: p
-        for p in EscalationPolicy.objects.filter(org=org, is_active=True)
+        p.priority: p for p in EscalationPolicy.objects.filter(org=org, is_active=True)
     }
     if not policies:
         return 0
@@ -267,7 +268,8 @@ def send_csat_survey(case_id, org_id):
     if case.status != "Closed":
         logger.info(
             "send_csat_survey: case=%s status=%s — likely reopened, skipping",
-            case_id, case.status,
+            case_id,
+            case.status,
         )
         return None
     if not case.org.csat_enabled:
@@ -279,9 +281,7 @@ def send_csat_survey(case_id, org_id):
 
     contact = _select_primary_contact(case)
     if contact is None or not contact.email:
-        logger.info(
-            "send_csat_survey: case=%s has no contact email, skipping", case_id
-        )
+        logger.info("send_csat_survey: case=%s has no contact email, skipping", case_id)
         return None
 
     now = timezone.now()
@@ -294,6 +294,13 @@ def send_csat_survey(case_id, org_id):
         sent_at=now,
         expires_at=now + timedelta(days=CSAT_TOKEN_TTL_DAYS),
     )
+
+    # Register the unscoped token→org lookup so the anonymous survey view can
+    # resolve the org under RLS. hash_csat_token is sha256, matching the key
+    # portal_token_hash computes from the same URL token.
+    from common.portal_tokens import register_portal_token_hash
+
+    register_portal_token_hash(survey.token_hash, org_id, "csat", survey.id)
 
     domain = (settings.DOMAIN_NAME or "").rstrip("/")
     link = f"{domain}/csat/{raw_token}"
@@ -328,7 +335,8 @@ def send_csat_survey(case_id, org_id):
         # CAN re-send manually if needed.
         logger.exception(
             "send_csat_survey: email send failed for case=%s contact=%s",
-            case_id, contact.id,
+            case_id,
+            contact.id,
         )
     return str(survey.id)
 
@@ -355,9 +363,7 @@ def auto_stop_stale_timers(threshold_hours=TIME_ENTRY_AUTO_STOP_HOURS):
     cutoff = now - timedelta(hours=threshold_hours)
 
     org_ids = list(
-        TimeEntry.objects.filter(
-            ended_at__isnull=True, started_at__lt=cutoff
-        )
+        TimeEntry.objects.filter(ended_at__isnull=True, started_at__lt=cutoff)
         .values_list("org_id", flat=True)
         .distinct()
     )
@@ -376,9 +382,7 @@ def auto_stop_stale_timers(threshold_hours=TIME_ENTRY_AUTO_STOP_HOURS):
                 entry.save()
                 stopped += 1
         except Exception:  # pragma: no cover
-            logger.exception(
-                "auto_stop_stale_timers failed for org=%s", org_id
-            )
+            logger.exception("auto_stop_stale_timers failed for org=%s", org_id)
     # Reset RLS context (same idiom as scan_for_breached_cases).
     from django.db import connection
 

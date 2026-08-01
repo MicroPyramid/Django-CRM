@@ -1,11 +1,15 @@
 import json
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.models import Q
+from django.db.models.functions import Coalesce, TruncDate
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -41,11 +45,45 @@ from leads.serializer import (
     TagsSerializer,
 )
 from leads.tasks import send_email_to_assigned_user
+from leads.workflow import IRREVERSIBLE_STATUSES
 
 
 class LeadListView(APIView, LimitOffsetPagination):
     model = Lead
     permission_classes = (IsAuthenticated, HasOrgContext)
+
+    #: A lead nobody has touched in this many days counts as unworked. Used
+    #: only for the headline count — it is not a status and nothing is filtered
+    #: on it.
+    UNWORKED_AFTER_DAYS = 7
+
+    def get_totals(self, queryset_open):
+        """Headline counts for the open-leads list.
+
+        Computed over the *whole* filtered queryset, deliberately — the caller
+        only ever holds one page, so a client-side reduction would report the
+        page and label it the list. Every filter applied above is already
+        baked into `queryset_open`, including the org scope and the
+        non-admin "only leads assigned to or created by me" narrowing, so
+        these counts describe exactly the set the requester is allowed to see.
+
+        `unworked_over_a_week` reads `last_contacted`, falling back to when the
+        lead was created. A lead nobody has ever contacted is not unworked on
+        the day it arrives — it becomes unworked once it has sat that long.
+        Lead has no aging chain (StageAgingConfig and get_aging_status() are
+        Opportunity-only), so this is the strongest signal the model actually
+        carries.
+        """
+        cutoff = timezone.now().date() - timedelta(days=self.UNWORKED_AFTER_DAYS)
+        totals_queryset = queryset_open.distinct()
+        return {
+            "count": totals_queryset.count(),
+            "unworked_over_a_week": totals_queryset.annotate(
+                last_touch=Coalesce("last_contacted", TruncDate("created_at"))
+            )
+            .filter(last_touch__lt=cutoff)
+            .count(),
+        }
 
     def get_context_data(self, **kwargs):
         params = self.request.query_params
@@ -144,6 +182,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             "open_leads": open_leads,
             "offset": offset,
         }
+        context["totals"] = self.get_totals(queryset_open)
 
         queryset_close = queryset.filter(status="closed")
         results_leads_close = self.paginate_queryset(
@@ -377,22 +416,35 @@ class LeadDetailView(APIView):
     def get_object(self, pk):
         return get_object_or_404(Lead, id=pk, org=self.request.profile.org)
 
+    def assert_lead_access(self):
+        """Admins see every lead in the org; everyone else sees their own.
+
+        This is the same rule `LeadListView` applies when it narrows the
+        queryset to `Q(assigned_to__in=[profile]) | Q(created_by=profile.user)`.
+        Without it here, a lead the list deliberately withholds is still
+        readable and writable by id.
+
+        Written once because the two hand-rolled copies this replaces had
+        drifted apart. One built a list of Profile ids and then appended
+        `request.profile.user` — a User — so the creator's own id was never in
+        the list and the check denied the person it existed to admit.
+
+        It raises rather than returning a Response: `get_context_data` returns
+        the dict that `get()` passes to `Response(...)`, so a Response returned
+        from in there was wrapped in a second one and rendered as a 500 instead
+        of the intended 403.
+        """
+        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+            return
+        allowed = {profile.id for profile in self.lead_obj.assigned_to.all()}
+        if self.request.profile.user_id == self.lead_obj.created_by_id:
+            allowed.add(self.request.profile.id)
+        if self.request.profile.id not in allowed:
+            raise PermissionDenied("You do not have Permission to perform this action")
+
     def get_context_data(self, **kwargs):
         context = {}
-        user_assgn_list = [
-            assigned_to.id for assigned_to in self.lead_obj.assigned_to.all()
-        ]
-        if self.request.profile.user == self.lead_obj.created_by:
-            user_assgn_list.append(self.request.profile.user)
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.profile.id not in user_assgn_list:
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        self.assert_lead_access()
 
         lead_content_type = ContentType.objects.get_for_model(Lead)
         comments = Comment.objects.filter(
@@ -415,7 +467,24 @@ class LeadDetailView(APIView):
                 ).values("user__email")
             )
         elif self.request.profile.user != self.lead_obj.created_by:
-            users_mention = [{"username": self.lead_obj.created_by.username}]
+            # Two ways this used to be a 500, both masked by the permission
+            # check above returning a Response instead of raising — nothing
+            # reached this line.
+            #
+            # `username` is not a field on this User model at all: it sets
+            # `USERNAME_FIELD = "email"` and defines no `username`, so the
+            # attribute access raised for *every* lead. And `created_by` is
+            # nullable — genuinely null on leads that arrived through
+            # `CreateLeadFromSite`, which has no authenticated user to
+            # attribute them to.
+            #
+            # The key is `user__email` to match the two sibling branches; this
+            # list feeds @-mention autocomplete and the callers read one shape.
+            users_mention = (
+                [{"user__email": self.lead_obj.created_by.email}]
+                if self.lead_obj.created_by
+                else []
+            )
         else:
             users_mention = list(self.lead_obj.assigned_to.all().values("user__email"))
         lead_content_type = ContentType.objects.get_for_model(Lead)
@@ -437,22 +506,6 @@ class LeadDetailView(APIView):
             users = Profile.objects.filter(
                 role="ADMIN", org=self.request.profile.org
             ).order_by("user__email")
-        user_assgn_list = [
-            assigned_to.id
-            for assigned_to in self.lead_obj.get_assigned_users_not_in_teams
-        ]
-
-        if self.request.profile.user == self.lead_obj.created_by:
-            user_assgn_list.append(self.request.profile.id)
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
-            if self.request.profile.id not in user_assgn_list:
-                return Response(
-                    {
-                        "error": True,
-                        "errors": "You do not have Permission to perform this action",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
         team_ids = [user.id for user in self.lead_obj.get_team_users]
         all_user_ids = [user.id for user in users]
         users_excluding_team_id = set(all_user_ids) - set(team_ids)
@@ -622,14 +675,13 @@ class LeadDetailView(APIView):
         """Fully update a lead, optionally converting it to an account."""
         params = request.data
         self.lead_obj = self.get_object(pk)
-        if self.lead_obj.org != request.profile.org:
-            return Response(
-                {
-                    "error": True,
-                    "errors": "User company does not match with header....",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # `get_object` scopes to the org, so a lead belonging to another
+        # tenant is already a 404 by the time we get here. What was missing is
+        # the check *within* the org: this method had no role or ownership test
+        # at all, so any authenticated member could rewrite any lead by id —
+        # reassign it, change its value, or push it through conversion —
+        # including the ones the list view deliberately hides from them.
+        self.assert_lead_access()
         previous_assigned_to_users = list(
             self.lead_obj.assigned_to.all().values_list("id", flat=True)
         )
@@ -821,6 +873,25 @@ class LeadDetailView(APIView):
 
         # Handle conversion if status is being set to converted
         if params.get("status") == "converted" or params.get("is_converted"):
+            # `LeadCreateSerializer.validate_status` is what refuses a repeat
+            # conversion, and this branch returns before the serializer ever
+            # runs — so the rule was enforced on PUT and not here. Two PATCHes
+            # built two Opportunities against the same Account, which is the
+            # exact failure that validator was written for.
+            if self.lead_obj.status in IRREVERSIBLE_STATUSES:
+                return Response(
+                    {
+                        "error": True,
+                        "errors": {
+                            "status": [
+                                f"This lead is already {self.lead_obj.status}. "
+                                "Converting it again would create a second "
+                                "opportunity against the same account."
+                            ]
+                        },
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             # Persist any custom_fields supplied alongside the conversion before
             # the converter runs — otherwise they'd be silently dropped because
             # this branch returns before the regular partial-update flow.

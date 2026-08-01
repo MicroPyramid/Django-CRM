@@ -37,6 +37,24 @@ MENTION_RATE_LIMIT_SECONDS = 60
 EXCERPT_LENGTH = 200
 
 
+def case_link(case_id) -> str:
+    """Client-side path for a case.
+
+    The model and this app call them cases; every client calls them tickets
+    and routes them at `/tickets/<id>`. This used to emit `/cases/<id>`, which
+    no client has ever served — the SvelteKit app has no `/cases` route at
+    all, and its notification panel assigns `link` straight to
+    `window.location.href`, so every notification ever sent landed on a 404.
+
+    It lives in one function because the fix belongs here rather than in the
+    readers: the same rows are consumed by the web panel, the notifications
+    page and the Flutter client, and a rewrite in each of them is three places
+    to forget. `Notification.link` is a client path, not an API path — do not
+    prefix it with `/api/`.
+    """
+    return f"/tickets/{case_id}"
+
+
 def parse_mentions(body: str) -> list[str]:
     """Return unique, lower-cased usernames found in ``body``."""
     if not body:
@@ -133,7 +151,7 @@ def dispatch_for_comment(comment, case, actor: Profile | None = None) -> dict:
             actor=actor,
             entity=case,
             entity_name=case.name,
-            link=f"/cases/{case.id}",
+            link=case_link(case.id),
             data={"comment_excerpt": _excerpt(body)},
         )
         mentioned.append(p)
@@ -159,7 +177,7 @@ def dispatch_for_comment(comment, case, actor: Profile | None = None) -> dict:
             actor=actor,
             entity=case,
             entity_name=case.name,
-            link=f"/cases/{case.id}",
+            link=case_link(case.id),
             data={"comment_excerpt": _excerpt(body)},
         )
         watchers_notified.append(p)

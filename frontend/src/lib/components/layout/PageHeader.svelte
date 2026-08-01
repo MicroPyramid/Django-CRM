@@ -32,12 +32,14 @@
     meta,
     amount,
     actions,
-    tabs,
+    tabs
   } = $props();
 </script>
 
 <header
-  class="sticky top-0 z-10 flex flex-col gap-3 bg-[color:var(--bg)] px-7 pt-6 md:px-8 {tabs ? 'pb-0' : 'pb-4'}"
+  class="sticky top-0 z-10 flex flex-col gap-3 bg-[color:var(--bg)] px-7 pt-6 md:px-8 {tabs
+    ? 'pb-0'
+    : 'pb-4'}"
 >
   {#if breadcrumb.length > 0}
     <nav
@@ -51,10 +53,13 @@
         {#if crumb.href && i < breadcrumb.length - 1}
           <a
             href={crumb.href}
-            class="rounded-sm transition-colors hover:text-[color:var(--text-muted)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ring)]"
-          >{crumb.label}</a>
+            class="rounded-sm transition-colors hover:text-[color:var(--text-muted)] focus-visible:ring-1 focus-visible:ring-[color:var(--ring)] focus-visible:outline-none"
+            >{crumb.label}</a
+          >
         {:else}
-          <span class={i === breadcrumb.length - 1 ? 'text-[color:var(--text-muted)]' : ''}>{crumb.label}</span>
+          <span class={i === breadcrumb.length - 1 ? 'text-[color:var(--text-muted)]' : ''}
+            >{crumb.label}</span
+          >
         {/if}
       {/each}
     </nav>
@@ -63,7 +68,9 @@
   <div class="flex min-h-[44px] items-start justify-between gap-6">
     <div class="flex min-w-0 flex-1 items-start gap-3">
       {#if titleIcon}
-        <div class="flex size-7 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]">
+        <div
+          class="flex size-7 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
+        >
           {@render titleIcon()}
         </div>
       {/if}

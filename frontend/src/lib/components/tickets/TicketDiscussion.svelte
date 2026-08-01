@@ -5,10 +5,7 @@
   import { Loader2, Lock, Mail, MessageSquare, Send } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
-  import {
-    MentionBody,
-    MentionTextarea
-  } from '$lib/components/ui/comment-section/index.js';
+  import { MentionBody, MentionTextarea } from '$lib/components/ui/comment-section/index.js';
   import MacroPicker from './MacroPicker.svelte';
   import SolutionSuggester from './SolutionSuggester.svelte';
   import { formatRelativeDate, getInitials } from '$lib/utils/formatting.js';
@@ -71,9 +68,7 @@
   }
 </script>
 
-<section
-  class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4"
->
+<section class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-default)] p-4">
   <Tabs.Root bind:value={activeTab} class="w-full">
     <Tabs.List class="mb-4 grid w-full grid-cols-3 sm:w-[480px]">
       <Tabs.Trigger value="replies" class="gap-2">
@@ -205,9 +200,7 @@
       >
         <input type="hidden" name="is_internal" value="true" />
         <input type="hidden" name="body" value={internalText} />
-        <div
-          class="flex items-center gap-2 text-xs font-medium text-amber-900 dark:text-amber-200"
-        >
+        <div class="flex items-center gap-2 text-xs font-medium text-amber-900 dark:text-amber-200">
           <Lock class="h-3 w-3" />
           Visible to agents only — never shown to customers.
         </div>
@@ -257,9 +250,7 @@
 
       <ul class="mt-4 space-y-3">
         {#if internalNotes.length === 0}
-          <li class="text-sm text-[var(--text-secondary)]">
-            No internal notes yet.
-          </li>
+          <li class="text-sm text-[var(--text-secondary)]">No internal notes yet.</li>
         {:else}
           {#each internalNotes as c (c.id)}
             <li
@@ -297,8 +288,8 @@
 
     <Tabs.Content value="emails" class="">
       <p class="mb-3 text-xs text-[var(--text-secondary)]">
-        Inbound emails routed to this ticket via configured mailboxes. Outbound
-        replies live on the Replies tab.
+        Inbound emails routed to this ticket via configured mailboxes. Outbound replies live on the
+        Replies tab.
       </p>
       <ul class="space-y-3">
         {#if inboundEmails.length === 0}

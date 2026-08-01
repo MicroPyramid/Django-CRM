@@ -19,7 +19,7 @@
   data-slot="select-item"
   class={cn(
     [
-      'relative flex w-full cursor-default select-none items-center gap-2',
+      'relative flex w-full cursor-default items-center gap-2 select-none',
       'py-1.5 ps-2 pe-8 text-[13px] text-[color:var(--text-muted)]',
       'rounded-[var(--r-sm)] outline-hidden',
       'data-[highlighted]:bg-[color:var(--bg-elevated)] data-[highlighted]:text-[color:var(--text)]',

@@ -18,12 +18,22 @@ class OrgSettingsView(APIView):
 
     def get(self, request):
         """Get current organization settings."""
+        if not request.profile:
+            return Response(
+                {"error": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         org = request.profile.org
         serializer = OrgSettingsSerializer(org, context={"request": request})
         return Response(serializer.data)
 
     def patch(self, request):
         """Update organization settings (admin only)."""
+        if not request.profile:
+            return Response(
+                {"error": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if request.profile.role != "ADMIN" and not request.user.is_superuser:
             return Response(
                 {"error": "Only admins can update organization settings"},

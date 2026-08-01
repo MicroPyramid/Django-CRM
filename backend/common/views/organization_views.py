@@ -2,7 +2,6 @@ import secrets
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +14,7 @@ from common.serializer import (
     CreateProfileSerializer,
     OrganizationSerializer,
     OrgProfileCreateSerializer,
+    ProfileSelfUpdateSerializer,
     ProfileSerializer,
     ShowOrganizationListSerializer,
 )
@@ -241,6 +241,92 @@ class OrgUpdateView(APIView):
         )
 
 
+class OrgApiKeyView(APIView):
+    """Read and rotate the org API key. Admins only.
+
+    The key authenticates its bearer as the org's first ADMIN profile, so it is
+    kept out of every nested representation (see `OrganizationSerializer`) and
+    served only here. The org is always taken from `request.profile` -- never
+    from a client-supplied id -- so a caller can only ever reach their own.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def _admin_org_or_error(self, request):
+        """Return (org, None) for org admins, or (None, error Response)."""
+        if not request.profile:
+            return None, Response(
+                {"error": True, "errors": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if (
+            request.profile.role != "ADMIN"
+            and not request.profile.is_organization_admin
+        ):
+            return None, Response(
+                {
+                    "error": True,
+                    "errors": "Only organization admins can access the API key",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return request.profile.org, None
+
+    @extend_schema(
+        operation_id="org_api_key_retrieve",
+        description="Retrieve the current organization's API key (admins only)",
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OrgApiKeyResponse",
+                fields={"api_key": serializers.CharField()},
+            )
+        },
+    )
+    def get(self, request, format=None):
+        org, error = self._admin_org_or_error(request)
+        if error:
+            return error
+
+        return Response(
+            {"error": False, "api_key": org.api_key},
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(
+        operation_id="org_api_key_rotate",
+        description=(
+            "Rotate the current organization's API key (admins only). "
+            "The previous key stops authenticating immediately."
+        ),
+        parameters=swagger_params.organization_params,
+        responses={
+            200: inline_serializer(
+                name="OrgApiKeyRotateResponse",
+                fields={"api_key": serializers.CharField()},
+            )
+        },
+    )
+    def post(self, request, format=None):
+        org, error = self._admin_org_or_error(request)
+        if error:
+            return error
+
+        org.api_key = secrets.token_urlsafe(32)
+        org.save(update_fields=["api_key"])
+
+        return Response(
+            {
+                "error": False,
+                "message": "API key rotated. The previous key is no longer valid.",
+                "api_key": org.api_key,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ProfileView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -254,21 +340,27 @@ class ProfileView(APIView):
         },
     )
     def get(self, request, format=None):
-        # profile=Profile.objects.get(user=request.user)
-        context = {}
-        context["user_obj"] = ProfileSerializer(self.request.profile).data
-        return Response(context, status=status.HTTP_200_OK)
+        # request.profile is set by middleware from the JWT's org claim. Without
+        # org context there is no profile to return; answer 400 rather than
+        # serialize None into an empty object that looks like a real one.
+        profile = request.profile
+        if profile is None:
+            return Response(
+                {"error": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user_obj = ProfileSerializer(profile).data
+        # The page shows which teams the current user is on. Teams is a real
+        # Profile.user_teams m2m, but it is not on the shared ProfileSerializer
+        # (nested into many records) — adding it here keeps the extra query and
+        # the wider output on this one self-profile endpoint, off the hot path.
+        user_obj["teams"] = list(profile.user_teams.values_list("name", flat=True))
+        return Response({"user_obj": user_obj}, status=status.HTTP_200_OK)
 
     @extend_schema(
         tags=["profile"],
         parameters=swagger_params.organization_params,
-        request=inline_serializer(
-            name="ProfilePatchRequest",
-            fields={
-                "phone": serializers.CharField(required=False, allow_blank=True),
-                "name": serializers.CharField(required=False, allow_blank=True),
-            },
-        ),
+        request=ProfileSelfUpdateSerializer,
         responses={
             200: inline_serializer(
                 name="ProfilePatchUpdateResponse",
@@ -281,18 +373,31 @@ class ProfileView(APIView):
     )
     def patch(self, request, format=None):
         profile = request.profile
-        data = request.data
+        if profile is None:
+            return Response(
+                {"error": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate through a serializer that names ONLY phone and name. A bad
+        # phone is now a clean 400 (the old code wrote request.data straight to
+        # the column), and — more importantly — role/org/access flags are not
+        # fields here, so no request body can escalate a profile through this
+        # self-edit door. See ProfileSelfUpdateSerializer.
+        update = ProfileSelfUpdateSerializer(data=request.data, partial=True)
+        update.is_valid(raise_exception=True)
+        data = update.validated_data
 
         # Update phone on Profile if provided
         if "phone" in data:
-            profile.phone = data.get("phone") or ""
+            profile.phone = data["phone"]
             profile.save(update_fields=["phone"])
 
         # Update name on User if provided. Name lives on User (not Profile) so
         # it's shared across all org memberships for the same user.
         if "name" in data:
             user = request.user
-            user.name = (data.get("name") or "").strip()[:255]
+            user.name = data["name"].strip()
             user.save(update_fields=["name"])
 
         return Response(

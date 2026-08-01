@@ -11,22 +11,23 @@ See `docs/cases/tier2/reporting.md` for the response shapes.
 from __future__ import annotations
 
 import csv
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from typing import Optional
 from uuid import UUID
 
 from django.db.models import Q
 from django.http import StreamingHttpResponse
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cases import analytics
+from cases.access import is_org_admin
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common.permissions import HasOrgContext
-
 
 # ---------------------------------------------------------------------------
 # Shared filter parsing
@@ -55,15 +56,15 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
     profile = request.profile
     params = request.query_params
 
-    qs = Case.objects.filter(org=profile.org, is_active=True).filter(
-        merged_into__isnull=True
-    ).exclude(status="Duplicate")
+    qs = (
+        Case.objects.filter(org=profile.org, is_active=True)
+        .filter(merged_into__isnull=True)
+        .exclude(status="Duplicate")
+    )
 
     if profile.role != "ADMIN" and not profile.is_admin:
         qs = qs.filter(
-            Q(created_by=profile.user)
-            | Q(assigned_to=profile)
-            | Q(watchers=profile)
+            Q(created_by=profile.user) | Q(assigned_to=profile) | Q(watchers=profile)
         ).distinct()
 
     if priority := params.get("priority"):
@@ -85,7 +86,9 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
 
 
 _FILTER_PARAMS = [
-    OpenApiParameter("from", str, description="Start of window (ISO-8601 or YYYY-MM-DD)"),
+    OpenApiParameter(
+        "from", str, description="Start of window (ISO-8601 or YYYY-MM-DD)"
+    ),
     OpenApiParameter("to", str, description="End of window (ISO-8601 or YYYY-MM-DD)"),
     OpenApiParameter("team", str, description="Filter to one team's cases"),
     OpenApiParameter("agent", str, description="Filter to one assignee profile"),
@@ -132,6 +135,41 @@ class AnalyticsSlaView(_AnalyticsBaseView):
         return Response(analytics.compute_sla(qs, from_dt, to_dt))
 
 
+class AnalyticsServiceView(_AnalyticsBaseView):
+    """Admin-only single-call dashboard behind /v2/tickets/analytics.
+
+    Returns org-wide service KPIs (totals, per-day volume, first-response
+    attainment by priority, case-type mix, per-agent table). Unlike the
+    per-metric endpoints above — which narrow a non-admin to their own cases
+    and would therefore show a personal slice under org-wide headings — this
+    view is an org-aggregate management surface, so it 403s non-admins outright
+    (mirrors the invoices/reports policy for whole-org figures).
+    """
+
+    @extend_schema(
+        tags=["cases-analytics"],
+        parameters=[
+            OpenApiParameter(
+                "days",
+                int,
+                description="Window length in whole days (default 14, max 90)",
+            )
+        ],
+    )
+    def get(self, request):
+        if not is_org_admin(request.profile):
+            return Response(
+                {"error": True, "errors": "Admin access required"}, status=403
+            )
+        qs = Case.objects.filter(
+            org=request.profile.org, is_active=True, merged_into__isnull=True
+        ).exclude(status="Duplicate")
+        data = analytics.compute_service_overview(
+            qs, request.profile.org_id, request.query_params.get("days", 14)
+        )
+        return Response(data)
+
+
 # ---------------------------------------------------------------------------
 # Drilldown + CSV export
 
@@ -142,7 +180,9 @@ class AnalyticsDrilldownView(_AnalyticsBaseView):
         parameters=_FILTER_PARAMS
         + [
             OpenApiParameter("metric", str, required=True),
-            OpenApiParameter("bucket", str, description="Bucket selector (metric-specific)"),
+            OpenApiParameter(
+                "bucket", str, description="Bucket selector (metric-specific)"
+            ),
         ],
     )
     def get(self, request):

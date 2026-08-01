@@ -1,708 +1,578 @@
 <script>
-  import { goto } from '$app/navigation';
+  /**
+   * A lead — a person you are trying to reach and, if it goes well, convert.
+   *
+   * The page is built around that verb. The header carries the ways to reach
+   * them (email, call) beside Edit; a single honest headline says what is in
+   * the way of the work when something is; the activity log can be *written to*,
+   * because the daily act on a lead is recording that you contacted them.
+   *
+   * WHAT IS NOT FAKED
+   * Conversion is a POST the community backend does not expose — there is no
+   * convert endpoint in `leads/urls.py` — so the Convert button stays disabled
+   * and says so, rather than pretending. The headline is derived only from
+   * fields the model actually has; where the data cannot support a sentence,
+   * there is no banner. The duplicate warning is a real query (see
+   * `findDuplicates`) and renders only when there is a match.
+   */
+  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import NextAction from '$lib/v2/components/NextAction.svelte';
+  import Avatar from '$lib/v2/components/Avatar.svelte';
+  import Pill from '$lib/v2/components/Pill.svelte';
+  import { money, relativeDays, daysSince, shortDate } from '$lib/v2/format.js';
+  import { LEAD_STATUS_TONE, LEAD_STATUS_LABEL, industryLabel } from '$lib/v2/enums.js';
+  import { enhance } from '$app/forms';
   import {
-    Pencil,
+    ChevronRight,
     Mail,
     Phone,
-    MoreHorizontal,
+    Pencil,
     Paperclip,
     MessageSquare,
-    Calendar,
-    ArrowRightCircle,
-    Globe,
-    Briefcase,
-    Building2,
-    DollarSign,
-    Target,
-    Star,
-    MapPin,
-    Users,
-    UserCheck,
-    FileText,
-    ExternalLink
+    Sparkles,
+    X
   } from '@lucide/svelte';
-  import { LinkedinIcon as Linkedin } from '$lib/components/icons';
-  import { PageHeader } from '$lib/components/layout';
-  import { StageStepper } from '$lib/components/ui/stage-stepper';
-  import { Timeline, TimelineItem } from '$lib/components/ui/timeline';
-  import { SectionCard } from '$lib/components/ui/section-card/index.js';
-  import * as Tabs from '$lib/components/ui/tabs/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import CustomFieldsPanel from '$lib/components/custom-fields/CustomFieldsPanel.svelte';
-  import {
-    formatRelativeDate,
-    formatDate,
-    formatCurrency,
-    getNameInitials
-  } from '$lib/utils/formatting.js';
-  import {
-    leadStatusOptions,
-    leadRatingOptions,
-    getOptionLabel,
-    getOptionStyle
-  } from '$lib/utils/table-helpers.js';
-  import { INDUSTRIES } from '$lib/constants/lead-choices.js';
-  import { getCountryName } from '$lib/constants/countries.js';
 
-  /** @type {{ data: { lead: any, comments: any[], attachments: any[], tags: any[], users: any[], commentPermission: boolean, customFieldDefinitions: any[], customFieldValues: Record<string, unknown> } }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
-  const lead = $derived(data.lead || {});
-  const comments = $derived(data.comments || []);
-  const attachments = $derived(data.attachments || []);
-  const tags = $derived(data.tags || []);
-  const customFieldDefinitions = $derived(data.customFieldDefinitions || []);
-  const customFieldValues = $derived(data.customFieldValues || {});
+  let { lead, activity, duplicates } = $derived(data);
+  let isConverted = $derived(lead.status === 'converted');
+  let firstName = $derived(lead.first_name || 'this lead');
+  let fullName = $derived(`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() || 'Lead');
 
-  let tab = $state('overview');
+  let note = $state('');
+  let saving = $state(false);
 
-  // Normalize backend status ("in process", "assigned") to leadStatusOptions value format ("IN_PROCESS")
-  const normalizedStatus = $derived(
-    (lead?.status || '').toString().toUpperCase().replace(/\s+/g, '_')
-  );
-  const normalizedRating = $derived((lead?.rating || '').toString().toUpperCase());
+  // The picked file's name, mirrored out of the input so the composer can show
+  // and clear it. `fileInput` is the element itself — a file input's value can
+  // only be cleared through the DOM, not by rebinding.
+  let fileName = $state('');
+  /** @type {HTMLInputElement | undefined} */
+  let fileInput;
 
-  const stepperStages = $derived(
-    leadStatusOptions.map((s) => ({ value: s.value, label: s.label }))
-  );
-
-  const fullName = $derived(
-    [lead?.salutation, lead?.first_name, lead?.last_name]
-      .filter(Boolean)
-      .join(' ')
-      .trim() ||
-      lead?.email ||
-      'Lead'
-  );
-
-  const sourceLabel = $derived(
-    lead?.source
-      ? lead.source.replace(/\b\w/g, (/** @type {string} */ c) => c.toUpperCase())
-      : ''
-  );
-
-  const industryLabel = $derived(
-    INDUSTRIES.find((i) => i.value === lead?.industry)?.label || lead?.industry || ''
-  );
-
-  /** @typedef {{ id: string, email: string }} AssignedUser */
-  /** @type {AssignedUser[]} */
-  const assignedUsers = $derived(
-    Array.isArray(lead?.assigned_to)
-      ? lead.assigned_to
-          .map((/** @type {any} */ p) => ({
-            id: p?.id,
-            email: p?.user_details?.email || p?.user?.email || ''
-          }))
-          .filter((/** @type {AssignedUser} */ u) => u.email)
-      : []
-  );
-
-  /** @type {{ id: string, name: string }[]} */
-  const teams = $derived(
-    Array.isArray(lead?.teams)
-      ? lead.teams.map((/** @type {any} */ t) => ({ id: t?.id, name: t?.name || '' }))
-      : []
-  );
-
-  const probability = $derived(
-    typeof lead?.probability === 'number' ? Math.max(0, Math.min(100, lead.probability)) : null
-  );
-
-  const hasDeal = $derived(
-    lead?.opportunity_amount != null || probability !== null || !!lead?.close_date
-  );
-
-  const hasContactLinks = $derived(
-    !!(lead?.email || lead?.phone || lead?.website || lead?.linkedin_url || lead?.job_title)
-  );
-
-  const hasAddress = $derived(
-    !!(lead?.address_line || lead?.city || lead?.state || lead?.postcode || lead?.country)
-  );
-
-  const addressLines = $derived(
-    [
-      lead?.address_line,
-      [lead?.city, lead?.state, lead?.postcode].filter(Boolean).join(', '),
-      getCountryName(lead?.country)
-    ].filter(Boolean)
-  );
-
-  function normalizeUrl(/** @type {string} */ raw) {
-    if (!raw) return '';
-    return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  /** @param {Event} e */
+  function pickFile(e) {
+    fileName = /** @type {HTMLInputElement} */ (e.currentTarget).files?.[0]?.name ?? '';
+  }
+  function clearFile() {
+    if (fileInput) fileInput.value = '';
+    fileName = '';
   }
 
-  // Timeline items: comments + attachments + created event, sorted DESC by timestamp.
-  const timelineItems = $derived.by(() => {
-    /** @type {Array<{ id: string, ts: string, kind: 'comment' | 'attachment' | 'created', payload: any }>} */
-    const items = [];
-    for (const c of comments) {
-      items.push({ id: `comment-${c.id}`, ts: c.commented_on || '', kind: 'comment', payload: c });
+  // ── activity feed ──────────────────────────────────────────────────────────
+  // Three real kinds (note / file / created). The filter only appears once there
+  // is a file to filter — with nothing but notes it would be a control that
+  // sorts one pile.
+  let hasFiles = $derived(activity.some((/** @type {any} */ e) => e.type === 'file'));
+  let filter = $state(/** @type {'all'|'notes'|'files'} */ ('all'));
+  let shown = $derived(
+    filter === 'files'
+      ? activity.filter((/** @type {any} */ e) => e.type === 'file')
+      : filter === 'notes'
+        ? activity.filter((/** @type {any} */ e) => e.type !== 'file')
+        : activity
+  );
+  let newestId = $derived(shown[0]?.id ?? null);
+
+  /**
+   * The line under an event: "Attached" for a file, the author where known, then
+   * how long ago — joined so no separator dangles when a part is missing.
+   * @param {{type:string,by:string|null,at:string}} e
+   */
+  function metaFor(e) {
+    const parts = [];
+    if (e.type === 'file') parts.push('Attached');
+    if (e.by) parts.push(e.by);
+    parts.push(relativeDays(e.at));
+    return parts.join(' · ');
+  }
+
+  /** @param {string} iso */
+  function dayGroup(iso) {
+    const n = daysSince(iso);
+    if (n === 0) return 'Today';
+    if (n === 1) return 'Yesterday';
+    return shortDate(iso);
+  }
+
+  // Interleave day headers so each date is announced once, in order.
+  let feed = $derived.by(() => {
+    /** @type {Array<{kind:'day',id:string,label:string}|{kind:'event',id:string,event:any}>} */
+    const out = [];
+    let last = null;
+    for (const e of shown) {
+      const g = dayGroup(e.at);
+      if (g !== last) {
+        out.push({ kind: 'day', id: `day-${g}-${e.id}`, label: g });
+        last = g;
+      }
+      out.push({ kind: 'event', id: e.id, event: e });
     }
-    for (const a of attachments) {
-      items.push({
-        id: `attachment-${a.id}`,
-        ts: a.created_on || a.created_at || '',
-        kind: 'attachment',
-        payload: a
-      });
-    }
-    if (lead?.created_at || lead?.created_on) {
-      items.push({
-        id: `created-${lead.id}`,
-        ts: lead.created_at || lead.created_on,
-        kind: 'created',
-        payload: lead
-      });
-    }
-    return items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+    return out;
   });
+
+  /**
+   * One line, and only where the data can carry it and the lead is still open.
+   * Ordered by what stops the work: a lead nobody can reach, then one nobody
+   * owns, then one that has gone cold without a first conversation. A converted
+   * lead has none of these problems, so it gets no banner — a page that always
+   * shouts is a page people stop reading.
+   *
+   * @type {{ tone: 'ember'|'rust', label: string, text: string, action: string|null } | null}
+   */
+  let headline = $derived.by(() => {
+    if (isConverted) return null;
+    if (!lead.email && !lead.phone) {
+      return {
+        tone: 'rust',
+        label: 'Cannot reach',
+        text: `No email and no phone on this lead, so there is no way to contact ${firstName}. Add one before you can work it.`,
+        action: 'Add contact details'
+      };
+    }
+    if (!lead.assigned_to) {
+      return {
+        tone: 'ember',
+        label: 'Needs an owner',
+        text: lead.opportunity_amount
+          ? `Worth ${money(lead.opportunity_amount)} and nobody owns it. Assign an owner before it goes cold.`
+          : 'Nobody owns this lead. Assign an owner so it does not sit unworked.',
+        action: 'Assign owner'
+      };
+    }
+    if (!lead.last_contacted && (daysSince(lead.created_at) ?? 0) > 7) {
+      return {
+        tone: 'ember',
+        label: 'Never contacted',
+        text: `Created ${relativeDays(lead.created_at)} and still never contacted. Reach out, or recycle it.`,
+        action: null
+      };
+    }
+    return null;
+  });
+
+  /**
+   * A website is user-entered and often has no scheme. Prepend https when it is
+   * missing; refuse to linkify anything carrying another scheme (a `javascript:`
+   * value becomes plain text, never an href).
+   *
+   * @param {string} url
+   * @returns {string|null}
+   */
+  function webHref(url) {
+    const u = String(url).trim();
+    if (/^https?:\/\//i.test(u)) return u;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return null;
+    return `https://${u}`;
+  }
 </script>
 
-<svelte:head>
-  <title>{fullName} · BottleCRM</title>
-</svelte:head>
-
-<PageHeader
-  title={fullName}
-  subtitle={lead?.title || ''}
-  breadcrumb={[{ label: 'Leads', href: '/leads' }, { label: fullName }]}
->
-  {#snippet meta()}
-    <div
-      class="flex flex-wrap items-center gap-3 text-[12px] leading-none text-[color:var(--text-subtle)]"
-    >
-      {#if lead?.created_at || lead?.created_on}
-        <span>Created {formatRelativeDate(lead.created_at || lead.created_on)}</span>
-      {/if}
-      {#if lead?.company_name}
-        <span>·</span>
-        <span class="flex items-center gap-1">
-          <Building2 class="size-3" />
-          {lead.company_name}
-        </span>
-      {/if}
-      {#if assignedUsers.length > 0}
-        <span>·</span>
-        <span class="flex items-center gap-1.5">
-          <span
-            class="flex size-4 items-center justify-center rounded-full bg-[color:var(--bg-elevated)] text-[9px] font-medium text-[color:var(--text-muted)]"
-          >
-            {getNameInitials(assignedUsers[0].email, '')}
-          </span>
-          {assignedUsers[0].email}{#if assignedUsers.length > 1}
-            <span class="text-[color:var(--text-subtle)]">+{assignedUsers.length - 1}</span>
-          {/if}
-        </span>
-      {/if}
-    </div>
+<PageHeader title="{lead.first_name} {lead.last_name}" record>
+  {#snippet leading()}
+    <Avatar name={fullName} size={42} />
   {/snippet}
-
+  {#snippet crumb()}
+    <a href="/leads">Leads</a>
+    <ChevronRight size={12} />
+    <span>{lead.company_name || 'No company'}</span>
+  {/snippet}
+  {#snippet sub()}
+    {lead.job_title || 'No title recorded'} ·
+    {lead.last_contacted
+      ? `last contacted ${relativeDays(lead.last_contacted)}`
+      : 'never contacted'}
+  {/snippet}
   {#snippet actions()}
-    <div class="flex items-center gap-1.5">
-      {#if lead?.email}
-        <Button variant="ghost" size="icon" aria-label="Email" href="mailto:{lead.email}">
-          <Mail class="size-4" />
-        </Button>
-      {/if}
-      {#if lead?.phone}
-        <Button variant="ghost" size="icon" aria-label="Call" href="tel:{lead.phone}">
-          <Phone class="size-4" />
-        </Button>
-      {/if}
-      <Button variant="ghost" size="icon" aria-label="More"><MoreHorizontal class="size-4" /></Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => lead?.id && goto(`/leads/${lead.id}/edit`)}
-      >
-        <Pencil class="mr-1.5 size-3.5" /> Edit
-      </Button>
-      <Button variant="default" size="sm">
-        <ArrowRightCircle class="mr-1.5 size-3.5" /> Convert
-      </Button>
-    </div>
+    {#if lead.email}
+      <a class="v2-btn" href="mailto:{lead.email}"><Mail />Email</a>
+    {/if}
+    {#if lead.phone}
+      <a class="v2-btn" href="tel:{lead.phone}"><Phone />Call</a>
+    {/if}
+    <a class="v2-btn" href="/leads/{lead.id}/edit"><Pencil />Edit</a>
   {/snippet}
 </PageHeader>
 
-<!-- Stage stepper -->
-<div class="px-7 pb-3 md:px-8">
-  <StageStepper stages={stepperStages} current={normalizedStatus} />
+<div style="display:flex;flex:1;min-height:0;overflow:hidden">
+  <div class="v2-main">
+    <div class="v2-scroll">
+      <div class="v2-pad" style="padding-top:16px;padding-bottom:32px">
+        {#if headline}
+          <div style="margin-bottom:18px">
+            <NextAction
+              label={headline.label}
+              text={headline.text}
+              action={headline.action}
+              href={headline.action ? `/leads/${lead.id}/edit` : null}
+              tone={headline.tone}
+            />
+          </div>
+        {/if}
+
+        <!-- Only when the query found one. A warning that is always on is the
+             fastest way to teach somebody to ignore the panel that will one day
+             matter. -->
+        {#if duplicates.length > 0}
+          <div class="dup" role="note">
+            <div class="v2-label" style="color:var(--v2-clay);margin-bottom:4px">
+              Possible duplicate
+            </div>
+            <div style="font-size:12.5px;line-height:1.55">
+              {#each duplicates as d, i (d.id)}
+                {i > 0 ? ', ' : ''}<a href="/leads/{d.id}">{d.name}</a> shares {d.matched_on}
+              {/each}. Merge them, or link both to one account when you convert.
+            </div>
+          </div>
+        {/if}
+
+        <div class="v2-card" style="padding:15px 16px">
+          {#if isConverted}
+            <div class="v2-label" style="margin-bottom:8px">Already converted</div>
+            <p class="v2-sub" style="margin:0;font-size:12.5px;line-height:1.55">
+              The account, contact and deal this lead became carry the work now. Converting again
+              would build a second deal against the same account, and the API refuses it.
+            </p>
+          {:else}
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div style="flex:1;min-width:210px">
+                <div class="v2-label" style="margin-bottom:6px">Convert</div>
+                <p class="v2-sub" style="margin:0;font-size:12.5px;line-height:1.55">
+                  Creates an <b style="color:var(--v2-ink)">account</b>, a
+                  <b style="color:var(--v2-ink)">contact</b> and one
+                  <b style="color:var(--v2-ink)">deal</b>{lead.opportunity_amount
+                    ? ` worth ${money(lead.opportunity_amount)}`
+                    : ''}. The lead stays linked, and there is no endpoint that undoes it.
+                </p>
+              </div>
+              <!-- Disabled, not hidden. Conversion is a POST this backend does
+                   not expose; hiding the button would hide the goal of the page. -->
+              <button class="v2-btn" disabled title="Conversion is not available yet">
+                Convert lead
+              </button>
+            </div>
+          {/if}
+        </div>
+
+        {#if lead.description}
+          <div class="v2-label" style="margin:22px 0 10px">About</div>
+          <div class="v2-card about">{lead.description}</div>
+        {/if}
+
+        <div class="act-head">
+          <div class="v2-label">Activity</div>
+          {#if hasFiles}
+            <!-- Only real kinds. There is no calls/emails/meetings split because
+                 there are no such records to split on. -->
+            <div class="seg" role="tablist" aria-label="Filter activity">
+              <button class:on={filter === 'all'} onclick={() => (filter = 'all')}>All</button>
+              <button class:on={filter === 'notes'} onclick={() => (filter = 'notes')}>Notes</button
+              >
+              <button class:on={filter === 'files'} onclick={() => (filter = 'files')}>Files</button
+              >
+            </div>
+          {/if}
+        </div>
+
+        <!-- The composer. `reset: false` plus clearing state by hand on success
+             keeps the box and the binding in step; a failed save keeps the words
+             and the picked file. A file only sends with a note — the button
+             stays disabled until there is one, which matches what the API stores. -->
+        <form
+          method="POST"
+          action="?/note"
+          enctype="multipart/form-data"
+          class="note-form"
+          use:enhance={() => {
+            saving = true;
+            return async ({ result, update }) => {
+              saving = false;
+              if (result.type === 'success') {
+                note = '';
+                clearFile();
+              }
+              await update({ reset: false });
+            };
+          }}
+        >
+          <textarea
+            name="comment"
+            rows="2"
+            bind:value={note}
+            class="note-input"
+            placeholder="Log a call, a reply, what they said…"></textarea>
+          <div class="note-actions">
+            <button class="v2-btn v2-btn-primary" type="submit" disabled={saving || !note.trim()}>
+              {saving ? 'Saving…' : 'Add note'}
+            </button>
+            <label class="v2-btn" class:has-file={fileName}>
+              <Paperclip size={14} />
+              <span class="attach-label">{fileName || 'Attach file'}</span>
+              <input
+                bind:this={fileInput}
+                type="file"
+                name="attachment"
+                onchange={pickFile}
+                hidden
+              />
+            </label>
+            {#if fileName}
+              <button
+                type="button"
+                class="v2-btn-quiet clear-file"
+                onclick={clearFile}
+                title="Remove file"
+              >
+                <X size={13} />
+              </button>
+            {/if}
+            {#if form?.message}
+              <span class="note-err">{form.message}</span>
+            {/if}
+          </div>
+        </form>
+
+        <div class="tl">
+          {#each feed as row (row.id)}
+            {#if row.kind === 'day'}
+              <div class="tl-day">{row.label}</div>
+            {:else}
+              {@const e = row.event}
+              <div class="tl-row" class:latest={e.id === newestId}>
+                <span class="tl-ico" data-kind={e.type}>
+                  {#if e.type === 'file'}<Paperclip size={13} />
+                  {:else if e.type === 'status'}<Sparkles size={13} />
+                  {:else}<MessageSquare size={13} />{/if}
+                </span>
+                <div class="tl-body">
+                  {#if e.type === 'file' && e.href}
+                    <a class="tl-file" href={e.href} target="_blank" rel="noreferrer noopener">
+                      {e.body}
+                    </a>
+                  {:else}
+                    <div class="tl-text" class:note={e.type === 'note'}>{e.body}</div>
+                  {/if}
+                  <div class="tl-meta">{metaFor(e)}</div>
+                </div>
+              </div>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="v2-rail">
+    <!-- An em dash where a field is empty. A blank list reads as a page that
+         failed to load; "—" reads as a fact nobody has filled in. -->
+    <div class="v2-label v2-rail-head">Reach</div>
+    <dl class="v2-kv">
+      <dt>Email</dt>
+      <dd style="font-size:12px">
+        {#if lead.email}<a href="mailto:{lead.email}" style="color:inherit">{lead.email}</a
+          >{:else}—{/if}
+      </dd>
+      <dt>Phone</dt>
+      <dd class="v2-num" style="font-size:12px">
+        {#if lead.phone}<a href="tel:{lead.phone}" style="color:inherit">{lead.phone}</a
+          >{:else}—{/if}
+      </dd>
+      <dt>Website</dt>
+      <dd style="font-size:12px">
+        {#if lead.website && webHref(lead.website)}<a
+            href={webHref(lead.website)}
+            target="_blank"
+            rel="noreferrer noopener"
+            style="color:inherit">{lead.website}</a
+          >{:else}{lead.website || '—'}{/if}
+      </dd>
+    </dl>
+
+    <div class="v2-label v2-rail-head">Lead</div>
+    <dl class="v2-kv">
+      <dt>Status</dt>
+      <dd><Pill tone={LEAD_STATUS_TONE[lead.status]}>{LEAD_STATUS_LABEL[lead.status]}</Pill></dd>
+      <dt>Owner</dt>
+      <dd>{lead.assigned_to || 'Nobody'}</dd>
+      <dt>Source</dt>
+      <dd>{lead.source || '—'}</dd>
+      <dt>Industry</dt>
+      <dd>{industryLabel(lead.industry) || '—'}</dd>
+      <dt>Est. value</dt>
+      <dd class="v2-num">{lead.opportunity_amount ? money(lead.opportunity_amount) : '—'}</dd>
+    </dl>
+
+    <div class="v2-label v2-rail-head">Timeline</div>
+    <dl class="v2-kv">
+      <dt>Last contacted</dt>
+      <dd>{lead.last_contacted ? relativeDays(lead.last_contacted) : 'Never'}</dd>
+      <dt>Created</dt>
+      <dd>{relativeDays(lead.created_at)}</dd>
+    </dl>
+  </aside>
 </div>
 
-<!-- Tabs -->
-<Tabs.Root bind:value={tab} class="px-7 md:px-8">
-  <Tabs.List class="">
-    <Tabs.Trigger class="" value="overview">Overview</Tabs.Trigger>
-    <Tabs.Trigger class="" value="activity">
-      Activity
-      <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
-      >
-        {timelineItems.length}
-      </span>
-    </Tabs.Trigger>
-    <Tabs.Trigger class="" value="files">
-      Files
-      <span
-        class="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--bg-elevated)] px-1 text-[10px] tabular-nums text-[color:var(--text-subtle)]"
-      >
-        {attachments.length}
-      </span>
-    </Tabs.Trigger>
-  </Tabs.List>
+<style>
+  /* A caution, not an alarm: a clay edge on an otherwise ordinary card. */
+  .dup {
+    border: 1px solid var(--v2-line);
+    border-left: 3px solid var(--v2-clay);
+    border-radius: var(--v2-radius);
+    background: var(--v2-card);
+    padding: 11px 14px;
+    margin-bottom: 18px;
+  }
+  .dup a {
+    color: var(--v2-clay);
+    font-weight: 600;
+  }
+  .about {
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .note-form {
+    margin-bottom: 22px;
+  }
+  .note-input {
+    width: 100%;
+    padding: 9px 11px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--v2-ink);
+    background: var(--v2-card);
+    border: 1px solid var(--v2-line);
+    border-radius: 8px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .note-input:focus {
+    outline: 2px solid var(--v2-ember);
+    outline-offset: -1px;
+  }
+  .note-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  /* The attach control is a label wrapping a hidden input, so the whole chip is
+     the click target. */
+  .note-actions label {
+    cursor: pointer;
+  }
+  .note-actions .attach-label {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .note-actions .has-file {
+    border-color: var(--v2-slate);
+    color: var(--v2-ink);
+  }
+  .clear-file {
+    padding: 5px 7px;
+  }
+  .note-err {
+    color: var(--v2-rust);
+    font-size: 12px;
+  }
 
-  <Tabs.Content class="" value="overview">
-    <div class="grid grid-cols-1 gap-6 pt-4 pb-8 lg:grid-cols-[1fr_320px]">
-      <!-- Main column -->
-      <div class="flex flex-col gap-6">
-        <!-- About card -->
-        <SectionCard title="About">
-            {#if lead?.description}
-              <p class="text-[13px] leading-[1.6] whitespace-pre-wrap text-[color:var(--text-muted)]">
-                {lead.description}
-              </p>
-            {:else}
-              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No description.</p>
-            {/if}
-          </SectionCard>
+  /* ── activity ─────────────────────────────────────────────────────────── */
+  .act-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 22px 0 12px;
+  }
+  .seg {
+    display: flex;
+    border: 1px solid var(--v2-line);
+    border-radius: 7px;
+    overflow: hidden;
+    flex: none;
+  }
+  .seg button {
+    padding: 4px 11px;
+    font: inherit;
+    font-size: 11.8px;
+    color: var(--v2-slate);
+    background: var(--v2-card);
+    border: 0;
+    cursor: pointer;
+  }
+  .seg button + button {
+    border-left: 1px solid var(--v2-line);
+  }
+  .seg button.on {
+    color: var(--v2-ink);
+    background: var(--v2-hover);
+    font-weight: 600;
+  }
 
-        <!-- Custom fields -->
-        {#if customFieldDefinitions.length > 0}
-          <CustomFieldsPanel
-            target="Lead"
-            definitions={customFieldDefinitions}
-            values={customFieldValues}
-            title="Custom Fields"
-          />
-        {/if}
-
-        <!-- Deal card -->
-        {#if hasDeal}
-          <SectionCard title="Deal">
-              <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-[12px] sm:grid-cols-3">
-                <div class="flex flex-col gap-1">
-                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                    <DollarSign class="size-3" /> Deal Value
-                  </dt>
-                  <dd class="text-[15px] font-medium tabular-nums text-[color:var(--text)]">
-                    {lead?.opportunity_amount != null
-                      ? formatCurrency(lead.opportunity_amount, lead?.currency || 'USD')
-                      : '—'}
-                  </dd>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                    <Target class="size-3" /> Probability
-                  </dt>
-                  <dd class="text-[color:var(--text)]">
-                    {#if probability !== null}
-                      <div class="flex items-center gap-2">
-                        <span class="text-[13px] tabular-nums">{probability}%</span>
-                        <div
-                          class="h-1.5 flex-1 overflow-hidden rounded-full bg-[color:var(--bg-elevated)]"
-                        >
-                          <div
-                            class="h-full rounded-full bg-[color:var(--color-primary-default)]"
-                            style="width: {probability}%"
-                          ></div>
-                        </div>
-                      </div>
-                    {:else}
-                      <span class="text-[color:var(--text-muted)]">—</span>
-                    {/if}
-                  </dd>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <dt class="flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                    <Calendar class="size-3" /> Close Date
-                  </dt>
-                  <dd class="text-[13px] text-[color:var(--text)]">
-                    {lead?.close_date ? formatDate(lead.close_date) : '—'}
-                  </dd>
-                </div>
-              </dl>
-            </SectionCard>
-        {/if}
-
-        <!-- Contact info card -->
-        {#if hasContactLinks}
-          <SectionCard title="Contact">
-              <dl class="grid grid-cols-1 gap-y-3 text-[12px] sm:grid-cols-2">
-                {#if lead?.email}
-                  <div class="flex items-start gap-2">
-                    <Mail
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Email</dt>
-                      <dd>
-                        <a
-                          href="mailto:{lead.email}"
-                          class="truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {lead.email}
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                {/if}
-                {#if lead?.phone}
-                  <div class="flex items-start gap-2">
-                    <Phone
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Phone</dt>
-                      <dd>
-                        <a
-                          href="tel:{lead.phone}"
-                          class="truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {lead.phone}
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                {/if}
-                {#if lead?.job_title}
-                  <div class="flex items-start gap-2">
-                    <Briefcase
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Job Title</dt>
-                      <dd class="truncate text-[color:var(--text)]">{lead.job_title}</dd>
-                    </div>
-                  </div>
-                {/if}
-                {#if lead?.website}
-                  <div class="flex items-start gap-2">
-                    <Globe
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">Website</dt>
-                      <dd>
-                        <a
-                          href={normalizeUrl(lead.website)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1 truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {lead.website}
-                          <ExternalLink class="size-3 shrink-0" aria-hidden="true" />
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                {/if}
-                {#if lead?.linkedin_url}
-                  <div class="flex items-start gap-2">
-                    <Linkedin
-                      class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                      aria-hidden="true"
-                    />
-                    <div class="flex min-w-0 flex-col">
-                      <dt class="text-[11px] text-[color:var(--text-subtle)]">LinkedIn</dt>
-                      <dd>
-                        <a
-                          href={normalizeUrl(lead.linkedin_url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1 truncate text-[color:var(--color-primary-default)] hover:underline"
-                        >
-                          {lead.linkedin_url}
-                          <ExternalLink class="size-3 shrink-0" aria-hidden="true" />
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                {/if}
-              </dl>
-            </SectionCard>
-        {/if}
-
-        <!-- Address card -->
-        {#if hasAddress}
-          <SectionCard title="Address">
-              <div class="flex items-start gap-2 text-[12px]">
-                <MapPin
-                  class="mt-0.5 size-3.5 shrink-0 text-[color:var(--text-subtle)]"
-                  aria-hidden="true"
-                />
-                <address class="flex flex-col gap-0.5 not-italic text-[color:var(--text-muted)]">
-                  {#each addressLines as line}
-                    <span>{line}</span>
-                  {/each}
-                </address>
-              </div>
-            </SectionCard>
-        {/if}
-
-        <!-- Activity timeline card -->
-        <SectionCard title="Activity" class="px-4 py-2">
-            <Timeline isEmpty={timelineItems.length === 0}>
-              {#each timelineItems as item (item.id)}
-                {#if item.kind === 'comment'}
-                  <TimelineItem
-                    variant="violet"
-                    time={item.ts ? formatRelativeDate(item.ts) : ''}
-                    quote={item.payload.comment || ''}
-                  >
-                    {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
-                    {#snippet text()}
-                      <strong>{item.payload.commented_by_user || 'Someone'}</strong> commented
-                    {/snippet}
-                  </TimelineItem>
-                {:else if item.kind === 'attachment'}
-                  <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                    {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
-                    {#snippet text()}
-                      <strong>{item.payload.created_by_user || 'Someone'}</strong> uploaded
-                      <strong>{item.payload.file_name || 'a file'}</strong>
-                    {/snippet}
-                  </TimelineItem>
-                {:else}
-                  <TimelineItem
-                    variant="success"
-                    time={item.ts ? formatRelativeDate(item.ts) : ''}
-                  >
-                    {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
-                    {#snippet text()}Lead created{/snippet}
-                  </TimelineItem>
-                {/if}
-              {/each}
-            </Timeline>
-          </SectionCard>
-      </div>
-
-      <!-- Right rail -->
-      <div class="flex flex-col gap-6">
-        <SectionCard title="Details">
-            <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Status</dt>
-                <dd>
-                  {#if normalizedStatus}
-                    <Badge
-                      variant="secondary"
-                      class={getOptionStyle(normalizedStatus, leadStatusOptions)}
-                    >
-                      {getOptionLabel(normalizedStatus, leadStatusOptions)}
-                    </Badge>
-                  {:else}
-                    <span class="text-[color:var(--text-muted)]">—</span>
-                  {/if}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Rating</dt>
-                <dd>
-                  {#if normalizedRating}
-                    <Badge
-                      variant="secondary"
-                      class={getOptionStyle(normalizedRating, leadRatingOptions)}
-                    >
-                      <Star class="mr-1 size-3" />
-                      {getOptionLabel(normalizedRating, leadRatingOptions)}
-                    </Badge>
-                  {:else}
-                    <span class="text-[color:var(--text-muted)]">—</span>
-                  {/if}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Source</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {sourceLabel || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Industry</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {industryLabel || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Company</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {lead?.company_name || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Created by</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {lead?.created_by?.email || '—'}
-                </dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[color:var(--text-subtle)]">Updated</dt>
-                <dd class="truncate text-right text-[color:var(--text-muted)]">
-                  {lead?.updated_at ? formatRelativeDate(lead.updated_at) : '—'}
-                </dd>
-              </div>
-            </dl>
-          </SectionCard>
-
-        <!-- People -->
-        <SectionCard title="People">
-            <div class="flex flex-col gap-3 text-[12px]">
-              <div>
-                <div class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]">
-                  <UserCheck class="size-3" /> Assigned to
-                </div>
-                {#if assignedUsers.length === 0}
-                  <p class="italic text-[color:var(--text-subtle)]">Unassigned</p>
-                {:else}
-                  <ul class="flex flex-col gap-1.5">
-                    {#each assignedUsers as user (user.id)}
-                      <li class="flex items-center gap-2">
-                        <span
-                          class="flex size-5 items-center justify-center rounded-full bg-[color:var(--color-primary-light)] text-[9px] font-semibold text-[color:var(--color-primary-default)]"
-                        >
-                          {getNameInitials(user.email, '')}
-                        </span>
-                        <span class="truncate text-[color:var(--text-muted)]">{user.email}</span>
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-              {#if teams.length > 0}
-                <div>
-                  <div
-                    class="mb-1.5 flex items-center gap-1 text-[11px] text-[color:var(--text-subtle)]"
-                  >
-                    <Users class="size-3" /> Teams
-                  </div>
-                  <div class="flex flex-wrap gap-1.5">
-                    {#each teams as team (team.id)}
-                      <Badge
-                        variant="secondary"
-                        class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                      >
-                        {team.name}
-                      </Badge>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            </div>
-          </SectionCard>
-
-        <!-- Dates -->
-        {#if lead?.last_contacted || lead?.next_follow_up}
-          <SectionCard title="Dates">
-              <dl class="grid grid-cols-1 gap-y-3 text-[12px]">
-                {#if lead?.last_contacted}
-                  <div class="flex items-baseline justify-between gap-3">
-                    <dt class="text-[color:var(--text-subtle)]">Last contact</dt>
-                    <dd
-                      class="truncate text-right text-[color:var(--text-muted)]"
-                      title={formatDate(lead.last_contacted)}
-                    >
-                      {formatRelativeDate(lead.last_contacted)}
-                    </dd>
-                  </div>
-                {/if}
-                {#if lead?.next_follow_up}
-                  <div class="flex items-baseline justify-between gap-3">
-                    <dt class="text-[color:var(--text-subtle)]">Next follow-up</dt>
-                    <dd
-                      class="truncate text-right text-[color:var(--text-muted)]"
-                      title={formatDate(lead.next_follow_up)}
-                    >
-                      {formatDate(lead.next_follow_up)}
-                    </dd>
-                  </div>
-                {/if}
-              </dl>
-            </SectionCard>
-        {/if}
-
-        <SectionCard title="Tags">
-            {#if tags.length === 0}
-              <p class="text-[12px] italic text-[color:var(--text-subtle)]">No tags.</p>
-            {:else}
-              <div class="flex flex-wrap gap-1.5">
-                {#each tags as tag, i (tag.id ?? tag.slug ?? tag.name ?? i)}
-                  <Badge
-                    variant="secondary"
-                    class="bg-[color:var(--bg-elevated)] text-[color:var(--text-muted)]"
-                  >
-                    {tag.name}
-                  </Badge>
-                {/each}
-              </div>
-            {/if}
-          </SectionCard>
-      </div>
-    </div>
-  </Tabs.Content>
-
-  <Tabs.Content class="" value="activity">
-    <div class="pt-4 pb-8">
-      <SectionCard title="All activity" class="px-4 py-2">
-          <Timeline isEmpty={timelineItems.length === 0}>
-            {#each timelineItems as item (item.id)}
-              {#if item.kind === 'comment'}
-                <TimelineItem
-                  variant="violet"
-                  time={item.ts ? formatRelativeDate(item.ts) : ''}
-                  quote={item.payload.comment || ''}
-                >
-                  {#snippet icon()}<MessageSquare class="size-3.5" />{/snippet}
-                  {#snippet text()}<strong
-                      >{item.payload.commented_by_user || 'Someone'}</strong
-                    > commented{/snippet}
-                </TimelineItem>
-              {:else if item.kind === 'attachment'}
-                <TimelineItem time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                  {#snippet icon()}<Paperclip class="size-3.5" />{/snippet}
-                  {#snippet text()}<strong>{item.payload.created_by_user || 'Someone'}</strong>
-                    uploaded <strong>{item.payload.file_name || 'a file'}</strong>{/snippet}
-                </TimelineItem>
-              {:else}
-                <TimelineItem variant="success" time={item.ts ? formatRelativeDate(item.ts) : ''}>
-                  {#snippet icon()}<Calendar class="size-3.5" />{/snippet}
-                  {#snippet text()}Lead created{/snippet}
-                </TimelineItem>
-              {/if}
-            {/each}
-          </Timeline>
-        </SectionCard>
-    </div>
-  </Tabs.Content>
-
-  <Tabs.Content class="" value="files">
-    <div class="pt-4 pb-8">
-      <SectionCard title="Files">
-          {#if attachments.length === 0}
-            <p class="text-[12px] italic text-[color:var(--text-subtle)]">No files uploaded.</p>
-          {:else}
-            <ul class="flex flex-col divide-y divide-[color:var(--border-faint)]">
-              {#each attachments as a (a.id)}
-                <li class="flex items-center gap-3 py-2.5 text-[12px]">
-                  <Paperclip class="size-3.5 shrink-0 text-[color:var(--text-subtle)]" />
-                  <span class="flex-1 truncate text-[color:var(--text)]">
-                    {a.file_name || 'File'}
-                  </span>
-                  <span class="text-[11px] text-[color:var(--text-subtle)]">
-                    {a.created_on ? formatRelativeDate(a.created_on) : ''}
-                  </span>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </SectionCard>
-    </div>
-  </Tabs.Content>
-</Tabs.Root>
+  .tl-day {
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    color: var(--v2-slate);
+    margin: 14px 0 9px;
+  }
+  .tl-day:first-child {
+    margin-top: 0;
+  }
+  .tl-row {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding-bottom: 15px;
+  }
+  /* A small icon chip instead of a bare dot: the kind of event is legible at a
+     glance, which is the whole point of a mixed feed. */
+  .tl-ico {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--v2-line-soft);
+    border: 1px solid var(--v2-line);
+    color: var(--v2-slate);
+    margin-top: 1px;
+  }
+  .tl-row.latest .tl-ico {
+    background: var(--v2-ink);
+    border-color: var(--v2-ink);
+    color: var(--v2-paper);
+  }
+  .tl-body {
+    min-width: 0;
+    padding-top: 3px;
+  }
+  .tl-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--v2-ink);
+  }
+  .tl-file {
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 550;
+    color: var(--v2-ink);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .tl-file:hover {
+    text-decoration: underline;
+  }
+  .tl-meta {
+    font-size: 11.5px;
+    color: var(--v2-slate);
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+  }
+</style>

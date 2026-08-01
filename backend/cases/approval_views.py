@@ -17,6 +17,7 @@ double-approve the same row — every transition takes a row lock first.
 from __future__ import annotations
 
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -31,12 +32,30 @@ from cases.serializer import (
     ApprovalRuleSerializer,
     ApprovalSerializer,
 )
-from common.models import Activity, Profile
+from common.models import Activity
 from common.permissions import HasOrgContext
 
 
 def _is_admin(profile) -> bool:
     return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
+
+
+def _approval_rule_analytics(org):
+    """Pending-approval count per rule + the org total, from the Approval log.
+
+    A clean compute: every pending decision is an ``Approval`` row in state
+    ``pending`` with a ``rule`` FK (the model even indexes ``(org, state)``), so
+    ``pending_count`` is a straight grouped count and the org total is the sum.
+    Scoped to ``org`` explicitly (RLS is inert in dev/test).
+    """
+    pending = (
+        Approval.objects.filter(org=org, state="pending")
+        .values("rule_id")
+        .annotate(n=Count("id"))
+    )
+    by_rule = {str(row["rule_id"]): row["n"] for row in pending}
+    total = sum(by_rule.values())
+    return by_rule, total
 
 
 def _admin_required():
@@ -70,8 +89,16 @@ class ApprovalRuleListCreateView(APIView):
         qs = ApprovalRule.objects.filter(org=org).prefetch_related(
             "approvers__user", "match_team"
         )
+        rules = ApprovalRuleSerializer(qs, many=True).data
+        pending_by_rule, total_pending = _approval_rule_analytics(org)
+        active = 0
+        for rule in rules:
+            rule["pending_count"] = pending_by_rule.get(str(rule["id"]), 0)
+            if rule["is_active"]:
+                active += 1
+        totals = {"count": len(rules), "active": active, "pending": total_pending}
         return Response(
-            {"rules": ApprovalRuleSerializer(qs, many=True).data},
+            {"rules": rules, "totals": totals},
             status=status.HTTP_200_OK,
         )
 
@@ -79,7 +106,7 @@ class ApprovalRuleListCreateView(APIView):
         if not _is_admin(request.profile):
             return _admin_required()
         org = request.profile.org
-        serializer = ApprovalRuleSerializer(data=request.data)
+        serializer = ApprovalRuleSerializer(data=request.data, context={"org": org})
         if not serializer.is_valid():
             return Response(
                 {"error": True, "errors": serializer.errors},
@@ -130,7 +157,12 @@ class ApprovalRuleDetailView(APIView):
                 {"error": True, "errors": "Rule not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        serializer = ApprovalRuleSerializer(rule, data=request.data, partial=True)
+        serializer = ApprovalRuleSerializer(
+            rule,
+            data=request.data,
+            partial=True,
+            context={"org": request.profile.org},
+        )
         if not serializer.is_valid():
             return Response(
                 {"error": True, "errors": serializer.errors},
@@ -264,10 +296,14 @@ class ApprovalInboxView(APIView):
             Approval.objects.filter(org=org)
             .select_related(
                 "case",
+                "case__account",
                 "rule",
                 "requested_by__user",
                 "approver__user",
             )
+            # `rule.approvers` is now serialized on every row (the queue shows
+            # who may act), so prefetch it here rather than per-call.
+            .prefetch_related("rule__approvers__user")
             .order_by("-created_at")
         )
 
@@ -284,19 +320,23 @@ class ApprovalInboxView(APIView):
             "1",
             "yes",
         )
+        rows = list(qs)
         if mine:
-            # Only this branch reads `rule.approvers`, so the prefetch is
-            # scoped here instead of paid on every list call.
+            # "Mine" = rows I can act on right now, which — like the approve
+            # endpoint — excludes requests I filed myself (separation of duties).
             profile = request.profile
-            rows = list(qs.prefetch_related("rule__approvers"))
-            qs = [a for a in rows if a.can_be_acted_on_by(profile)]
-            return Response(
-                {"approvals": ApprovalSerializer(qs, many=True).data},
-                status=status.HTTP_200_OK,
-            )
+            rows = [
+                a
+                for a in rows
+                if a.can_be_acted_on_by(profile) and a.requested_by_id != profile.id
+            ]
 
         return Response(
-            {"approvals": ApprovalSerializer(qs, many=True).data},
+            {
+                "approvals": ApprovalSerializer(
+                    rows, many=True, context={"request": request}
+                ).data
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -336,6 +376,18 @@ class ApprovalApproveView(APIView):
                 {"error": True, "errors": "You are not an approver for this rule."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        # Separation of duties: the person who filed the request cannot approve
+        # it, even if they are otherwise an approver (an admin who defaults into
+        # every rule's pool). Both are Profile FKs, so compare Profile ids.
+        if approval.requested_by_id == request.profile.id:
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You cannot approve your own request; "
+                    "another approver must decide it.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
         approval.state = "approved"
         approval.approver = request.profile
         approval.note = (request.data.get("note") or approval.note)[:4096]
@@ -352,9 +404,7 @@ class ApprovalApproveView(APIView):
             },
             actor=request.profile,
         )
-        return Response(
-            ApprovalSerializer(approval).data, status=status.HTTP_200_OK
-        )
+        return Response(ApprovalSerializer(approval).data, status=status.HTTP_200_OK)
 
 
 class ApprovalRejectView(APIView):
@@ -388,6 +438,17 @@ class ApprovalRejectView(APIView):
                 {"error": True, "errors": "You are not an approver for this rule."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        # Separation of duties: the requester cannot reject their own request
+        # either (see ApprovalApproveView). Another approver must decide it.
+        if approval.requested_by_id == request.profile.id:
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You cannot reject your own request; "
+                    "another approver must decide it.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
         approval.state = "rejected"
         approval.approver = request.profile
         approval.reason = reason[:4096]
@@ -411,9 +472,7 @@ class ApprovalRejectView(APIView):
             },
             actor=request.profile,
         )
-        return Response(
-            ApprovalSerializer(approval).data, status=status.HTTP_200_OK
-        )
+        return Response(ApprovalSerializer(approval).data, status=status.HTTP_200_OK)
 
 
 class ApprovalCancelView(APIView):
@@ -437,9 +496,8 @@ class ApprovalCancelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Only the requester (or an admin) can cancel.
-        if (
-            approval.requested_by_id != request.profile.id
-            and not _is_admin(request.profile)
+        if approval.requested_by_id != request.profile.id and not _is_admin(
+            request.profile
         ):
             return Response(
                 {"error": True, "errors": "Only the requester can cancel."},
@@ -457,6 +515,4 @@ class ApprovalCancelView(APIView):
             },
             actor=request.profile,
         )
-        return Response(
-            ApprovalSerializer(approval).data, status=status.HTTP_200_OK
-        )
+        return Response(ApprovalSerializer(approval).data, status=status.HTTP_200_OK)

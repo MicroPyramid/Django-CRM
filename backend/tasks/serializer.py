@@ -34,19 +34,60 @@ class BoardMemberSerializer(serializers.ModelSerializer):
 
 
 class BoardTaskSerializer(serializers.ModelSerializer):
-    """Serializer for board tasks"""
+    """Serializer for board tasks.
+
+    The write surface is deliberately narrow. A card write may set only its own
+    content — title, description, order, priority, due_date — and its assignees
+    (through the write-only ``assigned_to_ids``, which the views apply after
+    save and org-filter). Everything else is locked down:
+
+    * ``column`` is applied server-side by the move endpoint (see
+      ``BoardTaskDetailView.put``), so a card can't be mass-assigned into another
+      board's — or another org's — column.
+    * ``org``/``created_by``/``updated_by`` are server-derived audit facts.
+      (``created_by`` FKs ``common.User``, which is *not* org-scoped by RLS, so
+      leaving it writable let any user id be stamped onto a card.)
+    * the CRM-link FKs (``account``/``contact``/``opportunity``) are render-only
+      context — no UI sets them, and while writable they exposed the same
+      unfiltered, cross-org ``PrimaryKeyRelatedField`` queryset that
+      ``TaskCreateSerializer`` explicitly hardens against.
+    """
 
     assigned_to = ProfileSerializer(many=True, read_only=True)
     assigned_to_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
+    account = serializers.SerializerMethodField()
     is_completed = serializers.BooleanField(read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = BoardTask
         fields = "__all__"
-        read_only_fields = ("id", "created_at", "updated_at", "completed_at", "org", "column")
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+            "completed_at",
+            "org",
+            "column",
+            "created_by",
+            "updated_by",
+            "contact",
+            "opportunity",
+        )
+
+    @extend_schema_field(dict)
+    def get_account(self, obj):
+        """Render the parent account as ``{id, name}`` for the card chip, or
+        ``None``. Read-only: overriding the model FK with a method field also
+        removes it from the write surface."""
+        if not obj.account_id:
+            return None
+        return {
+            "id": str(obj.account_id),
+            "name": getattr(obj.account, "name", "") or "",
+        }
 
 
 class BoardColumnSerializer(serializers.ModelSerializer):
@@ -117,6 +158,7 @@ class BoardListSerializer(serializers.ModelSerializer):
     member_count = serializers.SerializerMethodField()
     column_count = serializers.SerializerMethodField()
     task_count = serializers.SerializerMethodField()
+    my_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Board
@@ -129,9 +171,35 @@ class BoardListSerializer(serializers.ModelSerializer):
             "member_count",
             "column_count",
             "task_count",
+            "my_role",
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(str)
+    def get_my_role(self, obj):
+        """The requesting profile's role on this board (``owner``/``admin``/
+        ``member``), or ``None`` when they have none.
+
+        Read-only and derived from the request, never the client — a client
+        cannot claim a role it does not hold. The board's own owner always
+        resolves to ``owner`` even if no explicit ``BoardMember`` row was created
+        for them, so a board created outside the API still gates correctly. The
+        frontend uses this to decide whether to offer column management, but the
+        backend (``BoardColumnListCreateView``) remains the enforcing boundary.
+        """
+        request = self.context.get("request")
+        profile = getattr(request, "profile", None)
+        if profile is None:
+            return None
+        membership = next(
+            (m for m in obj.memberships.all() if m.profile_id == profile.id), None
+        )
+        if membership is not None:
+            return membership.role
+        if obj.owner_id == profile.id:
+            return "owner"
+        return None
 
     @extend_schema_field(int)
     def get_member_count(self, obj):
@@ -241,6 +309,9 @@ class TaskSerializer(serializers.ModelSerializer):
         )
 
 
+PARENT_FIELDS = ("account", "opportunity", "case", "lead")
+
+
 class TaskCreateSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
@@ -248,12 +319,39 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         self.org = request_obj.profile.org
 
         self.fields["title"].required = True
+        # A `ModelSerializer` builds each FK as `PrimaryKeyRelatedField(
+        # queryset=Model.objects.all())` — every account, lead, case and
+        # opportunity in the database, not in the org. Proven live: a task in
+        # one org was created with another org's account, and the list endpoint
+        # then rendered that org's account *name* back to the requester. Org is
+        # a server-derived fact; narrowing the queryset is what makes it one.
+        for name in PARENT_FIELDS:
+            self.fields[name].queryset = self.fields[name].queryset.filter(org=self.org)
 
     def validate(self, attrs):
-        """Validate that task has at most one parent entity."""
+        """A task links to at most one parent entity.
+
+        The model says so too, in `Task.clean()`, and `Task.save()` calls
+        `full_clean()` — but Django's `ValidationError` is not DRF's, so the
+        model's refusal arrived as a 500. Checking here gets the client a 400
+        with the field named.
+
+        The check has to consider the parents already on the task, not only the
+        ones in this payload. Reading `attrs` alone was right for a create and
+        wrong for a `PATCH`: sending one parent to a task that already had a
+        different one looked like a single-parent request and walked straight
+        past the rule.
+        """
         attrs = super().validate(attrs)
-        parent_fields = ["account", "opportunity", "case", "lead"]
-        set_parents = [field for field in parent_fields if attrs.get(field)]
+        resolved = {}
+        for name in PARENT_FIELDS:
+            if name in attrs:
+                resolved[name] = attrs[name]
+            elif self.instance is not None:
+                resolved[name] = getattr(self.instance, f"{name}_id", None)
+            else:
+                resolved[name] = None
+        set_parents = [name for name in PARENT_FIELDS if resolved[name]]
         if len(set_parents) > 1:
             raise serializers.ValidationError(
                 {
@@ -282,6 +380,13 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "created_by",
             "created_at",
         )
+        # `created_by` was writable, so a client could name anyone in any org
+        # the creator of a task — proven live, a MicroPyramid task ended up
+        # created by a user of another org. That was a data-integrity bug while
+        # nothing read the field; the moment the creator clause in
+        # `tasks.access` starts returning True it is privilege escalation, so
+        # the two changes belong together.
+        read_only_fields = ("id", "created_by", "created_at")
 
 
 class TaskDetailEditSwaggerSerializer(serializers.Serializer):

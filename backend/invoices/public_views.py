@@ -6,23 +6,56 @@ These views do not require authentication and are accessed via public tokens.
 
 import logging
 
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-logger = logging.getLogger(__name__)
-
-from invoices.models import Invoice, Estimate, InvoiceTemplate
+from common.portal_tokens import resolve_portal_org
+from common.tasks import set_rls_context
+from invoices.models import Estimate, Invoice, InvoiceTemplate
 from invoices.pdf import (
-    generate_invoice_pdf,
-    generate_invoice_filename,
-    generate_estimate_pdf,
     generate_estimate_filename,
+    generate_estimate_pdf,
+    generate_invoice_filename,
+    generate_invoice_pdf,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_org_context(token, resource_type):
+    """Resolve the org from the URL token and set RLS context for this request.
+
+    Public endpoints reach the view with an empty ``app.current_org`` (the
+    middleware exempts them but sets no context), so under a correctly-configured
+    non-superuser DB role the resource query below would match zero rows and 404
+    every customer. Resolving the org from the unscoped token lookup and setting
+    the context first lets the query run under full RLS.
+
+    An unknown token leaves the context empty; the scoped query then returns
+    nothing and the caller 404s — the same answer a disabled link gives, so a
+    stranger learns nothing about whether a token is real.
+    """
+    org_id = resolve_portal_org(token, resource_type)
+    if org_id:
+        set_rls_context(org_id)
+    return org_id
+
+
+def _client_ip(request):
+    """Best-effort client IP for the acceptance record.
+
+    ``X-Forwarded-For`` is client-spoofable, so this is evidence, not proof;
+    the leftmost hop is recorded when a proxy set the header, else REMOTE_ADDR.
+    """
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
 
 
 class PublicInvoiceView(APIView):
@@ -36,6 +69,7 @@ class PublicInvoiceView(APIView):
 
     def get(self, request, token):
         """Get invoice by public token"""
+        _resolve_org_context(token, "invoice")
         invoice = Invoice.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()
@@ -64,8 +98,12 @@ class PublicInvoiceView(APIView):
             "issue_date": invoice.issue_date,
             "due_date": invoice.due_date,
             "subtotal": str(invoice.subtotal),
+            "discount_type": invoice.discount_type,
+            "discount_value": str(invoice.discount_value),
             "discount_amount": str(invoice.discount_amount),
+            "tax_rate": str(invoice.tax_rate),
             "tax_amount": str(invoice.tax_amount),
+            "shipping_amount": str(invoice.shipping_amount),
             "total_amount": str(invoice.total_amount),
             "amount_paid": str(invoice.amount_paid),
             "amount_due": str(invoice.amount_due),
@@ -136,6 +174,7 @@ class PublicInvoicePDFView(APIView):
 
     def get(self, request, token):
         """Download invoice PDF by public token"""
+        _resolve_org_context(token, "invoice")
         invoice = Invoice.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()
@@ -178,6 +217,7 @@ class PublicEstimateView(APIView):
 
     def get(self, request, token):
         """Get estimate by public token"""
+        _resolve_org_context(token, "estimate")
         estimate = Estimate.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()
@@ -206,7 +246,10 @@ class PublicEstimateView(APIView):
             "issue_date": estimate.issue_date,
             "expiry_date": estimate.expiry_date,
             "subtotal": str(estimate.subtotal),
+            "discount_type": estimate.discount_type,
+            "discount_value": str(estimate.discount_value),
             "discount_amount": str(estimate.discount_amount),
+            "tax_rate": str(estimate.tax_rate),
             "tax_amount": str(estimate.tax_amount),
             "total_amount": str(estimate.total_amount),
             "currency": estimate.currency,
@@ -269,6 +312,7 @@ class PublicEstimatePDFView(APIView):
 
     def get(self, request, token):
         """Download estimate PDF by public token"""
+        _resolve_org_context(token, "estimate")
         estimate = Estimate.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()
@@ -310,7 +354,15 @@ class PublicEstimateAcceptView(APIView):
     permission_classes = []
 
     def post(self, request, token):
-        """Accept estimate by public token"""
+        """Accept estimate by public token.
+
+        Accepting a quote authorises its price, so this is enforced, not
+        cosmetic: the token holder must be within the estimate's validity
+        window and must identify themselves. Both checks live here because the
+        frontend is not a trust boundary — hiding the button past expiry, or
+        collecting a name the client could omit, protects nothing.
+        """
+        _resolve_org_context(token, "estimate")
         estimate = Estimate.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()
@@ -330,8 +382,49 @@ class PublicEstimateAcceptView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # An expired quote is not acceptable at its original price. expiry_date
+        # is stored and printed on the estimate but was previously enforced
+        # nowhere; the check belongs on the server.
+        if estimate.is_expired:
+            return Response(
+                {
+                    "error": True,
+                    "message": (
+                        f"This estimate expired on {estimate.expiry_date} and can "
+                        "no longer be accepted. Please request an updated quote."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Acceptance is an authorisation; record who gave it. Name and a valid
+        # email are required so the record is more than "whoever held the link".
+        name = (request.data.get("name") or "").strip()
+        email = (request.data.get("email") or "").strip()
+        if not name or not email:
+            return Response(
+                {
+                    "error": True,
+                    "message": "Your name and email are required to accept this estimate.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {"error": True, "message": "Please enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         estimate.status = "Accepted"
         estimate.accepted_at = timezone.now()
+        estimate.accepted_by_name = name[:255]
+        estimate.accepted_by_email = email[:254]
+        estimate.accepted_ip = _client_ip(request)
+        estimate.accepted_user_agent = (request.META.get("HTTP_USER_AGENT") or "")[
+            :1024
+        ]
         estimate.save()
 
         return Response({"error": False, "message": "Estimate accepted successfully"})
@@ -348,6 +441,7 @@ class PublicEstimateDeclineView(APIView):
 
     def post(self, request, token):
         """Decline estimate by public token"""
+        _resolve_org_context(token, "estimate")
         estimate = Estimate.objects.filter(
             public_token=token, public_link_enabled=True
         ).first()

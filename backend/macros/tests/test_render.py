@@ -75,7 +75,9 @@ class TestRenderPlaceholders:
 
     def test_customer_name_empty_when_no_contact(self, case_factory, user_profile):
         case = case_factory(name="No contact case")
-        out = render_macro(_macro("Hi %customer_name%."), case=case, profile=user_profile)
+        out = render_macro(
+            _macro("Hi %customer_name%."), case=case, profile=user_profile
+        )
         assert out == "Hi ."
 
     def test_case_id_and_subject(self, case_factory, user_profile):

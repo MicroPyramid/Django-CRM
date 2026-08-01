@@ -11,6 +11,7 @@ from common.serializer import (
 from common.utils import LEAD_STATUS
 from contacts.serializer import ContactSerializer
 from leads.models import Lead, LeadPipeline, LeadStage
+from leads.workflow import IRREVERSIBLE_STATUSES
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -95,6 +96,77 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         self.fields["last_name"].required = False
         self.fields["salutation"].required = False
         self.org = request_obj.profile.org
+
+    def validate_email(self, value):
+        """One lead per address per org, matching the DB constraint exactly.
+
+        `unique_lead_email_per_org` is a `UniqueConstraint(Lower("email"),
+        "org")` conditional on a non-empty email, and nothing checked it before
+        the insert — so a duplicate reached the database and came back as an
+        IntegrityError, which the view does not catch. The caller got a 500 and
+        no indication of which field was wrong.
+
+        The comparison here has to be case-insensitive and has to skip empty
+        values for the same reasons the constraint does, or the two disagree
+        and the 500 comes back for the cases this misses.
+
+        This is a check, not the enforcement — the constraint is still what
+        guarantees it under a race. This exists so the ordinary case is a 400
+        that names the field.
+        """
+        if not value:
+            return value
+
+        duplicates = Lead.objects.filter(org=self.org, email__iexact=value)
+        if self.instance is not None:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            raise serializers.ValidationError(
+                "Another lead in this organisation already uses that email address."
+            )
+        return value
+
+    def validate_status(self, value):
+        """Refuse transitions into and out of an irreversible status.
+
+        Validate the *source* state, not just the target. On an update,
+        `self.instance` is the lead as it stands in the database, which is the
+        only trustworthy version — the client's idea of the current status is
+        not evidence of anything.
+
+        Two distinct failures are prevented here:
+
+        1. Re-converting. `LeadDetailView.put` calls
+           `convert_lead_to_account()` whenever the incoming status is
+           "converted" and never checks whether it already happened, so a
+           repeat PUT creates a second Opportunity against the same Account.
+        2. Un-converting. The Account, Contact and Opportunity that conversion
+           created are not removed when the status changes back, so the lead
+           returns to the working list with duplicates already downstream of
+           it.
+
+        Creating a lead directly as "converted" is left alone: there is no
+        prior state to contradict, and the create path does not run the
+        conversion service.
+        """
+        if self.instance is None:
+            return value
+
+        current = self.instance.status
+        if current not in IRREVERSIBLE_STATUSES:
+            return value
+
+        if value == current:
+            raise serializers.ValidationError(
+                f"This lead is already {current}. Converting it again would "
+                "create a second opportunity against the same account."
+            )
+        raise serializers.ValidationError(
+            f"A {current} lead cannot be changed back to '{value}'. The "
+            "account, contact and opportunity created by the conversion are "
+            "not removed, so the lead would reopen with duplicates already "
+            "downstream of it."
+        )
 
     class Meta:
         model = Lead
