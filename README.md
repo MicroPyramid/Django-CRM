@@ -119,7 +119,7 @@ The backend uses [`uv`](https://docs.astral.sh/uv/) for Python dependency manage
 
 ```bash
 # Clone the repository
-git clone https://github.com/Django-CRM/Django-CRM.git
+git clone https://github.com/django-crm/Django-CRM.git
 cd Django-CRM/backend
 
 # Install uv (one time, system-wide)
@@ -433,7 +433,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instr
 
 ## Community
 
-- **Issues**: [GitHub Issues](https://github.com/Django-CRM/Django-CRM/issues)
+- **Issues**: [GitHub Issues](https://github.com/django-crm/Django-CRM/issues)
 - **Twitter**: [@micropyramid](https://twitter.com/micropyramid)
 - **Commercial Support**: [Contact us](https://micropyramid.com/contact/)
 
@@ -453,4 +453,4 @@ We warmly welcome new sponsors. If you would like to support BottleCRM and help 
 
 This project exists thanks to all the people who contributed.
 
-[View all BottleCRM contributors](https://github.com/Django-CRM/Django-CRM/graphs/contributors).
+[View all BottleCRM contributors](https://github.com/django-crm/Django-CRM/graphs/contributors).

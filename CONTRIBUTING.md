@@ -4,7 +4,7 @@ Thank you for helping improve BottleCRM. Contributions of all sizes are welcome,
 
 ## Before You Start
 
-- Search the [existing issues](https://github.com/Django-CRM/Django-CRM/issues) before opening a new one.
+- Search the [existing issues](https://github.com/django-crm/Django-CRM/issues) before opening a new one.
 - For a substantial feature or architectural change, open an issue first so the approach can be discussed before implementation begins.
 - Keep pull requests focused. Unrelated changes are easier to review when submitted separately.
 

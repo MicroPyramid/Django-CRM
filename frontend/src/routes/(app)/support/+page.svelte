@@ -56,7 +56,7 @@
 
   const CONTACT = [
     {
-      href: 'https://github.com/MicroPyramid/Django-CRM/issues',
+      href: 'https://github.com/django-crm/Django-CRM/issues',
       icon: Bug,
       title: 'Report a bug',
       body: 'Public issue tracker. Fastest route for anything reproducible.',

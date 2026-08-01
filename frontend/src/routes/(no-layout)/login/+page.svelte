@@ -130,7 +130,7 @@
       <span class="v2-auth-dot"></span>
       <a href="https://bottlecrm.io/terms">Terms</a>
       <span class="v2-auth-dot"></span>
-      <a href="https://github.com/MicroPyramid/Django-CRM" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/django-crm/Django-CRM" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
 </div>
