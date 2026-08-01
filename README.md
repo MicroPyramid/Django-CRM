@@ -1,49 +1,88 @@
-# BottleCRM
+# BottleCRM — Open Source Django CRM for Startups & Enterprises
 
-A modern, open-source CRM platform built with Django REST Framework and SvelteKit.
+A free, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKit and Flutter.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.10+-green.svg)
-![Django](https://img.shields.io/badge/django-5.x-green.svg)
+![Python](https://img.shields.io/badge/python-3.12+-green.svg)
+![Django](https://img.shields.io/badge/django-6.x-green.svg)
 ![SvelteKit](https://img.shields.io/badge/sveltekit-2.x-orange.svg)
 ![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
+![Flutter](https://img.shields.io/badge/flutter-3.8+-blue.svg)
 ![Coverage](./coverage-badge.svg)
 
-https://github.com/user-attachments/assets/f384f25e-ab52-4069-afaf-f8e2f1f3f0e7
+**BottleCRM is an open source CRM you run on your own infrastructure.** It covers the full
+customer lifecycle — leads, accounts, contacts, opportunities, support tickets, tasks and
+invoices — through a SvelteKit web app, a native Flutter mobile app, and a documented REST API
+sharing one Django backend. PostgreSQL Row-Level Security isolates each organization's data at
+the database layer, so a single deployment serves one startup or hundreds of tenants.
 
-## Overview
+No per-seat pricing, no user caps, no feature paywall. MIT licensed — fork it, self-host it, own
+your data.
 
-BottleCRM is a full-featured Customer Relationship Management system designed for startups and small businesses. It combines a powerful Django REST API backend with a modern SvelteKit frontend, featuring multi-tenant architecture with PostgreSQL Row-Level Security (RLS) for enterprise-grade data isolation.
+**[Try it free →](https://bottlecrm.io/)** · [Features](https://bottlecrm.io/features) · [Docs](https://bottlecrm.io/docs) · [Pricing](https://bottlecrm.io/pricing) · [Migrate from Salesforce or HubSpot](https://bottlecrm.io/migration)
 
-**Try it free**: [bottlecrm.io](https://bottlecrm.io/)
+## Why BottleCRM
+
+- **Free forever, MIT licensed** — unlimited users and records, no subscription. A genuinely
+  self-hosted CRM alternative to Salesforce, HubSpot and Pipedrive.
+- **Multi-tenant by design** — PostgreSQL Row-Level Security enforces tenant isolation in the
+  database, not just in application code. Run it for a single company or as a SaaS for many.
+- **AI agents built in (MCP)** — connect Claude, Cursor, Codex, Gemini or any MCP client and let
+  it search, create and update records *as you*, inheriting your role, org and permissions.
+- **Web, native mobile and API** — one Django REST backend behind a Svelte 5 web app and a
+  Flutter app for iOS and Android.
+- **A stack you can actually hack on** — Django 6 / DRF and Svelte 5, not a bespoke in-house
+  framework. If your team writes Python, it can extend this on day one.
+- **Real support tooling** — a full helpdesk with SLA timers, approvals, escalations, macros and
+  a knowledge base, not a bolted-on ticket list.
+
+## How it compares
+
+| | BottleCRM | SaaS CRM (Salesforce, HubSpot) | Typical open source CRM |
+|---|---|---|---|
+| **Cost** | Free, unlimited users | Per seat, per month | Free core, often paid tiers |
+| **Hosting** | Self-hosted (managed hosting available) | Vendor cloud only | Self-hosted |
+| **Data ownership** | Total — it is your database | Vendor-controlled | Total |
+| **Multi-tenancy** | Database-level RLS | Not applicable | Uncommon |
+| **Native mobile app** | Yes — Flutter, iOS + Android | Yes | Uncommon |
+| **AI agent access** | Built-in MCP server | Proprietary add-ons | Uncommon |
+| **Stack** | Django REST + SvelteKit | Closed source | Varies |
+| **License** | MIT | Proprietary | Varies, often GPL/AGPL |
 
 ## Features
 
 ### Core CRM Modules
-- **Leads** - Track and manage sales leads through your pipeline
-- **Accounts** - Manage company/organization records
-- **Contacts** - Store and organize contact information
-- **Opportunities** - Track deals and sales opportunities
-- **Cases** - Customer support case management
-- **Tasks** - Task management with calendar and Kanban board views
-- **Invoices** - Create and manage invoices
+- **[Leads](https://bottlecrm.io/features/lead-management)** - Capture, score and convert sales leads through your pipeline
+- **[Accounts](https://bottlecrm.io/features/account-management)** - Manage company/organization records
+- **[Contacts](https://bottlecrm.io/features/contact-management)** - Store and organize contact information
+- **[Opportunities](https://bottlecrm.io/features/sales-pipeline)** - Visual sales pipeline for deals and forecasting
+- **[Tickets & Cases](https://bottlecrm.io/features/ticket-management)** - Helpdesk with SLA tracking, approvals, escalations, macros and a knowledge base
+- **[Tasks](https://bottlecrm.io/features/tasks)** - Task management with calendar and Kanban board views
+- **[Invoices](https://bottlecrm.io/features/invoices)** - Estimates, recurring invoices and online payments
+
+### AI & Integrations
+- **AI Agents (MCP)** - Built-in [Model Context Protocol](https://modelcontextprotocol.io) server (`mcp_server/`) lets Claude, Cursor, Codex, Gemini and any MCP client search, create and update records via a personal access token — acting as you, with your role and permissions. See [`mcp_server/README.md`](mcp_server/README.md).
+- **REST API** - Every feature is API-first and documented via OpenAPI/Swagger
+- **Email Integration** - AWS SES integration for transactional emails
 
 ### Platform Features
-- **Multi-Tenant Architecture** - PostgreSQL RLS for secure data isolation between organizations
+- **[Native Mobile App](https://bottlecrm.io/features/mobile-app)** - Flutter app for iOS and Android covering leads, deals, tickets, tasks, goals and timesheets
+- **Multi-Tenant Architecture** - PostgreSQL Row-Level Security keeps each organization's CRM data isolated
 - **JWT Authentication** - Secure token-based authentication
 - **Team Management** - Organize users into teams with role-based access
 - **Activity Tracking** - Comprehensive audit logs and activity history
 - **Comments & Attachments** - Collaborate with comments and file attachments on any record
 - **Tags** - Flexible tagging system for organizing records
-- **Email Integration** - AWS SES integration for transactional emails
 - **Background Tasks** - Celery + Redis for async task processing
-- **AI Agents (MCP)** - Built-in [Model Context Protocol](https://modelcontextprotocol.io) server (`mcp_server/`) lets Claude, Cursor, Codex, Gemini and any MCP client search, create and update records via a personal access token — acting as you, with your role and permissions. See [`mcp_server/README.md`](mcp_server/README.md).
+
+### Built for your industry
+Pre-configured setups for [professional services and agencies](https://bottlecrm.io/industries/professional-services-crm), [education and admissions](https://bottlecrm.io/industries/education-admissions-crm), and [real estate](https://bottlecrm.io/industries/real-estate-crm).
 
 ## Tech Stack
 
 ### Backend
-- **Django 5.x** with Django REST Framework
-- **PostgreSQL** with Row-Level Security (RLS)
+- **Django 6.x** with Django REST Framework
+- **PostgreSQL** for relational data storage
 - **Redis** for caching and Celery broker
 - **Celery** for background task processing
 - **JWT** for authentication
@@ -54,25 +93,33 @@ BottleCRM is a full-featured Customer Relationship Management system designed fo
 - **SvelteKit 2.x** with Svelte 5 (runes)
 - **TailwindCSS 4** for styling
 - **shadcn-svelte** UI components
-- **Zod** for schema validation
 - **Axios** for API communication
 - **Lucide** icons
+
+### Mobile
+- **Flutter 3.8+** targeting iOS and Android
+- **Material Design 3** with a flat, custom design system
+- **Google Sign-In** + JWT against the same backend API
+
+### AI
+- **MCP server** (`bcrm-mcp`) built on FastMCP, stdio and HTTP transports
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+ with pnpm
+- Python 3.12+
+- Node.js 24 with pnpm 10
 - PostgreSQL 14+
 - Redis
+- Flutter 3.8+ (only if you're building the mobile app)
 
 ### Backend Setup
 
-The backend uses [`uv`](https://docs.astral.sh/uv/) for Python dependency management — it reads `pyproject.toml`, installs from `uv.lock`, and creates the virtual environment for you. uv is much faster than pip and gives reproducible installs out of the box.
+The backend uses [`uv`](https://docs.astral.sh/uv/) for Python dependency management — it reads `pyproject.toml`, installs from `uv.lock`, and creates the virtual environment for you. Backend configuration starts from [`backend/.env.example`](backend/.env.example).
 
 ```bash
 # Clone the repository
-git clone https://github.com/MicroPyramid/Django-CRM.git
+git clone https://github.com/Django-CRM/Django-CRM.git
 cd Django-CRM/backend
 
 # Install uv (one time, system-wide)
@@ -82,7 +129,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install Python (matches the version in .python-version) and all deps into .venv/
 uv sync
 
-# Set up environment variables (see env.md for details)
+# Set up environment variables
 cp .env.example .env
 # Edit .env with your database and other settings
 
@@ -126,6 +173,18 @@ pnpm install
 # Start the development server
 pnpm run dev
 ```
+
+### Mobile Setup (optional)
+
+```bash
+# In a new terminal, from the project root
+cd mobile
+
+flutter pub get
+flutter run          # against a running backend on :8000
+```
+
+See [`mobile/README.md`](mobile/README.md) for emulator setup and release builds.
 
 ### Start Celery Worker
 
@@ -218,6 +277,14 @@ Django-CRM/
 │   │       └── (no-layout)/ # Auth pages (login, etc.)
 │   ├── static/            # Static assets
 │   └── Dockerfile         # Frontend dev container
+├── mobile/                 # Flutter app (iOS + Android)
+│   ├── lib/
+│   │   ├── config/        # API configuration
+│   │   ├── services/      # API + auth services
+│   │   ├── models/        # Typed API response models
+│   │   └── screens/       # Leads, deals, tickets, tasks, settings
+│   ├── android/           # Android build config
+│   └── ios/               # iOS build config
 ├── mcp_server/             # MCP server (bcrm-mcp) for AI agents
 │   └── src/bcrm_mcp/      # FastMCP tools over the REST API (stdio transport)
 ├── docker/                 # Docker support files
@@ -232,18 +299,16 @@ Django-CRM/
 
 ## Multi-Tenancy & Security
 
-BottleCRM uses PostgreSQL Row-Level Security (RLS) to ensure complete data isolation between organizations. Every database query is automatically filtered by organization context, providing enterprise-grade security.
+BottleCRM isolates tenant-scoped data at both the application and the database layer. Every
+org-scoped table is protected by a PostgreSQL Row-Level Security policy keyed on the
+`app.current_org` session variable, which middleware sets from the authenticated user's JWT — so
+a query that escapes the ORM's org filter still returns zero rows rather than another tenant's
+data.
 
-```bash
-# Check RLS status
-python manage.py manage_rls --status
-
-# Verify RLS user configuration
-python manage.py manage_rls --verify-user
-
-# Test data isolation
-python manage.py manage_rls --test
-```
+Self-hosters should follow the [Row-Level Security setup guide](RLS_SETUP.md) to configure and
+verify the policies. The most important rule: **the application's database user must not be a
+PostgreSQL superuser**, because superusers bypass RLS entirely. Verify with
+`python manage.py manage_rls --status`.
 
 ## Development
 
@@ -269,17 +334,6 @@ pytest -k "test_login"
 open htmlcov/index.html
 ```
 
-### Backend Commands
-
-```bash
-# Format code
-black . && isort .
-
-# Check dependencies
-pipdeptree
-pip-check -H
-```
-
 ### Dev login (skip the Google OAuth flow)
 
 For local development you can mint a JWT for any user without going through Google sign-in. The command refuses to run unless `DEBUG=True`, and there's no web endpoint — it's only reachable through `manage.py`:
@@ -297,7 +351,22 @@ uv run python manage.py devlogin aswin.1231@gmail.com --org "MicroPyramid"
 uv run python manage.py devlogin newdev@example.com --create
 ```
 
-The command prints the access/refresh tokens plus a ready-to-paste `localStorage.setItem(...)` snippet — drop it into the browser devtools console on `http://localhost:5173` and reload to be signed in.
+The command prints the access token, the refresh token, and (with `--org`) the org's UUID, plus a
+ready-to-paste `localStorage.setItem(...)` snippet.
+
+**Note:** `localStorage` alone is not enough to sign you in. The API client reads it for direct
+fetches, but SvelteKit's server-side guard (`frontend/src/hooks.server.js`) reads the
+`jwt_access`, `jwt_refresh` and `org` **cookies** — without them you'll still be redirected to
+`/login`. In the devtools console on `http://localhost:5173`, run the printed snippet *and*:
+
+```js
+const oneYear = 60 * 60 * 24 * 365;
+document.cookie = `jwt_access=${ACCESS_TOKEN}; path=/; max-age=${oneYear}; samesite=lax`;
+document.cookie = `jwt_refresh=${REFRESH_TOKEN}; path=/; max-age=${oneYear}; samesite=lax`;
+document.cookie = `org=${ORG_UUID}; path=/; max-age=${oneYear}; samesite=lax`;
+```
+
+Then reload. The root route `/` is the dashboard — there is no `/dashboard` path.
 
 ### Frontend Commands
 
@@ -314,42 +383,74 @@ pnpm run lint
 pnpm run format
 ```
 
+### Mobile Commands
+
+```bash
+cd mobile
+
+flutter test                      # run tests
+flutter analyze --no-fatal-infos  # static analysis
+dart format .                     # formatting
+flutter build apk --release       # Android release build
+```
+
 ## API Documentation
 
-The API follows RESTful conventions:
+API routes vary by module and are documented from the generated OpenAPI schema. After starting the backend, open the [interactive Swagger UI](http://localhost:8000/swagger-ui/) to explore the available endpoints and request formats.
 
-```
-GET/POST       /api/<module>/                 # List/Create
-GET/PUT/DELETE /api/<module>/<pk>/            # Detail/Update/Delete
-GET/POST       /api/<module>/comment/<pk>/    # Comments
-GET/POST       /api/<module>/attachment/<pk>/ # Attachments
-```
+## FAQ
 
-Interactive API documentation is available at `/swagger-ui/` when running the backend.
+**Is BottleCRM really free?**
+Yes. It's MIT licensed with unlimited users, unlimited records and no feature paywall. You only
+pay if you want [managed hosting, setup or custom development](https://bottlecrm.io/pricing).
+
+**Can I self-host it?**
+That's the primary way to run it. `docker compose up --build` gives you the full stack; see
+[Docker Setup](#docker-setup). Your database, your server, your data.
+
+**Is it a good Salesforce or HubSpot alternative?**
+For teams that want to own their data and avoid per-seat pricing, yes. It covers leads, pipeline,
+contacts, accounts, tickets, tasks and invoicing. See the [migration guide](https://bottlecrm.io/migration)
+for moving existing data across.
+
+**Can I run it as a multi-tenant SaaS?**
+Yes — multi-tenancy is built in at the database layer via PostgreSQL Row-Level Security, not
+bolted on. See [Multi-Tenancy & Security](#multi-tenancy--security).
+
+**Is there a mobile app?**
+Yes, a native [Flutter app](https://bottlecrm.io/features/mobile-app) for iOS and Android sharing
+the same backend API.
+
+**Can AI agents use it?**
+Yes. The bundled [MCP server](mcp_server/README.md) lets Claude, Cursor, Codex, Gemini or any MCP
+client work in your CRM under your own role and permissions.
+
+More at the [full FAQ](https://bottlecrm.io/faq).
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines for details.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, development checks, and pull request guidance.
 
 ## Community
 
-- **Issues**: [GitHub Issues](https://github.com/MicroPyramid/Django-CRM/issues)
+- **Issues**: [GitHub Issues](https://github.com/Django-CRM/Django-CRM/issues)
 - **Twitter**: [@micropyramid](https://twitter.com/micropyramid)
-- **Commercial Support**: [Contact us](https://micropyramid.com/contact-us/)
+- **Commercial Support**: [Contact us](https://micropyramid.com/contact/)
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Sponsors
+
+We are grateful to the sponsors who support BottleCRM's continued development and maintenance.
+
+- [MicroPyramid](https://micropyramid.com/)
+
+We warmly welcome new sponsors. If you would like to support BottleCRM and help the project grow, please [get in touch](https://micropyramid.com/contact/).
+
 ## Contributors
 
 This project exists thanks to all the people who contributed.
 
-![Contributors](https://opencollective.com/django-crm/contributors.svg?width=890&button=false)
-
+[View all BottleCRM contributors](https://github.com/Django-CRM/Django-CRM/graphs/contributors).
