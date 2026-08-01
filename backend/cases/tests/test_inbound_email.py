@@ -21,6 +21,11 @@ from contacts.models import Contact
 
 MAILBOXES_URL = "/api/cases/mailboxes/"
 
+# The SNS topic a mailbox is pinned to. A signature only proves a message came
+# from *some* SNS topic, so the webhook additionally requires it to come from
+# the topic this mailbox was wired to.
+SNS_TOPIC = "arn:aws:sns:us-east-1:123456789012:acme-inbound"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -32,6 +37,7 @@ def _make_mailbox(org, **overrides):
         "address": "support@acme.com",
         "provider": "ses",
         "webhook_secret": "test-secret",
+        "topic_arn": SNS_TOPIC,
         "default_priority": "Normal",
         "default_case_type": None,
         "is_active": True,
@@ -631,7 +637,11 @@ class TestWebhook:
             confirm.return_value = None
             response = admin_client.post(
                 f"/api/cases/inbound/{mailbox.id}/",
-                {"Type": "SubscriptionConfirmation", "SubscribeURL": "https://x"},
+                {
+                    "Type": "SubscriptionConfirmation",
+                    "SubscribeURL": "https://x",
+                    "TopicArn": SNS_TOPIC,
+                },
                 format="json",
             )
         assert response.status_code == 200
@@ -650,6 +660,7 @@ class TestWebhook:
                     "Signature": "x",
                     "SigningCertURL": "x",
                     "SignatureVersion": "1",
+                    "TopicArn": SNS_TOPIC,
                 },
                 format="json",
             )
@@ -673,6 +684,157 @@ class TestWebhook:
                     "SigningCertURL": "x",
                     "SignatureVersion": "1",
                 },
+                format="json",
+            )
+        assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# TopicArn pinning
+#
+# A valid SNS signature only proves a message came from *some* SNS topic in
+# *some* AWS account — anyone who learns a mailbox UUID could otherwise point
+# their own topic at the webhook and have AWS sign forged mail for them. The
+# webhook therefore also pins the TopicArn to the mailbox.
+# ---------------------------------------------------------------------------
+
+
+OTHER_TOPIC = "arn:aws:sns:us-east-1:999999999999:attacker-topic"
+
+
+def _notification(topic_arn, message="x"):
+    return {
+        "Type": "Notification",
+        "Message": message,
+        "Signature": "x",
+        "SigningCertURL": "x",
+        "SignatureVersion": "1",
+        "TopicArn": topic_arn,
+    }
+
+
+@pytest.mark.django_db
+class TestTopicArnPinning:
+    def test_notification_from_the_pinned_topic_is_accepted(self, admin_client, org_a):
+        mailbox = _make_mailbox(org_a, topic_arn=SNS_TOPIC)
+        with patch("cases.inbound_views.verify_sns_message"):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                _notification(SNS_TOPIC, _raw_email()),
+                format="json",
+            )
+        assert response.status_code == 200, response.content
+        assert Case.objects.filter(org=org_a).count() == 1
+
+    def test_notification_from_a_foreign_topic_is_rejected(self, admin_client, org_a):
+        """The crown-jewel case: a correctly-signed message from an attacker's
+        own SNS topic must not be able to inject mail into this org."""
+        mailbox = _make_mailbox(org_a, topic_arn=SNS_TOPIC)
+        with patch("cases.inbound_views.verify_sns_message"):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                _notification(OTHER_TOPIC, _raw_email()),
+                format="json",
+            )
+        assert response.status_code == 403
+        assert Case.objects.filter(org=org_a).count() == 0
+        assert EmailMessage.objects.filter(org=org_a).count() == 0
+
+    def test_notification_to_an_unpinned_mailbox_is_rejected(self, admin_client, org_a):
+        """Fail closed: until a topic is pinned there is nothing to check against."""
+        mailbox = _make_mailbox(org_a, topic_arn="")
+        with patch("cases.inbound_views.verify_sns_message"):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                _notification(SNS_TOPIC, _raw_email()),
+                format="json",
+            )
+        assert response.status_code == 403
+        assert Case.objects.filter(org=org_a).count() == 0
+
+    def test_notification_without_a_topic_arn_is_rejected(self, admin_client, org_a):
+        mailbox = _make_mailbox(org_a, topic_arn=SNS_TOPIC)
+        payload = _notification(SNS_TOPIC, _raw_email())
+        del payload["TopicArn"]
+        with patch("cases.inbound_views.verify_sns_message"):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/", payload, format="json"
+            )
+        assert response.status_code == 403
+
+    def test_subscription_confirmation_pins_an_unpinned_mailbox(
+        self, admin_client, org_a
+    ):
+        mailbox = _make_mailbox(org_a, topic_arn="")
+        with (
+            patch("cases.inbound_views.verify_sns_message"),
+            patch("cases.inbound_views.confirm_subscription"),
+        ):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                {
+                    "Type": "SubscriptionConfirmation",
+                    "SubscribeURL": "https://x",
+                    "TopicArn": SNS_TOPIC,
+                },
+                format="json",
+            )
+        assert response.status_code == 200, response.content
+        mailbox.refresh_from_db()
+        assert mailbox.topic_arn == SNS_TOPIC
+
+    def test_subscription_confirmation_cannot_repin_a_pinned_mailbox(
+        self, admin_client, org_a
+    ):
+        """Once pinned, a confirmation from another topic must not steal the
+        mailbox — otherwise the pin is trivially resettable by an attacker."""
+        mailbox = _make_mailbox(org_a, topic_arn=SNS_TOPIC)
+        with (
+            patch("cases.inbound_views.verify_sns_message"),
+            patch("cases.inbound_views.confirm_subscription") as confirm,
+        ):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                {
+                    "Type": "SubscriptionConfirmation",
+                    "SubscribeURL": "https://x",
+                    "TopicArn": OTHER_TOPIC,
+                },
+                format="json",
+            )
+        assert response.status_code == 403
+        assert confirm.called is False, "must not fetch an unpinned SubscribeURL"
+        mailbox.refresh_from_db()
+        assert mailbox.topic_arn == SNS_TOPIC
+
+    def test_subscription_confirmation_without_a_topic_arn_pins_nothing(
+        self, admin_client, org_a
+    ):
+        mailbox = _make_mailbox(org_a, topic_arn="")
+        with (
+            patch("cases.inbound_views.verify_sns_message"),
+            patch("cases.inbound_views.confirm_subscription"),
+        ):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox.id}/",
+                {"Type": "SubscriptionConfirmation", "SubscribeURL": "https://x"},
+                format="json",
+            )
+        assert response.status_code == 403
+        mailbox.refresh_from_db()
+        assert mailbox.topic_arn == ""
+
+    def test_pin_is_scoped_to_the_mailbox_not_shared_across_orgs(
+        self, admin_client, org_a, org_b
+    ):
+        """org_b's mailbox pinned to its own topic must not accept org_a's."""
+        mailbox_b = _make_mailbox(
+            org_b, address="support@beta.com", topic_arn=OTHER_TOPIC
+        )
+        with patch("cases.inbound_views.verify_sns_message"):
+            response = admin_client.post(
+                f"/api/cases/inbound/{mailbox_b.id}/",
+                _notification(SNS_TOPIC, _raw_email()),
                 format="json",
             )
         assert response.status_code == 403

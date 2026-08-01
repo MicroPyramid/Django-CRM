@@ -706,8 +706,18 @@ class InboundMailbox(BaseModel):
         max_length=128,
         blank=True,
         default="",
-        help_text="Shared secret / SNS Topic ARN suffix used to verify webhook "
-        "calls. Auto-generated on create if left blank.",
+        help_text="Shared secret used to verify webhook calls. Auto-generated "
+        "on create if left blank.",
+    )
+    topic_arn = models.CharField(
+        max_length=256,
+        blank=True,
+        default="",
+        help_text="SNS Topic ARN this mailbox accepts mail from. A valid SNS "
+        "signature only proves a message came from some topic, so the webhook "
+        "also requires this exact match. Pinned automatically from the first "
+        "verified SubscriptionConfirmation when left blank; until it is set, "
+        "notifications are rejected.",
     )
 
     # Reserved for future IMAP support (Tier 1+ follow-up).

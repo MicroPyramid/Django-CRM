@@ -1,8 +1,20 @@
 """Inbound email webhook + admin mailbox CRUD endpoints.
 
-The webhook is intentionally public (no auth). All trust is anchored on the
-SNS signature verification: an attacker who can't sign a message with the AWS
-SNS signing cert can't get past `verify_sns_message`.
+The webhook is intentionally public (no auth). Trust rests on two checks, and
+it takes both — the signature alone is not enough:
+
+1. `verify_sns_message` proves the payload was signed by AWS SNS. That rules
+   out arbitrary JSON posted at the URL, but note what it does *not* prove:
+   anyone with an AWS account can create a topic, so a valid signature only
+   says the message came from *some* topic in *some* account.
+2. The TopicArn pin (`InboundMailbox.topic_arn`) proves it came from *this
+   mailbox's* topic. Without it, anyone who learned a mailbox UUID could point
+   their own SNS topic here and have AWS sign forged mail for them — which,
+   because the pipeline threads replies onto existing cases, means injecting
+   messages into live customer conversations, not just spam tickets.
+
+A mailbox with no pin rejects notifications outright; it acquires one from the
+first signature-verified SubscriptionConfirmation and will not silently re-pin.
 """
 
 from __future__ import annotations
@@ -85,6 +97,15 @@ def _mailbox_analytics(org):
 def _admin_required():
     return Response(
         {"error": True, "errors": "Admin access required"},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _topic_rejected():
+    """Deliberately as opaque as the signature failure — a caller probing the
+    webhook shouldn't learn whether a mailbox is pinned or to what."""
+    return Response(
+        {"error": True, "errors": "Signature verification failed"},
         status=status.HTTP_403_FORBIDDEN,
     )
 
@@ -174,7 +195,35 @@ class InboundMailboxWebhookView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # A valid signature only proves the message came from *some* SNS topic
+        # in *some* AWS account. Pin it to this mailbox's topic, or anyone who
+        # learns the mailbox UUID can have AWS sign forged mail for them.
         msg_type = payload.get("Type")
+        topic_arn = payload.get("TopicArn") or ""
+        pinned = mailbox.topic_arn or ""
+        if pinned:
+            if topic_arn != pinned:
+                logger.warning(
+                    "SNS TopicArn mismatch for mailbox=%s: got %r",
+                    mailbox.id,
+                    topic_arn,
+                )
+                return _topic_rejected()
+        elif msg_type == "SubscriptionConfirmation" and topic_arn:
+            # Trust-on-first-use: the confirmation is signature-verified above,
+            # and this is the only moment a mailbox can acquire its pin.
+            mailbox.topic_arn = topic_arn
+            mailbox.save(update_fields=["topic_arn"])
+            logger.info("Pinned mailbox=%s to TopicArn=%r", mailbox.id, topic_arn)
+        else:
+            # Unpinned mailbox, and this message can't establish a pin.
+            logger.warning(
+                "Rejecting SNS message for unpinned mailbox=%s (type=%r)",
+                mailbox.id,
+                msg_type,
+            )
+            return _topic_rejected()
+
         if msg_type == "SubscriptionConfirmation":
             try:
                 confirm_subscription(payload)

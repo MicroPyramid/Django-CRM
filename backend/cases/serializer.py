@@ -558,6 +558,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             "address",
             "provider",
             "webhook_secret",
+            "topic_arn",
             "default_priority",
             "default_case_type",
             "default_assignee",
@@ -596,9 +597,11 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         """`webhook_secret` is a per-org shared secret — the credential a sender
         signs with. It is settable/rotatable by an admin, but it must never be
         read back by a regular member, or every agent in the org can forge
-        inbound mail. Non-admins see the mailbox config without the secret; the
-        field is only present for admins (who manage the integration), and only
-        when the view passes the request in context."""
+        inbound mail. `topic_arn` is the webhook's TopicArn pin and embeds the
+        AWS account id, so it is held to the same bar. Non-admins see the
+        mailbox config without either; both fields are only present for admins
+        (who manage the integration), and only when the view passes the request
+        in context."""
         data = super().to_representation(instance)
         request = self.context.get("request")
         profile = getattr(request, "profile", None) if request else None
@@ -607,6 +610,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         )
         if not is_admin:
             data.pop("webhook_secret", None)
+            data.pop("topic_arn", None)
         return data
 
 
