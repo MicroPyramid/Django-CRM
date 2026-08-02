@@ -52,6 +52,8 @@ coverage-badge.svg
 
 # Documentation
 docs/build/
+# MkDocs build output
+site/
 
 # Node.js / Frontend
 frontend/node_modules/

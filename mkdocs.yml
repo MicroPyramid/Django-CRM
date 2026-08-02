@@ -1,0 +1,112 @@
+site_name: BottleCRM
+site_description: Self-hosted, multi-tenant CRM — setup, self-hosting, API and development documentation.
+site_url: https://bottlecrm.readthedocs.io/
+repo_url: https://github.com/django-crm/Django-CRM
+repo_name: django-crm/Django-CRM
+edit_uri: edit/master/docs/
+
+docs_dir: docs
+
+# docs/ also holds internal specs, plans and design references. MkDocs copies
+# every file under docs_dir into the built site regardless of nav, so these
+# must be excluded explicitly or they are published.
+exclude_docs: |
+  superpowers/
+  design/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Docker quick start: getting-started/docker-quick-start.md
+      - Manual setup: getting-started/manual-setup.md
+      - First sign-in: getting-started/first-sign-in.md
+      - Demo data and packs: getting-started/demo-data.md
+  - Self-hosting:
+      - Requirements: self-hosting/requirements.md
+      - Docker: self-hosting/docker.md
+      - Production deployment: self-hosting/production-deploy.md
+      - PostgreSQL and RLS: self-hosting/postgresql-and-rls.md
+      - Environment variables: self-hosting/environment-variables.md
+      - Email and Celery: self-hosting/email-and-celery.md
+      - Google OAuth: self-hosting/google-oauth.md
+      - Backups and upgrades: self-hosting/backups-and-upgrades.md
+      - Security hardening: self-hosting/security-hardening.md
+      - Troubleshooting: self-hosting/troubleshooting.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Multi-tenancy and RLS: architecture/multi-tenancy-and-rls.md
+      - Authentication: architecture/authentication.md
+      - Permissions and roles: architecture/permissions-and-roles.md
+      - Data model: architecture/data-model.md
+      - Background jobs: architecture/background-jobs.md
+  - API reference:
+      - Conventions: api/conventions.md
+      - Authentication: api/authentication.md
+      - Errors: api/errors.md
+      - Tokens and API keys: api/tokens-and-api-keys.md
+      - Leads: api/leads.md
+      - Accounts: api/accounts.md
+      - Contacts: api/contacts.md
+      - Opportunities: api/opportunities.md
+      - Cases: api/cases.md
+      - Tasks: api/tasks.md
+      - Invoices and estimates: api/invoices.md
+      - Endpoint index: api/endpoint-index.md
+  - Integrations:
+      - MCP server: integrations/mcp-server.md
+      - Inbound email: integrations/inbound-email.md
+      - CSV import: integrations/csv-import.md
+      - Python sample: integrations/python-sample.md
+      - JavaScript sample: integrations/javascript-sample.md
+  - Mobile app:
+      - Build and configure: mobile/build-and-configure.md
+      - Connect to self-hosted: mobile/connect-to-self-hosted.md
+      - Release builds: mobile/release-builds.md
+  - Contributing:
+      - Development setup: contributing/development-setup.md
+      - Repository layout: contributing/repo-layout.md
+      - Testing: contributing/testing.md
+      - Code style: contributing/code-style.md
+      - Adding an org-scoped model: contributing/adding-an-org-scoped-model.md
+      - Security rules: contributing/security-rules.md
+      - Pull requests: contributing/pull-requests.md
+  - Reference:
+      - Environment variables: reference/environment-variables.md
+      - Management commands: reference/management-commands.md
+      - Glossary: reference/glossary.md

@@ -94,6 +94,9 @@ dev = [
     "pytest-django>=4.12.0",
     "pytest-cov>=7.1.0",
 ]
+docs = [
+    "mkdocs-material>=9.5.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = [
