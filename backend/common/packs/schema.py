@@ -326,6 +326,8 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         COUNTRIES,
         CURRENCY_CODES,
         INDCHOICES,
+        LEAD_SOURCE,
+        LEAD_STATUS,
         PRIORITY_CHOICE,
         SOURCES,
         STAGES,
@@ -432,6 +434,14 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         _reject_unknown(at, row, SAMPLE_LEAD_KEYS)
         _require(at, row, "title")
         _validate_choice(at, row.get("stage"), "stage", lead_stages)
+        # Lead.source and Lead.status carry `choices` the applier never checks.
+        # Both were unvalidated here until three shipped packs were found writing
+        # source="website" — a value LEAD_SOURCE does not contain, so the demo row
+        # rendered as a blank dropdown and no source filter could reach it. The
+        # row looked fine in the database, which is precisely why this needs a
+        # schema check rather than trust.
+        _validate_choice(at, row.get("source"), "source", {c for c, _l in LEAD_SOURCE})
+        _validate_choice(at, row.get("status"), "status", {c for c, _l in LEAD_STATUS})
         _validate_choice(at, row.get("currency"), "currency", currencies)
 
 

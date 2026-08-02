@@ -103,6 +103,29 @@ def test_task_stage_accepts_in_progress():
     assert stages[0]["stage_type"] == "in_progress"
 
 
+def _with_lead(lead: dict) -> dict:
+    return _minimal() | {"sample_data": {"leads": [{"title": "An enquiry"} | lead]}}
+
+
+def test_sample_lead_source_outside_lead_source_is_rejected():
+    # "website" reads as obviously valid and is not: LEAD_SOURCE has no such
+    # entry, and Django does not enforce choices on .create(). Three shipped
+    # packs carried this before the guard existed — the rows wrote cleanly and
+    # surfaced only as a blank source column no filter could match.
+    with pytest.raises(PackValidationError, match="source"):
+        validate_manifest(_with_lead({"source": "website"}))
+
+
+def test_sample_lead_source_from_lead_source_is_accepted():
+    manifest = validate_manifest(_with_lead({"source": "partner"}))
+    assert manifest["sample_data"]["leads"][0]["source"] == "partner"
+
+
+def test_sample_lead_status_outside_lead_status_is_rejected():
+    with pytest.raises(PackValidationError, match="status"):
+        validate_manifest(_with_lead({"status": "qualified"}))
+
+
 def test_registry_lookup_of_unknown_id_returns_none():
     assert get_pack("no-such-pack") is None
 

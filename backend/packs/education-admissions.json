@@ -246,7 +246,7 @@
         "custom_fields": { "course_interest": "Data Science Fundamentals", "intake": "Spring 2027", "parent_name": "Karen Whitmore", "parent_phone": "+1 720 555 0102", "previous_qualification": "High school diploma" } },
       { "title": "Weekend spoken English batch", "first_name": "Lucia", "last_name": "Moreau",
         "email": "lucia.moreau@example.com", "phone": "+1 305 555 0240",
-        "source": "website", "stage": "New enquiry",
+        "source": "other", "stage": "New enquiry",
         "opportunity_amount": 180, "currency": "USD",
         "custom_fields": { "course_interest": "Spoken English", "intake": "Fall 2026", "previous_qualification": "High school diploma" } },
       { "title": "Employer-sponsored CPA seat", "first_name": "Nathan", "last_name": "Achebe",
@@ -271,7 +271,7 @@
         "custom_fields": { "course_interest": "MBA Foundation", "intake": "Winter 2027", "previous_qualification": "Bachelor's degree" } },
       { "title": "IELTS for a visa application", "first_name": "Tariq", "last_name": "Rahman",
         "email": "tariq.rahman@example.com", "phone": "+1 832 555 0246",
-        "source": "website", "stage": "Demo class",
+        "source": "other", "stage": "Demo class",
         "opportunity_amount": 450, "currency": "USD",
         "custom_fields": { "course_interest": "IELTS Coaching", "intake": "Fall 2026", "previous_qualification": "Master's degree" } },
       { "title": "Bootcamp enquiry from a referral", "first_name": "Ursula", "last_name": "Klein",
@@ -316,7 +316,7 @@
         "custom_fields": { "course_interest": "Full-Stack Web Development", "intake": "Summer 2027", "previous_qualification": "High school diploma" } },
       { "title": "Withdrew before the demo class", "first_name": "Caleb", "last_name": "Nyong'o",
         "email": "caleb.nyongo@example.com", "phone": "+1 470 555 0257",
-        "source": "website", "stage": "Not joining",
+        "source": "other", "stage": "Not joining",
         "opportunity_amount": 3200, "currency": "USD",
         "custom_fields": { "course_interest": "Data Science Fundamentals", "intake": "Spring 2027", "previous_qualification": "Bachelor's in Physics" } }
     ]

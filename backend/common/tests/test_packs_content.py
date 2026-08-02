@@ -3,7 +3,12 @@ import pytest
 from common.packs.loader import get_registry
 from common.packs.schema import SAMPLE_ENTITY_KEYS
 
-SHIPPED = {"real-estate", "education-admissions", "professional-services"}
+SHIPPED = {
+    "real-estate",
+    "education-admissions",
+    "professional-services",
+    "events-weddings",
+}
 
 
 def test_all_shipped_packs_load_and_validate():
