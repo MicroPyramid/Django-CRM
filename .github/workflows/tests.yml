@@ -6,6 +6,9 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.readthedocs.yaml'
       - '.coveragerc'
       - '.github/workflows/tests.yml'
   pull_request:
@@ -13,6 +16,9 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.readthedocs.yaml'
       - '.coveragerc'
       - '.github/workflows/tests.yml'
 
@@ -120,3 +126,37 @@ jobs:
       - name: Build
         working-directory: frontend
         run: pnpm build
+
+  docs-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'backend/uv.lock'
+
+      - name: Install docs dependencies
+        working-directory: backend
+        run: uv sync --frozen --group docs
+
+      # --strict fails on broken internal links and nav entries pointing at
+      # files that do not exist.
+      - name: Build docs
+        working-directory: backend
+        run: uv run mkdocs build --strict -f ../mkdocs.yml -d site
+
+      # These two tests skip when mkdocs is absent, so the backend-tests job
+      # (which installs no docs group) cannot run them. Without this step the
+      # "no internal artifacts published" guard would silently never execute
+      # in CI — a skip reads as a pass.
+      - name: Check docs build guards
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crm.test_settings
+          SECRET_KEY: test-secret-key-for-ci
+          ADMIN_EMAIL: admin@test.com
+        run: uv run pytest common/tests/test_docs_build_excludes_internal.py --no-cov -v

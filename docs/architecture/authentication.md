@@ -1,0 +1,206 @@
+# Authentication
+
+BottleCRM has three separate credential types — a short-lived JWT for interactive clients, a
+personal access token for agents and scripts, and a per-org API key for server-to-server
+integrations — and this page describes how each one proves identity and how the server decides
+what it's allowed to do. The rule underneath all three is the same one stated in
+[Multi-tenancy and RLS](multi-tenancy-and-rls.md): identity, org, and role are facts the server
+derives and verifies, never values a client supplies. Nothing in a request body, query string, or
+custom header changes who you are authenticated as.
+
+## Token model
+
+Interactive sign-in (Google OAuth and passwordless magic-link/OTP) issues a JSON Web Token pair
+built on `djangorestframework-simplejwt`. `SIMPLE_JWT` in `backend/crm/settings.py` sets:
+
+```python
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    ...
+}
+```
+
+Access tokens live one hour; refresh tokens live 14 days. Both are signed with `SECRET_KEY` itself
+— there is no separate JWT signing key setting anywhere in this codebase, so rotating `SECRET_KEY`
+invalidates every outstanding token immediately. See
+[Security hardening](../self-hosting/security-hardening.md#secrets) for the operational
+consequences of that. `rest_framework_simplejwt.token_blacklist` is in `INSTALLED_APPS`
+specifically so that `RefreshToken.blacklist()` exists to call — without that app installed,
+`BLACKLIST_AFTER_ROTATION` would be a silent no-op, which is exactly the kind of failure mode this
+codebase's own comment on the `INSTALLED_APPS` entry calls out.
+
+Tokens are minted by `OrgAwareRefreshToken` (`backend/common/serializer.py`), a `RefreshToken`
+subclass whose `for_user_and_org(user, org, profile=None)` classmethod embeds org and role claims
+directly in the token payload (see [Claims](#claims)) so the frontend doesn't need a follow-up
+`/api/auth/profile/` call just to learn which org or role it's operating as.
+
+Two other credential types exist alongside the JWT, covered later on this page:
+[personal access tokens](#personal-access-tokens) (`bcrm_pat_…`, self-service, scoped to one
+profile) and [organization API keys](#organization-api-keys) (one per org, admin-managed,
+equivalent to an admin session). See
+[Security hardening](../self-hosting/security-hardening.md#token-surfaces) for how their blast
+radii compare.
+
+## Claims
+
+`OrgAwareRefreshToken.for_user_and_org` embeds, beyond simplejwt's own default claims
+(`token_type`, `exp`, `iat`, `jti`, and the user id under `USER_ID_CLAIM = "user_id"`):
+
+- `user_email`, `user_name` (derived from the email, since `User` has no first/last name fields),
+  `user_profile_pic`
+- `org_id`, `org_name` — only when an org is present; a token minted before the caller has picked
+  an org (see [Organization switching](#organization-switching)) carries neither
+- `org_settings` — `default_currency`, `currency_symbol`, `default_country`
+- `role` — only when a `Profile` was supplied, i.e. only once an org is known
+
+`org_id` is the claim that matters most: it's what `GetProfileAndOrg`
+(`backend/common/middleware/get_company.py`) reads to resolve `request.org`, and by extension it's
+what `RequireOrgContext` uses to set the PostgreSQL session variable every RLS policy checks — see
+[Overview](overview.md#request-lifecycle). Critically, the middleware does not simply trust the
+claim: it re-validates it against an active `Profile` row on every single request —
+
+```python
+profile = Profile.objects.select_related("org").get(
+    user_id=user_id, org_id=org_id, is_active=True
+)
+```
+
+— so a token minted while a user was a member of an org keeps working only as long as that
+membership stays active. If the membership is revoked after the token was issued, this lookup
+raises `Profile.DoesNotExist` and the middleware turns that into a 403 asking the user to log in
+again, rather than trusting a claim that's gone stale. `role` in the token is a display
+convenience, not the source of truth for authorization — every permission check in
+[Permissions and roles](permissions-and-roles.md) reads `request.profile.role` fresh from the
+database-backed `Profile` the middleware just re-validated, not from the JWT payload.
+
+## Refresh and rotation
+
+The old documentation for this project asserted refresh-token rotation and server-side tracking
+without pointing at code. Here is what the code actually does. `POST /api/auth/refresh-token/`
+(`OrgAwareTokenRefreshView`, `backend/common/views/auth_views.py`, wired at
+`backend/common/urls.py:58-62`) is the only refresh endpoint — there's no separate route using
+simplejwt's stock `TokenRefreshView`, so the `ROTATE_REFRESH_TOKENS`/`BLACKLIST_AFTER_ROTATION`
+settings shown above describe the intent, but the actual rotation logic is hand-written in this
+view rather than delegated to simplejwt's default serializer:
+
+```python
+with transaction.atomic():
+    token.blacklist()
+    new_token = OrgAwareRefreshToken.for_user_and_org(user, org, profile)
+```
+
+The presented refresh token is decoded and validated, its `org_id` claim (if any) is re-checked
+against an active `Profile` exactly as in [Claims](#claims) above — a revoked membership gets a 403
+here too, not a fresh token — and then, in one atomic transaction, the presented token is
+blacklisted and a replacement is minted carrying the same org context. Both writes share a
+transaction specifically so a failure can never leave the caller tokenless while the old token
+remains usable. This is real rotation with real server-side state: `RefreshToken.blacklist()`
+writes to simplejwt's own `OutstandingToken`/`BlacklistedToken` tables (from the
+`token_blacklist` app), which is what a stolen refresh token being replayed after the legitimate
+client has already refreshed would hit — the blacklisted token fails validation on reuse. Those
+bookkeeping rows aren't kept forever; `flush_expired_refresh_tokens`
+(`backend/common/tasks.py`) deletes `OutstandingToken` rows once their own `expires_at` has passed,
+scheduled nightly — see [Background jobs](background-jobs.md).
+
+An expired or already-blacklisted refresh token fails with `TokenError`, which this view turns into
+a 401. A refresh token for a `User` whose account has since been deactivated (`user.is_active`)
+also fails, explicitly, with a 403.
+
+## Organization switching
+
+A signed-in user can belong to more than one org, and a single JWT only ever carries one `org_id`.
+`POST /api/auth/switch-org/` (`OrgSwitchView`) is how a client moves to a different one: it
+requires only `IsAuthenticated` (not `HasOrgContext`), because it has to work for a token that has
+no org claim at all yet — the state a fresh Google OAuth login is in, since
+`GoogleOAuthCallbackView`/`GoogleIdTokenView` both mint their initial token with `org=None` and
+leave org selection to a separate step.
+
+The view re-validates membership the same way the refresh endpoint does —
+`Profile.objects.get(user=request.user, org_id=org_id, is_active=True)` — and 403s
+(with an audit-logged `permission_denied` entry) if the caller has no active profile in the
+requested org. It then optionally retires the refresh token the client is switching away from:
+
+```python
+if str(token.get("user_id")) != str(request.user.id):
+    return
+token.blacklist()
+```
+
+That ownership check is not incidental — without it, `refresh` would let any authenticated caller
+blacklist *any* refresh token they could observe, turning a convenience parameter into a remote
+logout for someone else's session. Retiring the old token is optional by design (existing clients
+don't all send it, and failing the switch over a missing optional field would be worse than letting
+one token expire on its own 14-day schedule), but when it is sent and does belong to the caller, it
+stops working immediately rather than staying valid against the previous org for the rest of its
+life. The org switch itself — retiring the old token and minting the replacement — happens inside
+one transaction for the same reason the refresh endpoint's does.
+
+## Personal access tokens
+
+Personal access tokens (`bcrm_pat_…`, `PersonalAccessToken` in `backend/common/models.py`) are
+for agents and scripts — the MCP server integration in particular — that need to authenticate as a
+specific user without going through the JWT/OAuth flow on every call. A token is generated once
+(`PersonalAccessToken.generate(profile, name, ...)`), shown to the caller exactly once, and stored
+only as a SHA-256 hash (`token_hash`); the plaintext is not recoverable from the database
+afterward.
+
+Resolution happens twice per request, deliberately: `GetProfileAndOrg` resolves the PAT first (so
+`request.org` — and, downstream, the RLS context — is set before `RequireOrgContext` runs), and
+DRF's `PATAuthentication` class (`backend/common/pat_auth.py`) reuses that same resolved token
+(stashed as `request._pat`) rather than looking it up a second time. Both share one validation
+function, `resolve_valid_pat`, which checks the token isn't revoked or expired
+(`PersonalAccessToken.is_valid()`) and that both the owning profile and its org are still active —
+so deactivating a profile cuts off its personal access tokens immediately, with no separate
+revocation step.
+
+A token authenticates **as** its owning profile and inherits that profile's role and org in full.
+`PersonalAccessToken` has a `scopes` field, but read the model's own comment before assuming it
+restricts anything:
+
+```python
+# NOTE: scopes are stored for forward-compatibility but are NOT enforced in
+# Phase 1 — a token always inherits the owning profile's full role/permissions.
+# Do not treat `scopes` as a trust boundary until enforcement lands.
+```
+
+Treat a personal access token as exactly as powerful as the user who created it — an admin's PAT
+can do everything that admin can do through the UI. Self-service management lives at
+`profile/tokens/` (a user manages only their own); admin oversight of every token in the org —
+including a deactivated colleague's — is a deliberately separate, admin-only endpoint at
+`org/tokens/`, so the self-service guard is never the thing that has to be loosened to support
+oversight. See [Security hardening](../self-hosting/security-hardening.md#token-surfaces) for that
+distinction in more depth.
+
+## Organization API keys
+
+Each `Org` has exactly one API key (`Org.api_key`, generated at creation), managed through
+`GET`/`POST /api/org/api-key/` (`OrgApiKeyView`), admin-only in both directions. Unlike a personal
+access token, this key doesn't authenticate as any particular person: `GetProfileAndOrg`'s
+`_process_api_key_auth` resolves a request bearing this key (in a `Token` header) to the org's
+**first active `ADMIN` profile** —
+
+```python
+profile = Profile.objects.filter(
+    org=organization, role="ADMIN", is_active=True
+).first()
+```
+
+— which makes a leaked org API key equivalent to a leaked admin session for that org, not a leaked
+individual user session. There's no way to scope it down to less than full admin, so it's the
+highest-privilege of the three credential types this page describes. Rotating it
+(`POST /api/org/api-key/`) invalidates the previous key immediately — the response is explicit
+that the old key is no longer valid. It's excluded from every nested API representation
+(`OrganizationSerializer` never embeds it) and only ever served by this one endpoint.
+
+One piece of related configuration to be aware of: `GOOGLE_REDIRECT_URI` is defined in
+`backend/crm/settings.py:360` but is dead — grep the backend and it's the only place that name
+appears. The actual redirect URI used in the Google OAuth code exchange
+(`GoogleOAuthCallbackView.post`) comes from the client's request body on each call
+(`request.data.get("redirect_uri")`), not from this setting. Don't spend time configuring
+`GOOGLE_REDIRECT_URI` expecting it to do anything; see
+[Google OAuth](../self-hosting/google-oauth.md) for the setting that actually matters.
