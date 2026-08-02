@@ -121,6 +121,13 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
     `csat_enabled` and `auto_close_children_on_parent_close` are real `Org` columns
     that previously had NO write path through any serializer; this is where they are
     edited. `member_count` and `created_at` are read-only header context.
+
+    `vertical` and `terminology` are read-only here too: they are written exclusively
+    by the vertical-pack applier (`common/packs/applier.py`), never by a client. A
+    writable path would let any admin PATCH `terminology` to arbitrary tenant-supplied
+    text (still safe to render -- see `$lib/terminology.js` on the frontend -- but not
+    something this endpoint is meant to let anyone set by hand) or overwrite `vertical`,
+    which is meant to record which pack was actually applied.
     """
 
     currency_symbol = serializers.SerializerMethodField()
@@ -152,6 +159,9 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
             # Case-handling behaviour (org-wide switches). Editable only here.
             "csat_enabled",
             "auto_close_children_on_parent_close",
+            # Vertical pack. Read-only -- see the class docstring.
+            "vertical",
+            "terminology",
             # Read-only context for the settings page header.
             "member_count",
             "created_at",
@@ -162,6 +172,8 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
             "logo_url",
             "member_count",
             "created_at",
+            "vertical",
+            "terminology",
         ]
 
     @extend_schema_field(str)
@@ -404,7 +416,15 @@ class OrgProfileCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Org
-        fields = ["name"]
+        # "id" is Org's UUIDField(editable=False) primary key -- DRF makes it
+        # read-only automatically because of `editable=False`, so listing it
+        # here only exposes the created org's id in the response; it does not
+        # open a new mass-assignment surface (a client-supplied "id" in the
+        # request body is still ignored, same as before this field existed).
+        # Callers (org/new/+page.server.js) need this id to switch the
+        # session into the org they just created and to apply a vertical
+        # pack to it -- see the C1 fix in the vertical-packs final review.
+        fields = ["id", "name"]
         extra_kwargs = {"name": {"required": True}}
 
     def validate_name(self, name):

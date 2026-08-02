@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from common.base import AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import COUNTRIES
 from common.validators import flexible_phone_validator
@@ -59,6 +59,7 @@ class Contact(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
+    is_sample = models.BooleanField(default=False, help_text=SAMPLE_DATA_HELP_TEXT)
     auto_created = models.BooleanField(
         default=False,
         help_text="True when the contact was created by an inbound channel "

@@ -12,10 +12,22 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import axios from 'axios';
+import { describeError } from '$lib/server/log-safe.js';
+import { listPacks, applyPack } from '$lib/server/packs.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {
-  // No data needed for load
+  // GET /api/packs/ needs IsAuthenticated only, no org context — but a
+  // brand-new user creating their very first org must never have this call
+  // break the page. Fall back to an empty list, which renders as just the
+  // "Skip for now" option.
+  try {
+    const packs = await listPacks(cookies);
+    return { packs };
+  } catch (/** @type {any} */ err) {
+    console.error('Could not load vertical packs:', err?.message, err?.status);
+    return { packs: [] };
+  }
 }
 
 /** @type {import('./$types').Actions} */
@@ -82,6 +94,84 @@ export const actions = {
         secure: env.NODE_ENV === 'production'
       });
 
+      // Optional vertical pack, chosen in the "What kind of business is this?"
+      // group below. Empty string — the "Skip for now" option, and the
+      // default when nothing is submitted — means do nothing.
+      const vertical = formData.get('vertical')?.toString();
+      if (vertical) {
+        // POST /api/packs/<id>/apply/ is ADMIN-only and derives its org from
+        // request.profile.org, i.e. from the org_id claim on the JWT — never
+        // from a body field. /api/org/ does not mint new tokens, so the
+        // access token we are holding here still carries the PREVIOUS org's
+        // claim (or no org claim at all, for a brand-new user's first org).
+        // Mint one scoped to the org we just created, the same way `/org`'s
+        // `selectOrg` action and the shell's own hooks.server.js do it, so
+        // the apply call lands on the right org as its ADMIN.
+        //
+        // This token is used ONLY as the bearer credential for the one
+        // applyPack() call below — it is never written to the jwt_access /
+        // jwt_refresh cookies. Doing so would silently rotate the caller's
+        // session to the new org mid-request (e.g. a user already in org A
+        // creating org B would suddenly be sitting in org B everywhere else
+        // too), which is a change to the session/org-claim contract the
+        // brief says must not move. The Skip path never touches these
+        // cookies at all, and this path must behave identically apart from
+        // the pack application itself. The existing `org` cookie + the
+        // shell's own hooks.server.js switch-org-on-mismatch logic already
+        // handle rotating the *browser's* session correctly if and when the
+        // user actually navigates into the new org.
+        try {
+          // Deliberately do NOT send `refresh` here. OrgSwitchView's
+          // `_retire_presented_refresh_token` blacklists whatever refresh
+          // token is presented -- that's correct for every other switch-org
+          // caller (hooks.server.js, /org, /settings/profile), which all
+          // write the replacement token back to the jwt_access/jwt_refresh
+          // cookies in the same request. This call mints a token used ONLY
+          // as the bearer credential for the one applyPack() call below (see
+          // the comment above) and never persists it, so blacklisting the
+          // caller's real refresh token here would leave the browser holding
+          // a dead one with nothing to replace it -- the user gets signed
+          // out the next time the access token expires and a refresh is
+          // attempted. `refresh` is optional on this endpoint precisely for
+          // callers like this one that only need the org-scoped access
+          // token and must not touch the caller's session.
+          const switchResponse = await axios.post(
+            `${apiUrl}/api/auth/switch-org/`,
+            { org_id: newOrg.id },
+            {
+              headers: {
+                Authorization: `Bearer ${jwtAccess}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          const { access_token } = switchResponse.data;
+
+          // A minimal cookies-shaped shim: applyPack()/apiRequest only ever
+          // call `.get('jwt_access')` on what they're given. Handing them
+          // this instead of the real `cookies` object means the org-scoped
+          // token is used for exactly this one outgoing request and never
+          // reaches `cookies.set()`, so nothing is queued onto the response.
+          const bearerOnly = { get: (name) => (name === 'jwt_access' ? access_token : undefined) };
+          await applyPack(bearerOnly, vertical);
+        } catch (packErr) {
+          // A pack failing to apply must never fail org creation — the org
+          // and its admin profile already exist, already committed by the
+          // /api/org/ call above. Log it and let signup succeed anyway.
+          //
+          // Do NOT log packErr itself: it may be an AxiosError carrying
+          // `.config.headers.Authorization` with the bearer token in it, and
+          // Node's default error formatting prints that in full. Log only
+          // the message and status.
+          console.error(
+            `Vertical pack "${vertical}" did not apply to new org ${newOrg.id} (org creation still succeeded):`,
+            packErr?.message,
+            packErr?.response?.status ?? packErr?.status
+          );
+        }
+      }
+
       // Return success
       return {
         data: {
@@ -89,7 +179,8 @@ export const actions = {
         }
       };
     } catch (err) {
-      console.error('Error creating organization:', err);
+      // Never log the raw error: its axios `config.headers` carries the JWT.
+      console.error('Error creating organization:', describeError(err));
 
       // Check if it's a duplicate name error
       if (err.response?.status === 400) {

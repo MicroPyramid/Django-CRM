@@ -106,3 +106,24 @@ export async function getOrgSettings({ cookies }) {
 export function updateOrgSettings({ cookies }, body) {
   return apiRequest('/org/settings/', { method: 'PATCH', body }, { cookies });
 }
+
+/**
+ * Vertical-pack label overrides for this org — read via the same
+ * `/api/org/settings/` endpoint the settings page uses, not a second
+ * endpoint. `terminology` and `vertical` are `read_only_fields` on
+ * `OrgSettingsSerializer`: the pack applier writes them server-side, so
+ * there is nothing to validate or scope on the way out.
+ *
+ * Called from the `(app)` shell load on *every* page (see
+ * `routes/(app)/+layout.server.js`), not just the settings page, so it must
+ * never be the reason the shell fails to render — callers are expected to
+ * fold a rejection into an empty/undefined result the same way the shell's
+ * badge-count fetches already do, rather than let it propagate.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @returns {Promise<{ terminology?: Record<string, string>, vertical?: string }>}
+ */
+export async function getOrgTerminology({ cookies }) {
+  const org = await apiRequest('/org/settings/', {}, { cookies });
+  return { terminology: org?.terminology, vertical: org?.vertical };
+}

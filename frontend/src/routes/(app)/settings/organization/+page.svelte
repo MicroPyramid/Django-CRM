@@ -22,21 +22,85 @@
    * Editing is admin-only. `can_edit` (from the JWT role claim) decides whether
    * the "Edit details" link shows; the edit route and the backend PATCH are what
    * enforce it. A member sees this page read-only.
+   *
+   * VERTICAL PACK SECTION
+   * `can_edit` — the same admin-derived flag the rest of this page already
+   * uses to gate the "Edit details" link — also gates the pack list and its
+   * actions here, because `PackApplyView`/`PackSampleDataView` are ADMIN-only
+   * for the identical reason: this is org-wide configuration, not a personal
+   * setting. A member sees only which pack (if any) is currently applied,
+   * with no buttons, matching the 403 the backend would return if the UI
+   * offered one anyway.
+   *
+   * Applying is additive-only and idempotent, so the currently-applied pack
+   * stays clickable — re-applying it is expected to report everything
+   * skipped, not to be disallowed.
+   *
+   * The report after an apply shows created AND skipped, by name, because a
+   * pack applied to an org that already has some of this configured is the
+   * normal case, not a partial failure — a plain success toast would say
+   * less than what actually happened. "Clear sample data" needs an in-page
+   * confirm step (never the native `confirm()`, which blocks the browser
+   * automation this app is smoke-tested with) before it deletes anything.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
+  import NextAction from '$lib/v2/components/NextAction.svelte';
   import { count, shortDate } from '$lib/v2/format.js';
-  import { FileText, ShieldAlert, Pencil } from '@lucide/svelte';
+  import { FileText, ShieldAlert, Pencil, Trash2 } from '@lucide/svelte';
+  import { enhance } from '$app/forms';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
   let org = $derived(data.org);
+  let packs = $derived(data.packs ?? []);
+  /** The registry entry matching `org.vertical`, or null if unapplied / unknown. */
+  let appliedPack = $derived(packs.find((/** @type {any} */ p) => p.id === org.vertical) ?? null);
 
   let address = $derived(
     [org.address_line, org.city, org.state, org.postcode, org.country].filter(Boolean).join(', ')
   );
+
+  /** Disables every Apply / Clear button while any one of them is in flight. */
+  let busy = $state(false);
+  let confirmingClear = $state(false);
+
+  /** Shared submit handler for the per-pack Apply forms. */
+  const applySubmit = () => {
+    busy = true;
+    return async (/** @type {any} */ { update }) => {
+      await update();
+      busy = false;
+    };
+  };
+
+  /** Clearing also drops back out of the confirm step on a successful run. */
+  const clearSubmit = () => {
+    busy = true;
+    return async (/** @type {any} */ { update, result }) => {
+      await update();
+      busy = false;
+      if (result?.type === 'success') confirmingClear = false;
+    };
+  };
+
+  /**
+   * "Created 18 items, skipped 3 you already had" — the exact wording this
+   * section exists to show instead of a success toast.
+   * @param {{ created?: any[], skipped?: any[] }} report
+   */
+  function reportSummary(report) {
+    const created = report?.created?.length ?? 0;
+    const skipped = report?.skipped?.length ?? 0;
+    if (!created && !skipped) return 'Nothing to add — this org already has all of it.';
+    if (!skipped) return `Created ${created} item${created === 1 ? '' : 's'}.`;
+    if (!created) {
+      return `Already had everything from this pack — skipped ${skipped} item${skipped === 1 ? '' : 's'} you already had.`;
+    }
+    return `Created ${created} item${created === 1 ? '' : 's'}, skipped ${skipped} you already had.`;
+  }
 </script>
 
 <PageHeader title="Organization">
@@ -162,5 +226,181 @@
         </div>
       </div>
     </div>
+
+    <div style="margin-top:24px">
+      <div class="v2-label" style="margin-bottom:10px">Vertical pack</div>
+      <div class="v2-card" style="padding:16px 18px">
+        <p class="v2-sub" style="font-size:12.5px;margin:0 0 14px;line-height:1.5">
+          A pack adds starter pipelines, tags, custom fields, products and a set of sample
+          records — accounts, contacts, deals, tickets, tasks and leads — for one kind of
+          business. Applying one only fills in what this org is missing — anything already set up
+          is left exactly as it is, and applying the same pack twice is safe.
+        </p>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <span class="v2-sub" style="font-size:11.5px">First pack applied</span>
+          {#if appliedPack}
+            <Pill tone="moss">{appliedPack.name}</Pill>
+          {:else if org.vertical}
+            <Pill tone="slate">{org.vertical}</Pill>
+          {:else}
+            <span class="v2-sub" style="font-size:12.5px">None yet</span>
+          {/if}
+        </div>
+
+        {#if !data.can_edit}
+          <p class="v2-sub" style="font-size:12px;margin:0">
+            Applying a pack or clearing sample data is limited to administrators.
+          </p>
+        {:else}
+          {#if form?.error}
+            <div style="margin-bottom:14px">
+              <NextAction label="That did not work" text={form.error} tone="rust" />
+            </div>
+          {/if}
+
+          {#if form?.report}
+            {@const created = form.report.created ?? []}
+            {@const skipped = form.report.skipped ?? []}
+            {@const appliedName =
+              packs.find((/** @type {any} */ p) => p.id === form.appliedPackId)?.name ??
+              form.appliedPackId}
+            <div
+              class="v2-card"
+              style="padding:14px 16px;margin-bottom:16px;border-color:color-mix(in srgb, var(--v2-moss) 40%, var(--v2-line))"
+            >
+              <div style="font-weight:650;font-size:13px">Applied “{appliedName}”</div>
+              <p class="v2-sub" style="font-size:12.5px;margin:4px 0 10px">
+                {reportSummary(form.report)}
+              </p>
+              {#if skipped.length}
+                <div class="v2-label" style="margin-bottom:4px">Skipped — already had these</div>
+                <ul style="margin:0 0 10px;padding-left:18px;font-size:12.5px;line-height:1.7">
+                  {#each skipped as item (item.type + ':' + item.name)}
+                    <li>
+                      {item.name}
+                      <span class="v2-sub" style="font-size:11px">
+                        ({item.type.replaceAll('_', ' ')} — {item.reason})
+                      </span>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+              {#if created.length}
+                <div class="v2-label" style="margin-bottom:4px">Created</div>
+                <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7">
+                  {#each created as item (item.type + ':' + item.name)}
+                    <li>
+                      {item.name}
+                      <span class="v2-sub" style="font-size:11px">
+                        ({item.type.replaceAll('_', ' ')})
+                      </span>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          {/if}
+
+          <div class="v2-card" style="overflow:hidden;margin-bottom:20px">
+            {#each packs as pack (pack.id)}
+              <div class="v2-setting">
+                <div class="v2-setting-body">
+                  <b>{pack.name}</b>
+                  <span class="v2-sub" style="font-size:11.5px">
+                    {pack.description}
+                    {#if pack.version}· v{pack.version}{/if}
+                  </span>
+                </div>
+                {#if pack.id === org.vertical}
+                  <Pill tone="moss">Applied</Pill>
+                {/if}
+                <form method="POST" action="?/apply" use:enhance={applySubmit}>
+                  <input type="hidden" name="pack_id" value={pack.id} />
+                  <button class="v2-btn v2-btn-sm" disabled={busy}>Apply</button>
+                </form>
+              </div>
+            {/each}
+            {#if !packs.length}
+              <div class="v2-setting">
+                <span class="v2-sub" style="font-size:12.5px">No packs available right now.</span>
+              </div>
+            {/if}
+          </div>
+
+          <div class="danger">
+            {#if confirmingClear}
+              <form
+                method="POST"
+                action="?/clearSampleData"
+                use:enhance={clearSubmit}
+                style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"
+              >
+                <span class="v2-sub" style="font-size:12px">
+                  Permanently delete every sample record a pack created for this org? This cannot
+                  be undone — your real records are never touched, and any sample record you have
+                  since attached real work to is kept.
+                </span>
+                <button class="v2-btn danger-btn" type="submit" disabled={busy}>
+                  <Trash2 size={14} /> Clear sample data
+                </button>
+                <button
+                  class="v2-btn"
+                  type="button"
+                  disabled={busy}
+                  onclick={() => (confirmingClear = false)}
+                >
+                  Cancel
+                </button>
+              </form>
+            {:else if form?.cleared !== undefined}
+              <span class="v2-sub" style="font-size:12.5px">
+                {form.cleared
+                  ? `Deleted ${form.cleared} sample ${form.cleared === 1 ? 'record' : 'records'}.`
+                  : 'No sample data to clear.'}
+                {#if form.retained}
+                  Kept {form.retained}
+                  {form.retained === 1 ? 'record' : 'records'} you have since attached real work to.
+                {/if}
+              </span>
+            {:else}
+              <button
+                class="v2-btn danger-btn"
+                type="button"
+                onclick={() => (confirmingClear = true)}
+              >
+                <Trash2 size={14} /> Clear sample data
+              </button>
+              <span class="v2-sub" style="font-size:11.5px">
+                Removes only the records a pack created as samples. Your real records are never
+                touched.
+              </span>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 </div>
+
+<style>
+  /* Mirrors the destructive-action pattern used on the product-edit page
+     (frontend/src/routes/(app)/invoices/products/[id]/edit/+page.svelte) —
+     same class names, same look, so "delete something" reads the same way
+     everywhere in the app. */
+  .danger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--v2-line-soft);
+    padding-top: 16px;
+  }
+  .danger-btn {
+    color: var(--v2-rust);
+    border-color: color-mix(in srgb, var(--v2-rust) 32%, transparent);
+  }
+  .danger-btn:hover {
+    background: color-mix(in srgb, var(--v2-rust) 9%, transparent);
+  }
+</style>

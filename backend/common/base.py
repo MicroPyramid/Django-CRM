@@ -9,6 +9,20 @@ from django.db import models
 # Module imports
 from common.mixins import AuditModel
 
+# Help text shared by every `is_sample` column. One string, because the rule it
+# states is a security invariant rather than documentation: the flag is the sole
+# key `clear_sample_data` deletes on, so any serializer that made it writable
+# would let a user mark a real record as sample and have it destroyed. Stating
+# that once, next to the definition all six models import, is what stops the
+# sixth copy from quietly dropping the warning.
+SAMPLE_DATA_HELP_TEXT = (
+    "True only for demo rows created by common.packs.applier._apply_sample_data. "
+    "Server-set exclusively — never expose this as a writable field on any "
+    "serializer. It is the sole key common.packs.applier.clear_sample_data uses "
+    "to decide what to delete, so a client-writable path here would let a user "
+    "mark an arbitrary real record as sample and have it deleted."
+)
+
 
 class AssignableMixin(models.Model):
     """

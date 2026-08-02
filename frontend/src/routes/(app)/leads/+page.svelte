@@ -7,12 +7,22 @@
   import { money, count, relativeDays, daysSince } from '$lib/v2/format.js';
   import { LEAD_STATUS_TONE } from '$lib/v2/enums.js';
   import { Plus, Upload, Target } from '@lucide/svelte';
+  import { t } from '$lib/terminology.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
 
   let leads = $derived(data.leads);
   let totals = $derived(data.totals);
+
+  /* A vertical pack renames this module in the sidebar. Reading the same map
+     here keeps the two agreeing — a nav item saying "Enquiries" that opens a
+     page headed "Leads" reads as a bug, not as configuration. `t()` falls back
+     to the literal, so an org with no terminology sees exactly what it saw
+     before. The values are tenant text and render as plain text. */
+  let terms = $derived(data.org?.terminology);
+  let plural = $derived(t(terms, 'lead.plural', 'Leads'));
+  let singular = $derived(t(terms, 'lead.singular', 'lead'));
 
   const FILTERS = [];
 
@@ -26,14 +36,14 @@
   const stale = (lead) => (daysSince(lead.last_contacted ?? lead.created_at) ?? 0) > 7;
 </script>
 
-<PageHeader title="Leads">
+<PageHeader title={plural}>
   {#snippet sub()}
     <span class="v2-num">{count(totals.count)}</span> open ·
     <span class="v2-num">{totals.unworked_over_a_week}</span> unworked for more than a week
   {/snippet}
   {#snippet actions()}
     <button class="v2-btn"><Upload />Import</button>
-    <button class="v2-btn v2-btn-primary"><Plus />New lead</button>
+    <button class="v2-btn v2-btn-primary"><Plus />New {singular}</button>
   {/snippet}
 </PageHeader>
 
@@ -42,12 +52,12 @@
 <div class="v2-scroll">
   {#if leads.length === 0}
     <EmptyState
-      title="No leads yet"
+      title="No {plural.toLowerCase()} yet"
       body="A lead is somebody who might buy, before you know enough to call it a deal. Import a list, or add the last person who emailed you."
     >
       {#snippet icon()}<Target size={21} />{/snippet}
       {#snippet actions()}
-        <button class="v2-btn v2-btn-primary">New lead</button>
+        <button class="v2-btn v2-btn-primary">New {singular}</button>
         <button class="v2-btn">Import</button>
       {/snippet}
     </EmptyState>

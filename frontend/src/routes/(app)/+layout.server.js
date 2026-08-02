@@ -5,6 +5,7 @@ import { listTasks } from '$lib/server/v2/tasks.js';
 import { listInvoices } from '$lib/server/v2/invoices.js';
 import { countAwaitingApprovals } from '$lib/server/v2/approvals.js';
 import { countUnread } from '$lib/server/v2/notifications.js';
+import { getOrgTerminology } from '$lib/server/v2/organization.js';
 
 /**
  * Counts for migrated modules, fetched for real and merged over the fixtures.
@@ -90,13 +91,17 @@ const LIVE_COUNTS = {
 };
 
 /**
- * The shell: nav counts and the org name.
+ * The shell: nav counts, the org name, and vertical-pack terminology.
  *
  * The org name is display-only and comes from the JWT via `locals.org` — never
- * the client, never a fixture. Counts run concurrently (in sequence they would
- * add a round trip per module to every page) and start empty: every badge the
- * sidebar renders is in LIVE_COUNTS, so a count that fails just shows no badge
- * rather than a stale number.
+ * the client, never a fixture. Everything below runs concurrently (in sequence
+ * it would add a round trip per module to every page) and starts empty: every
+ * badge the sidebar renders is in LIVE_COUNTS, so a count that fails just shows
+ * no badge rather than a stale number. `terminology` joins the same fan-out —
+ * a failed fetch there just leaves the sidebar's hard-coded labels in place
+ * (every consumer reads it through `$lib/terminology.js#t()`, which always
+ * takes an explicit fallback), the same "missing, not stale or broken" contract
+ * as a missing count badge.
  *
  * Still worth fixing: each count builds an entire page context — accounts,
  * tags, users, industries — to answer a question about one integer. One counts
@@ -107,7 +112,10 @@ const LIVE_COUNTS = {
 export async function load(event) {
   const shell = {
     counts: /** @type {Record<string, number>} */ ({}),
-    org: { name: event.locals.org?.name || 'BottleCRM' },
+    org: {
+      name: event.locals.org?.name || 'BottleCRM',
+      terminology: /** @type {Record<string, string> | undefined} */ (undefined)
+    },
     // Server-derived from the JWT (never the client). Display-only: it lets the
     // shell hide destinations a member can only reach to be turned away — the
     // backend still enforces every one of those gates, so this is UX, not a
@@ -115,15 +123,26 @@ export async function load(event) {
     role: event.locals.profile?.role ?? 'USER'
   };
 
-  const keys = Object.keys(LIVE_COUNTS);
-  const counted = await Promise.allSettled(
-    keys.map((key) => LIVE_COUNTS[/** @type {keyof typeof LIVE_COUNTS} */ (key)](event))
-  );
+  // countKeys' fetches and the terminology fetch are pushed into ONE
+  // Promise.allSettled call so they all fire in the same network wave — the
+  // terminology lookup is not a second round trip, it rides the wave that was
+  // already here for the badges. `results` is indexed by position: the count
+  // keys first (in `countKeys` order), terminology last.
+  const countKeys = Object.keys(LIVE_COUNTS);
+  const results = await Promise.allSettled([
+    ...countKeys.map((key) => LIVE_COUNTS[/** @type {keyof typeof LIVE_COUNTS} */ (key)](event)),
+    getOrgTerminology(event)
+  ]);
 
-  keys.forEach((key, index) => {
-    const result = counted[index];
+  countKeys.forEach((key, index) => {
+    const result = results[index];
     if (result.status === 'fulfilled') shell.counts[key] = result.value;
   });
+
+  const terminologyResult = results[countKeys.length];
+  if (terminologyResult.status === 'fulfilled') {
+    shell.org.terminology = terminologyResult.value.terminology;
+  }
 
   return shell;
 }

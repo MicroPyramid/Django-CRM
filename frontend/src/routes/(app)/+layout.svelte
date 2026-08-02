@@ -7,7 +7,7 @@
   import CommandPalette from '$lib/v2/components/CommandPalette.svelte';
   import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
 
-  /** @type {{ data: { counts: Record<string, number>, org: { name: string }, role: string }, children: import('svelte').Snippet }} */
+  /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, role: string }, children: import('svelte').Snippet }} */
   let { data, children } = $props();
 
   let paletteOpen = $state(false);
@@ -60,6 +60,7 @@
     counts={data.counts}
     org={data.org}
     role={data.role}
+    terminology={data.org.terminology}
     onsearch={() => (paletteOpen = true)}
   />
   <div class="v2-main">
@@ -133,6 +134,7 @@
           counts={data.counts}
           org={data.org}
           role={data.role}
+          terminology={data.org.terminology}
           onsearch={() => {
             menuOpen = false;
             paletteOpen = true;

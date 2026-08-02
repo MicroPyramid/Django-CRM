@@ -69,6 +69,7 @@ class LeadSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "is_active",
+            "is_sample",
             "company_name",
             # Kanban
             "stage",
@@ -76,6 +77,12 @@ class LeadSerializer(serializers.ModelSerializer):
             # Per-org custom fields (validated via common.custom_fields)
             "custom_fields",
         )
+        # is_sample is server-set only (see leads/models.py) — read-only here
+        # even though this serializer is a read/list path today (writes go
+        # through LeadCreateSerializer, which never lists this field at all).
+        # Defense in depth: a future write path added to this serializer
+        # without checking Meta.fields first still can't make it writable.
+        read_only_fields = ("is_sample",)
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):

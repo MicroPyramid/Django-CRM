@@ -77,6 +77,11 @@
   }));
 
   let form = $state(untrack(() => ({ ...data.form })));
+  /* Copied per row, not shared: each entry's `value` is bound to an input, so
+     the objects have to be the page's own rather than the load result's. */
+  let customFields = $state(
+    untrack(() => (data.customFields ?? []).map((/** @type {any} */ f) => ({ ...f })))
+  );
   let touched = $state(/** @type {Record<string, boolean>} */ ({}));
   let submitted = $state(false);
   let saving = $state(false);
@@ -128,6 +133,18 @@
       const n = Number(amount);
       if (!Number.isFinite(n)) e.opportunity_amount = 'Estimated value has to be a number.';
       else if (n < 0) e.opportunity_amount = 'Estimated value cannot be negative.';
+    }
+
+    /* Mirrors the required-field loop at the end of
+       `common.custom_fields.validate_payload`: a required definition errors
+       when neither the payload nor the stored record has a value. A plain
+       `required` attribute would do nothing here — the form is `novalidate`,
+       so the page owns its own checks. Without this the API answers 400 with
+       "is required" and the message has no field to sit beside. A checkbox is
+       exempt: false is a value, so a required one can never be unsatisfied. */
+    for (const f of customFields) {
+      if (!f.is_required || f.field_type === 'checkbox') continue;
+      if (String(f.value ?? '').trim() === '') e[`cf_${f.key}`] = `${f.label} is required.`;
     }
 
     return e;
@@ -448,6 +465,66 @@
         bind:value={form.description}></textarea>
     </div>
 
+    <!-- Per-org custom fields, in the order the org defined them. The input
+         type follows field_type; every one submits a string (or nothing, for
+         an unchecked box) and `_coerce_value` converts on the way in. -->
+    {#if customFields.length > 0}
+      <div class="v2-label v2-section-label">Details</div>
+      {#each customFields as f (f.key)}
+        <div class="v2-field">
+          {#if f.field_type === 'checkbox'}
+            <label class="cf-check">
+              <input type="checkbox" name="cf_{f.key}" bind:checked={f.value} />
+              <span>{f.label}</span>
+            </label>
+          {:else}
+            <label for="f-cf-{f.key}">
+              {f.label}
+              {#if f.is_required}<span class="req">required</span>{/if}
+            </label>
+            {#if f.field_type === 'dropdown'}
+              <select
+                id="f-cf-{f.key}"
+                name="cf_{f.key}"
+                class="v2-input"
+                bind:value={f.value}
+                onblur={() => (touched[`cf_${f.key}`] = true)}
+                aria-invalid={show(`cf_${f.key}`) ? 'true' : undefined}
+              >
+                <option value="">—</option>
+                {#each f.options as o (o.value)}
+                  <option value={o.value}>{o.label}</option>
+                {/each}
+              </select>
+            {:else if f.field_type === 'textarea'}
+              <textarea
+                id="f-cf-{f.key}"
+                name="cf_{f.key}"
+                class="v2-input"
+                rows="3"
+                bind:value={f.value}
+                onblur={() => (touched[`cf_${f.key}`] = true)}
+                aria-invalid={show(`cf_${f.key}`) ? 'true' : undefined}></textarea>
+            {:else}
+              <input
+                id="f-cf-{f.key}"
+                name="cf_{f.key}"
+                class="v2-input"
+                type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                step={f.field_type === 'number' ? 'any' : undefined}
+                bind:value={f.value}
+                onblur={() => (touched[`cf_${f.key}`] = true)}
+                aria-invalid={show(`cf_${f.key}`) ? 'true' : undefined}
+              />
+            {/if}
+            {#if show(`cf_${f.key}`)}
+              <p class="v2-error">{errors[`cf_${f.key}`]}</p>
+            {/if}
+          {/if}
+        </div>
+      {/each}
+    {/if}
+
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit" disabled={saving}>
         {saving ? 'Saving…' : 'Save changes'}
@@ -468,6 +545,14 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+  }
+  /* A checkbox labels itself inline — the stacked label/input of the other
+     fields leaves the box floating under its own caption. */
+  .cf-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
   }
   .req,
   .locked {

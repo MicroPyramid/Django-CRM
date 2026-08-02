@@ -22,6 +22,7 @@
     Smartphone,
     LogOut
   } from '@lucide/svelte';
+  import { t } from '$lib/terminology.js';
 
   /**
    * One flat tree, grouped by what the person is doing rather than by which
@@ -38,24 +39,43 @@
    * is one where a member gets nothing but a "for administrators" gate, so
    * showing it would only teach them to bounce off it.
    *
+   * `termKey` marks the handful of entity destinations a vertical pack may
+   * relabel (see `$lib/terminology.js`). The string in `label` below is only
+   * ever the fallback an org with no pack — or no override for that key —
+   * still renders; the derived `groups` below is what actually resolves it
+   * against `terminology`. No other label branches on the org at all.
+   *
    * @type {{
    *   counts?: Record<string, number>,
    *   org?: { name: string },
    *   role?: string,
+   *   terminology?: Record<string, string> | null,
    *   onsearch?: () => void
    * }}
    */
-  let { counts = {}, org = { name: 'BottleCRM' }, role = 'USER', onsearch = () => {} } = $props();
+  let {
+    counts = {},
+    org = { name: 'BottleCRM' },
+    role = 'USER',
+    terminology = undefined,
+    onsearch = () => {}
+  } = $props();
 
   const GROUPS = [
     {
       label: 'Sell',
       items: [
         { href: '/', label: 'Today', icon: Sun, exact: true },
-        { href: '/pipeline', label: 'Pipeline', icon: Columns3, count: 'pipeline' },
-        { href: '/leads', label: 'Leads', icon: Target, count: 'leads' },
-        { href: '/accounts', label: 'Accounts', icon: Building2 },
-        { href: '/contacts', label: 'Contacts', icon: Users },
+        {
+          href: '/pipeline',
+          label: 'Pipeline',
+          icon: Columns3,
+          count: 'pipeline',
+          termKey: 'opportunity.plural'
+        },
+        { href: '/leads', label: 'Leads', icon: Target, count: 'leads', termKey: 'lead.plural' },
+        { href: '/accounts', label: 'Accounts', icon: Building2, termKey: 'account.plural' },
+        { href: '/contacts', label: 'Contacts', icon: Users, termKey: 'contact.plural' },
         { href: '/goals', label: 'Goals', icon: Trophy }
       ]
     },
@@ -74,7 +94,13 @@
     {
       label: 'Bill',
       items: [
-        { href: '/invoices', label: 'Invoices', icon: Receipt, count: 'invoices' },
+        {
+          href: '/invoices',
+          label: 'Invoices',
+          icon: Receipt,
+          count: 'invoices',
+          termKey: 'invoice.plural'
+        },
         { href: '/timesheet', label: 'Timesheet', icon: Clock }
       ]
     },
@@ -93,11 +119,16 @@
     }
   ];
 
-  // Drop admin-only items for members, then drop any group left with nothing.
+  // Drop admin-only items for members, resolve any relabelled entity through
+  // the terminology map, then drop any group left with nothing.
   let groups = $derived(
     GROUPS.map((group) => ({
       ...group,
-      items: group.items.filter((item) => role === 'ADMIN' || !item.admin)
+      items: group.items
+        .filter((item) => role === 'ADMIN' || !item.admin)
+        .map((item) =>
+          item.termKey ? { ...item, label: t(terminology, item.termKey, item.label) } : item
+        )
     })).filter((group) => group.items.length > 0)
   );
 

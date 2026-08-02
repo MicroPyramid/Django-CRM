@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
-from common.base import AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from contacts.models import Contact
 
@@ -346,6 +346,7 @@ class Task(AssignableMixin, BaseModel):
     teams = models.ManyToManyField(Teams, related_name="tasks_teams")
     tags = models.ManyToManyField(Tags, related_name="task_tags", blank=True)
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="tasks")
+    is_sample = models.BooleanField(default=False, help_text=SAMPLE_DATA_HELP_TEXT)
 
     # Kanban fields
     kanban_order = models.DecimalField(

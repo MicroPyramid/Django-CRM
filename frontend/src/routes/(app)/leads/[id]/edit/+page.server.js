@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getLeadForEdit, updateLead } from '$lib/server/v2/leads.js';
+import { collectFromForm, leadFieldDefinitions } from '$lib/server/v2/lead-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
@@ -44,6 +45,22 @@ export const actions = {
     const owner = form.get('assigned_to')?.toString().trim() ?? '';
     const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
     if (owner !== ownerWas) values.assigned_to = owner;
+
+    /*
+     * Custom fields are read against the org's own definitions, re-fetched
+     * here rather than trusted from the body: the keys come from the server's
+     * list, so a `cf_` input appended to the POST by hand names nothing and is
+     * never read. The API is still the authority — `validate_payload` drops
+     * unknown keys and coerces every value — but the form has no reason to
+     * forward something it did not offer.
+     *
+     * Only sent when the org actually defines Lead fields, so an org with none
+     * PATCHes exactly the body it did before.
+     */
+    const definitions = await leadFieldDefinitions(cookies);
+    if (definitions.length > 0) {
+      values.custom_fields = collectFromForm(form, definitions);
+    }
 
     if (!values.first_name && !values.last_name) {
       return fail(400, {

@@ -25,6 +25,11 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
+import {
+  leadFieldDefinitions,
+  pairForDisplay,
+  pairForEdit
+} from '$lib/server/v2/lead-custom-fields.js';
 
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
@@ -137,8 +142,15 @@ export async function getLead({ cookies }, id) {
   // than widening every list row to carry a paragraph nobody scans.
   const lead = { ...toRow(response.lead_obj), description: response.lead_obj.description ?? '' };
 
+  // Per-org custom fields. A vertical pack's whole promise is the fields it
+  // sets up for the industry, and they are stored on the lead — so the detail
+  // page reads them here rather than leaving them visible only under
+  // Settings → Custom fields.
+  const definitions = await leadFieldDefinitions(cookies);
+
   return {
     lead,
+    customFields: pairForDisplay(definitions, response.lead_obj.custom_fields),
     activity: buildActivity(response),
     duplicates: await findDuplicates(cookies, lead)
   };
@@ -326,9 +338,15 @@ export async function getLeadForEdit({ cookies }, id) {
   // to a name, which reads the same on screen and cannot be saved.
   form.assigned_to = response.lead_obj.assigned_to?.[0]?.id ?? '';
 
+  const definitions = await leadFieldDefinitions(cookies);
+
   return {
     lead,
     form,
+    // The definitions drive both the inputs rendered here and the keys read
+    // back off the submitted form, so a field the org has not defined has
+    // nowhere to enter the request in the first place.
+    customFields: pairForEdit(definitions, response.lead_obj.custom_fields),
     owners: await listOwners(cookies),
     server: {
       // The DB constraint `unique_lead_email_per_org` is case-insensitive and
@@ -398,6 +416,17 @@ export async function updateLead({ cookies }, id, values) {
   // meaningful — it is how a lead is unassigned — so it is sent, not skipped.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
+  }
+
+  // `validate_payload` merges rather than replaces: it carries forward every
+  // recognized key the body does not mention, and treats an explicit null as
+  // "clear this one" (`cleaned.pop`). So omitting a field preserves it and
+  // submitting it empty removes it — which is exactly what a form whose empty
+  // input means "no value" needs, and why `collectFromForm` sends null instead
+  // of skipping the key. Absent stays absent: a caller that does not edit
+  // custom fields never sends the key at all.
+  if ('custom_fields' in values && values.custom_fields) {
+    body.custom_fields = values.custom_fields;
   }
 
   return await apiRequest(`/leads/${id}/`, { method: 'PATCH', body }, { cookies });

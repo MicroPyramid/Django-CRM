@@ -64,6 +64,16 @@ ORG_SCOPED_TABLES = [
     "email_message",
     "routing_rule",
     "routing_rule_state",
+    # Kanban pipelines and their stages. All six carry org_id directly.
+    # These were stamped out-of-band on existing databases but were absent from
+    # this list and from every migration, so a database built purely from
+    # migrations got no policies at all. common/0034 stamps them from source.
+    "lead_pipeline",
+    "lead_stage",
+    "case_pipeline",
+    "case_stage",
+    "task_pipeline",
+    "task_stage",
     # Boards (Kanban)
     "board",
     "board_column",
@@ -71,6 +81,7 @@ ORG_SCOPED_TABLES = [
     "board_member",
     # Settings
     "apiSettings",  # Note: camelCase
+    "pack_application",
     # Email & Invoicing
     "account_email",
     "emailLogs",

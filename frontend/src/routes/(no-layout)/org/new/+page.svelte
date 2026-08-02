@@ -6,7 +6,9 @@
   import imgLogo from '$lib/assets/images/logo.png';
   import { ArrowLeft, Check, AlertCircle } from '@lucide/svelte';
 
-  let { form } = $props();
+  let { data, form } = $props();
+
+  let packs = $derived(data?.packs ?? []);
 
   let isSubmitting = $state(false);
 
@@ -63,6 +65,47 @@
           <p class="v2-hint">This becomes your workspace name in BottleCRM.</p>
         </div>
 
+        {#if packs.length > 0}
+          <fieldset class="v2-field pack-choice">
+            <legend>What kind of business is this?</legend>
+            <p class="v2-hint" style="margin-top:0">
+              Sets up a starter pipeline, tags and fields for your industry. You can change
+              everything later.
+            </p>
+
+            <label class="pack-opt">
+              <input
+                type="radio"
+                name="vertical"
+                value=""
+                checked
+                disabled={isSubmitting || !!form?.data}
+              />
+              <span class="pack-opt-body">
+                <b>Skip for now</b>
+                <span class="v2-hint" style="margin:0">Start with a blank workspace.</span>
+              </span>
+            </label>
+
+            {#each packs as pack (pack.id)}
+              <label class="pack-opt">
+                <input
+                  type="radio"
+                  name="vertical"
+                  value={pack.id}
+                  disabled={isSubmitting || !!form?.data}
+                />
+                <span class="pack-opt-body">
+                  <b>{pack.name}</b>
+                  {#if pack.description}
+                    <span class="v2-hint" style="margin:0">{pack.description}</span>
+                  {/if}
+                </span>
+              </label>
+            {/each}
+          </fieldset>
+        {/if}
+
         {#if form?.error}
           <div class="v2-auth-note v2-auth-note-bad" style="margin-bottom:14px">
             <AlertCircle />
@@ -110,3 +153,46 @@
     </div>
   </div>
 </div>
+
+<style>
+  .pack-choice {
+    border: 1px solid var(--v2-line-soft);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .pack-choice legend {
+    font-weight: 600;
+    padding: 0 6px;
+  }
+  .pack-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 9px 10px;
+    border: 1px solid var(--v2-line);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .pack-opt + .pack-opt {
+    margin-top: 7px;
+  }
+  .pack-opt:has(input:checked) {
+    border-color: var(--v2-ember);
+    background: var(--v2-ember-soft);
+  }
+  .pack-opt:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+  .pack-opt input[type='radio'] {
+    margin-top: 2px;
+    accent-color: var(--v2-ember);
+    flex: none;
+  }
+  .pack-opt-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+</style>

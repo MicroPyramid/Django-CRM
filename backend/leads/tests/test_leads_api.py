@@ -65,6 +65,28 @@ class TestLeadListView:
         assert data["error"] is False
         assert Lead.objects.filter(email="jane@example.com", org=org_a).exists()
 
+    def test_create_lead_ignores_is_sample_in_payload(self, admin_client, org_a):
+        """`is_sample` is server-set only (see leads/models.py) and it is the
+        sole key common.packs.applier.clear_sample_data uses to decide what
+        to delete. LeadCreateSerializer.Meta.fields never lists it, so DRF
+        silently drops it from validated_data rather than erroring — this
+        proves that drop actually holds and a user cannot mark their own
+        lead "sample" (and have it swept up by a future clear) by adding the
+        field to the request body.
+        """
+        response = admin_client.post(
+            "/api/leads/",
+            {
+                "first_name": "Not",
+                "last_name": "Sample",
+                "email": "not.sample@example.com",
+                "is_sample": True,
+            },
+        )
+        assert response.status_code == 200
+        lead = Lead.objects.get(email="not.sample@example.com", org=org_a)
+        assert lead.is_sample is False
+
     def test_create_lead_invalid_data(self, admin_client):
         response = admin_client.post(
             "/api/leads/",
@@ -655,6 +677,31 @@ class TestLeadDetailView:
         lead.refresh_from_db()
         assert lead.first_name == "Updated"
         assert lead.last_name == "Lead"  # unchanged
+
+    def test_patch_lead_ignores_is_sample_in_payload(
+        self, admin_client, admin_user, org_a
+    ):
+        """Mirrors test_create_lead_ignores_is_sample_in_payload for the
+        update path — PUT/PATCH share LeadCreateSerializer with create, so
+        this is the "and False" half of proving the mass-assignment door is
+        shut: an existing real lead cannot be flipped to is_sample=True and
+        then destroyed by clear_sample_data.
+        """
+        lead = Lead.objects.create(
+            first_name="Real",
+            last_name="Lead",
+            email="real.lead@example.com",
+            created_by=admin_user,
+            org=org_a,
+        )
+        response = admin_client.patch(
+            _detail_url(lead.id),
+            {"is_sample": True},
+            format="json",
+        )
+        assert response.status_code == 200
+        lead.refresh_from_db()
+        assert lead.is_sample is False
 
     def test_patch_lead_with_tags(self, admin_client, admin_user, org_a):
         """PATCH with tags replaces existing tags."""
