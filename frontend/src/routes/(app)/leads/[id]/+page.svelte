@@ -21,6 +21,7 @@
   import Pill from '$lib/v2/components/Pill.svelte';
   import { money, relativeDays, daysSince, shortDate } from '$lib/v2/format.js';
   import { LEAD_STATUS_TONE, LEAD_STATUS_LABEL, industryLabel } from '$lib/v2/enums.js';
+  import { t } from '$lib/terminology.js';
   import { enhance } from '$app/forms';
   import {
     ChevronRight,
@@ -36,7 +37,7 @@
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
-  let { lead, activity, duplicates } = $derived(data);
+  let { lead, activity, duplicates, customFields } = $derived(data);
   let isConverted = $derived(lead.status === 'converted');
   let firstName = $derived(lead.first_name || 'this lead');
   let fullName = $derived(`${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() || 'Lead');
@@ -173,7 +174,7 @@
     <Avatar name={fullName} size={42} />
   {/snippet}
   {#snippet crumb()}
-    <a href="/leads">Leads</a>
+    <a href="/leads">{t(data.org?.terminology, 'lead.plural', 'Leads')}</a>
     <ChevronRight size={12} />
     <span>{lead.company_name || 'No company'}</span>
   {/snippet}
@@ -257,6 +258,23 @@
         {#if lead.description}
           <div class="v2-label" style="margin:22px 0 10px">About</div>
           <div class="v2-card about">{lead.description}</div>
+        {/if}
+
+        <!-- Per-org custom fields. Every active definition shows, filled or
+             not: on a real-estate org these ARE the record, and an unfilled
+             "Possession by" is worth seeing rather than silently omitted. -->
+        {#if customFields.length > 0}
+          <div class="v2-label" style="margin:22px 0 10px">Details</div>
+          <div class="v2-card cf">
+            {#each customFields as f (f.key)}
+              <div class="cf-row">
+                <span class="cf-label">{f.label}</span>
+                <span class="cf-value" class:v2-muted={!f.filled}>
+                  {f.filled ? f.value : '—'}
+                </span>
+              </div>
+            {/each}
+          </div>
         {/if}
 
         <div class="act-head">
@@ -431,6 +449,39 @@
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
+  }
+  .cf {
+    padding: 4px 16px;
+    font-size: 13px;
+  }
+  .cf-row {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--v2-line);
+  }
+  .cf-row:last-child {
+    border-bottom: 0;
+  }
+  .cf-label {
+    flex: 0 0 40%;
+    color: var(--v2-ink-soft);
+  }
+  .cf-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Stack on narrow screens, matching the list's data-m card treatment. */
+  @media (max-width: 767px) {
+    .cf-row {
+      display: block;
+    }
+    .cf-label {
+      display: block;
+      margin-bottom: 2px;
+    }
   }
   .note-form {
     margin-bottom: 22px;

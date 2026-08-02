@@ -120,13 +120,24 @@ class CustomFieldDefinitionListCreateView(APIView):
         if request.query_params.get("active_only") == "true":
             qs = qs.filter(is_active=True)
 
+        rows = CustomFieldDefinitionSerializer(qs, many=True).data
+
+        # `records_missing_value` costs one COUNT over the org's whole record
+        # set per definition, plus one per target model — a `custom_fields ?
+        # key` scan of every Lead the org has, for each field. The settings
+        # page needs those numbers; a record page that only wants labels and
+        # types to render a form does not, and making it pay for the stat cards
+        # puts N+1 full scans on every lead view. `include_counts=false` opts
+        # out. The default is unchanged, so existing callers are unaffected.
+        if request.query_params.get("include_counts") == "false":
+            return Response({"definitions": rows, "totals": None})
+
         # records_missing_value + totals are computed over the org's FULL
         # definition set (independent of the target_model/active_only filters)
         # so the stat cards stay correct when the list is filtered.
         all_defs = list(CustomFieldDefinition.objects.filter(org=org))
         missing_by_id = _records_missing_map(org, all_defs)
 
-        rows = CustomFieldDefinitionSerializer(qs, many=True).data
         for row in rows:
             row["records_missing_value"] = missing_by_id.get(row["id"], 0)
 

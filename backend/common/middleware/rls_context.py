@@ -143,6 +143,27 @@ class RequireOrgContext:
         "/api/public/estimate/",
     ]
 
+    # Paths exempt on an EXACT match only — never prefix-matched like
+    # EXEMPT_PATHS above. Mirrors the exact-match pattern already used in
+    # common.middleware.get_company.GetProfileAndOrg.process_request
+    # (`if request.path in auth_skip_paths`).
+    #
+    # GET /api/packs/ is static content read from JSON files in the repo —
+    # byte-identical for every tenant, no tenant data whatsoever. It backs
+    # the pack chooser on the org-creation page, where a user creating their
+    # *first* org has no org_id claim yet, so RequireOrgContext would 403 the
+    # exact audience the page serves.
+    #
+    # This MUST stay an exact match, not a prefix: POST
+    # /api/packs/<pack_id>/apply/ (writes org-wide config, ADMIN only) and
+    # DELETE /api/packs/sample-data/ (deletes records, ADMIN only) both start
+    # with "/api/packs/" too. Adding "/api/packs/" to the prefix-matched
+    # EXEMPT_PATHS list instead of here would silently strip tenant-context
+    # enforcement from those write/destroy endpoints. Do not move it there.
+    EXEMPT_EXACT_PATHS = [
+        "/api/packs/",
+    ]
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -176,6 +197,8 @@ class RequireOrgContext:
 
     def _is_exempt(self, path):
         """Check if path is exempt from org context requirement."""
+        if path in self.EXEMPT_EXACT_PATHS:
+            return True
         return any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS)
 
     def _set_org_context(self, request):

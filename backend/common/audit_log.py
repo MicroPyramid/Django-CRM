@@ -46,6 +46,7 @@ class SecurityAuditLog(BaseModel):
         ("API_KEY_INVALID", "Invalid API Key"),
         ("MEMBERSHIP_REVOKED", "Membership Revoked"),
         ("SUSPICIOUS_ACTIVITY", "Suspicious Activity"),
+        ("SAMPLE_DATA_CLEARED", "Vertical Pack Sample Data Cleared"),
     )
 
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, db_index=True)
@@ -290,6 +291,25 @@ class AuditLogger:
             org=org,
             description=f"Membership revoked by {revoked_by.email if revoked_by else 'system'}",
             metadata={"revoked_by": str(revoked_by.id) if revoked_by else None},
+            request=request,
+        )
+
+    def sample_data_cleared(self, user, org, deleted_count, request=None):
+        """Log a vertical-pack sample-data clear.
+
+        This is the only destructive operation in the vertical-packs
+        feature — apply_pack only ever creates and records itself via
+        PackApplication, but clear_sample_data deletes rows and, before
+        this, recorded nothing. Any org admin can trigger it, so an audit
+        trail of who cleared what, and how many rows, matters for incident
+        review the same way the other destructive-adjacent events here do.
+        """
+        self._log(
+            "SAMPLE_DATA_CLEARED",
+            user=user,
+            org=org,
+            description=f"Cleared {deleted_count} vertical-pack sample lead(s)",
+            metadata={"deleted_count": deleted_count},
             request=request,
         )
 

@@ -31,6 +31,7 @@ from common.views.organization_views import (
     ProfileDetailView,
     ProfileView,
 )
+from common.views.pack_views import PackApplyView, PackListView, PackSampleDataView
 from common.views.pat_views import (
     OrgAccessTokenDetailView,
     OrgAccessTokenListView,
@@ -164,4 +165,10 @@ urlpatterns = [
         NotificationDetailView.as_view(),
         name="notifications_detail",
     ),
+    # Vertical packs — any member may list; apply/clear are ADMIN-only (see
+    # common/views/pack_views.py). sample-data/ must precede
+    # <str:pack_id>/apply/ so it is never captured as a pack id.
+    path("packs/", PackListView.as_view(), name="pack_list"),
+    path("packs/sample-data/", PackSampleDataView.as_view(), name="pack_sample_data"),
+    path("packs/<str:pack_id>/apply/", PackApplyView.as_view(), name="pack_apply"),
 ]

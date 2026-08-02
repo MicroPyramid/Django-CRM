@@ -15,6 +15,7 @@ import { redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { generateCodeVerifier, generateCodeChallenge, generateState } from '$lib/utils/pkce.js';
+import { describeError } from '$lib/server/log-safe.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_SCOPES = ['openid', 'email', 'profile'].join(' ');
@@ -125,9 +126,10 @@ async function handleOAuthCallback(code, returnedState, cookies) {
     cookies.set('jwt_access', access_token, getCookieOptions(60 * 60 * 24)); // 1 day
     cookies.set('jwt_refresh', refresh_token, getCookieOptions(60 * 60 * 24 * 365)); // 1 year
   } catch (error) {
-    console.error('OAuth token exchange failed - Full error:', error);
-    console.error('Response data:', error.response?.data);
-    console.error('Response status:', error.response?.status);
+    // Never log the raw error or the response body: the axios `config.data` for
+    // this call is the authorization code plus the PKCE code_verifier, and a
+    // token endpoint's response body can carry tokens.
+    console.error('OAuth token exchange failed:', describeError(error));
     const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
 
     // Provide user-friendly error messages
@@ -138,7 +140,9 @@ async function handleOAuthCallback(code, returnedState, cookies) {
     } else if (errStr.includes('expired')) {
       userError = 'code_expired';
     }
-    console.error('Final error message:', errorMessage);
+    // Log the classification, not errorMessage: that string comes from the
+    // token endpoint's response body, which does not belong in logs.
+    console.error('OAuth failure classified as:', userError);
 
     throw redirect(307, `/login?error=${userError}`);
   }

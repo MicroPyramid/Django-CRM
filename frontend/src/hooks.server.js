@@ -13,6 +13,7 @@ import * as Sentry from '@sentry/sveltekit';
 import { redirect } from '@sveltejs/kit';
 import axios from 'axios';
 import { env } from '$env/dynamic/public';
+import { describeError } from '$lib/server/log-safe.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -130,7 +131,8 @@ async function performTokenRefresh(refreshToken) {
 
     return { access: response.data.access, refresh: response.data.refresh };
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    // Never log the raw error: its axios `config.data` is the refresh token.
+    console.error('Token refresh failed:', describeError(error));
     return null;
   }
 }
@@ -164,7 +166,8 @@ async function switchOrg(accessToken, orgId, refreshToken) {
 
     return response.data;
   } catch (error) {
-    console.error('Org switch failed:', error);
+    // Never log the raw error: its axios `config.headers` carries the JWT.
+    console.error('Org switch failed:', describeError(error));
     return null;
   }
 }

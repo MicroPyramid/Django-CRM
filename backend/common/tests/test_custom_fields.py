@@ -202,6 +202,38 @@ class TestCustomFieldDefinitionAPI:
         keys = [d["key"] for d in response.json()["definitions"]]
         assert keys == ["a"]
 
+    def test_get_include_counts_false_omits_the_expensive_counts(
+        self, admin_client, org_a
+    ):
+        """`records_missing_value` is one COUNT over every record of the target
+        model per definition. Record pages fetch definitions only for labels and
+        types, so they opt out; the payload must then carry neither the per-row
+        count nor the totals block."""
+        CustomFieldDefinition.objects.create(
+            org=org_a, target_model="Lead", key="budget", label="Budget", field_type="number"
+        )
+        response = admin_client.get(
+            self.URL + "?target_model=Lead&include_counts=false"
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body["definitions"]) == 1
+        assert body["definitions"][0]["key"] == "budget"
+        assert "records_missing_value" not in body["definitions"][0]
+        assert body["totals"] is None
+
+    def test_get_counts_included_by_default(self, admin_client, org_a):
+        """The opt-out must be opt-in: an unqualified GET, and an explicit
+        anything-other-than-"false", keep the settings page's numbers."""
+        CustomFieldDefinition.objects.create(
+            org=org_a, target_model="Lead", key="budget", label="Budget", field_type="number"
+        )
+        for query in ("?target_model=Lead", "?target_model=Lead&include_counts=true"):
+            body = admin_client.get(self.URL + query).json()
+            assert "records_missing_value" in body["definitions"][0], query
+            assert body["totals"] is not None, query
+            assert body["totals"]["count"] == 1, query
+
     def test_get_allowed_for_non_admin(self, user_client, org_a):
         # Non-admins read definitions so the case detail page can render fields.
         CustomFieldDefinition.objects.create(

@@ -10,7 +10,7 @@ from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Account
-from common.base import AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import (
     CURRENCY_CODES,
@@ -127,6 +127,7 @@ class Opportunity(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
+    is_sample = models.BooleanField(default=False, help_text=SAMPLE_DATA_HELP_TEXT)
     org = models.ForeignKey(
         Org,
         on_delete=models.CASCADE,

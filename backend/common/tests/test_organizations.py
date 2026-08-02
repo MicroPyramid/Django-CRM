@@ -32,6 +32,50 @@ class TestOrgProfileCreateView:
             user=admin_user, org__name="New Organization", role="ADMIN"
         ).exists()
 
+    def test_create_org_response_includes_id(self, admin_client, admin_user):
+        """The created org's id must be in the response.
+
+        The frontend (org/new/+page.server.js) reads `org.id` off this
+        response to set the `org` cookie and to mint an org-scoped token for
+        the optional vertical-pack apply call. Before this field was added
+        to OrgProfileCreateSerializer.Meta.fields, `org.id` was `undefined`
+        here and every downstream use of it silently no-opped (C1).
+        """
+        response = admin_client.post(
+            self.url,
+            {"name": "Org With Id"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert "id" in response.data["org"]
+        assert response.data["org"]["id"] is not None
+        created = Profile.objects.get(
+            user=admin_user, org__name="Org With Id"
+        ).org
+        assert str(response.data["org"]["id"]) == str(created.id)
+
+    def test_create_org_ignores_client_supplied_id(self, admin_client, admin_user):
+        """A client-supplied "id" in the request body must not be honoured.
+
+        `id` is a UUIDField(editable=False), which DRF marks read-only
+        automatically -- this pins that guarantee so adding "id" to the
+        serializer's fields for C1 never regresses into a mass-assignment
+        hole (client picking its own org id / colliding with another org).
+        """
+        spoofed_id = "11111111-1111-1111-1111-111111111111"
+        response = admin_client.post(
+            self.url,
+            {"name": "Org Ignoring Spoofed Id", "id": spoofed_id},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["org"]["id"] != spoofed_id
+        created = Profile.objects.get(
+            user=admin_user, org__name="Org Ignoring Spoofed Id"
+        ).org
+        assert str(created.id) != spoofed_id
+        assert str(response.data["org"]["id"]) == str(created.id)
+
     def test_create_org_special_chars(self, admin_client):
         """Organization name with special characters should fail."""
         response = admin_client.post(
@@ -355,6 +399,20 @@ class TestOrgSettingsView:
         # admin_profile + user_profile are both active in org_a.
         assert response.data["member_count"] == 2
 
+    def test_get_org_settings_includes_vertical_and_terminology(
+        self, admin_client, org_a
+    ):
+        """The frontend shell reads terminology/vertical off this same endpoint
+        (no second fetch) -- both must be present in the payload, and reflect
+        whatever the pack applier actually wrote."""
+        org_a.vertical = "real-estate"
+        org_a.terminology = {"lead.plural": "Enquiries"}
+        org_a.save(update_fields=["vertical", "terminology"])
+        response = admin_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["vertical"] == "real-estate"
+        assert response.data["terminology"] == {"lead.plural": "Enquiries"}
+
     # ── Writes: the behaviour toggles that had no API write path before ──────
 
     def test_patch_org_settings_behaviour_toggles(self, admin_client, org_a):
@@ -402,6 +460,28 @@ class TestOrgSettingsView:
         assert response.status_code == status.HTTP_200_OK
         org_a.refresh_from_db()
         assert org_a.api_key == original_key
+        # The legitimate field in the same request still applied.
+        assert org_a.company_name == "Legit Co"
+
+    def test_patch_org_settings_cannot_set_terminology_or_vertical(
+        self, admin_client, org_a
+    ):
+        """vertical and terminology are written exclusively by the pack applier.
+        A PATCH naming them -- even from an admin -- must be silently ignored,
+        not honoured: this is mass assignment on fields the server derives."""
+        response = admin_client.patch(
+            self.url,
+            {
+                "vertical": "attacker-chosen-vertical",
+                "terminology": {"lead.plural": "Hacked"},
+                "company_name": "Legit Co",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        org_a.refresh_from_db()
+        assert org_a.vertical == ""
+        assert org_a.terminology == {}
         # The legitimate field in the same request still applied.
         assert org_a.company_name == "Legit Co"
 

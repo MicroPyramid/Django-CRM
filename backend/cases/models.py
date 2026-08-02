@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from accounts.models import Account
-from common.base import AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import CASE_TYPE, CURRENCY_CODES, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
@@ -36,6 +36,7 @@ class Case(AssignableMixin, BaseModel):
     description = models.TextField(blank=True, null=True)
     assigned_to = models.ManyToManyField(Profile, related_name="case_assigned_users")
     is_active = models.BooleanField(default=True)
+    is_sample = models.BooleanField(default=False, help_text=SAMPLE_DATA_HELP_TEXT)
     teams = models.ManyToManyField(Teams, related_name="cases_teams")
     tags = models.ManyToManyField(Tags, related_name="case_tags", blank=True)
     watchers = models.ManyToManyField(

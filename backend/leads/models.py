@@ -5,7 +5,7 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.base import AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from common.utils import (
     COUNTRIES,
@@ -116,6 +116,7 @@ class Lead(AssignableMixin, BaseModel):
 
     # System Fields
     is_active = models.BooleanField(default=True)
+    is_sample = models.BooleanField(default=False, help_text=SAMPLE_DATA_HELP_TEXT)
     tags = models.ManyToManyField(Tags, related_name="lead_tags", blank=True)
     contacts = models.ManyToManyField(Contact, related_name="lead_contacts")
     org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="leads")

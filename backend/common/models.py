@@ -138,6 +138,20 @@ class Org(BaseModel):
     # explicit confirmation; this flag only controls the default state.
     auto_close_children_on_parent_close = models.BooleanField(default=False)
 
+    # Vertical packs. Descriptive only — records which pack was applied at
+    # signup. NEVER used in a permission check or a queryset filter.
+    vertical = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Pack id applied to this org, e.g. 'real-estate'. Descriptive only.",
+    )
+    terminology = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Label overrides, e.g. {'lead.plural': 'Enquiries'}.",
+    )
+
     class Meta:
         verbose_name = "Organization"
         verbose_name_plural = "Organizations"
@@ -954,3 +968,33 @@ class PortalAccessToken(models.Model):
 from common.audit_log import (
     SecurityAuditLog,
 )  # noqa: F401,E402  # pylint: disable=unused-import
+
+
+class PackApplication(BaseOrgModel):
+    """Audit record of one vertical-pack application to one org."""
+
+    pack_id = models.CharField(max_length=64)
+    pack_version = models.PositiveIntegerField()
+    applied_by = models.ForeignKey(
+        "common.Profile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pack_applications",
+    )
+    result = models.JSONField(
+        default=dict,
+        help_text="{'created': [...], 'skipped': [...], 'failed': [...]}",
+    )
+
+    class Meta:
+        verbose_name = "Pack Application"
+        verbose_name_plural = "Pack Applications"
+        db_table = "pack_application"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.pack_id} v{self.pack_version} → {self.org.name}"
