@@ -12,7 +12,7 @@ def orgless_user():
 @pytest.fixture
 def orgless_client(orgless_user):
     """
-    An authenticated JWT client whose token carries NO org_id claim — the
+    An authenticated JWT client whose token carries NO org_id claim. The
     shape of a user who has signed up but not yet created or joined an org.
     This is the exact audience GET /api/packs/ must serve (the pack chooser
     lives on the org-creation page); it's also the audience the write and
@@ -48,7 +48,7 @@ class TestPackAPI:
 
     def test_traversal_pack_id_is_404_not_a_file_read(self, admin_client):
         # %2F decodes to "/" before URL resolution, so this never reaches
-        # PackApplyView at all — it 404s at the Django router, as a plain
+        # PackApplyView at all: it 404s at the Django router, as a plain
         # HTML page, not the view's {"error": ..., "errors": "Unknown pack."}
         # JSON shape. That still proves no file read happened, but it does
         # NOT exercise get_pack()/the registry lookup this test is named for.
@@ -57,7 +57,7 @@ class TestPackAPI:
 
         # A slash-free traversal-shaped id (backslash-encoded, so the router
         # treats it as one path segment) DOES reach the view and get_pack().
-        # This is what actually proves the registry lookup — a dict get() —
+        # This is what actually proves the registry lookup, a dict get(),
         # is what turns a path-shaped id into a 404, not a filesystem call.
         res = admin_client.post("/api/packs/..%5C..%5Cwindows%5Cwin.ini/apply/")
         assert res.status_code == 404
@@ -85,7 +85,7 @@ class TestPackAPI:
     def test_clear_sample_data_does_not_touch_another_org(
         self, admin_client, org_b_client, org_a, org_b
     ):
-        # org_b_client is org_b's own ADMIN (profile_b, role=ADMIN — see
+        # org_b_client is org_b's own ADMIN (profile_b, role=ADMIN. See
         # conftest.py), not admin_client's org_a profile: applying to org_b
         # must use an org_b actor now that apply_pack rejects a mismatched
         # (org, actor) pair.
@@ -142,7 +142,7 @@ class TestPackListNoOrgContext:
     def test_packs_is_exempt_by_exact_match_only(self):
         # Pins the exemption to the exact-match list. If a later refactor
         # moves "/api/packs/" into the prefix-matched EXEMPT_PATHS, this
-        # fails — and so would the two tests above, since a prefix match
+        # fails, and so would the two tests above, since a prefix match
         # would also exempt /api/packs/<id>/apply/ and
         # /api/packs/sample-data/ from tenant-context enforcement.
         assert "/api/packs/" in RequireOrgContext.EXEMPT_EXACT_PATHS

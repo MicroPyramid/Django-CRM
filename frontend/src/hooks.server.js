@@ -88,7 +88,7 @@ const refreshesInFlight = new Map();
  *
  * The backend rotates refresh tokens: the one we send is blacklisted server-side
  * and a replacement comes back in `refresh`. Callers MUST persist that
- * replacement — reusing the old token on the next refresh gets a 401 and logs
+ * replacement, reusing the old token on the next refresh gets a 401 and logs
  * the user out.
  *
  * Concurrent requests arriving with the same expired access token would
@@ -113,8 +113,8 @@ function refreshAccessToken(refreshToken) {
 }
 
 /**
- * Perform the actual refresh round-trip. Use refreshAccessToken() instead —
- * it deduplicates concurrent callers.
+ * Perform the actual refresh round-trip. Use refreshAccessToken() instead.
+ * It deduplicates concurrent callers.
  *
  * @param {string} refreshToken - JWT refresh token
  * @returns {Promise<{access: string, refresh?: string}|null>} New tokens or null if refresh failed
@@ -142,7 +142,7 @@ async function performTokenRefresh(refreshToken) {
 /**
  * Switch organization and get new tokens with org context.
  *
- * Passes the outgoing refresh token so the backend can blacklist it — otherwise
+ * Passes the outgoing refresh token so the backend can blacklist it. Otherwise
  * it stays valid against the previous org for the rest of its lifetime even
  * though we replace it in the cookie below.
  *
@@ -312,7 +312,7 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
   // Define public routes (no auth required).
   //
   // `/portal` and `/csat` are the customer-facing pages reached from an emailed
-  // link — the invoice/estimate portals and the CSAT survey. They are anonymous
+  // link, the invoice/estimate portals and the CSAT survey. They are anonymous
   // by design: the only credential is the token in the URL, and the pages read
   // nothing from the session or org (only the token-scoped public Django
   // endpoints). Without them here the guard redirects every customer who clicks

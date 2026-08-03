@@ -171,7 +171,7 @@ class TestEscalationPolicyAPI:
     def test_cross_org_isolation(self, admin_client, org_a, org_b):
         target_b = _make_target_profile(org_b, "b@x.com")
         _make_policy(org_b, target_b, priority="Urgent")
-        # admin_client has org_a — should see no policies
+        # admin_client has org_a, should see no policies
         assert admin_client.get(POLICIES_URL).json()["policies"] == []
 
 
@@ -237,7 +237,7 @@ class TestScanForBreachedCases:
         _create_breached_case(admin_user, org_a)
 
         scan_for_breached_cases()
-        # Second pass within cooldown — no new activity
+        # Second pass within cooldown, no new activity
         assert scan_for_breached_cases() == 0
         assert Activity.objects.filter(action="ESCALATED").count() == 1
 
@@ -284,7 +284,7 @@ class TestScanForBreachedCases:
         )
         _create_breached_case(admin_user, org_a)
         scan_for_breached_cases()
-        # Look at any of the .delay calls — recipients should include both ids
+        # Look at any of the .delay calls. Recipients should include both ids
         called_recipients = []
         for call in mock_email.delay.call_args_list:
             called_recipients.extend(call.args[0])
@@ -320,7 +320,7 @@ class TestScanForBreachedCases:
 
 
 # ---------------------------------------------------------------------------
-# breaches_last_30d — the analytics the escalation page reads (Urgent SLAs:
+# breaches_last_30d. The analytics the escalation page reads (Urgent SLAs:
 # 1h first response, 4h resolution).
 # ---------------------------------------------------------------------------
 
@@ -419,7 +419,7 @@ class TestEscalationBreachCounts:
 
     def test_dead_policy_still_reports_breaches(self, admin_client, admin_user, org_a):
         """A disabled policy fires no ESCALATED activity, but its breaches must
-        still surface — that is the whole reason the page exists."""
+        still surface. That is the whole reason the page exists."""
         target = _make_target_profile(org_a)
         _make_policy(org_a, target, priority="Urgent", is_active=False)
         _case_with_sla(admin_user, org_a, created_ago=timedelta(hours=5))

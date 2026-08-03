@@ -4,14 +4,14 @@
    *
    * A percentage of target is meaningless on its own: 59% is excellent in week
    * two of a quarter and dire in week eleven. SalesGoal.status already knows
-   * this — it compares progress against expected pace and returns on_track /
-   * at_risk / behind — but v1 rendered only the raw percentage, so the model's
+   * this. It compares progress against expected pace and returns on_track /
+   * at_risk / behind, but v1 rendered only the raw percentage, so the model's
    * one interesting judgement never reached the screen. Here every bar carries
    * a pace marker showing how far through the period we are, and the gap
    * between fill and marker is the whole story.
    *
    * The elapsed-time figure is computed here from period_start and period_end,
-   * which is date arithmetic on two fields already in the payload — not an
+   * which is date arithmetic on two fields already in the payload, not an
    * aggregate. Everything that counts records (progress_value,
    * progress_percent, status) stays server-side.
    */
@@ -34,7 +34,7 @@
 
   let totals = $derived(data.totals);
 
-  /** How far through the period we are, 0–100. */
+  /** How far through the period we are, 0-100. */
   function elapsedPercent(g) {
     const start = new Date(g.period_start).getTime();
     const end = new Date(g.period_end).getTime();
@@ -113,7 +113,7 @@
     {#if data.goals.length === 0}
       <EmptyState
         title="No goals set"
-        body="A goal is a target and a period. Once one exists, closed-won deals count towards it automatically — nobody has to update a number."
+        body="A goal is a target and a period. Once one exists, closed-won deals count towards it automatically. Nobody has to update a number."
       >
         {#snippet icon()}<Target size={21} />{/snippet}
         {#snippet actions()}
@@ -136,7 +136,7 @@
                     <div style="font-weight:600;font-size:13.5px">{g.name}</div>
                     <div class="v2-sub" style="font-size:11.5px;margin-top:2px">
                       {GOAL_TYPE_LABEL[g.goal_type]} · {PERIOD_TYPE_LABEL[g.period_type]} ·
-                      {shortDate(g.period_start)} – {shortDate(g.period_end)}
+                      {shortDate(g.period_start)} - {shortDate(g.period_end)}
                     </div>
                   </div>
                   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
@@ -243,7 +243,7 @@
           </div>
 
           <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
-            Ranked on attainment against each person's own target, not on raw revenue — otherwise
+            Ranked on attainment against each person's own target, not on raw revenue. Otherwise
             the biggest patch wins every quarter regardless of who worked hardest.
           </p>
         </div>

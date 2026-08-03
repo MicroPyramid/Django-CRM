@@ -21,15 +21,15 @@
   // Built as one string rather than conditional markup: the "quiet deals"
   // clause only makes sense when there are any, and the numbers are often zero
   // in a real org, so the copy adapts instead of reading "0 deals … have gone
-  // quiet — those are first."
+  // quiet. Those are first."
   let subText = $derived(
     summary.count === 0
-      ? 'Nothing needs you right now — you’re all clear for today.'
+      ? 'Nothing needs you right now: you’re all clear for today.'
       : summary.quiet_deals === 0
         ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
         : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
           `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value)} ` +
-          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet — those are first.`
+          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet. Those are first.`
   );
 </script>
 
@@ -83,7 +83,7 @@
         <div
           style="display:flex;gap:13px;align-items:baseline;padding:9px 3px;border-bottom:1px solid var(--v2-line-soft)"
         >
-          <!-- The day is a short word, not a label — sentence case, same as the mocks. -->
+          <!-- The day is a short word, not a label, sentence case, same as the mocks. -->
           <span class="v2-muted" style="font-size:11.5px;font-weight:650;width:26px;flex:none"
             >{row.day}</span
           >

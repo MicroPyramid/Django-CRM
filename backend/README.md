@@ -38,7 +38,7 @@ The backend for BottleCRM, a multi-tenant CRM platform built with Django REST Fr
 - **Python 3.10+** (uv installs a matching Python automatically if needed)
 - **PostgreSQL**
 - **Redis** (for Celery)
-- **[uv](https://docs.astral.sh/uv/)** — Python package & venv manager (replaces pip + virtualenv)
+- **[uv](https://docs.astral.sh/uv/)**: Python package & venv manager (replaces pip + virtualenv)
 
 ## Installation
 
@@ -61,7 +61,7 @@ cd backend
 uv sync
 ```
 
-> Run any backend command with `uv run <cmd>` (e.g. `uv run python manage.py migrate`). uv resolves binaries from `.venv/bin/` automatically — no manual `source .venv/bin/activate` needed (though that still works if you prefer it).
+> Run any backend command with `uv run <cmd>` (e.g. `uv run python manage.py migrate`). uv resolves binaries from `.venv/bin/` automatically, no manual `source .venv/bin/activate` needed (though that still works if you prefer it).
 
 ### 3. Install PDF generation system dependencies
 
@@ -181,7 +181,7 @@ Every request operates within an organization context:
 - **Organization (Org)**: Top-level tenant container
 - **Users**: Regular members with USER role
 - **Admins**: Organization administrators with ADMIN role
-- **Super Admin**: Users with `is_superuser` set on the user record have platform-wide access. Grant it deliberately (`manage.py createsuperuser` or the Django admin) — it is never inferred from the email address
+- **Super Admin**: Users with `is_superuser` set on the user record have platform-wide access. Grant it deliberately (`manage.py createsuperuser` or the Django admin). It is never inferred from the email address
 
 ### Authentication
 

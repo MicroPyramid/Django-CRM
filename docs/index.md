@@ -10,7 +10,7 @@ per-seat limits, and there is no feature paywall.
 
 ## How it fits together
 
-Three clients — a SvelteKit web app, a Flutter mobile app, and the REST API — share one Django
+Three clients (a SvelteKit web app, a Flutter mobile app, and the REST API) share one Django
 REST Framework backend. Tenant isolation is enforced by PostgreSQL Row-Level Security keyed on
 the `app.current_org` session variable, not by application code alone: application middleware
 sets that variable from the authenticated user's JWT on every request, and the database enforces

@@ -91,7 +91,7 @@ class BulkDeleteCasesView(APIView):
             )
         org = request.profile.org
         # Snapshot the cases so we can emit Activity rows after the bulk update
-        # — queryset.update() bypasses signals.
+        #; queryset.update() bypasses signals.
         qs = Case.objects.filter(pk__in=ids, org=org, is_active=True)
         target_cases = list(qs.values("id", "name"))
         deleted_count = qs.update(is_active=False)

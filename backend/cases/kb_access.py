@@ -1,4 +1,4 @@
-"""Who may do what to a knowledge-base article — three rules, beside the
+"""Who may do what to a knowledge-base article, three rules, beside the
 three in `cases.access` and for the same reason.
 
 Before this module the Solution endpoints had **no authorization at all**.
@@ -13,7 +13,7 @@ profile: `PATCH` a colleague's article 200, `POST .../publish/` 200,
     delete    author · admin
 
 **Why `release` is narrower than `write`.** The model already carries a review
-workflow — draft → reviewed → approved, plus a separate `is_published` — and
+workflow (draft → reviewed → approved, plus a separate `is_published`), and
 the whole point of it is that somebody other than the writer says the answer is
 right before customers are shown it. If the author can approve their own
 article the workflow is theatre; the rules, the states and the UI would all
@@ -23,8 +23,8 @@ hypothetical shape of bug for this codebase.
 
 `read` is deliberately absent: every member of the org may read every article.
 A knowledge base whose articles are hidden from the agents answering the
-tickets is not a knowledge base. `is_published` is not an access rule either —
-it is the customer-visibility switch, and the customer-facing site it gates was
+tickets is not a knowledge base. `is_published` is not an access rule either.
+It is the customer-visibility switch, and the customer-facing site it gates was
 explicitly cut (see `kb_views`), so today it gates the agent suggester only.
 """
 
@@ -43,8 +43,8 @@ def get_solution_or_404(profile, pk):
 
     ``Solution.id`` is a UUID column, so ``filter(pk="nobody")`` raises
     Django's ``ValidationError`` instead of returning nothing. The views
-    caught ``Solution.DoesNotExist`` and nothing else, so every verb — read,
-    update, delete, publish, unpublish — answered 500 for any id that was not
+    caught ``Solution.DoesNotExist`` and nothing else, so every verb. Read,
+    update, delete, publish, unpublish. Answered 500 for any id that was not
     a well-formed UUID. A bad id names an article that does not exist.
     """
     try:

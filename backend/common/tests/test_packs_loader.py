@@ -110,7 +110,7 @@ def _with_lead(lead: dict) -> dict:
 def test_sample_lead_source_outside_lead_source_is_rejected():
     # "website" reads as obviously valid and is not: LEAD_SOURCE has no such
     # entry, and Django does not enforce choices on .create(). Three shipped
-    # packs carried this before the guard existed — the rows wrote cleanly and
+    # packs carried this before the guard existed, the rows wrote cleanly and
     # surfaced only as a blank source column no filter could match.
     with pytest.raises(PackValidationError, match="source"):
         validate_manifest(_with_lead({"source": "website"}))

@@ -7,7 +7,7 @@
    * the deals, people, tickets and invoices are on the page, and the next
    * action names the problem that spans them.
    *
-   * All four panels come from the single detail response — the API already
+   * All four panels come from the single detail response, the API already
    * returned them, so this costs no extra round trips.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -31,7 +31,7 @@
 
   let openDeals = $derived(deals.filter((/** @type {any} */ d) => !d.stage.startsWith('CLOSED_')));
   let stalled = $derived(openDeals.filter((/** @type {any} */ d) => d.aging_status === 'red'));
-  // `past_due` is decided by the same rule as the header figure — see
+  // `past_due` is decided by the same rule as the header figure. See
   // `isPastDue` in the data layer. The invoice's own `is_overdue` flag counts
   // drafts, and a rail that disagrees with its header discredits both.
   let pastDue = $derived(invoices.filter((/** @type {any} */ i) => i.past_due));
@@ -40,11 +40,11 @@
       fact on this page: a stalled deal, or an invoice past its due date. */
   let headline = $derived(
     stalled.length && pastDue.length
-      ? `${stalled[0].name} is stalled and ${pastDue[0].invoice_number} is past due — same account, two problems.`
+      ? `${stalled[0].name} is stalled and ${pastDue[0].invoice_number} is past due, same account, two problems.`
       : stalled.length
         ? `${stalled[0].name} has not moved in ${stalled[0].days_in_current_stage} days.`
         : pastDue.length
-          ? `${pastDue[0].invoice_number} is past due — ${money(pastDue[0].amount_due)}.`
+          ? `${pastDue[0].invoice_number} is past due, ${money(pastDue[0].amount_due)}.`
           : null
   );
 </script>
@@ -118,7 +118,7 @@
           outbound links rather than by reading it.
 
           Without an `href` the action stays a button that does nothing, which
-          is the same wrong answer more quietly — so when the target is not
+          is the same wrong answer more quietly, so when the target is not
           wired the action is dropped entirely and the sentence stands on its
           own. It comes back when invoices is.
         -->

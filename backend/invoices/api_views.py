@@ -860,7 +860,7 @@ class ProductListView(APIView, LimitOffsetPagination):
         if request.query_params.get("category"):
             queryset = queryset.filter(category=request.query_params.get("category"))
 
-        # `used_on` — how many distinct invoices each product is a line item on.
+        # `used_on`: how many distinct invoices each product is a line item on.
         # Annotated once here (the hot path) instead of per row so the list does
         # not fan out into N count queries; `ProductSerializer.get_used_on` reads
         # this attribute and falls back to its own query on the detail views.
@@ -882,7 +882,7 @@ class ProductListView(APIView, LimitOffsetPagination):
     def post(self, request):
         # The catalogue is org-wide config: its list prices flow onto every
         # rep's invoices and estimates. Reading it is open to any member (they
-        # need it to build line items), but changing it is an admin act — the
+        # need it to build line items), but changing it is an admin act, the
         # same posture Organization and Team settings take. A non-admin who
         # curls this endpoint is refused here, not just hidden from in the UI.
         if request.profile.role != "ADMIN" and not request.user.is_superuser:
@@ -1535,8 +1535,8 @@ def _forbid_non_admin_template_write(request):
     """Return a 403 Response for non-admins, or None to allow.
 
     Invoice templates are org-wide shared config: every member reads the
-    catalogue (to see how their invoices look), but changing a template — its
-    colours, its default flag, its raw HTML/CSS — affects everyone in the org
+    catalogue (to see how their invoices look), but changing a template: its
+    colours, its default flag, its raw HTML/CSS, affects everyone in the org
     and drives the server-side PDF render. So writes (create/update/delete) are
     admin-only, while reads stay open. Role is derived from ``request.profile``,
     never the request body.
@@ -1619,7 +1619,7 @@ class InvoiceTemplateDetailView(APIView):
                 {"error": True, "message": "Template not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        # Safe serializer only — never returns the raw template_html/css.
+        # Safe serializer only, never returns the raw template_html/css.
         return Response(InvoiceTemplateListSerializer(template).data)
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_update")
@@ -2390,7 +2390,7 @@ class InvoiceFromOpportunityView(APIView):
 
 
 class InvoiceFromTimeEntriesView(APIView):
-    """``POST /api/invoices/from-time-entries/`` — turn billable time entries
+    """``POST /api/invoices/from-time-entries/``, turn billable time entries
     into a draft invoice (Tier 3 time-tracking).
 
     Body: ``{"account_id": "<uuid>", "entry_ids": ["<uuid>", ...]}``.
@@ -2456,9 +2456,9 @@ class InvoiceFromTimeEntriesView(APIView):
             primary_contact = account.contacts.first()
 
             # Invoice.save() generates invoice_number, public_token, due_date,
-            # and recalculates totals — we just hand it the high-level fields.
+            # and recalculates totals. We just hand it the high-level fields.
             invoice = Invoice.objects.create(
-                invoice_title=f"Time entries — {timezone.now().date():%Y-%m-%d}",
+                invoice_title=f"Time entries, {timezone.now().date():%Y-%m-%d}",
                 account=account,
                 contact=primary_contact,
                 currency=currency,

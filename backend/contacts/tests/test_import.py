@@ -34,7 +34,7 @@ def _csv(headers: list[str], rows: list[list[str]]) -> SimpleUploadedFile:
 
 @pytest.fixture
 def existing_contact(org_a, admin_user):
-    """A contact already in org_a — used for vs-DB duplicate tests."""
+    """A contact already in org_a. Used for vs-DB duplicate tests."""
     return Contact.objects.create(
         first_name="Pat",
         last_name="Lee",
@@ -149,7 +149,7 @@ class TestImportPreview:
         self, admin_client, existing_contact, admin_profile
     ):
         # existing_contact.phone == "+1 (202) 555-1234"; this is the same
-        # number written differently — normalizer strips to "2025551234".
+        # number written differently, normalizer strips to "2025551234".
         csv_file = _csv(
             ["first_name", "last_name", "phone"],
             [["Different", "Person", "202-555-1234"]],
@@ -213,7 +213,7 @@ class TestImportPreview:
     def test_full_name_dup_within_file_blocked(
         self, admin_client, admin_profile
     ):
-        # Two name-only rows with no email/phone — second row must be flagged.
+        # Two name-only rows with no email/phone. Second row must be flagged.
         csv_file = _csv(
             ["first_name", "last_name"],
             [
@@ -234,7 +234,7 @@ class TestImportPreview:
     def test_linkedin_url_with_only_scheme_rejected(
         self, admin_client, admin_profile
     ):
-        # "https://" passes the old regex but is not a valid URL — Django's
+        # "https://" passes the old regex but is not a valid URL, Django's
         # URLValidator catches it.
         csv_file = _csv(
             ["first_name", "last_name", "linkedin_url"],
@@ -374,7 +374,7 @@ class TestImportCommit:
         self, admin_client, org_a, existing_contact, admin_profile
     ):
         # Row 1 is valid; row 2 collides on email with the existing contact.
-        # The whole batch must be rejected — atomic = all-or-nothing.
+        # The whole batch must be rejected, atomic = all-or-nothing.
         csv_file = _csv(
             ["first_name", "last_name", "email"],
             [
@@ -408,7 +408,7 @@ class TestImportCommit:
         # Simulate the case where another request inserts a colliding contact
         # AFTER parse_and_validate has read the DB but BEFORE the create runs.
         # The DB then raises IntegrityError on the unique_contact_email_per_org
-        # constraint — this must surface as a 400 with a friendly message, not
+        # constraint. This must surface as a 400 with a friendly message, not
         # a 500 from Django's exception middleware.
         from django.db import IntegrityError
 

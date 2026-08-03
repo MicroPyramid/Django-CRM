@@ -17,7 +17,7 @@ void main() async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Firebase + Crashlytics — Android only. iOS has no GoogleService-Info.plist
+      // Firebase + Crashlytics. Android only. iOS has no GoogleService-Info.plist
       // yet, so skip init there to avoid a startup crash.
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         await Firebase.initializeApp(
@@ -55,7 +55,7 @@ void main() async {
       runApp(const ProviderScope(child: BottleCRMApp()));
     },
     (error, stack) {
-      // Catch-all for anything that escaped the zone — e.g. errors from
+      // Catch-all for anything that escaped the zone, e.g. errors from
       // microtasks scheduled before PlatformDispatcher.onError was wired.
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);

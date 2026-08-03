@@ -5,7 +5,7 @@
 
   /**
    * Every failed load in /v2 lands here. Three cases, three different things
-   * to do next — which is the point: "Something went wrong" tells you nothing
+   * to do next, which is the point: "Something went wrong" tells you nothing
    * and leaves you on a dead page.
    *
    * 403 deliberately does not say whether the record exists. Confirming that

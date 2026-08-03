@@ -1,8 +1,8 @@
 /**
- * Invoice reports — the seventeenth v2 module, fourth of the invoices sub-pages.
+ * Invoice reports: the seventeenth v2 module, fourth of the invoices sub-pages.
  *
- * Server-only, like the sixteen before it. This one fans three endpoints —
- * `/invoices/reports/{dashboard,revenue,aging}/` — into the single shape the
+ * Server-only, like the sixteen before it. This one fans three endpoints,
+ * `/invoices/reports/{dashboard,revenue,aging}/`: into the single shape the
  * "Where the money is" page reads.
  *
  * WHY THIS IS ADMIN-ONLY
@@ -12,13 +12,13 @@
  * a rep the whole org's revenue and receivables would leak exactly what those
  * scopes protect. The three endpoints are admin-only on the backend, and this
  * layer surfaces a `can_view` flag so the page can say so plainly rather than
- * rendering a broken dashboard — the backend is still the one enforcing it.
+ * rendering a broken dashboard. The backend is still the one enforcing it.
  *
  * WHAT THE PAGE NEEDED THAT THE ENDPOINTS DID NOT HAVE
  * The dashboard gained `average_days_to_pay` and `invoice_count`; the revenue
  * report gained an `invoiced` series alongside `revenue` (paid), the two counted
  * on different dates on purpose; the aging report gained a `by_account` roll-up
- * (the "who owes it" table — the capped per-bucket invoice lists could not give
+ * (the "who owes it" table. The capped per-bucket invoice lists could not give
  * it). All added to the real endpoints, not faked here.
  */
 import { apiRequest } from '$lib/api-helpers.js';
@@ -45,9 +45,9 @@ const EMPTY = {
   aging: {
     not_yet_due: { amount: 0, count: 0 },
     buckets: [
-      { key: '1_30', label: '1–30 days', amount: 0, count: 0 },
-      { key: '31_60', label: '31–60 days', amount: 0, count: 0 },
-      { key: '61_90', label: '61–90 days', amount: 0, count: 0 },
+      { key: '1_30', label: '1-30 days', amount: 0, count: 0 },
+      { key: '31_60', label: '31-60 days', amount: 0, count: 0 },
+      { key: '61_90', label: '61-90 days', amount: 0, count: 0 },
       { key: '90_plus', label: 'Over 90 days', amount: 0, count: 0 }
     ],
     overdue_count: 0
@@ -105,19 +105,19 @@ export async function listReports({ cookies }) {
       buckets: [
         {
           key: '1_30',
-          label: '1–30 days',
+          label: '1-30 days',
           amount: num(aging['1_30_days']?.amount),
           count: aging['1_30_days']?.count ?? 0
         },
         {
           key: '31_60',
-          label: '31–60 days',
+          label: '31-60 days',
           amount: num(aging['31_60_days']?.amount),
           count: aging['31_60_days']?.count ?? 0
         },
         {
           key: '61_90',
-          label: '61–90 days',
+          label: '61-90 days',
           amount: num(aging['61_90_days']?.amount),
           count: aging['61_90_days']?.count ?? 0
         },

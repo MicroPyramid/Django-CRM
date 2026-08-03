@@ -11,7 +11,7 @@ Two flavors of endpoint live here:
 Each transition writes a ``common.Activity`` row using the verbs registered in
 ``common/models.Activity.ACTION_CHOICES`` (``APPROVAL_REQUESTED``,
 ``APPROVED``, ``REJECTED``, ``APPROVAL_CANCELLED``). Two approvers cannot
-double-approve the same row — every transition takes a row lock first.
+double-approve the same row. Every transition takes a row lock first.
 """
 
 from __future__ import annotations
@@ -180,7 +180,7 @@ class ApprovalRuleDetailView(APIView):
                 {"error": True, "errors": "Rule not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        # Hard delete is fine — Approval.rule is on_delete=PROTECT, so any
+        # Hard delete is fine. Approval.rule is on_delete=PROTECT, so any
         # historical request keeps the rule alive automatically.
         if rule.requests.exists():
             # Soft-disable instead of hard-delete when there is history.
@@ -199,7 +199,7 @@ class ApprovalRuleDetailView(APIView):
 
 
 class CaseRequestApprovalView(APIView):
-    """``POST /api/cases/<pk>/request-approval/`` — agent fires a new request."""
+    """``POST /api/cases/<pk>/request-approval/``, agent fires a new request."""
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
@@ -280,11 +280,11 @@ class CaseRequestApprovalView(APIView):
 
 
 class ApprovalInboxView(APIView):
-    """``GET /api/cases/approvals/`` — list approvals.
+    """``GET /api/cases/approvals/``, list approvals.
 
     Query params:
-      * ``state`` (default ``pending``) — filter by state, or ``all`` to drop the filter.
-      * ``mine`` (``true``/``false``) — when true, restrict to approvals the
+      * ``state`` (default ``pending``): filter by state, or ``all`` to drop the filter.
+      * ``mine`` (``true``/``false``), when true, restrict to approvals the
         caller can act on (in rule.approvers OR matches rule.approver_role).
     """
 
@@ -322,8 +322,8 @@ class ApprovalInboxView(APIView):
         )
         rows = list(qs)
         if mine:
-            # "Mine" = rows I can act on right now, which — like the approve
-            # endpoint — excludes requests I filed myself (separation of duties).
+            # "Mine" = rows I can act on right now, which, like the approve
+            # endpoint, excludes requests I filed myself (separation of duties).
             profile = request.profile
             rows = [
                 a

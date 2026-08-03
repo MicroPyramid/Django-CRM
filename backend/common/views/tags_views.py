@@ -33,7 +33,7 @@ def _usage_subquery(model, org):
     One correlated subquery per relation rather than four `Count`s on a single
     query: joining all four M2M through-tables at once multiplies rows, and a
     subquery keeps each count independent (the subquery-rollup rule). Filtered
-    by `org` explicitly — usage is a per-org fact and must not lean on RLS,
+    by `org` explicitly. Usage is a per-org fact and must not lean on RLS,
     which is inert for the app's DB role in dev/test.
     """
     return Coalesce(
@@ -68,7 +68,7 @@ def _tag_totals(org):
     return {
         "count": len(all_tags),
         "active": len(active),
-        # Active tags applied to nothing — the only ones safe to delete.
+        # Active tags applied to nothing: the only ones safe to delete.
         "unused": sum(1 for t in active if total_usage(t) == 0),
     }
 

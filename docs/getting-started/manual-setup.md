@@ -6,9 +6,9 @@ you, or if you're setting up on a host where Docker isn't available.
 
 ## Prerequisites
 
-- **Python 3.12 or later** — `backend/pyproject.toml` declares `requires-python = ">=3.12"`, and
+- **Python 3.12 or later**: `backend/pyproject.toml` declares `requires-python = ">=3.12"`, and
   `backend/.python-version` pins `3.12`.
-- **[uv](https://docs.astral.sh/uv/)** — the backend is managed with uv, not pip or a manually
+- **[uv](https://docs.astral.sh/uv/)**: the backend is managed with uv, not pip or a manually
   created virtualenv. `uv sync` reads `backend/pyproject.toml` and `backend/uv.lock` and creates
   a `.venv/` for you; every backend command in this guide runs via `uv run <cmd>`, which resolves
   that venv automatically. Install it once, system-wide:
@@ -17,10 +17,10 @@ you, or if you're setting up on a host where Docker isn't available.
   curl -LsSf https://astral.sh/uv/install.sh | sh
   # or, on macOS: brew install uv
   ```
-- **PostgreSQL** — the only supported database backend (`django.db.backends.postgresql` in
+- **PostgreSQL**: the only supported database backend (`django.db.backends.postgresql` in
   `backend/crm/settings.py`); Row-Level Security depends on it.
-- **Redis** — used as the Celery broker and result backend.
-- **Node.js and [pnpm](https://pnpm.io/)** — for the SvelteKit frontend in `frontend/`.
+- **Redis**: used as the Celery broker and result backend.
+- **Node.js and [pnpm](https://pnpm.io/)**: for the SvelteKit frontend in `frontend/`.
 
 ## Backend
 
@@ -119,7 +119,7 @@ schedule you also need Celery beat, in a separate terminal:
 uv run celery -A crm beat --loglevel=INFO
 ```
 
-Neither process is required for the API itself to respond to requests — they only matter for
+Neither process is required for the API itself to respond to requests. They only matter for
 background and scheduled work.
 
 ## Frontend
@@ -153,13 +153,13 @@ A full local stack is four long-running processes across (at least) three termin
 from the state above:
 
 ```bash
-# Terminal 1 — from backend/
+# Terminal 1: from backend/
 uv run python manage.py runserver
 
-# Terminal 2 — from backend/
+# Terminal 2: from backend/
 uv run celery -A crm worker --loglevel=INFO
 
-# Terminal 3 — from frontend/
+# Terminal 3: from frontend/
 pnpm run dev
 ```
 

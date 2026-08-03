@@ -63,7 +63,7 @@ def test_register_by_hash_matches_csat_storage(org_a):
     token_hash = hashlib.sha256(raw.encode()).hexdigest()
     register_portal_token_hash(token_hash, org_a.id, "csat", org_a.id)
     assert resolve_portal_org_by_hash(token_hash, "csat") == str(org_a.id)
-    # The view resolves from the raw URL token — same key.
+    # The view resolves from the raw URL token, same key.
     assert resolve_portal_org(raw, "csat") == str(org_a.id)
 
 

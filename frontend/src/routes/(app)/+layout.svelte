@@ -14,7 +14,7 @@
 
   // The sidebar is hidden below 768px, and the tab bar only carries four of the
   // ~16 destinations. This drawer is how a phone reaches the rest of the nav and
-  // the footer — profile, notifications, help, sign out. It reuses the same
+  // the footer: profile, notifications, help, sign out. It reuses the same
   // <Sidebar>, so the two can never drift apart. Closes itself on navigation.
   let menuOpen = $state(false);
   afterNavigate(() => (menuOpen = false));
@@ -26,7 +26,7 @@
 
   /**
    * The five things worth a thumb on a phone. Fewer than the sidebar on
-   * purpose — a tab bar that scrolls is a menu wearing a tab bar's clothes.
+   * purpose. A tab bar that scrolls is a menu wearing a tab bar's clothes.
    */
   const TABS = [
     { href: '/', label: 'Today', icon: Sun, exact: true },

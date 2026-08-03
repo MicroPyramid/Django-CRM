@@ -508,7 +508,7 @@ class BoardTaskDetailView(APIView):
         # serializer, so the drag-and-drop target is validated and applied here
         # instead: it must be a column of *this* board (which, since the board is
         # already org-scoped, keeps the card inside its org). Sending a column
-        # from another board — or a garbage id — is a 400, not a silent no-op.
+        # from another board, or a garbage id, is a 400, not a silent no-op.
         source_column = task.column
         target_column = source_column
         raw_column = data.get("column")

@@ -47,7 +47,7 @@ def test_resolution_reads_estimate_that_empty_context_hides():
     # Org is not org-scoped, so it inserts without a context.
     org = Org.objects.create(name="RLS Portal Org")
 
-    # Scoped inserts need the context set — this mimics an authenticated write.
+    # Scoped inserts need the context set. This mimics an authenticated write.
     _set_ctx(str(org.id))
     try:
         estimate = Estimate.objects.create(

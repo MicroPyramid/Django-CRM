@@ -4,7 +4,7 @@
  * `console.error('...', err)` runs the error through Node's util.inspect, which
  * walks the whole object graph. For an axios error that graph includes
  * `config.headers.Authorization` (the caller's JWT) and `config.data` (the
- * request body — which for the token-refresh call IS the refresh token, and for
+ * request body, which for the token-refresh call IS the refresh token, and for
  * the OAuth exchange is the authorization code plus the PKCE verifier). Those
  * end up in persistent server logs.
  *

@@ -1,4 +1,4 @@
-"""Who may do what to a case — one place, three rules.
+"""Who may do what to a case, one place, three rules.
 
 Before this module the question was answered in five places and had drifted
 into three different answers:
@@ -6,8 +6,8 @@ into three different answers:
 * `CaseListView` and `watcher_views._visible_cases_qs` said **admin, creator,
   assignee or watcher**.
 * `CaseDetailView.get` / `.put` / `.patch` / `.post` and
-  `CaseActivityListView` said **admin, creator or assignee** — no watcher.
-* `CaseDetailView.delete` said **admin or creator** — no assignee either.
+  `CaseActivityListView` said **admin, creator or assignee**, no watcher.
+* `CaseDetailView.delete` said **admin or creator**, no assignee either.
 
 The visible consequence was a queue that lied. A watcher's ticket list showed
 the one case they follow; opening it answered 403. That is the same shape of
@@ -21,7 +21,7 @@ deleting are three rules on three lines, deliberately not one:
     write   admin · creator · assignee
     delete  admin · creator
 
-Watching is subscribing to a ticket, not being handed the keys to it — so the
+Watching is subscribing to a ticket, not being handed the keys to it, so the
 watcher clause that was missing from reads is not quietly added to writes.
 """
 
@@ -41,7 +41,7 @@ def is_org_admin(profile):
 
 
 def visible_cases_qs(profile):
-    """Cases ``profile`` is allowed to open — the queryset form of `read`.
+    """Cases ``profile`` is allowed to open. The queryset form of `read`.
 
     The watcher clause is what lets somebody keep following a ticket after
     they are unassigned, and it is the clause the detail view was missing.
@@ -58,7 +58,7 @@ def get_case_or_404(profile, pk):
     """Fetch a case in the requester's org, or raise ``Http404``.
 
     ``Case.id`` is a UUID column, so ``filter(id="nobody")`` raises Django's
-    ``ValidationError`` rather than returning nothing — which surfaced as a
+    ``ValidationError`` rather than returning nothing, which surfaced as a
     500 on every verb for any id that was not a well-formed UUID. A bad id is
     a request for a case that does not exist; that is a 404.
     """

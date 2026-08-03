@@ -1,6 +1,6 @@
 # Environment variables
 
-`backend/crm/settings.py` is read once, at process import time, by every Django entry point —
+`backend/crm/settings.py` is read once, at process import time, by every Django entry point:
 `manage.py runserver`, `manage.py migrate`, a Gunicorn/Uvicorn worker, a Celery worker, a management
 command. This page explains where those values come from and which ones you actually have to set
 yourself; the exhaustive per-variable table lives in the Reference section.
@@ -8,8 +8,8 @@ yourself; the exhaustive per-variable table lives in the Reference section.
 ## How configuration is loaded
 
 `backend/crm/settings.py` calls `load_dotenv()` (from `python-dotenv`) near the top of the module,
-before any setting is read, so a `.env` file next to `manage.py` — created by copying
-`backend/.env.example`, per [Manual setup](../getting-started/manual-setup.md) — is loaded into the
+before any setting is read, so a `.env` file next to `manage.py`, created by copying
+`backend/.env.example`, per [Manual setup](../getting-started/manual-setup.md), is loaded into the
 process environment automatically. `docker-compose.yml` does the equivalent for containers by
 listing `.env.docker` and then the optional, gitignored `.env.docker.local` under each service's
 `env_file:`, in that order, so values in `.env.docker.local` win.
@@ -22,11 +22,11 @@ failing. `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DBNAME`/`DBUSER`/`DBPASSWORD`/
 smaller set of variables has no default at all: `backend/crm/server_settings.py` (imported only when
 `ENV_TYPE=prod`, see [Production deployment](production-deploy.md)) reads `AWS_BUCKET_NAME`,
 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`, `AWS_SES_REGION_ENDPOINT` and
-`SENTRY_DSN` with plain `os.environ[...]` — a missing one is a `KeyError` at import time, which means
+`SENTRY_DSN` with plain `os.environ[...]`. A missing one is a `KeyError` at import time, which means
 the process refuses to start at all rather than starting with something half-configured.
 
 Because all of this runs at import time, not per-request, a changed environment variable only takes
-effect the next time the process restarts — editing `.env` while `runserver` is already running does
+effect the next time the process restarts: editing `.env` while `runserver` is already running does
 nothing until you restart it (or, for the Docker Compose setup, until the container restarts, which
 happens automatically on `docker compose up --build`).
 
@@ -49,7 +49,7 @@ covers why the database role matters as much as any of the Django settings.
 `postgres`), `DBPASSWORD` (default `postgres`), `DBHOST` (default `localhost`) and `DBPORT` (default
 `5432`). The default `DBUSER` is the PostgreSQL superuser account on most installations, and a
 superuser silently bypasses every Row-Level Security policy this project relies on for tenant
-isolation — see [PostgreSQL and RLS](postgresql-and-rls.md) for how to create and verify a
+isolation. See [PostgreSQL and RLS](postgresql-and-rls.md) for how to create and verify a
 non-superuser role before pointing these variables at anything but a local, throwaway database.
 
 ## Email
@@ -57,8 +57,8 @@ non-superuser role before pointing these variables at anything but a local, thro
 `EMAIL_BACKEND` defaults to `django.core.mail.backends.console.EmailBackend`, so outbound mail
 (welcome emails, magic-link sign-in emails, comment-mention notifications) prints to stdout instead
 of being sent anywhere. `.env.example` sets `EMAIL_BACKEND` to that same console backend explicitly;
-`.env.docker` doesn't set `EMAIL_BACKEND` at all — only a comment noting the console backend is
-what's active — so it's relying on the identical default rather than setting it. `DEFAULT_FROM_EMAIL`
+`.env.docker` doesn't set `EMAIL_BACKEND` at all, only a comment noting the console backend is
+what's active, so it's relying on the identical default rather than setting it. `DEFAULT_FROM_EMAIL`
 and `ADMIN_EMAIL` default to `noreply@localhost`/`admin@localhost`. Switching to a real mail backend,
 and the Amazon SES-specific variables that come with it, is covered in full in
 [Email and Celery](email-and-celery.md).

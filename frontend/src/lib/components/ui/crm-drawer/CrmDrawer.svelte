@@ -101,7 +101,7 @@
   // Get title value
   const titleValue = $derived(data?.[titleKey] || '');
 
-  // Stable id for ARIA labelling — Sheet.Content references this so screen readers
+  // Stable id for ARIA labelling, Sheet.Content references this so screen readers
   // announce the lead title when the dialog opens.
   const titleId = $derived(`crm-drawer-title-${data?.id ?? 'new'}`);
 

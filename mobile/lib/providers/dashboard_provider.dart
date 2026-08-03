@@ -7,7 +7,7 @@ import '../services/api_service.dart';
 /// Async notifier owning the dashboard fetch.
 ///
 /// `build()` runs on first watch and seeds the AsyncValue with the result of
-/// the initial fetch — no separate `fetchDashboard()` call from the screen.
+/// the initial fetch, no separate `fetchDashboard()` call from the screen.
 /// `refresh()` is the pull-to-refresh / retry entrypoint.
 class DashboardNotifier extends AsyncNotifier<DashboardData> {
   final ApiService _apiService = ApiService();

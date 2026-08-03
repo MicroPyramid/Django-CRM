@@ -66,7 +66,7 @@ class _StubPubSub:
 
 class TestStreamEvents(TransactionTestCase):
     """Uses TransactionTestCase because the SSE generator's `sync_to_async`
-    DB hit opens a separate SQLite connection — incompatible with the
+    DB hit opens a separate SQLite connection, incompatible with the
     transaction-wrapped TestCase isolation."""
 
     def setUp(self):

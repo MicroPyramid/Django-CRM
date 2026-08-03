@@ -1243,7 +1243,7 @@ class TestProductDetailView:
 class TestProductWriteAuthorization:
     """The product catalogue is org-wide config: its list prices flow onto every
     rep's invoices and estimates. Reading it is open to any member (they build
-    line items from it), but creating/editing/deleting is admin-only — see
+    line items from it), but creating/editing/deleting is admin-only. See
     ProductListView.post and ProductDetailView._require_admin. Both directions
     are proven here: a non-admin is refused, an admin is allowed.
     """
@@ -1307,7 +1307,7 @@ class TestProductWriteAuthorization:
 @pytest.mark.django_db
 class TestProductUsedOn:
     """`used_on` reports the number of DISTINCT invoices a product is a line item
-    on — annotated across the list, computed on the single detail. Two line items
+    on, annotated across the list, computed on the single detail. Two line items
     on one invoice count once; it is why a retired product stays worth listing.
     """
 
@@ -1336,11 +1336,11 @@ class TestProductUsedOn:
             invoice=inv2, product=product, name="c", org=org_a
         )
 
-        # Detail path — the serializer's fallback query.
+        # Detail path: the serializer's fallback query.
         detail = admin_client.get(f"/api/invoices/products/{product.id}/")
         assert detail.json()["used_on"] == 2
 
-        # List path — the annotation.
+        # List path: the annotation.
         listed = admin_client.get("/api/invoices/products/")
         row = next(r for r in listed.json()["results"] if r["id"] == str(product.id))
         assert row["used_on"] == 2
@@ -1502,14 +1502,14 @@ class TestEstimateListRowShape:
         from opportunity.models import Opportunity
 
         opp = Opportunity.objects.create(
-            name="Renewal — 40 seats",
+            name="Renewal, 40 seats",
             account=account_for_invoice,
             org=org_a,
         )
         estimate.opportunity = opp
         estimate.save(update_fields=["opportunity"])
         row = self._row(admin_client, estimate.id)
-        assert row["opportunity"] == {"id": str(opp.id), "name": "Renewal — 40 seats"}
+        assert row["opportunity"] == {"id": str(opp.id), "name": "Renewal, 40 seats"}
 
 
 @pytest.mark.django_db
@@ -2179,7 +2179,7 @@ class TestInvoiceTemplateDetailView:
 class TestInvoiceTemplateWriteAuthorization:
     """Invoice templates are org-wide shared config: how every invoice reaches a
     customer. Any member reads the catalogue, but creating/editing/deleting a
-    template — or flipping the org default — is admin-only (see
+    template, or flipping the org default, is admin-only (see
     _forbid_non_admin_template_write). Both directions proven: a non-admin is
     refused, an admin is allowed.
     """
@@ -2258,7 +2258,7 @@ class TestInvoiceTemplateWriteAuthorization:
 @pytest.mark.django_db
 class TestInvoiceTemplateSafeShape:
     """The list/detail responses must never carry the raw template_html /
-    template_css (org-authored markup that WeasyPrint renders into a PDF — a
+    template_css (org-authored markup that WeasyPrint renders into a PDF, a
     stored-XSS vector the moment it reaches a browser DOM). They surface flags
     and a byte count instead, plus usage/authorship the page needs.
     """
@@ -2331,7 +2331,7 @@ class TestSafePdfUrlFetcher:
 
     def test_blocks_app_source(self, settings):
         # The exact LFI the sink enabled: base_url=BASE_DIR let markup read
-        # settings.py / .env / keys — all outside MEDIA_ROOT.
+        # settings.py / .env / keys. All outside MEDIA_ROOT.
         with pytest.raises(ValueError):
             self._fetcher()(f"file://{settings.BASE_DIR}/crm/settings.py")
 
@@ -2388,7 +2388,7 @@ class TestSafePdfUrlFetcher:
 
     def test_blocks_non_logo_media_cross_tenant(self, settings, tmp_path):
         # Files under MEDIA_ROOT that are not logos (another org's attachments or
-        # documents — MEDIA_ROOT is a flat, cross-tenant tree) must be blocked.
+        # documents. MEDIA_ROOT is a flat, cross-tenant tree) must be blocked.
         # Only the logo subtrees are allowed.
         settings.MEDIA_ROOT = str(tmp_path)
         settings.MEDIA_URL = "/media/"
@@ -2784,7 +2784,7 @@ class TestAgingReport:
 
 @pytest.mark.django_db
 class TestReportsAreAdminOnly:
-    """The three invoice reports are org-wide financials — admin-only.
+    """The three invoice reports are org-wide financials, admin-only.
 
     They roll up the whole org's invoiced/collected/overdue and its AR aging
     across every account. The list views scope a non-admin to their own records;
@@ -2876,7 +2876,7 @@ class TestReportPayloadShape:
 
 
 # ---------------------------------------------------------------------------
-# Public portal — reachability through the real middleware stack
+# Public portal: reachability through the real middleware stack
 #
 # The view-level tests below this class use APIRequestFactory and call the view
 # directly, which skips MIDDLEWARE entirely. That is fine for testing what the
@@ -2898,7 +2898,7 @@ class TestPublicPortalIsReachableAnonymously:
     def test_invoice_link_is_reachable(self, client, invoice):
         response = client.get(f"/api/public/invoice/{invoice.public_token}/")
         assert response.status_code == 200, (
-            "Anonymous GET must not be rejected by RequireOrgContext — "
+            "Anonymous GET must not be rejected by RequireOrgContext; "
             "this is the emailed customer link."
         )
         assert response.json()["invoice_number"] == invoice.invoice_number
@@ -3252,7 +3252,7 @@ class TestPublicEstimateAcceptDecline:
         assert estimate.accepted_at is None
 
     def test_accept_on_expiry_day_still_allowed(self, estimate):
-        """is_expired is strictly past the date — the last day still counts."""
+        """is_expired is strictly past the date. The last day still counts."""
         import datetime
 
         estimate.status = "Sent"

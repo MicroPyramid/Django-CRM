@@ -18,7 +18,7 @@
 
   /* Lanes are built server-side from `/opportunities/kanban/`, which returns
      every stage with its true count. They used to be grouped on the client
-     from whatever the list happened to return — correct only until the first
+     from whatever the list happened to return: correct only until the first
      page boundary, and wrong in the way that looks right: all the columns
      render, each is just short. */
   let lanes = $derived(data.lanes);
@@ -68,7 +68,7 @@
         <div class="v2-lane-body">
           {#if lane.truncated}
             <!-- The API caps a column at 100 cards. Saying so beats a lane
-                 that silently stops — the header count would not match the
+                 that silently stops. The header count would not match the
                  cards under it and there would be nothing to explain why. -->
             <p class="v2-sub" style="padding:6px 2px;font-size:11.5px">
               Showing the first <span class="v2-num">{lane.rows.length}</span>. Filter to see the

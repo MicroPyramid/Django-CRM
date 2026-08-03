@@ -118,10 +118,10 @@ class RequireOrgContext:
         "/admin/",
         "/swagger-ui/",
         "/api/schema/",
-        # Public CSAT survey link (Tier 2 csat) — anonymous, sets RLS
+        # Public CSAT survey link (Tier 2 csat). Anonymous, sets RLS
         # context manually inside the view from the survey's own org_id.
         "/api/public/csat/",
-        # Client portal — the invoice and estimate links emailed to customers.
+        # Client portal: the invoice and estimate links emailed to customers.
         # Anonymous by design: the view authorises on `public_token` alone
         # (see invoices/public_views.py) and never reads request.user or
         # request.org, so requiring org context here rejected every customer
@@ -131,7 +131,7 @@ class RequireOrgContext:
         #
         # NOTE: this restores reachability, not readability. `_set_org_context`
         # returns early when request.org is None, so these requests run with
-        # `app.current_org` empty — and the isolation policy from
+        # `app.current_org` empty, and the isolation policy from
         # `get_enable_policy_sql` is `org_id::text = NULLIF(current_setting(
         # 'app.current_org', true), '')`, which matches nothing when empty.
         # Verified as `crm_user` (non-superuser, no BYPASSRLS): invoice,
@@ -143,12 +143,12 @@ class RequireOrgContext:
         "/api/public/estimate/",
     ]
 
-    # Paths exempt on an EXACT match only — never prefix-matched like
+    # Paths exempt on an EXACT match only, never prefix-matched like
     # EXEMPT_PATHS above. Mirrors the exact-match pattern already used in
     # common.middleware.get_company.GetProfileAndOrg.process_request
     # (`if request.path in auth_skip_paths`).
     #
-    # GET /api/packs/ is static content read from JSON files in the repo —
+    # GET /api/packs/ is static content read from JSON files in the repo,
     # byte-identical for every tenant, no tenant data whatsoever. It backs
     # the pack chooser on the org-creation page, where a user creating their
     # *first* org has no org_id claim yet, so RequireOrgContext would 403 the

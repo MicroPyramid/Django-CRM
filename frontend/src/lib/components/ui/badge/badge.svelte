@@ -11,7 +11,7 @@
     ].join(' '),
     variants: {
       variant: {
-        // Legacy shadcn variants — kept for back-compat with existing callers.
+        // Legacy shadcn variants, kept for back-compat with existing callers.
         default:
           'bg-primary text-primary-foreground border-transparent px-2 py-0.5 [a&]:hover:bg-primary/90',
         secondary:
@@ -21,7 +21,7 @@
         outline:
           'text-foreground border-[color:var(--border-faint)] bg-[color:var(--bg-elevated)] px-2 py-0.5',
 
-        // New design-system tag variants — spec §6.4.
+        // New design-system tag variants, spec §6.4.
         customer:
           'bg-[color:var(--green-soft)] text-[color:var(--green-soft-text)] border-transparent px-[7px] py-px',
         vip: 'bg-[color:var(--violet-soft)] text-[color:var(--violet-soft-text)] border-transparent px-[7px] py-px',

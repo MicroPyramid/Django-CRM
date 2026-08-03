@@ -143,7 +143,7 @@ class TestOpportunityListView:
         }
         # Asserts the response, not an exception. The old version expected
         # `PermissionDenied` to propagate out of the client call, which DRF
-        # never lets happen — it catches the exception and renders a 403 — so
+        # never lets happen, it catches the exception and renders a 403, so
         # the test could only ever fail. It had been failing.
         response = unauthenticated_client.post(
             OPPORTUNITIES_LIST_URL, payload, format="json"
@@ -458,7 +458,7 @@ class TestOpportunityDetailView:
         assert response.status_code == status.HTTP_200_OK
         # Verify the comment was actually persisted AND echoed back. Without
         # this assertion the endpoint can silently drop the write (returns
-        # 200 with stale comments) — that's exactly how the original
+        # 200 with stale comments): that's exactly how the original
         # CommentSerializer.save(opportunity_id=...) regression slipped past
         # the test suite.
         assert "comments" in response.data
@@ -738,7 +738,7 @@ class TestOpportunityDetailView:
         """PATCH with CLOSED_WON stage sets closed_by.
 
         Now sends the amount and the close date, because closing a deal
-        requires both. This used to pass with neither — see
+        requires both. This used to pass with neither. See
         `test_patch_closed_won_without_amount_is_rejected` in
         test_deal_access_and_totals.py.
         """

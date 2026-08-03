@@ -52,7 +52,7 @@ def main() -> None:
         if methods:
             rows.append(f"| `{path}` | {', '.join(methods)} |")
     OUTPUT.write_text(HEADER + "\n".join(rows) + "\n")
-    print(f"wrote {OUTPUT} — {len(rows)} paths")
+    print(f"wrote {OUTPUT}, {len(rows)} paths")
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 /**
  * The approvals queue. `load` returns `{ approvals, totals, rules }`; the three
  * actions decide a request. Authorization (approver pool, separation of duties,
- * pending-only) is enforced by the backend — these actions just surface its
+ * pending-only) is enforced by the backend. These actions just surface its
  * error. On success `use:enhance` re-runs `load`, so the row reflects the real
  * new state rather than an optimistic guess.
  *

@@ -68,7 +68,7 @@ const List<String> _kIndustries = [
   'VENTURE CAPITAL',
 ];
 
-// Country picker options — backend stores the ISO-2/3 `code` and validates
+// Country picker options, backend stores the ISO-2/3 `code` and validates
 // against this same list (common/utils.py COUNTRIES).
 const List<({String code, String label})> _kCountries = [
   (code: 'GB', label: 'United Kingdom'),
@@ -344,7 +344,7 @@ int _suggestedProbabilityForStatus(LeadStatus status) {
   }
 }
 
-// Status icons — match the source picker affordance so every classification
+// Status icons, match the source picker affordance so every classification
 // row has a consistent visual leading element.
 IconData _statusIcon(LeadStatus s) {
   switch (s) {
@@ -451,7 +451,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   String? _fetchError;
   Lead? _existingLead;
 
-  // Sticky-section quick-jump targets — populated when each section is built.
+  // Sticky-section quick-jump targets. Populated when each section is built.
   final _identitySectionKey = GlobalKey();
   final _contactSectionKey = GlobalKey();
   final _companySectionKey = GlobalKey();
@@ -473,7 +473,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   // checks when the user blurs/refocuses without editing.
   String? _lastCheckedEmail;
 
-  // "Save & Add Another" — when true, on successful submit we reset the form
+  // "Save & Add Another", when true, on successful submit we reset the form
   // instead of popping back to the previous screen.
   bool _saveAndAddAnother = false;
 
@@ -803,7 +803,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       payload['phone'] = phone;
     } else if (widget.isEditMode &&
         (_existingLead?.phone ?? '').isNotEmpty) {
-      // User cleared the phone in edit mode — null clears the column.
+      // User cleared the phone in edit mode, null clears the column.
       payload['phone'] = null;
     }
 
@@ -833,11 +833,11 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     payload['last_contacted'] = _formatDate(_lastContacted);
     payload['next_follow_up'] = _formatDate(_nextFollowUp);
 
-    // Always include — empty list clears the M2M.
+    // Always include, empty list clears the M2M.
     payload['assigned_to'] = _assignedToIds;
     payload['tags'] = _tagIds;
 
-    // Custom fields — only send when the org has defined any, to avoid
+    // Custom fields, only send when the org has defined any, to avoid
     // overwriting unrelated keys.
     if (_customFieldDefs.isNotEmpty) {
       payload['custom_fields'] = _customFieldValues;
@@ -986,7 +986,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     for (final key in orderedKeys) {
       final ctx = key.currentContext;
       if (ctx == null) continue;
-      // Find a TextFormField state under this key — if its errorText is
+      // Find a TextFormField state under this key, if its errorText is
       // populated, this is the first failing field.
       bool foundError = false;
       void visit(Element element) {
@@ -1156,7 +1156,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     );
   }
 
-  /// Horizontal pill strip pinned above the scroll view — taps scroll the form
+  /// Horizontal pill strip pinned above the scroll view, taps scroll the form
   /// to that section. Helps when the form gets long; sections like Notes,
   /// Custom Fields, and Relationships are otherwise a long scroll away.
   Widget _buildSectionChipsBar() {
@@ -1298,7 +1298,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         FloatingLabelInput(
           key: _titleKey,
           label: 'Lead Title *',
-          hint: 'e.g. Website Inquiry — Q4 Demo',
+          hint: 'e.g. Website Inquiry, Q4 Demo',
           controller: _titleController,
           prefixIcon: LucideIcons.tag,
           maxLength: 200,
@@ -1462,7 +1462,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             Expanded(
               child: Text(
                 'A lead with this email already exists'
-                '${_duplicateLeadLabel != null ? ' — ${_duplicateLeadLabel!}' : ''}.'
+                '${_duplicateLeadLabel != null ? ', ${_duplicateLeadLabel!}' : ''}.'
                 ' Tap to open.',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.warning700,
@@ -1477,8 +1477,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   // Reformats the phone field on blur/submit: collapses multiple spaces, trims,
-  // and removes stray separators around digits. Intentionally light-touch —
-  // we don't enforce a region format because the backend accepts anything
+  // and removes stray separators around digits. Intentionally light-touch.
+  // We don't enforce a region format because the backend accepts anything
   // with >=6 digits.
   void _normalizePhoneInPlace() {
     final raw = _phoneController.text;
@@ -1496,7 +1496,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
 
   void _onEmailFocusChange() {
     if (_emailFocusNode.hasFocus) return;
-    // Blur — kick off a duplicate check on create mode only.
+    // Blur, kick off a duplicate check on create mode only.
     if (widget.isEditMode) return;
     final email = _emailController.text.trim();
     if (email.isEmpty || !_emailRegex.hasMatch(email)) {
@@ -1590,7 +1590,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           validator: _urlValidator,
         ),
         const SizedBox(height: 16),
-        // Industry picker — backed by backend's INDCHOICES so values match
+        // Industry picker, backed by backend's INDCHOICES so values match
         // across web + mobile and aren't fragmented by free-text drift.
         Padding(
           key: _industryKey,
@@ -1705,7 +1705,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                   if (v.isEmpty) return null;
                   final parsed = int.tryParse(v);
                   if (parsed == null) return 'Enter a number';
-                  if (parsed < 0 || parsed > 100) return '0–100';
+                  if (parsed < 0 || parsed > 100) return '0-100';
                   return null;
                 },
               ),

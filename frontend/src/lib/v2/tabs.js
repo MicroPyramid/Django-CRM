@@ -9,7 +9,7 @@
  * list a static declaration.
  *
  * `admin: true` marks a tab whose page is a "for administrators" gate to a
- * member — SectionTabs hides it for non-admins so they are not offered a tab
+ * member. SectionTabs hides it for non-admins so they are not offered a tab
  * that only turns them away. The backend still enforces the gate; this is UX.
  */
 export const TAB_SETS = {
@@ -20,7 +20,7 @@ export const TAB_SETS = {
   ],
   /**
    * These two are NOT two views of one list. `tasks.Task` and
-   * `tasks.BoardTask` are separate tables — a card on a board is not a task in
+   * `tasks.BoardTask` are separate tables. A card on a board is not a task in
    * the task list and never appears there. Tabs are still right (both are
    * "Tasks", and you move between them in one sitting), but the board page
    * says the rest out loud, because nothing about the word suggests it.
@@ -43,13 +43,13 @@ export const TAB_SETS = {
 /**
  * Settings deliberately has no tab set.
  *
- * Tabs are for peers you flip between — Queue / Approvals / Analytics are all
+ * Tabs are for peers you flip between. Queue / Approvals / Analytics are all
  * "Tickets", and you move among them in one sitting. The twelve settings pages
  * are not that: you arrive at exactly one of them, change a thing, and leave.
  * A twelve-item strip would push the destination you came for off the right
  * edge and make the other eleven look like they were also on your list.
  *
  * So settings uses the hub at /v2/settings as its index and a `crumb` back to
- * it on each page — which is also the shape that keeps working as the count
+ * it on each page, which is also the shape that keeps working as the count
  * grows past twelve.
  */

@@ -37,7 +37,7 @@ def _resolve_org_context(token, resource_type):
     the context first lets the query run under full RLS.
 
     An unknown token leaves the context empty; the scoped query then returns
-    nothing and the caller 404s — the same answer a disabled link gives, so a
+    nothing and the caller 404s. The same answer a disabled link gives, so a
     stranger learns nothing about whether a token is real.
     """
     org_id = resolve_portal_org(token, resource_type)
@@ -359,7 +359,7 @@ class PublicEstimateAcceptView(APIView):
         Accepting a quote authorises its price, so this is enforced, not
         cosmetic: the token holder must be within the estimate's validity
         window and must identify themselves. Both checks live here because the
-        frontend is not a trust boundary — hiding the button past expiry, or
+        frontend is not a trust boundary, hiding the button past expiry, or
         collecting a name the client could omit, protects nothing.
         """
         _resolve_org_context(token, "estimate")

@@ -4,7 +4,7 @@
    *
    * ── WHAT THIS PAGE IS NOT ────────────────────────────────────────────────
    * v1's support page is 647 lines of mission statement, pricing rationale and
-   * "join thousands of businesses" — marketing copy shown to people who have
+   * "join thousands of businesses": marketing copy shown to people who have
    * ALREADY BOUGHT and are, by the fact of being here, stuck. Somebody who
    * opens Help is not deciding whether to adopt the product; they are trying
    * to get out of a hole, and every paragraph between them and the way out is
@@ -16,8 +16,8 @@
    *
    * ── THE LAST SECTION IS THE POINT ────────────────────────────────────────
    * "What to include" exists because the first reply to almost every support
-   * email is a request for the same four facts. Printing them on the page —
-   * and only the ones the browser already knows — turns a two-day round trip
+   * email is a request for the same four facts. Printing them on the page,
+   * and only the ones the browser already knows, turns a two-day round trip
    * into one message. Nothing here is fetched, and nothing identifying is
    * displayed: no org id, no token, no email, no user id. A support page that
    * renders an identifier is a support page that puts it in screenshots.
@@ -80,7 +80,7 @@
   /**
    * The four facts a first reply always asks for. Browser and screen come from
    * the client; the other two are things only the person writing can supply,
-   * and they are phrased as prompts rather than pre-filled — this page is not
+   * and they are phrased as prompts rather than pre-filled. This page is not
    * going to quietly ship an org identifier into an email body.
    */
   let browser = $state('—');
@@ -156,8 +156,8 @@
         </dd>
       </dl>
       <p class="fine">
-        Please do not paste screenshots containing an invoice link, an API token or a survey URL —
-        each of those is a working credential for whoever ends up holding it.
+        Please do not paste screenshots containing an invoice link, an API token or a survey URL.
+        Each of those is a working credential for whoever ends up holding it.
       </p>
     </div>
   </div>

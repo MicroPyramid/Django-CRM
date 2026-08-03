@@ -4,7 +4,7 @@ import '../data/models/lookup_models.dart';
 import '../data/models/custom_field_definition.dart';
 import '../services/api_service.dart';
 
-/// Lookup providers — one AsyncNotifier per resource so the four fetches
+/// Lookup providers, one AsyncNotifier per resource so the four fetches
 /// (accounts / contacts / users / tags) cache, refresh and surface
 /// loading/error independently.
 ///
@@ -113,7 +113,7 @@ final usersLookupProvider =
 
 /// Teams. Backed by the same teams_and_users endpoint as the users lookup, so
 /// hitting it twice in one frame still only fires one network request (the
-/// underlying ApiService doesn't dedupe — these notifiers each call it once and
+/// underlying ApiService doesn't dedupe. These notifiers each call it once and
 /// cache).
 class TeamsLookupNotifier extends AsyncNotifier<List<TeamLookup>> {
   @override
@@ -177,7 +177,7 @@ final tagsLookupProvider =
       TagsLookupNotifier.new,
     );
 
-/// Convenience wrappers — return the resolved list (or empty during
+/// Convenience wrappers. Return the resolved list (or empty during
 /// load/error). Forms that don't care about loading state watch these.
 final accountsProvider = Provider<List<AccountLookup>>((ref) {
   return ref.watch(accountsLookupProvider).value ?? const [];

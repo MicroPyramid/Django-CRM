@@ -5,7 +5,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/ticket.dart';
 
 /// Sidebar-style card showing ticket SLA status, escalation count, and
-/// watcher count — the same surface the web app shows in its right rail.
+/// watcher count. The same surface the web app shows in its right rail.
 ///
 /// Deadlines and breach flags come from the backend so this view stays in
 /// sync with whatever the SLA calculator (business hours, paused windows)

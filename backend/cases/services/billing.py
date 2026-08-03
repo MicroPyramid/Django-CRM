@@ -2,7 +2,7 @@
 draft :class:`invoices.models.InvoiceLineItem` shapes.
 
 Kept in ``cases/services/`` so the cross-app glue lives on the cases side
-of the boundary — the invoices app only consumes these dicts. Reach over
+of the boundary, the invoices app only consumes these dicts. Reach over
 to ``invoices/api_views.py`` :class:`InvoiceFromTimeEntriesView` for the
 actual endpoint that calls this helper.
 """
@@ -26,7 +26,7 @@ def build_invoice_lines_from_entries(entries) -> Tuple[str, List[dict]]:
     Rejects (raising :class:`TimeEntryInvoicingError`):
 
     * Empty input.
-    * Mixed currencies — single invoices stay single-currency.
+    * Mixed currencies: single invoices stay single-currency.
     * Already-invoiced entries.
     * Unstopped (running) entries.
     * Non-billable entries.
@@ -68,7 +68,7 @@ def build_invoice_lines_from_entries(entries) -> Tuple[str, List[dict]]:
         rate = entry.hourly_rate if entry.hourly_rate is not None else Decimal("0")
         case_name = entry.case.name if getattr(entry, "case", None) else "Time entry"
         body = entry.description.strip() if entry.description else ""
-        full = f"{case_name} — {body}" if body else case_name
+        full = f"{case_name}, {body}" if body else case_name
         lines.append(
             {
                 "name": full[:255],

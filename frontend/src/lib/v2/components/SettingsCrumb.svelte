@@ -7,7 +7,7 @@
    * index, not twelve siblings competing for the same row.
    *
    * Rendered inside PageHeader's `crumb` snippet so it sits above the title in
-   * the same place a record's account name does — one convention for "the
+   * the same place a record's account name does. One convention for "the
    * thing this belongs to", whether that thing is an account or a section.
    */
   import { ChevronLeft } from '@lucide/svelte';

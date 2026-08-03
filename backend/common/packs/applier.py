@@ -129,7 +129,7 @@ def _apply_tags(org, pack: dict, report: _Report) -> None:
 
 def _apply_products(org, pack: dict, report: _Report) -> None:
     for product in pack.get("products") or []:
-        # sku is mandatory in a manifest — see schema._validate_product.
+        # sku is mandatory in a manifest. See schema._validate_product.
         if Product.objects.filter(org=org, sku=product["sku"]).exists():
             report.add_skipped("product", product["name"])
             continue
@@ -147,12 +147,12 @@ def _apply_products(org, pack: dict, report: _Report) -> None:
 
 def _apply_terminology(org, pack: dict, report: _Report) -> None:
     # `org` is the caller's in-memory object, loaded before apply_pack opened
-    # its transaction — it can already be stale (e.g. a second apply of a
+    # its transaction. It can already be stale (e.g. a second apply of a
     # different pack applied via the same object, or genuine concurrency).
     # Deciding "already set?" from that snapshot and then saving it back
     # would overwrite whatever the DB row actually holds. Re-read the row
     # under a lock, INSIDE this transaction, and decide from the locked row
-    # instead — that is the only copy of the truth we write from.
+    # instead. That is the only copy of the truth we write from.
     locked = Org.objects.select_for_update().get(pk=org.pk)
 
     terminology = pack.get("terminology") or {}
@@ -169,7 +169,7 @@ def _apply_terminology(org, pack: dict, report: _Report) -> None:
         current.update(added)
         locked.terminology = current
         changed_fields.append("terminology")
-    # Set regardless of whether this pack carries any terminology — a
+    # Set regardless of whether this pack carries any terminology, a
     # pipeline-only or products-only pack still applied, and vertical is the
     # field that records that.
     if not locked.vertical:
@@ -188,7 +188,7 @@ def _sample_models():
     Ordered as the applier creates them and, reversed, as clear_sample_data
     deletes them: a referenced row exists before the row referencing it, and is
     removed after. Defined once so the apply guard, the applier and the clear
-    can never disagree about what "sample data" covers — a seventh entity added
+    can never disagree about what "sample data" covers, a seventh entity added
     to one list but not the others is the failure mode this shape prevents.
     """
     from accounts.models import Account
@@ -219,12 +219,12 @@ def _create_sample(report, type_: str, name: str, build):
 
     The except covers *only* `build()`. It used to wrap the tags.add() /
     assigned_to.add() follow-up too, and blamed every IntegrityError on a
-    duplicate email — which was wrong, and silent, for the one it actually
+    duplicate email, which was wrong, and silent, for the one it actually
     produced: assigned_to.add(None) when actor is None. Keeping the M2M work
     outside is what stops this clause from misreporting an unrelated integrity
     error as a collision. ValidationError is caught alongside because Task.save
     calls full_clean, so a bad sample task raises Django's ValidationError
-    rather than an IntegrityError — uncaught, that is a 500 out of an endpoint
+    rather than an IntegrityError. Uncaught, that is a 500 out of an endpoint
     whose whole contract is "additive, never fatal".
     """
     from django.core.exceptions import ValidationError
@@ -253,7 +253,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     if not any(sample.get(key) for key in SAMPLE_ENTITY_KEYS):
         return
 
-    # is_sample, not the tag, is the re-apply guard — a tag is just a label a
+    # is_sample, not the tag, is the re-apply guard. A tag is just a label a
     # user can freely rename/delete/attach, so it must never gate anything this
     # module decides from. See clear_sample_data for the matching deletion-side
     # rule. The guard spans every sample model, not just Lead: a pack whose
@@ -264,9 +264,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
             report.add_skipped("sample_data", pack["id"])
             return
 
-    # The tag is attached purely for visibility/filtering in the UI — it
+    # The tag is attached purely for visibility/filtering in the UI. It
     # carries no authority over what apply/clear do. Adopting this tag onto a
-    # real record (or renaming another tag onto this slug) is harmless —
+    # real record (or renaming another tag onto this slug) is harmless,
     # nothing destructive keys off it.
     sample_tag, _ = Tags.objects.get_or_create(
         org=org, slug=SAMPLE_TAG_SLUG, defaults={"name": SAMPLE_TAG_NAME, "color": "gray"}
@@ -278,7 +278,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
             return
         obj.tags.add(sample_tag)
         # actor is optional (PackApplication.applied_by is nullable for the
-        # same reason — a caller may apply without an assigning admin, e.g. a
+        # same reason. A caller may apply without an assigning admin, e.g. a
         # future management command). Without an assignee the admin who applied
         # the pack has no ordinary "my records" query that reaches these rows,
         # but that is a lesser loss than silently mis-skipping every sample row,
@@ -286,7 +286,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
         if actor is not None:
             obj.assigned_to.add(actor)
 
-    # Every reference below resolves against these maps alone — rows this apply
+    # Every reference below resolves against these maps alone. Rows this apply
     # just created. Never against a queryset of the org's existing records: a
     # sample contact that latched onto a tenant's real "Acme Corp" would put demo
     # rows inside real customer data, and would then make that real account a
@@ -343,7 +343,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
             finish(obj)
             # Account.contacts is the M2M the account page actually reads; the
             # Contact.account FK alone leaves the account's contact list empty.
-            # See the "two account links on Contact" split — both are populated
+            # See the "two account links on Contact" split. Both are populated
             # here so the demo looks right from either side.
             if obj.account_id:
                 obj.account.contacts.add(obj)
@@ -434,7 +434,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
                 due_date=s.get("due_date"),
                 description=s.get("description"),
                 stage=task_stages.get(s.get("stage")),
-                # At most one of these is set — schema._validate_sample_data
+                # At most one of these is set; schema._validate_sample_data
                 # rejects a pack that names more, matching Task.clean.
                 account=accounts.get(s.get("account")),
                 opportunity=deals.get(s.get("deal")),
@@ -484,7 +484,7 @@ def _ids_with_foreign_children(model, ids: list, retained_pks: set) -> set:
 
     `retained_pks` is the exception, and it is what makes retention hold. A
     sample ticket kept because it carries billable time is no longer going
-    anywhere — so its sample account must be kept too, or deleting the account
+    anywhere, so its sample account must be kept too, or deleting the account
     would cascade the ticket away and take that billable time with it, which is
     exactly the loss the retention rule exists to prevent. Because the loop runs
     children first, every retained child is already known by the time its parent
@@ -507,8 +507,8 @@ def _ids_with_foreign_children(model, ids: list, retained_pks: set) -> set:
 def clear_sample_data(org, actor=None) -> dict:
     """Delete the demo records the applier created for THIS org, and nothing else.
 
-    Keyed on `is_sample` alone — a server-set, non-serializer-writable boolean on
-    all six models — never on the "Sample data" tag. `Tags.save()` recomputes its
+    Keyed on `is_sample` alone. A server-set, non-serializer-writable boolean on
+    all six models, never on the "Sample data" tag. `Tags.save()` recomputes its
     slug on every save and the tag CRUD endpoints have no reserved-slug guard, so
     the tag can be renamed onto this slug, adopted from an existing tag, or
     attached to any real record through the ordinary tag picker. None of that is
@@ -525,23 +525,23 @@ def clear_sample_data(org, actor=None) -> dict:
 
     2. **Never take real data with it, and never fail because of it.** A user who
        logs a real deal against a demo account, bills hours against a demo
-       ticket, or raises a real invoice on a demo account must lose none of it —
+       ticket, or raises a real invoice on a demo account must lose none of it,
        and in the invoice case a naive delete would not merely lose data, it
        would raise ProtectedError and abort the entire clear. Any sample row
        still referenced by a non-sample row is kept and reported as retained.
 
-    Returns {"deleted": {type: n}, "retained": {type: n}} — retained is a normal
+    Returns {"deleted": {type: n}, "retained": {type: n}}. Retained is a normal
     outcome, not an error, and the UI is expected to say so.
 
     `actor` is optional (mirrors apply_pack's PackApplication.applied_by) and is
-    used only to attribute the audit record — it plays no part in the delete,
+    used only to attribute the audit record. It plays no part in the delete,
     which is already org-scoped.
     """
     from common.audit_log import audit_log
 
     deleted: dict[str, int] = {}
     retained: dict[str, int] = {}
-    # Accumulated across models so a kept child keeps its parent — see
+    # Accumulated across models so a kept child keeps its parent. See
     # _ids_with_foreign_children.
     retained_pks: set = set()
 
@@ -561,14 +561,14 @@ def clear_sample_data(org, actor=None) -> dict:
 
             # `_total` sums every row the collector removed, including the M2M
             # through-table rows (tags/contacts/assigned_to/teams) cascaded off
-            # each deleted record — not the number of records deleted. Pull the
+            # each deleted record, not the number of records deleted. Pull the
             # model-specific count from the per-model breakdown instead of a
             # second, racy count() query.
             count = by_model.get(model._meta.label, 0)
             if count:
                 deleted[type_] = count
 
-    # This is the only destructive operation in the feature — apply_pack records
+    # This is the only destructive operation in the feature; apply_pack records
     # itself via PackApplication, so a delete leaving no trace at all would be
     # the odd one out. See AuditLogger.sample_data_cleared.
     audit_log.sample_data_cleared(
@@ -584,7 +584,7 @@ def apply_pack(org, pack: dict, actor) -> dict:
     # actor must belong to org. _apply_sample_data does
     # lead.assigned_to.add(actor) with no further org check of its own, so
     # without this guard a caller that passes a mismatched (org, actor) pair
-    # — e.g. an org-B apply given an org-A profile — creates cross-org
+    #; e.g. an org-B apply given an org-A profile: creates cross-org
     # assignments: an org-A profile ends up assigned to org-B's leads, and
     # that profile can then read those leads through an ordinary "my leads"
     # query, which is a tenant-isolation break. This is enforced here, not
@@ -594,7 +594,7 @@ def apply_pack(org, pack: dict, actor) -> dict:
     if actor is not None and actor.org_id != org.id:
         raise ValueError("actor must belong to the org the pack is being applied to")
 
-    # Serialize concurrent applies to the same org — keyed on org alone, not
+    # Serialize concurrent applies to the same org, keyed on org alone, not
     # org+pack. Two of our match keys (pipeline name, invoice template name)
     # are conventions rather than DB constraints, so without this two racing
     # applies of the same pack could both pass the existence check and both
@@ -605,13 +605,13 @@ def apply_pack(org, pack: dict, actor) -> dict:
     # both cases.
     #
     # pg_advisory_xact_lock is Postgres-only. Production and every real
-    # deployment run Postgres (RLS requires it — see RLS_SETUP.md), but the
+    # deployment run Postgres (RLS requires it: see RLS_SETUP.md), but the
     # test suite runs on SQLite (crm/test_settings.py), which has no such
     # function and would raise OperationalError. Guard on connection.vendor,
     # matching the existing pattern in common/tasks.py's set_rls_context and
     # common/management/commands/manage_rls.py: skip the Postgres-only
     # statement on other backends instead of trying to emulate it. This is a
-    # real no-op only on SQLite, which is test-only in this codebase — on
+    # real no-op only on SQLite, which is test-only in this codebase. On
     # every backend that ships to production, the lock is taken.
     from django.db import connection
 

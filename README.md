@@ -1,4 +1,4 @@
-# BottleCRM — Open Source Django CRM for Startups & Enterprises
+# BottleCRM: Open Source Django CRM for Startups & Enterprises
 
 A free, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKit and Flutter.
 
@@ -11,31 +11,31 @@ A free, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKi
 ![Coverage](./coverage-badge.svg)
 
 **BottleCRM is an open source CRM you run on your own infrastructure.** It covers the full
-customer lifecycle — leads, accounts, contacts, opportunities, support tickets, tasks and
-invoices — through a SvelteKit web app, a native Flutter mobile app, and a documented REST API
+customer lifecycle: leads, accounts, contacts, opportunities, support tickets, tasks and
+invoices: through a SvelteKit web app, a native Flutter mobile app, and a documented REST API
 sharing one Django backend. PostgreSQL Row-Level Security isolates each organization's data at
 the database layer, so a single deployment serves one startup or hundreds of tenants.
 
-No per-seat pricing, no user caps, no feature paywall. MIT licensed — fork it, self-host it, own
+No per-seat pricing, no user caps, no feature paywall. MIT licensed: fork it, self-host it, own
 your data.
 
 **[Try it free →](https://bottlecrm.io/)** · [Features](https://bottlecrm.io/features) · [Product docs](https://bottlecrm.io/docs) · [Pricing](https://bottlecrm.io/pricing) · [Migrate from Salesforce or HubSpot](https://bottlecrm.io/migration)
 
-(That's the marketing site's product documentation. For the technical documentation — self-hosting, architecture, the API, contributing — see [Documentation](#documentation) below.)
+(That's the marketing site's product documentation. For the technical documentation (self-hosting, architecture, the API, contributing) see [Documentation](#documentation) below.)
 
 ## Why BottleCRM
 
-- **Free forever, MIT licensed** — unlimited users and records, no subscription. A genuinely
+- **Free forever, MIT licensed**: unlimited users and records, no subscription. A genuinely
   self-hosted CRM alternative to Salesforce, HubSpot and Pipedrive.
-- **Multi-tenant by design** — PostgreSQL Row-Level Security enforces tenant isolation in the
+- **Multi-tenant by design**: PostgreSQL Row-Level Security enforces tenant isolation in the
   database, not just in application code. Run it for a single company or as a SaaS for many.
-- **AI agents built in (MCP)** — connect Claude, Cursor, Codex, Gemini or any MCP client and let
+- **AI agents built in (MCP)**: connect Claude, Cursor, Codex, Gemini or any MCP client and let
   it search, create and update records *as you*, inheriting your role, org and permissions.
-- **Web, native mobile and API** — one Django REST backend behind a Svelte 5 web app and a
+- **Web, native mobile and API**: one Django REST backend behind a Svelte 5 web app and a
   Flutter app for iOS and Android.
-- **A stack you can actually hack on** — Django 6 / DRF and Svelte 5, not a bespoke in-house
+- **A stack you can actually hack on**: Django 6 / DRF and Svelte 5, not a bespoke in-house
   framework. If your team writes Python, it can extend this on day one.
-- **Real support tooling** — a full helpdesk with SLA timers, approvals, escalations, macros and
+- **Real support tooling**: a full helpdesk with SLA timers, approvals, escalations, macros and
   a knowledge base, not a bolted-on ticket list.
 
 ## How it compares
@@ -44,9 +44,9 @@ your data.
 |---|---|---|---|
 | **Cost** | Free, unlimited users | Per seat, per month | Free core, often paid tiers |
 | **Hosting** | Self-hosted (managed hosting available) | Vendor cloud only | Self-hosted |
-| **Data ownership** | Total — it is your database | Vendor-controlled | Total |
+| **Data ownership** | Total. It is your database | Vendor-controlled | Total |
 | **Multi-tenancy** | Database-level RLS | Not applicable | Uncommon |
-| **Native mobile app** | Yes — Flutter, iOS + Android | Yes | Uncommon |
+| **Native mobile app** | Yes, Flutter, iOS + Android | Yes | Uncommon |
 | **AI agent access** | Built-in MCP server | Proprietary add-ons | Uncommon |
 | **Stack** | Django REST + SvelteKit | Closed source | Varies |
 | **License** | MIT | Proprietary | Varies, often GPL/AGPL |
@@ -65,14 +65,14 @@ login, loading demo data, and what each service does.
 
 ## Documentation
 
-The full documentation — setup, self-hosting, architecture, the REST API, and contributing — is
+The full documentation (setup, self-hosting, architecture, the REST API, and contributing) is
 built from this repository's [`docs/`](docs/) with MkDocs Material and publishes to Read the Docs
-at <https://bottlecrm.readthedocs.io/>. Four starting points:
+at <https://django-crm.readthedocs.io/en/latest/>. Four starting points:
 
-- **[Getting started](docs/getting-started/docker-quick-start.md)** — Docker and manual setup, first sign-in, demo data.
-- **[Self-hosting](docs/self-hosting/requirements.md)** — requirements, production deployment, PostgreSQL and Row-Level Security, backups, security hardening.
-- **[API reference](docs/api/conventions.md)** — authentication, conventions, and every documented endpoint.
-- **[Contributing](docs/contributing/development-setup.md)** — local development setup, testing, code style, and how to open a pull request.
+- **[Getting started](docs/getting-started/docker-quick-start.md)**: Docker and manual setup, first sign-in, demo data.
+- **[Self-hosting](docs/self-hosting/requirements.md)**: requirements, production deployment, PostgreSQL and Row-Level Security, backups, security hardening.
+- **[API reference](docs/api/conventions.md)**: authentication, conventions, and every documented endpoint.
+- **[Contributing](docs/contributing/development-setup.md)**: local development setup, testing, code style, and how to open a pull request.
 
 ## Contributing
 

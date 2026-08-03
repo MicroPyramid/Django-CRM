@@ -5,7 +5,7 @@
    * page to tick a checkbox, which is why nobody ticked them.
    *
    * Now on the real API, and the tick is a PATCH. The mock left a note saying
-   * this must never become "a tick that looks saved and is not" — so the row
+   * this must never become "a tick that looks saved and is not", so the row
    * shows a pending state while the request is in flight and takes whatever
    * the server says, rather than assuming it worked.
    */
@@ -124,7 +124,7 @@
           {#each tasks as t (t.id)}
             {@const late = overdueDays(t)}
             <tr style={t.is_done ? 'opacity:.5' : ''}>
-              <!-- Not the identifier, so it must not take the title slot — but it
+              <!-- Not the identifier, so it must not take the title slot, but it
                    is the one control on this row, so it stays on the title line
                    at the left rather than dropping into the meta run. -->
               <td data-m="lead">

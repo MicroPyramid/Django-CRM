@@ -18,8 +18,8 @@
    *
    * VALIDATION IS A UX HINT HERE, NOT A RULE.
    * Everything below only decides what this page shows. The serializer has to
-   * enforce the same constraints server-side — required fields, the amount
-   * being positive, the account belonging to this org — because curl, the
+   * enforce the same constraints server-side: required fields, the amount
+   * being positive, the account belonging to this org, because curl, the
    * mobile client and a stale build all reach the API without passing
    * through this file. See CLAUDE.md, "API Validation & Authorization".
    *
@@ -83,7 +83,7 @@
 
   /**
    * On success the action redirects to the new deal, so there is no success
-   * state to render here — the next thing anyone does after creating a deal is
+   * state to render here. The next thing anyone does after creating a deal is
    * look at it.
    *
    * @type {import('./$types').SubmitFunction}
@@ -92,7 +92,7 @@
     submitted = true;
     if (!valid) {
       // Send focus to the first field that needs work rather than only
-      // colouring it — on a long form the error can be off screen.
+      // colouring it. On a long form the error can be off screen.
       // await tick() matters: on the first submit the aria-invalid attributes
       // do not exist until Svelte flushes, so querying now finds nothing.
       cancel();
@@ -167,7 +167,7 @@
         <p class="v2-error" id="e-name">{errors.name}</p>
       {:else}
         <p class="v2-hint" id="h-name">
-          What you would say out loud — “40 seats plus onboarding”, not “Opportunity 118”.
+          What you would say out loud, “40 seats plus onboarding”, not “Opportunity 118”.
         </p>
       {/if}
     </div>
@@ -248,7 +248,7 @@
       The disclosure below removes its fields from the DOM when closed, and a
       field that is not in the DOM submits nothing. That is right for every
       field in there except the owner: the hint under it promises "Defaults to
-      you", and without this the common path — never opening the disclosure —
+      you", and without this the common path, never opening the disclosure,
       would create an unassigned deal. So the default rides along in a hidden
       input whenever the select itself is not mounted.
     -->
@@ -269,7 +269,7 @@
       >
         {#if more}<ChevronDown />{:else}<ChevronRight />{/if}
         More fields
-        <span class="v2-sub" style="font-size:12px">— type, probability, source, owner, notes</span>
+        <span class="v2-sub" style="font-size:12px">. Type, probability, source, owner, notes</span>
       </button>
 
       {#if more}

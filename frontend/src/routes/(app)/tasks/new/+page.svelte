@@ -107,7 +107,7 @@
         </select>
         {#if options.length === 0}
           <span class="v2-sub" style="font-size:11.5px"
-            >Nothing to pick — either there are none, or that list did not load.</span
+            >Nothing to pick. Either there are none, or that list did not load.</span
           >
         {/if}
       </label>

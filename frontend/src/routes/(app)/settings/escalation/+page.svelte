@@ -3,7 +3,7 @@
    * What happens when a ticket blows its target.
    *
    * One EscalationPolicy per priority, enforced by a unique constraint. The
-   * useful question is not "is there a policy" — there always is — but "does
+   * useful question is not "is there a policy", there always is, but "does
    * it do anything", and the model allows three separate ways for the answer
    * to be no:
    *
@@ -12,7 +12,7 @@
    *   · the action is `notify` with no individual and no team to notify
    *   · is_active is false
    *
-   * All three look identical in v1's form — a row of selects with something
+   * All three look identical in v1's form, a row of selects with something
    * chosen. Here the breach count sits next to the outcome, so "11 breaches,
    * nobody told" is one line rather than two screens.
    */
@@ -28,7 +28,7 @@
   let { data } = $props();
 
   /**
-   * By severity, not by the model's `ordering = ("priority",)` — that sorts
+   * By severity, not by the model's `ordering = ("priority",)`. That sorts
    * the CharField alphabetically and puts Low between High and Normal, which
    * reads as a mistake every single time.
    */
@@ -46,13 +46,13 @@
     const target = policy[`${kind}_target`];
     const team = policy.notify_team;
 
-    if (!policy.is_active) return { text: 'Nothing — the policy is off', dead: true };
+    if (!policy.is_active) return { text: 'Nothing. The policy is off', dead: true };
 
     if (action === 'reassign' && !target)
-      return { text: 'Reassign to nobody — no target is set', dead: true };
+      return { text: 'Reassign to nobody, no target is set', dead: true };
 
     if (action === 'notify' && !target && !team)
-      return { text: 'Notify nobody — no person and no team', dead: true };
+      return { text: 'Notify nobody, no person and no team', dead: true };
 
     const who = [target?.name, team ? `the ${team.name} team` : null].filter(Boolean).join(' and ');
     return { text: `${ESCALATION_ACTION_LABEL[action]} ${who}`, dead: false };
@@ -84,12 +84,12 @@
   <div class="v2-pad" style="padding-top:18px;padding-bottom:32px">
     {#if policies.length === 0}
       <!-- No policy for any priority. Without this the page falls to a header
-           over a blank column — the each-block renders nothing and the trailing
+           over a blank column, the each-block renders nothing and the trailing
            note hangs alone. The empty state says what a policy is and what its
            absence means, and centres itself like every other empty state. -->
       <EmptyState
         title="No escalation policies yet"
-        body="An escalation policy decides what happens when a ticket misses its first-response or resolution target — one per priority. None are set for this organisation, so a breach currently escalates to nobody."
+        body="An escalation policy decides what happens when a ticket misses its first-response or resolution target. One per priority. None are set for this organisation, so a breach currently escalates to nobody."
       >
         {#snippet icon()}<BellOff size={21} />{/snippet}
       </EmptyState>
@@ -142,7 +142,7 @@
                   </div>
                   <div class="v2-sub" style="font-size:11.5px;margin-top:6px">
                     <span class="v2-num">{count(half.n)}</span>
-                    in the last 30 days{half.o.dead && half.n > 0 ? ' — none of them acted on' : ''}
+                    in the last 30 days{half.o.dead && half.n > 0 ? ', none of them acted on' : ''}
                   </div>
                 </div>
               {/each}
@@ -182,7 +182,7 @@
     padding-left: 18px;
   }
 
-  /* Class, not an inline grid — an inline grid-template-columns cannot be
+  /* Class, not an inline grid. An inline grid-template-columns cannot be
      overridden here, which is how four earlier pages stayed two-column on a
      phone. */
   @media (max-width: 768px) {

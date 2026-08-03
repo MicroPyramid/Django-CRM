@@ -68,7 +68,7 @@
         <span
           class="bg-muted/50 text-foreground mx-1 inline-flex items-center justify-center rounded-md px-2 py-0.5 font-semibold tabular-nums"
         >
-          {startItem}–{endItem}
+          {startItem}-{endItem}
         </span>
         of
         <span class="text-foreground ml-1 font-semibold">{total}</span>

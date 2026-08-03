@@ -3,8 +3,8 @@ class EntityError(ValueError):
 
 
 # Paths verified against backend/common/app_urls/__init__.py and each app's
-# urls.py. Note: solutions are NOT served at a top-level /api/solutions/ —
-# they live under the cases app at /api/cases/solutions/ (see cases/urls.py).
+# urls.py. Note: solutions are NOT served at a top-level /api/solutions/.
+# They live under the cases app at /api/cases/solutions/ (see cases/urls.py).
 ENTITIES = {
     "leads":         {"path": "/api/leads/",          "actions": ["convert", "add_comment"]},
     "contacts":      {"path": "/api/contacts/",       "actions": ["add_comment"]},
@@ -19,7 +19,7 @@ ENTITIES = {
 # Actions with an outward-facing / irreversible side effect (e.g. emailing a
 # customer). Like crm_delete, these require an explicit confirm=True so an agent
 # can't trigger them off a misread instruction. Keyed by action name across all
-# entities — keep it small and conservative.
+# entities. Keep it small and conservative.
 CONFIRM_REQUIRED_ACTIONS = {"send"}
 
 

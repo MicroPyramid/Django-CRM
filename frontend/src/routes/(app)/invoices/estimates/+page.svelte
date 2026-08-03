@@ -45,7 +45,7 @@
     <span class="v2-num">{money(totals.awaiting_reply)}</span> awaiting a reply
   {/snippet}
   {#snippet actions()}
-    <!-- An estimate is raised from a deal, not typed from scratch here — the
+    <!-- An estimate is raised from a deal, not typed from scratch here. The
          empty state has always said so. Send the button where estimates are
          born rather than to a form this page does not own. -->
     <a class="v2-btn v2-btn-primary" href="/pipeline"><Plus />New estimate</a>

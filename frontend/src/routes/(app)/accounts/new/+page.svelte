@@ -10,7 +10,7 @@
    *
    * `org` and `created_by` are not on the form and are not in the request.
    * `AccountsListView.post` derives both from `request.profile`, which comes
-   * from the JWT — the only place identity can safely come from.
+   * from the JWT. The only place identity can safely come from.
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
@@ -71,8 +71,8 @@
 
   /**
    * The name must be unique in the org, case-insensitively. That check needs
-   * the database, so it happens on the server and arrives as `result.error` —
-   * this only stops submissions that are wrong on their face.
+   * the database, so it happens on the server and arrives as `result.error`.
+   * This only stops submissions that are wrong on their face.
    *
    * @type {import('./$types').SubmitFunction}
    */

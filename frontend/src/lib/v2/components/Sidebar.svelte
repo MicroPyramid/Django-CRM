@@ -27,21 +27,21 @@
   /**
    * One flat tree, grouped by what the person is doing rather than by which
    * Django app owns the model. Every label matches the route it lands on and
-   * the page title it lands on — "Pipeline" goes to /v2/pipeline, which is
+   * the page title it lands on; "Pipeline" goes to /v2/pipeline, which is
    * titled "Pipeline".
    *
    * v1 had /leads listed twice, as "Pipeline" and as "Leads", and a "Deals"
    * entry pointing at /opportunities while /deals 404'd.
    *
    * `role` is server-derived from the JWT (see the app layout loader). It only
-   * decides which destinations to *show* — every hidden one is still enforced
+   * decides which destinations to *show*. Every hidden one is still enforced
    * by the backend, so this is UX, not access control. An item marked `admin`
    * is one where a member gets nothing but a "for administrators" gate, so
    * showing it would only teach them to bounce off it.
    *
    * `termKey` marks the handful of entity destinations a vertical pack may
    * relabel (see `$lib/terminology.js`). The string in `label` below is only
-   * ever the fallback an org with no pack — or no override for that key —
+   * ever the fallback an org with no pack, or no override for that key,
    * still renders; the derived `groups` below is what actually resolves it
    * against `terminology`. No other label branches on the org at all.
    *
@@ -84,7 +84,7 @@
       items: [
         { href: '/tasks', label: 'Tasks', icon: CircleCheck, count: 'tasks' },
         // Approvals and Analytics live under Tickets as section tabs. They are
-        // not separate destinations, so they do not get separate nav entries —
+        // not separate destinations, so they do not get separate nav entries,
         // one level of navigation, and the tab strip carries the rest.
         { href: '/tickets', label: 'Tickets', icon: LifeBuoy, count: 'tickets' },
         { href: '/solutions', label: 'Knowledge base', icon: BookOpen },
@@ -108,7 +108,7 @@
       // Administration, kept apart from the work. Someone who never touches
       // these should not read past them four times a day.
       //
-      // Team is admin-only — a member reaches it only to be told so. Settings
+      // Team is admin-only. A member reaches it only to be told so. Settings
       // is not: the hub is readable by any member (it just omits admin-only
       // counts), so it stays for everyone.
       label: 'Run',
@@ -191,7 +191,7 @@
       <CircleHelp />
       Help
     </a>
-    <!-- The phone app for people on the hosted service. No pulsing dot — a
+    <!-- The phone app for people on the hosted service. No pulsing dot. A
          download link is not something that needs you right now, and v2 keeps
          attention for the things that do. -->
     <a
@@ -203,7 +203,7 @@
       <Smartphone />
       Download app
     </a>
-    <!-- Leaving the app. Last in the list, and a plain link — /logout is a
+    <!-- Leaving the app. Last in the list, and a plain link. /logout is a
          server load that clears the auth cookies and redirects to /login, so a
          GET navigation is all it takes and no data-fetching component follows. -->
     <a class="v2-link" href="/logout" data-sveltekit-reload>
@@ -215,7 +215,7 @@
 
 <style>
   /* Search opens an overlay rather than navigating, so it is a button. It
-     borrows .v2-link for everything else — a control that sits in a list of
+     borrows .v2-link for everything else. A control that sits in a list of
      links should not look like the odd one out. */
   .v2-nav-search {
     width: 100%;

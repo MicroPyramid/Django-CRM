@@ -7,7 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/ticket.dart';
 import '../../providers/analytics_provider.dart';
 
-/// Analytics dashboard for tickets (Tier 2). Read-only — no CSV export on
+/// Analytics dashboard for tickets (Tier 2). Read-only, no CSV export on
 /// mobile; users go to the web for that.
 class TicketAnalyticsScreen extends ConsumerStatefulWidget {
   const TicketAnalyticsScreen({super.key});
@@ -98,7 +98,7 @@ class _TicketAnalyticsScreenState extends ConsumerState<TicketAnalyticsScreen> {
                   Icon(LucideIcons.calendar, size: 16),
                   const SizedBox(width: 8),
                   Text(
-                    '${_fmt(_range.start)} — ${_fmt(_range.end)}',
+                    '${_fmt(_range.start)}. ${_fmt(_range.end)}',
                     style: AppTypography.body,
                   ),
                 ],

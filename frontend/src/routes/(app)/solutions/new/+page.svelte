@@ -6,12 +6,12 @@
    * `cases.Solution` carries `status` (draft → reviewed → approved) AND a
    * separate `is_published` boolean, and they answer different questions:
    * status is "has a human checked this", published is "can a customer read
-   * it". The list page exists partly to surface the row where they disagree —
+   * it". The list page exists partly to surface the row where they disagree,
    * approved and still invisible.
    *
    * ── WHERE THE MOCK WAS WRONG ─────────────────────────────────────────────
    * This form used to offer both switches freely and told the writer that a
-   * published draft was "allowed, and sometimes right — but it is a choice,
+   * published draft was "allowed, and sometimes right, but it is a choice,
    * not an accident". It was neither: `Solution.publish()` has always refused
    * it, and the serializer now refuses it on every path in. The old page could
    * say that because it never submitted anything.
@@ -19,7 +19,7 @@
    * What is true is narrower and more useful, so the form says that instead:
    * publishing needs an approval, approving is somebody else's job, and a
    * writer's article starts as a draft. The publish switch only appears for
-   * an admin — for anyone else it would be a control that answers 403.
+   * an admin. For anyone else it would be a control that answers 403.
    *
    * ── WHAT THIS FORM DOES NOT SET ──────────────────────────────────────────
    * `org` and `created_by` are server-derived; `case_count` is an aggregate
@@ -35,8 +35,8 @@
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
-  // `untrack` so a revalidation cannot overwrite what somebody has typed —
-  // these are read once, on purpose. `update({ reset: false })` below is what
+  // `untrack` so a revalidation cannot overwrite what somebody has typed.
+  // These are read once, on purpose. `update({ reset: false })` below is what
   // keeps a rejected save's words in the boxes.
   let title = $state(untrack(() => form?.values?.title ?? ''));
   let description = $state(untrack(() => form?.values?.description ?? ''));
@@ -45,8 +45,8 @@
   let saving = $state(false);
 
   /**
-   * Statuses this writer may actually set. `approved` is an admin act — see
-   * `cases/kb_access.py` — so for everybody else it is not in the list rather
+   * Statuses this writer may actually set. `approved` is an admin act. See
+   * `cases/kb_access.py`, so for everybody else it is not in the list rather
    * than in the list and rejected.
    */
   let statuses = $derived(
@@ -57,7 +57,7 @@
 
   /**
    * The combination, in words. Three reachable states, and each one means
-   * something different to a customer — which is why the two flags cannot be
+   * something different to a customer, which is why the two flags cannot be
    * collapsed into a single "publish" toggle.
    */
   let consequence = $derived.by(() => {
@@ -146,7 +146,7 @@
             placeholder="What is happening, why, and the steps that resolve it."></textarea>
           <em>
             {#if description.trim().length && description.trim().length <= 20}
-              A few more words — this is the text an agent will paste to a customer.
+              A few more words: this is the text an agent will paste to a customer.
             {:else}
               This is pasted into replies as-is, so write it to be read by the person with the
               problem.
@@ -170,7 +170,7 @@
               {/each}
             </select>
             {#if !data.canRelease}
-              <em>Approving is an admin's call — it is what lets an article go to customers.</em>
+              <em>Approving is an admin's call. It is what lets an article go to customers.</em>
             {/if}
           </label>
 

@@ -42,14 +42,14 @@ def case_link(case_id) -> str:
 
     The model and this app call them cases; every client calls them tickets
     and routes them at `/tickets/<id>`. This used to emit `/cases/<id>`, which
-    no client has ever served — the SvelteKit app has no `/cases` route at
+    no client has ever served. The SvelteKit app has no `/cases` route at
     all, and its notification panel assigns `link` straight to
     `window.location.href`, so every notification ever sent landed on a 404.
 
     It lives in one function because the fix belongs here rather than in the
     readers: the same rows are consumed by the web panel, the notifications
     page and the Flutter client, and a rewrite in each of them is three places
-    to forget. `Notification.link` is a client path, not an API path — do not
+    to forget. `Notification.link` is a client path, not an API path. Do not
     prefix it with `/api/`.
     """
     return f"/tickets/{case_id}"
@@ -156,7 +156,7 @@ def dispatch_for_comment(comment, case, actor: Profile | None = None) -> dict:
         )
         mentioned.append(p)
 
-    # Fan out `case.commented` to remaining watchers — exclude actor and
+    # Fan out `case.commented` to remaining watchers, exclude actor and
     # anyone who just got `case.mentioned` (they don't need both for the
     # same comment).
     skip_ids = {p.id for p in mentioned}

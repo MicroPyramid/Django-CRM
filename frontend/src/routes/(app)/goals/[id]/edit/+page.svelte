@@ -16,7 +16,7 @@
    * totals without losing its history) and a delete.
    *
    * VALIDATION HERE IS A UX HINT. The serializer enforces every rule server-side
-   * — a positive target, an end after the start, and an assignee/team in *this*
+   *: a positive target, an end after the start, and an assignee/team in *this*
    * org. See CLAUDE.md, "API Validation & Authorization".
    */
   let form = $state(
@@ -219,8 +219,8 @@
         <div class="v2-field">
           <label for="f-active">Status</label>
           <select id="f-active" name="is_active" class="v2-input" bind:value={form.is_active}>
-            <option value="true">Active — counts towards totals</option>
-            <option value="false">Paused — kept, but not counted</option>
+            <option value="true">Active. Counts towards totals</option>
+            <option value="false">Paused, kept, but not counted</option>
           </select>
         </div>
       </div>
@@ -236,7 +236,7 @@
     </form>
 
     <!-- Delete sits apart from the save form and behind an inline confirm, so a
-         mis-click cannot destroy a goal — no blocking browser dialog, just a
+         mis-click cannot destroy a goal, no blocking browser dialog, just a
          second, deliberate button. -->
     <div
       style="margin-top:26px;padding-top:18px;border-top:1px solid var(--v2-line-soft);max-width:640px"
@@ -249,7 +249,7 @@
           onclick={() => (confirmingDelete = true)}>Delete this goal</button
         >
         <p class="v2-sub" style="font-size:12px;margin-top:8px">
-          A finished goal is usually better paused than deleted — paused keeps its history. Delete
+          A finished goal is usually better paused than deleted. Paused keeps its history. Delete
           only when it was created by mistake.
         </p>
       {:else}

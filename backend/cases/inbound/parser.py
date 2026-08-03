@@ -108,7 +108,7 @@ def _extract_bodies(msg: StdlibEmailMessage) -> tuple[str, str]:
                 continue
             try:
                 content = part.get_content()
-            except Exception:  # pragma: no cover — corrupted MIME
+            except Exception:  # pragma: no cover, corrupted MIME
                 continue
             if not isinstance(content, str):
                 continue

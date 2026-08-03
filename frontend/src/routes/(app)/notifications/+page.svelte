@@ -10,8 +10,8 @@
    * Two things the real feed does that shaped this:
    *
    *   1. THE LINKS USED TO BE BROKEN. `cases/notifications.py` wrote
-   *      `link=f"/cases/{case.id}"` and no client has ever served `/cases` —
-   *      tickets are at `/tickets/<id>` — so v1's panel, which assigns
+   *      `link=f"/cases/{case.id}"` and no client has ever served `/cases`.
+   *      Tickets are at `/tickets/<id>`, so v1's panel, which assigns
    *      `n.link` straight to `window.location.href`, sent every notification
    *      to a 404. Fixed at the producer (`case_link()`), which is the only
    *      place it could be fixed once: the web panel, this page and the
@@ -19,7 +19,7 @@
    *      dead prefix defensively, because rows written before the fix are
    *      still in the database.
    *
-   *   2. ONLY TWO VERBS ARE EVER PRODUCED — `case.mentioned` and
+   *   2. ONLY TWO VERBS ARE EVER PRODUCED, `case.mentioned` and
    *      `case.commented`. v1's panel carries labels for five more that
    *      nothing dispatches, which reads as a rich notification system and is
    *      one comment hook. Anything unrecognised is rendered as a plain,
@@ -59,18 +59,18 @@
   function verbPhrase(n) {
     if (n.verb === 'case.mentioned') return 'mentioned you on';
     if (n.verb === 'case.commented') return 'commented on';
-    return `${n.verb.replace(/^[^.]+\./, '').replace(/_/g, ' ')} —`;
+    return `${n.verb.replace(/^[^.]+\./, '').replace(/_/g, ' ')}, `;
   }
 
   /* Persist to a page action. `keepalive` so the write survives the navigation
-     that a link click starts — clicking a notification both opens the ticket
+     that a link click starts, clicking a notification both opens the ticket
      AND marks it read, and the read must not be cancelled mid-flight. */
   async function post(/** @type {string} */ action, /** @type {FormData} */ body) {
     const res = await fetch(action, { method: 'POST', body, keepalive: true });
     return deserialize(await res.text());
   }
 
-  /* Marking read is optimistic — the dot clears immediately — then persisted.
+  /* Marking read is optimistic, the dot clears immediately, then persisted.
      If the API refuses (or the network fails) the change is put back, so the
      page never shows a state the server did not accept. */
   async function markRead(/** @type {any} */ n) {
@@ -204,7 +204,7 @@
 
       {#if data.totals.broken_links}
         <!--
-          The count, once, at the bottom — not repeated per row where it would
+          The count, once, at the bottom, not repeated per row where it would
           become the loudest thing on a page about other people's messages.
         -->
         <p class="footnote">
@@ -235,7 +235,7 @@
   }
 
   /* Unread is carried by a dot in its own column, so every row's text starts
-     on the same x — a bold-vs-regular treatment makes read rows look like a
+     on the same x. A bold-vs-regular treatment makes read rows look like a
      different kind of thing rather than the same thing, already seen. */
   .mark {
     display: flex;
@@ -322,7 +322,7 @@
   }
 
   /* Appears on hover or keyboard focus, but is always in the accessibility
-     tree — a control you can only reach with a mouse is not a control. */
+     tree. A control you can only reach with a mouse is not a control. */
   .read-btn {
     opacity: 0;
     transition: opacity 0.1s;

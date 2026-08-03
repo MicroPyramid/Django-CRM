@@ -216,7 +216,7 @@ class TestStateTransitions:
     def test_approve_records_activity(
         self, admin_client, admin_profile, user_profile, regular_user, org_a
     ):
-        # Requested by the USER, approved by the admin — a requester and an
+        # Requested by the USER, approved by the admin. A requester and an
         # approver who are different people, which the rule now requires.
         case, rule, approval = self._setup(org_a, user_profile, regular_user)
         res = admin_client.post(
@@ -528,7 +528,7 @@ class TestRuleCRUD:
         assert rule.match_team_id is None
 
     def test_put_accepts_same_org_approver(self, admin_client, org_a, user_profile):
-        """The allowed side — a same-org approver PUTs fine, proving the two
+        """The allowed side, a same-org approver PUTs fine, proving the two
         rejections above are org-scoping and not a blanket block on the field."""
         rule = _make_rule(org_a, match_priority="Urgent")
         res = admin_client.put(
@@ -560,7 +560,7 @@ class TestRuleCRUD:
 
 
 # ---------------------------------------------------------------------------
-# Rule-list analytics — pending_count per rule + org totals, read from the
+# Rule-list analytics: pending_count per rule + org totals, read from the
 # Approval log (state="pending").
 # ---------------------------------------------------------------------------
 

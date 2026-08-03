@@ -65,7 +65,7 @@ export const actions = {
       if (err?.status === 403) {
         return fail(403, { error: 'Only an administrator can delete products.' });
       }
-      // 404 means it is already gone — fall through to the list either way.
+      // 404 means it is already gone: fall through to the list either way.
       if (err?.status !== 404) {
         return fail(400, { error: readableError(err, 'Could not delete this product.') });
       }

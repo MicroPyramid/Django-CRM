@@ -6,9 +6,9 @@ point (the ``bcrm-mcp`` script points at ``bcrm_mcp.server:main``).
 
 The transport is chosen by ``BCRM_TRANSPORT`` (default ``stdio``):
 
-* **stdio** — the process acts as a single user; one :class:`CrmClient` is
+* **stdio**: the process acts as a single user; one :class:`CrmClient` is
   built lazily from ``BCRM_BASE_URL`` + ``BCRM_TOKEN`` and reused.
-* **http** — a hosted, multi-user server; each request authenticates with its
+* **http**: a hosted, multi-user server; each request authenticates with its
   own ``Authorization: Bearer <pat>`` header and gets a *fresh* per-request
   :class:`CrmClient`, so every caller acts strictly as their own CRM identity.
   See :class:`ClientResolver` and ``bcrm_mcp.auth``.
@@ -31,7 +31,7 @@ def _request_headers():
     """Headers of the active HTTP request (empty in stdio).
 
     ``get_http_headers`` strips ``authorization`` by default, so we explicitly
-    opt it back in — that header is exactly what we need for per-request auth.
+    opt it back in. That header is exactly what we need for per-request auth.
     """
     return get_http_headers(include={"authorization"})
 
@@ -41,7 +41,7 @@ class ClientResolver:
 
     * an injected client (tests) is always returned as-is;
     * **http** builds a *fresh* client per call from the request's bearer token
-      and never caches it — a cached client would serve the next caller under
+      and never caches it. A cached client would serve the next caller under
       the previous caller's identity (a cross-tenant leak);
     * **stdio** builds one shared client from env, lazily, and reuses it.
 
@@ -78,7 +78,7 @@ class ClientResolver:
 
 
 # Tool annotation hints (mcp.types.ToolAnnotations fields). Passed as plain
-# dicts to ``@mcp.tool(annotations=...)`` — FastMCP 3.x accepts a dict and
+# dicts to ``@mcp.tool(annotations=...)``. FastMCP 3.x accepts a dict and
 # coerces it to a ToolAnnotations model.
 _READ_ONLY = {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": True}
 _WRITE = {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": True}
@@ -133,7 +133,7 @@ def build_server(client=None, settings_loader=None):
 
     @mcp.tool(annotations=_DESTRUCTIVE)
     async def crm_delete(entity: str, id: str, confirm: bool = False):
-        """Delete a CRM record. DESTRUCTIVE and irreversible — you must pass confirm=true to proceed."""
+        """Delete a CRM record. DESTRUCTIVE and irreversible. You must pass confirm=true to proceed."""
         return await tools.crm_delete(get_client(), entity, id, confirm)
 
     @mcp.tool(annotations=_WRITE)

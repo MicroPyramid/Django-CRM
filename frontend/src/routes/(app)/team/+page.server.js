@@ -19,7 +19,7 @@ export async function load({ cookies }) {
 /** @type {import('./$types').Actions} */
 export const actions = {
   /**
-   * Invite a new member: email + role. The server is the boundary — it gates
+   * Invite a new member: email + role. The server is the boundary. It gates
    * this to admins, rejects a duplicate within the org with a 400, and reuses
    * an account that already exists elsewhere instead of erroring.
    */
@@ -47,7 +47,7 @@ export const actions = {
 
   /**
    * Change someone's role. The page only shows this control for another
-   * person's row and never for the last admin, mirroring the server's rules —
+   * person's row and never for the last admin, mirroring the server's rules,
    * but the server is what enforces them: a member cannot promote themselves
    * and nobody can change their own role here.
    */

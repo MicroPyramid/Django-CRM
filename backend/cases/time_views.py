@@ -3,17 +3,17 @@ Time-tracking endpoints (Tier 3 time-tracking).
 
 Case-scoped:
 
-* ``GET  /api/cases/<pk>/time-entries/``        — list (visible to actor)
-* ``POST /api/cases/<pk>/time-entries/``        — manual entry
-* ``POST /api/cases/<pk>/time-entries/start/``  — start a running timer (409 if one active)
-* ``GET  /api/cases/<pk>/time-summary/``        — totals + by-profile breakdown
+* ``GET  /api/cases/<pk>/time-entries/``: list (visible to actor)
+* ``POST /api/cases/<pk>/time-entries/``: manual entry
+* ``POST /api/cases/<pk>/time-entries/start/``: start a running timer (409 if one active)
+* ``GET  /api/cases/<pk>/time-summary/``: totals + by-profile breakdown
 
 Entry-scoped (registered at the project root under ``/api/time-entries/``):
 
-* ``POST   /api/time-entries/<pk>/stop/``       — stop a running timer
-* ``PUT    /api/time-entries/<pk>/``            — owner or admin
-* ``DELETE /api/time-entries/<pk>/``            — owner or admin
-* ``GET    /api/time-entries/timesheet/``       — week view, grouped by day
+* ``POST   /api/time-entries/<pk>/stop/``: stop a running timer
+* ``PUT    /api/time-entries/<pk>/``: owner or admin
+* ``DELETE /api/time-entries/<pk>/``: owner or admin
+* ``GET    /api/time-entries/timesheet/``: week view, grouped by day
 """
 
 from collections import OrderedDict
@@ -123,7 +123,7 @@ class TimeEntryStartView(APIView):
 
 
 class TimeSummaryView(APIView):
-    """``GET /api/cases/<pk>/time-summary/`` — totals + per-profile breakdown.
+    """``GET /api/cases/<pk>/time-summary/``, totals + per-profile breakdown.
 
     Same shape as ``CaseSerializer.time_summary`` for clients that don't
     want to refetch the full case envelope.
@@ -218,7 +218,7 @@ class TimeEntryDetailView(APIView):
 
 
 class TimeEntryStopView(APIView):
-    """``POST /api/time-entries/<pk>/stop/`` — stop a running timer."""
+    """``POST /api/time-entries/<pk>/stop/``. Stop a running timer."""
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
@@ -249,7 +249,7 @@ class TimeEntryStopView(APIView):
 
 
 class UnbilledEntriesView(APIView):
-    """``GET /api/time-entries/unbilled/?account=<uuid>`` — list billable,
+    """``GET /api/time-entries/unbilled/?account=<uuid>``: list billable,
     stopped, not-yet-invoiced entries for an account so the invoice picker
     can show them. Org-scoped; admins see all entries, agents only their own.
     """

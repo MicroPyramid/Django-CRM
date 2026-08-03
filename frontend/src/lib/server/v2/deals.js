@@ -1,5 +1,5 @@
 /**
- * Pipeline — the second v2 module wired to the real API.
+ * Pipeline: the second v2 module wired to the real API.
  *
  * Same rules as `leads.js`, which has the long version of the reasoning:
  * this file lives under `$lib/server` because SvelteKit refuses to bundle
@@ -12,7 +12,7 @@
  * derives one), `last_activity_at` (aging is measured from `stage_changed_at`,
  * which is a different claim), and a contact's `relationship` (Contact has
  * `title` and `department`). The related invoices and tickets rail is also
- * gone — those are real models, but attaching them to a deal means querying
+ * gone. Those are real models, but attaching them to a deal means querying
  * two more modules per page load for a panel nobody asked for; add it back
  * deliberately if it earns the round trips.
  *
@@ -25,7 +25,7 @@
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
 
-/** DRF decimals are strings. `null` stays `null` — it means "not priced". */
+/** DRF decimals are strings. `null` stays `null`. It means "not priced". */
 function num(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -35,7 +35,7 @@ function num(value) {
 /**
  * Django serialises `assigned_to` as a list of Profiles; the board card and
  * the list row show one owner. Falls back to the creator, which is what the
- * column means by "Owner" — whoever is answerable for this deal.
+ * column means by "Owner". Whoever is answerable for this deal.
  *
  * @param {any} deal
  */
@@ -48,7 +48,7 @@ function ownerName(deal) {
 /**
  * The subset of a Django opportunity the v2 pages read.
  *
- * `days_in_current_stage` is `days_in_stage` on the wire — the serializer
+ * `days_in_current_stage` is `days_in_stage` on the wire, the serializer
  * renames the model property. Keeping the model's name here means the pages
  * and `opportunity/models.py` say the same word for the same number.
  *
@@ -83,7 +83,7 @@ function toRow(deal) {
  *
  * `open=true` is applied by the API. The filter chip on the page says "Stage
  * is not Closed", and a chip that describes a filter the query did not run is
- * how v1 taught people the filter bar lies — the mock's own header comment
+ * how v1 taught people the filter bar lies, the mock's own header comment
  * made that point, so the query has to honour it rather than slicing the rows
  * that happened to arrive.
  *
@@ -128,7 +128,7 @@ function normaliseTotals(totals, rows) {
     amount_sum: num(totals.amount_sum) ?? 0,
     // Rounded for the header. The API returns the exact figure, but eleven
     // cents on a two-million-dollar forecast is precision the number does not
-    // have — and beside a whole-dollar `amount_sum` it reads as though the two
+    // have, and beside a whole-dollar `amount_sum` it reads as though the two
     // were measured differently.
     weighted_sum: Math.round(num(totals.weighted_sum) ?? 0),
     stalled_count: totals.stalled_count
@@ -199,7 +199,7 @@ export async function getDeal({ cookies }, id) {
       first_name: contact.first_name ?? '',
       last_name: contact.last_name ?? '',
       title: contact.title ?? '',
-      // The mock had `relationship` here — "Champion", "Blocker". Contact has
+      // The mock had `relationship` here; "Champion", "Blocker". Contact has
       // no such field and nothing infers one.
       department: contact.department ?? ''
     }))
@@ -210,7 +210,7 @@ export async function getDeal({ cookies }, id) {
  * Comments, plus the two events the record can actually reconstruct.
  *
  * The mock timeline had a run of stage changes. `Opportunity` keeps only
- * `stage_changed_at` — the *last* one — and there is no history table, so one
+ * `stage_changed_at`, the *last* one, and there is no history table, so one
  * stage event is the honest maximum. It is emitted only when it is meaningfully
  * later than creation, because `save()` also stamps `stage_changed_at` on a new
  * record and "moved to Prospecting" the second a deal is created is noise.
@@ -236,7 +236,7 @@ function buildActivity(response) {
       type: 'stage',
       at: deal.stage_changed_at,
       by: null,
-      // Deliberately not "moved from X to Y" — the previous stage is not
+      // Deliberately not "moved from X to Y". The previous stage is not
       // recorded anywhere, and inventing it would be inventing history.
       body: 'Moved into this stage'
     });
@@ -274,7 +274,7 @@ export const EDITABLE_FIELDS = [
  *
  * Taken from the opportunities list response, which already returns
  * `accounts_list` scoped to the org and narrowed for non-admins the same way
- * the deals are — so the select cannot offer an account the person could not
+ * the deals are, so the select cannot offer an account the person could not
  * otherwise see. `limit=1` because only the sidecar list is wanted.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies
@@ -296,7 +296,7 @@ async function listAccounts(cookies) {
  *
  * The API filters `assigned_to` ids through
  * `Profile.objects.filter(id__in=..., org=request.profile.org)` on the way in,
- * so a forged id cannot assign a deal into another tenant — it simply would
+ * so a forged id cannot assign a deal into another tenant. It simply would
  * not match.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies
@@ -316,7 +316,7 @@ async function listOwners(cookies) {
 /**
  * The caller's own Profile id, for defaulting the owner select to them.
  *
- * `GET /profile/` returns `request.profile` — derived from the JWT server-side,
+ * `GET /profile/` returns `request.profile`, derived from the JWT server-side,
  * so this is who the session actually is rather than who a form claims to be.
  * Empty on failure: an unassigned deal is a worse outcome than a wrong one is
  * dangerous, and the select is right there.
@@ -333,7 +333,7 @@ async function myProfileId(cookies) {
 }
 
 /**
- * Everything the create form needs to render its selects, in one call — five
+ * Everything the create form needs to render its selects, in one call, five
  * round trips to populate one form is how v1's create page took two seconds to
  * become usable.
  *
@@ -410,7 +410,7 @@ export async function getDealForEdit({ cookies }, id) {
 /**
  * Turn form values into a request body.
  *
- * Absent stays absent — a disabled control submits nothing, and on a deal with
+ * Absent stays absent, a disabled control submits nothing, and on a deal with
  * line items the amount input is disabled precisely because the server owns
  * that number. Sending back the value the field was showing would be sending
  * a value nobody typed.
@@ -430,7 +430,7 @@ function toBody(values) {
     body.probability = Number(body.probability);
   }
   // Single-select owner, so the list is empty or one long. Empty is
-  // meaningful — it is how a deal is left unassigned — so it is sent.
+  // meaningful, it is how a deal is left unassigned, so it is sent.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
@@ -445,7 +445,7 @@ function toBody(values) {
  * `teams.clear()` and `assigned_to.clear()` unconditionally and re-adds only
  * what the body carried. This form owns nine scalar fields and the owner, so
  * every save through PUT would silently drop the deal's contacts, its tags and
- * its teams — the people and the context, kept by somebody else. `patch`
+ * its teams, the people and the context, kept by somebody else. `patch`
  * guards each of those with `if "<field>" in params`.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -476,8 +476,8 @@ export async function createDeal({ cookies }, values) {
 }
 
 /**
- * `OpportunityDetailView.get` answers 404 for another org's deal — deliberately
- * not 403, which would confirm the id exists — and 403 for a deal inside the
+ * `OpportunityDetailView.get` answers 404 for another org's deal. Deliberately
+ * not 403, which would confirm the id exists, and 403 for a deal inside the
  * org that this profile neither created nor is assigned to. Both are the
  * caller's answer, not a server fault, so neither becomes a 500.
  *
@@ -488,7 +488,7 @@ async function fetchDetail(cookies, id) {
   try {
     return await apiRequest(`/opportunities/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
-    // On the status, not on the wording — see `api-helpers.js`.
+    // On the status, not on the wording. See `api-helpers.js`.
     if (err?.status === 404) {
       error(404, 'That deal does not exist, or it belongs to another team.');
     }

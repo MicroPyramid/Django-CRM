@@ -1,7 +1,7 @@
 # The client portal and RLS
 
-The public endpoints — the invoice and estimate links emailed to customers,
-and the CSAT survey link — are the only anonymous, org-less requests that need
+The public endpoints: the invoice and estimate links emailed to customers,
+and the CSAT survey link, are the only anonymous, org-less requests that need
 to read org-scoped rows. That combination puts them at odds with RLS, and this
 note records where that stands.
 
@@ -16,7 +16,7 @@ middleware returned
 403 {"detail": "Organization context is required. Please login again."}
 ```
 
-to every anonymous caller — that is, to every customer who clicked a link. The
+to every anonymous caller. That is, to every customer who clicked a link. The
 middleware runs before the view, so token validity never entered into it.
 
 **Fixed**: both prefixes are now exempt. Regression tests live in
@@ -50,7 +50,7 @@ context:
 So on a correctly configured production database, these endpoints now return
 **404 instead of 403**. The customer still cannot see their invoice.
 
-This is masked in development, where `DBUSER=postgres` — a superuser, which
+This is masked in development, where `DBUSER=postgres`. A superuser, which
 bypasses RLS entirely, so every public endpoint appears to work. Do not take a
 green dev run as evidence.
 

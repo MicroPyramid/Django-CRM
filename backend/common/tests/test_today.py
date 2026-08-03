@@ -2,8 +2,8 @@
 Tests for the v2 "Today" action queue: GET /api/dashboard/today/ (ApiTodayView).
 
 Two things are under test: that each of the four sources (unanswered cases,
-overdue invoices, quiet deals, due tasks) lands in the right bucket, and — the
-part that matters for a multi-tenant app — that a member sees only their own
+overdue invoices, quiet deals, due tasks) lands in the right bucket, and. The
+part that matters for a multi-tenant app. That a member sees only their own
 rows and no request ever crosses an org boundary.
 
 Run with: pytest common/tests/test_today.py -v
@@ -265,7 +265,7 @@ class TestTodayView:
 
     def test_admin_sees_colleague_items(self, admin_client, org_a, regular_user):
         """The same colleague-owned row the member is scoped to IS visible to an
-        admin — proving the member exclusion above is scoping, not a dropped row."""
+        admin. Proving the member exclusion above is scoping, not a dropped row."""
         _set_rls(org_a)
         inv = Invoice.objects.create(
             invoice_title="Someone else's overdue invoice",

@@ -56,8 +56,8 @@ from tasks.serializer import (
 def _model_errors(exc):
     """Django's ``ValidationError`` in the shape this API answers 400 with.
 
-    ``Task.save()`` calls ``full_clean()``, so a model-level rule — today, "one
-    parent entity" — fires on the way to the database. Django's exception is
+    ``Task.save()`` calls ``full_clean()``, so a model-level rule, today, "one
+    parent entity", fires on the way to the database. Django's exception is
     not DRF's, so nothing caught it and the client got a 500 for breaking a
     documented rule. Same rule, same wording, now with the right status.
     """
@@ -74,7 +74,7 @@ class TaskListView(APIView, LimitOffsetPagination):
         params = self.request.query_params
         # `visible_tasks_qs` is the same rule the detail view enforces. It used
         # to be spelled out here and spelled differently there, which is how a
-        # member came to have tasks in their list that answered 403 — or, once
+        # member came to have tasks in their list that answered 403, or, once
         # the creator clause is live, tasks they created and could not open.
         queryset = (
             visible_tasks_qs(self.request.profile)
@@ -187,7 +187,7 @@ class TaskListView(APIView, LimitOffsetPagination):
         )
 
         # What a task *form* needs, from the endpoint that already knows the
-        # answer — the same keys `cases` and `opportunity` publish, because a
+        # answer, the same keys `cases` and `opportunity` publish, because a
         # second name for the same list is how clients end up with two.
         context["status"] = Task.STATUS_CHOICES
         context["priority"] = Task.PRIORITY_CHOICES
@@ -198,7 +198,7 @@ class TaskListView(APIView, LimitOffsetPagination):
             profiles = profiles.filter(role="ADMIN")
         context["users"] = list(profiles.values("id", "user__email"))
         # The catalogues are for the parent picker and grow with the org, not
-        # with the page — `?slim=true` omits them for callers that only want
+        # with the page, `?slim=true` omits them for callers that only want
         # the list. Default unchanged, so v1 and mobile see what they saw.
         if params.get("slim") != "true":
             context["accounts_list"] = AccountSerializer(
@@ -335,7 +335,7 @@ class TaskListView(APIView, LimitOffsetPagination):
             # The parent FKs used to be re-read from `params` and re-saved here
             # with an org filter, *after* the serializer had already written
             # whatever the client sent. On create that second pass only ever
-            # assigned — it never cleared — so another org's lead survived it
+            # assigned, it never cleared, so another org's lead survived it
             # and the list rendered that org's name back. The serializer now
             # scopes the four querysets itself, which is one place instead of
             # three and refuses out-of-org ids instead of quietly dropping them.
@@ -359,7 +359,7 @@ class TaskDetailView(APIView):
     def get_context_data(self, **kwargs):
         context = {}
         # Raise, don't return. This used to hand a `Response` back to `get()`,
-        # which wrapped it in a second `Response` — so the one path that was
+        # which wrapped it in a second `Response`, so the one path that was
         # supposed to say 403 answered `TypeError: Object of type Response is
         # not JSON serializable` and a 500 instead.
         assert_task_access(self.request.profile, self.task_obj)
@@ -383,7 +383,7 @@ class TaskDetailView(APIView):
         # therefore always true, which made this line unreachable-by-intent and
         # unavoidable-in-practice: every non-admin who opened any task got an
         # AttributeError and a 500. Not "a member cannot open someone else's
-        # task" — a member could not open *their own*.
+        # task". A member could not open *their own*.
         if is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
@@ -489,7 +489,7 @@ class TaskDetailView(APIView):
             # Use the generic ContentType-based create directly. Validating
             # through CommentSerializer fails silently here because that
             # serializer requires object_id and org, neither of which the
-            # client sends — is_valid() returns False and the save is skipped,
+            # client sends; is_valid() returns False and the save is skipped,
             # leaving the user with a 200 and no comment.
             Comment.objects.create(
                 content_type=task_content_type,
@@ -636,7 +636,7 @@ class TaskDetailView(APIView):
                 )
                 task_obj.tags.add(*tag_objs)
 
-            # The parent FKs are the serializer's job now — it scopes all four
+            # The parent FKs are the serializer's job now. It scopes all four
             # querysets to the org, so an id from somewhere else is a 400 here
             # instead of a silent `None`. A form that says "link this to Acme"
             # and gets a 200 back should not have unlinked it.
@@ -968,7 +968,7 @@ class TaskAttachmentView(APIView):
         # lookup by pk alone reaches every attachment in the database. Without
         # `org=`, this endpoint was a "delete any attachment anywhere by UUID"
         # primitive for any org admin: proven live, an admin of one org
-        # destroyed a file belonging to another org — and it was attached to a
+        # destroyed a file belonging to another org, and it was attached to a
         # lead, not even to a task. The org filter is the fix; the uploader
         # clause below is a separate bug in the same three lines.
         try:

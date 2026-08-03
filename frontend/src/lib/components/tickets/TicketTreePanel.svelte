@@ -28,7 +28,7 @@
 
   const hasGraph = $derived(parentSummary !== null || childCount > 0);
 
-  // Reload the tree on mount AND whenever the graph signal flips — link/
+  // Reload the tree on mount AND whenever the graph signal flips. Link/
   // unlink calls invalidateAll() upstream, which refreshes parentSummary /
   // childCount; without this effect the tree stays null on a freshly-linked
   // ticket and the section renders empty under the Unlink button.

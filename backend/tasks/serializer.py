@@ -37,18 +37,18 @@ class BoardTaskSerializer(serializers.ModelSerializer):
     """Serializer for board tasks.
 
     The write surface is deliberately narrow. A card write may set only its own
-    content — title, description, order, priority, due_date — and its assignees
+    content (title, description, order, priority, due_date), and its assignees
     (through the write-only ``assigned_to_ids``, which the views apply after
     save and org-filter). Everything else is locked down:
 
     * ``column`` is applied server-side by the move endpoint (see
       ``BoardTaskDetailView.put``), so a card can't be mass-assigned into another
-      board's — or another org's — column.
+      board's, or another org's, column.
     * ``org``/``created_by``/``updated_by`` are server-derived audit facts.
       (``created_by`` FKs ``common.User``, which is *not* org-scoped by RLS, so
       leaving it writable let any user id be stamped onto a card.)
     * the CRM-link FKs (``account``/``contact``/``opportunity``) are render-only
-      context — no UI sets them, and while writable they exposed the same
+      context, no UI sets them, and while writable they exposed the same
       unfiltered, cross-org ``PrimaryKeyRelatedField`` queryset that
       ``TaskCreateSerializer`` explicitly hardens against.
     """
@@ -181,7 +181,7 @@ class BoardListSerializer(serializers.ModelSerializer):
         """The requesting profile's role on this board (``owner``/``admin``/
         ``member``), or ``None`` when they have none.
 
-        Read-only and derived from the request, never the client — a client
+        Read-only and derived from the request, never the client. A client
         cannot claim a role it does not hold. The board's own owner always
         resolves to ``owner`` even if no explicit ``BoardMember`` row was created
         for them, so a board created outside the API still gates correctly. The
@@ -242,7 +242,7 @@ class _MinimalLeadField(serializers.RelatedField):
 
 
 class TaskListSerializer(serializers.ModelSerializer):
-    """Slim payload for /api/tasks/ list pages — drops the comment/attachment
+    """Slim payload for /api/tasks/ list pages. Drops the comment/attachment
     bodies (sometimes hundreds of rows per task) and the contacts/teams M2Ms
     that the list UI doesn't render. Use TaskSerializer for the detail view."""
 
@@ -320,7 +320,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
         self.fields["title"].required = True
         # A `ModelSerializer` builds each FK as `PrimaryKeyRelatedField(
-        # queryset=Model.objects.all())` — every account, lead, case and
+        # queryset=Model.objects.all())`: every account, lead, case and
         # opportunity in the database, not in the org. Proven live: a task in
         # one org was created with another org's account, and the list endpoint
         # then rendered that org's account *name* back to the requester. Org is
@@ -332,7 +332,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         """A task links to at most one parent entity.
 
         The model says so too, in `Task.clean()`, and `Task.save()` calls
-        `full_clean()` — but Django's `ValidationError` is not DRF's, so the
+        `full_clean()`, but Django's `ValidationError` is not DRF's, so the
         model's refusal arrived as a 500. Checking here gets the client a 400
         with the field named.
 
@@ -381,7 +381,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             "created_at",
         )
         # `created_by` was writable, so a client could name anyone in any org
-        # the creator of a task — proven live, a MicroPyramid task ended up
+        # the creator of a task. Proven live, a MicroPyramid task ended up
         # created by a user of another org. That was a data-integrity bug while
         # nothing read the field; the moment the creator clause in
         # `tasks.access` starts returning True it is privilege escalation, so

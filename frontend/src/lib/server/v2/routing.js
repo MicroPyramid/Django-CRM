@@ -1,10 +1,10 @@
 /**
- * Ticket routing rules — the wiring behind `/settings/routing`.
+ * Ticket routing rules: the wiring behind `/settings/routing`.
  *
  * Server-only. Reads `GET /cases/routing-rules/`, ordered by priority (the
  * order IS the behaviour: the engine runs rules top-down and takes the first
  * match). Each rule carries its conditions, strategy, targets, and two things
- * the backend computes from the ROUTED activity log — `matched_last_30d` (how
+ * the backend computes from the ROUTED activity log, `matched_last_30d` (how
  * often the rule fired) and the round-robin `state.last_assigned_index` (so the
  * page can name who is next). The response also carries org totals, including
  * `unrouted_last_30d` (cases no rule matched).

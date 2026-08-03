@@ -435,7 +435,7 @@ class TestMagicLinkVerifyCode:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         # Also confirm that even a code that hashes to *something* on a link
-        # token can't be used — there's no code_hash on a link row.
+        # token can't be used. There's no code_hash on a link row.
         # (Defensive: ensure the lookup filters by delivery="code".)
         assert not MagicLinkToken.objects.filter(
             email="linktok@example.com", is_used=True

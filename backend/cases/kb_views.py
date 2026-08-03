@@ -1,7 +1,7 @@
 """Agent-facing knowledge-base helpers.
 
 The full kb-frontend spec calls for a customer-facing KB site too. We
-ship only the agent-side suggester here — see
+ship only the agent-side suggester here. See
 docs/cases/tier2/IMPLEMENTATION_STATUS.md "kb-frontend" section for the
 deliberate cut. The endpoint feeds the comment composer's typeahead.
 """
@@ -54,7 +54,7 @@ class SolutionSuggestionsView(APIView):
     """`GET /api/cases/<pk>/solution-suggestions/?q=&limit=`.
 
     Returns the top N published solutions in the same org whose title or
-    description matches the search term. `?q=` is optional — when blank,
+    description matches the search term. `?q=` is optional, when blank,
     the case's own name + description seed the search so the panel is
     useful on first focus.
     """
@@ -93,8 +93,8 @@ class SolutionSuggestionsView(APIView):
         else:
             # Seed from the case so the panel is useful on first focus. If
             # there are no seed terms, or the seed-term filter produces zero
-            # matches, fall back to the most-recent published solutions —
-            # the agent should always see *something* on first focus.
+            # matches, fall back to the most-recent published solutions.
+            # The agent should always see *something* on first focus.
             terms = _seed_terms(case)
             results = []
             if terms:

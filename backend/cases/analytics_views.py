@@ -51,7 +51,7 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
     """Build the org-scoped Case queryset + (from, to) window from query params.
 
     Visibility: admins see every case; non-admins see only those they
-    created, are assigned to, or watch — mirrors `CaseListView.get_queryset`.
+    created, are assigned to, or watch. Mirrors `CaseListView.get_queryset`.
     """
     profile = request.profile
     params = request.query_params
@@ -140,8 +140,8 @@ class AnalyticsServiceView(_AnalyticsBaseView):
 
     Returns org-wide service KPIs (totals, per-day volume, first-response
     attainment by priority, case-type mix, per-agent table). Unlike the
-    per-metric endpoints above — which narrow a non-admin to their own cases
-    and would therefore show a personal slice under org-wide headings — this
+    per-metric endpoints above, which narrow a non-admin to their own cases
+    and would therefore show a personal slice under org-wide headings. This
     view is an org-aggregate management surface, so it 403s non-admins outright
     (mirrors the invoices/reports policy for whole-org figures).
     """
@@ -202,7 +202,7 @@ class AnalyticsDrilldownView(_AnalyticsBaseView):
         return Response({"count": len(data), "results": data})
 
 
-# CSV columns kept tight on purpose — analyst pivots externally.
+# CSV columns kept tight on purpose: analyst pivots externally.
 _CSV_COLUMNS = (
     ("id", "ID"),
     ("name", "Name"),

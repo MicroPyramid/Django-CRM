@@ -491,7 +491,7 @@ def case_ids_for_metric(
         )
 
     if metric == "backlog":
-        # Bucket is a YYYY-MM-DD date — return cases open at end of that day.
+        # Bucket is a YYYY-MM-DD date. Return cases open at end of that day.
         if not bucket:
             raise ValueError("backlog drilldown requires a bucket=YYYY-MM-DD")
         target = date.fromisoformat(bucket)
@@ -529,7 +529,7 @@ def case_ids_for_metric(
 # whole "service health" page in one admin-only call so the frontend does not
 # fan out five requests. Elapsed times are wall-clock, consistent with the
 # compute_* functions above (business hours inform SLA *deadlines*, not the
-# elapsed math here — the same caveat the rest of this module already lives
+# elapsed math here, the same caveat the rest of this module already lives
 # with). The caller admin-gates this, so `qs` is the full org queryset with no
 # per-user visibility narrowing.
 
@@ -543,7 +543,7 @@ def _business_hours_state(org_id) -> tuple[Optional[str], bool]:
 
     Mirrors the SLA engine's own fallback (`business_hours.calendar`): no
     calendar, or a calendar with no open weekday window, means 24/7
-    wall-clock — reported here as not-applied with a null name.
+    wall-clock, reported here as not-applied with a null name.
     """
     from business_hours.calendar import get_default_calendar
 
@@ -593,7 +593,7 @@ def _first_response_by_priority(created_rows, now) -> list[dict]:
     for _id, created_at, first_response_at, sla_hours, priority, _ctype in created_rows:
         bucket = per.get(priority)
         if bucket is None:
-            # Unknown priority string — skip rather than invent a column.
+            # Unknown priority string: skip rather than invent a column.
             continue
         _accumulate_frt(bucket, created_at, first_response_at, sla_hours, now)
 
@@ -661,7 +661,7 @@ def _agent_table(qs, from_dt, to_dt, now) -> list[dict]:
         if pid is not None:
             _accumulate_frt(bucket(pid), created_at, fra, sla_hours, now)
 
-    # Unassigned bucket — explicit isnull filters (see docstring).
+    # Unassigned bucket: explicit isnull filters (see docstring).
     un = {"open": 0, "closed_this_week": 0, "frt_minutes": [], "breached": 0, "met": 0}
     un["open"] = open_qs.filter(assigned_to__isnull=True).count()
     un["closed_this_week"] = closed_week_qs.filter(assigned_to__isnull=True).count()

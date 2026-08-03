@@ -1,4 +1,4 @@
-"""Who may do what to a task — two rules, beside the three in `cases.access`.
+"""Who may do what to a task, two rules, beside the three in `cases.access`.
 
     access    admin · creator · assignee     read it, edit it, comment on it
     delete    admin · creator                destroy it
@@ -14,7 +14,7 @@ is the queryset form of `access` and the two are derived from the same clauses.
 
 **`created_by` is a `User`, not a `Profile`.** Every check this module replaced
 compared `request.profile` to it, which is never equal, so the creator clause
-was dead everywhere it appeared — and the list, which got it right with
+was dead everywhere it appeared, and the list, which got it right with
 `Q(created_by=profile.user)`, listed tasks the detail view then refused. The
 comparison here is `profile.user_id == task.created_by_id`.
 
@@ -41,7 +41,7 @@ def is_org_admin(profile):
 
 
 def visible_tasks_qs(profile):
-    """Tasks ``profile`` is allowed to open — the queryset form of `access`."""
+    """Tasks ``profile`` is allowed to open, the queryset form of `access`."""
     qs = Task.objects.filter(org=profile.org)
     if is_org_admin(profile):
         return qs
@@ -53,7 +53,7 @@ def get_task_or_404(profile, pk):
 
     ``Task.id`` is a UUID column and the URL captures ``<str:pk>``, so
     ``filter(pk="nope")`` raises Django's ``ValidationError`` rather than
-    matching nothing — which surfaced as a 500 on every verb, including the
+    matching nothing, which surfaced as a 500 on every verb, including the
     two that only need to say "no such task".
     """
     try:
@@ -90,7 +90,7 @@ def has_task_delete_access(profile, task):
 def assert_task_delete_access(profile, task):
     """Raise 403 unless ``profile`` may destroy ``task``.
 
-    Narrower than `access` on purpose — see the module docstring.
+    Narrower than `access` on purpose: see the module docstring.
     """
     if not has_task_delete_access(profile, task):
         raise PermissionDenied(_DENIED)

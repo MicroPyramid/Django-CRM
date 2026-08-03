@@ -17,7 +17,7 @@ import '../../widgets/tickets/ticket_properties_card.dart';
 import '../../widgets/tickets/ticket_solutions_panel.dart';
 import '../../widgets/tickets/ticket_time_panel.dart';
 
-/// Ticket Detail Screen — Overview / Comments / Activity tabs.
+/// Ticket Detail Screen, Overview / Comments / Activity tabs.
 class TicketDetailScreen extends ConsumerStatefulWidget {
   final String ticketId;
 
@@ -651,7 +651,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     }
 
     // The POST response already returns the fresh `comments` and
-    // `internal_notes` arrays — re-fold them into the existing _detail
+    // `internal_notes` arrays, re-fold them into the existing _detail
     // instead of refetching the whole envelope + watchers + tree (which
     // is what made the screen feel like a full reload).
     final data = response.data;
@@ -1055,7 +1055,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   Future<void> _mergeInto(Ticket c) async {
     // Pull the currently-loaded list so the user can pick another ticket
     // they've already seen. A dedicated /api/cases/search endpoint isn't
-    // wired into this app yet — list-scope is enough for the common case
+    // wired into this app yet. List-scope is enough for the common case
     // ("merge the dupe I just opened from the list").
     final candidates = ref
         .read(ticketsListProvider)
@@ -1127,7 +1127,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
-      // Source now redirects on detail fetch — pop back to the list so the
+      // Source now redirects on detail fetch, pop back to the list so the
       // user isn't stuck on a now-redirecting ticket.
       context.pop(true);
     } else {
@@ -1471,7 +1471,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
 
   List<Widget> _treeRows(TicketTreeNode node, {required int depth}) {
     final rows = <Widget>[];
-    // Don't render the root again — it's the parent we already showed above.
+    // Don't render the root again. It's the parent we already showed above.
     if (depth > 0) {
       rows.add(
         InkWell(

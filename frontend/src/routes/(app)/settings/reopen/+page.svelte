@@ -2,7 +2,7 @@
   /**
    * Whether a customer's reply can bring a closed ticket back.
    *
-   * One row per org, four fields — small enough that v1's form is not wrong,
+   * One row per org, four fields. Small enough that v1's form is not wrong,
    * just uninformative. The whole question here is what number to put in the
    * window, and the only thing that answers it is how customers actually
    * behave: the median reply comes back in two days, and four replies last

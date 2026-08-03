@@ -5,7 +5,7 @@
    * The page answers one question and everything else on it is evidence for
    * the answer: DO I OWE ANYTHING, HOW MUCH, AND BY WHEN. So the amount due
    * is the largest thing on the screen, the date sits under it, and the line
-   * items — which are what a v1-style invoice page leads with — come after,
+   * items, which are what a v1-style invoice page leads with, come after,
    * because nobody opens an invoice to read a table.
    *
    * ── FOUR THINGS THIS PAGE REFUSES TO DO ─────────────────────────────────
@@ -13,7 +13,7 @@
    * 1. It does not show `status`. `Sent`, `Viewed` and `Partially_Paid` are
    *    facts about our workflow, not theirs, and one of them is actively
    *    misleading: `Viewed` is set BY THIS PAGE LOAD. What they need is derived
-   *    below — paid, part-paid, due, or overdue.
+   *    below: paid, part-paid, due, or overdue.
    *
    * 2. It does not draw a "Pay now" button. There is no payment processor in
    *    this product: `invoices.models.Payment` rows are entered by a human in
@@ -22,7 +22,7 @@
    *    terms and the reference to quote instead.
    *
    * 3. It does not render the org's custom invoice template. See
-   *    `invoice-template-pdf-sink` — `template_html` is an org-authored blob
+   *    `invoice-template-pdf-sink`: `template_html` is an org-authored blob
    *    that WeasyPrint turns into a PDF server-side, and putting it in this
    *    page's DOM would make a PDF setting into stored XSS on a public URL.
    *    Only `primary_color` and `footer_text` cross over.
@@ -50,7 +50,7 @@
   });
 
   /**
-   * The customer-facing state, derived from money and dates only — never from
+   * The customer-facing state, derived from money and dates only, never from
    * `status`. Four outcomes, because there are four different things to do.
    */
   let state = $derived.by(() => {
@@ -60,7 +60,7 @@
     return 'due';
   });
 
-  /** "in 5 days" / "today" / "9 days ago" — a date alone makes people count. */
+  /** "in 5 days" / "today" / "9 days ago". A date alone makes people count. */
   let duePhrase = $derived.by(() => {
     if (daysToDue === null) return 'on receipt';
     if (daysToDue === 0) return 'today';
@@ -122,7 +122,7 @@
           <div class="amount-value v2-num">{money(inv.amount_due, inv.currency)}</div>
           <div class="amount-sub">
             {#if state === 'overdue'}
-              Due {longDate(inv.due_date)} — {duePhrase}
+              Due {longDate(inv.due_date)}, {duePhrase}
             {:else}
               Due {longDate(inv.due_date)}, {duePhrase}
             {/if}
@@ -206,7 +206,7 @@
 
     <footer class="doc-foot">
       <!-- No mailto here. The only address in the public payload is
-           `client_email`, which is the CUSTOMER's own — linking it under the
+           `client_email`, which is the CUSTOMER's own, linking it under the
            words "write to us" opens a message addressed to the person reading
            the page. The org's address is in `footer_text`, put there by
            whoever wrote the template, and that is the one to use. -->
@@ -360,8 +360,8 @@
     border-bottom: 1px solid var(--v2-line-soft);
   }
   .payments-balance {
-    /* The balance is a different kind of fact from a payment — it is the sum,
-       not another entry — so it sits under a rule rather than reading as one
+    /* The balance is a different kind of fact from a payment. It is the sum,
+       not another entry, so it sits under a rule rather than reading as one
        more identical row in the list. */
     font-weight: 600;
     border-bottom: 0;

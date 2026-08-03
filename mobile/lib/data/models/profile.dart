@@ -3,8 +3,8 @@ import 'auth_response.dart';
 /// User's profile within the current organization.
 ///
 /// Returned by GET /api/auth/profile/ (ProfileDetailSerializer).
-/// The mobile app can only PATCH the `phone` field via /api/profile/ —
-/// other fields are display-only by API contract.
+/// The mobile app can only PATCH the `phone` field via /api/profile/.
+/// Other fields are display-only by API contract.
 class Profile {
   final String id;
   final AuthUser user;

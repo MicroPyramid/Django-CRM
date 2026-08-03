@@ -10,7 +10,7 @@ import '../../providers/deals_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/misc/stage_stepper.dart';
 
-/// Deal Detail Screen — mirrors the lead-detail tab structure (Overview /
+/// Deal Detail Screen, mirrors the lead-detail tab structure (Overview /
 /// Activity / Notes / Files) and surfaces the full payload returned by the
 /// opportunities detail endpoint (comments, attachments, contacts, custom
 /// fields, teams, aging metadata).
@@ -247,7 +247,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              // Account name — the mobile app doesn't have an account
+              // Account name. The mobile app doesn't have an account
               // detail screen yet, so this is display-only. Don't make it
               // tappable until /accounts/<id> exists.
               Row(
@@ -300,7 +300,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       ),
     );
 
-    // Aging / rotten — backend's authoritative status when available,
+    // Aging / rotten, backend's authoritative status when available,
     // otherwise fall back to model-derived thresholds.
     final aging = _serverAgingStatus(deal) ?? _localAgingStatus(deal);
     if (aging != null) {
@@ -314,7 +314,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       );
     }
 
-    // Closing-soon / overdue (only for open deals — closed deals are by
+    // Closing-soon / overdue (only for open deals. Closed deals are by
     // definition past their close date).
     if (!deal.stage.isClosed && deal.closeDate != null) {
       if (deal.isOverdue) {
@@ -339,7 +339,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     }
 
     // Tag preview: first 2 + "+N more". The +N chip is informational only
-    // — full tag list is in the Overview tab.
+    //. Full tag list is in the Overview tab.
     final tags = deal.labels;
     for (final t in tags.take(2)) {
       chips.add(LabelPill(label: t));
@@ -383,7 +383,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stage stepper — closedLost gets a banner inside the widget.
+          // Stage stepper. ClosedLost gets a banner inside the widget.
           StageStepper(
             currentStage: deal.stage,
             onStageChange: _isUpdatingStage ? null : _confirmStageChange,
@@ -400,7 +400,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
           ],
           const SizedBox(height: 16),
 
-          // Probability bar — gives stage-aware copy below the percentage.
+          // Probability bar. Gives stage-aware copy below the percentage.
           _buildCard(
             title: 'Win Probability',
             child: _buildProbabilityContent(deal),
@@ -414,7 +414,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
           ),
           const SizedBox(height: 16),
 
-          // Notes (description) — formerly "Description" on the old screen.
+          // Notes (description), formerly "Description" on the old screen.
           if (hasNotes) ...[
             _buildCard(
               title: 'Notes',
@@ -443,7 +443,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Contacts list — backend returns full records.
+          // Contacts list. Backend returns full records.
           if (hasContacts) ...[
             _buildCard(
               title: 'Contacts',
@@ -457,7 +457,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Custom fields — org schema; only shown when the deal has at
+          // Custom fields, org schema; only shown when the deal has at
           // least one value populated.
           if (hasCustomFields) ...[
             _buildCard(
@@ -467,14 +467,14 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Assigned to — every assignee, not just the first.
+          // Assigned to: every assignee, not just the first.
           _buildCard(
             title: 'Assigned To',
             child: _buildAssigneesContent(deal),
           ),
           const SizedBox(height: 16),
 
-          // Teams — backend exposes teams on Opportunity; render names only.
+          // Teams, backend exposes teams on Opportunity; render names only.
           if (hasTeams) ...[
             _buildCard(
               title: 'Teams',
@@ -509,7 +509,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Metadata footer — created by / closed by.
+          // Metadata footer: created by / closed by.
           _buildCard(title: 'Metadata', child: _buildMetadataContent(deal)),
           const SizedBox(height: 24),
         ],
@@ -596,8 +596,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       0,
       (sum, p) => sum + p.unitPrice * p.quantity,
     );
-    // Backend pre-computes the line-items total. When present, trust it —
-    // it accounts for line-item-level rounding the mobile model doesn't.
+    // Backend pre-computes the line-items total. When present, trust it.
+    // It accounts for line-item-level rounding the mobile model doesn't.
     final total = deal.lineItemsTotal ?? localTotal;
 
     return Column(
@@ -835,7 +835,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   // ===========================================================================
-  // ACTIVITY TAB — comments + attachments + created event, newest first.
+  // ACTIVITY TAB, comments + attachments + created event, newest first.
   // ===========================================================================
 
   Widget _buildActivityTab() {
@@ -915,7 +915,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   // ===========================================================================
-  // NOTES TAB — comment CRUD.
+  // NOTES TAB, comment CRUD.
   // ===========================================================================
 
   Widget _buildNotesTab() {
@@ -1150,7 +1150,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     final isLost = deal.stage == DealStage.closedLost;
     final isClosed = isWon || isLost;
 
-    // Closed deals show a status banner but no actions — the stepper handles
+    // Closed deals show a status banner but no actions, the stepper handles
     // reopening (any non-current tap moves the deal).
     if (isClosed) {
       final bg = isWon ? AppColors.success100 : AppColors.danger100;
@@ -1441,7 +1441,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   Color _probabilityColor(Deal deal) {
-    // For closed deals the probability is meaningless — color by outcome.
+    // For closed deals the probability is meaningless, color by outcome.
     if (deal.stage.isWon) return AppColors.success600;
     if (deal.stage == DealStage.closedLost) return AppColors.danger600;
     final p = deal.probability;
@@ -1453,7 +1453,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
 
   /// Stage-aware copy. Avoids the old screen's bug where a brand-new
   /// Prospecting deal at probability=10 read "Low probability, consider
-  /// next steps" — the default IS 10, that's not a warning.
+  /// next steps". The default IS 10, that's not a warning.
   String _probabilityHint(Deal deal) {
     if (deal.stage.isWon) return 'Deal won';
     if (deal.stage == DealStage.closedLost) return 'Deal lost';
@@ -1470,7 +1470,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   /// Format the deal's main amount using the deal's own currency (not the
-  /// org default) — opportunities can be in any currency.
+  /// org default). Opportunities can be in any currency.
   String _formatDealAmount(Deal deal) => _formatMoney(deal.value, deal.currency);
 
   String _formatMoney(double value, Currency currency) {

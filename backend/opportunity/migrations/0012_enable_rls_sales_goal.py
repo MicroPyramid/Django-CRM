@@ -3,7 +3,7 @@
 # SalesGoal is org-scoped (it has an ``org_id`` column and every view filters on
 # it) but it was never registered in ORG_SCOPED_TABLES and no *source* migration
 # stamped its RLS policies. A now-deleted migration once did on already-migrated
-# databases, so those still carry the policies — but a fresh ``migrate`` from
+# databases, so those still carry the policies, but a fresh ``migrate`` from
 # this source tree would ship ``sales_goal`` with no RLS at all, leaving tenant
 # isolation resting solely on the ORM ``.filter(org=...)`` calls. This migration
 # makes the protection reconstructible from source again.

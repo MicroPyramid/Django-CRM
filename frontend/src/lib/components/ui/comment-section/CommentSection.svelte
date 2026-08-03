@@ -191,7 +191,7 @@
 
   // --- @mention typeahead ----------------------------------------------------
   // Detects an in-progress `@partial` token at the cursor and surfaces a
-  // dropdown of matching candidates. No network calls — caller passes the
+  // dropdown of matching candidates. No network calls, caller passes the
   // resolved candidate list via the `mentionCandidates` prop.
 
   const MENTION_TYPING_RE = /(?:^|[^A-Za-z0-9])@([A-Za-z0-9._-]*)$/;

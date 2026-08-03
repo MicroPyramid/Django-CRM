@@ -1,5 +1,5 @@
 /**
- * Global search for the ⌘K palette — the wiring behind /api/search.
+ * Global search for the ⌘K palette, the wiring behind /api/search.
  *
  * Server-only. One org-scoped backend call, `GET /search/`, returns typed hits
  * across every module (the org comes from the JWT, never the client, and each

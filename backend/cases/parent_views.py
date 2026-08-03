@@ -3,9 +3,9 @@ Parent/child case endpoints (Tier 3 parent-child).
 
 Three endpoints over and above what `CaseDetailView` already exposes:
 
-* ``GET  /api/cases/<pk>/tree/``                   — descendant tree, max depth 3.
-* ``POST /api/cases/<pk>/link/``                   — set/clear parent with explicit audit row.
-* ``POST /api/cases/<pk>/close-with-children/``    — close parent and (optionally) cascade-close descendants.
+* ``GET  /api/cases/<pk>/tree/``: descendant tree, max depth 3.
+* ``POST /api/cases/<pk>/link/``: set/clear parent with explicit audit row.
+* ``POST /api/cases/<pk>/close-with-children/``: close parent and (optionally) cascade-close descendants.
 
 The link endpoint takes a row lock on both rows so two concurrent agents cannot
 build a cycle. Cascade close honours ``Org.auto_close_children_on_parent_close``

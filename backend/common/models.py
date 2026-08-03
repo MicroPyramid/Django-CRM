@@ -56,7 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def save(self, *args, **kwargs):
         # On first save only, fall back to the email local-part when no name
-        # was supplied — keeps `name` non-empty without overwriting later
+        # was supplied. Keeps `name` non-empty without overwriting later
         # edits (PATCHing name to "" leaves it empty by user intent).
         if self._state.adding and not self.name and self.email:
             self.name = self.email.split("@", 1)[0][:255]
@@ -129,7 +129,7 @@ class Org(BaseModel):
         max_length=2, choices=COUNTRIES, blank=True, null=True
     )
 
-    # CSAT (Tier 2 csat). Org-level kill switch — when False, the
+    # CSAT (Tier 2 csat). Org-level kill switch, when False, the
     # post-close signal short-circuits before any survey email is sent.
     csat_enabled = models.BooleanField(default=True)
 
@@ -138,7 +138,7 @@ class Org(BaseModel):
     # explicit confirmation; this flag only controls the default state.
     auto_close_children_on_parent_close = models.BooleanField(default=False)
 
-    # Vertical packs. Descriptive only — records which pack was applied at
+    # Vertical packs. Descriptive only: records which pack was applied at
     # signup. NEVER used in a permission check or a queryset filter.
     vertical = models.CharField(
         max_length=64,
@@ -576,7 +576,7 @@ class Activity(BaseModel):
         ("VIEW", "Viewed"),
         ("COMMENT", "Commented"),
         ("ASSIGN", "Assigned"),
-        # Cases roadmap verb registry — see docs/cases/COORDINATION_DECISIONS.md D1.
+        # Cases roadmap verb registry: see docs/cases/COORDINATION_DECISIONS.md D1.
         ("STATUS_CHANGED", "Status Changed"),
         ("PRIORITY_CHANGED", "Priority Changed"),
         ("ROUTED", "Routed"),
@@ -659,7 +659,7 @@ class Notification(BaseModel):
     """In-app notification delivered to a single recipient.
 
     Per `docs/cases/COORDINATION_DECISIONS.md` D2 we inherit BaseModel and
-    declare our own `org` FK rather than using BaseOrgModel — RLS still
+    declare our own `org` FK rather than using BaseOrgModel. RLS still
     applies via the migration in 0018.
     """
 
@@ -869,7 +869,7 @@ class PersonalAccessToken(BaseOrgModel):
     token_hash = models.CharField(max_length=64, unique=True, db_index=True)
     token_prefix = models.CharField(max_length=20)
     # NOTE: scopes are stored for forward-compatibility but are NOT enforced in
-    # Phase 1 — a token always inherits the owning profile's full role/permissions.
+    # Phase 1: a token always inherits the owning profile's full role/permissions.
     # Do not treat `scopes` as a trust boundary until enforcement lands.
     scopes = models.JSONField(default=list, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -910,15 +910,15 @@ class PersonalAccessToken(BaseOrgModel):
 class PortalAccessToken(models.Model):
     """Unscoped ``token_hash → org`` lookup for anonymous portal requests.
 
-    The public portal endpoints — the invoice and estimate links emailed to
-    customers, and the CSAT survey link — arrive with no auth and no org
+    The public portal endpoints: the invoice and estimate links emailed to
+    customers, and the CSAT survey link, arrive with no auth and no org
     context. RLS is keyed on ``app.current_org``, so with an empty context the
     isolation policy hides the very row (invoice / estimate / csat_survey) that
     would tell us which org the token belongs to. That is a chicken-and-egg:
     you cannot set the context until you know the org, and you cannot read the
     org until the context is set.
 
-    This table breaks it. It is deliberately **not** org-scoped — it is absent
+    This table breaks it. It is deliberately **not** org-scoped. It is absent
     from ``common.rls.ORG_SCOPED_TABLES`` and carries no RLS policy, so it is
     readable with an empty context. A public view hashes the URL token, looks
     up the org here, calls ``set_rls_context(org_id)``, and only then reads the
@@ -927,7 +927,7 @@ class PortalAccessToken(models.Model):
 
     The key is ``sha256(url_token)``. For invoices and estimates the URL token
     is the raw ``public_token``; for CSAT it is the signed token whose SHA-256
-    is already the stored ``csat_survey.token_hash`` — so a single hash resolves
+    is already the stored ``csat_survey.token_hash``, so a single hash resolves
     all three. The row leaks only the *existence* of a token to somebody who
     already holds it; the resource contents stay behind RLS, and a disabled or
     deleted resource still 404s because the view's own scoped query re-checks

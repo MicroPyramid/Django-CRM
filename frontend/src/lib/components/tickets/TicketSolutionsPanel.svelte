@@ -46,7 +46,7 @@
           <a href="/solutions" class="text-[var(--text-primary)] underline">
             Visit Knowledge Base
           </a>
-          to publish one — only Live articles appear here.
+          to publish one, only Live articles appear here.
         </div>
       {:else if filteredAvailable.length === 0}
         <p class="px-1 py-2 text-xs text-[var(--text-secondary)]">

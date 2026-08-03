@@ -1,10 +1,10 @@
 /**
- * Escalation policies — the wiring behind `/settings/escalation`.
+ * Escalation policies: the wiring behind `/settings/escalation`.
  *
  * Server-only. Reads `GET /cases/escalation-policies/`, at most one row per
  * priority. Each row carries the policy's two halves (first_response /
- * resolution action + target), the team to notify, and — the reason the page
- * exists — `breaches_last_30d`, a server-side count of SLA breaches per
+ * resolution action + target), the team to notify, and. The reason the page
+ * exists; `breaches_last_30d`, a server-side count of SLA breaches per
  * priority over the last 30 days. That count is condition-based, not sourced
  * from the escalation event log, so it still surfaces breaches under a dead
  * policy (off, or reassigning to nobody), which is the page's whole point.

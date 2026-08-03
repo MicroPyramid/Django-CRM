@@ -4,7 +4,7 @@
    *
    * Two changes from the mock, both because the real model says so:
    *
-   * 1. The crumb printed `solution.id`. That is a UUID — 36 characters of
+   * 1. The crumb printed `solution.id`. That is a UUID, 36 characters of
    *    nothing, in the position where a reader looks for what they are
    *    reading. The status goes there instead.
    * 2. "Related articles" is gone. The mock listed three under that heading
@@ -35,8 +35,8 @@
    * What is standing between this article and a customer, said as the next
    * single step rather than as a description of the state.
    *
-   * The action is dropped for anyone who cannot take it — the API answers 403
-   * — but the sentence stays, because "an admin has to approve this" is the
+   * The action is dropped for anyone who cannot take it. The API answers 403
+   *, but the sentence stays, because "an admin has to approve this" is the
    * useful half and the half a writer needs to know.
    */
   let gate = $derived.by(() => {
@@ -65,7 +65,7 @@
       };
     }
     return {
-      text: 'This is a draft. Send it for review when the answer is right — somebody other than you has to approve it before customers see it.',
+      text: 'This is a draft. Send it for review when the answer is right: somebody other than you has to approve it before customers see it.',
       action: 'Send for review',
       form: 'setStatus',
       value: 'reviewed'

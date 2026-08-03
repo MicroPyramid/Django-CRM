@@ -114,7 +114,7 @@ class Opportunity(AssignableMixin, BaseModel):
         _("Stage Changed At"), null=True, blank=True
     )
 
-    # Kanban positioning within a stage column (fractional indexing — same
+    # Kanban positioning within a stage column (fractional indexing, same
     # convention as Task.kanban_order: large stride between rows lets drag-drop
     # insert by averaging neighbors without needing to renumber the column).
     kanban_order = models.DecimalField(

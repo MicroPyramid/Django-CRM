@@ -1,5 +1,5 @@
 /**
- * Approval rules — the wiring behind `/settings/ticket-approvals`.
+ * Approval rules: the wiring behind `/settings/ticket-approvals`.
  *
  * Server-only. Reads `GET /cases/approval-rules/`, the rules that gate a ticket
  * close and who can clear them. Each rule carries its match conditions, the

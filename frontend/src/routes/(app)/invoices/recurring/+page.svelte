@@ -5,7 +5,7 @@
    *
    * `auto_send` is the field that decides that, and v1 buried it inside an
    * edit form. A schedule with auto_send off generates a draft and stops, so
-   * unless somebody remembers, the customer never gets billed — the failure is
+   * unless somebody remembers, the customer never gets billed. The failure is
    * silent and looks exactly like success. It is a column here.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -140,7 +140,7 @@
                 {/if}
                 {#if endingSoon(s)}
                   <span class="v2-table-secondary" style="display:block;color:var(--v2-clay)">
-                    Ends {shortDate(s.end_date)} — last invoice after that
+                    Ends {shortDate(s.end_date)}, last invoice after that
                   </span>
                 {/if}
               </td>
@@ -158,7 +158,7 @@
                   >
                     {next.text}
                   </span>
-                  <!-- Pause a live schedule or resume a paused one — the one
+                  <!-- Pause a live schedule or resume a paused one. The one
                        write a schedule worklist needs, next to the state it
                        changes. The API refuses schedules that aren't yours. -->
                   <form method="POST" action="?/toggle" use:enhance>

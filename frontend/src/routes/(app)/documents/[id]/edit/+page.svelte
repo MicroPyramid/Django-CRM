@@ -10,19 +10,19 @@
   let { data, form: result } = $props();
 
   /**
-   * Rename, archive, and re-share — the mutations that used to be reachable by
+   * Rename, archive, and re-share, the mutations that used to be reachable by
    * anyone a document was shared with. The page is only ever drawn for a writer
    * (owner or admin); the PUT enforces the same, so this is the UX side of the
    * `_may_write` fix.
    *
-   * The file itself is not replaced here — swapping the bytes behind a title is
+   * The file itself is not replaced here. Swapping the bytes behind a title is
    * a new upload, kept apart so a rename cannot quietly change what the document
    * *is*. VALIDATION IS A UX HINT: the serializer requires a title and rejects a
    * duplicate within the org regardless of what this page allows.
    */
   // Seed once from the loaded document, or from a rejected submit's echoed
   // values. Read inside untrack so this captures the initial state without
-  // subscribing the form fields to later `data` changes (there are none — an
+  // subscribing the form fields to later `data` changes (there are none, an
   // edit page loads one document).
   const init = untrack(() => {
     const prev = result?.values ?? {};
@@ -125,14 +125,14 @@
       <div class="v2-field">
         <span class="pseudo-label">File</span>
         <p class="v2-input v2-file-static">{data.document.document_file}</p>
-        <p class="v2-hint">The file is not replaced here — upload a new document to change it.</p>
+        <p class="v2-hint">The file is not replaced here, upload a new document to change it.</p>
       </div>
 
       <div class="v2-field">
         <label for="f-status">Status</label>
         <select id="f-status" name="status" class="v2-input" bind:value={status}>
-          <option value="active">Active — appears in the list</option>
-          <option value="inactive">Archived — kept, hidden from the default view</option>
+          <option value="active">Active, appears in the list</option>
+          <option value="inactive">Archived, kept, hidden from the default view</option>
         </select>
       </div>
 
@@ -191,7 +191,7 @@
     </form>
 
     <!-- Delete sits apart from the save form and behind an inline confirm, so a
-         mis-click cannot destroy a document for everyone — no blocking browser
+         mis-click cannot destroy a document for everyone, no blocking browser
          dialog, just a second, deliberate button. -->
     <div
       style="margin-top:26px;padding-top:18px;border-top:1px solid var(--v2-line-soft);max-width:640px"

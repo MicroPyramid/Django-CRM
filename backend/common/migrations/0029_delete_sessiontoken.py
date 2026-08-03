@@ -1,7 +1,7 @@
 """Drop the unused `session_token` table.
 
 `SessionToken` was added as "Phase 3: JWT Token Tracking" but was never wired
-up — nothing in any view, middleware, serializer, or task ever created, read,
+up, nothing in any view, middleware, serializer, or task ever created, read,
 or revoked a row. Its only consumer was a Django admin page listing a
 permanently empty table, which read as a working session-revocation feature
 that did not exist.

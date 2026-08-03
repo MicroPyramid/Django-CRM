@@ -106,7 +106,7 @@ urlpatterns = [
         routing_views.RoutingRuleTestView.as_view(),
         name="routing_rule_test",
     ),
-    # Inbound email — public webhook (SNS-signed) + admin mailbox CRUD.
+    # Inbound email: public webhook (SNS-signed) + admin mailbox CRUD.
     path(
         "inbound/<str:mailbox_id>/",
         inbound_views.InboundMailboxWebhookView.as_view(),
@@ -197,7 +197,7 @@ urlpatterns = [
         import_views.CaseImportCommitView.as_view(),
         name="cases_import_commit",
     ),
-    # Case ↔ Solution linking (M2M endpoints — must be before <str:pk>/ patterns)
+    # Case ↔ Solution linking (M2M endpoints, must be before <str:pk>/ patterns)
     path(
         "<str:pk>/solutions/",
         views.CaseSolutionLinkView.as_view(),
@@ -274,7 +274,7 @@ urlpatterns = [
         time_views.TimeSummaryView.as_view(),
         name="case_time_summary",
     ),
-    # Approval workflows (must be before <str:pk>/ catchall) — Tier 3 approvals.
+    # Approval workflows (must be before <str:pk>/ catchall), Tier 3 approvals.
     path(
         "approval-rules/",
         approval_views.ApprovalRuleListCreateView.as_view(),

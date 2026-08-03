@@ -1,5 +1,5 @@
 /**
- * Goals — the twelfth v2 module wired to the real API.
+ * Goals: the twelfth v2 module wired to the real API.
  *
  * Lives under `$lib/server` like the eleven before it: SvelteKit keeps this
  * directory out of the client bundle, so the httpOnly access token never
@@ -10,14 +10,14 @@
  * `/goals` is a sidebar dead rail: every live page links to it and it still
  * read a fixture, its "New goal" button writing nowhere. Wiring it drove
  * `SalesGoalListView`, `SalesGoalLeaderboardView` and `SalesGoalDetailView`
- * (`/api/opportunities/goals/…`) for real — reads *and* the admin-only
+ * (`/api/opportunities/goals/…`) for real. Reads *and* the admin-only
  * create/update/delete writes.
  *
  * THE FINDING THE WIRING EXPOSED
  * `SalesGoalCreateSerializer` exposed `assigned_to` (a Profile) and `team` with
  * DRF's default all-rows queryset and no org check. `common_profile` is not
  * RLS-protected, so before the backend fix an admin could POST/PUT a goal
- * assigned to a Profile in *another org* — leaking that person's name and email
+ * assigned to a Profile in *another org*, leaking that person's name and email
  * into this org's goal detail and leaderboard. The fix scopes both to the
  * caller's org in the serializer (the trust boundary); this file only ever
  * offers in-org people and teams in its pickers, but that is a UX hint, not the
@@ -30,7 +30,7 @@
  * - The leaderboard fixture carried `user` as a bare string. The API nests
  *   `user: { id, name, email }`, so `toLeaderRow` collapses it to a name.
  * - There is **no** totals endpoint. The fixture's `goalTotals` is recomputed
- *   here from the fetched goals (sum over the active subset) — arithmetic on
+ *   here from the fetched goals (sum over the active subset), arithmetic on
  *   fields already in the payload, never a second aggregate query.
  */
 import { apiRequest } from '$lib/api-helpers.js';
@@ -45,7 +45,7 @@ export const PERIOD_TYPES = ['MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM'];
  * Plain scalar fields the write serializer accepts. `assigned_to`/`team` are
  * handled apart, through the single `target` picker, so the form can never send
  * both. `org` and `created_by` are set by the view from `request.profile` and
- * are not serializer fields — they cannot be assigned from the body.
+ * are not serializer fields. They cannot be assigned from the body.
  */
 export const EDITABLE_FIELDS = [
   'name',
@@ -64,8 +64,8 @@ export const EDITABLE_FIELDS = [
 const LEADERBOARD_PERIOD = 'MONTHLY';
 
 /**
- * The signed-in role, decoded from the JWT `role` claim. A display hint only —
- * it decides whether the page shows an edit affordance. The backend re-derives
+ * The signed-in role, decoded from the JWT `role` claim. A display hint only.
+ * It decides whether the page shows an edit affordance. The backend re-derives
  * the role and is the thing that actually refuses a non-admin write, so this is
  * never trusted for authorization.
  *
@@ -93,7 +93,7 @@ function personName(detail) {
 /**
  * One goal as the page reads it, from a `SalesGoalSerializer` row.
  *
- * `progress_value`, `progress_percent` and `status` are the server's — computed
+ * `progress_value`, `progress_percent` and `status` are the server's, computed
  * over CLOSED_WON opportunities in the period. They are passed straight through
  * and never recomputed here; that recomputation is the aggregate bug the v2
  * redesign exists to kill.
@@ -132,7 +132,7 @@ function toLeaderRow(r) {
   };
 }
 
-/** Active first, then most-urgent status, then furthest along — the mock order. */
+/** Active first, then most-urgent status, then furthest along, the mock order. */
 const STATUS_RANK = { behind: 0, at_risk: 1, on_track: 2, completed: 3 };
 function byUrgency(a, b) {
   return (
@@ -145,7 +145,7 @@ function byUrgency(a, b) {
 /**
  * Totals over the *active* goals only, mirroring the header ("Active goals
  * only"). Computed here because the API has no goals-summary endpoint. `behind`
- * counts active goals that are behind pace and still open — an ended goal is
+ * counts active goals that are behind pace and still open. An ended goal is
  * settled, not something anyone can still influence.
  *
  * @param {ReturnType<typeof toGoal>[]} goals
@@ -194,7 +194,7 @@ export async function listGoals({ cookies }) {
 /**
  * In-org people and teams for the create/edit pickers.
  * `/users/get-teams-and-users/` filters both to `request.profile.org`, so the
- * picker can only ever offer in-org targets — the same boundary the serializer
+ * picker can only ever offer in-org targets. The same boundary the serializer
  * now enforces, surfaced early as UX.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies

@@ -1,13 +1,13 @@
 <script>
   /**
-   * A week of logged time, one column per day — including the days with
+   * A week of logged time, one column per day, including the days with
    * nothing on them, because an unlogged Wednesday is the thing this page
    * exists to make visible. v1 rendered only the days that had entries, so a
    * gap and a quiet day looked identical.
    *
    * The running timer ticks locally from the server's live_duration_minutes.
    * The browser clock is a rendering detail, not a source of truth about how
-   * long somebody has been working — so the number starts from the server's
+   * long somebody has been working, so the number starts from the server's
    * and only the seconds since page load are added on top.
    */
   import { onMount } from 'svelte';
@@ -98,7 +98,7 @@
 
 <PageHeader title="Timesheet">
   {#snippet sub()}
-    {shortDate(week.start)} – {shortDate(week.end)} · {week.profile.name}
+    {shortDate(week.start)} - {shortDate(week.end)} · {week.profile.name}
   {/snippet}
   {#snippet actions()}
     <button class="v2-btn" aria-label="Previous week" onclick={() => shiftWeek(-7)}>
@@ -180,7 +180,7 @@
                   <span class="v2-sub" style="font-size:10.5px">internal</span>
                 {:else if e.invoice}
                   <!-- Already billed. Links out rather than offering to bill
-                       it again — double-billing an hour is a refund, not an
+                       it again. Double-billing an hour is a refund, not an
                        edge case. -->
                   <a
                     href="/invoices/{e.invoice.id}"
@@ -215,7 +215,7 @@
 
     <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
       Time is logged against a ticket, so every hour here is attached to something a customer can be
-      shown. Rates are saved on each entry when it is logged — changing your rate does not rewrite
+      shown. Rates are saved on each entry when it is logged. Changing your rate does not rewrite
       what past weeks were worth.
     </p>
   </div>

@@ -10,7 +10,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * `can_edit` (from the JWT role claim) decides whether the page shows the edit
  * affordance, and the edit route + the backend PATCH are what actually enforce
  * admin-only. The same `can_edit` flag is reused below to decide whether the
- * pack list and its actions render at all — vertical packs are admin-only for
+ * pack list and its actions render at all. Vertical packs are admin-only for
  * the identical reason (`PackApplyView`/`PackSampleDataView` both 403 a
  * non-admin server-side), so there is no second admin check to invent.
  *
@@ -19,7 +19,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 export async function load({ cookies }) {
   const settings = await getOrgSettings({ cookies });
 
-  // GET /api/packs/ needs IsAuthenticated only, no org context — but a
+  // GET /api/packs/ needs IsAuthenticated only, no org context, but a
   // reload of this page must never break over a transient failure here, so
   // this follows the same "empty list on error" fallback the org-creation
   // page already established for the identical call.
@@ -35,7 +35,7 @@ export async function load({ cookies }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
-  // Applying is additive-only and safe to repeat — a pack already applied
+  // Applying is additive-only and safe to repeat, a pack already applied
   // just reports everything as skipped. There is deliberately no guard here
   // against re-submitting the currently-applied pack.
   apply: async ({ cookies, request }) => {
@@ -56,7 +56,7 @@ export const actions = {
   clearSampleData: async ({ cookies }) => {
     try {
       const { deleted, retained_by_type } = await clearSampleData(cookies);
-      // Retained records are not a failure — they are demo rows the user has
+      // Retained records are not a failure. They are demo rows the user has
       // since attached real work to, which the backend deliberately keeps.
       // Passing the count through lets the page say so instead of reporting a
       // smaller number than the user expected with no explanation.

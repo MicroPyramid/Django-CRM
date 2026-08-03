@@ -3,11 +3,11 @@
    * Editing the organisation.
    *
    * Admin-only. A non-admin who reaches this URL directly gets an "Admins only"
-   * state, not the form — but that is the courtesy, not the control: the save
+   * state, not the form, but that is the courtesy, not the control: the save
    * posts to `PATCH /api/org/settings/`, which the backend refuses for anyone
    * whose role is not ADMIN. `result.error` reports that refusal.
    *
-   * What this form owns is the org's own settings — the company profile printed
+   * What this form owns is the org's own settings: the company profile printed
    * on invoices, the locale defaults, and the two org-wide case-handling
    * switches. What it deliberately does NOT own: the org API key (a credential,
    * rotated through its own audited action) and `is_active` (the org kill
@@ -15,7 +15,7 @@
    * they were smuggled into the request.
    *
    * The two switches submit an explicit on/off, so turning one OFF is a real
-   * choice the save records — not the "left blank, so unchanged" behaviour of
+   * choice the save records, not the "left blank, so unchanged" behaviour of
    * the text fields.
    */
   import { tick, untrack } from 'svelte';
@@ -329,8 +329,8 @@
       <div class="v2-field">
         <label for="f-csat">Satisfaction surveys</label>
         <select id="f-csat" name="csat_enabled" class="v2-input" bind:value={form.csat_enabled}>
-          <option value="true">Sending — a survey goes out after a ticket closes</option>
-          <option value="false">Off — no surveys, org-wide</option>
+          <option value="true">Sending. A survey goes out after a ticket closes</option>
+          <option value="false">Off, no surveys, org-wide</option>
         </select>
         <p class="v2-hint">
           Off stops every survey org-wide. There is no per-team exception and no notice on the
@@ -346,11 +346,11 @@
           class="v2-input"
           bind:value={form.auto_close_children_on_parent_close}
         >
-          <option value="true">Offer it on — the close prompt starts ticked</option>
-          <option value="false">Offer it off — the close prompt starts unticked</option>
+          <option value="true">Offer it on. The close prompt starts ticked</option>
+          <option value="false">Offer it off. The close prompt starts unticked</option>
         </select>
         <p class="v2-hint">
-          Only sets how the prompt starts. Closing a parent never closes a child on its own — the
+          Only sets how the prompt starts. Closing a parent never closes a child on its own, the
           person still confirms.
         </p>
       </div>

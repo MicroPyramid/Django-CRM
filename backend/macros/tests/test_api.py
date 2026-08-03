@@ -142,7 +142,7 @@ class TestListTotals:
     def test_placeholders_are_server_owned_set(self, user_client, org_macro):
         resp = user_client.get(LIST_URL)
         placeholders = resp.json()["placeholders"]
-        # Exactly the server's supported set, in order, verbatim — the page
+        # Exactly the server's supported set, in order, verbatim. The page
         # must not carry its own copy that could drift.
         assert placeholders == [dict(p) for p in SUPPORTED_PLACEHOLDERS]
         assert {p["token"] for p in placeholders} == {
@@ -412,7 +412,7 @@ class TestUnknownPlaceholders:
     """Backend-authoritative warning surface for typoed/unsupported tokens.
 
     The web UI does its own client-side check for live feedback, but mobile
-    and API consumers rely on this field — and the workspace rule says
+    and API consumers rely on this field, and the workspace rule says
     every UX constraint must also exist server-side.
     """
 
@@ -462,7 +462,7 @@ class TestUnknownPlaceholders:
         assert resp.json()["unknown_placeholders"] == ["%typo%"]
 
     def test_creation_is_not_blocked_by_unknown_placeholder(self, admin_client):
-        # Soft warning, not a save-blocker — matches `render_macro`'s
+        # Soft warning, not a save-blocker. Matches `render_macro`'s
         # leave-literal stance for unknown tokens.
         resp = admin_client.post(
             LIST_URL,

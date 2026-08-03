@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   BOTTLECRM v2 — "Clearing"
+   BOTTLECRM v2: "Clearing"
    Scoped design system. Every selector is prefixed .v2- or nested under
    .v2-root so this file cannot leak into the v1 app (which uses orange as
    decoration and would be visually altered by any global override here).
@@ -14,7 +14,7 @@
    size below is taken from docs/design/clearing-reference.html, which is the
    agreed reference for layout and type. That reference is built on a 14.4px
    base and derives most sizes from it, so --v2-fs is a real variable here and
-   sizes are written as calc() against it — same as the mocks.
+   sizes are written as calc() against it, same as the mocks.
 
    This supersedes the earlier "Label 9.5px mono / .12em" line: the reference
    sets section labels and table headers in quiet sans, and mono is reserved
@@ -30,7 +30,7 @@
   --v2-slate: #78716c; /* labels, secondary text, on-pace aging */
   --v2-paper: #fafaf9; /* app canvas */
   --v2-card: #ffffff; /* cards sit on paper in pure white */
-  --v2-clay: #b45309; /* aging_status "yellow" — past expected_days */
+  --v2-clay: #b45309; /* aging_status "yellow": past expected_days */
   --v2-rust: #9a3412; /* aging_status "red", overdue, destructive */
   --v2-moss: #3f6212; /* won, completed, positive delta. Sparingly. */
 
@@ -79,7 +79,7 @@
 }
 
 /* ── type scale ───────────────────────────────────────────────────────────
-   The reference sets one h1 for both list pages and record pages — a record
+   The reference sets one h1 for both list pages and record pages. A record
    title is not a bigger thing than a page title, it is the same thing with a
    crumb above it. .v2-record-title is kept as an alias so PageHeader's
    `record` prop stays meaningful for screen readers and future divergence. */
@@ -98,7 +98,7 @@
   margin: 0;
 }
 /* Quiet sans micro-caps. Used for section headings, nav groups and lane
-   titles — anywhere a word labels the block beneath it. */
+   titles, anywhere a word labels the block beneath it. */
 .v2-label {
   font-size: 10px;
   font-weight: 650;
@@ -107,7 +107,7 @@
   color: var(--v2-slate);
 }
 /* Every number in the product is tabular monospace. Mono means "this is a
-   figure you might compare down a column" — nothing else. */
+   figure you might compare down a column", nothing else. */
 .v2-num {
   font-family: var(--v2-mono);
   font-variant-numeric: tabular-nums;
@@ -213,7 +213,7 @@
 .v2-link:hover {
   background: var(--v2-line-soft);
 }
-/* Active is weight and ink — not ember. Where you are is not an action. */
+/* Active is weight and ink, not ember. Where you are is not an action. */
 .v2-link[aria-current='page'] {
   background: var(--v2-line-soft);
   font-weight: 640;
@@ -355,7 +355,7 @@
   flex: none;
 }
 
-/* ── the next-action strip — the signature element ────────────────────── */
+/* ── the next-action strip, the signature element ────────────────────── */
 .v2-next {
   display: flex;
   align-items: center;
@@ -466,7 +466,7 @@
 
 /* ── section tabs ─────────────────────────────────────────────────────── */
 /* Second level inside one destination. The active tab is weight plus an ink
-   underline — not an ember one. Ember marks what you can act on; "you are
+   underline, not an ember one. Ember marks what you can act on; "you are
    here" is not an action. */
 .v2-tabs {
   display: flex;
@@ -513,7 +513,7 @@
 /* ── bars ─────────────────────────────────────────────────────────────── */
 /* One horizontal track, used for goal attainment and for SLA attainment.
    `--v2-bar-pace` positions a hairline where a second value falls, so a
-   percentage can be read against the thing it should be compared with —
+   percentage can be read against the thing it should be compared with,
    attainment against elapsed time, rather than against nothing. */
 .v2-bar {
   position: relative;
@@ -556,7 +556,7 @@
   height: 104px;
 }
 /* Two bars per day, SIDE BY SIDE. Stacking them would make the column's
-   total height read as opened + closed, which is not a quantity — a day with
+   total height read as opened + closed, which is not a quantity. A day with
    6 opened and 5 closed would tower over a day with 8 opened and 1 closed. */
 .v2-cols .v2-col {
   flex: 1;
@@ -593,7 +593,7 @@
 }
 
 /* Legend swatch for a two-series column chart. Same two weights the columns
-   themselves use — ink for the primary series, line for the comparison — so
+   themselves use (ink for the primary series, line for the comparison), so
    the key and the bars cannot drift apart. Never ember: a legend is a label,
    not something you act on. */
 .v2-swatch {
@@ -624,7 +624,7 @@
   min-height: 168px;
   overflow: hidden;
 }
-/* Today is marked by the border, not by a fill — a tinted column reads as a
+/* Today is marked by the border, not by a fill. A tinted column reads as a
    status, and "it is Wednesday" is not a status. */
 .v2-day[data-today='true'] {
   border-color: var(--v2-ink);
@@ -662,7 +662,7 @@
    stayed two columns at 414px and squeezed both to nothing. */
 /* Both carry the layout, so either works alone. `.v2-split-wide` used to be a
    modifier that needed `.v2-split` beside it, and two pages in one batch used
-   it on its own and silently rendered a single full-width column — a modifier
+   it on its own and silently rendered a single full-width column. A modifier
    whose absence degrades quietly is a modifier that will be misused. */
 .v2-split,
 .v2-split-wide {
@@ -779,7 +779,7 @@ a.v2-setting:hover {
   background: var(--v2-line);
   display: block;
 }
-/* Filled segments are ink, not ember — progress through a funnel is a fact
+/* Filled segments are ink, not ember. Progress through a funnel is a fact
    about the record, not something you can act on. */
 .v2-meter i.on {
   background: var(--v2-ink);
@@ -818,8 +818,8 @@ a.v2-setting:hover {
 .v2-kv {
   display: grid;
   /* `minmax(0, 1fr)`, not `1fr`. A grid track's implicit minimum is its
-     content's min-width, so one unbreakable string — an email address, a URL,
-     a long job title — widens the column past the rail and scrolls the whole
+     content's min-width, so one unbreakable string: an email address, a URL,
+     a long job title, widens the column past the rail and scrolls the whole
      record sideways. Fixture data was all short enough never to show it. */
   grid-template-columns: 100px minmax(0, 1fr);
   gap: 7px 10px;
@@ -833,7 +833,7 @@ a.v2-setting:hover {
   margin: 0;
   font-weight: 500;
   /* Breaks mid-word only when there is no other option, which is what these
-     values need — `break-all` would hyphenate ordinary company names too. */
+     values need; `break-all` would hyphenate ordinary company names too. */
   overflow-wrap: anywhere;
 }
 .v2-rail-row {
@@ -1050,7 +1050,7 @@ a.v2-setting:hover {
   gap: 6px;
   align-items: flex-start;
 }
-/* "More fields" — everything the form does not need to open with. */
+/* "More fields". Everything the form does not need to open with. */
 .v2-disclosure {
   border-top: 1px solid var(--v2-line);
   margin-top: 20px;
@@ -1058,7 +1058,7 @@ a.v2-setting:hover {
 }
 
 /* ── entry / auth (login · magic-link verify · org select · org create) ────
-   The four screens that live outside the shell — no sidebar, so they carry the
+   The four screens that live outside the shell, no sidebar, so they carry the
    tokens through .v2-root directly and centre one card on paper. Same ink,
    slate and Ember as the app: the single Ember per screen is the primary
    action (Continue with Google, Create organisation), never the chrome.
@@ -1255,7 +1255,7 @@ a.v2-setting:hover {
 }
 
 /* Reusable spinner. Borders are currentColor, so it reads white on the Ember
-   button and ink (or Ember, if the parent sets colour) on paper — no variant
+   button and ink (or Ember, if the parent sets colour) on paper, no variant
    needed. The reduced-motion block above already stops the animation. */
 .v2-spin {
   width: 16px;
@@ -1272,7 +1272,7 @@ a.v2-setting:hover {
   }
 }
 
-/* Inline note inside an auth card — success (moss) or error (rust). */
+/* Inline note inside an auth card, success (moss) or error (rust). */
 .v2-auth-note {
   display: flex;
   gap: 9px;
@@ -1355,7 +1355,7 @@ a.v2-setting:hover {
   color: var(--v2-slate);
 }
 /* No focus ring on the palette input. It is the only focusable thing on
-   screen while the dialog is open and it already shows a caret — a 2px ember
+   screen while the dialog is open and it already shows a caret. A 2px ember
    outline there reads as a validation error, not as focus. */
 .v2-palette-input input:focus-visible {
   outline: none;
@@ -1383,7 +1383,7 @@ a.v2-setting:hover {
   cursor: pointer;
   text-decoration: none;
 }
-/* The highlighted row is what Enter will do, so it is genuinely an action —
+/* The highlighted row is what Enter will do, so it is genuinely an action,
    the one place a soft ember fill is not decoration. */
 .v2-palette-row[aria-selected='true'] {
   background: var(--v2-ember-soft);
@@ -1511,7 +1511,7 @@ a.v2-setting:hover {
 /* ── mobile nav drawer ────────────────────────────────────────────────── */
 /* The phone has no sidebar and the tab bar holds only four destinations; this
    slides the full navigation in from the left. It is rendered only while open
-   and only openable from the mobile top bar, so it never shows on desktop — the
+   and only openable from the mobile top bar, so it never shows on desktop. The
    min-width guard below is belt-and-suspenders for a resize mid-open. */
 .v2-drawer-scrim {
   position: fixed;
@@ -1625,7 +1625,7 @@ a.v2-setting:hover {
     font-size: calc(var(--v2-fs) + 4.5px);
   }
   /* Rows become cards. A seven-column table is 836px wide in a 390px viewport,
-     so two thirds of every row — including the name being scanned for — sat
+     so two thirds of every row, including the name being scanned for, sat
      behind a sideways swipe. Each row is now a card: the identifying cell on
      the first line, a status tag to its right, and the rest wrapping beneath
      as a meta line.
@@ -1644,7 +1644,7 @@ a.v2-setting:hover {
   }
   /* Block, not flex. Flexbox picks its line breaks from each item's content
      width before it grows anything, so a long title either demanded a line of
-     its own or — with a zero basis — let the meta cells crowd onto line one and
+     its own or, with a zero basis, let the meta cells crowd onto line one and
      squeeze it into a column three words wide. Which of the two happened
      depended on the length of the data. Blocks and floats are duller and do
      the same thing every time. */
@@ -1736,7 +1736,7 @@ a.v2-setting:hover {
   }
   /* Last, and stated twice. Hiding has to beat every layout rule above it, and
      `.v2-table td:first-child` carries an element selector that a lone
-     attribute selector loses to — so the `td` form ties on specificity and
+     attribute selector loses to, so the `td` form ties on specificity and
      wins on order. The bare form covers elements inside a cell, because some
      columns are worth dropping only in part: a contact's job label can go, the
      "Do not call" pill beside it cannot, least of all on the device the call
@@ -1748,8 +1748,8 @@ a.v2-setting:hover {
   .v2-stats {
     grid-template-columns: 1fr 1fr;
   }
-  /* Touch targets. These sat at 29–35px, and the icon-only ones cannot reach a
-     usable size on padding alone — an empty button has nothing to pad around —
+  /* Touch targets. These sat at 29-35px, and the icon-only ones cannot reach a
+     usable size on padding alone (an empty button has nothing to pad around),
      so they get an explicit minimum instead. The pointer is a fingertip here. */
   .v2-btn,
   .v2-view {
@@ -1763,7 +1763,7 @@ a.v2-setting:hover {
   .v2-chip {
     padding: 7px 10px 7px 12px;
   }
-  /* Was 12×14px — a target smaller than the fingertip aiming at it, sitting
+  /* Was 12×14px, a target smaller than the fingertip aiming at it, sitting
      inside a chip that does something different when hit by mistake. */
   .v2-chip button {
     min-width: 32px;
@@ -1775,7 +1775,7 @@ a.v2-setting:hover {
   .v2-scroll {
     padding-bottom: 62px;
   }
-  /* Title on its own line, pill and action beneath it — at 414px the
+  /* Title on its own line, pill and action beneath it, at 414px the
      three-across desktop row leaves about four words per line. */
   .v2-queue-item {
     flex-wrap: wrap;

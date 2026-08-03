@@ -298,7 +298,7 @@ class AuditLogger:
         """Log a vertical-pack sample-data clear.
 
         This is the only destructive operation in the vertical-packs
-        feature — apply_pack only ever creates and records itself via
+        feature; apply_pack only ever creates and records itself via
         PackApplication, but clear_sample_data deletes rows and, before
         this, recorded nothing. Any org admin can trigger it, so an audit
         trail of who cleared what, and how many rows, matters for incident

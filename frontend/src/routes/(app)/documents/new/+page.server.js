@@ -10,7 +10,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * `org` are server-derived and never read from the body. The share pickers only
  * ever offer in-org people and teams, and the view re-scopes both to the
  * caller's org, so a share can never point at another tenant. (Editing and
- * deleting are the narrow writes — creator or admin — enforced server-side.)
+ * deleting are the narrow writes, creator or admin, enforced server-side.)
  *
  * @type {import('./$types').PageServerLoad}
  */
@@ -30,8 +30,8 @@ export const actions = {
     const shared_to = form.getAll('shared_to').map((v) => v.toString());
     const teams = form.getAll('teams').map((v) => v.toString());
 
-    // What the form re-fills on a rejected submit. The file is never echoed —
-    // a browser will not let us re-populate a file input, so a rejected upload
+    // What the form re-fills on a rejected submit. The file is never echoed.
+    // A browser will not let us re-populate a file input, so a rejected upload
     // asks for the file again, which is the honest thing to do.
     const values = { title, status, shared_to, teams };
 

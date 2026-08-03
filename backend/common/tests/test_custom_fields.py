@@ -120,7 +120,7 @@ class TestValidatePayload:
 
     def test_inactive_definition_preserves_existing_value(self, org_a):
         """Soft-deleting a definition must NOT wipe historical values on
-        the next save — admins can deactivate a field without data loss."""
+        the next save. Admins can deactivate a field without data loss."""
         self._defn(org_a, is_active=False)
         cleaned, errors = validate_payload(
             "Case", {}, org_a, existing={"severity": "S1"}
@@ -365,7 +365,7 @@ class TestCustomFieldDefinitionAPI:
 
 @pytest.mark.django_db
 class TestCustomFieldAnalytics:
-    """records_missing_value + totals — the settings/custom-fields stat cards."""
+    """records_missing_value + totals, the settings/custom-fields stat cards."""
 
     URL = "/api/custom-fields/"
 
@@ -447,7 +447,7 @@ class TestCustomFieldAnalytics:
         }
 
     def test_records_missing_value_is_org_scoped(self, admin_client, org_a, org_b):
-        """The record count must not include another org's rows — proven on
+        """The record count must not include another org's rows. Proven on
         SQLite where RLS is inert, so only the explicit org filter scopes it."""
         CustomFieldDefinition.objects.create(
             org=org_a,

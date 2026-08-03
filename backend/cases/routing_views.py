@@ -30,12 +30,12 @@ def _routing_analytics(org):
     """Per-rule match counts + the org's unrouted count over the last 30 days.
 
     Both read from the ``ROUTED`` Activity log the engine writes on every match
-    (``cases.routing._apply``) — one row per rule that fired on a case, written
+    (``cases.routing._apply``), one row per rule that fired on a case, written
     even when the matched rule had an empty pool or a missing team. That log
     records the whole population the page needs (unlike escalation's ESCALATED
     log), so there is no fork: ``matched_last_30d`` is a straight count per
     ``rule_id`` and ``unrouted_last_30d`` is the cases that got no ROUTED row at
-    all — i.e. literally no rule matched, which is what "nobody was assigned"
+    all, i.e. literally no rule matched, which is what "nobody was assigned"
     on the page means. A rule that matched but could not assign is NOT unrouted.
 
     Anchored on ``created_at`` (routing runs once, at case creation, so a case's

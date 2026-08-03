@@ -1,4 +1,4 @@
-"""Mint a JWT for a given user — local-dev only.
+"""Mint a JWT for a given user. Local-dev only.
 
 Refuses to run unless DEBUG is true so this can never produce a token in
 a production environment.
@@ -90,7 +90,7 @@ class Command(BaseCommand):
             self.stdout.write(f"bound to org:  {org.name} ({org.id})")
         else:
             self.stdout.write(
-                "bound to org:  (none — call /api/auth/orgswitch/ from the UI)"
+                "bound to org:  (none. Call /api/auth/orgswitch/ from the UI)"
             )
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("=== Paste into browser devtools ==="))

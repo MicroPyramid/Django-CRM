@@ -48,7 +48,7 @@ class TestTaskListView:
         This used to assert that `PermissionDenied` propagated out of the
         client call, which it never does: DRF's exception handler turns it
         into a response, which is the whole point of raising it. The endpoint
-        was behaving correctly the entire time the test was red — so assert the
+        was behaving correctly the entire time the test was red, so assert the
         refusal the caller actually sees, and that nothing was written.
         """
         response = unauthenticated_client.post(
@@ -128,7 +128,7 @@ class TestTaskListView:
         """Titles are not unique per org, and should not be.
 
         This test used to assert a 400 for a duplicate title. No such
-        constraint exists on `Task` — and adding one would be wrong: "Call
+        constraint exists on `Task`, and adding one would be wrong: "Call
         back", "Send the quote" and "Chase invoice" are the titles a real task
         list is *made* of, one per customer. The rule the test wanted belongs
         to a ticket subject, not to a to-do.
@@ -351,7 +351,7 @@ class TestTaskListView:
     ):
         """Response should include status, priority, accounts_list, contacts_list.
 
-        The convention `cases` and `opportunity` already follow — the list
+        The convention `cases` and `opportunity` already follow, the list
         endpoint hands the form the pickers it needs instead of making the
         client fetch three more catalogues. Tasks did not follow it, so this
         test was red rather than wrong.
@@ -735,8 +735,8 @@ class TestTaskDetailView:
     ):
         """A non-admin assignee can open the task they were handed.
 
-        This used to assert the opposite — `pytest.raises(AttributeError,
-        match="has no attribute 'user'")` — because the view read
+        This used to assert the opposite: `pytest.raises(AttributeError,
+        match="has no attribute 'user'")`, because the view read
         `created_by.user.email` when `created_by` is already the `User`. The
         test was green and the endpoint was unusable for every non-admin in
         the product. Asserting the crash is not coverage; it is a bug with a
@@ -783,7 +783,7 @@ class TestTaskDetailView:
         The assertion was always right; the docstring used to explain it by
         the `Profile`/`User` comparison bug, which made every creator a
         non-creator. That bug is fixed, and this member really is not the
-        creator — `created_by` below is the admin.
+        creator; `created_by` below is the admin.
         """
         task = Task.objects.create(
             title="User Delete Task",
@@ -1363,7 +1363,7 @@ class TestTaskDetailCreatedByCoverage:
         """A non-admin assignee gets `users_mention` and a narrowed `users`.
 
         Someone who did not create the task can mention its creator, and is
-        offered the org's admins to reassign to — not the whole org. This
+        offered the org's admins to reassign to, not the whole org. This
         also used to assert `AttributeError`: the mention list was built from
         `created_by.user.email`, and `created_by` is the `User`.
         """

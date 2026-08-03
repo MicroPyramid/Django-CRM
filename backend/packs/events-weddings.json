@@ -64,7 +64,7 @@
     { "target": "Lead", "key": "venue_confirmed", "label": "Venue confirmed", "field_type": "checkbox", "display_order": 6 }
   ],
   "tags": [
-    { "name": "Peak date", "color": "red", "description": "Falls in the peak season — the date will not hold for long" },
+    { "name": "Peak date", "color": "red", "description": "Falls in the peak season. The date will not hold for long" },
     { "name": "Destination", "color": "violet", "description": "Event away from the home city" },
     { "name": "Corporate", "color": "blue", "description": "Company event rather than a private celebration" },
     { "name": "Referral", "color": "teal", "description": "Introduced by a past client or a venue" }
@@ -135,7 +135,7 @@
         "description": "Booked the retreat directly with the venue this year." }
     ],
     "deals": [
-      { "name": "Whitmore & Castellanos wedding — 12 September", "account": "Whitmore & Castellanos", "stage": "NEGOTIATION",
+      { "name": "Whitmore & Castellanos wedding, 12 September", "account": "Whitmore & Castellanos", "stage": "NEGOTIATION",
         "amount": 48000, "currency": "USD", "probability": 75, "closed_on": "2026-08-20", "lead_source": "PARTNER",
         "description": "Full planning plus decor. Negotiating the bar package and the late-night transport." },
       { "name": "Ferris golden anniversary dinner", "account": "The Ferris Family", "stage": "PROPOSAL",
@@ -182,7 +182,7 @@
         "stage": "Done", "ticket": "AV quote came back over the approved budget",
         "description": "Two screens, one operator. Signed off on the call." },
       { "title": "Chase the signed contract and the deposit", "status": "In Progress", "priority": "High", "due_date": "2026-08-06",
-        "stage": "In progress", "deal": "Whitmore & Castellanos wedding — 12 September",
+        "stage": "In progress", "deal": "Whitmore & Castellanos wedding. 12 September",
         "description": "Date is a peak Saturday and is only held until the deposit clears." },
       { "title": "Send the anniversary proposal to the family", "status": "New", "priority": "High", "due_date": "2026-08-04",
         "stage": "Scheduled", "deal": "Ferris golden anniversary dinner",

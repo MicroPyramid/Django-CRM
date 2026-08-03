@@ -42,7 +42,7 @@ class TestParseMentions:
         assert out == ["bob", "alice"]
 
     def test_does_not_match_email_addresses(self):
-        # The @ in 'foo@bar.com' is preceded by an alphanumeric — should be skipped.
+        # The @ in 'foo@bar.com' is preceded by an alphanumeric, should be skipped.
         assert parse_mentions("send mail to alice@example.com") == []
 
     def test_punctuation_chars_in_username(self):
@@ -52,7 +52,7 @@ class TestParseMentions:
         ]
 
     def test_no_match_inside_word(self):
-        # `\u`@x` — preceded by alphanumeric, skip
+        # `\u`@x`. Preceded by alphanumeric, skip
         assert parse_mentions("u@x") == []
 
     def test_empty_body(self):
@@ -126,7 +126,7 @@ class TestDispatchForComment:
         _comment(
             case_a, "Sent to bob@org.com about this", by=admin_profile
         )
-        # @ preceded by alphanumeric — must NOT be parsed as a mention.
+        # @ preceded by alphanumeric, must NOT be parsed as a mention.
         assert not Notification.objects.filter(
             recipient=bob, verb="case.mentioned"
         ).exists()
@@ -171,7 +171,7 @@ class TestDispatchForComment:
     def test_actor_does_not_get_their_own_comment_notification(
         self, case_a, admin_profile, org_a
     ):
-        # Actor is also a watcher — should still NOT receive case.commented.
+        # Actor is also a watcher, should still NOT receive case.commented.
         CaseWatcher.objects.create(
             case=case_a, profile=admin_profile, org=org_a
         )
@@ -200,8 +200,8 @@ class TestNotificationLinkIsReachable:
     """`Notification.link` is a client path, and it has to be one a client serves.
 
     The producer wrote `/cases/<id>` for the entire life of the feature. No
-    client has ever had a `/cases` route — the SvelteKit app serves tickets at
-    `/tickets/<id>` — and its notification panel assigns `link` straight to
+    client has ever had a `/cases` route, the SvelteKit app serves tickets at
+    `/tickets/<id>`, and its notification panel assigns `link` straight to
     `window.location.href`, so every notification ever sent landed on a 404.
     """
 

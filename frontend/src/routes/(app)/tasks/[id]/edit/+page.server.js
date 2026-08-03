@@ -84,7 +84,7 @@ export const actions = {
      * guards a validation rule rather than a relation: the API checks the
      * payload's parents *against the ones already on the task*, so re-sending
      * an unchanged account alongside nothing else is fine, but the moment the
-     * kind changes both columns have to travel together — the old one cleared
+     * kind changes both columns have to travel together, the old one cleared
      * to null in the same request as the new one is set. Sent one at a time
      * they read as "a second parent" and are refused, which is the rule
      * working.

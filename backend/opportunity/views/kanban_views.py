@@ -1,6 +1,6 @@
 """Kanban views for opportunities.
 
-Status-based only (Opportunity has no Pipeline/Stage model — it groups by the
+Status-based only (Opportunity has no Pipeline/Stage model. It groups by the
 flat `stage` CharField). The layout mirrors tasks/views/kanban_views.py so the
 frontend KanbanBoard component can consume both with the same shape.
 """
@@ -25,7 +25,7 @@ from opportunity.serializer import (
 
 
 # Column display config. Keys must match the stage choices in
-# common.utils.STAGES — extra/unknown stages get the fallback.
+# common.utils.STAGES. Extra/unknown stages get the fallback.
 STAGE_CONFIG = {
     "PROSPECTING":   {"order": 1, "color": "#3B82F6", "type": "open",        "label": "Prospecting"},
     "QUALIFICATION": {"order": 2, "color": "#8B5CF6", "type": "open",        "label": "Qualification"},
@@ -37,7 +37,7 @@ STAGE_CONFIG = {
 
 
 class OpportunityKanbanView(APIView):
-    """GET /api/opportunities/kanban/ — columns grouped by stage."""
+    """GET /api/opportunities/kanban/, columns grouped by stage."""
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
@@ -64,7 +64,7 @@ class OpportunityKanbanView(APIView):
         )
 
         # Match the list view's RBAC scoping so users only see opps they own
-        # or are assigned to — kanban shouldn't reveal more than the table.
+        # or are assigned to. Kanban shouldn't reveal more than the table.
         if request.profile.role != "ADMIN" and not request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=request.profile.user)
@@ -100,7 +100,7 @@ class OpportunityKanbanView(APIView):
                     "is_status_column": True,
                     "wip_limit": None,
                     "item_count": opps.count(),
-                    # Cap at 100 per column to keep the payload bounded — same
+                    # Cap at 100 per column to keep the payload bounded. Same
                     # cap tasks uses.
                     "items": OpportunityKanbanCardSerializer(
                         opps[:100], many=True, context={"aging_configs": aging_configs}
@@ -138,7 +138,7 @@ class OpportunityKanbanView(APIView):
 
 
 class OpportunityMoveView(APIView):
-    """PATCH /api/opportunities/<pk>/move/ — change stage and/or reorder.
+    """PATCH /api/opportunities/<pk>/move/, change stage and/or reorder.
 
     Mirrors TaskMoveView's fractional-order algorithm: if both neighbors are
     given we average them; with only one we offset by ±1000; falling through
@@ -176,7 +176,7 @@ class OpportunityMoveView(APIView):
         data = serializer.validated_data
 
         new_stage = data["stage"]
-        # If the user is moving INTO a closed stage, stamp closed_by — mirrors
+        # If the user is moving INTO a closed stage, stamp closed_by, mirrors
         # the OpportunityListView.post / OpportunityDetailView.put behavior so
         # kanban-driven close events look identical to form-driven ones.
         if new_stage in ("CLOSED_WON", "CLOSED_LOST") and opportunity.stage != new_stage:
@@ -185,7 +185,7 @@ class OpportunityMoveView(APIView):
         opportunity.stage = new_stage
         opportunity.kanban_order = self._calculate_order(data, opportunity, org)
 
-        # Opportunity.save() auto-updates probability + stage_changed_at — no
+        # Opportunity.save() auto-updates probability + stage_changed_at, no
         # need to pass update_fields here, the model handles its own bookkeeping.
         opportunity.save()
 

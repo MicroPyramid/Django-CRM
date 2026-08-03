@@ -1,6 +1,6 @@
 # Read the Docs build configuration.
 # The docs dependencies live in backend/pyproject.toml's `docs` group so the
-# site builds with uv, exactly as CI does — one dependency source, one lockfile.
+# site builds with uv, exactly as CI does, one dependency source, one lockfile.
 version: 2
 
 build:

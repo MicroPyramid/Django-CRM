@@ -11,7 +11,7 @@ creates a Case. It runs inside the caller's transaction, so the assignment is
 committed atomically with the Case row.
 
 `dry_run=True` runs the same matching/strategy logic but does NOT mutate
-state — used by the `test/` API endpoint to preview which agent a sample Case
+state, used by the `test/` API endpoint to preview which agent a sample Case
 would route to.
 """
 
@@ -80,10 +80,10 @@ def _match_condition(case_data: dict, condition: dict) -> bool:
     op = condition.get("op", "eq")
     value = condition.get("value")
     if op not in SUPPORTED_OPS:
-        logger.warning("RoutingRule unknown op %r — skipping condition", op)
+        logger.warning("RoutingRule unknown op %r. Skipping condition", op)
         return False
     if not (f in SUPPORTED_FIELDS or f.startswith("custom_fields.")):
-        logger.warning("RoutingRule unknown field %r — skipping condition", f)
+        logger.warning("RoutingRule unknown field %r. Skipping condition", f)
         return False
     actual = _resolve_field(case_data, f)
 
@@ -201,7 +201,7 @@ def _round_robin(rule: RoutingRule, pool: list[Profile], dry_run: bool) -> Profi
 
 
 def _case_to_dict(case) -> dict:
-    """Snapshot the fields the engine reads — keeps real Case + synthetic
+    """Snapshot the fields the engine reads. Keeps real Case + synthetic
     dicts behind the same shape.
 
     The inbound pipeline attaches `_routing_mailbox_id` and

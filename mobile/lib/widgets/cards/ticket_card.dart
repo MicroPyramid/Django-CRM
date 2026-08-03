@@ -4,7 +4,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/ticket.dart';
 import '../common/avatar.dart';
 
-/// Ticket Card — list item for the tickets list.
+/// Ticket Card, list item for the tickets list.
 /// Flat card aesthetic per mobile/DESIGN_SYSTEM.md (no shadow, grey-200 border).
 class TicketCard extends StatelessWidget {
   final Ticket ticketItem;
@@ -279,7 +279,7 @@ class TicketCard extends StatelessWidget {
 
   Widget _buildSlaChip() {
     // Distinguish first-response vs resolution breaches with a tooltip-y
-    // label rather than a separate chip — keeps the card compact.
+    // label rather than a separate chip. Keeps the card compact.
     final isResolution = ticketItem.isResolutionSlaBreached &&
         !ticketItem.isFirstResponseSlaBreached;
     return Container(

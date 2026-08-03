@@ -5,14 +5,14 @@
    *
    * A task is an action item, not a person or a record, so the page is built
    * around the verb. The identity mark is a completion circle at the leading
-   * edge of the title — the universal "tick to finish" control — and it is the
+   * edge of the title, the universal "tick to finish" control, and it is the
    * same one-field PATCH the list row sends, in the position the eye already
    * goes to. Everything below is the note, the parent record, the people, and
    * the conversation.
    *
    * Brought to the shape of the lead and contact detail pages: the flat
    * read-only comment list is now a writable activity feed that takes comments
-   * AND files, day-grouped and filterable. Nothing is faked — every event kind
+   * AND files, day-grouped and filterable. Nothing is faked. Every event kind
    * is backed by a row that exists (`Task` has no history table, so there are no
    * invented status events beyond the record's own creation).
    */
@@ -48,7 +48,7 @@
    * The next single step, said as a step.
    *
    * A task has exactly one, and which one depends on two facts the page
-   * already shows — so this is not new information, it is the same
+   * already shows, so this is not new information, it is the same
    * information with the verb attached. A finished task has no next step.
    */
   let next = $derived.by(() => {
@@ -56,7 +56,7 @@
     if (late) {
       return {
         label: `${late} ${late === 1 ? 'day' : 'days'} late`,
-        text: `This was due ${longDate(task.due_date)}. Finish it or move the date — leaving it late does neither.`
+        text: `This was due ${longDate(task.due_date)}. Finish it or move the date. Leaving it late does neither.`
       };
     }
     if (!task.due_date) {
@@ -73,7 +73,7 @@
   let saving = $state(false);
 
   // The picked file's name, mirrored out of the input so the composer can show
-  // and clear it. `fileInput` is the element itself — a file input's value can
+  // and clear it. `fileInput` is the element itself. A file input's value can
   // only be cleared through the DOM, not by rebinding.
   let fileName = $state('');
   /** @type {HTMLInputElement | undefined} */
@@ -88,14 +88,14 @@
     fileName = '';
   }
 
-  // A task accepts a file on its own — the API saves the attachment in a block
-  // separate from the comment — so the composer sends when there is either text
+  // A task accepts a file on its own, the API saves the attachment in a block
+  // separate from the comment, so the composer sends when there is either text
   // or a file, and the button says which it will do.
   let canSubmit = $derived(Boolean(comment.trim() || fileName));
 
   // ── activity feed ────────────────────────────────────────────────────────
   // Three real kinds (comment / file / created). The filter only appears once
-  // there is a file to filter — with nothing but comments it would sort one pile.
+  // there is a file to filter. With nothing but comments it would sort one pile.
   let hasFiles = $derived(activity.some((/** @type {any} */ e) => e.type === 'file'));
   let filter = $state(/** @type {'all'|'comments'|'files'} */ ('all'));
   let shown = $derived(
@@ -109,7 +109,7 @@
 
   /**
    * The line under an event: "Attached" for a file, the author where known, then
-   * how long ago — joined so no separator dangles when a part is missing.
+   * how long ago, joined so no separator dangles when a part is missing.
    * @param {{type:string,by:string|null,at:string}} e
    */
   function metaFor(e) {
@@ -360,7 +360,7 @@
     <div class="v2-label v2-rail-head">Assigned to</div>
     <!-- A multi-select, not a single one. `assigned_to` is many-to-many and
          the API rewrites the whole list on every save, so a one-owner picker
-         would silently drop co-assignees — and the seeded org has tasks with
+         would silently drop co-assignees, and the seeded org has tasks with
          two. -->
     <form method="POST" action="?/assign" use:enhance style="padding:0 16px 16px">
       <label class="v2-sr-only" for="assigned_to">Assigned to</label>

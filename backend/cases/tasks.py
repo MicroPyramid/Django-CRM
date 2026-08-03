@@ -27,7 +27,7 @@ CSAT_SEND_DELAY_MINUTES = 30
 # elsewhere in the codebase.
 CSAT_SIGNER_SALT = "cases.csat_survey"
 
-# Cap a single case at 3 escalations total — past that, a human needs to step in.
+# Cap a single case at 3 escalations total. Past that, a human needs to step in.
 ESCALATION_COUNT_CAP = 3
 # Minimum gap between escalation attempts on the same case (prevents storming).
 ESCALATION_COOLDOWN_MINUTES = 60
@@ -87,7 +87,7 @@ def _dispatch_breach(case, action, target_profile, team, org_id):
                 send_email_to_assigned_user.delay(recipients, str(case.id), str(org_id))
             except (
                 Exception
-            ):  # pragma: no cover — broker glitches shouldn't lose the escalation
+            ):  # pragma: no cover. Broker glitches shouldn't lose the escalation
                 logger.exception(
                     "Failed to enqueue escalation email for case=%s", case.pk
                 )
@@ -230,7 +230,7 @@ def csat_signer() -> TimestampSigner:
 
 
 def hash_csat_token(token: str) -> str:
-    """SHA-256 hex digest. We never store raw tokens — only their hash."""
+    """SHA-256 hex digest. We never store raw tokens, only their hash."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -257,7 +257,7 @@ def send_csat_survey(case_id, org_id):
       - The org has flipped `csat_enabled` off.
       - The case has no contact with an email (logged, not raised).
       - The case has been reopened in the meantime (status no longer
-        Closed) — the spec's reopen-protection clause.
+        Closed): the spec's reopen-protection clause.
       - A survey row already exists for this case (don't double-send).
     """
     set_rls_context(org_id)
@@ -267,7 +267,7 @@ def send_csat_survey(case_id, org_id):
         return None
     if case.status != "Closed":
         logger.info(
-            "send_csat_survey: case=%s status=%s — likely reopened, skipping",
+            "send_csat_survey: case=%s status=%s, likely reopened, skipping",
             case_id,
             case.status,
         )
@@ -313,7 +313,7 @@ def send_csat_survey(case_id, org_id):
     try:
         html = render_to_string("csat/survey_email.html", context=context)
     except Exception:
-        # Template missing in dev — fall back to a plain link so the task
+        # Template missing in dev: fall back to a plain link so the task
         # still records the survey row + token. Production has the template.
         html = (
             f'<p>Hi {contact.first_name or "there"},</p>'
@@ -322,7 +322,7 @@ def send_csat_survey(case_id, org_id):
         )
 
     msg = EmailMessage(
-        subject=f"How did we do? — {case.name}",
+        subject=f"How did we do?, {case.name}",
         body=html,
         to=[contact.email],
     )
@@ -342,7 +342,7 @@ def send_csat_survey(case_id, org_id):
 
 
 # ---------------------------------------------------------------------------
-# Tier 3 time-tracking — auto-stop forgotten timers.
+# Tier 3 time-tracking: auto-stop forgotten timers.
 
 # A running timer this old gets killed by the Celery beat. Hand-tuned: 12h
 # covers an overnight forgotten timer without clobbering a mid-day session

@@ -3,8 +3,8 @@
    * Editing a task.
    *
    * Same single "attached to" question as the new-task form, plus the two
-   * hidden originals that let the save tell a real change from a re-send —
-   * see the action for why that distinction matters here.
+   * hidden originals that let the save tell a real change from a re-send.
+   * See the action for why that distinction matters here.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';

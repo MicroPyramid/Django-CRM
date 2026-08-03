@@ -11,7 +11,7 @@ export async function load({ cookies, params }) {
 export const actions = {
   /**
    * The form posts here. The client-side checks in `+page.svelte` mirror the
-   * API's rules so somebody finds out before they press save — they are not
+   * API's rules so somebody finds out before they press save. They are not
    * the thing that enforces them. Anything reaching this action is validated
    * again by the DRF serializer, and a request that skips the page entirely
    * meets exactly the same rules.
@@ -24,7 +24,7 @@ export const actions = {
     const form = await request.formData();
 
     // Only fields the form actually submitted. A field that is absent stays
-    // absent all the way to the PATCH, where absent means "leave it alone" —
+    // absent all the way to the PATCH, where absent means "leave it alone",
     // which is how the disabled status select on a converted lead avoids
     // sending a value that `validate_status` would reject.
     /** @type {Record<string, any>} */
@@ -37,7 +37,7 @@ export const actions = {
      * The owner is only sent when somebody actually changed it.
      *
      * `assigned_to` is many-to-many and this form offers a single select, so
-     * sending it unconditionally rewrites the whole list from one value — a
+     * sending it unconditionally rewrites the whole list from one value, a
      * lead with two people on it loses one every time anybody edits a phone
      * number. Found while wiring the pipeline, which has the same shape; the
      * two forms should keep behaving the same way.
@@ -50,8 +50,8 @@ export const actions = {
      * Custom fields are read against the org's own definitions, re-fetched
      * here rather than trusted from the body: the keys come from the server's
      * list, so a `cf_` input appended to the POST by hand names nothing and is
-     * never read. The API is still the authority — `validate_payload` drops
-     * unknown keys and coerces every value — but the form has no reason to
+     * never read. The API is still the authority; `validate_payload` drops
+     * unknown keys and coerces every value, but the form has no reason to
      * forward something it did not offer.
      *
      * Only sent when the org actually defines Lead fields, so an org with none
@@ -73,7 +73,7 @@ export const actions = {
       await updateLead({ cookies }, params.id, values);
     } catch (/** @type {any} */ err) {
       // `api-helpers` flattens DRF's field errors into one string. Surface it
-      // rather than a generic failure — "email: lead with this email already
+      // rather than a generic failure: "email: lead with this email already
       // exists" tells somebody what to change; "Could not save" does not.
       return fail(400, { values, message: String(err?.message ?? 'Could not save this lead.') });
     }

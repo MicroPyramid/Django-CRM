@@ -132,7 +132,7 @@ def _extract_entity_fields(schema, entity):
     """Walk an OpenAPI 3 dict and return a field map for `entity`.
 
     Result shape: {field_name: {"type": str, "required": bool, "enum": [...]?}}
-    Returns {} (never raises) when no component matches — graceful degradation.
+    Returns {} (never raises) when no component matches: graceful degradation.
     """
     if not isinstance(schema, dict):
         return {}
@@ -174,7 +174,7 @@ def _extract_entity_fields(schema, entity):
             entry["enum"] = enum
         result[field] = entry
 
-    # Merge `required` from any write/request variant — DRF often marks fields
+    # Merge `required` from any write/request variant, DRF often marks fields
     # required only on the create/request serializer.
     for name in matches:
         if name == read_name:

@@ -26,7 +26,7 @@ def set_rls_context(org_id):
     Args:
         org_id: Organization UUID (string or UUID object)
     """
-    # SQLite (test backend) has no set_config() — RLS is a Postgres feature.
+    # SQLite (test backend) has no set_config(). RLS is a Postgres feature.
     if connection.vendor != "postgresql":
         return
     if org_id:
@@ -72,7 +72,7 @@ def send_magic_link_email(token_id, raw_code=None):
     """Send a magic-link or OTP-code email for passwordless authentication.
 
     For `delivery == "code"` rows, the caller passes `raw_code` (the plaintext
-    OTP) — only the hash is stored on the token row, so the plaintext can't be
+    OTP), only the hash is stored on the token row, so the plaintext can't be
     recovered from the DB by this task.
     """
     magic_token = MagicLinkToken.objects.filter(id=token_id).first()
@@ -383,7 +383,7 @@ def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
     """Delete already-read notifications older than ``days`` days.
 
     Schedule via celery-beat (recommended cadence: nightly). Runs once across
-    all orgs — RLS does not need a per-org context here because the query
+    all orgs. RLS does not need a per-org context here because the query
     targets `read_at`, which is intrinsic to the row, not org-scoped logic.
     """
     cutoff = timezone.now() - timedelta(days=days)
@@ -405,12 +405,12 @@ def flush_expired_refresh_tokens():
     `OutstandingToken` row per token minted and one `BlacklistedToken` row per
     rotation. An expired token is rejected on its `exp` claim regardless of
     blacklist state, so those rows stop carrying security value once
-    `expires_at` passes — and would otherwise grow unbounded, one row per login
+    `expires_at` passes, and would otherwise grow unbounded, one row per login
     and per refresh. Deleting the outstanding row cascades to its blacklist
     entry.
 
     Equivalent to simplejwt's `manage.py flushexpiredtokens`; schedule via
-    celery-beat (nightly is plenty). Not org-scoped — `expires_at` is intrinsic
+    celery-beat (nightly is plenty). Not org-scoped; `expires_at` is intrinsic
     to the row, so no RLS context is needed.
 
     Returns the number of outstanding-token rows removed.

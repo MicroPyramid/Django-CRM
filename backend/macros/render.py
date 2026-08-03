@@ -18,8 +18,8 @@ _PLACEHOLDER_RE = re.compile(r"%([a-zA-Z_][a-zA-Z0-9_]*)%")
 def _profile_full_name(profile) -> str:
     """Best display name for a Profile.
 
-    The project's `User` model has no first_name/last_name fields — only
-    email — so the agent display falls back to the email's local part to
+    The project's `User` model has no first_name/last_name fields, only
+    email, so the agent display falls back to the email's local part to
     keep replies readable ("alex@…" rather than the full address).
     """
     user = getattr(profile, "user", None)
@@ -91,7 +91,7 @@ SUPPORTED_PLACEHOLDERS: tuple[dict[str, str], ...] = (
     {"token": "%customer_email%", "resolves": "That contact's email"},
     {"token": "%case_id%", "resolves": "The case number"},
     {"token": "%case_subject%", "resolves": "The case title"},
-    {"token": "%agent_name%", "resolves": "You — the local part of your email"},
+    {"token": "%agent_name%", "resolves": "You: the local part of your email"},
     {"token": "%agent_email%", "resolves": "Your email"},
     {"token": "%org_name%", "resolves": "The organisation name"},
 )
@@ -108,7 +108,7 @@ def find_unknown_placeholders(body: str | None) -> list[str]:
     order they appear. Tokens are returned with their `%...%` wrapping so
     the UI / API consumer can show them verbatim. The result is non-empty
     only when the macro author has typoed (`%custmer_name%`) or used a
-    token we don't expand server-side — same set as `render_macro`.
+    token we don't expand server-side. Same set as `render_macro`.
     """
     if not body:
         return []

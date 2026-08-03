@@ -269,7 +269,7 @@
               onclick={() => toggleBillable(e)}
               disabled={actionPending || !!e.invoice}
               title={e.invoice
-                ? 'Already invoiced — billable flag is locked'
+                ? 'Already invoiced. Billable flag is locked'
                 : e.billable
                   ? 'Mark non-billable'
                   : 'Mark billable'}

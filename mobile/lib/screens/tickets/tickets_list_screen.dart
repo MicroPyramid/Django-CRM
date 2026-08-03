@@ -18,7 +18,7 @@ import '../../widgets/forms/multi_select_sheet.dart';
 
 const String _filtersPrefsKey = 'tickets_filters_v1';
 
-/// Tickets List Screen — paginated list with server- and client-side filters.
+/// Tickets List Screen, paginated list with server- and client-side filters.
 class TicketsListScreen extends ConsumerStatefulWidget {
   const TicketsListScreen({super.key});
 
@@ -60,7 +60,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
       });
       ref.read(ticketsProvider.notifier).refresh(filters: restored);
     } catch (_) {
-      // Persisted shape mismatch from an older version — ignore and use the
+      // Persisted shape mismatch from an older version, ignore and use the
       // default empty filter.
     }
   }

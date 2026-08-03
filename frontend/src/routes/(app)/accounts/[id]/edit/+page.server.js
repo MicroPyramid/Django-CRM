@@ -17,7 +17,7 @@ export const actions = {
     for (const field of EDITABLE_FIELDS) {
       // Only fields the form actually submitted. A control that is absent or
       // disabled sends nothing, and "nothing" is how PATCH is told to leave a
-      // field alone — see `updateAccount`.
+      // field alone. See `updateAccount`.
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
 
@@ -25,7 +25,7 @@ export const actions = {
      * The owner is only sent when somebody actually changed it.
      *
      * `assigned_to` is many-to-many and this form offers a single select, so
-     * sending it unconditionally rewrites the whole list from one value — an
+     * sending it unconditionally rewrites the whole list from one value, an
      * account with two people on it silently loses one every time anybody
      * edits the phone number. The hidden `assigned_to_original` is what makes
      * "nobody touched this" distinguishable from "somebody chose this".

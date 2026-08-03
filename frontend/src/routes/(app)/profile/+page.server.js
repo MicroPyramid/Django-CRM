@@ -13,7 +13,7 @@ export async function load({ cookies }) {
 /** @type {import('./$types').Actions} */
 export const actions = {
   /**
-   * Edit your own name and phone. Only those two are read out of the form — the
+   * Edit your own name and phone. Only those two are read out of the form. The
    * page shows role, org and access, but they are never posted, and the API
    * would refuse them anyway (ProfileSelfUpdateSerializer names only name and
    * phone). A field appended to the body by hand is not forwarded.
@@ -41,7 +41,7 @@ export const actions = {
   /**
    * Switch to another organisation you belong to. This is not a field edit: the
    * backend re-issues the JWT with the new org claim (and only if you have an
-   * active profile there — else 403), and we swap the httpOnly cookies the shell
+   * active profile there, else 403), and we swap the httpOnly cookies the shell
    * reads so every later request is scoped to the new org. Mirrors the v1 /org
    * picker so the two behave the same.
    */

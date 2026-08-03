@@ -18,7 +18,7 @@ from django.utils import timezone
 from cases.models import Case
 
 # A single reference instant for the whole fixture. Anchoring every timestamp
-# to one `now` keeps the FRT deltas exact — deriving each from its own
+# to one `now` keeps the FRT deltas exact, deriving each from its own
 # timezone.now() call drifts by microseconds, which would nudge a case that
 # meets its SLA exactly (1h against a 1h target) just over the line.
 _BASE = timezone.now()
@@ -83,7 +83,7 @@ def service_cases(org_a, admin_profile):
 
 
 # --------------------------------------------------------------------------
-# Authorization — the admin-only gate (both directions)
+# Authorization: the admin-only gate (both directions)
 
 
 class TestServiceAuthorization:
@@ -92,7 +92,7 @@ class TestServiceAuthorization:
         assert resp.status_code in (401, 403)
 
     def test_non_admin_forbidden(self, user_client, service_cases):
-        """A USER-role member gets 403 — never a personal slice."""
+        """A USER-role member gets 403, never a personal slice."""
         resp = user_client.get("/api/cases/analytics/service/")
         assert resp.status_code == 403
 
@@ -226,7 +226,7 @@ class TestServiceByAgent:
 
 
 # --------------------------------------------------------------------------
-# Empty org — the shape holds so the SSR page never divides by an absent array
+# Empty org: the shape holds so the SSR page never divides by an absent array
 
 
 class TestServiceEmpty:

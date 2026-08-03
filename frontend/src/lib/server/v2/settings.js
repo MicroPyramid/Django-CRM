@@ -1,18 +1,18 @@
 /**
- * Settings hub — the wiring behind `/settings`.
+ * Settings hub: the wiring behind `/settings`.
  *
  * Server-only. The hub summarises every settings destination, so it needs a
- * number from each. Rather than a bespoke `/settings/summary/` endpoint — which
+ * number from each. Rather than a bespoke `/settings/summary/` endpoint, which
  * would have to reproduce, in Python across eight apps, the per-destination
  * rollups the pages already derive (escalation's "breaches going nowhere",
- * inbound's "silently dropping") — this fans out to the same server layers each
+ * inbound's "silently dropping"). This fans out to the same server layers each
  * sub-page uses and assembles their totals. The calls run concurrently, so the
  * hub costs one round of parallel requests, not a dozen sequential ones.
  *
  * People, API tokens and the reopen policy are admin-only: their endpoints 403
  * a member. `listTeam` / `listOrgTokens` already fold that into a `forbidden`
  * sentinel; the reopen fetch throws, so it is caught below. Either way the hub
- * still lists those destinations for a member — it just omits the value and any
+ * still lists those destinations for a member. It just omits the value and any
  * warning it cannot compute, the same way the shell omits the team badge a
  * member cannot count. Every other destination is readable by any member, so a
  * throw from one of those is a real failure and is left to propagate.
@@ -34,7 +34,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Escalation "breaches that went nowhere", counted exactly as the escalation
- * page's `breachesGoingNowhere` does — so the hub's warning matches the page it
+ * page's `breachesGoingNowhere` does, so the hub's warning matches the page it
  * links to. A half is dead when the policy is off, reassigns to nobody, or
  * notifies nobody (no person and no team).
  * @param {any[]} policies
@@ -62,7 +62,7 @@ function escalationRollup(policies) {
 }
 
 /**
- * Mailboxes switched off that are still receiving mail — a customer ignored,
+ * Mailboxes switched off that are still receiving mail, a customer ignored,
  * as opposed to an address deliberately retired. Matches the inbound page's
  * reasoning about which "off" is worth a warning.
  * @param {any[]} mailboxes @param {number} now

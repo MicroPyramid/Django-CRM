@@ -1,12 +1,12 @@
 <script>
   /**
-   * Documents — a model with a full API and, until now, no screen anywhere.
+   * Documents: a model with a full API and, until now, no screen anywhere.
    * `Document` has existed since the first migration and neither v1 nor the
    * Flutter client ever rendered one, so three defects in
    * `/api/documents/` went unnoticed for its whole life: the list crashed for
    * non-admins, uploading a file did not let you open it, and sharing with a
-   * team granted nobody anything. All three are fixed —
-   * `common/tests/test_documents_access.py` covers them in both directions —
+   * team granted nobody anything. All three are fixed;
+   * `common/tests/test_documents_access.py` covers them in both directions,
    * and the page is drawn against the corrected rules.
    *
    * The column that matters here is **who can open it**. On every other v2
@@ -34,7 +34,7 @@
   let totals = $derived(data.totals);
   // Uploading is open to any org member (the server checks only auth + org), so
   // the Upload button shows for everyone. Editing/deleting are the narrow writes
-  // — those are gated per row by `can_write` (creator or admin) below.
+  //. Those are gated per row by `can_write` (creator or admin) below.
 
   let showInactive = $state(false);
   let visible = $derived(documents.filter((d) => showInactive || d.status === 'active'));
@@ -42,7 +42,7 @@
   const ICON = { pdf: FileText, sheet: FileSpreadsheet, text: FileText };
   const iconFor = (kind) => ICON[kind] ?? File;
 
-  /** kB and MB, never bytes — nobody reads a file size in bytes. A missing file
+  /** kB and MB, never bytes. Nobody reads a file size in bytes. A missing file
       has no size the server could read, so it shows an em dash, not "0 kB". */
   function fileSize(bytes) {
     if (bytes == null) return '—';
@@ -54,7 +54,7 @@
    * Who can open a document, in the same terms the server uses: the creator,
    * anyone in `shared_to`, anyone in a team it is shared with, plus admins.
    *
-   * Names rather than a count while there are few enough to read — "Marcus
+   * Names rather than a count while there are few enough to read; "Marcus
    * and Ken" is checkable at a glance and "2 people" is not. Teams are named
    * separately below because "the Support team" is the thing that was chosen,
    * and flattening it to three names loses the reason.
@@ -105,7 +105,7 @@
   {#if visible.length === 0}
     <EmptyState
       title="No documents yet"
-      body="Contracts, runbooks, price sheets — the things you send people often enough to stop hunting for. Share each one with the people or the team who need it; an unshared upload is visible only to you and to admins."
+      body="Contracts, runbooks, price sheets. The things you send people often enough to stop hunting for. Share each one with the people or the team who need it; an unshared upload is visible only to you and to admins."
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
@@ -166,8 +166,8 @@
               <td class="v2-r v2-num v2-muted">{fileSize(d.size_bytes)}</td>
               <td class="v2-r v2-muted">{relativeDays(d.created_at)}</td>
 
-              <!-- Edit is offered only where the server would allow the write —
-                   the uploader or an admin — so the row never presents an action
+              <!-- Edit is offered only where the server would allow the write,
+                   the uploader or an admin, so the row never presents an action
                    that would 403. Managing shares and deleting both live behind
                    it. Reading is broader, but that is what the row already is. -->
               <td class="v2-r">
@@ -220,7 +220,7 @@
     color: var(--v2-slate);
   }
 
-  /* Archived rows stay legible — dimming them to near-invisible is how people
+  /* Archived rows stay legible. Dimming them to near-invisible is how people
      stop believing the archive contains anything. */
   .archived .v2-table-primary {
     color: var(--v2-slate);

@@ -30,7 +30,7 @@
     if (status === 403) return 'Your account does not have permission to view this resource.';
     if (status === 401) return 'Your session may have expired. Sign in again to continue.';
     if (status >= 500)
-      return "An unexpected error occurred on our end. We've been notified — please try again in a moment.";
+      return "An unexpected error occurred on our end. We've been notified. Please try again in a moment.";
     return 'Please check the URL or try going back to where you came from.';
   });
 

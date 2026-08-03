@@ -19,7 +19,7 @@ dependencies:
   jwt_decoder: ^2.0.1
   package_info_plus: ^10.1.0
 
-  # Firebase / Crashlytics (Android only — no iOS GoogleService-Info.plist yet)
+  # Firebase / Crashlytics (Android only, no iOS GoogleService-Info.plist yet)
   firebase_core: ^4.12.1
   firebase_crashlytics: ^5.2.6
   # Icons

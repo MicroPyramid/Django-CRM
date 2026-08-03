@@ -17,7 +17,7 @@ from common.mixins import AuditModel
 # sixth copy from quietly dropping the warning.
 SAMPLE_DATA_HELP_TEXT = (
     "True only for demo rows created by common.packs.applier._apply_sample_data. "
-    "Server-set exclusively — never expose this as a writable field on any "
+    "Server-set exclusively, never expose this as a writable field on any "
     "serializer. It is the sole key common.packs.applier.clear_sample_data uses "
     "to decide what to delete, so a client-writable path here would let a user "
     "mark an arbitrary real record as sample and have it deleted."

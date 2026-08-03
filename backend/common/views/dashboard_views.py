@@ -27,7 +27,7 @@ from opportunity.workflow import DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 from tasks.models import Task
 from tasks.serializer import TaskSerializer
 
-# Sales stages a deal can still be worked (and therefore "age") in — mirrors
+# Sales stages a deal can still be worked (and therefore "age") in: mirrors
 # the open-stage list ApiHomeView uses for its revenue metrics.
 OPEN_STAGES = ["PROSPECTING", "QUALIFICATION", "PROPOSAL", "NEGOTIATION"]
 
@@ -57,7 +57,7 @@ def _fmt_money(amount, currency):
 
 
 def _fmt_date(d):
-    """'Jul 5' — portable (avoids the platform-specific %-d)."""
+    """'Jul 5'. Portable (avoids the platform-specific %-d)."""
     return f"{d:%b} {d.day}"
 
 
@@ -310,8 +310,8 @@ class ApiTodayView(APIView):
       * open deals that have gone quiet (stage-aging yellow/red),
       * tasks overdue or due today.
 
-    Security: every query is org-scoped — the org comes from the JWT via
-    middleware, never the client — and a member sees only rows assigned to or
+    Security: every query is org-scoped. The org comes from the JWT via
+    middleware, never the client, and a member sees only rows assigned to or
     created by them, the same visibility ``ApiHomeView`` applies. Admins see the
     whole org. ``HasOrgContext`` guarantees ``request.profile``/``org`` are set,
     so this never dereferences a ``None`` profile.
@@ -354,7 +354,7 @@ class ApiTodayView(APIView):
         def mine(qs):
             """Restrict a queryset to rows a member may see. ``created_by`` is a
             User FK (compared to ``profile.user``); ``assigned_to`` is an M2M of
-            Profile — the OR-over-a-join can duplicate rows, so distinct()."""
+            Profile: the OR-over-a-join can duplicate rows, so distinct()."""
             return qs.filter(
                 Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
             ).distinct()

@@ -6,7 +6,7 @@ import { createInvoice } from '$lib/server/v2/invoices.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * The builder needs three pickers — account (required), contact (required, the
+ * The builder needs three pickers: account (required), contact (required, the
  * create serializer enforces it and cross-validates it against the account),
  * and the product catalogue for line items. All three reuse the real list
  * layers; nothing here is a fixture. Contacts carry their primary account so

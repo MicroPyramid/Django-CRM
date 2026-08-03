@@ -142,7 +142,7 @@ class TestSLADeadlineWithCalendar:
         assert deadline == datetime(2026, 5, 11, 14, 0, tzinfo=_UTC)
 
     def test_currently_pending_extends_deadline(self, case_a, calendar_a):
-        # Case is currently pending — paused_at set 30 minutes ago.
+        # Case is currently pending; paused_at set 30 minutes ago.
         case_a.created_at = datetime(2026, 5, 11, 9, 0, tzinfo=_UTC)
         case_a.sla_first_response_hours = 4
         case_a.status = "Pending"

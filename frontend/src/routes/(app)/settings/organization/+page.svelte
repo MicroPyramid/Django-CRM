@@ -9,8 +9,8 @@
    * document. The page groups them under that heading instead.
    *
    * Two behaviour switches sit at the bottom. They are not preferences either
-   * — one stops customer surveys org-wide, the other changes what a close
-   * button offers to do — so each says what turning it off actually causes.
+   *: one stops customer surveys org-wide, the other changes what a close
+   * button offers to do, so each says what turning it off actually causes.
    * They are real `Org` columns and, until this page was wired, had no way to
    * be edited at all.
    *
@@ -24,8 +24,8 @@
    * enforce it. A member sees this page read-only.
    *
    * VERTICAL PACK SECTION
-   * `can_edit` — the same admin-derived flag the rest of this page already
-   * uses to gate the "Edit details" link — also gates the pack list and its
+   * `can_edit`: the same admin-derived flag the rest of this page already
+   * uses to gate the "Edit details" link: also gates the pack list and its
    * actions here, because `PackApplyView`/`PackSampleDataView` are ADMIN-only
    * for the identical reason: this is org-wide configuration, not a personal
    * setting. A member sees only which pack (if any) is currently applied,
@@ -33,12 +33,12 @@
    * offered one anyway.
    *
    * Applying is additive-only and idempotent, so the currently-applied pack
-   * stays clickable — re-applying it is expected to report everything
+   * stays clickable. Re-applying it is expected to report everything
    * skipped, not to be disallowed.
    *
    * The report after an apply shows created AND skipped, by name, because a
    * pack applied to an org that already has some of this configured is the
-   * normal case, not a partial failure — a plain success toast would say
+   * normal case, not a partial failure. A plain success toast would say
    * less than what actually happened. "Clear sample data" needs an in-page
    * confirm step (never the native `confirm()`, which blocks the browser
    * automation this app is smoke-tested with) before it deletes anything.
@@ -87,17 +87,17 @@
   };
 
   /**
-   * "Created 18 items, skipped 3 you already had" — the exact wording this
+   * "Created 18 items, skipped 3 you already had". The exact wording this
    * section exists to show instead of a success toast.
    * @param {{ created?: any[], skipped?: any[] }} report
    */
   function reportSummary(report) {
     const created = report?.created?.length ?? 0;
     const skipped = report?.skipped?.length ?? 0;
-    if (!created && !skipped) return 'Nothing to add — this org already has all of it.';
+    if (!created && !skipped) return 'Nothing to add. This org already has all of it.';
     if (!skipped) return `Created ${created} item${created === 1 ? '' : 's'}.`;
     if (!created) {
-      return `Already had everything from this pack — skipped ${skipped} item${skipped === 1 ? '' : 's'} you already had.`;
+      return `Already had everything from this pack, skipped ${skipped} item${skipped === 1 ? '' : 's'} you already had.`;
     }
     return `Created ${created} item${created === 1 ? '' : 's'}, skipped ${skipped} you already had.`;
   }
@@ -201,7 +201,7 @@
                    requires explicit confirmation either way. -->
               <span class="v2-sub" style="font-size:11.5px">
                 Sets how the prompt starts when you close a parent. It never closes a child on its
-                own — you still confirm.
+                own. You still confirm.
               </span>
             </div>
             <Pill tone={org.auto_close_children_on_parent_close ? 'clay' : 'slate'}>
@@ -232,8 +232,8 @@
       <div class="v2-card" style="padding:16px 18px">
         <p class="v2-sub" style="font-size:12.5px;margin:0 0 14px;line-height:1.5">
           A pack adds starter pipelines, tags, custom fields, products and a set of sample
-          records — accounts, contacts, deals, tickets, tasks and leads — for one kind of
-          business. Applying one only fills in what this org is missing — anything already set up
+          records (accounts, contacts, deals, tickets, tasks and leads) for one kind of
+          business. Applying one only fills in what this org is missing. Anything already set up
           is left exactly as it is, and applying the same pack twice is safe.
         </p>
 
@@ -274,13 +274,13 @@
                 {reportSummary(form.report)}
               </p>
               {#if skipped.length}
-                <div class="v2-label" style="margin-bottom:4px">Skipped — already had these</div>
+                <div class="v2-label" style="margin-bottom:4px">Skipped, already had these</div>
                 <ul style="margin:0 0 10px;padding-left:18px;font-size:12.5px;line-height:1.7">
                   {#each skipped as item (item.type + ':' + item.name)}
                     <li>
                       {item.name}
                       <span class="v2-sub" style="font-size:11px">
-                        ({item.type.replaceAll('_', ' ')} — {item.reason})
+                        ({item.type.replaceAll('_', ' ')}, {item.reason})
                       </span>
                     </li>
                   {/each}
@@ -338,7 +338,7 @@
               >
                 <span class="v2-sub" style="font-size:12px">
                   Permanently delete every sample record a pack created for this org? This cannot
-                  be undone — your real records are never touched, and any sample record you have
+                  be undone. Your real records are never touched, and any sample record you have
                   since attached real work to is kept.
                 </span>
                 <button class="v2-btn danger-btn" type="submit" disabled={busy}>
@@ -385,7 +385,7 @@
 
 <style>
   /* Mirrors the destructive-action pattern used on the product-edit page
-     (frontend/src/routes/(app)/invoices/products/[id]/edit/+page.svelte) —
+     (frontend/src/routes/(app)/invoices/products/[id]/edit/+page.svelte):
      same class names, same look, so "delete something" reads the same way
      everywhere in the app. */
   .danger {

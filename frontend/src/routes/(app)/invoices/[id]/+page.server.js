@@ -59,7 +59,7 @@ export const actions = {
     return { paid: true };
   },
 
-  /** Cancel it. 400 if already Cancelled, or if Paid — settled money stays. */
+  /** Cancel it. 400 if already Cancelled, or if Paid. Settled money stays. */
   cancel: async ({ cookies, params }) => {
     try {
       await cancelInvoice({ cookies }, params.id);

@@ -101,7 +101,7 @@
         {/if}
         {#if isPending}
           <p class="pt-1 text-xs text-[var(--text-secondary)] italic">
-            Paused — counter resumes when status leaves Pending.
+            Paused: counter resumes when status leaves Pending.
           </p>
         {/if}
       </dl>

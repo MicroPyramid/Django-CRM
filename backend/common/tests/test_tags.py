@@ -44,7 +44,7 @@ class TestTagsListView:
     def test_unauthenticated(self, unauthenticated_client):
         # DRF converts the auth failure into a 401/403 Response (it does not
         # propagate the exception through the test client), so assert on the
-        # status — the endpoint still rejects an anonymous caller.
+        # status. The endpoint still rejects an anonymous caller.
         resp = unauthenticated_client.get(self.url)
         assert resp.status_code in (
             status.HTTP_401_UNAUTHORIZED,
@@ -202,7 +202,7 @@ class TestTagsUsageAndTotals:
 
     def test_usage_excludes_other_orgs_records(self, admin_client, org_a, org_b):
         """The usage subquery is explicitly org-scoped, so a foreign-org record
-        carrying the same tag row is not counted — proven here on SQLite where
+        carrying the same tag row is not counted. Proven here on SQLite where
         RLS is inert, so only the ORM filter can be doing the scoping."""
         tag = Tags.objects.create(name="Shared", slug="shared", org=org_a)
         Account.objects.create(org=org_a, name="Ours").tags.add(tag)

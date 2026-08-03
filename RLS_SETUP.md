@@ -13,5 +13,5 @@ misconfigured role (empty admin lists, data visible across organizations, and mo
 
 This file is kept only so existing links to `RLS_SETUP.md` keep resolving; it is not maintained
 as a setup guide in its own right. Notably, the number of RLS-protected tables cited in earlier
-versions of this file (24) was out of date — the current, verified count is documented on the
+versions of this file (24) was out of date. The current, verified count is documented on the
 linked page rather than repeated here, precisely so this file can't drift out of sync again.

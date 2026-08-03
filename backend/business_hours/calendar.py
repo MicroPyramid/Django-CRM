@@ -47,7 +47,7 @@ def add_business_hours(start_dt: datetime, hours: float, calendar) -> datetime:
     ``calendar`` is a ``BusinessCalendar`` instance, or ``None`` to fall back
     to 24/7 wall-clock arithmetic. Holidays attached to the calendar are
     skipped (full days off, in the calendar's timezone). The result preserves
-    the input timezone — a UTC ``start_dt`` returns a UTC-aware datetime even
+    the input timezone. A UTC ``start_dt`` returns a UTC-aware datetime even
     if the calendar lives in another zone.
     """
     if hours is None:

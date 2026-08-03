@@ -5,8 +5,8 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 /**
  * API tokens (admin oversight).
  *
- * Server load, so the JWT cookie stays server-side and the raw token value —
- * returned once on create — is handled here, never fetched from the browser.
+ * Server load, so the JWT cookie stays server-side and the raw token value.
+ * Returned once on create, is handled here, never fetched from the browser.
  * The list is admin-only; a non-admin gets `forbidden` back, not a broken page.
  *
  * @type {import('./$types').PageServerLoad}
@@ -17,7 +17,7 @@ export async function load({ cookies }) {
 
 /**
  * Turn a coarse expiry choice into an ISO datetime the API will accept, or null
- * for "never". Kept coarse on purpose — a date picker is more precision than a
+ * for "never". Kept coarse on purpose. A date picker is more precision than a
  * token expiry needs, and "never" is named rather than left as an empty field
  * so the riskiest choice is a deliberate one.
  *
@@ -36,7 +36,7 @@ function expiryFromChoice(choice) {
 export const actions = {
   /**
    * Create a token for the signed-in admin. The server owns the owner (from the
-   * JWT) and returns the raw value once — the page shows it a single time and
+   * JWT) and returns the raw value once. The page shows it a single time and
    * it is unrecoverable after. We never log it.
    */
   create: async ({ cookies, request }) => {
@@ -89,7 +89,7 @@ export const actions = {
 
   /**
    * Revoke every live token on a deactivated owner in one go. The id list is
-   * re-derived from the server, not read from the form — the page cannot ask us
+   * re-derived from the server, not read from the form. The page cannot ask us
    * to revoke an arbitrary set, only the orphaned rows the API itself reports.
    */
   revokeOrphaned: async ({ cookies }) => {

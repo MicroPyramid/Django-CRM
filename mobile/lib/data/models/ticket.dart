@@ -155,7 +155,7 @@ class Ticket {
     return DateTime.now().isAfter(deadline);
   }
 
-  /// Resolution SLA breach — same wall-clock approximation as
+  /// Resolution SLA breach, same wall-clock approximation as
   /// [isFirstResponseSlaBreached] (no business-hours adjustment) so the chip
   /// matches what the user reads on the card.
   bool get isResolutionSlaBreached {
@@ -381,7 +381,7 @@ class Ticket {
   int get hashCode => id.hashCode;
 }
 
-/// Lightweight ref to a parent ticket — used to render the "linked to" tile.
+/// Lightweight ref to a parent ticket, used to render the "linked to" tile.
 class TicketParentSummary {
   final String id;
   final String name;

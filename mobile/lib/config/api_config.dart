@@ -43,7 +43,7 @@ class ApiConfig {
   /// Get user profile with org details (read; ProfileDetailView)
   static String get profile => '$apiBaseUrl/auth/profile/';
 
-  /// Update user profile — only `phone` is editable per backend contract.
+  /// Update user profile, only `phone` is editable per backend contract.
   /// Distinct endpoint from `profile` above (ProfileView vs ProfileDetailView).
   static String get profileUpdate => '$apiBaseUrl/profile/';
 
@@ -90,7 +90,7 @@ class ApiConfig {
   /// Ticket detail (retrieve / update / delete / add comment)
   static String ticketDetail(String id) => '$apiBaseUrl/cases/$id/';
 
-  /// Ticket comment (single — for delete or status checks)
+  /// Ticket comment (single, for delete or status checks)
   static String ticketComment(String commentId) =>
       '$apiBaseUrl/cases/comment/$commentId/';
 
@@ -131,7 +131,7 @@ class ApiConfig {
   static String ticketTimerStart(String id) =>
       '$apiBaseUrl/cases/$id/time-entries/start/';
 
-  /// Time summary for a ticket — totals + per-profile breakdown.
+  /// Time summary for a ticket, totals + per-profile breakdown.
   static String ticketTimeSummary(String id) =>
       '$apiBaseUrl/cases/$id/time-summary/';
 
@@ -139,7 +139,7 @@ class ApiConfig {
   static String timeEntryStop(String entryId) =>
       '$apiBaseUrl/time-entries/$entryId/stop/';
 
-  /// Solutions (Knowledge Base) — list/create.
+  /// Solutions (Knowledge Base). List/create.
   static String get solutions => '$apiBaseUrl/cases/solutions/';
 
   /// Solution detail (GET / PUT / DELETE).

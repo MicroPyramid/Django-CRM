@@ -134,7 +134,7 @@ class TestImportPreview:
     def test_cross_org_account_rejected(
         self, admin_client, admin_profile, org_b, user_b
     ):
-        # Account belongs to org_b but admin is in org_a — must not resolve.
+        # Account belongs to org_b but admin is in org_a, must not resolve.
         Account.objects.create(name="Secret Co", org=org_b, created_by=user_b)
         csv_file = _csv(
             ["name", "status", "priority", "account_name"],
@@ -199,7 +199,7 @@ class TestImportCommit:
         assert case.tags.filter(name="auth").exists()
 
     def test_rolls_back_on_any_error(self, admin_client, org_a, admin_profile):
-        # Mix one good row with one invalid row — neither should be created.
+        # Mix one good row with one invalid row. Neither should be created.
         csv_file = _csv(
             ["name", "status", "priority"],
             [

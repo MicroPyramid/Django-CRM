@@ -1,4 +1,4 @@
-"""Org-scoped global search behind ``GET /api/search/?q=`` — the ⌘K palette.
+"""Org-scoped global search behind ``GET /api/search/?q=``, the ⌘K palette.
 
 ONE endpoint, deliberately. The org comes from the JWT (`request.profile.org`)
 exactly once and every queryset is filtered by it; a per-model fan-out from the
@@ -7,13 +7,13 @@ browser would be as many chances to read another tenant's rows.
 Each type also honours the SAME read visibility as its own list view, so search
 can never surface a record the caller could not open from the list:
 
-* leads / opportunities / invoices — admin (role ``ADMIN`` or a Django
+* leads / opportunities / invoices, admin (role ``ADMIN`` or a Django
   superuser) sees the whole org; everyone else sees only what they created or
   were assigned.
-* accounts / contacts — admin (role ``ADMIN`` or the org-admin flag) sees the
+* accounts / contacts, admin (role ``ADMIN`` or the org-admin flag) sees the
   whole org; everyone else sees created-or-assigned.
-* tickets — reuse ``visible_cases_qs`` (adds the watcher clause).
-* knowledge-base articles — org-wide, every member reads them.
+* tickets. Reuse ``visible_cases_qs`` (adds the watcher clause).
+* knowledge-base articles. Org-wide, every member reads them.
 
 Matching stays on the server; the whole record set never reaches the browser.
 """
@@ -32,7 +32,7 @@ from invoices.models import Invoice
 from leads.models import Lead
 from opportunity.models import Opportunity
 
-# Rows per type. Small on purpose — the palette shows a handful per group and
+# Rows per type. Small on purpose. The palette shows a handful per group and
 # the point is the fastest match, not an exhaustive report.
 PER_TYPE = 6
 # One-character queries match almost everything; wait for a second character.
@@ -43,7 +43,7 @@ def _own_filter(profile):
     """The created-or-assigned clause every assignable list view uses.
 
     ``created_by`` is a FK to ``User`` (not Profile), so it is compared against
-    ``profile.user`` — comparing it to the Profile is the silent always-False
+    ``profile.user``: comparing it to the Profile is the silent always-False
     bug this codebase has hit before.
     """
     return Q(created_by=profile.user) | Q(assigned_to=profile)
@@ -64,7 +64,7 @@ def _scope_superuser(qs, profile, user):
 
 
 class GlobalSearchView(APIView):
-    """``GET /api/search/?q=<query>`` — a handful of matches per record type."""
+    """``GET /api/search/?q=<query>``. A handful of matches per record type."""
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
@@ -158,7 +158,7 @@ class GlobalSearchView(APIView):
                 }
             )
 
-        # Tickets (Case) — the module's own read-visibility helper
+        # Tickets (Case): the module's own read-visibility helper
         cases = (
             visible_cases_qs(profile)
             .select_related("account")
@@ -204,7 +204,7 @@ class GlobalSearchView(APIView):
                 }
             )
 
-        # Knowledge base (Solution) — org-wide, every member reads
+        # Knowledge base (Solution): org-wide, every member reads
         solutions = Solution.objects.filter(org=org).filter(
             Q(title__icontains=q) | Q(description__icontains=q)
         )[:PER_TYPE]

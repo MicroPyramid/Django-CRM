@@ -22,7 +22,7 @@ export const actions = {
       description: form.get('description')?.toString().trim() ?? '',
       status: form.get('status')?.toString() || 'draft',
       // A checkbox that is off submits nothing at all, which on a *create* is
-      // unambiguous — there is no stored value for "unchanged" to mean.
+      // unambiguous. There is no stored value for "unchanged" to mean.
       is_published: form.get('is_published') === 'on'
     };
 

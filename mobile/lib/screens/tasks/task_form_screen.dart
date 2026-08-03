@@ -124,7 +124,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   // Resolve the label for the currently-linked entity from cached lookup
   // providers. The TaskSerializer returns FKs as plain UUIDs (not nested
-  // objects), so we have no embedded name on the edit fetch — we look it up
+  // objects), so we have no embedded name on the edit fetch. We look it up
   // in the same provider used by the picker. Returns null if the cache
   // doesn't have it yet (provider not loaded); the UI falls back to a
   // generic "Selected" hint until the provider warms up.
@@ -241,7 +241,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       'assigned_to': _assigneeIds,
       'custom_fields': _customFields,
     };
-    // Send exactly one parent FK and clear the others — backend's
+    // Send exactly one parent FK and clear the others. Backend's
     // `Task.clean()` rejects multi-parent. On PUT, sending `null` for an
     // unset slot is how the view detects "clear this FK" (task_views.py).
     for (final k in _RelatedKind.values) {

@@ -13,8 +13,8 @@ export const actions = {
    * the note text and the file; who wrote it and which org it belongs to are
    * derived server-side from the JWT (see `addContactNote`), never from the form.
    *
-   * A contact accepts a file on its own — unlike a lead, `ContactDetailView.post`
-   * saves the attachment in a separate block from the comment — so this refuses
+   * A contact accepts a file on its own, unlike a lead, `ContactDetailView.post`
+   * saves the attachment in a separate block from the comment, so this refuses
    * only the empty case: nothing typed and nothing picked. The DRF view enforces
    * the same access as reading the contact, so this action cannot post to a
    * contact the caller could not open.

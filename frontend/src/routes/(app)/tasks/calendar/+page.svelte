@@ -1,12 +1,12 @@
 <script>
   /**
    * The task calendar. One month at a time, dated tasks sitting on the day they
-   * are due — the view that answers "what is coming" the way a list can't.
+   * are due. The view that answers "what is coming" the way a list can't.
    *
    * Two layouts from one set of cells: a seven-column grid on a wide screen, an
    * agenda (only the days that carry work) on a phone, where a 7×6 grid would be
    * unreadable. Both come from `data.weeks`/`data.agenda`, so they can never
-   * show different tasks. Everything here is read-only — the tick, the edit and
+   * show different tasks. Everything here is read-only, the tick, the edit and
    * the drag all live on the other two task views; this one is for seeing.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -26,7 +26,7 @@
     moss: 'var(--v2-moss)'
   };
 
-  /** Overdue trumps priority — a late card is rust whatever it was set to. */
+  /** Overdue trumps priority. A late card is rust whatever it was set to. */
   const dot = (/** @type {any} */ t) =>
     t.overdue ? TONE_VAR.rust : (TONE_VAR[TASK_PRIORITY_TONE[t.priority]] ?? TONE_VAR.slate);
 
@@ -140,7 +140,7 @@
   </div>
 
   <p class="v2-sub v2-pad v2-cal-foot">
-    Tasks without a due date don't appear here —
+    Tasks without a due date don't appear here,
     <a href="/tasks" style="color:inherit">see the task list</a>.
     {#if data.truncated}
       This month has more scheduled tasks than fit on the calendar; the list shows them all.
@@ -214,7 +214,7 @@
     display: flex;
     justify-content: flex-end;
   }
-  /* Today is the one Ember mark on the page — it is "you are here", the nearest
+  /* Today is the one Ember mark on the page. It is "you are here", the nearest
      thing a calendar has to something that needs you. */
   .v2-cal-today-badge {
     display: inline-grid;

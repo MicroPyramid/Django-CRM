@@ -29,7 +29,7 @@ def _google_email_is_verified(claims):
     Google always sends it alongside the ``email`` scope, so its absence means
     the payload is not the shape we think it is. Without this check, a Google
     account carrying an address whose owner never proved control of it is enough
-    to become that address here — which matters because other parts of the
+    to become that address here, which matters because other parts of the
     system key off the email string.
     """
     verified = claims.get("email_verified")
@@ -39,7 +39,7 @@ def _google_email_is_verified(claims):
 def _disabled_account_response():
     """403 for a login attempt by a deactivated account.
 
-    Deactivation is the offboarding lever, so every login path must honour it —
+    Deactivation is the offboarding lever, so every login path must honour it,
     otherwise a revoked user simply signs in again. Kept identical across the
     Google and magic-link flows so clients can handle one shape.
     """
@@ -646,7 +646,7 @@ class MagicLinkRequestView(APIView):
             ip_address=request.META.get("REMOTE_ADDR"),
         )
 
-        # Send email via Celery — pass raw_code only when delivery is "code".
+        # Send email via Celery. Pass raw_code only when delivery is "code".
         send_magic_link_email.delay(str(token_obj.id), raw_code=raw_code)
 
         return Response(

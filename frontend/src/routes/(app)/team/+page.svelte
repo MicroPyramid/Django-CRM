@@ -5,17 +5,17 @@
    * ROLE IS DISPLAYED HERE, DECIDED ON THE SERVER.
    * `role` comes from the Profile the API returned. This page renders it and
    * offers to change it; the server decides whether the change is allowed. Two
-   * rules the endpoint enforces and this page mirrors as hints only — nobody
+   * rules the endpoint enforces and this page mirrors as hints only, nobody
    * changes their own role, and the org keeps at least one admin. Mirroring
    * them is a courtesy so a button does not 400; it is not the control. The
    * real enforcement is in common/views/user_views.py, because anyone can skip
-   * this page entirely with curl — which is exactly how a member used to PATCH
+   * this page entirely with curl, which is exactly how a member used to PATCH
    * themselves to admin before that path was closed.
    *
    * The row that matters most is the quiet one: a deactivated account with a
    * not-yet-revoked API token. Deactivating a login already stops that token at
-   * the door — resolve_valid_pat rejects a token whose profile.is_active is
-   * false — but it is dormant, not revoked, and would authenticate again the
+   * the door; resolve_valid_pat rejects a token whose profile.is_active is
+   * false, but it is dormant, not revoked, and would authenticate again the
    * moment the account is reactivated. That is why the count is here: an
    * offboarding to-do, not a live breach.
    */
@@ -148,7 +148,7 @@
           class="v2-sub"
           style="color:var(--v2-moss);font-size:12.5px;margin:0 0 16px;font-weight:550"
         >
-          {form.invited} is a member now — they show below as “never” signed in until they log in with
+          {form.invited} is a member now. They show below as “never” signed in until they log in with
           that email.
         </p>
       {:else if form?.error}
@@ -161,14 +161,14 @@
         <!--
           A dormant liability, not a live one. Deactivating a profile already
           stops its tokens at login (resolve_valid_pat checks profile.is_active),
-          but it does not revoke the PersonalAccessToken rows — they would
+          but it does not revoke the PersonalAccessToken rows. They would
           authenticate again if the account were reactivated. Worth clearing as
           part of offboarding, hence clay rather than rust.
         -->
         <div style="margin-bottom:20px">
           <NextAction
             label="Loose end"
-            text={`${data.totals.tokens_on_deactivated} API ${data.totals.tokens_on_deactivated === 1 ? 'token belongs' : 'tokens belong'} to a deactivated account. Deactivating already stops them at login, but they are not revoked — reactivating the account would bring them back. Revoke to close that off.`}
+            text={`${data.totals.tokens_on_deactivated} API ${data.totals.tokens_on_deactivated === 1 ? 'token belongs' : 'tokens belong'} to a deactivated account. Deactivating already stops them at login, but they are not revoked. Reactivating the account would bring them back. Revoke to close that off.`}
             action="Review tokens"
             href="/settings/api-tokens"
           />
@@ -197,8 +197,8 @@
                     <Avatar name={m.name} size={27} />
                     <span style="min-width:0">
                       <span class="v2-table-primary">
-                        {m.name}{#if m.is_you}<span class="v2-sub" style="font-weight:400">
-                            — you</span
+                        {m.name}{#if m.is_you}<span class="v2-sub" style="font-weight:400">,
+                            you</span
                           >{/if}
                       </span>
                       <span class="v2-table-secondary" style="display:block">{m.email}</span>
@@ -317,7 +317,7 @@
       </div>
 
       <p class="v2-sub" style="font-size:11.5px">
-        Roles are Admin and Member — the only two the API recognises. Admins can invite people,
+        Roles are Admin and Member, the only two the API recognises. Admins can invite people,
         change roles and edit org settings; the server refuses to let anyone change their own role
         or deactivate the last admin. Editing team membership is not available here yet.
       </p>

@@ -1,7 +1,7 @@
 <script>
   /**
-   * Editing an article is editing its words. The two decisions about it —
-   * approving it, and giving it to customers — are buttons on the article
+   * Editing an article is editing its words. The two decisions about it,
+   * approving it, and giving it to customers, are buttons on the article
    * page, because they are things somebody does once and not fields somebody
    * fills in.
    *
@@ -19,7 +19,7 @@
   let { data, form } = $props();
 
   // `untrack` so a revalidation of the page data cannot overwrite what
-  // somebody has typed — the initial value is read once, on purpose.
+  // somebody has typed. The initial value is read once, on purpose.
   let title = $state(untrack(() => form?.values?.title ?? data.form.title));
   let description = $state(untrack(() => form?.values?.description ?? data.form.description));
   let status = $state(untrack(() => form?.values?.status ?? data.form.status));
@@ -31,7 +31,7 @@
 
   let ready = $derived(title.trim().length > 3 && description.trim().length > 20);
 
-  /** Published articles cannot be moved back down the workflow — see the
+  /** Published articles cannot be moved back down the workflow. See the
       serializer. Saying so beside the select beats a 400 after the save. */
   let locked = $derived(data.article.is_published);
 </script>
@@ -110,7 +110,7 @@
             {#if locked}
               A published article cannot move back down the workflow. Unpublish it first.
             {:else if !data.canRelease}
-              Approving is an admin's call — it is what lets an article go to customers.
+              Approving is an admin's call. It is what lets an article go to customers.
             {:else}
               Approving does not publish it. That is a separate button on the article.
             {/if}

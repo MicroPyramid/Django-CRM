@@ -1,5 +1,5 @@
 /**
- * Tickets — the fifth v2 module wired to the real API.
+ * Tickets: the fifth v2 module wired to the real API.
  *
  * Same rules as `leads.js`, `deals.js`, `accounts.js` and `contacts.js`: this
  * file lives under `$lib/server` because SvelteKit refuses to bundle that
@@ -10,7 +10,7 @@
  * WHY THIS MODULE, AND WHY NOW
  * `/tickets` is the most-linked unwired prefix in the app. The account page
  * and the contact page both list a customer's tickets, and both had to render
- * them as plain text because `/tickets/<uuid>` answered 404 — the fixtures
+ * them as plain text because `/tickets/<uuid>` answered 404. The fixtures
  * were keyed on `'421'`. Timesheet rows, the approvals queue and every
  * notification about a case point here too.
  *
@@ -29,8 +29,8 @@
  *   number than the wall-clock arithmetic the mock page was doing, so the
  *   deadline is taken from the server and not recomputed here.
  * - `next_action` is gone for the fifth time. Nothing on Case suggests what to
- *   do next; the page says what is true — unanswered, waiting on the customer,
- *   nobody assigned — and leaves the advice out.
+ *   do next; the page says what is true: unanswered, waiting on the customer,
+ *   nobody assigned, and leaves the advice out.
  * - `contact` (one name) is really `contacts`, a many-to-many. A ticket can be
  *   raised by nobody, or name three people.
  * - The mock's "Suggested articles" rail is now the articles actually **linked**
@@ -41,7 +41,7 @@
  * WHAT THE FIXTURE GOT RIGHT
  * That the queue's job is to say what to open next, and that a first-reply
  * clock is the thing that decides it. It just measured it against a field
- * nothing in the codebase ever wrote — see `cases/signals.py`.
+ * nothing in the codebase ever wrote. See `cases/signals.py`.
  */
 import { error, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
@@ -53,8 +53,8 @@ export const OPEN_STATUSES = ['New', 'Assigned', 'Pending'];
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too —
- * the file is served off `/media`, not `/api`. Same helper as leads/contacts/tasks.
+ * against the Django origin so the link works from the SvelteKit origin too.
+ * The file is served off `/media`, not `/api`. Same helper as leads/contacts/tasks.
  *
  * @param {string|null|undefined} path
  * @returns {string|null}
@@ -83,8 +83,8 @@ function accountLink(account) {
 /**
  * The subset of a Django case the v2 pages read.
  *
- * `first_response_deadline` and both breach flags come from the serializer —
- * they are business-hours calculations that also account for pause time, and
+ * `first_response_deadline` and both breach flags come from the serializer.
+ * They are business-hours calculations that also account for pause time, and
  * reimplementing them in the browser would produce a second, quietly different
  * answer on the same screen.
  *
@@ -129,12 +129,12 @@ function toRow(row) {
  * The queue, newest first.
  *
  * `slim=true` drops the account and contact catalogues the endpoint used to
- * attach to every list response — they are for the form, not the queue, and
+ * attach to every list response. They are for the form, not the queue, and
  * they were most of a 190 KB payload for five tickets.
  *
  * The API narrows this list for non-admins to tickets they raised, are
  * assigned to, or watch, so what comes back is already what this person may
- * see — and, since the detail view now enforces the same rule, every row here
+ * see, and, since the detail view now enforces the same rule, every row here
  * opens.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -396,7 +396,7 @@ export async function getTicketForEdit({ cookies }, id) {
 /**
  * Turn form values into a request body.
  *
- * Absent stays absent — a field the form did not send is a field the save
+ * Absent stays absent. A field the form did not send is a field the save
  * leaves alone, which is the whole reason for PATCH below.
  *
  * @param {Record<string, any>} values
@@ -410,7 +410,7 @@ function toBody(values) {
     body[field] = value === '' ? null : value;
   }
   // Single-select owner, so the list is empty or one long. Only present when
-  // the form decided it changed — see the action for why that matters.
+  // the form decided it changed. See the action for why that matters.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
@@ -423,7 +423,7 @@ function toBody(values) {
 /**
  * Save the edit form.
  *
- * PATCH, not PUT — five for five now. `CaseDetailView.put` runs
+ * PATCH, not PUT. Five for five now. `CaseDetailView.put` runs
  * `contacts.clear()`, `teams.clear()`, `assigned_to.clear()` and
  * `tags.clear()` unconditionally before re-adding whatever the body carried,
  * so one PUT from a form that holds a single owner would drop every
@@ -443,7 +443,7 @@ export async function updateTicket({ cookies }, id, values) {
  *
  * No `org` and no `created_by` in the body: `CaseListView.post` sets both from
  * `request.profile`. `account` is checked against the caller's org before it is
- * accepted — it used to take anybody's.
+ * accepted. It used to take anybody's.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {Record<string, any>} values
@@ -455,8 +455,8 @@ export async function createTicket({ cookies }, values) {
 /**
  * Post a reply, or an internal note, optionally with a file.
  *
- * The first public reply is what stamps `first_response_at` on the ticket —
- * that happens in a signal, so it holds however the comment was made. An
+ * The first public reply is what stamps `first_response_at` on the ticket.
+ * That happens in a signal, so it holds however the comment was made. An
  * internal note deliberately does not stamp it: a note to the team is not an
  * answer to the customer.
  *
@@ -485,8 +485,8 @@ export async function replyToTicket({ cookies }, id, reply) {
 }
 
 /**
- * `CaseDetailView.get` answers 404 for another org's ticket — deliberately not
- * 403, which would confirm the id exists — and 403 for a ticket inside the org
+ * `CaseDetailView.get` answers 404 for another org's ticket. Deliberately not
+ * 403, which would confirm the id exists, and 403 for a ticket inside the org
  * that this profile neither raised, nor is assigned to, nor watches.
  *
  * It has a third answer the fixtures had no equivalent for: a ticket that was

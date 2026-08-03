@@ -20,7 +20,7 @@
   let sending = $state(/** @type {Record<string, boolean>} */ ({}));
 
   /**
-   * Days past due, or days remaining. A settled invoice has no age — once it
+   * Days past due, or days remaining. A settled invoice has no age, once it
    * is Paid or Cancelled the due date stops meaning anything, and showing
    * "4d late" against a paid invoice is just wrong.
    */
@@ -84,7 +84,7 @@
   {#if invoices.length === 0}
     <EmptyState
       title="Nothing billed yet"
-      body="Invoices show up here once you raise one. A won deal is usually the place to start — the amount and the account are already there."
+      body="Invoices show up here once you raise one. A won deal is usually the place to start. The amount and the account are already there."
     >
       {#snippet icon()}<Receipt size={21} />{/snippet}
       {#snippet actions()}

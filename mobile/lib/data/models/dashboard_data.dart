@@ -147,7 +147,7 @@ class DashboardTask {
   factory DashboardTask.fromJson(Map<String, dynamic> json) {
     // Backend's TaskSerializer returns `account`/`lead` as plain FK UUIDs
     // (strings), not nested {id, name} objects. Only extract a display name
-    // when the field is a Map — otherwise we have a UUID with no name and
+    // when the field is a Map. Otherwise we have a UUID with no name and
     // skip the related-entity badge rather than crashing on String indexing.
     String? accountName;
     final account = json['account'];

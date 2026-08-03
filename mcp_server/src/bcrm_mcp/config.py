@@ -32,7 +32,7 @@ class Settings:
         # required. http: the token arrives per-request in each caller's
         # Authorization header, so a server-side BCRM_TOKEN is not only
         # unnecessary but a footgun (it would make every caller share one
-        # identity and bypass tenant isolation) — reject it outright.
+        # identity and bypass tenant isolation). Reject it outright.
         if transport == STDIO and not token:
             raise SystemExit("BCRM_TOKEN env var is required for stdio transport")
         if transport == HTTP and token:

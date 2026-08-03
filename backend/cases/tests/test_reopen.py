@@ -220,7 +220,7 @@ class TestReopenPolicyAPI:
 
 @pytest.mark.django_db
 class TestReopenAnalytics:
-    """The three settings-page metrics returned alongside the policy — all built
+    """The three settings-page metrics returned alongside the policy, all built
     from the real reopen path (create a comment, let the signal fire)."""
 
     URL = "/api/cases/reopen-policy/"

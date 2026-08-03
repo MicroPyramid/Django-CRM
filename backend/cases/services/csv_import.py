@@ -10,7 +10,7 @@ reported as row errors rather than silently dropped. Tags are auto-created at
 commit if not present.
 
 All reference lookups are bulk-prefetched once per call (one SELECT per
-reference type), not per-row — a 5000-row file with five reference columns
+reference type), not per-row, a 5000-row file with five reference columns
 runs ~6 queries during validation instead of ~25k.
 """
 

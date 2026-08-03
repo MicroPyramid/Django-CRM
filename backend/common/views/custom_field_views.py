@@ -61,7 +61,7 @@ def _records_missing_map(org, definitions):
     field's key (the value pipeline never stores empty/None), so
     missing = <org records of that target_model> − <those carrying the key>.
     Marking a field required only binds new writes, so this counts the rows that
-    predate the rule. Every query is explicitly `org=`-scoped — RLS is inert for
+    predate the rule. Every query is explicitly `org=`-scoped. RLS is inert for
     the app's DB role in dev/test, so the ORM filter is what keeps another org's
     record counts (and their existence) out of this number.
     """
@@ -73,7 +73,7 @@ def _records_missing_map(org, definitions):
     for target_model, defs in by_model.items():
         model = _resolve_target_model(target_model)
         if model is None:
-            # Unknown/unwired target — can't count, report zero rather than 500.
+            # Unknown/unwired target, can't count, report zero rather than 500.
             for defn in defs:
                 result[str(defn.id)] = 0
             continue
@@ -123,7 +123,7 @@ class CustomFieldDefinitionListCreateView(APIView):
         rows = CustomFieldDefinitionSerializer(qs, many=True).data
 
         # `records_missing_value` costs one COUNT over the org's whole record
-        # set per definition, plus one per target model — a `custom_fields ?
+        # set per definition, plus one per target model, a `custom_fields ?
         # key` scan of every Lead the org has, for each field. The settings
         # page needs those numbers; a record page that only wants labels and
         # types to render a form does not, and making it pay for the stat cards
@@ -238,7 +238,7 @@ class CustomFieldDefinitionDetailView(APIView):
                 {"error": True, "errors": "Custom field not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        # Soft delete — historical values on entities stay readable; the field
+        # Soft delete: historical values on entities stay readable; the field
         # just stops appearing in admin UIs and stops accepting new writes.
         obj.is_active = False
         obj.save(update_fields=["is_active", "updated_at"])

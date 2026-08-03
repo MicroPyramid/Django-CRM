@@ -5,7 +5,7 @@
    * VALIDATION HERE IS A UX HINT, NOT A RULE. The serializer requires a name and
    * a numeric price and rejects a duplicate SKU within the org; a non-admin is
    * refused outright. curl and the mobile client reach the API without passing
-   * through this page — the view is the trust boundary (see CLAUDE.md).
+   * through this page. The view is the trust boundary (see CLAUDE.md).
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';
@@ -62,7 +62,7 @@
           required
           maxlength="255"
           value={values.name ?? ''}
-          placeholder="Platform licence — per seat"
+          placeholder="Platform licence, per seat"
         />
       </label>
 
@@ -124,8 +124,8 @@
           name="is_active"
           value={values.is_active === false ? 'false' : 'true'}
         >
-          <option value="true">Sellable — appears in the line-item picker</option>
-          <option value="false">Retired — kept for history, hidden from the picker</option>
+          <option value="true">Sellable, appears in the line-item picker</option>
+          <option value="false">Retired, kept for history, hidden from the picker</option>
         </select>
       </label>
 

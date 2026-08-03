@@ -311,7 +311,7 @@ class Lead {
           .toList();
     }
 
-    // Parse attachments — list backend uses `lead_attachment` inside the
+    // Parse attachments. List backend uses `lead_attachment` inside the
     // serialized lead object; the detail endpoint also returns a separate
     // top-level `attachments` key, which is merged in by the provider.
     List<Attachment> parsedAttachments = [];
@@ -323,7 +323,7 @@ class Lead {
           .toList();
     }
 
-    // Custom fields — backend stores them as a single JSON dict on the
+    // Custom fields, backend stores them as a single JSON dict on the
     // lead row, keyed by the CustomFieldDefinition.key.
     Map<String, dynamic> parsedCustomFields = const {};
     final cf = json['custom_fields'];

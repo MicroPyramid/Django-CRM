@@ -211,7 +211,7 @@ class TestPublicCsatPost:
 
     def test_edit_after_24h_locked(self, client, closed_case):
         survey, token = self._seed(closed_case)
-        # First submit — rewind responded_at past the edit window.
+        # First submit: rewind responded_at past the edit window.
         client.post(
             f"/api/public/csat/{token}/",
             data={"rating": 3},
@@ -259,7 +259,7 @@ class TestCsatAggregate:
                 rating=rating,
                 responded_at=timezone.now(),
             )
-        # One un-responded survey — must not count.
+        # One un-responded survey, must not count.
         case = Case.objects.create(
             org=org_a, name="Cx", status="Closed", priority="Normal",
             closed_on=timezone.now().date(),

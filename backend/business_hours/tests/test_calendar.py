@@ -60,7 +60,7 @@ class TestAddBusinessHours:
         assert result == datetime(2026, 5, 11, 11, 0, tzinfo=_UTC)
 
     def test_skip_holiday(self, calendar_a, holiday_factory):
-        # Make Mon 5/11 a holiday — Mon's 8 hours move to Tue
+        # Make Mon 5/11 a holiday, Mon's 8 hours move to Tue
         holiday_factory(calendar_a, date=date(2026, 5, 11), name="Founders Day")
         start = datetime(2026, 5, 11, 10, 0, tzinfo=_UTC)
         result = add_business_hours(start, 4, calendar_a)

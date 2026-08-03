@@ -3,31 +3,31 @@
 BottleCRM is multi-tenant: every deployment holds more than one organization's data behind the same
 database and the same application process. This page collects the settings and surfaces that matter
 most once you're running something other people depend on, most of which are covered in more depth
-elsewhere in Self-hosting — this page is the checklist, with pointers to the detail.
+elsewhere in Self-hosting. This page is the checklist, with pointers to the detail.
 
 ## Production checklist
 
 - **`DEBUG=False`.** `crm/settings.py` reads it as `os.environ.get("DEBUG", "False").lower() ==
-  "true"`, so it's already `False` by default — the failure mode to avoid is `.env.docker` (which
+  "true"`, so it's already `False` by default. The failure mode to avoid is `.env.docker` (which
   ships `DEBUG=True` for local development) carrying into a production environment unchanged.
-- **A real `SECRET_KEY`**, not the shipped `django-insecure-...` placeholder — see
+- **A real `SECRET_KEY`**, not the shipped `django-insecure-...` placeholder. See
   [Secrets](#secrets) below.
 - **`ALLOWED_HOSTS`** set to your real hostname(s), and **`CSRF_TRUSTED_ORIGINS`** set with a scheme
-  (`https://crm.example.com`, not a bare hostname) — both detailed in
+  (`https://crm.example.com`, not a bare hostname), both detailed in
   [Production deployment](production-deploy.md#required-settings).
 - **`CORS_ALLOW_ALL=False`** (the default) with **`CORS_ALLOWED_ORIGINS`** scoped to your real
   frontend origin(s); `.env.docker` sets `CORS_ALLOW_ALL=True` for local development, which should
   not carry into production either.
-- **`SECURE_PROXY_SSL_HEADER`** added yourself if you terminate TLS at a reverse proxy — nothing in
+- **`SECURE_PROXY_SSL_HEADER`** added yourself if you terminate TLS at a reverse proxy, nothing in
   `crm/settings.py` sets it, so without it Django never considers a proxied request secure and the
   HSTS headers this project does set unconditionally (`SECURE_HSTS_SECONDS`,
-  `SECURE_HSTS_INCLUDE_SUBDOMAINS`, `SECURE_HSTS_PRELOAD`) silently never get sent — see
+  `SECURE_HSTS_INCLUDE_SUBDOMAINS`, `SECURE_HSTS_PRELOAD`) silently never get sent. See
   [Production deployment](production-deploy.md#reverse-proxy).
-- **A non-superuser database role** — see [Database role](#database-role) below.
+- **A non-superuser database role**: see [Database role](#database-role) below.
 - **Don't set `ENV_TYPE=prod` casually.** It's not just a flag: it makes `AWS_BUCKET_NAME`,
   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`, `AWS_SES_REGION_ENDPOINT` and
   `SENTRY_DSN` mandatory (a `KeyError` at startup if any is missing), switches email to Amazon SES,
-  and hardcodes `SESSION_COOKIE_DOMAIN = ".bottlecrm.io"` — a domain specific to this project's own
+  and hardcodes `SESSION_COOKIE_DOMAIN = ".bottlecrm.io"`, a domain specific to this project's own
   SaaS hosting. See [Production deployment](production-deploy.md#static-files) before setting it.
 
 ## Database role
@@ -42,8 +42,8 @@ cd backend
 uv run python manage.py manage_rls --verify-user
 ```
 
-Full detail — how to create the role, how RLS policies are applied, and how to prove isolation holds
-for real data rather than trusting that it does — is in
+Full detail: how to create the role, how RLS policies are applied, and how to prove isolation holds
+for real data rather than trusting that it does, is in
 [PostgreSQL and RLS](postgresql-and-rls.md).
 
 ## Secrets
@@ -51,14 +51,14 @@ for real data rather than trusting that it does — is in
 `SECRET_KEY` does more than Django's usual signing duties here: `SIMPLE_JWT["SIGNING_KEY"]` in
 `crm/settings.py` is set to `SECRET_KEY` directly, so it is also the key every access and refresh
 token is signed and verified with. There is no separate JWT signing-key setting anywhere in this
-codebase — rotating `SECRET_KEY` invalidates every outstanding access and refresh token immediately,
+codebase, rotating `SECRET_KEY` invalidates every outstanding access and refresh token immediately,
 which is worth knowing before you rotate it as a routine maintenance step rather than in response to
 an actual compromise.
 
 `crm/settings.py` itself guards against the worst case of forgetting to set it: if `SECRET_KEY` is
 empty or still starts with `"django-insecure"` **and** `ENV_TYPE` is anything other than `dev`, the
 module raises `ValueError("SECRET_KEY must be set to a secure value in non-dev environments")` at
-import time — a hard startup failure rather than a silent insecure default. That guard only fires
+import time, a hard startup failure rather than a silent insecure default. That guard only fires
 when `ENV_TYPE` is explicitly non-`dev`, so set a real, unique `SECRET_KEY` regardless of whether you
 ever set `ENV_TYPE=prod`.
 
@@ -69,10 +69,10 @@ Three different credential types exist, with different blast radii if one leaks:
 - **Personal access tokens** (`bcrm_pat_...`, managed at `profile/tokens/`) are scoped to the one
   profile that created them. `resolve_valid_pat()` in `backend/common/pat_auth.py` checks
   `pat.profile.is_active` (and `pat.org.is_active`) on every use, so deactivating a profile cuts off
-  its personal access tokens immediately — there's no separate token-revocation step required when
+  its personal access tokens immediately. There's no separate token-revocation step required when
   offboarding someone.
 - **Admin oversight of tokens** is separate from the self-service surface above: `org/tokens/`
-  (`OrgAccessTokenListView`/`OrgAccessTokenDetailView`) is admin-only and org-wide — an admin can see
+  (`OrgAccessTokenListView`/`OrgAccessTokenDetailView`) is admin-only and org-wide. An admin can see
   and revoke any token in their org, including one belonging to a colleague who has since been
   deactivated. It's deliberately a distinct endpoint from `profile/tokens/` rather than a widened
   version of it, so the self-service guard never has to be loosened to support oversight.
@@ -80,8 +80,8 @@ Three different credential types exist, with different blast radii if one leaks:
   privilege of the three: `common/middleware/get_company.py`'s `_process_api_key_auth` resolves a
   request bearing this key to the org's first active `ADMIN` profile, so a leaked org API key is
   equivalent to a leaked admin session for that org, not a leaked user session. It's kept out of
-  every nested API representation and served only by this endpoint. If it's ever exposed — committed
-  to a repo, logged, shared over an insecure channel — rotate it with `POST /api/org/api-key/`; the
+  every nested API representation and served only by this endpoint. If it's ever exposed: committed
+  to a repo, logged, shared over an insecure channel, rotate it with `POST /api/org/api-key/`; the
   response is explicit that "the previous key is no longer valid" immediately on rotation.
 
 ## What to monitor
@@ -97,5 +97,5 @@ watching, with one caveat: of the thirteen event types the model defines
 logged anywhere in the application code as of this writing. `LOGIN_FAILURE`, `LOGOUT`,
 `CROSS_ORG_ATTEMPT`, `API_KEY_USED`, `API_KEY_INVALID`, `MEMBERSHIP_REVOKED` and
 `SUSPICIOUS_ACTIVITY` are defined on the model and have corresponding methods on the `AuditLogger`
-helper, but nothing in the codebase currently calls them — don't rely on this table to surface a
+helper, but nothing in the codebase currently calls them. Don't rely on this table to surface a
 brute-forced login or a bad API key attempt today; it doesn't yet.

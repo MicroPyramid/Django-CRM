@@ -85,7 +85,7 @@
     step = 'select';
     file = null;
     // Clearing the input's value lets the user re-pick the same filename
-    // after editing the file on disk — without this, the browser dedupes
+    // after editing the file on disk, without this, the browser dedupes
     // the change event and the drop zone appears unresponsive.
     if (fileInputEl) fileInputEl.value = '';
     preview = null;
@@ -214,8 +214,8 @@
         Import contacts from CSV
       </Dialog.Title>
       <Dialog.Description>
-        Upload a CSV of contacts. We'll validate every row — including duplicates by email, phone,
-        and name — before writing anything.
+        Upload a CSV of contacts. We'll validate every row, including duplicates by email, phone,
+        and name, before writing anything.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -372,7 +372,7 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-red-800">
-                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'} — fix the CSV before
+                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'}, fix the CSV before
                 importing
               </p>
               <button
@@ -411,7 +411,7 @@
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-red-800">
                 Server rejected {commitErrors.length} row{commitErrors.length === 1 ? '' : 's'} during
-                import — the file may have changed since preview
+                import. The file may have changed since preview
               </p>
               <button
                 type="button"

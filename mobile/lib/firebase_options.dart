@@ -1,4 +1,4 @@
-// Hand-written Firebase config (not from `flutterfire configure`) — Android
+// Hand-written Firebase config (not from `flutterfire configure`). Android
 // is the only configured platform. Values mirror `android/app/google-services.json`.
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'

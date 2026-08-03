@@ -106,7 +106,7 @@ def find_existing_case(parsed: ParsedEmail, org) -> Optional[Case]:
     return None
 
 
-# A tiny helper used by the pipeline when a brand-new Case is created — the
+# A tiny helper used by the pipeline when a brand-new Case is created. The
 # Case.external_thread_id should be the Message-ID of the email that birthed it.
 def short_case_id(case: Case) -> str:
     """8-char prefix used in subject-line fallback threading."""

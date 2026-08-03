@@ -122,7 +122,7 @@
     );
     if (!cardEl) return;
 
-    // Build a crisp, tilted clone for the drag image — the browser default
+    // Build a crisp, tilted clone for the drag image, the browser default
     // mirrors the source element AFTER our style changes apply, which makes
     // the ghost look washed out. An explicit clone keeps it sharp and tactile.
     const rect = cardEl.getBoundingClientRect();

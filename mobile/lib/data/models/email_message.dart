@@ -1,6 +1,6 @@
 /// Inbound/outbound email associated with a ticket.
 ///
-/// Mirrors `cases.models.EmailMessage` — read-only for now. Direction is one
+/// Mirrors `cases.models.EmailMessage`. Read-only for now. Direction is one
 /// of `in` (customer → us) or `out` (us → customer).
 class EmailMessage {
   final String id;

@@ -35,7 +35,7 @@ class _TicketApprovalPanelState extends ConsumerState<TicketApprovalPanel> {
     _load();
   }
 
-  /// Direct fetch — keeps the inbox screen's shared `approvalsProvider`
+  /// Direct fetch. Keeps the inbox screen's shared `approvalsProvider`
   /// state untouched when the user opens a ticket.
   Future<void> _load() async {
     final url = Uri.parse(ApiConfig.approvals).replace(
@@ -189,7 +189,7 @@ class _TicketApprovalPanelState extends ConsumerState<TicketApprovalPanel> {
 
   @override
   Widget build(BuildContext context) {
-    // Don't render anything until the first fetch settles — avoids flashing
+    // Don't render anything until the first fetch settles, avoids flashing
     // an empty panel on every detail open.
     if (!_isLoaded) return const SizedBox.shrink();
     final latest = _latest;

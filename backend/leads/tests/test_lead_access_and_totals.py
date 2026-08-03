@@ -67,7 +67,7 @@ class TestLeadTotals:
     def test_count_covers_the_whole_list_not_one_page(self, admin_client, org_a):
         """The page holds 10; the count has to say 24.
 
-        This is the bug the v2 redesign exists to fix — a total reduced over
+        This is the bug the v2 redesign exists to fix: a total reduced over
         the rows the client happens to be holding, printed as though it
         described the list.
         """
@@ -136,7 +136,7 @@ class TestLeadTotals:
         assert admin_client.get(LEADS_URL).json()["totals"]["count"] == 2
 
     def test_totals_respect_an_applied_filter(self, admin_client, org_a):
-        """A filtered list gets filtered totals — otherwise the number beside
+        """A filtered list gets filtered totals, otherwise the number beside
         the chips contradicts the rows under them."""
         _lead(org_a, email="a@example.com", source="call")
         _lead(org_a, email="b@example.com", source="email")
@@ -150,7 +150,7 @@ class TestLeadTotals:
 @pytest.mark.django_db
 class TestLeadDetailRead:
     """`get_context_data` used to `return Response(...)` on refusal, and
-    `get()` wrapped that in a second Response — so the intended 403 rendered
+    `get()` wrapped that in a second Response, so the intended 403 rendered
     as a 500. It also appended a User to a list of Profile ids, which meant
     the creator was refused access to their own lead."""
 
@@ -188,7 +188,7 @@ class TestLeadDetailRead:
         assert admin_client.get(_detail_url(lead.id)).status_code == 200
 
     def test_unrelated_non_admin_is_refused(self, user_client, org_a):
-        """Neither assigned nor creator — a real 403, not a 500."""
+        """Neither assigned nor creator, a real 403, not a 500."""
         lead = _lead(org_a)
 
         assert user_client.get(_detail_url(lead.id)).status_code == 403
@@ -202,7 +202,7 @@ class TestLeadDetailRead:
 @pytest.mark.django_db
 class TestDuplicateEmail:
     """`unique_lead_email_per_org` had no serializer check in front of it, so a
-    duplicate reached the database and returned an IntegrityError as a 500 —
+    duplicate reached the database and returned an IntegrityError as a 500,
     with nothing naming the field that caused it."""
 
     def test_duplicate_email_is_a_400_naming_the_field(self, admin_client, org_a):
@@ -268,7 +268,7 @@ class TestDuplicateEmail:
 
     def test_clearing_an_email_is_allowed(self, admin_client, org_a):
         """The constraint is conditional on a non-empty email, so the check
-        has to skip empties too — otherwise a second blank-email lead is
+        has to skip empties too: otherwise a second blank-email lead is
         refused for colliding with the first."""
         _lead(org_a, email="")
         mine = _lead(org_a, email="mine@example.com")
@@ -287,7 +287,7 @@ class TestPutClearsRelations:
     `put` calls `.clear()` on tags, contacts, teams and assigned_to before
     re-adding whatever the body carried, so a form that owns only the scalar
     fields strips all four every time somebody corrects a phone number. This
-    is existing behaviour and is left alone — PUT means "replace the whole
+    is existing behaviour and is left alone. PUT means "replace the whole
     resource" and that reading is defensible. It is pinned here because it is
     load-bearing for the frontend's choice of verb, and a future change that
     makes PUT partial should have to notice this test.

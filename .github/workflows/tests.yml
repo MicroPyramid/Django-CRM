@@ -152,7 +152,7 @@ jobs:
       # These two tests skip when mkdocs is absent, so the backend-tests job
       # (which installs no docs group) cannot run them. Without this step the
       # "no internal artifacts published" guard would silently never execute
-      # in CI — a skip reads as a pass.
+      # in CI. A skip reads as a pass.
       - name: Check docs build guards
         working-directory: backend
         env:

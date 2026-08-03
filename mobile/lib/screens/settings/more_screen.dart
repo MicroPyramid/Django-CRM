@@ -36,7 +36,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             // Profile Section
             _buildProfileSection(),
 
-            // Workspace Section — destinations that aren't on the bottom nav.
+            // Workspace Section. Destinations that aren't on the bottom nav.
             _buildSectionHeader('Workspace'),
             _MenuItem(
               icon: LucideIcons.checkSquare,

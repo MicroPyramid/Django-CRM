@@ -1,4 +1,4 @@
-"""Render-helper tests. Pure function — no API/RLS surface here."""
+"""Render-helper tests. Pure function, no API/RLS surface here."""
 
 from types import SimpleNamespace
 
@@ -49,7 +49,7 @@ class TestRenderPlaceholders:
         )
 
     def test_unknown_token_is_left_literal(self):
-        # `%priority%` is not in SUPPORTED_TOKENS — must survive verbatim.
+        # `%priority%` is not in SUPPORTED_TOKENS, must survive verbatim.
         out = render_macro(_macro("priority=%priority%"), case=None, profile=None)
         assert out == "priority=%priority%"
 
@@ -91,7 +91,7 @@ class TestRenderPlaceholders:
         assert "Reset password" in out
 
     def test_agent_name_and_email(self, case_factory, user_profile):
-        # The User model only has `email` — agent_name falls back to the
+        # The User model only has `email`, agent_name falls back to the
         # local-part of the email so signatures stay readable.
         case = case_factory()
         out = render_macro(

@@ -37,7 +37,7 @@ def _valid_token_counts_by_profile(org):
     """{profile_id (str): count of non-revoked, non-expired PATs} for one org.
 
     One query for the whole roster. A token is "valid" if it has not been
-    revoked and has not expired — the same test PersonalAccessToken.is_valid()
+    revoked and has not expired. The same test PersonalAccessToken.is_valid()
     applies per row, expressed as a filter so the count is a single round trip.
     """
     now = timezone.now()
@@ -208,7 +208,7 @@ class UsersListView(APIView, LimitOffsetPagination):
 
         # A not-yet-revoked, unexpired token on a deactivated account is a
         # dormant liability the team page surfaces: it is rejected at login
-        # today (resolve_valid_pat checks profile.is_active — see
+        # today (resolve_valid_pat checks profile.is_active: see
         # test_pat_auth.py::test_inactive_profile_raises), but it would
         # authenticate again the moment the account is reactivated, so it is
         # worth revoking as part of offboarding. Count such tokens per profile
@@ -285,7 +285,7 @@ class UserDetailView(APIView):
         Two rules, both of which the /v2/team UI already advertises as enforced:
 
         * only an admin (or superuser) may hand out access, and
-        * nobody may change their *own* role — an admin included, so the org
+        * nobody may change their *own* role. An admin included, so the org
           cannot be self-locked out of its last admin and a member cannot
           promote themselves.
 
@@ -569,7 +569,7 @@ class UserStatusView(APIView):
                 # org with no admin (self role-change is blocked in the
                 # serializer), and an org with no admin can never invite,
                 # promote or reconfigure itself again. Refuse to deactivate the
-                # last active admin — the rule the /v2/team page advertises.
+                # last active admin, the rule the /v2/team page advertises.
                 target_is_admin = (
                     profile.role == "ADMIN" or profile.is_organization_admin
                 )

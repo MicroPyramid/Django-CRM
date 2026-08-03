@@ -77,7 +77,7 @@ class LeadSerializer(serializers.ModelSerializer):
             # Per-org custom fields (validated via common.custom_fields)
             "custom_fields",
         )
-        # is_sample is server-set only (see leads/models.py) — read-only here
+        # is_sample is server-set only (see leads/models.py). Read-only here
         # even though this serializer is a read/list path today (writes go
         # through LeadCreateSerializer, which never lists this field at all).
         # Defense in depth: a future write path added to this serializer
@@ -109,7 +109,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
         `unique_lead_email_per_org` is a `UniqueConstraint(Lower("email"),
         "org")` conditional on a non-empty email, and nothing checked it before
-        the insert — so a duplicate reached the database and came back as an
+        the insert, so a duplicate reached the database and came back as an
         IntegrityError, which the view does not catch. The caller got a 500 and
         no indication of which field was wrong.
 
@@ -117,7 +117,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         values for the same reasons the constraint does, or the two disagree
         and the 500 comes back for the cases this misses.
 
-        This is a check, not the enforcement — the constraint is still what
+        This is a check, not the enforcement. The constraint is still what
         guarantees it under a race. This exists so the ordinary case is a 400
         that names the field.
         """
@@ -138,7 +138,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
         Validate the *source* state, not just the target. On an update,
         `self.instance` is the lead as it stands in the database, which is the
-        only trustworthy version — the client's idea of the current status is
+        only trustworthy version. The client's idea of the current status is
         not evidence of anything.
 
         Two distinct failures are prevented here:

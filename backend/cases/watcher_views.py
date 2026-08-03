@@ -1,13 +1,13 @@
 """Watch / unwatch / list-watchers REST endpoints.
 
 URL surface (mounted under /api/cases/):
-    POST   /<id>/watch/      — subscribe the requesting profile (idempotent)
-    DELETE /<id>/watch/      — unsubscribe
-    GET    /<id>/watchers/   — list everyone watching the case
-    GET    /watching/        — cases the current profile watches
+    POST   /<id>/watch/: subscribe the requesting profile (idempotent)
+    DELETE /<id>/watch/: unsubscribe
+    GET    /<id>/watchers/: list everyone watching the case
+    GET    /watching/: cases the current profile watches
 
 Authorisation: a user who can see the case can also watch it, using the one
-rule in `cases.access.visible_cases_qs` — admins see everything; non-admins
+rule in `cases.access.visible_cases_qs`, admins see everything; non-admins
 see cases they created OR are assigned to OR already watch (so a watcher who
 was un-assigned can still unsubscribe). This module used to keep its own copy
 of that query, which is how the case detail view came to disagree with it.

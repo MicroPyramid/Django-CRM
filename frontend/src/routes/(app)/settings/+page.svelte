@@ -4,7 +4,7 @@
    *
    * v1 has thirteen settings routes reachable only from a dropdown, so nobody
    * could tell what was configurable without opening each one. This lists them
-   * with the current value beside each — a settings index that does not tell
+   * with the current value beside each. A settings index that does not tell
    * you the current state is a table of contents, not a screen.
    *
    * Grouped by what a setting decides, not by which Django app owns it:
@@ -14,7 +14,7 @@
    * `warn` is the second reason this page exists. Each destination reports
    * whether something there needs attention, so the hub is worth opening even
    * when you did not come to change anything. A warning here always has a
-   * matching explanation on the page it points to — never a badge that leads
+   * matching explanation on the page it points to, never a badge that leads
    * to a screen with nothing on it.
    *
    * Destinations v2 has not built are listed anyway and link to v1, marked as
@@ -33,7 +33,7 @@
 
   /**
    * Weekday hours as one line. When the days do not all match it says so
-   * rather than printing the first day's hours — "09:00–17:00" beside a
+   * rather than printing the first day's hours; "09:00-17:00" beside a
    * calendar where four days run to 17:30 is a summary that is simply wrong,
    * and this is the number an SLA is measured against.
    */
@@ -43,7 +43,7 @@
     const first = open[0];
     const uniform = open.every((d) => d.open === first.open && d.close === first.close);
     return uniform
-      ? `${open.length} days, ${first.open}–${first.close}`
+      ? `${open.length} days, ${first.open}-${first.close}`
       : `${open.length} days, hours vary`;
   });
 
@@ -130,7 +130,7 @@
             ? null
             : data.reopen.is_enabled
               ? `Within ${data.reopen.reopen_window_days} days`
-              : 'Off — closed stays closed',
+              : 'Off. Closed stays closed',
           // Replies arriving outside the window are normal for any window, so
           // that number belongs on the page, not on a warning here. Off is the
           // state worth flagging: it makes every reply to a closed ticket
@@ -164,7 +164,7 @@
           title: 'Tags',
           body: 'Labels shared across accounts, leads, deals and tickets.',
           value: `${data.tagTotals.active} in use`,
-          // Unused tags are housekeeping, not a fault — the tags page lists
+          // Unused tags are housekeeping, not a fault, the tags page lists
           // them without needing the hub to raise an alarm about tidiness.
           warn: false
         },
@@ -254,12 +254,12 @@
       The org API key is deliberately absent from this page. It is a
       credential, it was once exposed through nested serializers, and a
       settings screen that renders it is how the next leak happens. Rotating
-      or revealing it belongs behind an explicit, audited action — not on an
+      or revealing it belongs behind an explicit, audited action, not on an
       index anyone with the URL can load.
     -->
     <p class="v2-sub" style="font-size:11.5px;margin-top:18px;max-width:64ch">
       The organisation API key is not shown here. Credentials are never rendered on a page you can
-      arrive at by browsing — see
+      arrive at by browsing. See
       <a href="/settings/api-tokens" style="color:inherit">API tokens</a> for how token values are handled.
     </p>
   </div>
@@ -272,7 +272,7 @@
   }
 
   /* At 414px the value column squeezes the title to a couple of words per
-     line. Drop it — the destination and what it does are what you navigate
+     line. Drop it. The destination and what it does are what you navigate
      by, and every value is repeated on the page it points to. */
   @media (max-width: 640px) {
     .v2-setting-value {

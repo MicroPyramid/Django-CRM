@@ -1,10 +1,10 @@
-"""Org-wide token oversight — the admin's cross-user view and revoke.
+"""Org-wide token oversight, the admin's cross-user view and revoke.
 
 Distinct from test_pat_api.py, which covers the SELF-scoped /profile/tokens/
 endpoints. These endpoints (/org/tokens/) are the admin oversight half added
 for the /v2/settings/api-tokens page: read every token in the org, revoke any
-of them. Every rule is asserted both ways — the allowed path AND the forbidden
-one — because personal_access_token has no RLS, so the explicit org filter and
+of them. Every rule is asserted both ways, the allowed path AND the forbidden
+one, because personal_access_token has no RLS, so the explicit org filter and
 the IsOrgAdmin gate are the only barriers and a silent regression in either
 would leak or let through cross-tenant/cross-role access.
 """
@@ -46,7 +46,7 @@ class TestOrgTokenList:
         assert by_id[str(theirs.id)]["owner"]["is_active"] is True
 
     def test_non_admin_is_forbidden(self, user_client, user_profile):
-        # A member must not see the whole org's tokens — not even their own via
+        # A member must not see the whole org's tokens, not even their own via
         # this endpoint; self-service lives on /profile/tokens/.
         PersonalAccessToken.generate(profile=user_profile, name="mine")
         resp = user_client.get(LIST_URL)

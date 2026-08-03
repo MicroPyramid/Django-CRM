@@ -31,7 +31,7 @@ def _visible_to(profile):
 
     Three ways in, and each was broken in its own way:
 
-    * **Creator.** `Document.created_by` is a **User** FK — the create path
+    * **Creator.** `Document.created_by` is a **User** FK. The create path
       sets `created_by=request.profile.user`. The old checks compared it to
       `request.profile`, a different model, so the expression was always
       False and the uploader of a document could not open or delete it.
@@ -44,7 +44,7 @@ def _visible_to(profile):
       anything while the interface presented it as a share. Honouring it is
       what makes the stored value mean what it says.
 
-    Scope: this only ever narrows within one org — the caller has already
+    Scope: this only ever narrows within one org. The caller has already
     filtered on `org=request.profile.org`, and RLS is underneath that. It is
     not a substitute for either.
     """
@@ -124,7 +124,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
         ).data
         if results_documents_inactive:
             # This block computes the *inactive* envelope's offset, so it must
-            # key off the last inactive row — not `results_documents_active[-1]`,
+            # key off the last inactive row, not `results_documents_active[-1]`,
             # a copy-paste from the active block above. When the org has archived
             # documents but no active ones (e.g. the only document was just
             # archived), `results_documents_active` is empty and `[-1]` raised
@@ -256,7 +256,7 @@ class DocumentDetailView(APIView):
 
         Being able to read a document does not imply being able to destroy it
         for everyone else, so this stays narrower than `_may_read`: the person
-        who uploaded it, or an admin. `created_by` is a User FK — comparing it
+        who uploaded it, or an admin. `created_by` is a User FK. Comparing it
         to a Profile is the bug that made this branch unreachable.
         """
         if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
@@ -267,15 +267,15 @@ class DocumentDetailView(APIView):
         """Editing is as consequential as deleting, so it is gated the same way.
 
         PUT and PATCH used to authorise on `_may_read`, which meant anyone a
-        document was merely *shared with* — or a member of a team it was shared
-        with — could overwrite its file, rename it, flip its status to
+        document was merely *shared with*, or a member of a team it was shared
+        with, could overwrite its file, rename it, flip its status to
         `inactive` (hiding it from the org), and, on PUT, wipe its entire
         `shared_to`/`teams` list and lock everyone else out. A share hands
         someone a copy to work with; it does not hand them the original to
         rewrite. Replacing the bytes behind a title is at least as destructive
         as deleting the row, so mutation stays exactly as narrow as
         `_may_delete`: the uploader or an admin. Reading (`_may_read`) remains
-        broad on purpose — creator, share, team, admin — because seeing a
+        broad on purpose (creator, share, team, admin), because seeing a
         document and changing it for everyone are different privileges.
         """
         return self._may_delete(document)

@@ -7,7 +7,7 @@ import 'lookup_models.dart';
 
 /// Opportunity type enumeration
 enum OpportunityType {
-  // Sentinel — backend stores this as null (the column is blank=True,null=True).
+  // Sentinel, backend stores this as null (the column is blank=True,null=True).
   // The picker shows this as "Not Specified"; toJson translates it to null so
   // we don't auto-stamp NEW_BUSINESS on deals the user never categorized.
   unspecified('', 'Not Specified'),
@@ -261,7 +261,7 @@ class Deal {
   final List<String> assignedToIds;
   // Raw assigned_to profile maps from the detail endpoint (each entry has
   // `id`, `user_details: { name, email, profile_pic }`). Used to render
-  // every assignee in the detail screen — not just the first.
+  // every assignee in the detail screen, not just the first.
   final List<Map<String, dynamic>> assignedToRaw;
   final Priority priority;
   final List<String> labels;
@@ -291,7 +291,7 @@ class Deal {
   final String? closedByName;
   final String? closedByEmail;
   // Backend-computed aging fields (override the model-derived calculation
-  // when present — they account for per-stage aging config overrides the
+  // when present. They account for per-stage aging config overrides the
   // mobile code doesn't know about).
   final int? daysInStageServer;
   final String? agingStatus;
@@ -429,7 +429,7 @@ class Deal {
       }
     }
 
-    // created_by and closed_by — full user / profile maps.
+    // created_by and closed_by, full user / profile maps.
     String? createdByName;
     String? createdByEmail;
     final cb = json['created_by'];
@@ -457,7 +457,7 @@ class Deal {
       closedByEmail ??= clb['email'] as String?;
     }
 
-    // line_items_total — backend pre-computes; may be int, double, string,
+    // line_items_total. Backend pre-computes; may be int, double, string,
     // or null.
     double? lineItemsTotal;
     final lit = json['line_items_total'];
@@ -606,7 +606,7 @@ class Deal {
   /// IMPORTANT: nullable fields (amount, account, closed_on, description,
   /// opportunity_type) are emitted as explicit `null` when empty so edit-mode
   /// clears actually persist. The backend's PUT uses a non-partial serializer,
-  /// so omitting a key leaves the old value in place — which would silently
+  /// so omitting a key leaves the old value in place, which would silently
   /// drop the user's edit. m2m collections (contacts/tags/teams/assigned_to)
   /// are always sent as arrays (possibly empty) because the view unconditionally
   /// calls `.clear()` then re-adds.

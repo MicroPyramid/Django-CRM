@@ -1,5 +1,5 @@
 /**
- * Service analytics — the wiring behind /v2/tickets/analytics.
+ * Service analytics: the wiring behind /v2/tickets/analytics.
  *
  * Server-only. One admin-only backend call, `/cases/analytics/service/`,
  * returns the whole "service health" page shape; this layer only re-keys the
@@ -8,7 +8,7 @@
  * `byAgent`). The inner field names are already what the page reads.
  *
  * WHY THIS IS ADMIN-ONLY
- * These are org-wide support KPIs — opened/closed volume, first-response
+ * These are org-wide support KPIs: opened/closed volume, first-response
  * attainment across every priority, the case-type mix, and a leaderboard of
  * who is carrying the queue. The per-metric analytics endpoints narrow a
  * non-admin to their own cases; showing a rep those same figures under
@@ -40,7 +40,7 @@ const EMPTY = {
  * gets `{ can_view: false }` and the empty-but-valid shape above.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
- * @param {string | number} [days] optional window length in days (backend clamps 1–90)
+ * @param {string | number} [days] optional window length in days (backend clamps 1-90)
  */
 export async function getServiceAnalytics({ cookies }, days) {
   const query = days ? `?days=${encodeURIComponent(days)}` : '';

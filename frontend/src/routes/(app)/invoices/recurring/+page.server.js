@@ -3,7 +3,7 @@ import { listRecurringInvoices, toggleRecurring } from '$lib/server/v2/recurring
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * The schedules worklist. `load` returns `{ schedules, totals }` — the names the
+ * The schedules worklist. `load` returns `{ schedules, totals }`. The names the
  * page reads; the data layer's own field is `schedules`, so no rename here.
  *
  * @type {import('./$types').PageServerLoad}
@@ -16,7 +16,7 @@ export async function load({ cookies }) {
 export const actions = {
   /**
    * Pause a live schedule or resume a paused one. The id comes from the row, and
-   * the API decides whether this caller may toggle it — a member who is neither
+   * the API decides whether this caller may toggle it. A member who is neither
    * creator nor assignee gets 403.
    */
   toggle: async ({ cookies, request }) => {

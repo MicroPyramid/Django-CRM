@@ -1,4 +1,4 @@
-# Resolution-window scans for MTTR / SLA breach aggregations — see
+# Resolution-window scans for MTTR / SLA breach aggregations. See
 # docs/cases/tier2/reporting.md "Data model changes". The existing
 # (org, -created_at) index doesn't cover queries that filter by resolved_at.
 

@@ -11,7 +11,7 @@ import '../../providers/tickets_provider.dart';
 
 /// Time tracking panel: start/stop timer, manual entry, recent entries.
 ///
-/// Self-contained — owns its own loading state and refreshes on demand. The
+/// Self-contained, owns its own loading state and refreshes on demand. The
 /// parent passes the ticket id and (optionally) the embedded `TimeSummary`
 /// from the case envelope so the totals render before this widget's own
 /// fetch resolves.
@@ -367,7 +367,7 @@ class _RunningTimerCard extends StatelessWidget {
               foregroundColor: AppColors.danger600,
               side: BorderSide(color: AppColors.danger300),
               // Override the global theme's `minimumSize: Size.fromHeight(..)`
-              // which is `Size(∞, X)` — needed so this in-row button doesn't
+              // which is `Size(∞, X)`. Needed so this in-row button doesn't
               // try to layout at infinite width when there's no Expanded parent.
               minimumSize: const Size(0, 36),
             ),

@@ -1,10 +1,10 @@
 /**
- * Your own account — the wiring behind /v2/profile.
+ * Your own account: the wiring behind /v2/profile.
  *
  * Server-only. Read in three calls, none of which reaches past the caller:
  *   - `GET /profile/`         the current profile (own; request.profile),
  *                             extended with the caller's team names.
- *   - `GET /org/`             every org the caller is a member of — scoped to
+ *   - `GET /org/`             every org the caller is a member of, scoped to
  *                             `Profile.objects.filter(user=request.user)`, so it
  *                             is their memberships, never a directory of orgs.
  *   - `GET /profile/tokens/`  the caller's personal access tokens, counted here
@@ -13,7 +13,7 @@
  * The one field the page lets you change is name + phone, over
  * `PATCH /profile/`. Role, org and the access flags are shown but never posted:
  * they decide permissions and are an admin's to set (the endpoint refuses them
- * regardless — see ProfileSelfUpdateSerializer). Switching org is a real action
+ * regardless. See ProfileSelfUpdateSerializer). Switching org is a real action
  * and re-issues the JWT rather than editing a field; that lives in the page's
  * `switchOrg` action, not here.
  */

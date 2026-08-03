@@ -3,7 +3,7 @@
    * What gates a ticket close, and who can clear it.
    *
    * The queue at /v2/tickets/approvals answers "what is waiting on me". This
-   * answers "what will be gated next time, and by whom" — the same rows, a
+   * answers "what will be gated next time, and by whom", the same rows, a
    * different question, which is why it is a settings page and not a tab.
    *
    * One configuration state the model permits and the form does not warn
@@ -11,7 +11,7 @@
    * Profile.role is only ADMIN or USER, so the rule matches nobody and the
    * cases it gates can never be closed by anyone.
    *
-   * Separation of duties — an admin clearing their own requested close — is
+   * Separation of duties, an admin clearing their own requested close, is
    * NOT a gap to warn about: `ApprovalApproveView` rejects an approval whose
    * requester is the approver, unconditionally (no admin exception), so the API
    * enforces it however a rule is configured. An earlier version of this page
@@ -86,7 +86,7 @@
                 <div class="v2-rule-flag">
                   <TriangleAlert size={14} style="color:var(--v2-rust);flex:none" />
                   <span>
-                    This organisation has admins and members — there is no manager role. With no
+                    This organisation has admins and members. There is no manager role. With no
                     named approvers, the first ticket this gates cannot be closed by anyone. Name
                     approvers, or set it to admin.
                   </span>

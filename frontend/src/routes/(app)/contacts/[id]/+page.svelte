@@ -2,21 +2,21 @@
   /**
    * A person, and everything that person is involved in.
    *
-   * The rail holds the identity fields — those genuinely are label/value
+   * The rail holds the identity fields. Those genuinely are label/value
    * pairs. The body holds what is happening: the deals they are named on, the
-   * tasks that name them, the tickets they are on, and — now writable — the log
+   * tasks that name them, the tickets they are on, and, now writable, the log
    * of what has been said and shared. v1 put all of it in one flat form and
    * answered none of it.
    *
    * The mock version of this page leant on two fields that do not exist: a
    * `relationship` ("Champion", "Blocker"), and `last_activity_at`. The whole
-   * headline argument was built on the second — how long since anyone spoke to
-   * this person — and nothing in the CRM records that. What is left is what the
+   * headline argument was built on the second, how long since anyone spoke to
+   * this person, and nothing in the CRM records that. What is left is what the
    * data can support, which is less dramatic and true.
    *
    * Built to the same shape as the lead detail page: an avatar anchors the
    * header, and the activity log takes notes and files because the daily act on
-   * a contact is recording that you spoke to them. Nothing is faked — every
+   * a contact is recording that you spoke to them. Nothing is faked. Every
    * event kind is backed by a row that exists.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -72,7 +72,7 @@
   let saving = $state(false);
 
   // The picked file's name, mirrored out of the input so the composer can show
-  // and clear it. `fileInput` is the element itself — a file input's value can
+  // and clear it. `fileInput` is the element itself. A file input's value can
   // only be cleared through the DOM, not by rebinding.
   let fileName = $state('');
   /** @type {HTMLInputElement | undefined} */
@@ -87,14 +87,14 @@
     fileName = '';
   }
 
-  // A contact accepts a file on its own — the API saves the attachment in a
-  // block separate from the comment — so the composer sends when there is
+  // A contact accepts a file on its own, the API saves the attachment in a
+  // block separate from the comment, so the composer sends when there is
   // either a note or a file, and the button says which it will do.
   let canSubmit = $derived(Boolean(note.trim() || fileName));
 
   // ── activity feed ────────────────────────────────────────────────────────
   // Three real kinds (note / file / created). The filter only appears once there
-  // is a file to filter — with nothing but notes it would sort one pile.
+  // is a file to filter. With nothing but notes it would sort one pile.
   let hasFiles = $derived(activity.some((/** @type {any} */ e) => e.type === 'file'));
   let filter = $state(/** @type {'all'|'notes'|'files'} */ ('all'));
   let shown = $derived(
@@ -108,7 +108,7 @@
 
   /**
    * The line under an event: "Attached" for a file, the author where known, then
-   * how long ago — joined so no separator dangles when a part is missing.
+   * how long ago, joined so no separator dangles when a part is missing.
    * @param {{type:string,by:string|null,at:string}} e
    */
   function metaFor(e) {
@@ -148,7 +148,7 @@
    *
    * Ordered by what stops work: somebody who has left, then somebody nobody
    * can reach, then money riding on a record with no owner. Anything softer
-   * than that gets no banner at all — a page that always shouts is a page
+   * than that gets no banner at all. A page that always shouts is a page
    * people stop reading.
    */
   let headline = $derived(
@@ -247,7 +247,7 @@
             </a>
           {:else}
             <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-              No deals name this person. Add them to the deal they are actually involved in — the
+              No deals name this person. Add them to the deal they are actually involved in. The
               account having deals is a different fact.
             </p>
           {/each}
@@ -449,7 +449,7 @@
       <dd>
         {#if contact.account}
           <a href="/accounts/{contact.account.id}" style="color:inherit">{contact.account.name}</a>
-        {:else}—{/if}
+        {:else}, {/if}
       </dd>
       {#if contact.other_accounts.length}
         <dt>Also at</dt>
@@ -469,12 +469,12 @@
       <dt>Email</dt>
       <dd style="font-size:12px;word-break:break-all">
         {#if contact.email}<a href="mailto:{contact.email}" style="color:inherit">{contact.email}</a
-          >{:else}—{/if}
+          >{:else}, {/if}
       </dd>
       <dt>Phone</dt>
       <dd class="v2-num" style="font-size:12px">
         {#if contact.phone}<a href="tel:{contact.phone}" style="color:inherit">{contact.phone}</a
-          >{:else}—{/if}
+          >{:else}, {/if}
       </dd>
       {#if contact.linkedin_url}
         <dt>LinkedIn</dt>

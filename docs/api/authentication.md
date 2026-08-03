@@ -1,14 +1,14 @@
 # Authentication
 
 This page documents the calls a client makes to sign in and stay signed in: what to send, what
-comes back, and what each failure mode means. For the design behind these endpoints — token
+comes back, and what each failure mode means. For the design behind these endpoints. Token
 lifetimes, claims, why rotation is implemented by hand, why personal access tokens and organization
-API keys exist alongside the JWT — see [Architecture: Authentication](../architecture/authentication.md),
+API keys exist alongside the JWT. See [Architecture: Authentication](../architecture/authentication.md),
 which this page does not repeat or contradict. For a guided walkthrough of picking a sign-in path
 locally, see [First sign-in](../getting-started/first-sign-in.md).
 
-All three interactive sign-in paths below — Google OAuth, Google ID token, and both magic-link
-verify endpoints — mint tokens through the same `OrgAwareRefreshToken.for_user_and_org()` helper and
+All three interactive sign-in paths below, Google OAuth, Google ID token, and both magic-link
+verify endpoints, mint tokens through the same `OrgAwareRefreshToken.for_user_and_org()` helper and
 are public: `permission_classes = []`, `authentication_classes = []`
 (`backend/common/views/auth_views.py`). None of them require an existing token to call.
 
@@ -28,12 +28,12 @@ Request body:
 }
 ```
 
-`redirect_uri` is taken from this field, not from any server-side setting — see
+`redirect_uri` is taken from this field, not from any server-side setting. See
 [Architecture: Authentication](../architecture/authentication.md#organization-api-keys) for the
 related, dead `GOOGLE_REDIRECT_URI` config, and [Google OAuth](../self-hosting/google-oauth.md) for
 the setting that actually matters.
 The view exchanges these with Google, decodes the returned ID token, and rejects the sign-in
-outright if Google's own `email_verified` claim is not `true` — an unverified Google address never
+outright if Google's own `email_verified` claim is not `true`. An unverified Google address never
 reaches the database. On success:
 
 ```json
@@ -45,7 +45,7 @@ reaches the database. On success:
 ```
 
 The token is minted with no org claim (`OrgAwareRefreshToken.for_user_and_org(user, None)`,
-`:190`) — both Google flows always hand back an org-less token (the magic-link flows differ; see
+`:190`), both Google flows always hand back an org-less token (the magic-link flows differ; see
 [Magic links](#magic-links) below), so the client's next call is normally
 [switching organization](#switching-organization).
 
@@ -77,7 +77,7 @@ against `GOOGLE_CLIENT_ID`) and applies the same `email_verified` check as the w
 }
 ```
 
-Note the access token field here is `JWTtoken`, not `access_token` — the two Google flows do not
+Note the access token field here is `JWTtoken`, not `access_token`. The two Google flows do not
 share a response shape, so a client that supports both cannot read the access token the same way
 from each. This response also includes `organizations` directly (the caller's existing memberships),
 which the web callback response above does not; a mobile client can offer org selection without an
@@ -98,14 +98,14 @@ Passwordless sign-in, in two deliveries, across three endpoints:
 `delivery` is optional and defaults to `"link"`; the only other value is `"code"`. This endpoint
 **always returns `200`** with the same body, regardless of whether the address has an account,
 whether it failed validation (a malformed or disposable-domain email), or whether it was rate
-limited (five tokens per address per hour) — every one of those cases falls through to the same
+limited (five tokens per address per hour), every one of those cases falls through to the same
 generic response:
 
 ```json
 {"message": "If this email is valid, you will receive a sign-in link."}
 ```
 
-This is deliberate — see [First sign-in](../getting-started/first-sign-in.md#magic-links) — and
+This is deliberate, see [First sign-in](../getting-started/first-sign-in.md#magic-links), and
 means a client cannot distinguish "sent" from "rejected" from this response; there is no `400` to
 handle here at all. A generated token expires after 10 minutes.
 
@@ -148,13 +148,13 @@ one of them and the response also includes:
 {"current_org": {"id": "<uuid>", "name": "Acme"}}
 ```
 
-This is not gated on having exactly one membership — `Profile.objects.filter(user=user,
+This is not gated on having exactly one membership; `Profile.objects.filter(user=user,
 is_active=True).first()` (`backend/common/views/auth_views.py:740,745-746` for verify, `:874,878-879`
 for verify-code) picks whichever active profile sorts first, and `Profile`'s default ordering is
 `("-created_at",)` (`backend/common/models.py:238`), so for a user in more than one org this binds
 to their **most recently created** membership, not necessarily the one they intend to use next. A
 client for a user who might belong to multiple orgs cannot assume magic-link verification always
-leaves org selection to a later step — it has to check whether `current_org` is present and let the
+leaves org selection to a later step. It has to check whether `current_org` is present and let the
 user switch away from it if it's the wrong one, via
 [switching organization](#switching-organization). If there is no active org membership at all, the
 token comes back org-less, same as the OAuth flows.
@@ -166,7 +166,7 @@ if the email has never signed in before, exactly like the OAuth flows do.
 
 ## Using an access token
 
-Send the access token as `Authorization: Bearer <access_token>`. It is valid for one hour — see
+Send the access token as `Authorization: Bearer <access_token>`. It is valid for one hour. See
 [Token model](../architecture/authentication.md#token-model) for why, and what happens after it
 expires.
 
@@ -187,9 +187,9 @@ user and every organization they have an active profile in:
 
 Two things worth knowing about this specific endpoint: it sets `authentication_classes =
 [JWTAuthentication]` explicitly (`:327`), so unlike most endpoints it does not also accept a
-personal access token or an organization API key — only a JWT works here. And its exact path is one
+personal access token or an organization API key, only a JWT works here. And its exact path is one
 of a short list `GetProfileAndOrg` skips org-context resolution for entirely
-(`backend/common/middleware/get_company.py:29-38`) — the middleware returns immediately without
+(`backend/common/middleware/get_company.py:29-38`). The middleware returns immediately without
 trying to set `request.profile`/`request.org`, so this endpoint never requires an `org_id` claim.
 That is what makes it work with the org-less token an org-less sign-in above produces, and exactly
 what makes it useful for letting a freshly-authenticated client list organizations to choose from.
@@ -208,7 +208,7 @@ pair:
 {"access": "<new access token>", "refresh": "<new refresh token>"}
 ```
 
-Note the field names here — `access` and `refresh` — do not match `access_token`/`refresh_token`
+Note the field names here, `access` and `refresh`, do not match `access_token`/`refresh_token`
 used by the sign-in endpoints above; this is the one response on this page that uses the shorter
 pair. Failure responses: `400` if `refresh` is missing; `401` if the token is expired, malformed,
 or already blacklisted (`TokenError`); `403` if the user account has been deactivated since the
@@ -241,7 +241,7 @@ that has none yet:
 
 `refresh` is optional; when it is sent and belongs to the caller, it is blacklisted as part of the
 switch so the org-less (or previous-org) token stops working immediately rather than staying valid
-for the rest of its 14-day life — see
+for the rest of its 14-day life. See
 [Organization switching](../architecture/authentication.md#organization-switching) for why the
 ownership check on that field matters. Failure responses: `400` if `org_id` is missing or not a
 valid UUID; `403` if the caller has no active profile in the requested org.
@@ -249,7 +249,7 @@ valid UUID; `403` if the caller has no active profile in the requested org.
 ## Local development
 
 For local development against a running backend with `DEBUG=True`, the fastest way to obtain a
-token pair is the `devlogin` management command rather than any of the endpoints above — it needs
+token pair is the `devlogin` management command rather than any of the endpoints above. It needs
 no OAuth provider and no outbound email. It refuses to run at all unless `DEBUG` is `True`. See
 [First sign-in: Local development](../getting-started/first-sign-in.md) for its exact invocation,
 flags, and org-resolution behavior; this page's endpoints are what `devlogin` is a shortcut around,

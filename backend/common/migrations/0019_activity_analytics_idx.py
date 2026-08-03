@@ -1,4 +1,4 @@
-# Composite index used by the cases analytics aggregation queries — see
+# Composite index used by the cases analytics aggregation queries. See
 # docs/cases/tier2/reporting.md "Data model changes". Lets us scan
 # `Case` Activity rows by (entity_type, action, created_at) inside a single
 # org without re-walking the whole table.

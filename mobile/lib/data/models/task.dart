@@ -95,7 +95,7 @@ class Task {
   // the IDs to round-trip through the API; the detail view uses `assignedTo`.
   final List<String> assignedToIds;
   final RelatedEntity? relatedTo;
-  // Raw parent FK IDs from the API — exposed separately because the backend
+  // Raw parent FK IDs from the API, exposed separately because the backend
   // serializes FKs as plain UUID strings (not nested objects), which the
   // `relatedTo` parser misses. Exactly one of these can be non-null per the
   // backend's `Task.clean()` invariant.
@@ -108,7 +108,7 @@ class Task {
   // Team objects, but only the display name is used in the UI today).
   final List<String> teamNames;
   final Map<String, dynamic> customFields;
-  // Task creator — backend serializes via UserSerializer, exposing at least
+  // Task creator, backend serializes via UserSerializer, exposing at least
   // an email. We surface both first/last name (joined) and email so the UI
   // can pick whichever is non-empty.
   final String? createdByName;
@@ -276,7 +276,7 @@ class Task {
         ? Map<String, dynamic>.from(rawCustomFields)
         : const {};
 
-    // Teams — TaskSerializer returns nested objects. Fall back to a string
+    // Teams. TaskSerializer returns nested objects. Fall back to a string
     // if the API ever switches to plain values.
     final List<String> parsedTeamNames = [];
     if (json['teams'] is List) {
@@ -290,7 +290,7 @@ class Task {
       }
     }
 
-    // created_by — UserSerializer shape: {id, email, name, profile_pic}.
+    // created_by, UserSerializer shape: {id, email, name, profile_pic}.
     // Be defensive: backend serializers sometimes return null or a plain id,
     // and `name` may be an empty string for users who never set it.
     String? createdByName;

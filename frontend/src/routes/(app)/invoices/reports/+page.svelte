@@ -4,7 +4,7 @@
    *
    * The one decision that shapes this page: **"not yet due" is not aging.**
    * The API returns it in the same aging response, and v1 draws it as the
-   * first bucket — where it is by far the biggest bar, so the chart reads as
+   * first bucket, where it is by far the biggest bar, so the chart reads as
    * mostly healthy while $80,150 is genuinely late. Here the not-yet-due
    * figure is stated once, as context, and the aging chart contains only money
    * that is actually overdue.
@@ -13,7 +13,7 @@
    * needs, and shipping a charting dependency to draw sixteen rectangles costs
    * more than it explains.
    *
-   * Every figure is server-computed over the whole window — nothing here is
+   * Every figure is server-computed over the whole window, nothing here is
    * summed from a page of invoices.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -177,7 +177,7 @@
               <span class="v2-sub">Not yet due</span>
               <span class="v2-num" style="font-size:13px">{money(aging.not_yet_due.amount)}</span>
               <span class="v2-sub" style="font-size:11px">
-                across {count(aging.not_yet_due.count)} invoices — not late, not shown above
+                across {count(aging.not_yet_due.count)} invoices, not late, not shown above
               </span>
             </div>
           </div>

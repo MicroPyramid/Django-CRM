@@ -258,7 +258,7 @@ class TestThreading:
             org=org_a,
             created_by=admin_user,
         )
-        # Subject identical but no `[Case #...]` marker — must not match.
+        # Subject identical but no `[Case #...]` marker, must not match.
         parsed = parse_raw_email(_raw_email(message_id="<reply@x>", subject="Help"))
         assert find_existing_case(parsed, org_a) is None
 
@@ -563,7 +563,7 @@ class TestMailboxAPI:
         assert response.status_code == 403
 
     def test_non_admin_cannot_read_webhook_secret(self, user_client, org_a):
-        """webhook_secret is the credential a sender signs with — a non-admin
+        """webhook_secret is the credential a sender signs with. A non-admin
         member may see the mailbox config but never the secret (list + detail)."""
         mailbox = _make_mailbox(org_a, webhook_secret="s3cr3t-value")
 
@@ -693,7 +693,7 @@ class TestWebhook:
 # TopicArn pinning
 #
 # A valid SNS signature only proves a message came from *some* SNS topic in
-# *some* AWS account — anyone who learns a mailbox UUID could otherwise point
+# *some* AWS account: anyone who learns a mailbox UUID could otherwise point
 # their own topic at the webhook and have AWS sign forged mail for them. The
 # webhook therefore also pins the TopicArn to the mailbox.
 # ---------------------------------------------------------------------------
@@ -787,7 +787,7 @@ class TestTopicArnPinning:
         self, admin_client, org_a
     ):
         """Once pinned, a confirmation from another topic must not steal the
-        mailbox — otherwise the pin is trivially resettable by an attacker."""
+        mailbox. Otherwise the pin is trivially resettable by an attacker."""
         mailbox = _make_mailbox(org_a, topic_arn=SNS_TOPIC)
         with (
             patch("cases.inbound_views.verify_sns_message"),
@@ -841,7 +841,7 @@ class TestTopicArnPinning:
 
 
 # ---------------------------------------------------------------------------
-# Mailbox list analytics — cases_last_30d / last_received_at, attributed to a
+# Mailbox list analytics: cases_last_30d / last_received_at, attributed to a
 # mailbox via the EmailMessage.mailbox FK (set at ingest). Driven through the
 # real pipeline so the FK is populated the way production populates it.
 # ---------------------------------------------------------------------------

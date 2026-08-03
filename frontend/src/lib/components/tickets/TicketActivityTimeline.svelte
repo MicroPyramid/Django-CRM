@@ -118,7 +118,7 @@
           return `${who} changed comment visibility ${m.before ? 'internal' : 'public'} → ${m.after ? 'internal' : 'public'}`;
         }
         if (m.out_of_reopen_window) {
-          return `${who} commented (outside reopen window — ticket stays closed)`;
+          return `${who} commented (outside reopen window. Ticket stays closed)`;
         }
         return `${who} commented`;
       case 'REOPENED':
@@ -163,7 +163,7 @@
         )
         .join('\n');
     }
-    if (m._truncated) return '(metadata truncated — payload too large)';
+    if (m._truncated) return '(metadata truncated. Payload too large)';
     return null;
   }
 </script>

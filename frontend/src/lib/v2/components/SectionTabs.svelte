@@ -3,7 +3,7 @@
   import { TAB_SETS } from '$lib/v2/tabs.js';
 
   /**
-   * Second-level navigation within one destination — Tickets has a queue, an
+   * Second-level navigation within one destination. Tickets has a queue, an
    * approval list and a measurement page, and all three are still "Tickets".
    *
    * This exists so the sidebar stays one level deep. A sidebar that expands

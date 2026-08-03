@@ -64,7 +64,7 @@ from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
 # A ticket is "open" while somebody still owes the customer something. The
-# other three values in STATUS_CHOICE — Closed, Rejected, Duplicate — are all
+# other three values in STATUS_CHOICE (Closed, Rejected, Duplicate) are all
 # ways of being finished with it.
 OPEN_STATUSES = ("New", "Assigned", "Pending")
 
@@ -87,7 +87,7 @@ def apply_case_list_filters(queryset, params):
 
     Shared between CaseListView and WatchingListView so both endpoints accept
     the same filter chips from the mobile client. Caller is responsible for
-    the base scope (org membership, watcher allowance, etc.) — this only
+    the base scope (org membership, watcher allowance, etc.). This only
     layers in user-supplied filters.
     """
     if not params:
@@ -125,7 +125,7 @@ def apply_case_list_filters(queryset, params):
         queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
     if params.get("sla_breached") == "true":
         # Wall-clock approximation matching the mobile card's
-        # `isFirstResponseSlaBreached` getter — `Case.is_sla_*_breached` uses
+        # `isFirstResponseSlaBreached` getter; `Case.is_sla_*_breached` uses
         # business hours, but the badges on both clients compute from
         # created_at + hours, so this filter mirrors what the user actually
         # sees on the row. Postgres-specific (INTERVAL).
@@ -147,7 +147,7 @@ def apply_case_list_filters(queryset, params):
             cf_key = raw_key[3:]
             if cf_key:
                 queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
-    # Ordering — whitelisted so callers can't sort on arbitrary cols.
+    # Ordering: whitelisted so callers can't sort on arbitrary cols.
     ordering = params.get("ordering")
     if ordering in _ALLOWED_CASE_ORDERINGS:
         queryset = queryset.order_by(ordering, "-id")
@@ -162,7 +162,7 @@ class CaseListView(APIView, LimitOffsetPagination):
     def get_context_data(self, **kwargs):
         params = self.request.query_params
         # `-id` is a random UUID, so the default "newest first" was in fact no
-        # order at all — the queue came back shuffled and the page still said
+        # order at all, the queue came back shuffled and the page still said
         # it was sorted. `-created_at` is the order the header promises;
         # `-id` stays as a tiebreak so pagination is stable when a batch of
         # cases shares a timestamp (which the seeded data does exactly).
@@ -190,7 +190,7 @@ class CaseListView(APIView, LimitOffsetPagination):
         if not is_org_admin(self.request.profile):
             # Watcher allowance: a non-admin who is a watcher must still be
             # able to see the case even when un-assigned. The rule now lives
-            # in `cases.access` so the detail view enforces the same one — it
+            # in `cases.access` so the detail view enforces the same one. It
             # used to drop the watcher clause, which meant this list handed
             # somebody a ticket that answered 403 when they clicked it.
             queryset = queryset.filter(
@@ -246,7 +246,7 @@ class CaseListView(APIView, LimitOffsetPagination):
         context["priority"] = PRIORITY_CHOICE
         context["type_of_case"] = CASE_TYPE
         # The account and contact catalogues exist for the case *form*, but
-        # they were serialized in full on every list call — 190 KB of response
+        # they were serialized in full on every list call, 190 KB of response
         # for a queue of five tickets in the seeded org, and it grows with the
         # org rather than with the page. `?slim=true` omits them for callers
         # that only want the queue. The default is unchanged, so v1 and the
@@ -254,8 +254,8 @@ class CaseListView(APIView, LimitOffsetPagination):
         if params.get("slim") != "true":
             context["accounts_list"] = AccountSerializer(accounts, many=True).data
             context["contacts_list"] = ContactSerializer(contacts, many=True).data
-        # `profiles` was computed a few lines up — narrowed to admins for
-        # non-admins, even — and then dropped on the floor. So a ticket form
+        # `profiles` was computed a few lines up, narrowed to admins for
+        # non-admins, even, and then dropped on the floor. So a ticket form
         # had no way to populate an assignee picker from the endpoint that
         # already knew the answer. Same `id` / `user__email` shape the
         # contacts and accounts lists publish.
@@ -650,7 +650,7 @@ class CaseDetailView(APIView):
         elif self.request.profile.user_id != self.cases.created_by_id:
             # `created_by` is a `User`; `Profile.user` is the FK pointing at
             # one, so `User.user` does not exist and this line raised
-            # AttributeError — a 500 for *every* non-admin on *every* ticket
+            # AttributeError, a 500 for *every* non-admin on *every* ticket
             # they were entitled to open. The guard above it compared a
             # Profile to a User and was always true, so nothing shielded it.
             # The admin branch above emits `user__email` keys, so this one does
@@ -748,7 +748,7 @@ class CaseDetailView(APIView):
     )
     def post(self, request, pk, **kwargs):
         params = request.data
-        # `.get()` raised DoesNotExist — a 500 — when the case was missing or
+        # `.get()` raised DoesNotExist, a 500, when the case was missing or
         # belonged to another org. Replying to a ticket that is not there is a
         # 404, not a crash.
         self.cases_obj = self.get_object(pk)
@@ -947,7 +947,7 @@ class CaseCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        """Org-scoped already; `.get()` was the problem — a comment id that
+        """Org-scoped already; `.get()` was the problem. A comment id that
         does not exist raised DoesNotExist and answered 500 instead of 404."""
         try:
             comment = self.model.objects.filter(
@@ -1104,7 +1104,7 @@ class CaseAttachmentView(APIView):
            generic table shared by leads, accounts, contacts, deals, cases and
            tasks, so this endpoint deleted any attachment in the database
            belonging to any organisation, given only its UUID. RLS blocks that
-           in a correctly-configured deployment — but per CLAUDE.md the ORM
+           in a correctly-configured deployment, but per CLAUDE.md the ORM
            filter is the contract and RLS is the safety net, and the dev role
            here is a superuser, so the probe went through.
         2. `request.profile == self.object.created_by` compares a `Profile` to
@@ -1166,7 +1166,7 @@ class CaseSolutionLinkView(APIView):
         # Attaching an article to a ticket changes the ticket, so it takes the
         # same permission as any other change to it. Org alone was the whole
         # check, which meant somebody refused the case with a 403 could still
-        # link to it — and then read the case straight back out of the
+        # link to it, and then read the case straight back out of the
         # article's `linked_cases`. Closing that read-around at the serializer
         # is not enough on its own: writing to a ticket you cannot open is a
         # defect whichever way the data comes back.
@@ -1255,15 +1255,15 @@ def _reopen_analytics(org):
     persists:
     - `reopened_last_30d`: one REOPENED Activity is written per reopen.
     - `replies_after_window_30d`: when an external reply lands too late the
-      signal flags the COMMENT Activity `out_of_reopen_window=True` — the
+      signal flags the COMMENT Activity `out_of_reopen_window=True`, the
       authoritative "reopened nothing" record, judged against the window in
       force at the time (which a recompute here could not reproduce).
     - `median_days_to_reply`: days-from-close-to-reply across every post-close
       external reply we can date. A reply that reopened nulled `closed_on`, so
       its delta survives only in the REOPENED Activity's `days_since_close`; a
       reply that did not reopen left its case Closed, so its delta is
-      `commented_on − closed_on`. The median unions both, with no double count —
-      a reopened case is no longer Closed, so it drops out of the comment side.
+      `commented_on − closed_on`. The median unions both, with no double count.
+      A reopened case is no longer Closed, so it drops out of the comment side.
 
     Every query is `org=`-scoped explicitly (RLS is inert for the app's DB role
     in dev/test), so another org's cases, comments and activities cannot leak in.

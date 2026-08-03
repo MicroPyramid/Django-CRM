@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
-/// Callback invoked when an authenticated request gets a 401 — should hit the
+/// Callback invoked when an authenticated request gets a 401, should hit the
 /// refresh endpoint and update the ApiService's access token, returning true
 /// if the new token is ready and the original request can be retried.
 typedef RefreshTokenCallback = Future<bool> Function();
@@ -89,7 +89,7 @@ class ApiService {
   }
 
   /// Send an HTTP request and transparently retry once on 401 after refreshing
-  /// the access token. The `send` closure must be safe to invoke twice — every
+  /// the access token. The `send` closure must be safe to invoke twice, every
   /// caller below builds a fresh request inside it.
   Future<http.Response> _sendWithRetry({
     required bool requiresAuth,
@@ -155,8 +155,8 @@ class ApiService {
       }
 
       // Handle backend-shaped errors. The Django views use two flavors:
-      //   {"errors": "plain string"}  — top-level error message
-      //   {"errors": {"field": ["msg", ...]}}  — DRF field-level errors
+      //   {"errors": "plain string"}: top-level error message
+      //   {"errors": {"field": ["msg", ...]}}: DRF field-level errors
       if (data.containsKey('errors')) {
         final errors = data['errors'];
         if (errors is String && errors.isNotEmpty) return errors;
@@ -324,7 +324,7 @@ class ApiService {
 
       return ApiResponse(
         success: success,
-        // Preserve the parsed body on failure too — see POST for rationale.
+        // Preserve the parsed body on failure too. See POST for rationale.
         data: data is Map<String, dynamic> ? data : null,
         message: success
             ? null

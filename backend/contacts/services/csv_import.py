@@ -6,14 +6,14 @@ phases re-run validation so the commit endpoint is safe even if called
 directly.
 
 Duplicate policy (per org):
-  * email     — hard error (DB enforces a per-org case-insensitive unique
+  * email: hard error (DB enforces a per-org case-insensitive unique
                 constraint; we mirror it in the importer so users see a clean
                 row-level message instead of an IntegrityError at commit).
-  * phone     — hard error. There is no DB constraint, but most callers
+  * phone: hard error. There is no DB constraint, but most callers
                 consider phone a unique identifier in practice. We normalize
                 using `common.validators.normalize_phone` (digits-only, last
                 10) so "+1 (202) 555-1234" matches "2025551234".
-  * full name — hard error ONLY when the row has neither email nor phone to
+  * full name. Hard error ONLY when the row has neither email nor phone to
                 disambiguate from an existing same-named contact. Two people
                 can legitimately share a name when other identifiers differ.
 
@@ -265,7 +265,7 @@ def parse_and_validate(file_bytes: bytes, org) -> ImportResult:
     errors: list[RowError] = []
     seen_emails: dict[str, int] = {}  # email.lower() -> row number
     seen_phones: dict[str, int] = {}  # normalized phone -> row number
-    # Tracks rows that had NO email and NO phone — the same disambiguation
+    # Tracks rows that had NO email and NO phone, the same disambiguation
     # rule used vs the DB. A row with an email/phone is exempt because the
     # email/phone uniqueness checks already prevent silent duplicates.
     seen_full_names: dict[str, int] = {}  # "first|last".lower() -> row number
@@ -371,7 +371,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org) -> _RefMaps:
     if candidate_phones:
         # Phone has no DB constraint and no normalized column; we have to scan
         # all contacts that have a phone in this org and normalize in Python.
-        # Bounded by org size, not file size — fine for any reasonable tenant.
+        # Bounded by org size, not file size, fine for any reasonable tenant.
         for raw_phone in Contact.objects.filter(org=org).exclude(
             phone__isnull=True
         ).exclude(phone="").values_list("phone", flat=True):
@@ -382,7 +382,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org) -> _RefMaps:
     existing_full_names: set[str] = set()
     if candidate_full_names:
         # Only run this query if any row has a full name but no email and no
-        # phone — that's the only case where full-name dedup applies.
+        # phone. That's the only case where full-name dedup applies.
         for first, last in (
             Contact.objects.filter(org=org)
             .annotate(
@@ -415,7 +415,7 @@ def _validate_and_build(
 ) -> tuple[list[RowError], ValidatedRow | None]:
     """Validate a single row and, on success, return the resolved ValidatedRow.
 
-    All reference resolution uses the prefetched maps — no DB calls here.
+    All reference resolution uses the prefetched maps, no DB calls here.
     """
     errors: list[RowError] = []
 

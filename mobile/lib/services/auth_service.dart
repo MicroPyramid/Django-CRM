@@ -64,7 +64,7 @@ class AuthService {
 
     // Initialize Google Sign-In (required in v7.1.1).
     // serverClientId is the Web OAuth client (client_type: 3 in google-services.json)
-    // — this is the audience the Django backend's GOOGLE_CLIENT_ID verifies against,
+    //. This is the audience the Django backend's GOOGLE_CLIENT_ID verifies against,
     // and it's what makes Android return a usable ID token.
     try {
       await _googleSignIn.initialize(
@@ -79,7 +79,7 @@ class AuthService {
     await _loadFromStorage();
 
     // Wire auto-refresh BEFORE any network calls so the preemptive refresh
-    // below — and every subsequent authenticated request — can hit the
+    // below, and every subsequent authenticated request, can hit the
     // refresh endpoint on 401.
     _apiService.setRefreshCallback(refreshAccessToken);
 
@@ -89,7 +89,7 @@ class AuthService {
     // longer than the 1-hour access lifetime, even though their session is
     // still valid.
     if (_accessToken != null && _isTokenExpired && _refreshToken != null) {
-      debugPrint('AuthService: Access token expired on launch — refreshing...');
+      debugPrint('AuthService: Access token expired on launch, refreshing...');
       await refreshAccessToken();
     }
 
@@ -182,7 +182,7 @@ class AuthService {
   ///
   /// Response shape matches `UserDetailSerializer` (see backend
   /// `MagicLinkVerifyCodeView`), which is different from the Google sign-in
-  /// shape — hence the separate parser instead of `_handleAuthResponse`.
+  /// shape, hence the separate parser instead of `_handleAuthResponse`.
   Future<bool> signInWithMagicCode({
     required String email,
     required String code,
@@ -256,7 +256,7 @@ class AuthService {
   /// Handle authentication response from backend
   Future<void> _handleAuthResponse(Map<String, dynamic> data) async {
     // Backend returns JWTtoken (matching old app response format) and a
-    // refresh_token alongside it — without the refresh token, the access
+    // refresh_token alongside it, without the refresh token, the access
     // token would die in 1 hour with no way to refresh until the user picks
     // an org (which re-issues both via OrgSwitchView).
     _accessToken = data['JWTtoken'] as String?;
@@ -325,7 +325,7 @@ class AuthService {
       _accessToken = newAccess;
       // Backend rotates refresh tokens (ROTATE_REFRESH_TOKENS=True), so the
       // old refresh is blacklisted on success. Only overwrite when the new
-      // one is present — never null out a valid refresh on a malformed reply.
+      // one is present, never null out a valid refresh on a malformed reply.
       if (newRefresh != null) {
         _refreshToken = newRefresh;
       }
@@ -347,7 +347,7 @@ class AuthService {
       debugPrint('AuthService: Switching to organization: ${org.name}...');
 
       // Call switch-org API to get new tokens with org context. The outgoing
-      // refresh token is sent so the backend blacklists it — we replace it below
+      // refresh token is sent so the backend blacklists it. We replace it below
       // either way, and leaving it live keeps a stolen copy working against the
       // previous org until it expires.
       final response = await _apiService.post(ApiConfig.switchOrg, {
@@ -361,7 +361,7 @@ class AuthService {
       }
 
       // Update tokens from response. The backend has now blacklisted the token
-      // we sent, so a malformed reply must not clear the field — mirror the
+      // we sent, so a malformed reply must not clear the field, mirror the
       // guard in refreshAccessToken rather than stranding the session.
       _accessToken = response.data!['access_token'] as String?;
       final newRefresh = response.data!['refresh_token'] as String?;
@@ -415,7 +415,7 @@ class AuthService {
     _selectedOrganization = null;
 
     _apiService.clearAuth();
-    // Leave the refresh callback wired — `refreshAccessToken` already bails
+    // Leave the refresh callback wired, `refreshAccessToken` already bails
     // when `_refreshToken == null`, so it's safe to keep registered. Nulling
     // it here used to break refresh for any signOut → signIn cycle inside
     // the same app session (no path re-registers it).
