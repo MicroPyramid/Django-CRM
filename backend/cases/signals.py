@@ -2,7 +2,7 @@
 Audit-log signal handlers for the Cases app.
 
 Replaces the generic Case CREATE/UPDATE/DELETE handlers in `common/signals.py`
-with finer-grained Activity rows — see `docs/cases/COORDINATION_DECISIONS.md` D1.
+with finer-grained Activity rows. See `docs/cases/COORDINATION_DECISIONS.md` D1.
 
 Verbs emitted from here: CREATE, UPDATE, DELETE, ASSIGN, STATUS_CHANGED,
 PRIORITY_CHANGED, COMMENT, LINKED_SOLUTION, UNLINKED_SOLUTION.
@@ -187,7 +187,7 @@ def case_pre_save_stamp_resolved_at(sender, instance, **kwargs):
     `resolved_at` drives `is_sla_resolution_breached`, the MTTR dashboard and
     the resolution half of the escalation scan. The only code in the repo that
     ever wrote it was `parent_views.close_with_children`; a case closed the
-    ordinary way — the API, the v1 UI, a bulk update, a kanban drag — kept
+    ordinary way (the API, the v1 UI, a bulk update, a kanban drag) kept
     `resolved_at = NULL` forever. Both seeded Closed cases show it.
 
     The consequences ran one way: a resolved case stayed permanently
@@ -219,8 +219,8 @@ def case_pre_save_stamp_resolved_at(sender, instance, **kwargs):
 def _maybe_stamp_first_response(case, comment):
     """Stamp `first_response_at` on the first agent reply to a ticket.
 
-    Nothing wrote this field either — not the API, not the v1 UI, not the
-    inbound-email path — while four things read it: the breach property, the
+    Nothing wrote this field either, not the API, not the v1 UI, not the
+    inbound-email path, while four things read it: the breach property, the
     "first reply" column, the escalation scan and the FRT dashboard. So every
     case in every org was permanently first-response-breached, the escalation
     task re-fired on tickets that had been answered hours ago, and no ticket
@@ -229,7 +229,7 @@ def _maybe_stamp_first_response(case, comment):
 
     "First response" is the first *public* comment from somebody on our side.
     An internal note is not a reply to the customer, and a comment with no
-    `commented_by` is the customer themselves — the same test
+    `commented_by` is the customer themselves. The same test
     `_evaluate_reopen` already uses to tell the two apart.
     """
     if case.first_response_at is not None:
@@ -321,7 +321,7 @@ def _maybe_schedule_csat(case, old_status):
 
     Uses a delayed Celery task so a near-immediate reopen short-circuits
     inside the task body (status re-check). The task itself is also
-    idempotent — a second STATUS_CHANGED → Closed on the same case won't
+    idempotent, a second STATUS_CHANGED → Closed on the same case won't
     create a second survey because of the `OneToOneField` on Case.
     """
     if case.status != "Closed" or old_status == "Closed":
@@ -335,7 +335,7 @@ def _maybe_schedule_csat(case, old_status):
             args=[str(case.id), str(case.org_id)],
             countdown=CSAT_SEND_DELAY_MINUTES * 60,
         )
-    except Exception:  # pragma: no cover — broker outage shouldn't block close
+    except Exception:  # pragma: no cover. Broker outage shouldn't block close
         logger.exception("Failed to enqueue CSAT survey for case=%s", case.pk)
 
 
@@ -440,7 +440,7 @@ def _evaluate_reopen(case, comment):
     case.closed_on = None
     # `.update()` skips signals, so the resolved_at reset that
     # `case_pre_save_stamp_resolved_at` does on a normal save has to be
-    # written out by hand here — a reopened ticket is not a resolved one.
+    # written out by hand here. A reopened ticket is not a resolved one.
     case.resolved_at = None
     Case.objects.filter(pk=case.pk).update(
         status=case.status, closed_on=None, resolved_at=None
@@ -500,7 +500,7 @@ def maybe_reopen_for_inbound_email(case, email_message):
     case.closed_on = None
     # `.update()` skips signals, so the resolved_at reset that
     # `case_pre_save_stamp_resolved_at` does on a normal save has to be
-    # written out by hand here — a reopened ticket is not a resolved one.
+    # written out by hand here. A reopened ticket is not a resolved one.
     case.resolved_at = None
     Case.objects.filter(pk=case.pk).update(
         status=case.status, closed_on=None, resolved_at=None

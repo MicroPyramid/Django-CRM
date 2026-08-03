@@ -7,7 +7,7 @@
    * Two things this page refuses to fake:
    *
    * 1. `can_act` comes from the server (Approval.can_be_acted_on_by, minus your
-   *    own requests). The client does not recompute it — the answer depends on
+   *    own requests). The client does not recompute it, the answer depends on
    *    rule.approvers and on your role, and guessing wrong means a button that
    *    403s.
    * 2. A row you cannot act on is shown, greyed, with the reason. Hiding it
@@ -32,7 +32,7 @@
 
   /**
    * The first row you can actually act on. Only that one gets the ember
-   * button — same rule as the Today queue, and for the same reason: a column
+   * button: same rule as the Today queue, and for the same reason: a column
    * of identical orange buttons is a column with no emphasis in it, so the
    * colour stops meaning "start here". The rest are ordinary buttons and work
    * exactly the same.
@@ -46,7 +46,7 @@
 
   /**
    * Why a non-actionable row is blocked, in the words of the rule that says so.
-   * Only called for rows that are neither yours nor actionable — an own request
+   * Only called for rows that are neither yours nor actionable. An own request
    * gets its own banner, so this never has to explain that case.
    */
   function blockedReason(a) {
@@ -183,7 +183,7 @@
               >
                 <TriangleAlert size={15} style="color:var(--v2-clay);flex:none" />
                 <span class="v2-sub" style="font-size:12px">
-                  You raised this request, so you cannot decide it yourself — another approver must.
+                  You raised this request, so you cannot decide it yourself. Another approver must.
                   Withdraw it if it is no longer needed.
                 </span>
               </div>
@@ -266,7 +266,7 @@
          here rather than left for someone to discover via a stuck queue. -->
     {#if rules.some((r) => r.is_active && r.approver_role === 'MANAGER' && !r.approvers.length)}
       <p class="v2-sub" style="font-size:12px;margin-top:12px">
-        One active rule is cleared by managers, but this org has only admins and members — nobody
+        One active rule is cleared by managers, but this org has only admins and members. Nobody
         can clear it. Name approvers on the rule, or set it to admin.
       </p>
     {/if}
@@ -329,8 +329,8 @@
       margin-top: 12px;
       justify-content: flex-end;
     }
-    /* flex:1 so the reason fills the row and reads from the left margin —
-       right-aligned prose in a flex-end container looks like a caption. */
+    /* flex:1 so the reason fills the row and reads from the left margin.
+       Right-aligned prose in a flex-end container looks like a caption. */
     .v2-approval-reason {
       flex: 1;
       max-width: none;

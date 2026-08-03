@@ -7,11 +7,11 @@ order a person would meet them:
 1.  **A member could create a task and then never open it again.** `POST`
     succeeded, the task appeared in their list, and `GET` answered 500, with
     `PATCH`, comment and `DELETE` all answering 403. `created_by` is a `User`
-    and every check compared it to a `Profile`, so the creator clause was dead
-    — except in the list query, which spelled it correctly and therefore
+    and every check compared it to a `Profile`, so the creator clause was dead,
+    except in the list query, which spelled it correctly and therefore
     listed tasks the detail view refused.
 2.  **No non-admin could open *any* task, including their own.**
-    `created_by.user.email` — `created_by` is already the user — threw
+    `created_by.user.email`, `created_by` is already the user, threw
     `AttributeError` behind an always-true branch.
 3.  **The 403 path was a 500.** `get_context_data` returned a `Response`,
     which `get()` wrapped in a second one: "Object of type Response is not
@@ -19,7 +19,7 @@ order a person would meet them:
 4.  **Any admin could delete any attachment in the database.** `Attachments`
     is one generic table and the lookup had no `org=`. Proven by destroying a
     file that belonged to another org and hung off a lead, not a task.
-5.  **The uploader could not delete their own attachment** — same
+5.  **The uploader could not delete their own attachment**: same
     `Profile`/`User` comparison.
 6.  **`created_by` was writable.** A task could be handed a creator from
     another org. Harmless only while the field was never read; the moment
@@ -29,8 +29,8 @@ order a person would meet them:
 8.  **"One parent entity" did not survive `PATCH`.** Sending a second parent
     one request at a time walked past the serializer, and the model's own
     refusal surfaced as a 500 because Django's `ValidationError` is not DRF's.
-9.  **Every malformed id was a 500** — task, comment and attachment, on
-    every verb — and a well-formed id for a missing comment or attachment too.
+9.  **Every malformed id was a 500**: task, comment and attachment, on
+    every verb, and a well-formed id for a missing comment or attachment too.
 """
 
 import uuid
@@ -51,7 +51,7 @@ def _task(org, creator, assignees=(), **kwargs):
 
     ``BaseModel.save()`` stamps ``created_by`` from the crum thread-local,
     which is empty in a test, so passing it to ``create()`` is silently
-    dropped. ``.update()`` goes round ``save()`` and actually sets it — the
+    dropped. ``.update()`` goes round ``save()`` and actually sets it, the
     same trick the contacts and cases suites needed.
     """
     task = Task.objects.create(
@@ -74,7 +74,7 @@ def other_user():
 
 @pytest.fixture
 def other_profile(other_user, org_a):
-    """A second plain member of org A — the person on neither side of a task."""
+    """A second plain member of org A: the person on neither side of a task."""
     return Profile.objects.create(
         user=other_user, org=org_a, role="USER", is_active=True
     )
@@ -89,7 +89,7 @@ def other_client(other_user, org_a, other_profile):
 
 @pytest.mark.django_db
 class TestWhoMayOpenATask:
-    """`access` — admin, creator, assignee. Each clause, both directions."""
+    """`access`: admin, creator, assignee. Each clause, both directions."""
 
     def test_the_creator_can_open_their_own_task(
         self, user_client, regular_user, admin_user, org_a
@@ -171,7 +171,7 @@ class TestTheListAndTheDetailAgree:
 class TestWritingAndDeletingDifferOnPurpose:
     """`access` covers reading and writing; `delete` is narrower.
 
-    Being handed a task is a reason to work it, not a reason to erase it — the
+    Being handed a task is a reason to work it, not a reason to erase it, the
     same line `cases.access` draws for an assignee, and it has to be asserted
     separately or a later tidy-up will collapse the two.
     """
@@ -222,7 +222,7 @@ class TestWritingAndDeletingDifferOnPurpose:
         assert response.status_code == 403
 
     def test_the_creator_can_run_the_whole_loop(self, user_client, regular_user, org_a):
-        """Create, open, edit, comment, delete — as one plain member.
+        """Create, open, edit, comment, delete, as one plain member.
 
         Before the fix this read 200 / 500 / 403 / 403 / 403: a create endpoint
         that handed every non-admin a task they could never touch again.
@@ -300,7 +300,7 @@ class TestCreatedByIsServerDerived:
 
 @pytest.mark.django_db
 class TestParentsAreScopedToTheOrg:
-    """A task links to one account, opportunity, case or lead — one of *ours*.
+    """A task links to one account, opportunity, case or lead, one of *ours*.
 
     Every one of these was a 200 before, and the list endpoint then rendered
     the other org's record name back to the requester.
@@ -438,7 +438,7 @@ class TestAttachmentDeleteIsScopedToTheOrg:
     """`Attachments` is one table shared by every module.
 
     Without `org=` this endpoint was "delete any attachment in the database by
-    UUID" for anybody's admin — proven live against a file in another org that
+    UUID" for anybody's admin. Proven live against a file in another org that
     was attached to a lead.
     """
 
@@ -590,7 +590,7 @@ class TestTheListPayload:
         """Same narrowing the detail view has always applied.
 
         `other_profile` is a second plain member, and its absence from the
-        answer is the point — otherwise this would pass on an empty list.
+        answer is the point. Otherwise this would pass on an empty list.
         """
         emails = [
             row["user__email"] for row in user_client.get("/api/tasks/").json()["users"]
@@ -602,8 +602,8 @@ class TestTheListPayload:
     ):
         """Fixed count, not a ceiling: a ceiling passes while it rots.
 
-        The first request of a process pays for a few one-off lookups — the
-        JWT's user and profile, the content types — so the count depends on
+        The first request of a process pays for a few one-off lookups, the
+        JWT's user and profile, the content types, so the count depends on
         what ran before it. Measuring the *second* request makes the number
         the query cost of serving the page and nothing else, which is the
         number worth pinning.
@@ -621,7 +621,7 @@ class TestTheListPayload:
 
         Before `select_related`/`prefetch_related` the parents and assignees
         were fetched per row, so this is the assertion that would have caught
-        it — and it holds whatever the fixed number turns out to be.
+        it, and it holds whatever the fixed number turns out to be.
         """
         for i in range(2):
             _task(org_a, admin_user, title=f"Small {i}")

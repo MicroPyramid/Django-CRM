@@ -11,10 +11,10 @@ the strategy only decides *which rows are visible*:
 
 * If an empty context still exposes rows (a superuser / RLS-disabled dev DB,
   where one deployment can have thousands of orgs), a single unscoped pass sees
-  everything — O(rows), not O(orgs × rows).
+  everything, O(rows), not O(orgs × rows).
 * If an empty context hides rows (a correctly-configured non-superuser prod
   role), the pass sees nothing, so it falls back to iterating orgs and setting
-  ``app.current_org`` for each — O(orgs) cheap lookups, each seeing only its own
+  ``app.current_org`` for each: O(orgs) cheap lookups, each seeing only its own
   rows.
 """
 

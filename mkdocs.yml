@@ -1,5 +1,5 @@
 site_name: BottleCRM
-site_description: Self-hosted, multi-tenant CRM — setup, self-hosting, API and development documentation.
+site_description: Self-hosted, multi-tenant CRM. Setup, self-hosting, API and development documentation.
 site_url: https://bottlecrm.readthedocs.io/
 repo_url: https://github.com/django-crm/Django-CRM
 repo_name: django-crm/Django-CRM

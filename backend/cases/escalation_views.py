@@ -48,7 +48,7 @@ def _breach_counts_last_30d(org):
     """Count SLA breaches per priority among cases OPENED in the last 30 days.
 
     The escalation page shows these under each priority's policy AND, crucially,
-    keeps showing them when the policy is dead (off, or no recipient) — that is
+    keeps showing them when the policy is dead (off, or no recipient). That is
     the entire point of the screen ("breaches told nobody"). So this cannot be
     sourced from the ``ESCALATED`` Activity log: ``scan_for_breached_cases``
     records an activity only when a policy actually acts (active + a target set),
@@ -63,12 +63,12 @@ def _breach_counts_last_30d(org):
 
     Anchored on ``created_at`` (a standard SLA cohort framing) so the scan stays
     bounded and index-friendly. Not captured: a case opened before the window
-    whose deadline slipped inside it via a long Pending pause — rare; noted, not
+    whose deadline slipped inside it via a long Pending pause, rare; noted, not
     counted.
     """
     now = timezone.now()
     cutoff = now - timedelta(days=BREACH_WINDOW_DAYS)
-    # One calendar for the whole org — resolved once, not per case.
+    # One calendar for the whole org: resolved once, not per case.
     calendar = get_default_calendar(org.id)
     counts = {}
     qs = Case.objects.filter(org=org, is_active=True, created_at__gte=cutoff)
@@ -194,7 +194,7 @@ class EscalationPolicyDetailView(APIView):
                 {"error": True, "errors": "Escalation policy not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        # `priority` is the natural key — disallow changing it post-create
+        # `priority` is the natural key. Disallow changing it post-create
         # (would collide with the (org, priority) unique constraint anyway).
         data = {k: v for k, v in request.data.items() if k != "priority"}
         serializer = EscalationPolicySerializer(

@@ -1,7 +1,7 @@
 /**
  * Public CSAT survey page.
  *
- * Anonymous — the token in the URL is the only auth. Server-side fetch
+ * Anonymous: the token in the URL is the only auth. Server-side fetch
  * fronts the public Django endpoint so the survey context renders on first
  * paint without exposing the API base URL to the browser.
  */
@@ -57,7 +57,7 @@ export const actions = {
       return fail(410, { error: 'This survey link has expired.' });
     }
     if (res.status === 409) {
-      return fail(409, { error: 'This survey is locked — the edit window has closed.' });
+      return fail(409, { error: 'This survey is locked. The edit window has closed.' });
     }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

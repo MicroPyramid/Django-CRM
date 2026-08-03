@@ -1,4 +1,4 @@
-"""Macro model tests — primarily the scope/owner consistency constraint."""
+"""Macro model tests, primarily the scope/owner consistency constraint."""
 
 import pytest
 from django.db import IntegrityError, transaction

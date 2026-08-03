@@ -84,7 +84,7 @@ from tasks.serializer import TaskSerializer
 # worth, what is still in play, what it owes, and what is on fire.
 #
 # These are annotations, never stored columns. A stored total is a total that
-# can be wrong — it goes stale the moment a deal moves or an invoice is paid,
+# can be wrong. It goes stale the moment a deal moves or an invoice is paid,
 # and then the header disagrees with the very rows printed underneath it.
 ROLLUP_FIELDS = (
     "won_amount",
@@ -107,7 +107,7 @@ def _per_account(model, aggregate, output_field, **filters):
 
     `.values("account").annotate(...)` groups inside the subquery so it yields
     at most one row. When an account has no matching rows it yields *none*, and
-    an empty subquery is NULL rather than zero — which is why every caller
+    an empty subquery is NULL rather than zero, which is why every caller
     wraps this in a `Coalesce`. Zero and "no invoices at all" look identical to
     a reader of the page, and should.
     """
@@ -148,7 +148,7 @@ def annotate_rollups(queryset):
     }
 
     return queryset.annotate(
-        # Booked revenue — deals actually won. Not cash collected; the invoices
+        # Booked revenue: deals actually won. Not cash collected; the invoices
         # tell that story and are counted separately below.
         won_amount=Coalesce(
             _per_account(Opportunity, Sum("amount"), MONEY, **won), zero
@@ -164,7 +164,7 @@ def annotate_rollups(queryset):
         ),
         # Past due and still owed. The due date is the fact; the "Overdue"
         # status is a nightly task's opinion about that fact, and can be a day
-        # behind it — see UNPAID_STATUSES.
+        # behind it. See UNPAID_STATUSES.
         overdue_amount=Coalesce(
             _per_account(Invoice, Sum("amount_due"), MONEY, **past_due), zero
         ),
@@ -407,7 +407,7 @@ class AccountDetailView(APIView):
     def get_object(self, pk):
         # A malformed id is 404, not 500. The URL pattern is `<str:pk>`, so an
         # old bookmark or a typo reaches the UUID field as text, and
-        # `UUIDField.to_python` raises `ValidationError` — which
+        # `UUIDField.to_python` raises `ValidationError`, which
         # `get_object_or_404` does not catch, because it only knows about
         # `DoesNotExist`. "That is not an id" and "no such account" are the
         # same answer to whoever asked.
@@ -424,7 +424,7 @@ class AccountDetailView(APIView):
         """Admins, the person who created it, and anyone assigned. Else 403.
 
         One check, because there were four and they disagreed. `get`, `put`,
-        `patch` and comment `post` each compared `request.profile` — a Profile —
+        `patch` and comment `post` each compared `request.profile`, a Profile,
         against `account.created_by`, which is a FK to `User`. Those are never
         equal, so the creator branch could not fire and creators were locked out
         of their own accounts.
@@ -622,7 +622,7 @@ class AccountDetailView(APIView):
         elif self.request.profile.user_id != self.account.created_by_id:
             # `created_by` IS the User. Reading `created_by.user.email` raised
             # AttributeError and returned a 500 to every non-admin assignee who
-            # opened an account — and the branch was reached every time, because
+            # opened an account, and the branch was reached every time, because
             # the Profile-vs-User comparison above it was never equal.
             #
             # The key is `user__email`, matching the admin branch. It used to be
@@ -712,7 +712,7 @@ class AccountDetailView(APIView):
     def post(self, request, pk, **kwargs):
         data = request.data
         context = {}
-        # `Account.objects.get()` raised DoesNotExist — a 500 — for an id that
+        # `Account.objects.get()` raised DoesNotExist, a 500, for an id that
         # simply is not there, while GET on the same id answered 404. Commenting
         # on a deleted account is a normal race, not a server fault.
         self.account_obj = self.get_object(pk=pk)
@@ -976,7 +976,7 @@ class AccountAttachmentView(APIView):
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         # Scoped to the caller's org. `Attachments` is one generic table shared
-        # by every module, and this looked the row up by primary key alone — so
+        # by every module, and this looked the row up by primary key alone, so
         # the endpoint would delete any attachment in the database, belonging to
         # any organisation, hanging off any kind of record. RLS is the only
         # thing that stood between that and a cross-tenant delete, and RLS is
@@ -1027,7 +1027,7 @@ class AccountCreateMailView(APIView):
         # Org-scoped: unscoped, this would let anyone send mail recorded as
         # coming *from* another organisation's account.
         #
-        # Note this endpoint cannot currently succeed at all — `EmailSerializer`
+        # Note this endpoint cannot currently succeed at all; `EmailSerializer`
         # does not accept the `request_obj` kwarg the line below passes it, so
         # every request dies with a TypeError before reaching any of this. The
         # scoping is here so it is not missing when somebody revives the

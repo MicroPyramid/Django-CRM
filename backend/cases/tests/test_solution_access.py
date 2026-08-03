@@ -3,7 +3,7 @@
 Every case below was driven against the running API before the fix and
 answered the wrong thing. What was broken:
 
-1.  The Solution endpoints had **no authorization at all** — `IsAuthenticated`
+1.  The Solution endpoints had **no authorization at all**; `IsAuthenticated`
     was the whole of it. A plain `USER` could rewrite an admin's article
     (200), publish it to customers (200) and hard-delete it (204). The
     draft → reviewed → approved workflow, the publish and unpublish
@@ -13,7 +13,7 @@ answered the wrong thing. What was broken:
     **create** it did not run. `POST {"status": "draft", "is_published":
     true}` returned 201 with a published draft.
 3.  On update the same check read the **stored** status, never the incoming
-    one, and only ran when `is_published` was in the body — so
+    one, and only ran when `is_published` was in the body, so
     `PATCH {"status": "draft"}` on an approved, published article left it
     published. The invariant the model asserts ("published implies approved")
     held on one path in three.
@@ -22,15 +22,15 @@ answered the wrong thing. What was broken:
     `CaseSolutionLinkView` checked org and nothing else. So a member refused
     a case with a 403 could link an article to that very case and read its
     name, description, account and contacts back out of the article.
-5.  A malformed id was a **500** on every verb — read, update, delete,
-    publish, unpublish — because a UUID column raises `ValidationError`
+5.  A malformed id was a **500** on every verb. Read, update, delete,
+    publish, unpublish, because a UUID column raises `ValidationError`
     rather than returning nothing, and the views caught only
     `Solution.DoesNotExist`.
 6.  `?is_published=1` silently meant *unpublished*: the parse was
     `value.lower() == "true"`, so every other spelling of true inverted the
     filter.
 7.  The list served `case_count` and a nested `org` per row without fetching
-    either — 13 articles cost 27 queries — and `created_by` came back as a
+    either, 13 articles cost 27 queries, and `created_by` came back as a
     bare `User` UUID, so no client could name the author.
 """
 
@@ -99,7 +99,7 @@ def member_article(org_a, regular_user):
 
 @pytest.mark.django_db
 class TestWhoMayEditAnArticle:
-    """`write` — author or admin. Proven both ways, per rule."""
+    """`write`, author or admin. Proven both ways, per rule."""
 
     def test_author_may_edit_their_own(self, user_client, member_article):
         response = user_client.patch(
@@ -138,7 +138,7 @@ class TestWhoMayEditAnArticle:
         assert Solution.objects.filter(pk=admin_article.pk).exists()
 
     def test_every_member_may_read_every_article(self, user_client, admin_article):
-        """`read` is deliberately not restricted — see `cases.kb_access`."""
+        """`read` is deliberately not restricted. See `cases.kb_access`."""
         response = user_client.get(_detail(admin_article.pk))
         assert response.status_code == status.HTTP_200_OK
         assert response.data["title"] == "Admin's article"
@@ -298,7 +298,7 @@ class TestPublishedImpliesApproved:
     ):
         """Rows written before the rule existed can be published drafts.
         Judging the stored combination on a request that touches neither
-        field would make them uneditable — and editing is how somebody fixes
+        field would make them uneditable, and editing is how somebody fixes
         one."""
         article = _article(org_a, regular_user, status="draft", is_published=True)
         response = user_client.patch(
@@ -373,7 +373,7 @@ class TestLinkedCasesIsNotAWayIntoCases:
 
     def test_the_count_stays_honest(self, user_client, hidden_case, member_article):
         """Zero rows and a count of one is the page saying "there is a ticket
-        here and it is not yours" — better than a number that quietly means
+        here and it is not yours". Better than a number that quietly means
         something different for each reader."""
         hidden_case.solutions.add(member_article)
         response = user_client.get(_detail(member_article.pk))
@@ -507,8 +507,8 @@ class TestTheListPayload:
         self, admin_client, org_a, admin_user, django_assert_max_num_queries
     ):
         """`case_count` and the nested `org` were both computed per row: 13
-        articles, 27 queries. The ceiling here is the page's fixed cost —
-        auth, the count, the page — and does not move with the row count."""
+        articles, 27 queries. The ceiling here is the page's fixed cost.
+        Auth, the count, the page, and does not move with the row count."""
         for index in range(12):
             _article(org_a, admin_user, title=f"Article {index}")
 

@@ -5,7 +5,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 /**
  * `?account=<id>` preselects the company, so "add somebody at this account"
  * arrives with the account already chosen. An id that is not one of this org's
- * accounts is dropped rather than trusted — the picker is built from the API's
+ * accounts is dropped rather than trusted. The picker is built from the API's
  * own list, and the serializer checks the org again on save.
  *
  * @type {import('./$types').PageServerLoad}
@@ -26,7 +26,7 @@ export const actions = {
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
     values.do_not_call = form.get('do_not_call') === 'on';
-    // On create there is nothing to preserve, so the owner is always sent —
+    // On create there is nothing to preserve, so the owner is always sent,
     // including empty, which is how a contact is deliberately left unowned.
     values.assigned_to = form.get('assigned_to')?.toString().trim() ?? '';
 

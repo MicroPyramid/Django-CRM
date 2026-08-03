@@ -556,7 +556,7 @@ class TestRoutingRuleAPI:
 
 
 # ---------------------------------------------------------------------------
-# List analytics — matched_last_30d / unrouted_last_30d / round_robin state.
+# List analytics: matched_last_30d / unrouted_last_30d / round_robin state.
 # Driven through the real create-signal path so counts come from the ROUTED
 # activity log the engine writes.
 # ---------------------------------------------------------------------------
@@ -599,7 +599,7 @@ class TestRoutingAnalytics:
         self, admin_client, admin_profile, org_a
     ):
         """A rule that matches but has nobody to assign still logs a ROUTED
-        row, so its case counts as matched, NOT unrouted — 'nobody assigned'
+        row, so its case counts as matched, NOT unrouted; 'nobody assigned'
         is not the same as 'no rule matched'."""
         _rule(org_a, "Empty pool", strategy="direct", target_assignees=[])
         _case(org_a, name="c1")

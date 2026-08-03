@@ -4,7 +4,7 @@
    *
    * `cases.routing.evaluate` walks active rules by priority_order, runs the
    * first match, and stops there when stop_processing is set. So the list is
-   * ordered because the order IS the behaviour — which means two things this
+   * ordered because the order IS the behaviour, which means two things this
    * page does that v1's table of names does not:
    *
    * 1. Each rule reads as the sentence it performs, not as four columns
@@ -12,7 +12,7 @@
    *    reader has to reassemble.
    * 2. A rule that can never run is marked as such. Once an active,
    *    unconditional, stop-processing rule appears, everything below it is
-   *    dead — and "matched 0 times" on its own looks like a quiet month.
+   *    dead, and "matched 0 times" on its own looks like a quiet month.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
@@ -35,7 +35,7 @@
    * Reachability, walked in evaluation order.
    *
    * This is derived on the client rather than sent by the API, and that is
-   * deliberate — unlike a list total, it is not a fact about rows we cannot
+   * deliberate. Unlike a list total, it is not a fact about rows we cannot
    * see. It is a property of this complete ordered list, and it has to stay
    * correct the instant someone drags a rule, before any request goes out.
    */
@@ -69,7 +69,7 @@
 
   /**
    * Who the next matching ticket goes to. Only knowable for round_robin, where
-   * RoutingRuleState holds the cursor — for the other strategies it depends on
+   * RoutingRuleState holds the cursor, for the other strategies it depends on
    * the ticket or on live workload, and guessing would be worse than silence.
    */
   function nextUp(r) {
@@ -144,8 +144,8 @@
                 <UserX size={14} style="color:var(--v2-clay);flex:none" />
                 <span>
                   {inactiveTargets.map((a) => a.name).join(', ')}
-                  {inactiveTargets.length === 1 ? 'is' : 'are'} deactivated and still in the rotation
-                  — tickets routed there wait for someone who cannot sign in.
+                  {inactiveTargets.length === 1 ? 'is' : 'are'} deactivated and still in the rotation,
+                  tickets routed there wait for someone who cannot sign in.
                 </span>
               </div>
             {/if}
@@ -216,7 +216,7 @@
     line-height: 1.45;
   }
 
-  /* The match count is a footnote at 414px, not a column — stacking keeps the
+  /* The match count is a footnote at 414px, not a column. Stacking keeps the
      sentence full-width, which is the part you came to read. */
   @media (max-width: 768px) {
     .v2-rule {

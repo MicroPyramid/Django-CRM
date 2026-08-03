@@ -1,6 +1,6 @@
 <script>
   /**
-   * A status pill. Tinted background, never a solid fill — solid reads as a
+   * A status pill. Tinted background, never a solid fill. Solid reads as a
    * button, and only actions get solid colour.
    *
    * Ember is deliberately not an available tone: it belongs to actions and

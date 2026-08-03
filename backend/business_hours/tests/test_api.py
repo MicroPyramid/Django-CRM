@@ -196,6 +196,6 @@ class TestOrgContextRequired:
         request = APIRequestFactory().get(CALENDAR_URL)
         force_authenticate(request, user=admin_user)
         # This direct-call path skips the middleware that sets request.profile,
-        # so the request has no org context — exactly what HasOrgContext guards.
+        # so the request has no org context, exactly what HasOrgContext guards.
         response = BusinessCalendarView.as_view()(request)
         assert response.status_code == 403

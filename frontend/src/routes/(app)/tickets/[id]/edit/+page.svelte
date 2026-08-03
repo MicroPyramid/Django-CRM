@@ -22,7 +22,7 @@
   let ticket = $derived(data.ticket);
 
   // `untrack` so a re-render after a failed save does not throw away what the
-  // person typed — `result.values` is the server's echo of the same fields.
+  // person typed; `result.values` is the server's echo of the same fields.
   let form = $state(
     untrack(() => ({
       ...data.form,

@@ -5,7 +5,7 @@
    * what is it made of.
    *
    * No chart library. Every mark here is a div sized by a percentage, which
-   * keeps the page honest about how little it is actually drawing — and a
+   * keeps the page honest about how little it is actually drawing, and a
    * fourteen-bar series does not need an axis, a legend and 90kb of SVG.
    *
    * WHAT THIS PAGE DOES NOT DO
@@ -33,7 +33,7 @@
 
   /**
    * Minutes → "41m" / "2h 20m" / "1d 3h" / "1d". A number of minutes is not a
-   * duration, and neither is "1d 0h" — a zero remainder is dropped rather than
+   * duration, and neither is "1d 0h". A zero remainder is dropped rather than
    * printed, at every scale.
    */
   function duration(mins) {
@@ -47,7 +47,7 @@
   }
 
   // Attainment among *decided* cases (met vs missed). A priority with no
-  // decided cases yet — all in-flight, or none at all — has no percentage to
+  // decided cases yet (all in-flight, or none at all) has no percentage to
   // report, so it returns null and the row shows "—" rather than "NaN%".
   const attainment = (r) => {
     const decided = r.met + r.missed;
@@ -115,7 +115,7 @@
         label="Median resolution"
         value={`${totals.median_resolution_hours}h`}
         tone="slate"
-        detail="Median, not mean — one three-week ticket should not move it"
+        detail="Median, not mean. One three-week ticket should not move it"
       />
     </div>
   </div>
@@ -133,7 +133,7 @@
         </div>
         <div class="v2-cols">
           {#each data.volume as d (d.date)}
-            <div class="v2-col" title="{shortDate(d.date)} — {d.opened} opened, {d.closed} closed">
+            <div class="v2-col" title="{shortDate(d.date)}, {d.opened} opened, {d.closed} closed">
               <i class="in" style="height:{(d.opened / peak) * 100}%"></i>
               <i class="out" style="height:{(d.closed / peak) * 100}%"></i>
             </div>
@@ -216,8 +216,8 @@
             <p class="v2-sub" style="font-size:11.5px;margin:16px 0 0">
               <a href="/solutions" style="color:inherit">
                 {data.byType.find((t) => t.case_type === 'Question').count} questions in this window
-              </a>
-              — the ones that repeat belong in the knowledge base.
+              </a>.
+              The ones that repeat belong in the knowledge base.
             </p>
           {/if}
         </div>
@@ -281,7 +281,7 @@
             holidays do not count against a target.
             <a href="/settings/business-hours" style="color:inherit">Change the calendar</a>.
           {:else}
-            Elapsed time is counted around the clock — no business-hours calendar is set, so
+            Elapsed time is counted around the clock, no business-hours calendar is set, so
             evenings and weekends count against a target.
             <a href="/settings/business-hours" style="color:inherit">Set up a calendar</a>.
           {/if}

@@ -13,14 +13,14 @@
    *
    * VALIDATION HERE IS A UX HINT, NOT A RULE. The serializer requires a title
    * and a file, rejects a duplicate title within the org, and re-scopes every
-   * share to the caller's org — curl and the mobile client reach the API
+   * share to the caller's org. Curl and the mobile client reach the API
    * without passing through this page. See CLAUDE.md, "API Validation &
    * Authorization". Note what is NOT on this form: org and created_by, both
    * server-derived from the session.
    *
    * The share pickers only list people and teams in this org because that is
    * all the options endpoint returns; the view enforces the same boundary when
-   * it saves. An unshared upload is not an error — it is a document only the
+   * it saves. An unshared upload is not an error. It is a document only the
    * uploader and admins can open, which the form says plainly.
    */
   const previous = untrack(() => result?.values) ?? {};
@@ -122,7 +122,7 @@
         <p class="v2-error" id="e-title">{errors.title}</p>
       {:else}
         <p class="v2-hint" id="h-title">
-          What you would call it out loud — it has to be unique here.
+          What you would call it out loud. It has to be unique here.
         </p>
       {/if}
     </div>
@@ -144,7 +144,7 @@
         <p class="v2-hint" id="h-file">
           {fileName
             ? `Selected: ${fileName}`
-            : 'PDFs, sheets, docs — whatever you send people often.'}
+            : 'PDFs, sheets, docs. Whatever you send people often.'}
         </p>
       {/if}
     </div>
@@ -198,7 +198,7 @@
 
       {#if !data.people?.length && !data.teams?.length}
         <p class="v2-sub" style="font-size:12px">
-          No teammates or teams to share with yet — the document will be visible to you and admins.
+          No teammates or teams to share with yet. The document will be visible to you and admins.
         </p>
       {/if}
     </fieldset>

@@ -8,7 +8,7 @@ import { listLeads } from '$lib/server/v2/leads.js';
 /**
  * The new-task form.
  *
- * A task has one parent — account, deal, ticket or lead — and the form has to
+ * A task has one parent (account, deal, ticket or lead), and the form has to
  * offer all four, so this loads four catalogues. The accounts one comes free
  * with the task list endpoint; the other three are separate calls, run
  * concurrently. A picker that fails keeps its empty list rather than failing
@@ -57,13 +57,13 @@ export async function load(event) {
 /**
  * Read the one parent off the form.
  *
- * The form asks "attached to what?" once — a kind and an id — because the
+ * The form asks "attached to what?" once, a kind and an id, because the
  * model allows exactly one and now says so on every path. Four separate
  * pickers would have let somebody fill two and find out on submit.
  *
  * A chosen kind with no record is an error, not an empty parent. This
  * returned `{}` for that case and the task was created attached to nothing,
- * with a 303 that looked like it had worked — the same silent-success shape
+ * with a 303 that looked like it had worked, the same silent-success shape
  * the backend audit spent the morning removing. The `required` on the select
  * stops a browser getting here; it is not what makes it true.
  *

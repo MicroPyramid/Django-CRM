@@ -14,7 +14,7 @@ export async function GET({ cookies, request, url }) {
   if (!accessToken) return new Response('Unauthorized', { status: 401 });
 
   const qs = url.searchParams.toString();
-  // Org context lives inside the JWT — no extra header needed.
+  // Org context lives inside the JWT, no extra header needed.
   const upstream = await fetch(`${API_BASE_URL}/cases/analytics/export/${qs ? `?${qs}` : ''}`, {
     method: 'GET',
     headers: {

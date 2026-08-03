@@ -23,7 +23,7 @@ export async function load(event) {
 
   return {
     // Filtered here rather than with `?status=`, because the totals the header
-    // reads have to cover both — "3 of 11 open" needs the 11.
+    // reads have to cover both; "3 of 11 open" needs the 11.
     tasks: showAll ? results : results.filter((task) => !task.is_done),
     totals,
     owners,

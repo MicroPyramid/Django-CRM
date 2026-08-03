@@ -121,13 +121,13 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 class InvoiceTemplateSerializer(serializers.ModelSerializer):
-    """Full template serializer — EXPOSES the raw ``template_html`` /
+    """Full template serializer, EXPOSES the raw ``template_html`` /
     ``template_css``.
 
     Those two fields are org-authored HTML/CSS rendered into a PDF server-side;
     handing them to a browser is a stored-XSS vector. This serializer must only
     ever back an admin-only editor fetch. No list, detail, create/update, or
-    nested response uses it — those all use ``InvoiceTemplateListSerializer``
+    nested response uses it. Those all use ``InvoiceTemplateListSerializer``
     (below), which never returns the markup. Do not wire this to a wide-read or
     non-admin surface.
     """
@@ -153,7 +153,7 @@ class InvoiceTemplateSerializer(serializers.ModelSerializer):
 
 
 class InvoiceTemplateListSerializer(serializers.ModelSerializer):
-    """Safe template representation — never returns the raw markup.
+    """Safe template representation, never returns the raw markup.
 
     ``template_html`` / ``template_css`` are org-authored HTML/CSS that
     WeasyPrint renders into a PDF server-side. The moment either reaches a
@@ -613,7 +613,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         # through the validated lifecycle endpoints (InvoiceSendView /
         # InvoiceMarkPaidView / InvoiceCancelView). Left writable here, a member
         # could POST status="Paid" and mint an invoice that reports as paid with
-        # no Payment behind it — corrupting AR, aging, and revenue. Read-only
+        # no Payment behind it: corrupting AR, aging, and revenue. Read-only
         # closes that on both create and update.
         read_only_fields = ("status",)
 
@@ -660,7 +660,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         """Validate template exists and belongs to org (if provided).
 
         Without this, a member could attach another org's InvoiceTemplate UUID
-        and render its markup/branding on this invoice's PDF — a cross-tenant
+        and render its markup/branding on this invoice's PDF, a cross-tenant
         IDOR. Mirrors the account/contact/opportunity checks above.
         """
         if value is None:

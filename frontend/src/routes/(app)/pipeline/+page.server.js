@@ -20,7 +20,7 @@ export async function load(event) {
 
   if (view === 'board') {
     const { lanes } = await listBoard(event, params);
-    // The header totals stay the table's — they describe the whole open
+    // The header totals stay the table's: they describe the whole open
     // pipeline, which is the same claim on either view.
     const { totals } = await listDeals(event, new URLSearchParams(params));
     return { view, lanes, totals, deals: [] };

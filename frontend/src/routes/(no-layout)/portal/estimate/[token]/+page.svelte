@@ -6,7 +6,7 @@
    * ── ACCEPT IS A DECISION, NOT A CLICK ────────────────────────────────────
    * `PublicEstimateAcceptView` flips status to `Accepted`, stamps
    * `accepted_at`, and there is no undo endpoint. So the page makes it two
-   * steps — press, then confirm against the total. Decline is one step,
+   * steps, press, then confirm against the total. Decline is one step,
    * because decline is recoverable by picking up the phone and accept is not.
    *
    * ── THE TWO THINGS THE SERVER NOW CHECKS ─────────────────────────────────
@@ -18,7 +18,7 @@
    *    token directly. The button is hidden past expiry as a courtesy, not as
    *    the control.
    * 2. WHO ACCEPTED. The acceptor's name and email are required and recorded
-   *    (with the request IP and user-agent) — acceptance authorises an
+   *    (with the request IP and user-agent), acceptance authorises an
    *    invoice, and the record of who gave it is now more than "whoever held
    *    the link".
    */
@@ -46,7 +46,7 @@
   /** The server's own gate, mirrored so the two cannot drift apart silently. */
   let serverWouldAllow = $derived(['Sent', 'Viewed'].includes(est.status));
 
-  /** Already decided — the page becomes a receipt. */
+  /** Already decided. The page becomes a receipt. */
   let decided = $derived(est.status === 'Accepted' || est.status === 'Declined');
 
   let confirming = $state(false);
@@ -139,7 +139,7 @@
           {:else}
             <p>
               {est.org.name} has been notified. If you declined by mistake, reply to the email this link
-              came from — this page cannot undo it.
+              came from. This page cannot undo it.
             </p>
           {/if}
         </div>

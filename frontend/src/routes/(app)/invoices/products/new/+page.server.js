@@ -37,7 +37,7 @@ export const actions = {
 
     const values = { name, sku, price, currency, category, description, is_active };
 
-    // UX-side mirrors of the serializer's rules — the API enforces both again.
+    // UX-side mirrors of the serializer's rules. The API enforces both again.
     if (!name) return fail(400, { values, error: 'Give the product a name.' });
     if (!priceOk(price)) return fail(400, { values, error: 'Enter a list price of 0 or more.' });
 

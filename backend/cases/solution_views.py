@@ -29,7 +29,7 @@ def _wants_release(data, instance=None):
     """True when this payload would approve or publish the article.
 
     Both are admin-only acts (see `cases.kb_access`), and both can arrive as
-    ordinary fields on an ordinary create or update — which is exactly how
+    ordinary fields on an ordinary create or update, which is exactly how
     they were being performed. Read as a transition, not as a value: a PATCH
     that repeats the `approved` an article already has is not an approval, so
     an author fixing a typo on their own approved draft is not stopped by a
@@ -109,8 +109,8 @@ class SolutionListView(APIView, LimitOffsetPagination):
             queryset = queryset.filter(status=status_filter)
 
         if is_published is not None:
-            # `is_published.lower() == "true"` meant every other spelling —
-            # `1`, `yes`, `on` — silently filtered to *unpublished*, which is
+            # `is_published.lower() == "true"` meant every other spelling:
+            # `1`, `yes`, `on`: silently filtered to *unpublished*, which is
             # the opposite of what the caller asked for.
             queryset = queryset.filter(is_published=_as_bool(is_published))
 
@@ -120,8 +120,8 @@ class SolutionListView(APIView, LimitOffsetPagination):
             )
 
         # Counted over the whole knowledge base, not over the filtered page.
-        # These four are a partition of the KB — "12 total, 3 of them drafts"
-        # — so recomputing them inside a `?status=draft` filter would leave
+        # These four are a partition of the KB, "12 total, 3 of them drafts"
+        #, so recomputing them inside a `?status=draft` filter would leave
         # the other three cards reading zero and say nothing.
         counts = base.aggregate(
             count=Count("id"),
@@ -182,7 +182,7 @@ class SolutionDetailView(APIView):
     def get(self, request, pk):
         """Get solution details"""
         solution = get_solution_or_404(request.profile, pk)
-        # The requester's profile decides which linked cases come back — see
+        # The requester's profile decides which linked cases come back. See
         # `SolutionDetailSerializer.get_linked_cases`.
         serializer = SolutionDetailSerializer(
             solution, context={"profile": request.profile}

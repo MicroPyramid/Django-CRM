@@ -19,7 +19,7 @@
   let { data, form: result } = $props();
 
   // `untrack` so a re-render after a failed save does not throw away what the
-  // person typed — `result.values` is the server's echo of the same fields.
+  // person typed; `result.values` is the server's echo of the same fields.
   let form = $state(
     untrack(() => ({
       first_name: '',
@@ -228,7 +228,7 @@
       <label for="f-org">Company typed in</label>
       <input id="f-org" name="organization" class="v2-input" bind:value={form.organization} />
       <p class="v2-hint">
-        Only needed when there is no account to link — an imported record, or a company nobody has
+        Only needed when there is no account to link, an imported record, or a company nobody has
         created yet.
       </p>
     </div>

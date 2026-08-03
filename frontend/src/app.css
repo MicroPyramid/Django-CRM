@@ -414,7 +414,7 @@
   --status-info-bg: #e3f2fd;
 
   /* ─────────────────────────────────────────────────────────────────────────
-     REDESIGN TOKENS (2026-05-10 spec) — Phase 1
+     REDESIGN TOKENS (2026-05-10 spec): Phase 1
      New design system, additive. Existing tokens above are kept for
      back-compat until Phase 2+ migrates components onto these.
      Spec: docs/superpowers/specs/2026-05-10-app-redesign-design.md
@@ -429,20 +429,20 @@
   --bg-active: #f0efed;
   --bg-input: #ffffff;
 
-  /* Border (NOTE: --border, --border-strong, --focus-ring redefined — see Phase 1 plan §Task 3) */
+  /* Border (NOTE: --border, --border-strong, --focus-ring redefined: see Phase 1 plan §Task 3) */
   --border-faint: #f0f0f0;
   --border: #e5e5e5;
   --border-strong: #c4c4c4;
   --focus-ring: rgba(17, 17, 17, 0.1);
 
-  /* Text — aliases of canonical --text-primary/secondary/tertiary (defined above).
+  /* Text, aliases of canonical --text-primary/secondary/tertiary (defined above).
      Keep both names so the typography utilities (.t-body / .t-meta / etc.) can reference
      short names while pages that grew up using --text-primary keep working. */
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
   --text-subtle: var(--text-tertiary);
 
-  /* Accents — semantic */
+  /* Accents, semantic */
   --green: #10b981;
   --green-soft: rgba(16, 185, 129, 0.12);
   --green-soft-text: #047857;
@@ -467,7 +467,7 @@
   --r-xl: 12px;
   --r-full: 9999px;
 
-  /* Fonts (override existing aliases at lines ~379–381) */
+  /* Fonts (override existing aliases at lines ~379-381) */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, ui-sans-serif, sans-serif;
@@ -639,7 +639,7 @@
   --glass-blur: 16px;
 
   /* ─────────────────────────────────────────────────────────────────────────
-     REDESIGN TOKENS (2026-05-10 spec) — Phase 1, dark theme overrides
+     REDESIGN TOKENS (2026-05-10 spec): Phase 1, dark theme overrides
      ───────────────────────────────────────────────────────────────────────── */
 
   /* Surface */
@@ -657,12 +657,12 @@
   --border-strong: rgba(255, 255, 255, 0.2);
   --focus-ring: rgba(237, 242, 245, 0.14);
 
-  /* Text — aliases of canonical --text-primary/secondary/tertiary (dark theme defined above). */
+  /* Text, aliases of canonical --text-primary/secondary/tertiary (dark theme defined above). */
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
   --text-subtle: var(--text-tertiary);
 
-  /* Accents — semantic */
+  /* Accents, semantic */
   --green: #10b981;
   --green-soft: rgba(16, 185, 129, 0.14);
   --green-soft-text: #6ee7b7;
@@ -680,7 +680,7 @@
   --cta-text: #18181b;
   --cta-bg-hover: #ededed;
 
-  /* Radii + fonts inherit from :root — no override needed */
+  /* Radii + fonts inherit from :root, no override needed */
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1187,7 +1187,7 @@ select {
 
 @layer utilities {
   /* ─────────────────────────────────────────────────────────────────────────
-     REDESIGN TYPOGRAPHY UTILITIES (2026-05-10 spec) — Phase 1
+     REDESIGN TYPOGRAPHY UTILITIES (2026-05-10 spec), Phase 1
      See spec §5 for usage. Tabular numerics applied where data-heavy.
      ───────────────────────────────────────────────────────────────────────── */
 
@@ -1224,14 +1224,14 @@ select {
     color: var(--text-muted);
   }
 
-  /* Crisp cell/value text — primary color + medium weight (use for table cells, dl values). */
+  /* Crisp cell/value text, primary color + medium weight (use for table cells, dl values). */
   .t-data {
     font-size: 13px;
     font-weight: 500;
     color: var(--text);
   }
 
-  /* KPI number — used in stat cards. */
+  /* KPI number, used in stat cards. */
   .t-kpi {
     font-size: 18px;
     font-weight: 500;
@@ -1272,7 +1272,7 @@ select {
     padding: 1px 4px;
   }
 
-  /* Apply tabular numerics globally on a helper class — useful for tables, KPI cards */
+  /* Apply tabular numerics globally on a helper class, useful for tables, KPI cards */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }

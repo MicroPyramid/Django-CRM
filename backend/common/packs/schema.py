@@ -1,6 +1,6 @@
 """Strict validation for vertical-pack manifests.
 
-Unknown keys are errors, not ignored — a typo in a pack file must fail in CI,
+Unknown keys are errors, not ignored. A typo in a pack file must fail in CI,
 not silently drop a stage. See docs/superpowers/specs/2026-08-01-vertical-packs-design.md §6.
 """
 
@@ -16,7 +16,7 @@ TOP_LEVEL_KEYS = {
     "custom_fields", "tags", "products", "sample_data",
 }
 
-#  is_default is a recognised key on both — not a typo — but is rejected by
+#  is_default is a recognised key on both, not a typo, but is rejected by
 # _reject_is_default with a specific message rather than lumped in with
 # genuinely unknown keys. See _reject_is_default for why this matters.
 PIPELINE_KEYS = {"name", "description", "stages", "is_default"}
@@ -63,7 +63,7 @@ SAMPLE_TASK_KEYS = {
 }
 
 # Every entity `sample_data` understands, in the order the applier creates them
-# — a later entity may reference an earlier one by name, never the reverse.
+#. A later entity may reference an earlier one by name, never the reverse.
 # Tasks are last because a task is the only row that can point at any of the
 # other five. common.packs.applier imports this rather than restating it.
 SAMPLE_ENTITY_KEYS = ("accounts", "contacts", "deals", "tickets", "leads", "tasks")
@@ -96,14 +96,14 @@ def _reject_is_default(where: str, obj: dict) -> None:
     # containing is_default gets this specific, actionable message instead of
     # a generic unknown-key error. is_default is deliberately INCLUDED in
     # PIPELINE_KEYS/STAGE_KEYS (a recognised key, not a typo) precisely so
-    # _reject_unknown does not also flag it — this guard must be the sole
+    # _reject_unknown does not also flag it. This guard must be the sole
     # gatekeeper, or a stub-to-no-op could hide behind _reject_unknown's
     # "unknown key(s) [...]" message, which also contains the substring
     # "is_default" and would let a loose regex match pass for the wrong
     # reason.
     if isinstance(obj, dict) and "is_default" in obj:
         raise PackValidationError(
-            f"{where}: is_default is not allowed in a pack — the admin promotes a default"
+            f"{where}: is_default is not allowed in a pack, the admin promotes a default"
         )
 
 
@@ -113,7 +113,7 @@ def _stage_type_choices(pipeline_key: str) -> set[str]:
     CaseStage = open/closed/rejected (cases/models.py:531),
     TaskStage = open/in_progress/completed (tasks/models.py:240).
     Lazy-imported so schema.py stays importable before the Django app
-    registry is configured — same reasoning as _validate_tag's lazy import
+    registry is configured, same reasoning as _validate_tag's lazy import
     of Tags.
     """
     from cases.models import CaseStage
@@ -131,10 +131,10 @@ def _stage_type_choices(pipeline_key: str) -> set[str]:
 def _maps_to_status_choices(pipeline_key: str) -> set[str] | None:
     """maps_to_status choices also differ per pipeline model. LeadStage maps
     to LEAD_STATUS and CaseStage maps to STATUS_CHOICE (leads/models.py:293,
-    cases/models.py:551) — both plain tuples in common/utils.py, lazy-imported
+    cases/models.py:551), both plain tuples in common/utils.py, lazy-imported
     for consistency with _stage_type_choices even though they don't touch the
     app registry. TaskStage.maps_to_status has no `choices` at all
-    (tasks/models.py:257 — a freeform CharField), so there is no vocabulary to
+    (tasks/models.py:257. A freeform CharField), so there is no vocabulary to
     validate task-pipeline stages against: this returns None and the caller
     skips the check rather than inventing a restriction the model doesn't
     have.
@@ -252,7 +252,7 @@ def _require(where: str, obj: dict, *keys: str) -> None:
 def _validate_choice(where: str, value, field: str, allowed: set[str]) -> None:
     """Reject a value the model's `choices` would reject.
 
-    Django does not enforce `choices` on .create() — only full_clean() does, and
+    Django does not enforce `choices` on .create(), only full_clean() does, and
     of the six sample models only Task calls it. So without this check a pack
     could write a stage or status no UI can render and no filter can find, and
     the row would look fine in the DB. Skips None/absent: every one of these
@@ -283,7 +283,7 @@ def _reference_index(where: str, rows: list, key_of, label: str) -> set[str]:
     """Build the set of names later entities may reference, rejecting duplicates.
 
     A reference is resolved by name, so two sample accounts called "Northwind"
-    would make `"account": "Northwind"` ambiguous — and the applier would pick
+    would make `"account": "Northwind"` ambiguous, and the applier would pick
     one arbitrarily. Catching it here keeps the reference scheme honest.
     """
     seen: set[str] = set()
@@ -291,7 +291,7 @@ def _reference_index(where: str, rows: list, key_of, label: str) -> set[str]:
         name = key_of(row)
         if name in seen:
             raise PackValidationError(
-                f"{where}[{i}]: duplicate {label} {name!r} — sample references are by name, "
+                f"{where}[{i}]: duplicate {label} {name!r}. Sample references are by name, "
                 "so each must be unique within the pack"
             )
         seen.add(name)
@@ -316,7 +316,7 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
     """Validate sample_data, including every cross-entity name reference.
 
     References are checked against the pack's own lists, not the database,
-    because that is the only thing true at authoring time — and because the
+    because that is the only thing true at authoring time, and because the
     applier deliberately resolves them the same way. A sample contact must
     never attach itself to a tenant's real account (see _apply_sample_data),
     so "resolvable" here means "declared in this pack" and nothing wider.
@@ -436,7 +436,7 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         _validate_choice(at, row.get("stage"), "stage", lead_stages)
         # Lead.source and Lead.status carry `choices` the applier never checks.
         # Both were unvalidated here until three shipped packs were found writing
-        # source="website" — a value LEAD_SOURCE does not contain, so the demo row
+        # source="website". A value LEAD_SOURCE does not contain, so the demo row
         # rendered as a blank dropdown and no source filter could reach it. The
         # row looked fine in the database, which is precisely why this needs a
         # schema check rather than trust.

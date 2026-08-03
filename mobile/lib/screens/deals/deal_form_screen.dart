@@ -46,7 +46,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   final _probabilityKey = GlobalKey();
 
   DealStage _stage = DealStage.prospecting;
-  // Default to "Not Specified" — matches web's empty placeholder. The backend
+  // Default to "Not Specified", matches web's empty placeholder. The backend
   // column is nullable; auto-stamping NEW_BUSINESS on every create silently
   // miscategorizes data.
   OpportunityType _opportunityType = OpportunityType.unspecified;
@@ -65,7 +65,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   List<String> _selectedTeamIds = [];
   List<String> _selectedTagIds = [];
 
-  // Custom fields — schema-driven JSONField on Opportunity. Loaded lazily so
+  // Custom fields, schema-driven JSONField on Opportunity. Loaded lazily so
   // the form renders before the lookup resolves.
   List<CustomFieldDefinition> _customFieldDefs = const [];
   Map<String, dynamic> _customFieldValues = {};
@@ -75,12 +75,12 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   // typed value).
   bool _probabilityUserEdited = false;
 
-  // Same idea for the close date — once the user picks one explicitly, stage
+  // Same idea for the close date, once the user picks one explicitly, stage
   // changes stop auto-suggesting. Clearing the date via the X button resets
   // this so the next stage change can suggest again.
   bool _closeDateUserEdited = false;
 
-  // "Save & Add Another" — when set, on a successful create we reset the form
+  // "Save & Add Another", when set, on a successful create we reset the form
   // instead of popping. Edit mode never shows the button.
   bool _saveAndAddAnother = false;
 
@@ -118,7 +118,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   /// Pre-fills close date based on the stage's expected dwell window. Returns
-  /// null for closed stages — those should be set explicitly by the user.
+  /// null for closed stages. Those should be set explicitly by the user.
   DateTime? _suggestedCloseDateFor(DealStage stage) {
     final days = Deal.defaultExpectedDays(stage);
     if (days == null) return null;
@@ -183,8 +183,8 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         ? deal.value.toStringAsFixed(2)
         : '';
     _probabilityController.text = deal.probability.toString();
-    // In edit mode the existing values are by definition the source of truth —
-    // treat them as user-edited so stage changes don't clobber them.
+    // In edit mode the existing values are by definition the source of truth.
+    // Treat them as user-edited so stage changes don't clobber them.
     _probabilityUserEdited = true;
     _closeDateUserEdited = deal.closeDate != null;
     _notesController.text = deal.notes ?? '';
@@ -223,7 +223,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           !_listEquals(_selectedTagIds, _existingDeal!.tagIds) ||
           !_mapEquals(_customFieldValues, _existingDeal!.customFieldValues);
     }
-    // Account pre-fill from route doesn't count as a user edit — the user
+    // Account pre-fill from route doesn't count as a user edit. The user
     // didn't pick it, so leaving immediately shouldn't trigger the discard
     // prompt.
     final accountChanged =
@@ -379,7 +379,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       return;
     }
 
-    // Amount is required for CLOSED_WON — mirrors Opportunity.clean() on the
+    // Amount is required for CLOSED_WON, mirrors Opportunity.clean() on the
     // backend. Catching it here gives the user a useful inline message instead
     // of a generic 400 from the DRF view.
     if (_stage == DealStage.closedWon) {
@@ -404,7 +404,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       }
     }
 
-    // Required custom fields — the form validator can't reach inside the CF
+    // Required custom fields. The form validator can't reach inside the CF
     // editor's bespoke inputs, so we check here before submit.
     for (final def in _customFieldDefs) {
       if (!def.isRequired) continue;
@@ -739,7 +739,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
           onChanged: (_) {
-            // User edited the name — clear any stale "already exists" hint.
+            // User edited the name. Clear any stale "already exists" hint.
             if (_serverNameError != null) {
               setState(() => _serverNameError = null);
             }
@@ -762,7 +762,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Currency Selector — wider chip showing both symbol and code so
+            // Currency Selector, wider chip showing both symbol and code so
             // it reads as a discoverable dropdown rather than a passive label.
             GestureDetector(
               onTap: _showCurrencyPicker,
@@ -911,7 +911,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
           ],
           onChanged: (_) {
             // Once the user types anything in here, stop auto-overwriting on
-            // stage change. Even clearing the field counts — they're showing
+            // stage change. Even clearing the field counts. They're showing
             // intent to manage it themselves.
             if (!_probabilityUserEdited) {
               _probabilityUserEdited = true;
@@ -1415,7 +1415,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       setState(() {
         _closeDate = date;
         // Once the user explicitly picks a date, stop auto-suggesting on stage
-        // changes — they've expressed intent. Clearing the date (X button)
+        // changes. They've expressed intent. Clearing the date (X button)
         // resets this so the next stage change can suggest again.
         _closeDateUserEdited = true;
       });
@@ -1453,7 +1453,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                       _probabilityUserEdited = false;
                     }
                     // Re-suggest the close date for the new stage's expected
-                    // dwell window — but only in create mode, and only while
+                    // dwell window, but only in create mode, and only while
                     // the user hasn't picked one themselves. This means moving
                     // PROSPECTING → PROPOSAL refreshes the auto suggestion
                     // instead of leaving the old PROSPECTING-based date.

@@ -13,7 +13,7 @@ export const actions = {
    * wrote it and which org it belongs to are derived server-side from the JWT
    * (see `addLeadNote`), never from the form. An empty note is refused here so
    * the API is not asked to store a blank comment, and the DRF view enforces
-   * the same access as reading the lead — this action cannot post to a lead the
+   * the same access as reading the lead. This action cannot post to a lead the
    * caller could not open.
    */
   note: async ({ cookies, params, request }) => {
@@ -24,7 +24,7 @@ export const actions = {
     const file =
       picked && typeof picked === 'object' && 'size' in picked && picked.size > 0 ? picked : null;
 
-    // A note is required, and a file only rides with one — the API drops an
+    // A note is required, and a file only rides with one. The API drops an
     // attachment posted without a comment (see `addLeadNote`), so refusing it
     // here turns a silent no-op into a message somebody can act on.
     if (!comment) {

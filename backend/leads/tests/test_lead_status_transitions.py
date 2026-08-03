@@ -32,7 +32,7 @@ def _lead(org, **kw):
 @pytest.mark.django_db
 class TestConvertedIsIrreversible:
     def test_converting_an_open_lead_is_allowed(self, admin_client, org_a):
-        """The permitted direction — this must still work."""
+        """The permitted direction. This must still work."""
         lead = _lead(org_a, opportunity_amount="1000.00")
         response = admin_client.put(
             _detail_url(lead.id),
@@ -81,7 +81,7 @@ class TestConvertedIsIrreversible:
         `validate_status` lives on the serializer, and `LeadDetailView.patch`
         has its own conversion branch that returns before the serializer runs.
         So the rule held on PUT and not on PATCH, and two PATCHes produced two
-        Opportunities against one Account — which is what the validator was
+        Opportunities against one Account, which is what the validator was
         written to prevent.
         """
         lead = _lead(org_a, opportunity_amount="1000.00")
@@ -179,7 +179,7 @@ class TestReversibleTransitionsStillWork:
 
     def test_creating_a_lead_as_converted_is_still_allowed(self, admin_client, org_a):
         """There is no prior state to contradict, and the create path does not
-        run the conversion service — so the new rule must not reach it."""
+        run the conversion service, so the new rule must not reach it."""
         response = admin_client.post(
             LEADS_URL,
             {

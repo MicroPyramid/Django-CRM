@@ -19,7 +19,7 @@
    * v1 had a search box per list, each scoped to that list, so finding a
    * ticket meant knowing it was a ticket first. This asks once.
    *
-   * Empty query shows actions rather than an empty box — the fastest way to
+   * Empty query shows actions rather than an empty box. The fastest way to
    * start a new deal is ⌘K, "new", Enter, and that only works if the actions
    * are there before you type.
    *
@@ -92,7 +92,7 @@
   );
 
   // Re-runs whenever the query changes. `seq` drops out-of-order responses,
-  // which matters now that this is a network call rather than a filter — the
+  // which matters now that this is a network call rather than a filter. The
   // request goes to /api/search, a server route that scopes to the org and
   // keeps the httpOnly token off the client.
   let seq = 0;

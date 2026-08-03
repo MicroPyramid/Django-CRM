@@ -34,7 +34,7 @@ INVOICE_STATUS = (
 #
 # Shared so that "what this account owes us" on an account page and the
 # accounts-receivable aging report cannot answer the same question differently.
-# Note this deliberately includes "Overdue" — `mark_overdue_invoices` flips the
+# Note this deliberately includes "Overdue", `mark_overdue_invoices` flips the
 # status on a daily schedule, so anything that only looked for "Overdue" would
 # report nothing at all on a day the task has not run yet.
 UNPAID_STATUSES = ("Sent", "Viewed", "Partially_Paid", "Overdue")
@@ -783,7 +783,7 @@ class Estimate(AssignableMixin, BaseModel):
     declined_at = models.DateTimeField(_("Declined At"), null=True, blank=True)
 
     # Acceptance audit trail. Accepting authorises the quote's price, so we
-    # record who did it — the anonymous accept endpoint captures the name and
+    # record who did it. The anonymous accept endpoint captures the name and
     # email they entered plus the request IP/user-agent as best-effort evidence.
     accepted_by_name = models.CharField(
         _("Accepted By Name"), max_length=255, blank=True, default=""

@@ -12,7 +12,7 @@ import '../../routes/app_router.dart';
 import '../../widgets/cards/lead_card.dart';
 import '../../widgets/common/common.dart';
 
-/// Leads list screen — searchable, filterable, paginated against the server.
+/// Leads list screen: searchable, filterable, paginated against the server.
 class LeadsListScreen extends ConsumerStatefulWidget {
   const LeadsListScreen({super.key});
 
@@ -73,7 +73,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   Widget build(BuildContext context) {
     final leadsAsync = ref.watch(leadsProvider);
     // Eagerly subscribe so the profile is fetched before the user opens the
-    // Owner filter sheet — otherwise the "My leads" option wouldn't render
+    // Owner filter sheet. Otherwise the "My leads" option wouldn't render
     // until the profile call completes.
     ref.watch(profileProvider);
     final data = leadsAsync.value;

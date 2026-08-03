@@ -1,5 +1,5 @@
 /**
- * Products — the product catalogue line items are priced from, wired to the
+ * Products: the product catalogue line items are priced from, wired to the
  * real API. First of the invoices sub-pages to move off fixtures.
  *
  * Lives under `$lib/server` so the httpOnly access token stays out of the
@@ -11,26 +11,26 @@
  * excluded in `migrated.js`: it listed mock rows and its "New product" button
  * wrote nowhere. `Product` (`invoices/models.py`) has had a full CRUD API
  * (`ProductListView`/`ProductDetailView`) that no v2 page drew, so its write
- * authorisation had only ever been exercised by tests — all of which used an
+ * authorisation had only ever been exercised by tests, all of which used an
  * admin client.
  *
  * THE FINDING THE WIRING EXPOSED
- * The catalogue is org-wide config — its list prices flow onto every rep's
- * invoices and estimates — yet `POST`/`PUT`/`DELETE` gated on
+ * The catalogue is org-wide config, its list prices flow onto every rep's
+ * invoices and estimates, yet `POST`/`PUT`/`DELETE` gated on
  * `(IsAuthenticated, HasOrgContext)` only, so any member (role `USER`) could
  * rewrite a price, retire a product, or hard-delete one for the whole org. The
  * backend fix gates all three writes to an admin (the same posture Organization
  * and Team settings take); reading stays open to every member because a rep
  * needs the catalogue to build line items. This file offers the New/Edit
- * affordances only to an admin, but that is a UX hint — the view is the trust
+ * affordances only to an admin, but that is a UX hint. The view is the trust
  * boundary and refuses a non-admin write regardless.
  *
  * WHAT THE MOCK ASSUMED THAT THE API SHAPES DIFFERENTLY
  * - The list endpoint returns a plain `{ count, results }` page with no totals
  *   envelope, so `listProducts` recomputes the header totals here.
  * - `used_on` (how many invoices a product is on) is not a stored column; the
- *   mock hard-coded it. `ProductSerializer` now returns it — annotated across
- *   the list to avoid an N+1 — because it is the whole reason a retired product
+ *   mock hard-coded it. `ProductSerializer` now returns it, annotated across
+ *   the list to avoid an N+1, because it is the whole reason a retired product
  *   is still listed rather than deleted.
  */
 import { apiRequest } from '$lib/api-helpers.js';
@@ -41,19 +41,19 @@ import { apiRequest } from '$lib/api-helpers.js';
  * that could 400 on an unknown code. Kept in this order (org default first).
  */
 export const CURRENCY_CHOICES = [
-  { code: 'USD', label: 'USD — Dollar' },
-  { code: 'EUR', label: 'EUR — Euro' },
-  { code: 'GBP', label: 'GBP — Pound' },
-  { code: 'INR', label: 'INR — Rupee' },
-  { code: 'CAD', label: 'CAD — Dollar' },
-  { code: 'AUD', label: 'AUD — Dollar' },
-  { code: 'JPY', label: 'JPY — Yen' },
-  { code: 'CNY', label: 'CNY — Yuan' },
-  { code: 'CHF', label: 'CHF — Franc' },
-  { code: 'SGD', label: 'SGD — Dollar' },
-  { code: 'AED', label: 'AED — Dirham' },
-  { code: 'BRL', label: 'BRL — Real' },
-  { code: 'MXN', label: 'MXN — Peso' }
+  { code: 'USD', label: 'USD, Dollar' },
+  { code: 'EUR', label: 'EUR, Euro' },
+  { code: 'GBP', label: 'GBP, Pound' },
+  { code: 'INR', label: 'INR, Rupee' },
+  { code: 'CAD', label: 'CAD, Dollar' },
+  { code: 'AUD', label: 'AUD, Dollar' },
+  { code: 'JPY', label: 'JPY, Yen' },
+  { code: 'CNY', label: 'CNY: Yuan' },
+  { code: 'CHF', label: 'CHF: Franc' },
+  { code: 'SGD', label: 'SGD: Dollar' },
+  { code: 'AED', label: 'AED: Dirham' },
+  { code: 'BRL', label: 'BRL: Real' },
+  { code: 'MXN', label: 'MXN. Peso' }
 ];
 
 const CURRENCY_CODES = new Set(CURRENCY_CHOICES.map((c) => c.code));
@@ -116,7 +116,7 @@ function computeTotals(items) {
 
 /**
  * The catalogue. `limit=1000` fetches the whole (small) set so the totals cover
- * every row. Active first, then by name — the order the settings-style list
+ * every row. Active first, then by name. The order the settings-style list
  * reads best in. `can_manage` gates the write affordances; the API enforces it.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -135,7 +135,7 @@ export async function listProducts({ cookies }) {
 }
 
 /**
- * Options for the new-product form. Nothing to fetch — just the currency list
+ * Options for the new-product form. Nothing to fetch, just the currency list
  * and whether this viewer may create. A non-admin is turned away by the page
  * (and by the API) rather than shown a form the POST would refuse.
  *

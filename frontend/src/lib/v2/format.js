@@ -30,7 +30,7 @@ export function initials(name) {
 }
 
 /**
- * ISO date → "8 Aug", or "8 Aug 2023" when it is not this year — otherwise a
+ * ISO date → "8 Aug", or "8 Aug 2023" when it is not this year, otherwise a
  * deal closed three years ago reads as if it closed last week.
  * Returns an em dash for null so table cells never collapse.
  */
@@ -66,7 +66,7 @@ export function daysSince(iso, now = new Date()) {
   return Math.floor((now.getTime() - d.getTime()) / 86400000);
 }
 
-/** "12 days ago" / "today" / "in 4 days" — for a person, not a machine. */
+/** "12 days ago" / "today" / "in 4 days", for a person, not a machine. */
 export function relativeDays(iso, now = new Date()) {
   const n = daysSince(iso, now);
   if (n === null) return '—';
@@ -80,7 +80,7 @@ export function relativeDays(iso, now = new Date()) {
 /**
  * "just now" / "18 minutes ago" / "3 hours ago", then whole days.
  *
- * `relativeDays` is right for records — a lead touched at 09:00 and one
+ * `relativeDays` is right for records, a lead touched at 09:00 and one
  * touched at 17:00 are both "today" and the difference does not change what
  * you do. A feed is the opposite: a mention from five minutes ago and one from
  * twenty hours ago are different events, and collapsing both to "today" is how

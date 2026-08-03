@@ -1,7 +1,7 @@
 /**
  * SSE proxy.
  *
- * The browser cannot send custom headers via EventSource — so we proxy the
+ * The browser cannot send custom headers via EventSource, so we proxy the
  * stream through SvelteKit, where we can read the JWT cookie server-side
  * and attach it as an Authorization header on the upstream fetch. The
  * upstream Response body is piped straight through.
@@ -32,7 +32,7 @@ export async function GET({ cookies, request }) {
     });
   }
 
-  // Note: `Connection` is a hop-by-hop header — Node refuses to forward it
+  // Note: `Connection` is a hop-by-hop header, Node refuses to forward it
   // and HTTP keep-alive is the default in HTTP/1.1 anyway. Don't set it.
   return new Response(upstream.body, {
     status: 200,

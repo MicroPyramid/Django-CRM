@@ -1,6 +1,6 @@
 <script>
   /**
-   * A lead — a person you are trying to reach and, if it goes well, convert.
+   * A lead: a person you are trying to reach and, if it goes well, convert.
    *
    * The page is built around that verb. The header carries the ways to reach
    * them (email, call) beside Edit; a single honest headline says what is in
@@ -8,8 +8,8 @@
    * because the daily act on a lead is recording that you contacted them.
    *
    * WHAT IS NOT FAKED
-   * Conversion is a POST the community backend does not expose — there is no
-   * convert endpoint in `leads/urls.py` — so the Convert button stays disabled
+   * Conversion is a POST the community backend does not expose. There is no
+   * convert endpoint in `leads/urls.py`, so the Convert button stays disabled
    * and says so, rather than pretending. The headline is derived only from
    * fields the model actually has; where the data cannot support a sentence,
    * there is no banner. The duplicate warning is a real query (see
@@ -46,7 +46,7 @@
   let saving = $state(false);
 
   // The picked file's name, mirrored out of the input so the composer can show
-  // and clear it. `fileInput` is the element itself — a file input's value can
+  // and clear it. `fileInput` is the element itself. A file input's value can
   // only be cleared through the DOM, not by rebinding.
   let fileName = $state('');
   /** @type {HTMLInputElement | undefined} */
@@ -63,7 +63,7 @@
 
   // ── activity feed ──────────────────────────────────────────────────────────
   // Three real kinds (note / file / created). The filter only appears once there
-  // is a file to filter — with nothing but notes it would be a control that
+  // is a file to filter. With nothing but notes it would be a control that
   // sorts one pile.
   let hasFiles = $derived(activity.some((/** @type {any} */ e) => e.type === 'file'));
   let filter = $state(/** @type {'all'|'notes'|'files'} */ ('all'));
@@ -78,7 +78,7 @@
 
   /**
    * The line under an event: "Attached" for a file, the author where known, then
-   * how long ago — joined so no separator dangles when a part is missing.
+   * how long ago, joined so no separator dangles when a part is missing.
    * @param {{type:string,by:string|null,at:string}} e
    */
   function metaFor(e) {
@@ -117,7 +117,7 @@
    * One line, and only where the data can carry it and the lead is still open.
    * Ordered by what stops the work: a lead nobody can reach, then one nobody
    * owns, then one that has gone cold without a first conversation. A converted
-   * lead has none of these problems, so it gets no banner — a page that always
+   * lead has none of these problems, so it gets no banner. A page that always
    * shouts is a page people stop reading.
    *
    * @type {{ tone: 'ember'|'rust', label: string, text: string, action: string|null } | null}
@@ -294,7 +294,7 @@
 
         <!-- The composer. `reset: false` plus clearing state by hand on success
              keeps the box and the binding in step; a failed save keeps the words
-             and the picked file. A file only sends with a note — the button
+             and the picked file. A file only sends with a note. The button
              stays disabled until there is one, which matches what the API stores. -->
         <form
           method="POST"
@@ -388,12 +388,12 @@
       <dt>Email</dt>
       <dd style="font-size:12px">
         {#if lead.email}<a href="mailto:{lead.email}" style="color:inherit">{lead.email}</a
-          >{:else}—{/if}
+          >{:else}, {/if}
       </dd>
       <dt>Phone</dt>
       <dd class="v2-num" style="font-size:12px">
         {#if lead.phone}<a href="tel:{lead.phone}" style="color:inherit">{lead.phone}</a
-          >{:else}—{/if}
+          >{:else}, {/if}
       </dd>
       <dt>Website</dt>
       <dd style="font-size:12px">

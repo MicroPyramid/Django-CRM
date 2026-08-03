@@ -1,11 +1,11 @@
 /**
- * Reopen policy — the wiring behind `/settings/reopen`.
+ * Reopen policy: the wiring behind `/settings/reopen`.
  *
  * Server-only. Reads `GET /cases/reopen-policy/`, the per-org singleton
  * (admin-only, auto-created on first read). The endpoint returns the four
  * policy fields (is_enabled, reopen_window_days, reopen_to_status,
- * notify_assigned) alongside three 30-day metrics the settings page draws —
- * reopened_last_30d, replies_after_window_30d, median_days_to_reply — all
+ * notify_assigned) alongside three 30-day metrics the settings page draws,
+ * reopened_last_30d, replies_after_window_30d, median_days_to_reply, all
  * computed server-side from the reopen audit trail (REOPENED activities + the
  * out-of-window flag the signal writes on late replies).
  *

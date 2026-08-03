@@ -108,7 +108,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   }
 
   /// Set due-date range to the visible month so calendar markers cover every
-  /// task in that month — not just the 20 currently paged in.
+  /// task in that month, not just the 20 currently paged in.
   void _fetchMonthForCalendar(DateTime focusedDay) {
     final first = DateTime(focusedDay.year, focusedDay.month, 1);
     final last = DateTime(focusedDay.year, focusedDay.month + 1, 0);

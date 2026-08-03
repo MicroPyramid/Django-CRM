@@ -41,7 +41,7 @@ class GetProfileAndOrg:
         request.profile = None
         request.org = None
 
-        # Personal Access Token (agent / MCP) — resolve here so org context is
+        # Personal Access Token (agent / MCP). Resolve here so org context is
         # set before RequireOrgContext runs (DRF auth runs too late for that).
         # MUST come before the JWT branch so a PAT bearer is never handed to
         # the JWT decoder.
@@ -166,7 +166,7 @@ class GetProfileAndOrg:
 
             if not profile:
                 logger.error("No active admin profile found for org %s", organization.id)
-                # Let DRF authentication reject this — raising AuthenticationFailed
+                # Let DRF authentication reject this, raising AuthenticationFailed
                 # here escapes the middleware stack as a 500 instead of a 401.
                 return
 

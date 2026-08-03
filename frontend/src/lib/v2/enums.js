@@ -1,5 +1,5 @@
 /**
- * v2 enums — mirrored 1:1 from the Django models so the API swap is a
+ * v2 enums, mirrored 1:1 from the Django models so the API swap is a
  * field mapping, not a translation.
  *
  *   STAGES, OPPORTUNITY_TYPES, SOURCES  → backend/common/utils.py
@@ -11,7 +11,7 @@
  *                                         returns 'green' | 'yellow' | 'red'
  *
  * TONE is the only place colour is decided. Six tones, and Ember is not one
- * of them — Ember belongs to actions, never to status.
+ * of them. Ember belongs to actions, never to status.
  *   ink   → neutral, structural
  *   slate → nothing to do here (includes aging "green": on pace is the
  *           absence of a problem, not an achievement)
@@ -58,7 +58,7 @@ export const OPPORTUNITY_TYPE_LABEL = {
   CROSS_SELL: 'Cross-sell'
 };
 
-/** Opportunity.aging_status — the API returns these three strings verbatim. */
+/** Opportunity.aging_status. The API returns these three strings verbatim. */
 export const AGING_TONE = { green: 'slate', yellow: 'clay', red: 'rust' };
 export const AGING_LABEL = { green: 'On pace', yellow: 'Past expected', red: 'Stalled' };
 
@@ -71,7 +71,7 @@ export const LEAD_STATUS_TONE = {
 };
 
 /**
- * common.utils LEAD_STATUS / LEAD_SOURCE / INDCHOICES — the stored values,
+ * common.utils LEAD_STATUS / LEAD_SOURCE / INDCHOICES: the stored values,
  * verbatim, lowercase and misspellings included. "compaign" is the value in
  * the database; correcting it here would produce a form that writes a value
  * the column rejects.
@@ -207,7 +207,7 @@ export const SOLUTION_STATUS_LABEL = { draft: 'Draft', reviewed: 'Reviewed', app
 export const SOLUTION_STATUS_TONE = { draft: 'slate', reviewed: 'clay', approved: 'moss' };
 
 /**
- * opportunity.SalesGoal — GOAL_TYPES and PERIOD_TYPES from common/utils.py.
+ * opportunity.SalesGoal, GOAL_TYPES and PERIOD_TYPES from common/utils.py.
  *
  * The status values are the four SalesGoal.status returns, and the labels say
  * what they mean rather than repeating the wire value: "behind" alone does not
@@ -236,7 +236,7 @@ export const GOAL_STATUS_TONE = {
   behind: 'rust'
 };
 
-/** cases.approvals — APPROVAL_STATE_CHOICES. */
+/** cases.approvals: APPROVAL_STATE_CHOICES. */
 export const APPROVAL_STATE_LABEL = {
   pending: 'Waiting',
   approved: 'Approved',
@@ -252,13 +252,13 @@ export const APPROVAL_STATE_TONE = {
 };
 
 /**
- * invoices.ESTIMATE_STATUS — its own enum, not the invoice one. There is no
+ * invoices.ESTIMATE_STATUS, its own enum, not the invoice one. There is no
  * Paid estimate and no Accepted invoice; keeping the maps apart makes a
  * mix-up show up as a missing key instead of an unstyled pill.
  *
  * Accepted is moss because the customer said yes. Whether it has been turned
- * into an invoice yet is a separate fact, and the list shows it separately —
- * a green pill on money nobody has billed is exactly the wrong reassurance.
+ * into an invoice yet is a separate fact, and the list shows it separately.
+ * A green pill on money nobody has billed is exactly the wrong reassurance.
  */
 export const ESTIMATE_STATUS_TONE = {
   Draft: 'slate',
@@ -290,7 +290,7 @@ export const PAYMENT_TERMS_LABEL = {
 };
 
 /**
- * common.Profile.role. Two values, and that is the whole set — ADMIN and USER.
+ * common.Profile.role. Two values, and that is the whole set. ADMIN and USER.
  * Role is server-derived from the profile; nothing the browser sends decides
  * it. This map exists to label a value the API gave us, never to offer one.
  */
@@ -336,7 +336,7 @@ export const ESCALATION_ACTION_LABEL = {
   notify_and_reassign: 'Notify and reassign to'
 };
 
-/** cases.InboundMailbox.PROVIDER_CHOICES — only SES ships today. */
+/** cases.InboundMailbox.PROVIDER_CHOICES, only SES ships today. */
 export const MAILBOX_PROVIDER_LABEL = {
   ses: 'Amazon SES',
   mailgun: 'Mailgun',
@@ -374,7 +374,7 @@ export const MACRO_SCOPE_LABEL = { org: 'Everyone', personal: 'Just you' };
 /* ── board ──────────────────────────────────────────────────────────────── */
 
 /**
- * tasks.BoardTask.PRIORITY_CHOICES — lowercase, and a different set from
+ * tasks.BoardTask.PRIORITY_CHOICES. Lowercase, and a different set from
  * TASK_PRIORITY (Low/Medium/High) and PRIORITY_TONE (Urgent/High/Normal/Low).
  * Three enums for one word across three models; keep them apart.
  */
@@ -391,5 +391,5 @@ export const BOARD_PRIORITY_TONE = {
   urgent: 'rust'
 };
 
-/** tasks.BoardMember.ROLE_CHOICES — board-local, unrelated to Profile.role. */
+/** tasks.BoardMember.ROLE_CHOICES, board-local, unrelated to Profile.role. */
 export const BOARD_ROLE_LABEL = { owner: 'Owner', admin: 'Admin', member: 'Member' };

@@ -352,7 +352,7 @@ class ProfileView(APIView):
         user_obj = ProfileSerializer(profile).data
         # The page shows which teams the current user is on. Teams is a real
         # Profile.user_teams m2m, but it is not on the shared ProfileSerializer
-        # (nested into many records) — adding it here keeps the extra query and
+        # (nested into many records). Adding it here keeps the extra query and
         # the wider output on this one self-profile endpoint, off the hot path.
         user_obj["teams"] = list(profile.user_teams.values_list("name", flat=True))
         return Response({"user_obj": user_obj}, status=status.HTTP_200_OK)
@@ -381,7 +381,7 @@ class ProfileView(APIView):
 
         # Validate through a serializer that names ONLY phone and name. A bad
         # phone is now a clean 400 (the old code wrote request.data straight to
-        # the column), and — more importantly — role/org/access flags are not
+        # the column), and, more importantly, role/org/access flags are not
         # fields here, so no request body can escalate a profile through this
         # self-edit door. See ProfileSelfUpdateSerializer.
         update = ProfileSelfUpdateSerializer(data=request.data, partial=True)

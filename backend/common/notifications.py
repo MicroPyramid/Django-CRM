@@ -5,7 +5,7 @@ future apps). Writes a `Notification` row, then best-effort publishes the
 new row's id on a Redis pub/sub channel so the SSE consumer can fan it out
 to any open browser tabs for that recipient.
 
-Channel naming: ``notif:<org_id>:<profile_id>`` — see
+Channel naming: ``notif:<org_id>:<profile_id>``. See
 ``docs/cases/tier2/in-app-notifications.md`` "Cross-org leak".
 """
 
@@ -29,7 +29,7 @@ _redis_lock = threading.Lock()
 def _get_redis():
     """Lazy redis-py client keyed off CELERY_BROKER_URL.
 
-    Returns None if redis is unavailable (e.g. test environments) — callers
+    Returns None if redis is unavailable (e.g. test environments). Callers
     must treat publish as best-effort.
     """
     global _redis_client
@@ -64,7 +64,7 @@ def _publish(channel: str, payload: str) -> None:
     try:
         client.publish(channel, payload)
     except Exception as exc:
-        # Publish failure must never break the originating request — the
+        # Publish failure must never break the originating request. The
         # row is already persisted and the user sees it on next poll/load.
         logger.warning("notifications publish failed on %s: %s", channel, exc)
 

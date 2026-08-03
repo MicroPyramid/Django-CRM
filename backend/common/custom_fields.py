@@ -129,7 +129,7 @@ def validate_payload(
 
     Returns (cleaned_dict, errors_dict). Non-empty errors -> caller should 400.
     Unknown keys are dropped silently and logged. `existing` is the value
-    currently stored on the entity — required fields already set on the entity
+    currently stored on the entity. Required fields already set on the entity
     are preserved across PATCHes that omit them.
 
     Values tied to soft-deleted (is_active=False) definitions are carried
@@ -156,7 +156,7 @@ def validate_payload(
 
     # Carry forward existing recognized values (active OR soft-deleted) that
     # the caller didn't touch. Values whose definition was hard-deleted are
-    # dropped — the schema is gone.
+    # dropped. The schema is gone.
     for key, value in existing.items():
         if key in all_keys and key not in value_dict:
             cleaned[key] = value

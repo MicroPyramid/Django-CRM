@@ -3,12 +3,12 @@
 ## What this does
 
 The same flow as the [Python sample](python-sample.md), in JavaScript: obtain an access token,
-list the org's leads, and create one — using only the built-in `fetch`, no npm dependencies. It's
+list the org's leads, and create one, using only the built-in `fetch`, no npm dependencies. It's
 written for Node (tested for compatibility with Node 24), but the `fetch` calls themselves would
 run unmodified in any modern browser's console against a CORS-enabled backend.
 
 As with the Python sample, "obtains a token" means reading a personal access token (`bcrm_pat_…`)
-from the environment rather than driving an interactive sign-in — see
+from the environment rather than driving an interactive sign-in. See
 [Tokens and API keys](../api/tokens-and-api-keys.md#personal-access-tokens) for what a PAT
 authenticates as, and the [Python sample](python-sample.md#what-this-does) for how to mint one
 locally.
@@ -48,7 +48,7 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-// GET /api/leads/ — the response splits leads into open/closed sections
+// GET /api/leads/, the response splits leads into open/closed sections
 // rather than one flat list; see docs/api/leads.md#list-leads.
 async function listLeads() {
   const res = await fetch(`${BASE_URL}/api/leads/`, { headers });
@@ -70,7 +70,7 @@ async function listLeads() {
   return data;
 }
 
-// POST /api/leads/ — a 200 with {"error": false, ...} is success; the
+// POST /api/leads/. A 200 with {"error": false, ...} is success; the
 // response does not echo the created record, so we look it up afterward.
 async function createLead() {
   const email = `sample.lead+${Date.now()}@example.com`;
@@ -93,7 +93,7 @@ async function createLead() {
   return email;
 }
 
-// GET /api/leads/?email=... — `email` is a case-insensitive contains filter
+// GET /api/leads/?email=...; `email` is a case-insensitive contains filter
 // (docs/api/conventions.md#filtering-and-search), fine here since the address
 // we just created is unique in this org.
 async function findByEmail(email) {
@@ -132,7 +132,7 @@ main().catch((err) => {
 Save the script as `leads-sample.mjs`. It uses no `import`/`export` and no top-level `await` (the
 `await` calls are all inside `async function main()`, invoked with `.catch()` rather than awaited
 at the top level), so it runs the same way whether Node treats the file as CommonJS or an ES
-module — the `.mjs` extension just removes any ambiguity from a `package.json` in the same
+module, the `.mjs` extension just removes any ambiguity from a `package.json` in the same
 directory. You need a reachable
 BottleCRM backend and a personal access token, minted as described in the
 [Python sample](python-sample.md#what-this-does):
@@ -143,9 +143,9 @@ BCRM_TOKEN=bcrm_pat_... \
   node leads-sample.mjs
 ```
 
-**A note on verification:** like the Python sample, this script was checked by static means —
+**A note on verification:** like the Python sample, this script was checked by static means,
 every URL and field against [Leads](../api/leads.md) and [Conventions](../api/conventions.md), and
-the whole file with `node --check` — rather than executed against a live database, to avoid
+the whole file with `node --check`, rather than executed against a live database, to avoid
 writing a row into a shared instance this documentation didn't provision. The example output is
 illustrative, not a captured run, and is identical in shape to the
 [Python sample's](python-sample.md#running-it) since both call the same endpoints:

@@ -5,7 +5,7 @@ import { listContacts } from '$lib/server/v2/contacts.js';
  * changes the URL and nothing else teaches people the filter bar is decorative.
  *
  * `inactive=1` in the URL is kept from the fixture page, because the question
- * it asks is a good one — but it is answered by the API now (`?is_active=`)
+ * it asks is a good one, but it is answered by the API now (`?is_active=`)
  * rather than by discarding rows after they arrive, which was only ever right
  * on the first page.
  *

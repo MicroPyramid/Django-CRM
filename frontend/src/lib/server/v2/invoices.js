@@ -1,5 +1,5 @@
 /**
- * Invoices — the eighth v2 module wired to the real API.
+ * Invoices: the eighth v2 module wired to the real API.
  *
  * Same rules as the seven before it: this file lives under `$lib/server`
  * because SvelteKit refuses to bundle that directory into client code and the
@@ -8,14 +8,14 @@
  *
  * WHY THIS MODULE, AND WHY NOW
  * The account page has rendered a real Invoices rail since accounts were wired
- * — actual rows, with a "View all" that pointed at the fixture list, and rows
+ *: actual rows, with a "View all" that pointed at the fixture list, and rows
  * that were deliberately *not* links because there was no invoice page to open.
  * Same quiet dead end the Tasks rail was last session. Wiring the list and the
  * detail turns both into real links.
  *
  * WHAT CHANGED WHEN THE FIXTURES CAME OFF
  * - **The reminders log is not a thing.** The mock detail carried a per-reminder
- *   history — "First reminder · opened · 8d ago" — with read receipts. The
+ *   history, "First reminder · opened · 8d ago", with read receipts. The
  *   model records no such log and tracks no opens: it has `reminder_count`,
  *   `last_reminder_sent` and the on/off settings, nothing per-send and nothing
  *   about the client opening anything. The rail now shows those real settings;
@@ -27,11 +27,11 @@
  *   page shows those figures instead of re-deriving them wrong.
  * - **Status "Overdue" is a real status, not a UI flourish.** A daily task
  *   (`mark_overdue_invoices`) flips unpaid past-due invoices to it, so the
- *   detail page's Overdue branch stays — it is describing a column, not
+ *   detail page's Overdue branch stays. It is describing a column, not
  *   guessing from the due date.
  *
  * WHAT STAYED FIXTURES, ON PURPOSE
- * Only the core invoice entity is wired here — list, detail, and the lifecycle
+ * Only the core invoice entity is wired here: list, detail, and the lifecycle
  * writes on the detail page. Estimates, recurring, products, templates and the
  * reports dashboard are separate entities on separate endpoints; they keep
  * their fixtures and their preview banner (see `migrated.js`). Bringing the
@@ -90,7 +90,7 @@ function toRow(row) {
 
 /**
  * A line item as the detail table reads it. `total` is the server's figure,
- * net of this line's own discount and tax — the page does not recompute it.
+ * net of this line's own discount and tax. The page does not recompute it.
  *
  * @param {any} item
  */
@@ -133,7 +133,7 @@ function toDetail(inv) {
     amount_due: num(inv.amount_due),
     is_overdue: Boolean(inv.is_overdue),
     is_settled: SETTLED.includes(inv.status),
-    // Real reminder state — settings and counters, no fabricated log.
+    // Real reminder state, settings and counters, no fabricated log.
     reminder_enabled: Boolean(inv.reminder_enabled),
     reminder_frequency: inv.reminder_frequency ?? null,
     reminder_count: inv.reminder_count ?? 0,
@@ -146,7 +146,7 @@ function toDetail(inv) {
 /**
  * The invoice list, most-overdue first.
  *
- * `totals` is aggregated by the API over the whole visible queryset — the
+ * `totals` is aggregated by the API over the whole visible queryset. The
  * requester's, so an admin's pills cover the org and a member's cover the
  * invoices they made or were assigned. The rows follow the same rule, which is
  * the point: v1 summed the loaded page and the pills disagreed with the list.
@@ -179,7 +179,7 @@ export async function listInvoices({ cookies }, params) {
 /**
  * One invoice, with its line items.
  *
- * A 404 from the API — the record does not exist, or belongs to another org —
+ * A 404 from the API (the record does not exist, or belongs to another org)
  * becomes a 404 here. A 403 (a member who is neither creator nor assignee)
  * also surfaces as "not yours" rather than leaking that the invoice exists.
  *
@@ -205,7 +205,7 @@ export async function getInvoice({ cookies }, id) {
 
 /**
  * The lifecycle writes. Each is a bare POST through `get_invoice_or_error`, so
- * the API — not this layer — decides who may act and refuses the rest.
+ * the API, not this layer, decides who may act and refuses the rest.
  */
 
 /** Draft -> Sent (and mails the client). 400 on a Paid/Cancelled invoice. */
@@ -243,7 +243,7 @@ export async function duplicateInvoice({ cookies }, id) {
 /**
  * Create an invoice from the builder. The body is already the API shape
  * (account_id/contact_id required, line_items nested). The server owns the parts
- * that must not be forged — org and created_by (from the JWT/profile), the
+ * that must not be forged: org and created_by (from the JWT/profile), the
  * invoice number, the public token, and every total (recomputed from the line
  * items). `status` is server-forced to Draft; sending it is ignored. The 201
  * wraps the record as `{ invoice }`, so unwrap it for the caller's redirect.

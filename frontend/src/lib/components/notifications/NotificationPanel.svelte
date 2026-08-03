@@ -23,7 +23,7 @@
   let { onClose } = $props();
 
   // Map machine verbs to icons. Unknown verbs fall back to the bell.
-  // NOTE: `case.*` keys are backend wire-format strings — do not rename.
+  // NOTE: `case.*` keys are backend wire-format strings. Do not rename.
   const VERB_ICONS = {
     'case.commented': MessageSquare,
     'case.mentioned': AtSign,
@@ -127,7 +127,7 @@
               <span class="min-w-0 flex-1">
                 <span class="block text-sm leading-snug">
                   <span class="font-medium">{actorLabel(n)}</span>
-                  {' '}{verbLabel(n)}{n.entity_name ? ` — ${n.entity_name}` : ''}
+                  {' '}{verbLabel(n)}{n.entity_name ? `, ${n.entity_name}` : ''}
                 </span>
                 {#if n.data?.comment_excerpt}
                   <span class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]">

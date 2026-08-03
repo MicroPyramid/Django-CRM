@@ -3,10 +3,10 @@ Tier 3 approval workflows.
 
 Two org-scoped models live here:
 
-* ``ApprovalRule`` — admin-configurable predicate. When an active rule matches
+* ``ApprovalRule``: admin-configurable predicate. When an active rule matches
   a case (priority + case_type + team filters), the close transition is gated
   until an ``Approval`` row in state ``approved`` exists.
-* ``Approval`` — one row per request. State machine:
+* ``Approval``: one row per request. State machine:
   ``pending`` -> ``approved`` | ``rejected`` | ``cancelled``.
 
 Both models follow ``COORDINATION_DECISIONS.md`` D2: inherit ``BaseModel`` and
@@ -24,7 +24,7 @@ from common.utils import CASE_TYPE, PRIORITY_CHOICE
 
 
 # Approver roles. Mirrors the spec's ``ADMIN``/``MANAGER`` choices even though
-# the project's ``Profile.role`` only knows ``ADMIN``/``USER`` today — keeping
+# the project's ``Profile.role`` only knows ``ADMIN``/``USER`` today, keeping
 # ``MANAGER`` as a reserved value avoids a future schema change when the role
 # model expands. Today, MANAGER simply matches no profiles.
 APPROVER_ROLE_CHOICES = (

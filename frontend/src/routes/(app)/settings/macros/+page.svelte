@@ -2,7 +2,7 @@
   /**
    * Canned replies.
    *
-   * The body is the whole point of a macro, so it is on the page — v1 hides it
+   * The body is the whole point of a macro, so it is on the page. V1 hides it
    * behind an edit dialog and lists titles, which means you cannot tell two
    * similarly-named macros apart without opening both.
    *
@@ -11,7 +11,7 @@
    * goes to the customer exactly as typed. That is the failure this page
    * exists to make visible: `%custmer_name%` has shipped twelve times.
    *
-   * The body is org-authored text and is rendered as TEXT — split into
+   * The body is org-authored text and is rendered as TEXT, split into
    * segments and placed in elements, never through {@html}. A canned reply is
    * a string a colleague wrote; putting it in the DOM as markup would make the
    * macro editor a stored-XSS form.
@@ -37,7 +37,7 @@
    *
    * Whether a token is real is decided by the server's `unknown_placeholders`,
    * not by matching against a list kept here. The supported set lives in
-   * `macros/render.py` precisely so clients cannot drift from it — a copy in
+   * `macros/render.py` precisely so clients cannot drift from it. A copy in
    * this file would eventually mark a working macro as broken.
    */
   function segments(macro) {
@@ -121,7 +121,7 @@
         </div>
         <p class="v2-sub" style="font-size:11.5px;margin-top:11px;line-height:1.5">
           These seven are the whole set. Anything else between percent signs is left exactly as
-          written and goes out that way — the server does not guess, on purpose, so a typo is
+          written and goes out that way. The server does not guess, on purpose, so a typo is
           visible in the composer rather than a blank in the customer's inbox.
         </p>
       </div>
@@ -145,8 +145,8 @@
 
       Written on one line and held there by prettier-ignore. Svelte collapses
       the newline and indentation between two inline children into a single
-      space, so a formatted version of this block renders "%customer_name% ,"
-      — a space the macro does not contain, in a preview whose whole job is to
+      space, so a formatted version of this block renders "%customer_name% ,".
+      A space the macro does not contain, in a preview whose whole job is to
       show exactly what the customer receives.
     -->
     <!-- prettier-ignore -->
@@ -157,7 +157,7 @@
         <TriangleAlert size={14} style="color:var(--v2-rust);flex:none" />
         <span>
           {m.unknown_placeholders.join(' and ')}
-          {m.unknown_placeholders.length === 1 ? 'is not a placeholder' : 'are not placeholders'} —
+          {m.unknown_placeholders.length === 1 ? 'is not a placeholder' : 'are not placeholders'},
           {m.unknown_placeholders.length === 1 ? 'it goes' : 'they go'} to the customer exactly as written.
           {#if m.usage_count > 0}
             This macro has been sent
@@ -192,7 +192,7 @@
     color: var(--v2-ink);
   }
   /* No side padding inside a body preview. Four pixels either side renders
-     "%customer_name% ," — a space the macro does not contain, on a screen
+     "%customer_name% ,". A space the macro does not contain, on a screen
      whose only job is to show exactly what the customer will receive. The
      background alone is enough to mark it. */
   .v2-macro-body .v2-token {

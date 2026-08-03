@@ -31,7 +31,7 @@ def published_solutions(org_a):
     s3 = Solution.objects.create(
         org=org_a,
         title="Internal draft about passwords",
-        description="Don't show me — I'm a draft.",
+        description="Don't show me: I'm a draft.",
         status="draft",
         is_published=False,
     )
@@ -122,7 +122,7 @@ class TestSolutionSuggestionsSeed:
     def test_empty_q_falls_back_to_recent_when_no_seed_match(
         self, admin_client, case_a, org_a
     ):
-        # No matches against "Bug in login page" terms — endpoint falls back
+        # No matches against "Bug in login page" terms, endpoint falls back
         # to the most-recent published solutions.
         Solution.objects.create(
             org=org_a,

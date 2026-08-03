@@ -2,7 +2,7 @@
 
 Written while wiring the v2 pipeline pages to the real API. Driving the
 endpoints (rather than reading them) turned up five defects, and each one has a
-test here in both directions — a permission check that has never been shown to
+test here in both directions. A permission check that has never been shown to
 return `True` is indistinguishable from one that cannot.
 
 - `get`, `put`, `patch` and `post` compared `request.profile` (a Profile) to
@@ -75,8 +75,8 @@ class TestDealDetailAccess:
     ):
         """The regression test for the 500.
 
-        This is the ordinary case — a rep opening a deal an admin created and
-        assigned to them — and it raised AttributeError on `created_by.user`.
+        This is the ordinary case, a rep opening a deal an admin created and
+        assigned to them, and it raised AttributeError on `created_by.user`.
         `_created_by` matters: with `created_by` left null the buggy branch is
         skipped and the test passes against broken code.
         """
@@ -101,13 +101,13 @@ class TestDealDetailAccess:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_other_org_is_not_found(self, org_b_client, org_a):
-        """404, not 403 — the reply must not confirm the id exists."""
+        """404, not 403. The reply must not confirm the id exists."""
         deal = _deal(org_a, name="Org A Only")
         response = org_b_client.get(_detail_url(deal.pk))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_deal_with_no_creator_still_renders(self, user_client, user_profile, org_a):
-        """`created_by` is nullable — SET_NULL on user deletion."""
+        """`created_by` is nullable. SET_NULL on user deletion."""
         deal = _deal(org_a, name="Orphan")
         deal.assigned_to.add(user_profile)
         response = user_client.get(_detail_url(deal.pk))
@@ -330,7 +330,7 @@ class TestDealListTotals:
     def test_totals_narrow_for_a_non_admin(
         self, user_client, user_profile, admin_user, org_a
     ):
-        """A rep's header counts the rep's deals — the same subset the list
+        """A rep's header counts the rep's deals. The same subset the list
         shows them, since the queryset is already narrowed before totalling."""
         _created_by(_deal(org_a, name="Theirs", amount=Decimal("500")), admin_user)
         mine = _created_by(

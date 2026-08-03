@@ -53,7 +53,7 @@ class PATAuthentication(BaseAuthentication):
     def authenticate(self, request):
         raw = _extract_raw(request)
         if not raw:
-            return None  # Not a PAT — let JWT / org-key auth handle it.
+            return None  # Not a PAT. Let JWT / org-key auth handle it.
 
         # The GetProfileAndOrg middleware resolves the PAT first (so org
         # context is set before RequireOrgContext runs) and stashes it on the

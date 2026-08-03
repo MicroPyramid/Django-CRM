@@ -7,7 +7,7 @@
    * up with two tags for one idea", and both need the counts to answer.
    *
    * `slug` is unique per org and derived from `name`, so two tags can never
-   * collide on the slug — but "Renewal" and "Renewals" slug differently while
+   * collide on the slug, but "Renewal" and "Renewals" slug differently while
    * meaning the same thing, and the work splits silently across them.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -32,7 +32,7 @@
   /**
    * Tags that probably mean the same thing.
    *
-   * A suggestion, computed over the complete list — settings lists are not
+   * A suggestion, computed over the complete list. Settings lists are not
    * paginated, so this is not an aggregate over rows we cannot see. It is
    * deliberately crude (case, spacing, punctuation and a trailing plural) and
    * it never merges anything: it puts two names next to each other and lets a

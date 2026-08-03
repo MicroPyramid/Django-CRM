@@ -5,7 +5,7 @@
    * Two things the model already knows that v1 drew over:
    *
    * 1. `BoardColumn.limit` is a WIP limit. It is stored, and v1 rendered a
-   *    column at 6/4 exactly like one at 2/5 — so the limit was a number
+   *    column at 6/4 exactly like one at 2/5, so the limit was a number
    *    nobody could act on. Here the count is against the limit and a column
    *    over it says so, because that is the entire purpose of setting one.
    * 2. `is_completed` is `completed_at is not None`, not "sits in Done". A
@@ -13,8 +13,8 @@
    *    work and stays overdue. Both checks key off the timestamp, so the board
    *    and every count agree with the API.
    *
-   * Moving a card is a drag. The lane state is optimistic — the card follows
-   * the cursor and the counts update immediately — and the drop is persisted
+   * Moving a card is a drag. The lane state is optimistic, the card follows
+   * the cursor and the counts update immediately, and the drop is persisted
    * with `PUT /boards/tasks/<id>/`. If the server refuses (it validates the
    * target column and the membership), we reload and the card snaps back, so
    * the board never claims a move the backend didn't make.
@@ -48,7 +48,7 @@
   }
 
   // Lanes are optimistic local state: dnd mutates them on drag, and we resync
-  // from the server only when `load` actually re-runs (a genuine reload) — an
+  // from the server only when `load` actually re-runs (a genuine reload), an
   // optimistic move touches `lanes`, not `data`, so it is never clobbered.
   // svelte-ignore state_referenced_locally
   let lanes = $state(buildLanes(data));
@@ -64,7 +64,7 @@
   // Adding cards and columns. A card form opens under one lane at a time; the
   // column form opens once at the end. Both post to the page's actions and
   // reload on success, so the new record arrives from the API rather than being
-  // guessed at — the same rule the drag follows.
+  // guessed at. The same rule the drag follows.
   let addingCardTo = $state(/** @type {string | null} */ (null));
   let addCardBusy = $state(false);
   let addCardError = $state('');
@@ -133,11 +133,11 @@
       } else {
         moveError =
           (result.type === 'failure' && /** @type {any} */ (result.data)?.error) ||
-          'Could not move the card — reverted.';
+          'Could not move the card; reverted.';
         await invalidateAll();
       }
     } catch {
-      moveError = 'Could not move the card — reverted.';
+      moveError = 'Could not move the card, reverted.';
       await invalidateAll();
     }
   }
@@ -153,11 +153,11 @@
   {/snippet}
   {#snippet actions()}
     <!-- The board picker is a control, not navigation, so it stays out of the
-         sidebar — boards come and go, and a sidebar that grows a row per board
+         sidebar. Boards come and go, and a sidebar that grows a row per board
          stops being a map. A single board needs no picker. -->
     {#if data.boards.length > 1}
       <!-- A GET form: picking a board navigates to `?board=<id>` and re-runs
-           load, which SvelteKit routes client-side — no goto() needed. -->
+           load, which SvelteKit routes client-side, no goto() needed. -->
       <form method="GET" class="v2-board-form">
         <select
           name="board"
@@ -295,7 +295,7 @@
                      work by every count on this page, and by the API's. -->
                 <div class="v2-card-flag">
                   <TriangleAlert size={12} style="flex:none" />
-                  <span>In Done, never marked complete — still counted as open</span>
+                  <span>In Done, never marked complete, still counted as open</span>
                 </div>
               {/if}
             </div>
@@ -467,7 +467,7 @@
      there, so it is said once, in the open. -->
 <p class="v2-sub v2-pad" style="font-size:11.5px;padding-bottom:14px;flex:none;margin:0">
   Cards on a board are separate records from the
-  <a href="/tasks" style="color:inherit">task list</a> — a card here does not appear there, and completing
+  <a href="/tasks" style="color:inherit">task list</a>. A card here does not appear there, and completing
   one does not complete the other.
 </p>
 
@@ -563,7 +563,7 @@
     color: var(--v2-ink);
   }
   /* The whole "Add column" lane is the target, so it gets a dashed frame and
-     centres its label — an empty column waiting to exist. */
+     centres its label. An empty column waiting to exist. */
   .v2-lane-add-column {
     background: none;
   }

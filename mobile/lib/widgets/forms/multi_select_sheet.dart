@@ -5,7 +5,7 @@ import '../../core/theme/theme.dart';
 
 /// Generic searchable multi-select bottom sheet.
 ///
-/// Open with `MultiSelectSheet.show<T>(...)` — returns the new selection or
+/// Open with `MultiSelectSheet.show<T>(...)`. Returns the new selection or
 /// null if cancelled. Items are matched against `searchText(item)`.
 class MultiSelectSheet<T> extends StatefulWidget {
   final String title;

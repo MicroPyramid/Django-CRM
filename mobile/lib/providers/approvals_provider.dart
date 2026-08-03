@@ -17,7 +17,7 @@ class ApprovalsQuery {
   });
 }
 
-/// Approvals (Tier 3) — fetched on demand. Used by both the per-case panel
+/// Approvals (Tier 3), fetched on demand. Used by both the per-case panel
 /// and the inbox screen.
 class ApprovalsNotifier extends Notifier<List<Approval>> {
   final ApiService _api = ApiService();

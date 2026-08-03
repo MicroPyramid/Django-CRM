@@ -18,7 +18,7 @@ export async function POST({ params, request, cookies, locals }) {
     );
     return json(data, { status: 201 });
   } catch (err) {
-    // 409 surfaces "you already have a running timer" — bubble up so the UI
+    // 409 surfaces "you already have a running timer". Bubble up so the UI
     // can offer to switch the running timer to this case.
     const status = /already have a running/i.test(err?.message || '') ? 409 : 400;
     return json({ error: err?.message || 'Start failed' }, { status });

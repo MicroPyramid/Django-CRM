@@ -84,7 +84,7 @@ class BusinessHoliday(BaseModel):
     """A single full-day off on a calendar (national holiday, company day off).
 
     Holidays are date-based and apply for the entire day in the calendar's
-    timezone — partial-day holidays are out of scope for v1.
+    timezone. Partial-day holidays are out of scope for v1.
     """
 
     calendar = models.ForeignKey(

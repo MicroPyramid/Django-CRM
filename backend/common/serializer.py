@@ -280,7 +280,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    """In-app notification — list/feed shape returned by GET and SSE."""
+    """In-app notification. List/feed shape returned by GET and SSE."""
 
     actor = CommentUserSerializer(read_only=True)
 
@@ -318,7 +318,7 @@ class LeadCommentSerializer(serializers.ModelSerializer):
 
 class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
     """Per-org custom-field definition. key/target_model/field_type are immutable
-    after creation — admins must create a new definition to change shape."""
+    after creation. Admins must create a new definition to change shape."""
 
     class Meta:
         model = CustomFieldDefinition
@@ -549,7 +549,7 @@ class CreateProfileSerializer(serializers.ModelSerializer):
         # a caller that forgets to pass it fails closed: the worst outcome of a
         # missing flag is that a privileged field is ignored, never that an
         # unprivileged caller gets to set one. A plain member editing their own
-        # profile could otherwise PATCH themselves to role="ADMIN" — a live
+        # profile could otherwise PATCH themselves to role="ADMIN". A live
         # privilege escalation this closes by making these fields read_only
         # (so they are silently ignored) when the caller may not grant them.
         can_grant = kwargs.pop("can_grant_privileges", False)
@@ -602,13 +602,13 @@ class ProfileSelfUpdateSerializer(serializers.Serializer):
     and the ``has_*_access`` / ``is_organization_admin`` flags are NOT here:
     those decide permissions and are an admin's to set. Leaving them out is what
     keeps this self-edit endpoint from becoming the same self-serve privilege
-    escalation ``CreateProfileSerializer`` once was — a field the serializer does
+    escalation ``CreateProfileSerializer`` once was. A field the serializer does
     not name cannot be written, no matter what the request body contains.
 
     ``phone`` is validated (not written raw as the view used to), so a bad value
     is a clean 400 instead of an unvalidated string in the column. A blank phone
-    is allowed and clears it — ``allow_blank`` short-circuits before the regex,
-    which requires 7–25 characters.
+    is allowed and clears it, ``allow_blank`` short-circuits before the regex,
+    which requires 7-25 characters.
     """
 
     name = serializers.CharField(required=False, allow_blank=True, max_length=255)
@@ -685,7 +685,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(list)
     def get_teams(self, obj):
-        # `member_count` is what a reader needs to understand a team share —
+        # `member_count` is what a reader needs to understand a team share;
         # "Support (3)" says how many people the pick actually reaches, which a
         # bare team name does not. Naming the team rather than flattening it to
         # its members keeps the share meaning what was chosen as people join and

@@ -1,6 +1,6 @@
 <script>
   /**
-   * Personal access tokens — the org-wide oversight view.
+   * Personal access tokens: the org-wide oversight view.
    *
    * THE ONE RULE THIS PAGE EXISTS TO KEEP
    * A token value is shown once, in the response to the request that created
@@ -18,8 +18,8 @@
    * The mock this page replaced claimed such a token "keeps working with the
    * role they had". It does not: deactivating an account sets profile.is_active
    * false, and that is exactly the flag the token authenticator checks, so the
-   * token is refused at login today. It is worth revoking anyway — it would come
-   * back if the account were reactivated — which is why it is surfaced in clay
+   * token is refused at login today. It is worth revoking anyway. It would come
+   * back if the account were reactivated, which is why it is surfaced in clay
    * (a loose end) rather than rust (a live breach).
    *
    * `scopes` is not shown as a permission list, and that is deliberate. The
@@ -74,13 +74,13 @@
       setTimeout(() => (copied = false), 1600);
     } catch {
       // Clipboard blocked (no https / no permission). The value is on screen to
-      // select by hand — nothing else to do, and no error worth alarming over.
+      // select by hand, nothing else to do, and no error worth alarming over.
     }
   }
 
   /**
    * Revoked and expired are different reasons for the same outcome, so they
-   * read differently but tone the same — neither is a live credential.
+   * read differently but tone the same. Neither is a live credential.
    *
    * @param {any} t
    * @returns {{ label: string, tone: 'ink'|'slate'|'clay'|'rust'|'moss' }}
@@ -152,7 +152,7 @@
           style="padding:15px 16px;margin-bottom:18px;border-color:color-mix(in srgb, var(--v2-moss) 40%, var(--v2-line))"
         >
           <div style="font-weight:650;font-size:13px">
-            “{form.created.name}” created — copy it now
+            “{form.created.name}” created, copy it now
           </div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 10px">
             This is the only time the full token is shown. Store it somewhere safe; it cannot be
@@ -238,7 +238,7 @@
         <div style="margin-bottom:18px">
           <NextAction
             label="Loose end"
-            text={`${totals.orphaned} live ${totals.orphaned === 1 ? 'token belongs' : 'tokens belong'} to a deactivated account. Deactivating already stops them at login, but they are not revoked — reactivating the account would bring them back.`}
+            text={`${totals.orphaned} live ${totals.orphaned === 1 ? 'token belongs' : 'tokens belong'} to a deactivated account. Deactivating already stops them at login, but they are not revoked. Reactivating the account would bring them back.`}
           />
           <form
             method="POST"
@@ -338,7 +338,7 @@
         <div>
           <div style="font-weight:600;font-size:13px">A token is the whole account</div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
-            A token authenticates as its owner and inherits their role and organisation — there is
+            A token authenticates as its owner and inherits their role and organisation. There is
             no narrower permission to give it. Issue one per integration so a single revocation
             stops a single thing, set an expiry, and revoke anything you cannot name a use for. The
             value is shown once when the token is created and cannot be recovered afterwards.

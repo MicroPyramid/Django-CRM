@@ -1,14 +1,14 @@
 """ASGI entrypoint for Django-CRM.
 
 Mirror of `wsgi.py` for ASGI servers (uvicorn, hypercorn, daphne). Required
-for the in-app notifications SSE stream — async views serving long-lived
+for the in-app notifications SSE stream. Async views serving long-lived
 connections will hold a worker hostage when run under WSGI.
 
 It also optionally mounts the BottleCRM **MCP server** at ``/mcp`` so AI agents
 can connect over HTTP with no local install (each request authenticates with
 its own ``Authorization: Bearer <pat>`` header). The mount is best-effort: if
 the optional ``bcrm-mcp`` dependency is not installed, or ``BCRM_MCP_ENABLED``
-is false, this module serves Django alone — exactly as before.
+is false, this module serves Django alone. Exactly as before.
 
 Production deploy must run an ASGI server pointing at this module:
 
@@ -54,7 +54,7 @@ def _build_application():
         from bcrm_mcp.auth import extract_bearer_token
         from bcrm_mcp.server import build_http_app
     except ImportError:
-        # Optional `mcp` extra not installed — serve Django only.
+        # Optional `mcp` extra not installed: serve Django only.
         return django_application
 
     # The CRM REST root the MCP tools call. Mounted in-process, so this is a
@@ -65,7 +65,7 @@ def _build_application():
     # MCP streamable endpoint lives at exactly "/mcp". We dispatch by prefix
     # ourselves rather than using Starlette's Mount, which (in the vendored
     # starlette) only matches "/mcp/…" and lets a slashless "/mcp" fall through
-    # to Django — users configure ".../mcp" without a trailing slash.
+    # to Django, users configure ".../mcp" without a trailing slash.
     mcp_app = build_http_app(base_url, path="/mcp")
 
     def _bearer_token(scope):
@@ -87,7 +87,7 @@ def _build_application():
             path = scope.get("path", "")
             if path == "/mcp" or path.startswith("/mcp/"):
                 # Edge auth: reject anything without a well-formed bearer token
-                # BEFORE it reaches the MCP layer — so initialize/list-tools are
+                # BEFORE it reaches the MCP layer, so initialize/list-tools are
                 # unreachable unauthenticated, not just tool calls. (The token's
                 # validity is still checked by the backend on each API call.)
                 if _bearer_token(scope) is None:

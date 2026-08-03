@@ -1,7 +1,7 @@
 """Vertical-pack endpoints.
 
 Authorization: any authenticated member may list packs; only an org ADMIN may
-apply one or clear sample data. The org is always request.profile.org — never a
+apply one or clear sample data. The org is always request.profile.org, never a
 body field. Org.vertical is descriptive and is never read here for access control.
 """
 
@@ -29,12 +29,12 @@ class PackListView(APIView):
     # No HasOrgContext: this list is static repo content (JSON files),
     # byte-identical for every tenant, with no tenant data in the response.
     # It backs the pack chooser on the org-creation page, where a user
-    # creating their first org has no org_id claim yet — HasOrgContext would
+    # creating their first org has no org_id claim yet. HasOrgContext would
     # 403 exactly that audience. /api/packs/ is exempted from
     # RequireOrgContext by exact match (not prefix) in
     # common/middleware/rls_context.py; see the comment there for why the
     # write/destroy endpoints below must not be. IsAuthenticated still
-    # applies — this is not anonymous.
+    # applies. This is not anonymous.
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):

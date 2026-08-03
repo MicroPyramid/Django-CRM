@@ -156,7 +156,7 @@
                 bind:value={draft[defn.key]}
                 class="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-default)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary-default)]"
               >
-                <option value="">— None —</option>
+                <option value="">, None, </option>
                 {#each defn.options || [] as opt (opt.value)}
                   <option value={opt.value}>{opt.label}</option>
                 {/each}

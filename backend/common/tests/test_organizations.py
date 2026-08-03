@@ -278,7 +278,7 @@ class TestProfileView:
         """A plain USER cannot set role/admin flags on their own profile here.
 
         The self-edit serializer names only phone and name, so a role or
-        is_organization_admin in the body is ignored (not 400'd) — the request
+        is_organization_admin in the body is ignored (not 400'd). The request
         succeeds, the privileged fields do not move. This is the /api/profile/
         counterpart to the CreateProfileSerializer escalation that was closed on
         /api/user/<id>/; the door has to be shut on every self-edit path.

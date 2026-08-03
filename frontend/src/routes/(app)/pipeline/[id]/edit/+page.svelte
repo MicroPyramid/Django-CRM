@@ -3,7 +3,7 @@
    * Editing a deal.
    *
    * Three fields on this form are not what they appear to be, and all three
-   * were found by reading `opportunity/models.py` rather than v1's edit page —
+   * were found by reading `opportunity/models.py` rather than v1's edit page,
    * which offers Amount, Stage and Close date as three plain inputs with no
    * indication that any of them behaves specially.
    *
@@ -19,7 +19,7 @@
    * and `stage_changed_at` is what `days_in_current_stage` and
    * `get_aging_status()` are computed from. The pipeline board colours every
    * card by that status. Moving a stage therefore turns a stalled deal green
-   * — not because anything improved, but because the clock restarted. That is
+   *, not because anything improved, but because the clock restarted. That is
    * a legitimate thing to do and an illegitimate thing to do by accident, so
    * the form shows the number that is about to be discarded.
    *
@@ -28,7 +28,7 @@
    * mirrored below so the requirement appears when you pick the stage rather
    * than after you submit.
    *
-   * `Opportunity.clean()` declares both — but DRF never calls `clean()`, so
+   * `Opportunity.clean()` declares both, but DRF never calls `clean()`, so
    * until this module was wired the API accepted a won deal worth nothing with
    * no close date, and only the model's unit tests knew otherwise. They are
    * enforced in `OpportunityCreateSerializer.validate()` now. The rule below is
@@ -37,7 +37,7 @@
    * NOT ON THIS FORM, because the server owns them: `amount_source`,
    * `stage_changed_at`, `closed_by`, `kanban_order`, `org`, `created_by`.
    * The amount input is `disabled` when line items own it, and a disabled
-   * control submits nothing — which is exactly what PATCH needs, since absent
+   * control submits nothing, which is exactly what PATCH needs, since absent
    * means "leave it alone".
    */
   import { tick, untrack } from 'svelte';
@@ -58,7 +58,7 @@
   let { data, form: result } = $props();
 
   /* Read once, on purpose. `originalStage` has to stay the stage this form
-     opened on — that is what "the clock is about to reset" is measured
+     opened on. That is what "the clock is about to reset" is measured
      against, and a revalidation must not quietly redefine it. */
   const { deal, server, originalStage } = untrack(() => ({
     deal: data.deal,
@@ -110,7 +110,7 @@
 
   /**
    * Stop the submit when this form's own checks fail, and send focus to the
-   * first field that needs work — on a long form the error can be off screen.
+   * first field that needs work. On a long form the error can be off screen.
    * `await tick()` matters: on the first submit the aria-invalid attributes do
    * not exist until Svelte flushes, so querying now would find nothing.
    *
@@ -259,7 +259,7 @@
       <!--
         The cost of the change, shown before it is made. `days_in_current_stage`
         and the aging pill on the board are both derived from stage_changed_at,
-        which save() resets — so this is the number that is about to disappear.
+        which save() resets, so this is the number that is about to disappear.
       -->
       {#if stageChanged}
         <div class="consequence" style="--edge:var(--v2-clay)" id="stage-effect">
@@ -352,7 +352,7 @@
       <div class="v2-field">
         <label for="f-owner">Owner</label>
         <!-- What the select was rendered with. The action compares against it
-             so an untouched owner is not sent at all — `assigned_to` is a
+             so an untouched owner is not sent at all; `assigned_to` is a
              many-to-many and this select is single, so sending it always would
              cut a two-person deal down to one on every save. -->
         <input type="hidden" name="assigned_to_original" value={data.form.assigned_to} />

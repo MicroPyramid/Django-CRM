@@ -3,14 +3,14 @@
    * Your own account.
    *
    * The fields that are NOT editable here are the interesting ones. Role is
-   * shown and cannot be changed from this page — the API refuses to let anyone
+   * shown and cannot be changed from this page. The API refuses to let anyone
    * change their own role (ProfileSelfUpdateSerializer names only name and
    * phone), and an input that always fails is worse than no input. Same for the
    * organisation: which org you are in decides which rows you can see at all,
    * and it comes from the JWT, not from a form.
    *
    * Two things you CAN do: edit your name and phone (PATCH /profile/), and
-   * switch org — a real action that re-issues the token rather than editing a
+   * switch org, a real action that re-issues the token rather than editing a
    * field, so it goes through its own action and the copy says so.
    */
   import { enhance } from '$app/forms';
@@ -42,7 +42,7 @@
   const onEdit = (/** @type {any} */ { formData }) => {
     // Only send the field the person actually changed. The PATCH treats an
     // absent field as "leave it alone", so an untouched phone is not
-    // re-validated — which matters because some seeded numbers carry an
+    // re-validated, which matters because some seeded numbers carry an
     // extension the validator rejects, and re-sending one would block a plain
     // name change. Same rule the leads form uses for its owner select.
     if ((formData.get('name') ?? '') === name) formData.delete('name');

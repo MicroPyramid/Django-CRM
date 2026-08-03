@@ -172,7 +172,7 @@ class TestDispatcher(NotificationModelBase):
                 (),
                 {"publish": lambda self, *a, **kw: (_ for _ in ()).throw(RuntimeError("boom"))},
             )()
-            # Should NOT raise — publish is best-effort.
+            # Should NOT raise. Publish is best-effort.
             n = notifications.create(self.profile_a, "case.commented")
         assert n is not None
         assert Notification.objects.filter(pk=n.pk).exists()
@@ -214,7 +214,7 @@ class TestPurgeTask(NotificationModelBase):
     def test_purge_respects_custom_days_arg(self):
         from common.tasks import purge_read_notifications
 
-        # Read 5 days ago — survives default 90, but not when days=1
+        # Read 5 days ago, survives default 90, but not when days=1
         n = Notification.objects.create(
             org=self.org_a,
             recipient=self.profile_a,

@@ -14,7 +14,7 @@ class CrashReporting {
     return Firebase.apps.isNotEmpty;
   }
 
-  /// Reflect the current auth state into Crashlytics — user id + email + org.
+  /// Reflect the current auth state into Crashlytics. User id + email + org.
   /// Call after sign-in, org switch, or restore-from-storage.
   static Future<void> applyFromAuth(AuthService auth) async {
     if (!_enabled) return;

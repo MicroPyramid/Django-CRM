@@ -1,18 +1,18 @@
 import { listTasks } from '$lib/server/v2/tasks.js';
 
 /**
- * The task calendar — the third face of Tasks, after the list and the boards.
+ * The task calendar: the third face of Tasks, after the list and the boards.
  *
  * v1 had a `/tasks/calendar` route that only redirected: the calendar was a
  * view-mode folded into the main tasks page. Here it is its own page under the
- * Tasks tabs, reading the same list endpoint the queue reads — so it inherits
+ * Tasks tabs, reading the same list endpoint the queue reads, so it inherits
  * the queue's visibility rule exactly (an admin sees the org's tasks, a member
  * sees the ones they made or were handed) with no new authorisation surface.
  *
  * Only DATED, month-windowed tasks are fetched: the API is asked for the grid's
  * date range with `due_date__gte`/`due_date__lte`, so a calendar of July never
  * pulls a year of rows. Tasks with no due date can't sit on a day and so don't
- * appear here at all — the page says so, and points at the list where they live.
+ * appear here at all. The page says so, and points at the list where they live.
  */
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -59,7 +59,7 @@ export async function load(event) {
   const { year, month } = resolveMonth(event.url.searchParams.get('month'), now);
 
   // Monday-start grid. `offset` is how many days of the previous month lead the
-  // 1st; `cells` rounds up to whole weeks so the grid is always 4–6 clean rows.
+  // 1st; `cells` rounds up to whole weeks so the grid is always 4-6 clean rows.
   const first = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const offset = (first.getDay() + 6) % 7; // JS Sun=0..Sat=6 → Mon=0..Sun=6
@@ -117,7 +117,7 @@ export async function load(event) {
     .filter((c) => c.inMonth && c.tasks.length > 0)
     .map((c) => ({ date: c.date, day: c.day, isToday: c.isToday, tasks: c.tasks }));
 
-  // Count only tasks whose due date is IN this month — the leading/trailing
+  // Count only tasks whose due date is IN this month. The leading/trailing
   // cells can carry a day or two of the neighbouring months, and the header
   // says "July", so a spillover task must not inflate July's number.
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;

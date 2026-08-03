@@ -28,7 +28,7 @@ def test_clear_removes_only_sample_rows(org_a, admin_profile):
     assert result["retained"] == {}
     assert Lead.objects.filter(org=org_a).count() == 1
     assert Lead.objects.filter(org=org_a).first().id == real.id
-    # The reserved tag is a label only now — clear_sample_data must never
+    # The reserved tag is a label only now; clear_sample_data must never
     # delete it (Critical fix: it also must never be the *deletion key*; see
     # test_clear_does_not_delete_a_real_lead_that_adopted_the_sample_tag
     # below). This assertion is intentionally the inverse of the original
@@ -38,7 +38,7 @@ def test_clear_removes_only_sample_rows(org_a, admin_profile):
 
 @pytest.mark.django_db
 def test_clear_does_not_touch_another_org(org_a, org_b, admin_profile, profile_b):
-    # Each org is applied with an actor from that same org — apply_pack now
+    # Each org is applied with an actor from that same org; apply_pack now
     # rejects a mismatched (org, actor) pair (see the org guard in
     # applier.py), so org_b's apply uses profile_b, not admin_profile.
     apply_pack(org_a, get_pack("real-estate"), admin_profile)
@@ -56,7 +56,7 @@ def test_clear_does_not_delete_a_real_lead_that_adopted_the_sample_tag(
     """Regression for the Critical finding: clear_sample_data must key off
     Lead.is_sample, never the "Sample data" tag. Tags.save() recomputes its
     slug on every save and the tag CRUD endpoints have no reserved-slug
-    guard, so a real lead can end up carrying this tag several ways — a
+    guard, so a real lead can end up carrying this tag several ways: a
     member attaching it from the ordinary tag picker (reproduced here), a
     tag getting renamed onto this slug, or a user's own pre-existing
     "Sample data" tag being adopted by an apply. None of those may destroy
@@ -103,11 +103,11 @@ def test_apply_with_no_actor_still_creates_leads_unassigned(org_a):
     """Regression: actor is optional (mirrors PackApplication.applied_by
     being nullable). Before the fix, `lead.assigned_to.add(None)` on
     Postgres raised a NOT NULL violation on the through row that the
-    per-lead except clause misdiagnosed as "duplicate email" and swallowed —
+    per-lead except clause misdiagnosed as "duplicate email" and swallowed;
     apply_pack(org, pack, None) created zero leads and reported all of them
     skipped with a false reason. On SQLite (this whole suite) the same call
     was a silent no-op, so this test could not have caught the Postgres bug
-    by itself — it only pins the now-intended behavior: creation must
+    by itself: it only pins the now-intended behavior: creation must
     succeed, and no lead ends up with a None entry in assigned_to.
     """
     pack = get_pack("real-estate")
@@ -160,7 +160,7 @@ def test_sample_data_applies_cleanly_for_every_shipped_pack(
     org_a, admin_profile, pack_id
 ):
     """The only end-to-end coverage of education-admissions' and
-    professional-services' sample_data blocks — everything else in this file
+    professional-services' sample_data blocks, everything else in this file
     exercises real-estate only. Both other packs carry opportunity_amount /
     currency (Minor 9) and a full set of remapped `source` values (Important
     4), so this is what actually proves those two packs' sample rows insert
@@ -232,11 +232,11 @@ def test_sample_references_resolve_to_sample_rows(org_a, admin_profile):
     assert dana.account is not None
     assert dana.account.name == "Harbourline Developments"
     assert dana.account.is_sample
-    # Both sides of the account/contact link — the FK alone leaves the account
+    # Both sides of the account/contact link. The FK alone leaves the account
     # page's contact list empty.
     assert dana in dana.account.contacts.all()
 
-    deal = Opportunity.objects.get(org=org_a, name="Marina District 3 bed — Whitfield")
+    deal = Opportunity.objects.get(org=org_a, name="Marina District 3 bed, Whitfield")
     assert deal.account == dana.account
 
     ticket = Case.objects.get(org=org_a, name="Parking allocation not confirmed")
@@ -309,7 +309,7 @@ def test_clear_keeps_a_sample_account_carrying_a_real_deal(org_a, admin_profile)
 
 @pytest.mark.django_db
 def test_clear_keeps_a_sample_ticket_carrying_billable_time(org_a, admin_profile):
-    """TimeEntry.case is CASCADE — billable hours logged against a demo ticket
+    """TimeEntry.case is CASCADE, billable hours logged against a demo ticket
     must survive a clear.
     """
     from django.utils import timezone
@@ -329,7 +329,7 @@ def test_clear_keeps_a_sample_ticket_carrying_billable_time(org_a, admin_profile
     assert TimeEntry.objects.filter(pk=entry.pk).exists()
     # Retention has to propagate: Case.account is CASCADE, so keeping the ticket
     # is worthless if its sample account is deleted a step later and takes the
-    # ticket — and the billable time — with it.
+    # ticket, and the billable time, with it.
     assert result["retained"]["sample_account"] == 1
     ticket.refresh_from_db()
     assert ticket.account is not None
@@ -357,6 +357,6 @@ def test_clear_does_not_raise_when_a_sample_account_has_a_protected_invoice(
     assert result["retained"]["sample_account"] == 1
     assert Account.objects.filter(pk=account.pk).exists()
     assert Invoice.objects.filter(pk=invoice.pk).exists()
-    # The rest of the sample data still cleared — one blocked row must not
+    # The rest of the sample data still cleared. One blocked row must not
     # abort the whole operation.
     assert result["deleted"]["sample_lead"] == 25

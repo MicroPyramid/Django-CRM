@@ -265,7 +265,7 @@ class Case(AssignableMixin, BaseModel):
         """Auto-set SLA values based on priority for new cases."""
         from .workflow import DEFAULT_FIRST_RESPONSE_SLA, DEFAULT_RESOLUTION_SLA
 
-        # Use `_state.adding` rather than `not self.pk` — BaseModel populates
+        # Use `_state.adding` rather than `not self.pk`, BaseModel populates
         # `id` with a UUID default at __init__, so `self.pk` is truthy long
         # before the first INSERT.
         if self._state.adding:
@@ -299,7 +299,7 @@ class Case(AssignableMixin, BaseModel):
             return None
         deadline = add_business_hours(self.created_at, hours, self._sla_calendar())
         # Customer wait time accumulated while Pending shifts the deadline
-        # forward verbatim — we don't try to walk this through business hours
+        # forward verbatim. We don't try to walk this through business hours
         # again because it represents real elapsed time the agent had to wait,
         # not a target that respects the calendar.
         paused = self.sla_paused_seconds or 0
@@ -344,7 +344,7 @@ class CaseWatcher(BaseModel):
     """A profile subscribed to updates on a case.
 
     Per `docs/cases/COORDINATION_DECISIONS.md` D2 we inherit BaseModel and
-    declare our own org FK rather than using BaseOrgModel — RLS still
+    declare our own org FK rather than using BaseOrgModel. RLS still
     applies via the migration that adds the `case_watcher` table.
     """
 
@@ -947,7 +947,7 @@ class TimeEntry(BaseModel):
     Per `docs/cases/COORDINATION_DECISIONS.md` D2 we inherit BaseModel and
     declare our own org FK; RLS is enforced via the migration policy. The
     `one_active_timer_per_profile` partial unique index guarantees a profile
-    cannot have two running timers concurrently — the start endpoint relies
+    cannot have two running timers concurrently. The start endpoint relies
     on this constraint as a race-defense in addition to its own existence
     check.
     """

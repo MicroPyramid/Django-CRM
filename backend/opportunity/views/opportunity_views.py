@@ -48,8 +48,8 @@ def stalled_filter(org):
     (falling back to `DEFAULT_STAGE_EXPECTED_DAYS`), multiplied by
     `ROTTEN_MULTIPLIER`.
 
-    It lives here, once, because two callers need it — the `?rotten=true`
-    filter and the `stalled` figure in the list totals — and a header that
+    It lives here, once, because two callers need it, the `?rotten=true`
+    filter and the `stalled` figure in the list totals, and a header that
     counts stalled deals differently from the pills on the rows underneath it
     is worse than no header. Note this cannot be an ORM annotation shared with
     the serializer: the threshold varies per stage and per org, so it has to be
@@ -75,14 +75,14 @@ class OpportunityListView(APIView, LimitOffsetPagination):
 
         `opportunities_count` already existed but nothing else did, so a client
         wanting the pipeline value had to add up the rows it happened to be
-        holding — which is one page of ten. The resulting header reads as a
+        holding, which is one page of ten. The resulting header reads as a
         statement about the pipeline and is actually a statement about the
         page, and it changes when you paginate.
 
         `weighted_sum` is SUM(amount * probability / 100): the forecast, as
         opposed to `amount_sum`, which is what the deals are worth if every one
-        of them lands. `probability` is never null on a saved row —
-        `Opportunity.save()` fills it from `STAGE_PROBABILITIES` — but `amount`
+        of them lands. `probability` is never null on a saved row,
+        `Opportunity.save()` fills it from `STAGE_PROBABILITIES`, but `amount`
         is nullable, so both sums coalesce to zero rather than returning None
         to a caller that will format it as currency.
         """
@@ -100,8 +100,8 @@ class OpportunityListView(APIView, LimitOffsetPagination):
             "count": totals_queryset.count(),
             "amount_sum": aggregates["amount_sum"],
             "weighted_sum": aggregates["weighted_sum"],
-            # Closed deals are never stalled — `get_aging_status()` returns
-            # green for them — so the count excludes them regardless of whether
+            # Closed deals are never stalled; `get_aging_status()` returns
+            # green for them, so the count excludes them regardless of whether
             # the caller asked for open deals only.
             "stalled_count": totals_queryset.exclude(stage__in=CLOSED_STAGES)
             .filter(stage_changed_at__isnull=False)
@@ -176,7 +176,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                             custom_fields__contains={cf_key: raw_value}
                         )
 
-            # `?open=true` — everything that is not Closed Won or Closed Lost.
+            # `?open=true`: everything that is not Closed Won or Closed Lost.
             # The existing `stage` filter is a `contains` match, so it cannot
             # express "not closed"; a caller wanting the working pipeline had to
             # fetch every deal and drop the closed ones client-side, which is
@@ -395,7 +395,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 opportunity_obj.id,
                 str(request.profile.org.id),
             )
-            # `id` is additive — no existing key changes — and without it a
+            # `id` is additive, no existing key changes, and without it a
             # client cannot open the deal it just created. The alternative is
             # guessing by name, which is a race and breaks on duplicates.
             return Response(
@@ -424,13 +424,13 @@ class OpportunityDetailView(APIView):
         """Admins, the creator, and anyone assigned. Everyone else gets a 403.
 
         Four copies of this check used to live inline in `get`, `put`, `patch`
-        and `post`, and all four compared `request.profile` — a Profile — to
+        and `post`, and all four compared `request.profile`, a Profile, to
         `opportunity.created_by`, which is a FK to `User`. Those types are
         never equal, so the creator half was dead: a non-admin who created a
         deal and did not also assign it to themselves was refused their own
         record. `delete()` got the same comparison right
         (`request.profile.user != created_by`), which is how you could tell it
-        was a mistake rather than a policy — the same person could delete the
+        was a mistake rather than a policy. The same person could delete the
         deal they were not allowed to read.
 
         Raising beats returning a Response: a returned Response from a helper
@@ -685,7 +685,7 @@ class OpportunityDetailView(APIView):
         elif self.opportunity.created_by:
             # `created_by` IS the User. The old code read `created_by.user.email`,
             # which raised AttributeError and returned a 500 for every non-admin
-            # assignee opening a deal somebody else had created — the common
+            # assignee opening a deal somebody else had created, the common
             # case, and invisible until the 403 above stopped firing wrongly.
             # Key is `user__email` to match the admin branch above; the two
             # returned different key names for the same list.
@@ -765,7 +765,7 @@ class OpportunityDetailView(APIView):
             )
         self.assert_deal_access(self.opportunity_obj)
 
-        # Create the comment directly via the generic Comment ORM path — the
+        # Create the comment directly via the generic Comment ORM path, the
         # previous code routed through CommentSerializer.save(opportunity_id=...,
         # commented_by_id=...) but CommentSerializer requires `object_id` and
         # `org` on input which the client never supplies, so is_valid() always

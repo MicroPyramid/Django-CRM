@@ -40,7 +40,7 @@ export const actions = {
      * reason: `SolutionDetailView` asks whether the request *moves* `status`
      * before demanding an admin. Sending the article's existing status on
      * every save is harmless for an admin and would be a 403 for the author
-     * of an already-approved article who only fixed a typo — a form that
+     * of an already-approved article who only fixed a typo, a form that
      * refuses to save what it just showed you.
      *
      * `is_published` is not on this form at all. It is the publish button on

@@ -9,13 +9,13 @@ it.
 
 The lookup key is always ``sha256(url_token)``:
 
-* invoice / estimate — the URL token is the raw ``public_token``;
-* CSAT — the URL token is the signed token, and ``cases.tasks.hash_csat_token``
+* invoice / estimate. The URL token is the raw ``public_token``;
+* CSAT: the URL token is the signed token, and ``cases.tasks.hash_csat_token``
   already stores its SHA-256 as ``csat_survey.token_hash``.
 
 Registration is called from the same place each token is minted, so the lookup
 never drifts from the source of truth. Resolution is deliberately side-effect
-free apart from returning the org id — the caller sets the RLS context.
+free apart from returning the org id. The caller sets the RLS context.
 """
 
 import hashlib
@@ -24,7 +24,7 @@ from common.models import PortalAccessToken
 
 
 def portal_token_hash(url_token: str) -> str:
-    """SHA-256 hex digest of a raw URL token — the lookup key."""
+    """SHA-256 hex digest of a raw URL token. The lookup key."""
     return hashlib.sha256(url_token.encode("utf-8")).hexdigest()
 
 
@@ -42,7 +42,7 @@ def register_portal_token(url_token, org_id, resource_type, resource_id) -> None
 
 
 def register_portal_token_hash(token_hash, org_id, resource_type, resource_id) -> None:
-    """Upsert by pre-computed hash — for callers that only store the hash (CSAT)."""
+    """Upsert by pre-computed hash, for callers that only store the hash (CSAT)."""
     if not token_hash or not org_id:
         return
     PortalAccessToken.objects.update_or_create(
@@ -58,7 +58,7 @@ def register_portal_token_hash(token_hash, org_id, resource_type, resource_id) -
 def resolve_portal_org(url_token, resource_type=None):
     """Resolve the org id for a raw URL token, or ``None`` if unknown.
 
-    Reads the unscoped lookup only — no org-scoped table is touched, so it works
+    Reads the unscoped lookup only, no org-scoped table is touched, so it works
     with an empty RLS context. When ``resource_type`` is given it must match,
     so an estimate token cannot resolve on the invoice endpoint. The caller is
     responsible for ``set_rls_context`` and for the resource query that

@@ -43,7 +43,7 @@ class AccountSerializer(serializers.ModelSerializer):
         """What this account is worth, owes and is complaining about.
 
         Computed by `accounts.views.annotate_rollups`, which is applied on the
-        list and detail endpoints. It is deliberately absent — `null` — rather
+        list and detail endpoints. It is deliberately absent, `null`, rather
         than zero-filled anywhere else: a page that was never given the numbers
         should say nothing, not quietly claim every total is zero.
         """
@@ -213,7 +213,7 @@ class AccountCreateSerializer(serializers.ModelSerializer):
         """Reject negative revenue here rather than letting the database do it.
 
         `Account` carries a `account_revenue_non_negative` CheckConstraint, so
-        the value could never be stored — but with nothing in front of it the
+        the value could never be stored, but with nothing in front of it the
         constraint surfaced as an IntegrityError, i.e. a 500, with no indication
         of which field was at fault. `number_of_employees` is a
         PositiveIntegerField and DRF derives `min_value=0` from it for free,

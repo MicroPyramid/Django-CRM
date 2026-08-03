@@ -1,11 +1,11 @@
 /**
- * Case approvals — the wiring behind /v2/tickets/approvals.
+ * Case approvals: the wiring behind /v2/tickets/approvals.
  *
  * Server-only. The inbox (`GET /cases/approvals/?state=all`) and the rule list
  * (`GET /cases/approval-rules/`) are fanned into the single shape the queue
  * reads, and the three decisions (approve / reject / cancel) POST to their
  * endpoints. The inbox has no totals envelope, so the header numbers are
- * computed here from the rows — same approach as recurring invoices.
+ * computed here from the rows, same approach as recurring invoices.
  *
  * The action guard `can_act` and `is_own_request` come straight from the
  * serializer (the server knows the rule pool and the viewer's identity); the
@@ -70,7 +70,7 @@ function computeTotals(/** @type {any[]} */ rows) {
   }, 0);
   const weekAgo = now - 7 * 86_400_000;
   return {
-    // What is waiting on *this viewer* specifically — the only figure a rep can
+    // What is waiting on *this viewer* specifically. The only figure a rep can
     // act on. `can_act` already excludes rows they filed themselves.
     awaiting_you: rows.filter((r) => r.can_act).length,
     pending: pending.length,
@@ -108,7 +108,7 @@ export async function listApprovals({ cookies }) {
 }
 
 /**
- * Count of pending approvals the viewer can act on — the nav badge. Lighter
+ * Count of pending approvals the viewer can act on, the nav badge. Lighter
  * than {@link listApprovals}: `mine=true` already scopes to the actionable set.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

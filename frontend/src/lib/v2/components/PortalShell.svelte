@@ -1,6 +1,6 @@
 <script>
   /**
-   * The frame for the customer's side of the product — the invoice and estimate
+   * The frame for the customer's side of the product, the invoice and estimate
    * links emailed to a customer, and the CSAT survey.
    *
    * These pages live under `(no-layout)`, which has no app chrome, so this is
@@ -11,7 +11,7 @@
    * furniture.
    *
    * `v2.css` is imported here rather than in a layout so the styles arrive with
-   * the component and nowhere else — the sibling `(no-layout)` routes (login,
+   * the component and nowhere else, the sibling `(no-layout)` routes (login,
    * bounce) are untouched.
    */
   import '$lib/v2/styles/v2.css';

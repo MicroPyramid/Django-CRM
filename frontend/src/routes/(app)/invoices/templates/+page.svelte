@@ -2,18 +2,18 @@
   /**
    * How an invoice looks when it reaches a customer.
    *
-   * `is_default` is a singleton — `InvoiceTemplate.save()` clears the flag on
+   * `is_default` is a singleton, `InvoiceTemplate.save()` clears the flag on
    * every other row inside a transaction, so exactly one template can hold it.
    * That makes "make this the default" a swap and not a toggle, and the button
    * says so: turning this one on turns another one off, and the copy names
    * which.
    *
-   * SECURITY — `template_html` and `template_css` are never rendered.
+   * SECURITY: `template_html` and `template_css` are never rendered.
    * They are org-authored blobs that WeasyPrint turns into a PDF server-side.
    * This page reports that a template carries custom markup and roughly how
    * much; it does not fetch the markup and there is no preview. Putting an
    * arbitrary HTML blob into this app's DOM would turn a PDF setting into
-   * stored XSS — and the backend list serializer now strips both fields, so the
+   * stored XSS, and the backend list serializer now strips both fields, so the
    * markup never reaches the wire at all.
    *
    * Writes are admin-only. `data.can_manage` decides whether the write controls
@@ -144,7 +144,7 @@
       <p class="v2-sub" style="font-size:11.5px;margin-top:16px">
         <span class="v2-num">{count(totals.unused)}</span>
         {totals.unused === 1 ? 'template has' : 'templates have'} never been used and
-        {totals.unused === 1 ? 'is' : 'are'} not the default — deleting
+        {totals.unused === 1 ? 'is' : 'are'} not the default, deleting
         {totals.unused === 1 ? 'it' : 'them'} changes no existing invoice.
       </p>
     {/if}

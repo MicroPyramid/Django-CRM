@@ -119,8 +119,8 @@ let refreshInFlight = null;
 /**
  * Refresh the access token using refresh token.
  *
- * The backend rotates refresh tokens — the token we send is blacklisted and a
- * replacement comes back — so concurrent callers must not each spend the same
+ * The backend rotates refresh tokens: the token we send is blacklisted and a
+ * replacement comes back, so concurrent callers must not each spend the same
  * one. Whichever request landed second would get a 401 and log the user out,
  * so all callers share a single in-flight refresh.
  *
@@ -139,8 +139,8 @@ async function refreshAccessToken() {
 }
 
 /**
- * Perform the actual refresh round-trip. Use refreshAccessToken() instead —
- * it deduplicates concurrent callers.
+ * Perform the actual refresh round-trip. Use refreshAccessToken() instead.
+ * It deduplicates concurrent callers.
  * @returns {Promise<string|null>} New access token or null if refresh failed
  */
 async function performTokenRefresh() {

@@ -116,7 +116,7 @@ class CaseSerializer(serializers.ModelSerializer):
             "custom_fields",
             "escalation_count",
             "last_escalation_fired_at",
-            # SLA — Tier 2 business-hours-sla
+            # SLA: Tier 2 business-hours-sla
             "sla_first_response_hours",
             "sla_resolution_hours",
             "first_response_at",
@@ -153,8 +153,8 @@ class CaseCreateSerializer(serializers.ModelSerializer):
 
         `account` is a plain model FK, so DRF built it with a queryset of
         *every* Account row. Posting a stranger's account UUID stored the
-        link and — because the create response echoes `cases_obj` through
-        `CaseSerializer`, which nests `AccountSerializer` — handed the caller
+        link and, because the create response echoes `cases_obj` through
+        `CaseSerializer`, which nests `AccountSerializer`: handed the caller
         that account's name, email, phone and website back. So the same hole
         was both a cross-tenant write and a cross-tenant read. `validate_parent`
         below already guarded the other FK on this serializer; this one had
@@ -173,7 +173,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         API, because DRF does not call `Model.clean()` and nothing on the save
         path calls `full_clean()`. Proven live: with a matching rule armed,
         `PATCH {"status": "Closed"}` returned 200, closed the case and
-        recorded zero approvals — the whole approval feature, its inbox and
+        recorded zero approvals, the whole approval feature, its inbox and
         its settings page were decoration.
 
         Validating the *transition* rather than the target matters here: a
@@ -200,7 +200,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             from cases.approvals import Approval, find_matching_rule
 
-            # A rule matches on priority, case_type and team — so evaluate it
+            # A rule matches on priority, case_type and team, so evaluate it
             # against the values this request is setting, not the stored ones,
             # or a caller could re-target the case out of the rule and close it
             # in the same PATCH. The instance is restored either way; nothing
@@ -594,7 +594,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         return value
 
     def to_representation(self, instance):
-        """`webhook_secret` is a per-org shared secret — the credential a sender
+        """`webhook_secret` is a per-org shared secret, the credential a sender
         signs with. It is settable/rotatable by an admin, but it must never be
         read back by a regular member, or every agent in the org can forge
         inbound mail. `topic_arn` is the webhook's TopicArn pin and embeds the
@@ -830,7 +830,7 @@ class TimeEntryUpdateSerializer(serializers.ModelSerializer):
 
     Lets the owner (or an admin) revise the start/end window, description,
     billable flag, and hourly rate. `case`, `profile`, and `invoice` stay
-    read-only — moving an entry between cases or stealing someone else's
+    read-only, moving an entry between cases or stealing someone else's
     timer is intentionally not supported.
     """
 
@@ -955,7 +955,7 @@ class ApprovalRuleSerializer(serializers.ModelSerializer):
         if org is None:
             org = self.context.get("org") if hasattr(self, "context") else None
         if org is not None:
-            # Scope the relational querysets to the caller's org — the same
+            # Scope the relational querysets to the caller's org, the same
             # __init__ scoping RoutingRule/Escalation serializers do. Without it
             # approver_ids/match_team_id accept ANY org's rows, so a PUT (whose
             # view does not re-run the POST's manual org check) could attach a
@@ -971,7 +971,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     ``can_act`` and ``is_own_request`` are viewer-relative and need the request
     in serializer context; without it (e.g. the single-object action responses)
-    they default to False, which is safe — the queue re-reads the list after any
+    they default to False, which is safe. The queue re-reads the list after any
     action, and that read carries the context.
     """
 

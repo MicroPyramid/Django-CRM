@@ -3,7 +3,7 @@
    * Fields this organisation added to records that shipped without them.
    *
    * Grouped by the record they extend, because that is how anyone looks for
-   * one — "what do we collect on a ticket" is the question, not "show me all
+   * one; "what do we collect on a ticket" is the question, not "show me all
    * 40 definitions sorted by created date".
    *
    * The number that earns its place here is `records_missing_value`. Marking a
@@ -82,7 +82,7 @@
                 (f) =>
                   `${f.label} is missing on ${f.records_missing_value} ${(TARGET_MODEL_LABEL[f.target_model] ?? f.target_model).toLowerCase()}`
               )
-              .join('; ')}. Marking a field required binds new writes only — nothing goes back and
+              .join('; ')}. Marking a field required binds new writes only, nothing goes back and
             fills in what was saved before.
           </p>
         </div>

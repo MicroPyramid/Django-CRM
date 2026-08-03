@@ -17,7 +17,7 @@ export const actions = {
   /**
    * Move the article along the review workflow.
    *
-   * Only the status — the body is not in this form, so a PATCH carrying one
+   * Only the status: the body is not in this form, so a PATCH carrying one
    * field is exactly what should go. `draft → reviewed` is anyone's to press;
    * anything → `approved` is an admin's, and the API is what says so.
    */
@@ -38,8 +38,8 @@ export const actions = {
    * Give the article to customers, or take it back.
    *
    * The two verbs are one action with a flag rather than two nearly identical
-   * ones, because the thing they have in common — both are admin-only, both
-   * are the same switch — is the part worth keeping in one place.
+   * ones, because the thing they have in common. Both are admin-only, both
+   * are the same switch, is the part worth keeping in one place.
    */
   setPublished: async ({ cookies, params, request }) => {
     const form = await request.formData();

@@ -17,7 +17,7 @@
   /*
    * The composer owns its own text rather than reading it back from `data`, so
    * a revalidation cannot wipe a half-written reply. It is cleared only on a
-   * send that actually succeeded — `update({ reset: false })` below leaves it
+   * send that actually succeeded; `update({ reset: false })` below leaves it
    * alone otherwise, which is what makes a rejected send recoverable.
    */
   let body = $state('');
@@ -25,7 +25,7 @@
   let sending = $state(false);
 
   // The picked file's name, mirrored out of the input so the composer can show
-  // and clear it. `fileInput` is the element itself — a file input's value can
+  // and clear it. `fileInput` is the element itself. A file input's value can
   // only be cleared through the DOM, not by rebinding.
   let fileName = $state('');
   /** @type {HTMLInputElement | undefined} */
@@ -40,8 +40,8 @@
     fileName = '';
   }
 
-  // A ticket accepts a file on its own — the API saves the attachment in a block
-  // separate from the comment — so the composer sends when there is either text
+  // A ticket accepts a file on its own, the API saves the attachment in a block
+  // separate from the comment, so the composer sends when there is either text
   // or a file.
   let canSend = $derived(Boolean(body.trim() || fileName));
 
@@ -59,8 +59,8 @@
   };
 
   /**
-   * The one thing that needs a person right now, said as the state it is —
-   * ember when the ball is in our court, rust when a target has already been
+   * The one thing that needs a person right now, said as the state it is.
+   * Ember when the ball is in our court, rust when a target has already been
    * missed. Only "needs you" states earn a banner: a ticket waiting on the
    * customer is not blocked on us, so it stays a quiet line below, and a healthy
    * open ticket gets nothing at all.
@@ -77,12 +77,12 @@
         ? {
             tone: 'rust',
             label: 'First reply overdue',
-            text: 'Past its first-reply target and still unanswered. A reply below is the first response — it stops the clock.'
+            text: 'Past its first-reply target and still unanswered. A reply below is the first response. It stops the clock.'
           }
         : {
             tone: 'ember',
             label: 'Needs a first reply',
-            text: 'Nobody has replied yet. A reply below is the first response — it is what stops the first-reply clock.'
+            text: 'Nobody has replied yet. A reply below is the first response. It is what stops the first-reply clock.'
           };
     }
     // Waiting on the customer is not something we can act on, so it is not a
@@ -176,7 +176,7 @@
           </div>
         {:else if waiting}
           <p class="v2-sub" style="margin:0 0 18px;font-size:12.5px">
-            Waiting on the customer — the first-reply clock is paused while it sits in Pending.
+            Waiting on the customer: the first-reply clock is paused while it sits in Pending.
           </p>
         {/if}
 
@@ -191,7 +191,7 @@
 
         {#if conversation.length === 0}
           <p class="v2-sub" style="margin:0 0 18px;font-size:12.5px">
-            Nothing has been said on this ticket yet. A reply below is the first response — it is
+            Nothing has been said on this ticket yet. A reply below is the first response. It is
             what stops the first-reply clock.
           </p>
         {/if}

@@ -260,7 +260,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       child: SafeArea(
         bottom: false,
         // FlexibleSpaceBar shrinks the background height as the SliverAppBar
-        // collapses on scroll — wrapping the content in a non-scrollable
+        // collapses on scroll, wrapping the content in a non-scrollable
         // SingleChildScrollView lets it clip cleanly instead of throwing a
         // RenderFlex-overflow assertion mid-collapse.
         child: SingleChildScrollView(
@@ -378,7 +378,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Deal card — most valuable info on a lead. Shown first when present.
+          // Deal card, most valuable info on a lead. Shown first when present.
           if (hasDeal) ...[
             _buildCard(title: 'Deal', child: _buildDealContent(lead)),
             const SizedBox(height: 16),
@@ -411,14 +411,14 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Assigned To — render all assignees, not just the first one. The
+          // Assigned To, render all assignees, not just the first one. The
           // backend lets a lead belong to multiple users and the count alone
           // changes who's responsible for follow-up.
           _buildCard(title: 'Assigned To', child: _buildAssigneesContent(lead)),
 
           const SizedBox(height: 16),
 
-          // Custom fields — org-defined schema, key/value pairs stored on the
+          // Custom fields, org-defined schema, key/value pairs stored on the
           // lead under `custom_fields`. Only shown when the org has at least
           // one definition AND the lead has at least one value.
           if (_hasRenderableCustomFields(lead)) ...[
@@ -1108,7 +1108,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
     _noteController.clear();
 
-    // The POST returns the updated comments list — use it directly instead
+    // The POST returns the updated comments list, use it directly instead
     // of refetching. The previous refetch path could silently fail (provider
     // catches and returns null on any parse error), leaving the new comment
     // invisible even though the server saved it.
@@ -1122,7 +1122,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
         _lead = _lead!.copyWith(comments: newComments);
       });
     } else {
-      // Response missing comments (shouldn't happen) — fall back to refetch
+      // Response missing comments (shouldn't happen), fall back to refetch
       // so the user doesn't end up staring at stale data.
       await _fetchLead();
     }
@@ -1162,7 +1162,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       return;
     }
 
-    // PATCH returns only {error, message} — patch the comment locally.
+    // PATCH returns only {error, message}, patch the comment locally.
     if (_lead != null) {
       final updated = _lead!.comments.map((c) {
         return c.id == commentId
@@ -1206,7 +1206,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       return;
     }
 
-    // DELETE returns only {error, message} — remove locally.
+    // DELETE returns only {error, message}, remove locally.
     if (_lead != null) {
       final filtered = _lead!.comments
           .where((c) => c.id != commentId)
@@ -1385,7 +1385,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
   Future<void> _showTagsSheet() async {
     var tags = ref.read(tagsProvider);
     if (tags.isEmpty) {
-      // First open of a session — async notifier hasn't materialised yet.
+      // First open of a session. Async notifier hasn't materialised yet.
       // Wait for the next emission instead of opening an empty sheet.
       await ref.read(tagsLookupProvider.future);
       if (!mounted) return;
@@ -1449,7 +1449,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
   Future<void> _shareLead() async {
     final lead = _lead!;
-    // No share_plus dep — copy a useful text block to the clipboard. The user
+    // No share_plus dep, copy a useful text block to the clipboard. The user
     // can paste it anywhere (email, Slack, notes).
     final summary = [
       lead.name,
@@ -1713,7 +1713,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
   Future<void> _launch(Uri uri, {String? failureLabel}) async {
     // canLaunchUrl returns false on Android 11+ for tel:/mailto:/sms: unless
     // <queries> is declared, so we skip the gate and surface failures via
-    // the snackbar — matches the pattern used in LeadCard.
+    // the snackbar, matches the pattern used in LeadCard.
     final ok = await launchUrl(uri);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1843,7 +1843,7 @@ class _InfoRow extends StatelessWidget {
 }
 
 /// Dialog for editing an existing note. Owns its TextEditingController so the
-/// lifecycle stays tied to the dialog's State — disposing the controller
+/// lifecycle stays tied to the dialog's State, disposing the controller
 /// inline after `await showDialog(...)` races the dialog's exit animation
 /// (TextField still listens during the dismiss tween) and crashes.
 class _EditNoteDialog extends StatefulWidget {

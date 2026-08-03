@@ -110,7 +110,7 @@ def opportunity_post_delete(sender, instance, **kwargs):
     create_activity(instance, "DELETE", "Opportunity")
 
 
-# Cases use a richer signal handler module — see cases/signals.py for
+# Cases use a richer signal handler module. See cases/signals.py for
 # STATUS_CHANGED / PRIORITY_CHANGED / ASSIGN / COMMENT / LINKED_SOLUTION etc.
 
 

@@ -73,7 +73,7 @@ android {
     }
 }
 
-// Replaces the old `android { kotlinOptions { jvmTarget = "..." } }` block —
+// Replaces the old `android { kotlinOptions { jvmTarget = "..." } }` block,
 // KGP 2.4 removed the String-typed jvmTarget in favour of this DSL. Must stay
 // in step with compileOptions above (Java 17); AGP hard-fails on a mismatch.
 kotlin {

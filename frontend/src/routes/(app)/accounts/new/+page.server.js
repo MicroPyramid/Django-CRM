@@ -17,7 +17,7 @@ export const actions = {
     for (const field of EDITABLE_FIELDS) {
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
-    // On create there is nothing to preserve, so the owner is always sent —
+    // On create there is nothing to preserve, so the owner is always sent,
     // including empty, which is how an account is deliberately left unowned.
     values.assigned_to = form.get('assigned_to')?.toString().trim() ?? '';
 

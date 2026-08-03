@@ -72,8 +72,8 @@ class TestCaseListView:
 
     def test_create_case_unauthenticated(self, unauthenticated_client):
         """Asserted `pytest.raises(PermissionDenied)`, which can never hold
-        through an APIClient — DRF renders an APIException as a response
-        rather than letting it escape — so this had always failed. It now
+        through an APIClient, DRF renders an APIException as a response
+        rather than letting it escape, so this had always failed. It now
         checks the response the client actually receives."""
         response = unauthenticated_client.post(
             CASES_LIST_URL,
@@ -1390,7 +1390,7 @@ class TestCaseModelMethods:
     def test_save_applies_priority_specific_sla_defaults(self, admin_user, org_a):
         """New case picks up the priority-specific SLA defaults via save().
 
-        See cases/workflow.py — Urgent gets 1h first-response / 4h resolution.
+        See cases/workflow.py: Urgent gets 1h first-response / 4h resolution.
         Previously this logic was guarded by `not self.pk`, which never fired
         because BaseModel populates pk via uuid4 default; we now use
         _state.adding so the auto-set actually applies.

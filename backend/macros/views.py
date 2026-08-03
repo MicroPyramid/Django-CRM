@@ -1,15 +1,15 @@
 """REST endpoints for macros / canned responses.
 
 Routes (all under /api/macros/):
-    GET    /                  — list macros visible to the requester
+    GET    /: list macros visible to the requester
                                 (org scope + own personal scope).
-    POST   /                  — create. Non-admins forced into personal scope.
-    GET    /<id>/             — retrieve.
-    PUT    /<id>/             — update. Same scope rules as create.
-    PATCH  /<id>/             — partial update.
-    DELETE /<id>/             — soft-deactivate org macros, hard-delete
+    POST   /: create. Non-admins forced into personal scope.
+    GET    /<id>/: retrieve.
+    PUT    /<id>/: update. Same scope rules as create.
+    PATCH  /<id>/: partial update.
+    DELETE /<id>/: soft-deactivate org macros, hard-delete
                                 personal ones (per spec).
-    POST   /<id>/render/      — server-side substitute placeholders against
+    POST   /<id>/render/: server-side substitute placeholders against
                                 the requested case and return the rendered
                                 body. Increments usage_count.
 """
@@ -57,7 +57,7 @@ def _compute_totals(visible_qs) -> dict:
     meaningful when the list itself is filtered. `with_unknown_placeholders`
     is not a DB aggregate (it depends on `find_unknown_placeholders`, the same
     check the serializer surfaces per row), so we fetch the three columns we
-    need and fold in Python — the visible set is small (org macros + the
+    need and fold in Python. The visible set is small (org macros + the
     requester's own personal ones).
     """
     rows = list(visible_qs.values_list("scope", "is_active", "body"))
@@ -154,7 +154,7 @@ class MacroDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         if macro.scope == Macro.SCOPE_PERSONAL and macro.owner_id != request.profile.id:
-            # A personal macro you don't own is invisible to you — the list and
+            # A personal macro you don't own is invisible to you. The list and
             # GET hide it (404). The write verbs must not confirm it exists via
             # a 403 either, or the id space leaks which rows are somebody else's
             # personal macros. Mirror the GET: 404.
@@ -215,7 +215,7 @@ class MacroDetailView(APIView):
 
 
 class MacroRenderView(APIView):
-    """POST /<id>/render/ — substitute placeholders against a case."""
+    """POST /<id>/render/, substitute placeholders against a case."""
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 

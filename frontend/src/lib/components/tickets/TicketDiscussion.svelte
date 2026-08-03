@@ -202,7 +202,7 @@
         <input type="hidden" name="body" value={internalText} />
         <div class="flex items-center gap-2 text-xs font-medium text-amber-900 dark:text-amber-200">
           <Lock class="h-3 w-3" />
-          Visible to agents only — never shown to customers.
+          Visible to agents only, never shown to customers.
         </div>
         <MentionTextarea
           bind:value={internalText}

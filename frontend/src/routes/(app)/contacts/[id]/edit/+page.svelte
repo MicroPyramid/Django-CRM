@@ -45,7 +45,7 @@
     // The exact regex from `flexible_phone_validator` in
     // `common/validators.py`, which Contact, Account and Lead all use.
     // Surfaced at the field, because otherwise a seeded number carrying an
-    // "x123" extension rejects the entire save without naming a field — and
+    // "x123" extension rejects the entire save without naming a field, and
     // seven of the fifteen seeded contacts carry exactly that.
     if (form.phone && !/^[\d\s\-()+.]{7,25}$/.test(form.phone))
       e.phone = '7 to 25 characters: digits, spaces, brackets, dots, dashes. No extensions.';
@@ -249,7 +249,7 @@
       <div class="v2-field">
         <label for="f-owner">Owner</label>
         <!-- What the select was rendered with. The action compares against it
-             so an untouched owner is not sent at all — `assigned_to` is a
+             so an untouched owner is not sent at all; `assigned_to` is a
              many-to-many and this select is single, so sending it always would
              cut a two-person contact down to one on every save. -->
         <input type="hidden" name="assigned_to_original" value={data.form.assigned_to} />
@@ -333,7 +333,7 @@
 
     <!--
       A cleared checkbox submits nothing, which is indistinguishable from a
-      field this form does not own — and "absent means leave alone" is what
+      field this form does not own, and "absent means leave alone" is what
       makes PATCH safe everywhere else. The hidden partner is always sent, so
       the action can tell the two apart and switching either flag off works.
     -->

@@ -2,7 +2,7 @@
 
 This page is for anyone writing a new Celery task. If you're operating a deployment rather than
 writing code, see [Email and Celery](../self-hosting/email-and-celery.md#rls-in-background-tasks)
-instead — it covers running the worker and beat processes and has the same rule below from the
+instead. It covers running the worker and beat processes and has the same rule below from the
 operator's side. This page exists because the rule is easy to get right by copying an existing
 task and easy to get wrong by writing one from scratch.
 
@@ -11,7 +11,7 @@ task and easy to get wrong by writing one from scratch.
 `backend/crm/celery.py` defines the app: `Celery("crm")`, configured from Django settings under the
 `CELERY_` namespace, so `CELERY_BROKER_URL` and `CELERY_RESULT_BACKEND`
 (`backend/crm/settings.py`, both defaulting to `redis://localhost:6379/0`) are what it actually
-connects with — there's no separate Celery-only config file. `app.autodiscover_tasks()` finds
+connects with. There's no separate Celery-only config file. `app.autodiscover_tasks()` finds
 `tasks.py` in each app; a second call, `app.autodiscover_tasks(related_name="celery_tasks")`,
 exists specifically because the `tasks` Django app's own task module is named `celery_tasks.py`
 to avoid colliding with the app's own name.
@@ -19,9 +19,9 @@ to avoid colliding with the app's own name.
 Two processes run against this one app definition, and neither is required for the API itself to
 answer requests:
 
-- **`celery -A crm worker`** executes tasks queued by the API — welcome emails, magic-link
+- **`celery -A crm worker`** executes tasks queued by the API, welcome emails, magic-link
   delivery, assignment notifications, and more.
-- **`celery -A crm beat`** fires the schedule in `app.conf.beat_schedule` (ten entries — recurring
+- **`celery -A crm beat`** fires the schedule in `app.conf.beat_schedule` (ten entries, recurring
   invoice generation, overdue-invoice checks, payment reminders, expired-estimate checks,
   stale-opportunity and goal-milestone scans, case SLA-breach scanning every five minutes,
   stale-timer cleanup, and nightly cleanup of read notifications and expired refresh-token
@@ -33,13 +33,13 @@ commands and what each scheduled entry does operationally.
 ## Writing a task
 
 Celery workers never go through Django's HTTP middleware stack. `GetProfileAndOrg` and
-`RequireOrgContext` — the two middleware classes that establish tenancy for a normal request, see
-[Overview](overview.md#request-lifecycle) — simply never run for a task, so nothing sets the
+`RequireOrgContext`: the two middleware classes that establish tenancy for a normal request, see
+[Overview](overview.md#request-lifecycle). Simply never run for a task, so nothing sets the
 PostgreSQL session variable `app.current_org` on the worker's connection for you. A fresh worker
 connection has an empty context, and per RLS's fail-safe design (see
 [Multi-tenancy and RLS](multi-tenancy-and-rls.md#policies-and-org_scoped_tables)) an empty context
 makes every org-scoped query on a correctly-configured, non-superuser database role return zero
-rows — not another org's rows, but not the rows you wanted either.
+rows, not another org's rows, but not the rows you wanted either.
 
 The fix is one line, and it has to be the first thing a task that touches an org-scoped table does.
 `set_rls_context(org_id)`, defined in `backend/common/tasks.py`, sets the same session variable the
@@ -62,10 +62,10 @@ def send_email_to_assigned_user(recipients, contact_id, org_id):
 ```
 
 Any task queued from a view already has `org_id` available (`request.profile.org.id`) to pass along
-as an argument — pass it, and call `set_rls_context` with it before the first query, every time.
+as an argument. Pass it, and call `set_rls_context` with it before the first query, every time.
 
 A task that has to sweep every org rather than act on one record calls `set_rls_context` once per
-org, inside the loop, immediately before that org's queries — for example
+org, inside the loop, immediately before that org's queries, for example
 `cases.tasks.scan_for_breached_cases`:
 
 ```python
@@ -77,12 +77,12 @@ for org in Org.objects.filter(id__in=list(org_ids)):
         logger.exception("Escalation scan failed for org=%s", org.id)
 ```
 
-Two kinds of task legitimately skip this call. First, a task whose table isn't org-scoped at all —
+Two kinds of task legitimately skip this call. First, a task whose table isn't org-scoped at all:
 `flush_expired_refresh_tokens` operates on simplejwt's `OutstandingToken` table, which carries no
 `org_id` column and isn't in `ORG_SCOPED_TABLES`, so there's no per-org context to set in the first
 place. Second, a task that already sets context per-org inside a loop, as above, doesn't need it
 again outside the loop. What doesn't qualify as an exception is "the query looks like it filters by
-something else" — see below.
+something else". See below.
 
 ## The RLS rule
 
@@ -97,7 +97,7 @@ than a cutoff:
 ```python
 @shared_task
 def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
-    """... Runs once across all orgs — RLS does not need a per-org context
+    """... Runs once across all orgs. RLS does not need a per-org context
     here because the query targets `read_at`, which is intrinsic to the row,
     not org-scoped logic."""
     cutoff = timezone.now() - timedelta(days=days)
@@ -108,12 +108,12 @@ def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
 ```
 
 The docstring's reasoning doesn't hold: whether a *query condition* is org-specific has nothing to
-do with whether the *table* is org-scoped, and `notification` is — it's in `ORG_SCOPED_TABLES`
+do with whether the *table* is org-scoped, and `notification` is. It's in `ORG_SCOPED_TABLES`
 (`backend/common/rls/__init__.py`) and carries the same `FORCE ROW LEVEL SECURITY` policy as every
 other table on that list. This task never calls `set_rls_context`, so on the non-superuser database
 role this project requires, it runs with an empty `app.current_org`, and its `DELETE` matches zero
 rows across every org, silently, on every scheduled run. It doesn't fail loudly and it doesn't
-purge the wrong org's data — it just never purges anything, which is its own quietly bad outcome:
+purge the wrong org's data. It just never purges anything, which is its own quietly bad outcome:
 the table grows unbounded while the schedule entry that's supposed to prevent that keeps reporting
 success. Read the code a task actually executes, not the comment sitting above it, before trusting
 either one.

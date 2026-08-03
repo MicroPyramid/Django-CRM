@@ -64,10 +64,10 @@
   /** @type {Props} */
   let { user = {}, org_name = 'BottleCRM', org_settings = {} } = $props();
 
-  // Tier badge — hidden when JWT doesn't carry one (spec §8 "No tier in JWT")
+  // Tier badge. Hidden when JWT doesn't carry one (spec §8 "No tier in JWT")
   const tier = $derived(org_settings?.tier ?? null);
 
-  // Workspace gradient seed — first-letter monogram fallback for the avatar
+  // Workspace gradient seed, first-letter monogram fallback for the avatar
   const orgInitial = $derived((org_name || 'B').charAt(0).toUpperCase());
 
   const sidebar = Sidebar.useSidebar();
@@ -149,7 +149,7 @@
   };
 
   // Auto-open dropdown if a child route is active. Untrack the openDropdowns
-  // read so this effect only re-fires on currentPath changes — otherwise the
+  // read so this effect only re-fires on currentPath changes, otherwise the
   // user's onOpenChange (closing the panel) would re-trigger the effect and
   // immediately re-open it, fighting the click.
   $effect(() => {

@@ -5,7 +5,7 @@ defects survived in it: the list crashed for non-admins on an AttributeError,
 the object-level checks compared a `Profile` to a `User` FK and were therefore
 always False, and `Document.teams` was written but never read.
 
-Every check below asserts BOTH directions — a permission test that only ever
+Every check below asserts BOTH directions, a permission test that only ever
 sees one answer cannot tell a working check from a constant.
 """
 
@@ -168,7 +168,7 @@ class TestDocumentDetailAccess:
         assert user_client.get(_detail_url(doc.id)).status_code == 200
 
     def test_stranger_is_forbidden(self, user_client, admin_user, org_a):
-        """The other direction — the check must still be able to say no."""
+        """The other direction. The check must still be able to say no."""
         doc = _doc(org_a, admin_user)
         assert user_client.get(_detail_url(doc.id)).status_code == 403
 

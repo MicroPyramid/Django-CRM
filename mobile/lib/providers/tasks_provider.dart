@@ -54,7 +54,7 @@ class TaskFilters {
   // Display label for the active assignee filter (e.g. "Me"). Not sent to
   // backend; used by the UI to render the chip without a profile lookup.
   final String? assignedToLabel;
-  // ISO date strings (yyyy-MM-dd) — backend supports due_date__gte/__lte.
+  // ISO date strings (yyyy-MM-dd), backend supports due_date__gte/__lte.
   // Used by the calendar view to fetch only the visible month.
   final String? dueDateGte;
   final String? dueDateLte;
@@ -118,7 +118,7 @@ class TaskFilters {
   }
 }
 
-/// Paginated tasks snapshot — wrapped by AsyncValue.
+/// Paginated tasks snapshot, wrapped by AsyncValue.
 class TasksListData {
   final List<Task> tasks;
   final int totalCount;
@@ -259,7 +259,7 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
   }
 
   /// Fetch full task detail incl. comments, attachments and custom-field
-  /// schema. The detail endpoint returns all of these in one payload — splitting
+  /// schema. The detail endpoint returns all of these in one payload. Splitting
   /// them into separate models lets the UI render each section without
   /// re-parsing the raw map.
   Future<TaskDetailResult?> getTaskDetail(String taskId) async {
@@ -362,8 +362,8 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
   ) async {
     try {
       final url = '${ApiConfig.tasks}$taskId/';
-      // PATCH (not PUT) so M2M fields the form doesn't touch — `tags`,
-      // `contacts`, `teams` — are left alone. The backend PUT handler
+      // PATCH (not PUT) so M2M fields the form doesn't touch; `tags`,
+      // `contacts`, `teams`, are left alone. The backend PUT handler
       // unconditionally clears those M2Ms before reading the request body
       // (tasks/views/task_views.py), so a mobile PUT silently wipes them.
       // PATCH only mutates keys present in the payload.
@@ -405,7 +405,7 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
     return patchTask(task.id, {'status': newStatus});
   }
 
-  /// Partially update a task — optimistically applies changes locally.
+  /// Partially update a task. Optimistically applies changes locally.
   Future<ApiResponse<Map<String, dynamic>>> patchTask(
     String taskId,
     Map<String, dynamic> data,
@@ -450,7 +450,7 @@ final tasksProvider = AsyncNotifierProvider<TasksNotifier, TasksListData>(
   TasksNotifier.new,
 );
 
-/// Convenience providers — read from the AsyncValue.
+/// Convenience providers. Read from the AsyncValue.
 final tasksListProvider = Provider<List<Task>>((ref) {
   return ref.watch(tasksProvider).value?.tasks ?? const [];
 });

@@ -5,7 +5,7 @@
    * literally "the thing that needs you".
    *
    * Give it an `href` and the action becomes a link. Without one it stays a
-   * button, which on the fixture pages goes nowhere — fine while a page is a
+   * button, which on the fixture pages goes nowhere. Fine while a page is a
    * sandbox, not fine once the record it names is real and one click away.
    *
    * @type {{ label?: string, text: string, action?: string, href?: string|null, secondary?: string, tone?: 'ember'|'rust' }}

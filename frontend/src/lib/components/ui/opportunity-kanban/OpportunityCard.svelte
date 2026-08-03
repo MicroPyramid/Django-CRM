@@ -30,7 +30,7 @@
   const agingStatus = $derived(item.aging_status);
   const daysInStage = $derived(item.days_in_stage ?? 0);
 
-  // Hide the aging chip for closed deals — aging is a forecasting signal
+  // Hide the aging chip for closed deals. Aging is a forecasting signal
   // and stops mattering once the deal is won/lost.
   const isClosed = $derived(item.stage === 'CLOSED_WON' || item.stage === 'CLOSED_LOST');
   const showAging = $derived(!isClosed && agingStatus && agingStatus !== 'green');

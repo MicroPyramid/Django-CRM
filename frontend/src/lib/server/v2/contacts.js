@@ -1,5 +1,5 @@
 /**
- * Contacts — the fourth v2 module wired to the real API.
+ * Contacts: the fourth v2 module wired to the real API.
  *
  * Same rules as `leads.js`, `deals.js` and `accounts.js`: this file lives under
  * `$lib/server` because SvelteKit refuses to bundle that directory into client
@@ -7,8 +7,8 @@
  * parameter; it is a claim inside the JWT and the backend reads it from there.
  *
  * WHY THIS MODULE, AND WHY NOW
- * Three wired pages already show people — a lead's converted contact, the
- * deal's contact rail, the account's people rail — and not one of them could
+ * Three wired pages already show people: a lead's converted contact, the
+ * deal's contact rail, the account's people rail, and not one of them could
  * link to a person, because `/contacts/<uuid>` answered 404. The rails were
  * written as dead text for exactly that reason. Contacts was also the last
  * object in the core record graph still on fixtures: leads become an account,
@@ -22,7 +22,7 @@
  *   contact: Lead has `last_contacted`, Contact has nothing like it, and there
  *   is no activity table to derive one from. The list sorted by it, coloured a
  *   column by it, and the detail page built its whole "gone quiet" argument on
- *   it. What is real is `updated_at` — when the record was last edited — and
+ *   it. What is real is `updated_at`, when the record was last edited, and
  *   that is what the pages show, under a label that says so.
  * - `account_id` was a single account. A contact is joined to an account twice
  *   over (`Contact.account`, the model's "primary", and membership of
@@ -31,7 +31,7 @@
  *   layer picks the primary if there is one and the first membership otherwise.
  * - `organization` survives but is demoted. It is free text and, across the
  *   seeded org, routinely names a different company from the account the person
- *   is actually attached to — so it is shown only where there is no account
+ *   is actually attached to, so it is shown only where there is no account
  *   link to show instead, labelled as what somebody typed.
  *
  * WHAT THE FIXTURE GOT RIGHT
@@ -43,7 +43,7 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
 
-/** DRF decimals arrive as strings. `null` stays `null` — it means "not recorded". */
+/** DRF decimals arrive as strings. `null` stays `null`. It means "not recorded". */
 function num(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -53,8 +53,8 @@ function num(value) {
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too —
- * the file is served off `/media`, not `/api`, so this uses the base host, not
+ * against the Django origin so the link works from the SvelteKit origin too.
+ * The file is served off `/media`, not `/api`, so this uses the base host, not
  * `apiRequest`. Same helper as `leads.js`.
  *
  * @param {string|null|undefined} path
@@ -80,7 +80,7 @@ function profileName(profile) {
  * `account_detail` is the FK the model calls primary; `linked_accounts` is
  * membership of `Account.contacts`. They are independent, so this returns the
  * primary where there is one, the first membership otherwise, and how many
- * others there are — a person attached to three accounts should not silently
+ * others there are. A person attached to three accounts should not silently
  * look like they belong to one.
  *
  * @param {any} contact
@@ -171,7 +171,7 @@ export async function listContacts({ cookies }, params) {
  *
  * All of it arrives in a single request. `ContactDetailView.get` now returns
  * the deals and cases this contact is named on and the colleagues at their
- * account alongside the tasks it already returned — before that, "their deals"
+ * account alongside the tasks it already returned. Before that, "their deals"
  * could not be asked for at all, because Contact is on the far side of a
  * many-to-many from both Opportunity and Case.
  *
@@ -219,7 +219,7 @@ export async function getContact({ cookies }, id) {
 /**
  * The record's real events, newest first: notes, files, and creation.
  *
- * Three event KINDS, all backed by rows that exist — a note is a `Comment`, a
+ * Three event KINDS, all backed by rows that exist. A note is a `Comment`, a
  * file is an `Attachments`, and the record always has its own creation. The old
  * shape read `response.comments` alone, so every file uploaded against a contact
  * was dropped from the page it should have appeared on. Nothing records status
@@ -228,7 +228,7 @@ export async function getContact({ cookies }, id) {
  *
  * `ContactDetailView.get` returns `comments` and `attachments` as siblings, and
  * an attachment's `created_by` is a bare user id rather than a nested user, so a
- * file's author is left unnamed rather than printing an id — the note author,
+ * file's author is left unnamed rather than printing an id, the note author,
  * which arrives as a nested profile, is shown.
  *
  * @param {any} response
@@ -272,15 +272,15 @@ function buildContactActivity(response) {
 }
 
 /**
- * Log a note against a contact, optionally with a file — a call made, a reply,
+ * Log a note against a contact, optionally with a file. A call made, a reply,
  * a document shared.
  *
  * `ContactDetailView.post` creates a Comment scoped to the contact's org and
  * stamps `commented_by` from `request.profile`; the only field it reads from the
  * body is `comment`. It answers 403 through `assert_contact_access` for anyone
  * who is not the contact's creator, an assignee, an admin, or assigned to the
- * account the person belongs to — the same gate that governs *reading* the
- * contact — so the composer this feeds appears only to someone who could already
+ * account the person belongs to, the same gate that governs *reading* the
+ * contact, so the composer this feeds appears only to someone who could already
  * open the page, and the note is attributed server-side, never by the client.
  *
  * Unlike a lead, a contact's attachment save is a SEPARATE top-level block in
@@ -330,7 +330,7 @@ export const EDITABLE_FIELDS = [
  * from it cannot offer a value the serializer will reject.
  *
  * The account picker holds up to 200 accounts. Past that it needs to become a
- * search rather than a select, and this will quietly stop offering the rest —
+ * search rather than a select, and this will quietly stop offering the rest,
  * so the form says how many it is showing instead of pretending it is all of
  * them.
  *
@@ -429,7 +429,7 @@ export async function getContactForEdit({ cookies }, id) {
 /**
  * Turn form values into a request body.
  *
- * Absent stays absent — a field the form did not send is a field the save
+ * Absent stays absent. A field the form did not send is a field the save
  * leaves alone, which is the whole reason for PATCH below.
  *
  * @param {Record<string, any>} values
@@ -445,7 +445,7 @@ function toBody(values) {
   if ('do_not_call' in body) body.do_not_call = Boolean(values.do_not_call);
   if ('is_active' in body) body.is_active = Boolean(values.is_active);
   // Single-select owner, so the list is empty or one long. Only present when
-  // the form decided it changed — see the action for why that matters.
+  // the form decided it changed. See the action for why that matters.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
@@ -457,7 +457,7 @@ function toBody(values) {
  *
  * PATCH, not PUT. `ContactDetailView.put` runs `teams.clear()`,
  * `assigned_to.clear()` and `tags.clear()` unconditionally before re-adding
- * whatever the body carried, and this form carries one owner — so a single PUT
+ * whatever the body carried, and this form carries one owner, so a single PUT
  * would drop every co-assignee, every team and every tag on the record.
  * `patch` guards each relation with `if "<field>" in data`.
  *
@@ -480,8 +480,8 @@ export async function updateContact({ cookies }, id, values) {
  * from `request.profile`, and `CreateContactSerializer` lists neither as a
  * field. `account` is checked against the caller's org before it is accepted.
  *
- * The response now carries the new `id`, which it did not before this change —
- * without it a client cannot open what it just made.
+ * The response now carries the new `id`, which it did not before this change.
+ * Without it a client cannot open what it just made.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {Record<string, any>} values
@@ -491,8 +491,8 @@ export async function createContact({ cookies }, values) {
 }
 
 /**
- * `ContactDetailView.get` answers 404 for another org's contact — deliberately
- * not 403, which would confirm the id exists — and 403 for a contact inside the
+ * `ContactDetailView.get` answers 404 for another org's contact. Deliberately
+ * not 403, which would confirm the id exists, and 403 for a contact inside the
  * org that this profile neither created, nor is assigned to, nor reaches
  * through the account they own.
  *
@@ -504,7 +504,7 @@ async function fetchDetail(cookies, id) {
     return await apiRequest(`/contacts/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
     // On the status, not on the wording. Django answers a missing record with
-    // "No Contact matches the given query." — no "404" in it anywhere.
+    // "No Contact matches the given query.", no "404" in it anywhere.
     if (err?.status === 404) {
       error(404, 'That contact does not exist, or they belong to another team.');
     }

@@ -1,12 +1,12 @@
 /**
- * Recurring invoices — the sixteenth v2 module, third of the invoices sub-pages.
+ * Recurring invoices: the sixteenth v2 module, third of the invoices sub-pages.
  *
  * Same rules as the fifteen before it: server-only, because the access token is
  * an httpOnly cookie; the org is a JWT claim the backend reads, never a param.
  *
  * WHY THIS MODULE, AND THE FINDING IT CARRIED
- * A recurring invoice is an owned billing record — `AssignableMixin` +
- * `created_by`, the same shape as Invoice and Estimate — but its endpoints
+ * A recurring invoice is an owned billing record, `AssignableMixin` +
+ * `created_by`, the same shape as Invoice and Estimate, but its endpoints
  * filtered on `org` ONLY: no object-level check on detail/update/delete/toggle
  * and no non-admin list scoping. Any member could read, edit, delete or
  * pause/resume every schedule in the org, while Invoice and Estimate beside it
@@ -15,10 +15,10 @@
  * this page is the client that finally draws the writes those endpoints guard.
  *
  * THE ONE WRITE: PAUSE / RESUME
- * The page's thesis is "does anyone have to do anything" — `auto_send`, and
+ * The page's thesis is "does anyone have to do anything"; `auto_send`, and
  * whether a schedule is live or paused. Pause/resume is the one action that
  * belongs on a schedule worklist, so it is wired here (`toggle`) and everything
- * else — creating a schedule, a builder with line items and FK pickers — is
+ * else (creating a schedule, a builder with line items and FK pickers) is
  * deferred, the same class of surface as the invoice builder (#48).
  *
  * TOTALS ARE COMPUTED HERE
@@ -26,7 +26,7 @@
  * derived from the rows the API returns for this requester (org-wide for an
  * admin, own-and-assigned for a member), so the pills and the table describe the
  * same set. `monthly_run_rate` normalises every ACTIVE schedule to a month by
- * its cadence — the one figure nobody can eyeball off the rows, because each is
+ * its cadence. The one figure nobody can eyeball off the rows, because each is
  * on a different frequency. `limit=1000`; past that the derived figures would
  * undercount, and that ceiling is called out where it is set.
  */
@@ -98,9 +98,9 @@ function toRow(row) {
 /**
  * The four header figures, derived from the visible rows.
  *
- * - `active` — schedules currently generating.
- * - `monthly_run_rate` — every active schedule normalised to a month.
- * - `due_within_7d` — active schedules generating within a week (or overdue):
+ * - `active`. Schedules currently generating.
+ * - `monthly_run_rate`, every active schedule normalised to a month.
+ * - `due_within_7d`, active schedules generating within a week (or overdue):
  *   drafts to check before they send.
  *
  * @param {any[]} rows
@@ -156,7 +156,7 @@ export async function listRecurringInvoices({ cookies }) {
 
 /**
  * Pause or resume a schedule. A bare POST through `get_recurring_or_error`, so
- * the API — not this layer — decides who may toggle (creator, an assignee, or
+ * the API, not this layer, decides who may toggle (creator, an assignee, or
  * an admin) and refuses the rest. The endpoint flips `is_active` and returns the
  * updated row.
  *

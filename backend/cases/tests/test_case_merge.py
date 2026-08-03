@@ -50,7 +50,7 @@ def _make_case(
     """Create a Case with `created_by` set deterministically.
 
     `BaseModel.save()` reads `crum.get_current_user()` to populate
-    `created_by` — outside a request that's None, which would break the
+    `created_by`: outside a request that's None, which would break the
     permission tests. Set the current user explicitly for the duration of
     the create.
     """
@@ -206,8 +206,8 @@ class TestCaseMergePermissions:
     def test_creator_of_only_one_forbidden(
         self, user_client, regular_user, admin_user, org_a
     ):
-        a = _make_case(org_a, regular_user, name="A — user-created")
-        b = _make_case(org_a, admin_user, name="B — admin-created")
+        a = _make_case(org_a, regular_user, name="A. User-created")
+        b = _make_case(org_a, admin_user, name="B, admin-created")
         response = user_client.post(f"/api/cases/{a.id}/merge/{b.id}/")
         assert response.status_code == 403
 

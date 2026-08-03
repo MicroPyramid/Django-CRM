@@ -14,9 +14,9 @@
    * `center` narrows the header to a form column so it sits above a centred
    * `.v2-form` (or other centred body) rather than spanning the full width.
    * `width` overrides that column's outer width for pages whose body is wider
-   * than the standard 560px form — pass the body's own max-width.
+   * than the standard 560px form, pass the body's own max-width.
    *
-   * `leading` renders before the title block — an avatar or record mark. It is
+   * `leading` renders before the title block. An avatar or record mark. It is
    * centred against the text so it sits beside the name, not the crumb.
    */
   let { title, record = false, center = false, width, leading, sub, crumb, actions } = $props();

@@ -50,7 +50,7 @@ export const actions = {
     }
   },
 
-  // Add a column. Owner/admin only — the page hides the control for a member,
+  // Add a column. Owner/admin only. The page hides the control for a member,
   // but the backend refuses it either way, so a hand-rolled POST still 403s.
   addColumn: async ({ request, cookies }) => {
     const form = await request.formData();

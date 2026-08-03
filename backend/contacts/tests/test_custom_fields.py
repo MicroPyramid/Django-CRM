@@ -247,7 +247,7 @@ class TestContactDetailResponse:
         assert "other_org_field" not in keys
 
     def test_cross_org_does_not_leak_values(self, admin_client, admin_user, org_b):
-        """Same CF key in both orgs — admin (org_a) must not GET a contact
+        """Same CF key in both orgs. Admin (org_a) must not GET a contact
         from org_b, so its custom_fields values stay confined to org_b."""
         _set_rls(org_b)
         contact_in_b = Contact.objects.create(

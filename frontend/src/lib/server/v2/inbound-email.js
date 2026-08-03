@@ -1,15 +1,15 @@
 /**
- * Inbound mailboxes — the wiring behind `/settings/inbound-email`.
+ * Inbound mailboxes: the wiring behind `/settings/inbound-email`.
  *
  * Server-only. Reads `GET /cases/mailboxes/`, the addresses that turn email
  * into tickets. Each row carries its defaults (priority, case type, assignee)
- * plus two backend-computed metrics — `cases_last_30d` (tickets opened from the
+ * plus two backend-computed metrics, `cases_last_30d` (tickets opened from the
  * address in 30 days) and `last_received_at` (newest mail seen), both attributed
  * exactly via the `EmailMessage.mailbox` FK. Totals carry `count`, `active`, and
  * the org's `cases_last_30d`.
  *
  * NO SECRETS. `webhook_secret` is the credential that proves a delivery really
- * came from the provider — anything holding it can forge tickets into this org.
+ * came from the provider. Anything holding it can forge tickets into this org.
  * The backend already strips it for non-admins, but this layer drops it for
  * everyone: it is never needed to render the page, so it never reaches the
  * browser, admin or not. Rotation is an explicit action elsewhere, not a field
@@ -34,7 +34,7 @@ function shapeAssignee(p) {
 export async function getMailboxes({ cookies }) {
   const { mailboxes, totals } = await apiRequest('/cases/mailboxes/', {}, { cookies });
   return {
-    // Rebuild each row from a fixed allowlist of fields — webhook_secret and the
+    // Rebuild each row from a fixed allowlist of fields; webhook_secret and the
     // imap_* columns are deliberately not among them, so a secret can never ride
     // along into the page even if the serializer starts returning one.
     mailboxes: (mailboxes ?? []).map((m) => ({

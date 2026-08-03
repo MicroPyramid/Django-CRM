@@ -26,8 +26,8 @@ Three controls keep that pinning honest (CodeQL `py/full-ssrf` #27/#28):
   fetch; following a 3xx would land us somewhere never checked. `_OPENER`
   surfaces the redirect as an error instead of chasing it.
 * **Strict TLS.** The fetch uses an explicit default-verifying SSL context, so
-  transport trust is anchored to the CA store and can't silently degrade. This
-  — not the signing cert's own issuer chain — is what proves the PEM really
+  transport trust is anchored to the CA store and can't silently degrade. This,
+  not the signing cert's own issuer chain, is what proves the PEM really
   came from AWS.
 * **Certificate validation.** The fetched cert must be inside its validity
   window and carry a subject CN in the same SNS host family, so a stale or
@@ -147,8 +147,8 @@ def _fetch_signing_cert(url: str, *, timeout: float = 5.0) -> bytes:
     if not parsed.path.endswith(".pem"):
         raise SNSVerificationError(f"SigningCertURL must end in .pem: {url!r}")
     # `_OPENER` refuses redirects, so the host checked above is the host we talk
-    # to — the pinning cannot be sidestepped by a 3xx.
-    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310 — host pinned
+    # to. The pinning cannot be sidestepped by a 3xx.
+    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310. Host pinned
         return response.read()
 
 
@@ -214,7 +214,7 @@ def verify_sns_message(
     try:
         cert = load_pem_x509_certificate(cert_bytes)
     except ValueError as exc:
-        # Malformed PEM is an attacker-shaped input, not a server fault — a 403
+        # Malformed PEM is an attacker-shaped input, not a server fault. A 403
         # from the caller beats a 500.
         raise SNSVerificationError(
             f"Signing certificate is not valid PEM: {exc}"
@@ -236,7 +236,7 @@ def verify_sns_message(
         )
     except InvalidSignature as exc:
         raise SNSVerificationError("Signature does not match") from exc
-    except Exception as exc:  # pragma: no cover — non-RSA cert is impossible in practice
+    except Exception as exc:  # pragma: no cover. Non-RSA cert is impossible in practice
         raise SNSVerificationError(f"Verification failed: {exc}") from exc
 
 
@@ -259,7 +259,7 @@ def confirm_subscription(payload: dict, *, fetch=None, timeout: float = 5.0) -> 
     # stays the single place redirect policy is decided.
     fetch = fetch or _OPENER.open
     try:
-        with fetch(url, timeout=timeout) as response:  # noqa: S310 — host pinned
+        with fetch(url, timeout=timeout) as response:  # noqa: S310. Host pinned
             response.read()
     except Exception:
         logger.exception("Failed to confirm SNS subscription at %s", url)

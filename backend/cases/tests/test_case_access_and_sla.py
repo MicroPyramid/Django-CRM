@@ -12,25 +12,25 @@ answered the wrong thing. What was broken, in the order the classes appear:
 2.  The watcher allowance was half-built. `CaseListView` and
     `watcher_views` granted it with a citation; the detail view dropped it.
     A watcher's queue showed the ticket and opening it answered 403.
-3.  The verbs disagreed by accident — read, write and delete each had a
+3.  The verbs disagreed by accident: read, write and delete each had a
     different idea of who was allowed, spread over five copies.
 4.  A missing case was a **500** on PUT / PATCH / DELETE (only GET checked
     for `None`), and a malformed id was a 500 on all four plus the comment
     and attachment endpoints, because a UUID column raises rather than
     returning nothing.
 5.  `CaseAttachmentView.delete` looked its row up by pk with **no org
-    filter** — one endpoint that deleted any attachment in the database —
+    filter**, one endpoint that deleted any attachment in the database,
     and its permission branch compared a `Profile` to a `User` FK, so the
     person who uploaded a file could not delete it.
 6.  `account` accepted **another org's account** on create, stored the link,
     and echoed that account's name, email, phone and website back through the
     nested serializer.
 7.  The close gate did not exist in practice. `Case.clean()` requires a
-    `closed_on` and, where an active rule matches, a recorded approval — but
+    `closed_on` and, where an active rule matches, a recorded approval, but
     DRF never calls `Model.clean()`. With a matching rule armed,
     `PATCH {"status": "Closed"}` returned 200 and recorded zero approvals.
 8.  `resolved_at` was written by exactly one code path in the repo
-    (`close_with_children`), so an ordinarily-closed case stayed NULL — and
+    (`close_with_children`), so an ordinarily-closed case stayed NULL, and
     the property reads NULL as *not resolved*, leaving it permanently
     "resolution breached" and invisible to MTTR.
 9.  `first_response_at` was written by **no** code path at all, while four
@@ -64,7 +64,7 @@ def _created_by(instance, user):
     """Set `created_by` after the fact.
 
     `BaseModel.save()` takes `created_by` from the crum thread-local and sets
-    it to **None** when there is no request in flight — so passing it to
+    it to **None** when there is no request in flight, so passing it to
     `objects.create()` inside a test silently stores nothing. `.update()`
     writes the column directly and skips that.
     """
@@ -92,7 +92,7 @@ def assigned_case(case_a, user_profile):
 
 @pytest.fixture
 def watched_case(case_a, user_profile, org_a):
-    """A case the non-admin only watches — not creator, not assignee."""
+    """A case the non-admin only watches, not creator, not assignee."""
     CaseWatcher.objects.create(
         case=case_a, profile=user_profile, org=org_a, subscribed_via="manual"
     )
@@ -113,7 +113,7 @@ class TestWhoMayOpenACase:
         assert response.json()["cases_obj"]["id"] == str(case_a.id)
 
     def test_assignee_opens_a_case_they_did_not_raise(self, user_client, assigned_case):
-        """Also a 500 — every non-admin hit the same line."""
+        """Also a 500. Every non-admin hit the same line."""
         response = user_client.get(_detail(assigned_case.id))
         assert response.status_code == status.HTTP_200_OK
 
@@ -132,7 +132,7 @@ class TestWhoMayOpenACase:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_another_org_gets_404_not_403(self, org_b_client, case_a):
-        """404, not 403 — confirming a record exists is itself a disclosure."""
+        """404, not 403. Confirming a record exists is itself a disclosure."""
         response = org_b_client.get(_detail(case_a.id))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -368,7 +368,7 @@ class TestClosingACase:
         self, admin_client, case_a, org_a
     ):
         """The rule matches on priority, so it is evaluated against the
-        incoming values — not the stored ones a caller is about to replace."""
+        incoming values, not the stored ones a caller is about to replace."""
         case_a.priority = "High"
         case_a.save()
         ApprovalRule.objects.create(
@@ -494,7 +494,7 @@ class TestFirstResponseIsRecorded:
 @pytest.mark.django_db
 class TestListOrderAndMentions:
     def test_newest_first(self, admin_client, case_a, case_b_same_org):
-        """Ordering was `-id` — a random UUID — under a header that said
+        """Ordering was `-id`, a random UUID, under a header that said
         the newest were on top."""
         Case.objects.filter(pk=case_a.id).update(
             created_at=timezone.now() - timezone.timedelta(days=3)

@@ -23,7 +23,7 @@ def personal_macro(org_a, user_profile):
     return Macro.objects.create(
         org=org_a,
         title="My closer",
-        body="Thanks, %customer_name% — case #%case_id% is closed.",
+        body="Thanks, %customer_name%. Case #%case_id% is closed.",
         scope=Macro.SCOPE_PERSONAL,
         owner=user_profile,
         is_active=True,

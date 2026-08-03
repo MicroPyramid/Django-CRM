@@ -90,7 +90,7 @@
                   The linked account, not the typed-in company name.
                   `organization` is free text and routinely names a different
                   company from the account this person is attached to, so it
-                  appears only where there is no link to show — and says so.
+                  appears only where there is no link to show, and says so.
                 -->
                 {#if c.account}
                   <a href="/accounts/{c.account.id}" style="color:inherit">{c.account.name}</a>
@@ -135,8 +135,8 @@
               <td class="v2-r v2-muted">
                 <!--
                   When the record was last edited, which is all the CRM knows.
-                  The mock sorted and coloured this column by `last_activity_at`
-                  — when somebody last spoke to this person. Nothing stores that.
+                  The mock sorted and coloured this column by `last_activity_at`,
+                  when somebody last spoke to this person. Nothing stores that.
                 -->
                 {c.updated_at ? relativeDays(c.updated_at) : '—'}
               </td>

@@ -4,11 +4,11 @@
    *
    * The create form's job is to ask for as little as possible. An edit form's
    * job is different: the record already exists, somebody is changing one
-   * thing about it, and the risk is not a slow form — it is a change whose
+   * thing about it, and the risk is not a slow form. It is a change whose
    * consequence is invisible. Two of those live on this record.
    *
    * ── ONE: STATUS IS NOT JUST A LABEL ──────────────────────────────────────
-   * Setting status to "converted" is checked twice server-side —
+   * Setting status to "converted" is checked twice server-side;
    * `Lead.clean()` raises "Email is required to convert lead", and
    * `LeadCreateSerializer.__init__` flips `email` to required when the
    * incoming status is "converted". So the email field's requiredness is a
@@ -30,11 +30,11 @@
    * The form still shows the consequence before you pick the status, because
    * being told "no" after pressing save is a worse way to learn a rule than
    * reading it beside the control. "closed" is deliberately NOT in the same
-   * category — reopening a closed lead is ordinary work and creates nothing.
+   * category. Reopening a closed lead is ordinary work and creates nothing.
    *
    * ── WHAT THIS FORM SENDS ─────────────────────────────────────────────────
    * `EDITABLE_FIELDS` plus the owner, over PATCH. Not `org`, not `created_by`,
-   * not tags, contacts or teams, and nothing conversion produced — those are
+   * not tags, contacts or teams, and nothing conversion produced. Those are
    * server-derived, and the action picks fields out by name so a hand-appended
    * key in the POST body is not forwarded.
    *
@@ -45,7 +45,7 @@
    *
    * The checks below duplicate the API's rules so somebody learns about them
    * beside the control rather than in a 400. They are a courtesy, not the
-   * enforcement — the serializer runs again on everything that arrives.
+   * enforcement. The serializer runs again on everything that arrives.
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
@@ -68,7 +68,7 @@
   let { data, form: result } = $props();
 
   /* Read once, on purpose. `originalStatus` in particular has to be the status
-     the record had when this form opened — if it tracked `data` a revalidation
+     the record had when this form opened, if it tracked `data` a revalidation
      mid-edit would redefine what counts as "changed" underneath the person. */
   const { lead, server, originalStatus } = untrack(() => ({
     lead: data.lead,
@@ -96,7 +96,7 @@
      status you can neither re-enter nor leave. Everything else can change. */
   const isConverted = LEAD_IRREVERSIBLE_STATUSES.includes(originalStatus);
 
-  /* Mirrors LeadCreateSerializer.__init__ — the status decides this. */
+  /* Mirrors LeadCreateSerializer.__init__. The status decides this. */
   let emailRequired = $derived(form.status === 'converted');
 
   let enteringConverted = $derived(!isConverted && form.status === 'converted');
@@ -118,14 +118,14 @@
 
     /* Mirrors `flexible_phone_validator` in common/validators.py exactly.
        The check here used to be a length test, which passes plenty of values
-       the API then refuses — extensions being the common one. A whole-form
+       the API then refuses, extensions being the common one. A whole-form
        rejection reading "phone: Enter a valid phone number" after save is a
        worse way to learn that than a message beside the field. */
     if (form.phone && !/^[\d\s\-()+.]{7,25}$/.test(form.phone)) {
       e.phone =
         form.phone.length > 25
           ? `Phone is stored in 25 characters; this is ${form.phone.length}.`
-          : 'Digits and separators only — the API rejects letters, so "x123" extensions have to go in the notes.';
+          : 'Digits and separators only. The API rejects letters, so "x123" extensions have to go in the notes.';
     }
 
     const amount = form.opportunity_amount;
@@ -138,7 +138,7 @@
     /* Mirrors the required-field loop at the end of
        `common.custom_fields.validate_payload`: a required definition errors
        when neither the payload nor the stored record has a value. A plain
-       `required` attribute would do nothing here — the form is `novalidate`,
+       `required` attribute would do nothing here. The form is `novalidate`,
        so the page owns its own checks. Without this the API answers 400 with
        "is required" and the message has no field to sit beside. A checkbox is
        exempt: false is a value, so a required one can never be unsatisfied. */
@@ -281,7 +281,7 @@
         <p class="v2-error" id="e-email">{errors.email}</p>
       {:else}
         <p class="v2-hint" id="h-email">
-          One lead per address per org, ignoring case — the database enforces it, so a duplicate
+          One lead per address per org, ignoring case. The database enforces it, so a duplicate
           comes back as a rejected save rather than a second record.
         </p>
       {/if}
@@ -358,7 +358,7 @@
         <!--
           No hidden field carrying the current value here, deliberately. A
           disabled control submits nothing, PATCH is partial, and "absent"
-          means "leave it alone" — which is exactly right for a status that
+          means "leave it alone", which is exactly right for a status that
           cannot change.
 
           Sending it would be worse than useless: `validate_status` raises on
@@ -381,7 +381,7 @@
 
     <!--
       The consequence of the status select, stated where the select is rather
-      than in a dialog after the fact — and only where there is one.
+      than in a dialog after the fact, and only where there is one.
     -->
     {#if isConverted}
       <div class="consequence" style="--edge:var(--v2-moss)" id="status-locked">
@@ -392,7 +392,7 @@
           build a second opportunity against the same account. The API refuses both.
         </p>
         <p style="margin-top:6px">
-          Everything else on this form is still editable — a converted lead is a record, not a
+          Everything else on this form is still editable. A converted lead is a record, not a
           read-only one.
         </p>
       </div>
@@ -402,7 +402,7 @@
         <p>
           An Account, a Contact and an Opportunity, with this lead's comments and attachments moved
           across. The lead stays as a converted record, and this is the last time you can change its
-          status — there is no endpoint that undoes any of it.
+          status. There is no endpoint that undoes any of it.
         </p>
       </div>
     {:else if statusChanged}
@@ -442,7 +442,7 @@
         <!-- Bound to the Profile id. The mock bound this to a display name,
              which reads identically on screen and cannot be saved. -->
         <!-- What the select was rendered with. The action compares against it
-             so an untouched owner is not sent at all — `assigned_to` is a
+             so an untouched owner is not sent at all; `assigned_to` is a
              many-to-many and this select is single, so sending it always would
              cut a two-person lead down to one on every save. -->
         <input type="hidden" name="assigned_to_original" value={data.form.assigned_to} />
@@ -546,7 +546,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  /* A checkbox labels itself inline — the stacked label/input of the other
+  /* A checkbox labels itself inline, the stacked label/input of the other
      fields leaves the box floating under its own caption. */
   .cf-check {
     display: flex;

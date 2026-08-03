@@ -1,5 +1,5 @@
 /**
- * Accounts — the third v2 module wired to the real API.
+ * Accounts: the third v2 module wired to the real API.
  *
  * Same rules as `leads.js` and `deals.js`: this file lives under `$lib/server`
  * because SvelteKit refuses to bundle that directory into client code and the
@@ -13,12 +13,12 @@
  * when its own pages work; it is finished when the pages it points at do.
  *
  * WHAT CHANGED WHEN THE FIXTURES CAME OFF
- * - `renewal_note` ("Renews every August", "Prospect — no contract yet") is
+ * - `renewal_note` ("Renews every August", "Prospect, no contract yet") is
  *   gone. There is no contract, subscription or renewal model anywhere in the
  *   backend, and nothing to derive one from. A renewal date is the kind of
  *   invention somebody plans a quarter around.
  * - `customer_since` is gone as a stored fact and comes back as `first_won_on`
- *   — the close date of the first deal won against this company, which the CRM
+ *: the close date of the first deal won against this company, which the CRM
  *   does know. The page still says "customer since"; the field name says where
  *   the date came from.
  * - `billing_city` / `billing_country` are `city` / `country_display`. Account
@@ -30,18 +30,18 @@
  * WHAT THE FIXTURE GOT RIGHT
  * The mock refused to store `lifetime_value` / `open_pipeline` /
  * `overdue_amount` and derived them from the records instead, with a comment
- * saying the real API had to aggregate them in SQL. It does now —
+ * saying the real API had to aggregate them in SQL. It does now,
  * `accounts.views.annotate_rollups`, one correlated subquery per figure.
  *
  * NUMBERS ARRIVE AS STRINGS
  * DRF renders `DecimalField` as a string. The rollups come through the JSON
  * encoder as numbers, the model fields as strings, and the pages add them
- * together — so everything numeric is coerced here, at the boundary.
+ * together, so everything numeric is coerced here, at the boundary.
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '$lib/api-helpers.js';
 
-/** DRF decimals are strings. `null` stays `null` — it means "not recorded". */
+/** DRF decimals are strings. `null` stays `null`. It means "not recorded". */
 function num(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -53,8 +53,8 @@ function num(value) {
  *
  * Mirrors `invoices.models.UNPAID_STATUSES`, which the account rollup uses on
  * the server. It is repeated here so the per-row "past due" marker on the
- * invoice rail is decided by the same rule as the total printed above it —
- * the API's own `is_overdue` counts a *draft* past its date, which the header
+ * invoice rail is decided by the same rule as the total printed above it.
+ * The API's own `is_overdue` counts a *draft* past its date, which the header
  * deliberately does not, and a rail that disagrees with its own header is how
  * people stop believing either number.
  */
@@ -73,7 +73,7 @@ function isPastDue(invoice) {
 }
 
 /**
- * `INDCHOICES` stores the label in the value — "FOOD & BEVERAGE", shouting.
+ * `INDCHOICES` stores the label in the value, "FOOD & BEVERAGE", shouting.
  * Only the presentation changes; the value that round-trips to the API is
  * untouched.
  *
@@ -191,7 +191,7 @@ export async function listAccounts({ cookies }, params) {
  *
  * All of it arrives in a single request. `AccountDetailView.get` already
  * returns the deals, people, tickets and invoices for the account, so unlike
- * the pipeline's "attached" rail this panel costs nothing extra — it was the
+ * the pipeline's "attached" rail this panel costs nothing extra. It was the
  * response all along and the fixture page was reimplementing it.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -277,7 +277,7 @@ export const EDITABLE_FIELDS = [
  * The choice lists the forms need, taken from the API rather than hardcoded.
  *
  * `industries` and `countries` come back as `[value, label]` pairs on every
- * accounts list response — the same lists the model validates against, so a
+ * accounts list response, the same lists the model validates against, so a
  * select built from them cannot offer a value the serializer will reject.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies
@@ -359,7 +359,7 @@ export async function getAccountForEdit({ cookies }, id) {
 /**
  * Turn form values into a request body.
  *
- * Absent stays absent — a field the form did not send is a field the save
+ * Absent stays absent. A field the form did not send is a field the save
  * leaves alone, which is the whole reason for PATCH below.
  *
  * @param {Record<string, any>} values
@@ -379,7 +379,7 @@ function toBody(values) {
     body.annual_revenue = Number(body.annual_revenue);
   }
   // Single-select owner, so the list is empty or one long. Only present when
-  // the form decided it changed — see the action for why that matters.
+  // the form decided it changed. See the action for why that matters.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
@@ -393,7 +393,7 @@ function toBody(values) {
  * deals: `AccountDetailView.put` runs `contacts.clear()`, `tags.clear()`,
  * `teams.clear()` and `assigned_to.clear()` unconditionally before re-adding
  * whatever the body carried. This form owns thirteen scalar fields and one
- * owner, so a single PUT would strip every contact off the account — the
+ * owner, so a single PUT would strip every contact off the account, the
  * people, on the record whose entire purpose is the people. `patch` guards
  * each relation with `if "<field>" in data`.
  *
@@ -416,8 +416,8 @@ export async function updateAccount({ cookies }, id, values) {
  * from `request.profile`, and `AccountCreateSerializer` does not list either
  * as a field.
  *
- * The response now carries the new `id`, which it did not before this change —
- * without it a client cannot open what it just made, and searching by name is
+ * The response now carries the new `id`, which it did not before this change.
+ * Without it a client cannot open what it just made, and searching by name is
  * a race dressed up as a lookup.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -428,8 +428,8 @@ export async function createAccount({ cookies }, values) {
 }
 
 /**
- * `AccountDetailView.get` answers 404 for another org's account — deliberately
- * not 403, which would confirm the id exists — and 403 for an account inside
+ * `AccountDetailView.get` answers 404 for another org's account. Deliberately
+ * not 403, which would confirm the id exists, and 403 for an account inside
  * the org that this profile neither created nor is assigned to.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies
@@ -440,7 +440,7 @@ async function fetchDetail(cookies, id) {
     return await apiRequest(`/accounts/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
     // On the status, not on the wording. Django answers a missing record with
-    // "No Account matches the given query." — no "404" in it anywhere.
+    // "No Account matches the given query.", no "404" in it anywhere.
     if (err?.status === 404) {
       error(404, 'That account does not exist, or it belongs to another team.');
     }

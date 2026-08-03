@@ -1,5 +1,5 @@
 /**
- * Documents — the thirteenth v2 module wired to the real API.
+ * Documents: the thirteenth v2 module wired to the real API.
  *
  * Lives under `$lib/server` like the twelve before it: SvelteKit keeps this
  * directory out of the client bundle, so the httpOnly access token never
@@ -11,29 +11,29 @@
  * its list rendered mock rows and its "Upload" button wrote nowhere. `Document`
  * has had a full API (`common/views/document_views.py`) since the first
  * migration and neither v1 nor Flutter ever drew it, so its access rules had
- * only ever been exercised by tests. Wiring it drove those rules for real —
- * the org-scoped, share-aware list read, plus the three writes (upload, edit,
+ * only ever been exercised by tests. Wiring it drove those rules for real.
+ * The org-scoped, share-aware list read, plus the three writes (upload, edit,
  * delete).
  *
  * THE FINDING THE WIRING EXPOSED
- * `DocumentDetailView.put`/`patch` authorised on `_may_read` — creator, anyone
+ * `DocumentDetailView.put`/`patch` authorised on `_may_read`: creator, anyone
  * in `shared_to`, any member of a shared `teams`, or an admin. So anyone a
  * document was merely *shared with* could overwrite its file, rename it, flip
- * its status to `inactive` (hiding it), and — through PUT, which clears the M2M
- * before re-adding — wipe the whole share list and lock everyone else out. The
+ * its status to `inactive` (hiding it), and, through PUT, which clears the M2M
+ * before re-adding, wipe the whole share list and lock everyone else out. The
  * same view already gated `delete` narrowly with a written rationale ("a share
  * hands someone a copy to work with, not the right to remove it from everyone
  * else"); rewriting the bytes behind a title is at least as destructive as
  * deleting the row, yet mutation was left at read level. The backend fix adds
  * `_may_write` = `_may_delete` (creator or admin) and uses it on PUT and PATCH.
  * This file only offers an Edit affordance where the viewer can write, but that
- * is a UX hint — the serializer/view is the trust boundary. Uploading is a
+ * is a UX hint. The serializer/view is the trust boundary. Uploading is a
  * separate, unrestricted operation: any org member may add a document (the
  * server checks only auth + org), so the page does not gate the Upload button.
  *
  * WHAT THE MOCK ASSUMED THAT THE API SHAPES DIFFERENTLY
  * - `GET /api/documents/` returns two separately paginated envelopes
- *   (`documents_active` / `documents_inactive`) plus a `users` list — a v1
+ *   (`documents_active` / `documents_inactive`) plus a `users` list, a v1
  *   artefact. `listDocuments` flattens both into the one list the page reads
  *   and recomputes the totals here (there is no summary endpoint), never a
  *   second query.
@@ -104,7 +104,7 @@ function fileKind(path = '') {
  *
  * `can_write` mirrors the server's `_may_write`: an admin, or the person whose
  * user id matches `created_by`. It gates the Edit link so the row never offers
- * an action the server would refuse — but the view enforces it regardless.
+ * an action the server would refuse, but the view enforces it regardless.
  *
  * @param {any} d
  * @param {{ role: string | null, userId: string | null }} viewer
@@ -138,7 +138,7 @@ function toDoc(d, viewer) {
 
 /**
  * Totals for the header and stat cards, over every document (not one page).
- * `unshared` counts documents given to nobody and no team — reachable only by
+ * `unshared` counts documents given to nobody and no team, reachable only by
  * their uploader and admins. Not an error, so the page states it without alarm.
  *
  * @param {ReturnType<typeof toDoc>[]} docs
@@ -176,7 +176,7 @@ export async function listDocuments({ cookies }) {
 /**
  * In-org people and teams for the share pickers.
  * `/users/get-teams-and-users/` filters both to `request.profile.org`, so the
- * picker can only ever offer in-org targets — the same boundary the upload/edit
+ * picker can only ever offer in-org targets, the same boundary the upload/edit
  * view enforces when it filters `shared_to`/`teams` by org, surfaced early as
  * UX.
  *
@@ -204,7 +204,7 @@ async function shareOptions(cookies) {
  *
  * Uploading is NOT admin-only: `DocumentListView.post` gates on
  * `(IsAuthenticated, HasOrgContext)` and nothing more, so any org member may
- * add a document (a rep attaching a discovery note, not just an admin) — and a
+ * add a document (a rep attaching a discovery note, not just an admin), and a
  * UI that claimed "admins only" would be inventing a rule the server does not
  * enforce. Editing and deleting are the narrow writes (creator or admin,
  * enforced by `_may_write` / `_may_delete`); creating is open to the org.
@@ -218,8 +218,8 @@ export async function getUploadOptions({ cookies }) {
 
 /**
  * The document plus the picker options and current shares, for the edit form.
- * Refuses a non-writer up front — a non-admin who is not the creator gets
- * `can_edit: false` and an "only the owner or an admin" state — so the form is
+ * Refuses a non-writer up front: a non-admin who is not the creator gets
+ * `can_edit: false` and an "only the owner or an admin" state, so the form is
  * never drawn for someone the PUT would refuse. The detail fetch is org-scoped,
  * so a bad or foreign id 404s.
  *
@@ -292,7 +292,7 @@ export async function uploadDocument(cookies, values) {
 }
 
 /**
- * `PUT /api/documents/<id>/` as JSON — no new file, so `apiRequest` is enough.
+ * `PUT /api/documents/<id>/` as JSON, no new file, so `apiRequest` is enough.
  * The view treats `shared_to`/`teams` as clear-then-re-add and scopes both to
  * the caller's org, so a share can never point at another tenant. Gated by
  * `_may_write` (creator or admin) server-side.

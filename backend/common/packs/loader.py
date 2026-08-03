@@ -1,6 +1,6 @@
 """Registry of vertical packs, built once from backend/packs/*.json.
 
-Pack ids are dict keys, never filesystem paths — a caller-supplied id can only
+Pack ids are dict keys, never filesystem paths. A caller-supplied id can only
 hit or miss this dict, so there is no traversal or SSRF surface.
 """
 
@@ -35,5 +35,5 @@ def get_registry() -> dict[str, dict]:
 
 
 def get_pack(pack_id: str) -> dict | None:
-    """Look up a pack by id. Unknown ids — including anything path-shaped — return None."""
+    """Look up a pack by id. Unknown ids, including anything path-shaped, return None."""
     return get_registry().get(pack_id)

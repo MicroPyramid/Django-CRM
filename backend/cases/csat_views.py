@@ -1,4 +1,4 @@
-"""CSAT endpoints — public (token-scoped) + internal (aggregate).
+"""CSAT endpoints, public (token-scoped) + internal (aggregate).
 
 The public GET/POST pair is hit anonymously from a customer's email link.
 There is no agent JWT, no portal session, and we deliberately do not
@@ -110,7 +110,7 @@ class PublicCsatView(APIView):
             window_close = survey.responded_at + timedelta(hours=EDIT_WINDOW_HOURS)
             if timezone.now() >= window_close:
                 return Response(
-                    {"error": "Survey is locked — edit window has closed."},
+                    {"error": "Survey is locked. Edit window has closed."},
                     status=drf_status.HTTP_409_CONFLICT,
                 )
 

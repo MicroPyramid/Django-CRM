@@ -69,7 +69,7 @@ class TestLeadListView:
         """`is_sample` is server-set only (see leads/models.py) and it is the
         sole key common.packs.applier.clear_sample_data uses to decide what
         to delete. LeadCreateSerializer.Meta.fields never lists it, so DRF
-        silently drops it from validated_data rather than erroring — this
+        silently drops it from validated_data rather than erroring. This
         proves that drop actually holds and a user cannot mark their own
         lead "sample" (and have it swept up by a future clear) by adding the
         field to the request body.
@@ -99,7 +99,7 @@ class TestLeadListView:
     def test_create_lead_unauthenticated(self, unauthenticated_client):
         """`HasOrgContext` refuses before anything reads the body.
 
-        Was already failing before the v2 leads work — it asserted that the
+        Was already failing before the v2 leads work: it asserted that the
         request *raises* `PermissionDenied` out of the client, but DRF handles
         the exception and renders it, so nothing propagates. Assert the
         response the caller actually receives.
@@ -682,7 +682,7 @@ class TestLeadDetailView:
         self, admin_client, admin_user, org_a
     ):
         """Mirrors test_create_lead_ignores_is_sample_in_payload for the
-        update path — PUT/PATCH share LeadCreateSerializer with create, so
+        update path, PUT/PATCH share LeadCreateSerializer with create, so
         this is the "and False" half of proving the mass-assignment door is
         shut: an existing real lead cannot be flipped to is_sample=True and
         then destroyed by clear_sample_data.
@@ -1389,7 +1389,7 @@ class TestLeadDetailViewNonAdmin:
         mention list read `created_by.username`, and this User model sets
         `USERNAME_FIELD = "email"` and has no `username` field. Being assigned
         a lead and then getting a 500 when you open it is not a branch worth
-        covering — it is the bug.
+        covering. It is the bug.
         """
         lead = self._create_lead_with_creator(
             admin_user,

@@ -16,7 +16,7 @@
   let totals = $derived(data.totals);
 
   /* A vertical pack renames this module in the sidebar. Reading the same map
-     here keeps the two agreeing — a nav item saying "Enquiries" that opens a
+     here keeps the two agreeing, a nav item saying "Enquiries" that opens a
      page headed "Leads" reads as a bug, not as configuration. `t()` falls back
      to the literal, so an org with no terminology sees exactly what it saw
      before. The values are tenant text and render as plain text. */
@@ -29,7 +29,7 @@
   /**
    * The same rule the API counts with, so the highlighted rows and the
    * "unworked for more than a week" figure in the header agree. If one moves,
-   * move the other — `LeadListView.UNWORKED_AFTER_DAYS`.
+   * move the other, `LeadListView.UNWORKED_AFTER_DAYS`.
    *
    * @param {{ last_contacted: string | null, created_at: string }} lead
    */
@@ -93,7 +93,7 @@
               <td class="v2-r v2-num">{l.opportunity_amount ? money(l.opportunity_amount) : '—'}</td
               >
               <!--
-              `last_contacted` is the only touch the model records — Lead has
+              `last_contacted` is the only touch the model records. Lead has
               no aging chain, StageAgingConfig and get_aging_status() being
               Opportunity-only. Where it is null the cell says so and falls
               back to how long the lead has been sitting, rather than
@@ -126,7 +126,7 @@
 </div>
 
 <style>
-  /* A colour and a weight, not an inline style — the cell already carries a
+  /* A colour and a weight, not an inline style. The cell already carries a
      class for the ordinary case and the two should be stated the same way. */
   .overdue {
     color: var(--v2-rust);

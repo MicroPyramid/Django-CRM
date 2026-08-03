@@ -5,7 +5,7 @@ import { env } from '$env/dynamic/public';
  * Stream an invoice PDF from the API.
  *
  * The PDF endpoint is authenticated with the bearer token, which lives in an
- * httpOnly cookie the browser never sends to the API host — so a plain
+ * httpOnly cookie the browser never sends to the API host, so a plain
  * `<a href>` straight to `:8000/api/.../pdf/` would arrive unauthenticated and
  * 401. This server route carries the token for the browser and pipes the bytes
  * back. Authorization is still the API's call: `get_invoice_or_error` runs on

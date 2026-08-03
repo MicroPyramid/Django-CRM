@@ -1,11 +1,11 @@
 /**
- * Leads — the first v2 module wired to the real API.
+ * Leads: the first v2 module wired to the real API.
  *
  * WHY THIS LIVES IN `$lib/server`
  * SvelteKit refuses to bundle anything under `src/lib/server` into client
  * code, and that guarantee is the point: the access token is read from an
- * httpOnly cookie in here. A module importable from a `+page.js` — and
- * therefore from the browser — cannot be where authenticated requests are
+ * httpOnly cookie in here. A module importable from a `+page.js`, and
+ * therefore from the browser, cannot be where authenticated requests are
  * made. Leads was the first module to move here off the old mock facade; every
  * other module has since followed and the facade (`$lib/v2/api.js` and
  * `$lib/v2/mock/`) is gone.
@@ -13,7 +13,7 @@
  * SHAPES
  * The functions below return the shapes the v2 pages already consume, so the
  * pages did not have to change to stop being mocks. Where the mock invented a
- * field the backend does not have, the field is gone rather than faked —
+ * field the backend does not have, the field is gone rather than faked;
  * `last_activity_at` is the notable one; see `listLeads`.
  *
  * SECURITY
@@ -34,8 +34,8 @@ import {
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too —
- * the file is served off `/media`, not `/api`, so this uses the base host, not
+ * against the Django origin so the link works from the SvelteKit origin too.
+ * The file is served off `/media`, not `/api`, so this uses the base host, not
  * `apiRequest`.
  *
  * @param {string|null|undefined} path
@@ -50,7 +50,7 @@ function fileUrl(path) {
 
 /**
  * Django serialises `assigned_to` as a list of Profiles. The v2 list and rail
- * show a single owner, so pick the first and fall back to the creator — which
+ * show a single owner, so pick the first and fall back to the creator, which
  * is what the row means by "Owner": whoever is answerable for this lead.
  *
  * @param {any} lead
@@ -83,7 +83,7 @@ function toRow(lead) {
     opportunity_amount: lead.opportunity_amount ? Number(lead.opportunity_amount) : null,
     assigned_to: ownerName(lead),
     // Null means never contacted, and the column says so rather than
-    // substituting `updated_at` — an edit is not a conversation, and a list
+    // substituting `updated_at`. An edit is not a conversation, and a list
     // whose "Last touch" quietly counts edits stops being worth reading.
     last_contacted: lead.last_contacted ?? null,
     created_at: lead.created_at
@@ -93,14 +93,14 @@ function toRow(lead) {
 /**
  * The open leads list, least recently touched first.
  *
- * The mock sorted on a `last_activity_at` field that Lead does not have — the
+ * The mock sorted on a `last_activity_at` field that Lead does not have: the
  * file that defined it said so in a header comment, because aging
  * (`StageAgingConfig`, `get_aging_status()`) is Opportunity-only. The real
  * ordering is `last_contacted` where it is set and the creation date where it
  * is not, which is the same intent expressed in fields that exist.
  *
  * `totals` comes from the API and is computed there over the whole filtered
- * queryset. Do not recompute it from `results` — `results` is one page, and a
+ * queryset. Do not recompute it from `results`; `results` is one page, and a
  * page total presented as a list total is the specific bug this redesign
  * exists to fix.
  *
@@ -137,13 +137,13 @@ function lastTouch(row) {
 export async function getLead({ cookies }, id) {
   const response = await fetchDetail(cookies, id);
   // `description` is a real field the edit form owns, but `toRow` leaves it out
-  // because the list has no use for it. The detail page does — it is the one
-  // place a lead's free text is worth reading — so it is attached here rather
+  // because the list has no use for it. The detail page does. It is the one
+  // place a lead's free text is worth reading, so it is attached here rather
   // than widening every list row to carry a paragraph nobody scans.
   const lead = { ...toRow(response.lead_obj), description: response.lead_obj.description ?? '' };
 
   // Per-org custom fields. A vertical pack's whole promise is the fields it
-  // sets up for the industry, and they are stored on the lead — so the detail
+  // sets up for the industry, and they are stored on the lead, so the detail
   // page reads them here rather than leaving them visible only under
   // Settings → Custom fields.
   const definitions = await leadFieldDefinitions(cookies);
@@ -157,19 +157,19 @@ export async function getLead({ cookies }, id) {
 }
 
 /**
- * Log a note against a lead — a call made, a reply, what they said.
+ * Log a note against a lead: a call made, a reply, what they said.
  *
  * `LeadDetailView.post` creates a Comment scoped to the lead's org and stamps
  * `commented_by` from `request.profile`; the only field it reads from the body
  * is `comment`. That view answers 403 for a profile that is neither the lead's
- * creator, an assignee, nor an admin — the same gate that governs *reading* the
- * lead — so the composer this feeds appears only to someone who could already
+ * creator, an assignee, nor an admin, the same gate that governs *reading* the
+ * lead, so the composer this feeds appears only to someone who could already
  * open the page, and a note is attributed server-side rather than by the client.
  *
  * A file rides with the note, never alone: `LeadDetailView.post` only saves an
  * attachment inside its `if params.get("comment")` branch, so an upload with no
  * note text is silently dropped by the API. The composer enforces the note, and
- * the form action refuses a file without one — so the two rules agree.
+ * the form action refuses a file without one, so the two rules agree.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {string} id
@@ -189,10 +189,10 @@ export async function addLeadNote({ cookies }, id, comment, file = null) {
 /**
  * The record's real events, newest first: notes, files, and creation.
  *
- * Three event KINDS, all backed by rows that exist — a note is a `Comment`, a
+ * Three event KINDS, all backed by rows that exist. A note is a `Comment`, a
  * file is an `Attachments`, and the record always has its own creation. The
  * mock timeline also had `status` entries ("moved from Assigned to In process");
- * nothing records those — Lead has no history table and no aging chain — so they
+ * nothing records those, Lead has no history table and no aging chain, so they
  * are not reconstructed here. Meetings, calls and emails as distinct types would
  * be the same fiction: there are no such records, so there are no such events.
  *
@@ -296,7 +296,7 @@ export const EDITABLE_FIELDS = [
  *
  * The endpoint scopes to `request.profile.org` itself, and the API filters
  * `assigned_to` ids through `Profile.objects.filter(id__in=..., org=...)` on
- * the way back in — so a forged id cannot assign a lead to somebody in
+ * the way back in, so a forged id cannot assign a lead to somebody in
  * another tenant. It would simply not match, and the lead would end up
  * unassigned.
  *
@@ -351,7 +351,7 @@ export async function getLeadForEdit({ cookies }, id) {
     server: {
       // The DB constraint `unique_lead_email_per_org` is case-insensitive and
       // conditional on a non-empty email. This list only lets the form show
-      // the collision before submit — the 400 from the API is what decides.
+      // the collision before submit: the 400 from the API is what decides.
       taken_emails: await takenEmails(cookies, id),
       converted_at: lead.status === 'converted' ? response.lead_obj.updated_at : null
     }
@@ -390,8 +390,8 @@ async function takenEmails(cookies, excludeId) {
  * `validate_status`, which treats `value == current` on an irreversible status
  * as a repeat conversion and rejects the whole save.
  *
- * The API ignores `org` and `created_by` — `LeadCreateSerializer` does not
- * list them — but a client should not be sending fields whose absence is what
+ * The API ignores `org` and `created_by`; `LeadCreateSerializer` does not
+ * list them, but a client should not be sending fields whose absence is what
  * makes them safe. To write a new field, add it to `EDITABLE_FIELDS`
  * deliberately.
  *
@@ -413,7 +413,7 @@ export async function updateLead({ cookies }, id, values) {
     body.opportunity_amount = amount === '' || amount == null ? null : Number(amount);
   }
   // A single-select owner, so the list is empty or one long. Empty is
-  // meaningful — it is how a lead is unassigned — so it is sent, not skipped.
+  // meaningful, it is how a lead is unassigned, so it is sent, not skipped.
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
@@ -421,7 +421,7 @@ export async function updateLead({ cookies }, id, values) {
   // `validate_payload` merges rather than replaces: it carries forward every
   // recognized key the body does not mention, and treats an explicit null as
   // "clear this one" (`cleaned.pop`). So omitting a field preserves it and
-  // submitting it empty removes it — which is exactly what a form whose empty
+  // submitting it empty removes it, which is exactly what a form whose empty
   // input means "no value" needs, and why `collectFromForm` sends null instead
   // of skipping the key. Absent stays absent: a caller that does not edit
   // custom fields never sends the key at all.
@@ -446,7 +446,7 @@ async function fetchDetail(cookies, id) {
   } catch (/** @type {any} */ err) {
     // On the status, not on the wording. This read `message.includes('404')`,
     // and Django's message for a missing lead is "No Lead matches the given
-    // query." — so opening a deleted lead answered 500. See `api-helpers.js`.
+    // query.", so opening a deleted lead answered 500. See `api-helpers.js`.
     if (err?.status === 404) {
       error(404, 'That lead does not exist, or it belongs to another team.');
     }

@@ -1,5 +1,5 @@
 /**
- * Team and access — the ninth v2 module wired to the real API.
+ * Team and access: the ninth v2 module wired to the real API.
  *
  * Lives under `$lib/server` for the same reason as the eight before it:
  * SvelteKit refuses to bundle this directory into client code, and the access
@@ -9,7 +9,7 @@
  * WHY THIS MODULE
  * This is the access-control page: who is an admin, who has been deactivated,
  * and whose API tokens still authenticate after their login was pulled. Wiring
- * it meant driving `/api/users/` and `/api/user/<id>/` for real — and those are
+ * it meant driving `/api/users/` and `/api/user/<id>/` for real, and those are
  * the endpoints where a plain member could PATCH their own profile to
  * role="ADMIN" and become an org admin. The page's own header comment claimed
  * "the server refuses to let anyone change their own role"; it did not. Fixing
@@ -23,9 +23,9 @@
  *   email when someone was invited and has no name yet.
  * - **Per-member teams.** `ProfileSerializer` does not list a person's teams.
  *   They are derived here from `/api/teams/`, whose serializer nests each
- *   team's members — one source of truth, not a second field that could drift.
- * - **Token counts.** The one genuinely urgent thing this page surfaces — a
- *   live token on a deactivated account — needs a real count, so the users list
+ *   team's members, one source of truth, not a second field that could drift.
+ * - **Token counts.** The one genuinely urgent thing this page surfaces. A
+ *   live token on a deactivated account. Needs a real count, so the users list
  *   now returns `active_token_count` per profile (computed once server-side,
  *   not on the shared serializer). No count is invented.
  *
@@ -33,13 +33,13 @@
  * The People/access half is wired: list, invite, role change, activate and
  * deactivate. Team CRUD (create/edit membership) is a separate write surface
  * with its own picker UI and is left for later, exactly as estimates were left
- * beside invoices. The teams list still renders — read-only — because the
+ * beside invoices. The teams list still renders, read-only, because the
  * people rows need it to show who is on what.
  */
 import { apiRequest } from '$lib/api-helpers.js';
 
 /**
- * Profile.role is ADMIN | USER — the only two the backend recognises. There is
+ * Profile.role is ADMIN | USER, the only two the backend recognises. There is
  * no MANAGER despite ApprovalRule offering it; a picker offering a value the
  * server rejects is worse than not offering it.
  */
@@ -48,11 +48,11 @@ export const ROLES = ['ADMIN', 'USER'];
 /**
  * The signed-in user's id, read from the `user_id` claim of the access token.
  *
- * Used only to mark "— you" on a row and to withhold the controls a person
+ * Used only to mark ", you" on a row and to withhold the controls a person
  * must not use on themselves. It is a display hint, never an authorization
  * decision: the server re-derives identity from the same token and is the
- * thing that actually refuses a self-role-change. Decoded, not verified —
- * verifying our own freshly-read cookie would buy nothing.
+ * thing that actually refuses a self-role-change. Decoded, not verified.
+ * Verifying our own freshly-read cookie would buy nothing.
  *
  * @param {import('@sveltejs/kit').Cookies} cookies
  * @returns {string | null}
@@ -157,7 +157,7 @@ export async function listTeam({ cookies }) {
       admins: admins.length,
       never_signed_in: active.filter((/** @type {any} */ m) => !m.last_login).length,
       deactivated: inactive.length,
-      // A live token outliving the account that owns it — the number worth acting on.
+      // A live token outliving the account that owns it, the number worth acting on.
       tokens_on_deactivated: inactive.reduce(
         (/** @type {number} */ a, /** @type {any} */ m) => a + m.active_token_count,
         0
@@ -171,7 +171,7 @@ export async function listTeam({ cookies }) {
 
 /**
  * Invite someone: `POST /api/users/`. Admin-only server-side. Role is chosen
- * at invite time — that is legitimate on this path (an admin choosing a new
+ * at invite time. That is legitimate on this path (an admin choosing a new
  * member's role), unlike a member setting their own.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

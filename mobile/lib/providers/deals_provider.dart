@@ -141,7 +141,7 @@ class DealDetail {
   });
 }
 
-/// Paginated deals snapshot — wrapped by AsyncValue for loading/error.
+/// Paginated deals snapshot, wrapped by AsyncValue for loading/error.
 class DealsListData {
   final List<Deal> deals;
   final int totalCount;
@@ -224,7 +224,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
       await loadMore();
       final after = state.value;
       if (after == null || after.currentOffset == current.currentOffset) {
-        return; // safety — avoid infinite loop on a backend that misreports.
+        return; // safety. Avoid infinite loop on a backend that misreports.
       }
     }
   }
@@ -354,7 +354,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
       Deal deal = Deal.fromJson(dealData);
 
       // Top-level comments override anything that might have been inlined
-      // on the deal — they're freshly queried.
+      // on the deal. They're freshly queried.
       try {
         final raw = data['comments'] as List<dynamic>?;
         if (raw != null) {
@@ -480,7 +480,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
     }
   }
 
-  /// Create a new deal — list refreshes on success.
+  /// Create a new deal, list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> createDeal(
     Deal deal,
   ) async {
@@ -515,7 +515,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
     }
   }
 
-  /// Update an existing deal — list refreshes on success.
+  /// Update an existing deal, list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> updateDeal(
     String id,
     Deal deal,
@@ -549,7 +549,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
     }
   }
 
-  /// Quick stage change — optimistic local update for snappy UX.
+  /// Quick stage change, optimistic local update for snappy UX.
   Future<({bool success, String? error})> updateDealStage(
     String id,
     DealStage stage,
@@ -591,7 +591,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
     }
   }
 
-  /// Delete a deal — local state mutation (no full refresh).
+  /// Delete a deal, local state mutation (no full refresh).
   Future<({bool success, String? error})> deleteDeal(String id) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
@@ -624,7 +624,7 @@ final dealsProvider = AsyncNotifierProvider<DealsNotifier, DealsListData>(
   DealsNotifier.new,
 );
 
-/// Convenience providers — read from the AsyncValue so screen code stays the
+/// Convenience providers. Read from the AsyncValue so screen code stays the
 /// same shape as before the riverpod 3 migration.
 final dealsListProvider = Provider<List<Deal>>((ref) {
   return ref.watch(dealsProvider).value?.deals ?? const [];
@@ -638,7 +638,7 @@ final dealsErrorProvider = Provider<String?>((ref) {
   return ref.watch(dealsProvider).error?.toString();
 });
 
-/// Grouped deals by stage — derived.
+/// Grouped deals by stage, derived.
 final dealsByStageProvider = Provider<Map<DealStage, List<Deal>>>((ref) {
   final deals = ref.watch(dealsListProvider);
   final Map<DealStage, List<Deal>> grouped = {};
@@ -655,7 +655,7 @@ final activeDealsCountProvider = Provider<int>((ref) {
   return deals.where((d) => !d.stage.isClosed).length;
 });
 
-/// Authoritative active count — derived from server `opportunities_count`
+/// Authoritative active count. Derived from server `opportunities_count`
 /// minus locally-known closed deals. Best-effort when the API doesn't
 /// distinguish open/closed in its count.
 final activeDealsTotalCountProvider = Provider<int>((ref) {
@@ -691,7 +691,7 @@ class PipelineSummary {
   final bool loadedSubset;
   const PipelineSummary({required this.buckets, required this.loadedSubset});
 
-  /// Currency with the largest active total — used as the "primary" chip
+  /// Currency with the largest active total, used as the "primary" chip
   /// when there are multiple currencies in play.
   PipelineBucket? get primary {
     if (buckets.isEmpty) return null;

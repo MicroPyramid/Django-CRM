@@ -5,13 +5,13 @@ A user manages ONLY their own tokens. Both list and revoke are filtered by
 token id 404s rather than leaking or being revoked (IDOR guard). The raw token
 is returned exactly once, on create; ``token_hash`` is never serialized.
 
-The ``Org*`` views below are the admin's *oversight* half — org-wide read and
-revoke, gated to admins — and are deliberately kept SEPARATE from the
+The ``Org*`` views below are the admin's *oversight* half. Org-wide read and
+revoke, gated to admins, and are deliberately kept SEPARATE from the
 self-scoped views above rather than widening them, so the "a user manages only
 their own" guard is never relaxed. ``personal_access_token`` is intentionally
 NOT RLS-protected (it is looked up by ``token_hash`` before any tenant context
 exists), so on every view here the explicit ``org=request.profile.org`` filter
-is the *only* tenant barrier — load-bearing, not a belt over RLS's braces.
+is the *only* tenant barrier, load-bearing, not a belt over RLS's braces.
 """
 
 from django.shortcuts import get_object_or_404
@@ -87,11 +87,11 @@ class PersonalAccessTokenDetailView(APIView):
 
 
 class OrgAccessTokenListView(APIView):
-    """Org-wide token oversight — ADMIN only, read.
+    """Org-wide token oversight. ADMIN only, read.
 
     The self-scoped list above answers "my tokens". This one answers the
     admin's question: which tokens exist across the whole org, and which two
-    kinds are worth acting on —
+    kinds are worth acting on.
 
     * a token whose owner has been deactivated, and
     * a token nobody has used in a long time.
@@ -105,7 +105,7 @@ class OrgAccessTokenListView(APIView):
     flag ``resolve_valid_pat`` checks, so a token on a deactivated owner is
     already rejected at login (see
     ``common/tests/test_pat_auth.py::test_inactive_profile_raises``). It is a
-    dormant liability, not a live credential — it would authenticate again only
+    dormant liability, not a live credential. It would authenticate again only
     if the account were reactivated. The count is surfaced so an admin can
     revoke it as part of offboarding, not because it is "still working".
     """
@@ -153,13 +153,13 @@ class OrgAccessTokenListView(APIView):
 
 
 class OrgAccessTokenDetailView(APIView):
-    """Admin revoke of ANY token in the org — org-scoped, not profile-scoped.
+    """Admin revoke of ANY token in the org, org-scoped, not profile-scoped.
 
     Separate from ``PersonalAccessTokenDetailView`` (which stays self-only): an
     admin cleaning up a deactivated colleague's token cannot use the self path.
     The org filter is the sole tenant barrier (no RLS on this table), so a pk in
     another org 404s rather than being revoked cross-tenant. Revoke is
-    idempotent — a second call on an already-revoked token is a no-op 200.
+    idempotent. A second call on an already-revoked token is a no-op 200.
     """
 
     permission_classes = (IsAuthenticated, HasOrgContext, IsOrgAdmin)

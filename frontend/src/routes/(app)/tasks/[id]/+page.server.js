@@ -5,7 +5,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 /**
  * One task.
  *
- * The mock never had this page — the list was the whole module — but the
+ * The mock never had this page, the list was the whole module, but the
  * contact page has been rendering a Tasks rail with nowhere to click since
  * contacts were wired, and a comment thread has nowhere else to live.
  *
@@ -37,10 +37,10 @@ export const actions = {
 
   /**
    * Comment on the task, with an optional file. Anyone who may open the task may
-   * add one — the DRF view enforces the same `assert_task_access` gate.
+   * add one. The DRF view enforces the same `assert_task_access` gate.
    *
    * A task accepts a file on its own: `TaskDetailView.post` saves the attachment
-   * in a block separate from the comment, so this refuses only the empty case —
+   * in a block separate from the comment, so this refuses only the empty case,
    * nothing typed and nothing picked. Not `updateTask`: comments and files go to
    * the same URL by POST (see `addTaskNote`); routing them through the PATCH body
    * would make them task fields.
@@ -71,7 +71,7 @@ export const actions = {
    * `assigned_to` is many-to-many and the API clears it whenever the key is
    * present, so this sends the whole list. A single-select posting one id
    * would drop every co-assignee, which is a data loss that only shows up
-   * against real records — the seeded org has tasks with two.
+   * against real records. The seeded org has tasks with two.
    */
   assign: async ({ cookies, params, request }) => {
     const form = await request.formData();

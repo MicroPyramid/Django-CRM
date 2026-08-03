@@ -1,7 +1,7 @@
 """Inbound email webhook + admin mailbox CRUD endpoints.
 
 The webhook is intentionally public (no auth). Trust rests on two checks, and
-it takes both — the signature alone is not enough:
+it takes both. The signature alone is not enough:
 
 1. `verify_sns_message` proves the payload was signed by AWS SNS. That rules
    out arbitrary JSON posted at the URL, but note what it does *not* prove:
@@ -9,7 +9,7 @@ it takes both — the signature alone is not enough:
    says the message came from *some* topic in *some* account.
 2. The TopicArn pin (`InboundMailbox.topic_arn`) proves it came from *this
    mailbox's* topic. Without it, anyone who learned a mailbox UUID could point
-   their own SNS topic here and have AWS sign forged mail for them — which,
+   their own SNS topic here and have AWS sign forged mail for them, which,
    because the pipeline threads replies onto existing cases, means injecting
    messages into live customer conversations, not just spam tickets.
 
@@ -66,7 +66,7 @@ def _mailbox_analytics(org):
       at the address for an older case is not a new ticket, so we anchor on the
       case's ``created_at``).
     - ``last_received_at`` per mailbox = the newest inbound message's
-      ``received_at`` (any message, including dropped ones — the address still
+      ``received_at`` (any message, including dropped ones, the address still
       received mail).
     - org ``cases_last_30d`` = distinct such cases across all mailboxes (not a
       sum, so a case cross-posted to two addresses is not double counted).
@@ -102,7 +102,7 @@ def _admin_required():
 
 
 def _topic_rejected():
-    """Deliberately as opaque as the signature failure — a caller probing the
+    """Deliberately as opaque as the signature failure. A caller probing the
     webhook shouldn't learn whether a mailbox is pinned or to what."""
     return Response(
         {"error": True, "errors": "Signature verification failed"},
@@ -114,7 +114,7 @@ class InboundMailboxWebhookView(APIView):
     """Public endpoint where AWS SNS POSTs for one configured mailbox.
 
     URL: `/api/cases/inbound/<mailbox_id>/`. The mailbox lookup also acts as
-    the org boundary — the URL embeds the per-mailbox UUID so the webhook
+    the org boundary, the URL embeds the per-mailbox UUID so the webhook
     can't be confused for one belonging to a different tenant.
     """
 
@@ -171,7 +171,7 @@ class InboundMailboxWebhookView(APIView):
                 status=status.HTTP_501_NOT_IMPLEMENTED,
             )
 
-        # SNS posts the JSON body in `request.body` — DRF may have parsed it.
+        # SNS posts the JSON body in `request.body`. DRF may have parsed it.
         try:
             payload = (
                 request.data
@@ -235,7 +235,7 @@ class InboundMailboxWebhookView(APIView):
                 )
             return Response({"ok": True, "subscribed": True})
 
-        if msg_type == "UnsubscribeConfirmation":  # pragma: no cover — informational
+        if msg_type == "UnsubscribeConfirmation":  # pragma: no cover: informational
             logger.info("SNS unsubscribe for mailbox=%s", mailbox.id)
             return Response({"ok": True, "unsubscribed": True})
 

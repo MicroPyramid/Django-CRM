@@ -6,7 +6,7 @@
    * Getting the arithmetic and the due date right BEFORE the document goes to
    * a customer, because both are hard to take back. So the right-hand panel is
    * not a decoration: it renders the running totals through
-   * `PortalLineItems` — the very same component the customer's portal page
+   * `PortalLineItems`: the very same component the customer's portal page
    * uses. If the number here is wrong, it is wrong in the same way there, and
    * you find that out now rather than from a reply.
    *
@@ -22,7 +22,7 @@
    * And `recalculate_totals()` recomputes subtotal, discount, tax, total and
    * amount_due from the line items on every save. THE SERVER IS THE AUTHORITY
    * ON THE MONEY. Everything computed in this file is a preview of what it
-   * will decide, mirroring its order exactly — subtotal, then discount, then
+   * will decide, mirroring its order exactly: subtotal, then discount, then
    * tax on the discounted amount, then shipping added untaxed. If the two ever
    * disagree, the server is right and this file has a bug.
    *
@@ -60,8 +60,8 @@
 
   /**
    * Contacts whose primary account is this account, plus contacts with no
-   * account (they attach to anyone). The server enforces the same rule — a
-   * contact bound to another account is a 400 — so offering only these keeps the
+   * account (they attach to anyone). The server enforces the same rule. A
+   * contact bound to another account is a 400, so offering only these keeps the
    * form from proposing a pairing the API will refuse.
    */
   let contactOptions = $derived(
@@ -178,7 +178,7 @@
 
 <PageHeader title="New invoice">
   {#snippet sub()}
-    Nothing is sent until you send it — saving leaves it as a draft
+    Nothing is sent until you send it. Saving leaves it as a draft
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn" href="/invoices">Cancel</a>
@@ -267,7 +267,7 @@
             <p class="warn">
               <Info size={13} />
               <span>
-                Custom terms with no date set becomes <b>Net 30</b> on save — the server falls back to
+                Custom terms with no date set becomes <b>Net 30</b> on save, the server falls back to
                 30 days rather than leaving the date empty.
               </span>
             </p>
@@ -287,7 +287,7 @@
             >
               <option value="">Add from catalogue…</option>
               {#each data.products as p (p.id)}
-                <option value={p.id}>{p.name} — {money(p.price, CURRENCY)}</option>
+                <option value={p.id}>{p.name}, {money(p.price, CURRENCY)}</option>
               {/each}
             </select>
           </div>
@@ -485,7 +485,7 @@
   .line {
     /* Two rows, always. Squeezing the description into the leftover 1fr
        beside four numeric columns leaves it about 85px wide inside this
-       column — the widest field in the record rendered as the narrowest box
+       column, the widest field in the record rendered as the narrowest box
        on the screen. The numbers are fixed-width because they are short; the
        description gets the whole row because it is not. */
     display: grid;

@@ -3,7 +3,7 @@
 
   /**
    * Four segments for the four open stages. A closed deal leaves the meter
-   * entirely and becomes a pill — a won deal is not "100% through a funnel",
+   * entirely and becomes a pill. A won deal is not "100% through a funnel",
    * it is done.
    *
    * @type {{ stage: string, label?: boolean }}

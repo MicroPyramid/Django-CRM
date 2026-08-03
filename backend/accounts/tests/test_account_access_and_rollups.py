@@ -4,26 +4,26 @@ Written while wiring `/v2/accounts` to the real API. Every case here failed
 against the code as it stood, or pins a behaviour that was one edit away from
 breaking:
 
-1. `get`, `put`, `patch` and comment `post` compared `request.profile` — a
-   Profile — against `account.created_by`, a FK to `User`. Never equal, so the
+1. `get`, `put`, `patch` and comment `post` compared `request.profile`, a
+   Profile: against `account.created_by`, a FK to `User`. Never equal, so the
    creator branch was unreachable. `delete()` and the list filter compared
    correctly, which is how you can tell: the same non-admin could see an
    account in their own list, be refused permission to open it, and delete it
    anyway.
 2. `users_mention` read `created_by.user.email`. `created_by` *is* the User, so
-   that was an AttributeError — a 500 for every non-admin assignee who opened
+   that was an AttributeError, a 500 for every non-admin assignee who opened
    an account they were legitimately assigned.
 3. Commenting on an id that does not exist raised `DoesNotExist` (500) where
    `get` on the same id answered 404.
 4. `AccountAttachmentView.delete` looked its row up by primary key with no org
    filter. `Attachments` is one generic table shared by every module, so that
-   endpoint deleted any attachment in the database — any org, any parent record.
+   endpoint deleted any attachment in the database, any org, any parent record.
 5. A negative `annual_revenue` reached the CheckConstraint and came back as an
    IntegrityError, i.e. a 500 naming no field.
 6. The account page's money had no source at all. `won_amount`, `open_pipeline`,
    `overdue_amount` and the counts beside them are now annotated in SQL, and
-   the interesting case is an account with several deals *and* several invoices
-   — a single `.annotate(Sum(...), Sum(...))` multiplies those together.
+   the interesting case is an account with several deals *and* several invoices,
+   a single `.annotate(Sum(...), Sum(...))` multiplies those together.
 """
 
 import datetime
@@ -68,7 +68,7 @@ def _created_by(account, user):
     """Stage a creator.
 
     `BaseModel.save()` overwrites `created_by` from the crum thread-local, so
-    passing it to `create()` does not stick — the row comes back with whoever
+    passing it to `create()` does not stick. The row comes back with whoever
     the request belongs to, or None. `.update()` skips `save()` and is the only
     way to set it. Getting this wrong makes every creator test a false negative:
     the branch under test is simply never entered.
@@ -167,7 +167,7 @@ class TestAccountVerbsAgree:
     ):
         """`delete` was the verb that was already correct.
 
-        It stays correct — the point of the fix was to bring the other four up
+        It stays correct. The point of the fix was to bring the other four up
         to it, not to take this one away.
         """
         _created_by(account, user_profile.user)
@@ -212,8 +212,8 @@ class TestAccountVerbsAgree:
         """A stranger with a malformed body is still a stranger.
 
         The access check used to sit inside `is_valid()`, so an unauthorised
-        caller was told their payload was bad — a free validity oracle on
-        somebody else's record — before being refused.
+        caller was told their payload was bad, a free validity oracle on
+        somebody else's record, before being refused.
         """
         _created_by(account, admin_user)
         response = user_client.put(
@@ -315,7 +315,7 @@ class TestMalformedIds:
         """`acc-northwind` is what the v2 fixtures used for ids.
 
         The URL pattern is `<str:pk>`, so the text reaches `UUIDField` and
-        `to_python` raises `ValidationError` — which `get_object_or_404` does
+        `to_python` raises `ValidationError`, which `get_object_or_404` does
         not catch, so every typo and every old link answered 500.
         """
         response = admin_client.get("/api/accounts/acc-northwind/")
@@ -414,7 +414,7 @@ class TestAccountRollups:
     def test_nothing_is_zero_not_null(self, admin_client, account):
         """An account with no deals, invoices or tickets.
 
-        Each subquery returns no rows at all, and an empty subquery is NULL —
+        Each subquery returns no rows at all, and an empty subquery is NULL,
         so without the Coalesce every figure on a brand new account renders as
         blank rather than zero.
         """
@@ -462,8 +462,8 @@ class TestAccountRollups:
     ):
         """`status == "Overdue"` is a nightly task's opinion, and it lags.
 
-        Keying off the status alone hides money on any day the task has not run
-        — which on the seeded database is most of them.
+        Keying off the status alone hides money on any day the task has not run,
+        which on the seeded database is most of them.
         """
         _invoice(org_a, account, "LATE-1", Decimal("400"), datetime.date(2020, 1, 1))
 

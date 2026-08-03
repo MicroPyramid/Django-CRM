@@ -44,7 +44,7 @@ def test_second_apply_creates_nothing_and_mutates_nothing(org_a, admin_profile):
         for t in (LeadPipeline, LeadStage, CustomFieldDefinition, Tags)
         for row in t.objects.filter(org=org_a)
     }
-    # Org is the one row the applier IS allowed to write — the invariant only
+    # Org is the one row the applier IS allowed to write. The invariant only
     # holds if a no-op second apply leaves it untouched too.
     before_org = (org_a.vertical, dict(org_a.terminology))
 
@@ -67,7 +67,7 @@ def test_second_apply_creates_nothing_and_mutates_nothing(org_a, admin_profile):
 
 @pytest.mark.django_db
 def test_stale_org_reference_does_not_clobber_a_prior_apply(org_a, admin_profile):
-    """No concurrency needed to reproduce this — just two Org references.
+    """No concurrency needed to reproduce this, just two Org references.
 
     `stale` is loaded before either apply_pack call, so it never observes
     real-estate's terminology/vertical write. If _apply_terminology decides
@@ -140,7 +140,7 @@ def test_apply_records_a_pack_application(org_a, admin_profile):
 @pytest.mark.django_db
 def test_apply_pack_rejects_an_actor_from_a_different_org(org_a, org_b, admin_profile):
     """admin_profile belongs to org_a. Applying to org_b with that actor must
-    be rejected outright, not silently create cross-org lead assignments —
+    be rejected outright, not silently create cross-org lead assignments;
     _apply_sample_data does lead.assigned_to.add(actor) with no org check of
     its own, so before this guard existed apply_pack(org_b, pack, admin_profile)
     assigned every sample lead it created in org_b to an org_a profile.

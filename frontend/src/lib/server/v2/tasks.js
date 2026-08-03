@@ -1,5 +1,5 @@
 /**
- * Tasks — the seventh v2 module wired to the real API.
+ * Tasks: the seventh v2 module wired to the real API.
  *
  * Same rules as the six before it: this file lives under `$lib/server` because
  * SvelteKit refuses to bundle that directory into client code and the access
@@ -7,26 +7,26 @@
  * inside the JWT and the backend reads it from there.
  *
  * WHY THIS MODULE, AND WHY NOW
- * The contact page already renders a **Tasks** rail from real rows — it has
- * since contacts were wired — and every one of those rows was a dead end,
+ * The contact page already renders a **Tasks** rail from real rows. It has
+ * since contacts were wired, and every one of those rows was a dead end,
  * because there was no task page to link to. That is a quieter failure than
  * the ticket rail that pointed at a 404 last session: nothing was broken,
  * there was simply nowhere to go. It also turned out to be the module whose
  * three red tests nobody had read.
  *
  * WHAT CHANGED WHEN THE FIXTURES CAME OFF
- * - **A task cannot be attached to an invoice.** The mock had one — `related:
+ * - **A task cannot be attached to an invoice.** The mock had one, `related:
  *   { kind: 'invoice', … }` linking to `/invoices/INV-2025-0142`. `Task`
  *   has four optional parents: account, opportunity, case, lead. There is no
  *   invoice FK and no endpoint that would populate one, so that kind is gone.
  * - **"Done this week" is not computable.** It was the fourth stat card.
- *   `Task` has no `completed_at` column — only `BoardTask` does — so nothing
+ *   `Task` has no `completed_at` column, only `BoardTask` does, so nothing
  *   records *when* a task was finished, and a card counting it would have been
  *   inventing the number. In its place: **no due date**, which is real, and is
  *   the count that matters most, because a task with no due date is never
  *   overdue and never due this week and so never appears in front of anyone.
  * - `assigned_to` is a list of resolved display names in the mock. It is M2M
- *   on the model and stays a list here — `toRow` keeps ids alongside names, so
+ *   on the model and stays a list here; `toRow` keeps ids alongside names, so
  *   an edit can preserve co-assignees instead of dropping them.
  * - `related` is derived here, once, from the four nullable columns, the way
  *   the mock promised the API layer would. Nothing in the UI branches on which
@@ -42,15 +42,15 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
 
-/** `Task.STATUS_CHOICES`. Note `Task` priority is Low/Medium/High — a Case's is not. */
+/** `Task.STATUS_CHOICES`. Note `Task` priority is Low/Medium/High. A Case's is not. */
 export const TASK_STATUSES = ['New', 'In Progress', 'Completed'];
 export const TASK_PRIORITIES = ['Low', 'Medium', 'High'];
 
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too —
- * the file is served off `/media`, not `/api`. Same helper as `leads.js` /
+ * against the Django origin so the link works from the SvelteKit origin too.
+ * The file is served off `/media`, not `/api`. Same helper as `leads.js` /
  * `contacts.js`.
  *
  * @param {string|null|undefined} path
@@ -145,7 +145,7 @@ function toRow(row) {
  * The task list, newest first.
  *
  * `totals` is counted by the API over the whole filtered queryset and is the
- * *requester's* — an admin's numbers cover the org, a member's cover the tasks
+ * *requester's*: an admin's numbers cover the org, a member's cover the tasks
  * they made or were handed. That is the same rule the rows follow, which is
  * the point: a header that counted more than the list can show is how the old
  * queue came to disagree with itself.
@@ -184,7 +184,7 @@ export async function listTasks({ cookies }, params) {
 /**
  * Everything a task form needs to render its pickers.
  *
- * One call, because the list endpoint already computes all of it — the
+ * One call, because the list endpoint already computes all of it, the
  * catalogues, the assignable profiles and the two choice lists. Dropping
  * `slim` is the whole difference.
  *
@@ -208,8 +208,8 @@ export async function getTaskFormOptions({ cookies }) {
 /**
  * One task, with its comments.
  *
- * A 404 here covers three different things on purpose — no such id, a
- * malformed id, and a task belonging to another org — because distinguishing
+ * A 404 here covers three different things on purpose, no such id, a
+ * malformed id, and a task belonging to another org, because distinguishing
  * them out loud would confirm which ids exist.
  *
  * The 403 carries no message: `routes/v2/+error.svelte` writes its own copy
@@ -251,12 +251,12 @@ export async function getTask({ cookies }, id) {
 /**
  * The task's real events, newest first: comments, files, and creation.
  *
- * Three event KINDS, all backed by rows that exist — a comment is a `Comment`,
+ * Three event KINDS, all backed by rows that exist. A comment is a `Comment`,
  * a file is an `Attachments`, and the task always has its own creation. The old
  * shape read `response.comments` alone, so every file uploaded against a task
  * was dropped from the page it should have appeared on (`TaskDetailView.get`
  * returns `attachments` right beside `comments`). Nothing records status
- * changes on a `Task` — there is no history table and no `completed_at` — so
+ * changes on a `Task`, there is no history table and no `completed_at`, so
  * those are not invented here, the same discipline as `leads.js`.
  *
  * A comment's author comes from the nested `commented_by`; an attachment's
@@ -308,8 +308,8 @@ function buildTaskActivity(response) {
  *
  * `TaskDetailView.post` creates a `Comment` scoped to the task's org and stamps
  * `commented_by` from `request.profile`; the only field it reads from the body
- * is `comment`. It is gated by `assert_task_access` — the same gate as reading
- * the task — so this composer appears only to someone who could already open the
+ * is `comment`. It is gated by `assert_task_access`, the same gate as reading
+ * the task, so this composer appears only to someone who could already open the
  * page, and the comment is attributed server-side, never by the client.
  *
  * The attachment save is a SEPARATE top-level block in the view (not nested
@@ -349,7 +349,7 @@ export const EDITABLE_FIELDS = [
  * Turn form values into a request body.
  *
  * Absent stays absent, which is what makes PATCH safe: a field the form did
- * not send is a field the save leaves alone. It matters twice on this model —
+ * not send is a field the save leaves alone. It matters twice on this model;
  * `assigned_to` is an M2M the API clears and rewrites whenever the key is
  * present, and the four parent columns are checked against each other, so
  * sending an untouched one back can trip the "one parent entity" rule.
@@ -369,7 +369,7 @@ function toBody(values) {
 /**
  * Save an edit.
  *
- * PATCH, not PUT — seven for seven, and here for two reasons at once. A PUT
+ * PATCH, not PUT, seven for seven, and here for two reasons at once. A PUT
  * clears `contacts`, `teams`, `assigned_to` and `tags` whenever the key is
  * missing, so a form that edits the title would silently unassign everybody;
  * and it would send all four parent columns on every save, which the
@@ -400,7 +400,7 @@ export async function createTask({ cookies }, values) {
 /**
  * Tick a task off, or put it back.
  *
- * The narrowest possible PATCH — one field — because this fires from a list
+ * The narrowest possible PATCH, one field, because this fires from a list
  * row where nothing else on screen is being edited.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -418,7 +418,7 @@ export async function setTaskDone({ cookies }, id, done) {
 /**
  * Delete a task.
  *
- * Admins and the creator only — an assignee gets a 403, which the page shows
+ * Admins and the creator only: an assignee gets a 403, which the page shows
  * rather than hiding the button and pretending the rule is about the UI.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

@@ -226,7 +226,7 @@
       className
     )}
   >
-    <!-- Label with icon — uses <label for> so clicking focuses the input -->
+    <!-- Label with icon. Uses <label for> so clicking focuses the input -->
     <label
       for={inputId}
       id={labelId}

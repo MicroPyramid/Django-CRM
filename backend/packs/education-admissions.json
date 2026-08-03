@@ -60,9 +60,9 @@
     { "name": "Repeat family", "color": "amber" }
   ],
   "products": [
-    { "name": "SAT Prep — 12 week", "sku": "ED-SAT-12W", "price": 1200, "category": "Test prep",
+    { "name": "SAT Prep, 12 week", "sku": "ED-SAT-12W", "price": 1200, "category": "Test prep",
       "description": "Twelve weeks, two sessions a week, four full mock tests." },
-    { "name": "IELTS Coaching — 8 week", "sku": "ED-IELTS-8W", "price": 450, "category": "Test prep",
+    { "name": "IELTS Coaching, 8 week", "sku": "ED-IELTS-8W", "price": 450, "category": "Test prep",
       "description": "Eight weeks covering all four bands, with speaking practice." },
     { "name": "Full-Stack Web Development bootcamp", "sku": "ED-FSWD", "price": 6500, "category": "Bootcamp",
       "description": "Sixteen-week intensive, includes placement support." },
@@ -72,7 +72,7 @@
       "description": "All four sections, question bank access for twelve months." },
     { "name": "MBA Foundation", "sku": "ED-MBA-FND", "price": 4500, "category": "Professional",
       "description": "Pre-MBA quantitative and case-method preparation." },
-    { "name": "Spoken English — evening batch", "sku": "ED-SPEAK-EVE", "price": 180, "category": "Language",
+    { "name": "Spoken English, evening batch", "sku": "ED-SPEAK-EVE", "price": 180, "category": "Language",
       "description": "Six weeks, conversational focus, small groups." },
     { "name": "Registration fee", "sku": "ED-REG", "price": 50, "category": "Administrative",
       "description": "One-off, non-refundable, charged at admission." }
@@ -125,7 +125,7 @@
         "description": "School-side contact for the annual SAT cohort." }
     ],
     "deals": [
-      { "name": "Lincoln High SAT cohort — Fall 2026", "account": "Lincoln High School", "stage": "NEGOTIATION",
+      { "name": "Lincoln High SAT cohort, Fall 2026", "account": "Lincoln High School", "stage": "NEGOTIATION",
         "amount": 21600, "currency": "USD", "probability": 70, "closed_on": "2026-08-31", "lead_source": "PARTNER",
         "description": "Eighteen students at the group rate; school wants two on-site sessions." },
       { "name": "Northgate data science sponsorship", "account": "Northgate Tech Employers Forum", "stage": "PROPOSAL",
@@ -175,7 +175,7 @@
         "stage": "In progress", "ticket": "Mock test score dispute",
         "description": "Second marker required per the academic policy." },
       { "title": "Prepare the Lincoln High group quote", "status": "New", "priority": "High", "due_date": "2026-08-06",
-        "stage": "Scheduled", "deal": "Lincoln High SAT cohort — Fall 2026",
+        "stage": "Scheduled", "deal": "Lincoln High SAT cohort, Fall 2026",
         "description": "Eighteen students, two on-site sessions, show the per-head rate." },
       { "title": "Draft the Northgate sponsorship agreement", "status": "In Progress", "priority": "Medium",
         "due_date": "2026-08-12", "stage": "In progress", "deal": "Northgate data science sponsorship",
@@ -293,7 +293,7 @@
         "email": "xavier.dumont@example.com", "phone": "+1 214 555 0251",
         "source": "partner", "stage": "Counselling done",
         "opportunity_amount": 28000, "currency": "USD",
-        "custom_fields": { "course_interest": "CPA Exam Prep", "intake": "Spring 2027", "previous_qualification": "Various — corporate cohort" } },
+        "custom_fields": { "course_interest": "CPA Exam Prep", "intake": "Spring 2027", "previous_qualification": "Various, corporate cohort" } },
       { "title": "Scholarship applicant, spoken English", "first_name": "Yara", "last_name": "Haddad",
         "email": "yara.haddad@example.com", "phone": "+1 305 555 0252",
         "source": "public relations", "stage": "Counsellor assigned",

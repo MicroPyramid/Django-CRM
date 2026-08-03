@@ -60,13 +60,13 @@ def _allowed_media_file(parsed):
     Three walls: the url path must sit under MEDIA_URL; the remainder must be one
     of the logo subtrees in ``_ALLOWED_MEDIA_SUBDIRS`` (so attachments/docs of
     any org are unreachable); and the joined path, once canonicalised, must not
-    escape MEDIA_ROOT (blocks ``..``/symlink traversal). Anything else — app
-    source, ``crm/settings.py``, ``.env``, keys, other orgs' attachments — is
+    escape MEDIA_ROOT (blocks ``..``/symlink traversal). Anything else, app
+    source, ``crm/settings.py``, ``.env``, keys, other orgs' attachments, is
     outside the allowlist and returns None.
     """
     media_root = getattr(settings, "MEDIA_ROOT", "")
     if not media_root or not os.path.isabs(str(media_root)):
-        # No usable local MEDIA root (e.g. the S3 marker in prod) — no local
+        # No usable local MEDIA root (e.g. the S3 marker in prod), no local
         # file is legitimately loadable; the http(s) allowlist handles prod.
         return None
 
@@ -102,11 +102,11 @@ def safe_pdf_url_fetcher(url):
     ``.env``, secret keys). This fetcher denies by default and only permits the
     three things a legitimate render actually needs:
 
-    * ``data:`` URIs — inert, no disk or network.
-    * A local logo file inside MEDIA_ROOT (see ``_allowed_media_file``) — dev.
-    * HTTPS to the configured S3 media host only — the org logo in prod.
+    * ``data:`` URIs, inert, no disk or network.
+    * A local logo file inside MEDIA_ROOT (see ``_allowed_media_file``), dev.
+    * HTTPS to the configured S3 media host only. The org logo in prod.
 
-    Must be passed to BOTH ``HTML(...)`` and ``CSS(...)`` — WeasyPrint resolves
+    Must be passed to BOTH ``HTML(...)`` and ``CSS(...)``, WeasyPrint resolves
     ``@import`` / ``@font-face`` / ``@color-profile`` at CSS parse time through
     the CSS object's own fetcher, so a CSS() left on the default fetcher would
     reopen the whole SSRF/LFI through ``template_css``.
@@ -117,26 +117,26 @@ def safe_pdf_url_fetcher(url):
     if scheme == "data":
         return default_url_fetcher(url)
 
-    # http(s) — and protocol-relative //host/path — only to the S3 media host.
+    # http(s), and protocol-relative //host/path, only to the S3 media host.
     if scheme in ("http", "https") or (scheme == "" and parsed.netloc):
         s3_host = (getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "") or "").lower()
         host = (parsed.hostname or "").lower()
         if s3_host and host == s3_host:
             # Residual: default_url_fetcher follows 30x, and only the first hop
-            # is host-checked. Low risk — the S3 host is trusted and fixed, and
+            # is host-checked. Low risk. The S3 host is trusted and fixed, and
             # only serves the org's own logo object; urllib refuses redirects to
             # non-http(s)/ftp, so no redirect->file://.
             return default_url_fetcher(url)
         raise ValueError(f"Blocked non-allowlisted host in PDF template: {url!r}")
 
-    # file:// or a bare local path — only files inside MEDIA_ROOT.
+    # file:// or a bare local path, only files inside MEDIA_ROOT.
     if scheme in ("", "file"):
         candidate = _allowed_media_file(parsed)
         if candidate:
             return default_url_fetcher("file://" + candidate)
         raise ValueError(f"Blocked local-file access in PDF template: {url!r}")
 
-    # ftp:, gopher:, jar:, dict: ... — deny by default.
+    # ftp:, gopher:, jar:, dict: .... Deny by default.
     raise ValueError(f"Blocked disallowed URL scheme in PDF template: {url!r}")
 
 

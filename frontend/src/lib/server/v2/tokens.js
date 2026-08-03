@@ -1,5 +1,5 @@
 /**
- * API tokens — the tenth v2 module wired to the real API.
+ * API tokens: the tenth v2 module wired to the real API.
  *
  * Lives under `$lib/server` like the nine before it: this directory is the one
  * SvelteKit refuses to bundle into client code, and a token is a bearer
@@ -8,10 +8,10 @@
  *
  * WHY THIS PAGE IS ADMIN-ONLY, AND WHAT IT READS
  * This is the *oversight* view: every token across the org, so an admin can
- * spot the two rows worth acting on — one whose owner was deactivated, and one
+ * spot the two rows worth acting on. One whose owner was deactivated, and one
  * nobody has used in months. That is inherently cross-user, so it reads a NEW
  * admin-gated endpoint (`GET /api/org/tokens/`). The pre-existing
- * `/api/profile/tokens/` stays self-scoped and untouched — a user managing
+ * `/api/profile/tokens/` stays self-scoped and untouched. A user managing
  * their own tokens is a separate surface, not this one.
  *
  * WHAT THE MOCK ASSERTED THAT THE BACKEND DOES NOT
@@ -19,23 +19,23 @@
  * with the role they had." It does not. `resolve_valid_pat` rejects a token
  * whose `profile.is_active` is false, and deactivating someone sets exactly
  * that flag (common/tests/test_pat_auth.py::test_inactive_profile_raises proves
- * it). So an "owner deactivated" token is dormant — refused at login today,
+ * it). So an "owner deactivated" token is dormant, refused at login today,
  * revived only if the account is reactivated. The page says that instead: still
  * worth revoking on offboarding, but not a live credential. (The /v2/team page
  * carried the same false claim; corrected there too.)
  *
  * WRITES
- * - Create posts to the self-scoped `/api/profile/tokens/` — a token can only
+ * - Create posts to the self-scoped `/api/profile/tokens/`. A token can only
  *   ever be created for yourself (the server sets `profile=request.profile`);
  *   there is no "create on behalf of", by design. The raw value comes back
  *   once, in that response, and is never retrievable again.
- * - Revoke posts to the admin `DELETE /api/org/tokens/<id>/` — org-scoped, so
+ * - Revoke posts to the admin `DELETE /api/org/tokens/<id>/`. Org-scoped, so
  *   an admin can retire any token in their own org (a colleague's included).
  */
 import { apiRequest } from '$lib/api-helpers.js';
 
 /**
- * Live first, then most-recently-used first — the order an admin scans in,
+ * Live first, then most-recently-used first, the order an admin scans in,
  * with the dormant and revoked rows sinking to the bottom.
  *
  * @param {any} a
@@ -49,7 +49,7 @@ function byUrgency(a, b) {
 /**
  * The oversight list. `/api/org/tokens/` is admin-only; a non-admin who reaches
  * this settings page (the nav shows it) gets a clean `forbidden` state rather
- * than a crash — the same shape [[/v2/team]] uses.
+ * than a crash. The same shape [[/v2/team]] uses.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  */
@@ -69,7 +69,7 @@ export async function listOrgTokens({ cookies }) {
     totals: resp?.totals ?? { count: 0, live: 0, orphaned: 0, unused_90d: 0 },
     // Ids of the live tokens on deactivated owners, so "revoke them all" can be
     // one submit instead of the admin hunting each row. Derived from the same
-    // rows the page renders — no second source to drift.
+    // rows the page renders, no second source to drift.
     orphaned_ids: tokens
       .filter((/** @type {any} */ t) => t.is_live && !t.owner?.is_active)
       .map((/** @type {any} */ t) => t.id)
@@ -79,7 +79,7 @@ export async function listOrgTokens({ cookies }) {
 /**
  * Create a token for the signed-in admin. `POST /api/profile/tokens/` sets the
  * owner server-side from the JWT, so there is no way to mint one for someone
- * else. Returns the created row plus `token` — the raw value, shown once.
+ * else. Returns the created row plus `token`, the raw value, shown once.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {{ name: string, expires_at?: string | null }} body

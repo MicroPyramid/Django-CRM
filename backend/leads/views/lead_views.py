@@ -53,14 +53,14 @@ class LeadListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     #: A lead nobody has touched in this many days counts as unworked. Used
-    #: only for the headline count — it is not a status and nothing is filtered
+    #: only for the headline count. It is not a status and nothing is filtered
     #: on it.
     UNWORKED_AFTER_DAYS = 7
 
     def get_totals(self, queryset_open):
         """Headline counts for the open-leads list.
 
-        Computed over the *whole* filtered queryset, deliberately — the caller
+        Computed over the *whole* filtered queryset, deliberately. The caller
         only ever holds one page, so a client-side reduction would report the
         page and label it the list. Every filter applied above is already
         baked into `queryset_open`, including the org scope and the
@@ -69,7 +69,7 @@ class LeadListView(APIView, LimitOffsetPagination):
 
         `unworked_over_a_week` reads `last_contacted`, falling back to when the
         lead was created. A lead nobody has ever contacted is not unworked on
-        the day it arrives — it becomes unworked once it has sat that long.
+        the day it arrives. It becomes unworked once it has sat that long.
         Lead has no aging chain (StageAgingConfig and get_aging_status() are
         Opportunity-only), so this is the strongest signal the model actually
         carries.
@@ -426,7 +426,7 @@ class LeadDetailView(APIView):
 
         Written once because the two hand-rolled copies this replaces had
         drifted apart. One built a list of Profile ids and then appended
-        `request.profile.user` — a User — so the creator's own id was never in
+        `request.profile.user`, a User, so the creator's own id was never in
         the list and the check denied the person it existed to admit.
 
         It raises rather than returning a Response: `get_context_data` returns
@@ -468,13 +468,13 @@ class LeadDetailView(APIView):
             )
         elif self.request.profile.user != self.lead_obj.created_by:
             # Two ways this used to be a 500, both masked by the permission
-            # check above returning a Response instead of raising — nothing
+            # check above returning a Response instead of raising, nothing
             # reached this line.
             #
             # `username` is not a field on this User model at all: it sets
             # `USERNAME_FIELD = "email"` and defines no `username`, so the
             # attribute access raised for *every* lead. And `created_by` is
-            # nullable — genuinely null on leads that arrived through
+            # nullable, genuinely null on leads that arrived through
             # `CreateLeadFromSite`, which has no authenticated user to
             # attribute them to.
             #
@@ -678,8 +678,8 @@ class LeadDetailView(APIView):
         # `get_object` scopes to the org, so a lead belonging to another
         # tenant is already a 404 by the time we get here. What was missing is
         # the check *within* the org: this method had no role or ownership test
-        # at all, so any authenticated member could rewrite any lead by id —
-        # reassign it, change its value, or push it through conversion —
+        # at all, so any authenticated member could rewrite any lead by id,
+        # reassign it, change its value, or push it through conversion,
         # including the ones the list view deliberately hides from them.
         self.assert_lead_access()
         previous_assigned_to_users = list(
@@ -875,7 +875,7 @@ class LeadDetailView(APIView):
         if params.get("status") == "converted" or params.get("is_converted"):
             # `LeadCreateSerializer.validate_status` is what refuses a repeat
             # conversion, and this branch returns before the serializer ever
-            # runs — so the rule was enforced on PUT and not here. Two PATCHes
+            # runs, so the rule was enforced on PUT and not here. Two PATCHes
             # built two Opportunities against the same Account, which is the
             # exact failure that validator was written for.
             if self.lead_obj.status in IRREVERSIBLE_STATUSES:
@@ -893,7 +893,7 @@ class LeadDetailView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             # Persist any custom_fields supplied alongside the conversion before
-            # the converter runs — otherwise they'd be silently dropped because
+            # the converter runs, otherwise they'd be silently dropped because
             # this branch returns before the regular partial-update flow.
             if "custom_fields" in params:
                 cf_payload = params.get("custom_fields")

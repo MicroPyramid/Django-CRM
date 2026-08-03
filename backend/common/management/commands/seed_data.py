@@ -684,7 +684,7 @@ class Command(BaseCommand):
         local-dev workflows have a known name to log into via `manage.py devlogin`.
 
         Uses get_or_create on name so repeated seed runs reuse the same org rather
-        than piling up duplicates — duplicate names break `devlogin --org NAME`
+        than piling up duplicates. Duplicate names break `devlogin --org NAME`
         because it can't disambiguate.
         """
         name = "MicroPyramid" if index == 0 else self._demo_company()

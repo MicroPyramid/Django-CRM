@@ -3,8 +3,8 @@
 Covers the three controls added after CodeQL alerts #27/#28 (`py/full-ssrf`)
 on `cases/inbound/sns.py`:
 
-1. Neither outbound fetch (SigningCertURL, SubscribeURL) follows redirects —
-   the host allow-list is applied to the URL we are *about* to fetch, so a 3xx
+1. Neither outbound fetch (SigningCertURL, SubscribeURL) follows redirects.
+   The host allow-list is applied to the URL we are *about* to fetch, so a 3xx
    would otherwise land us on an unvalidated host.
 2. The signing certificate is validated (validity window + subject CN pinned
    to the AWS SNS host family) instead of being trusted blindly.
@@ -37,7 +37,7 @@ from cases.inbound.sns import SNSVerificationError, verify_sns_message
 
 @pytest.fixture(scope="module")
 def signing_key():
-    """One RSA key for the whole module — keygen is the slow part."""
+    """One RSA key for the whole module. Keygen is the slow part."""
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
@@ -92,7 +92,7 @@ def _signed_payload(key, *, topic_arn="arn:aws:sns:us-east-1:1:t", **overrides):
 
 class TestSigningCertValidation:
     def test_valid_cert_and_signature_verifies(self, signing_key):
-        """Happy path — proves the new checks can return True, not just False."""
+        """Happy path. Proves the new checks can return True, not just False."""
         cert = _make_cert(signing_key)
         payload = _signed_payload(signing_key)
 
@@ -188,7 +188,7 @@ class _RedirectHandler(http.server.BaseHTTPRequestHandler):
 
     paths_seen: list = []
 
-    def do_GET(self):  # noqa: N802 — BaseHTTPRequestHandler API
+    def do_GET(self):  # noqa: N802. BaseHTTPRequestHandler API
         type(self).paths_seen.append(self.path)
         if self.path == "/start":
             self.send_response(302)

@@ -12,8 +12,8 @@ export const actions = {
   /**
    * Post a reply, or an internal note.
    *
-   * A reply may also move the ticket — "answer and set to Pending" is one
-   * decision, not two — so the status change goes with it when the composer
+   * A reply may also move the ticket; "answer and set to Pending" is one
+   * decision, not two, so the status change goes with it when the composer
    * asked for one. The reply is posted first: if the status change is refused
    * (the close gate, say) the customer has still been answered, which is the
    * order that loses the least.
@@ -28,8 +28,8 @@ export const actions = {
     const file =
       picked && typeof picked === 'object' && 'size' in picked && picked.size > 0 ? picked : null;
 
-    // A ticket accepts a file on its own — the API saves the attachment in a
-    // block separate from the comment — so this refuses only the empty case.
+    // A ticket accepts a file on its own, the API saves the attachment in a
+    // block separate from the comment, so this refuses only the empty case.
     if (!body && !file) {
       return fail(400, {
         body,
@@ -61,8 +61,8 @@ export const actions = {
   /**
    * Move the ticket without saying anything.
    *
-   * Closing needs a date — `Case.clean()` has always said so and the serializer
-   * now enforces it — so the button supplies today rather than bouncing the
+   * Closing needs a date; `Case.clean()` has always said so and the serializer
+   * now enforces it, so the button supplies today rather than bouncing the
    * user into a form to type a date they were never going to change. Where an
    * approval rule covers the ticket, the API refuses and says which rule.
    */

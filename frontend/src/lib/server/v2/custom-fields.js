@@ -1,10 +1,10 @@
 /**
- * Custom fields — the wiring behind `/settings/custom-fields`.
+ * Custom fields: the wiring behind `/settings/custom-fields`.
  *
  * Server-only. Reads `GET /custom-fields/` (no filter, so it returns every
  * definition including the turned-off ones the page dims). Each row carries the
- * computed `records_missing_value` — how many records of that target_model
- * predate the field and hold no value for it — and the response includes a
+ * computed `records_missing_value`: how many records of that target_model
+ * predate the field and hold no value for it, and the response includes a
  * `totals` block { count, active, models_extended, required_with_gaps } for the
  * stat cards. Both are org-scoped server-side; the page never counts records.
  *

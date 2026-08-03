@@ -2,7 +2,7 @@
   import { relativeDays } from '$lib/v2/format.js';
 
   /**
-   * Newest first. The filled dot marks the latest event only — everything
+   * Newest first. The filled dot marks the latest event only. Everything
    * else is a hairline, so the eye lands on "what happened last".
    *
    * @type {{ events: Array<{ id: string, body: string, at: string, by?: string|null, type?: string }> }}

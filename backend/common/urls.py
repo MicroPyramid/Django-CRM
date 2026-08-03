@@ -88,7 +88,7 @@ urlpatterns = [
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
     # These literal org/… paths must precede org/<str:pk>/ so they are not
     # captured as a pk (org/tokens/ would otherwise resolve to OrgUpdateView
-    # with pk="tokens"). org/tokens/ is ADMIN-only token oversight — separate
+    # with pk="tokens"). org/tokens/ is ADMIN-only token oversight, separate
     # from profile/tokens/ (self-scoped) so the self guard is never widened; an
     # admin sees and can revoke any token in their own org, a deactivated
     # colleague's included.
@@ -101,7 +101,7 @@ urlpatterns = [
     ),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
-    # Personal Access Tokens (MCP server) — a user manages ONLY their own
+    # Personal Access Tokens (MCP server), a user manages ONLY their own
     path(
         "profile/tokens/",
         PersonalAccessTokenListCreateView.as_view(),
@@ -165,7 +165,7 @@ urlpatterns = [
         NotificationDetailView.as_view(),
         name="notifications_detail",
     ),
-    # Vertical packs — any member may list; apply/clear are ADMIN-only (see
+    # Vertical packs: any member may list; apply/clear are ADMIN-only (see
     # common/views/pack_views.py). sample-data/ must precede
     # <str:pack_id>/apply/ so it is never captured as a pack id.
     path("packs/", PackListView.as_view(), name="pack_list"),

@@ -118,7 +118,7 @@ class KanbanColumn extends StatelessWidget {
                               // LongPressDraggable and shares the same 500ms
                               // deadline, so it would win the gesture arena and
                               // the drag would never start. Selection is still
-                              // reachable — onDragStarted above enters selection
+                              // reachable, onDragStarted above enters selection
                               // mode, and tapping toggles it once in that mode.
                               child: DealCard(
                                 deal: deal,

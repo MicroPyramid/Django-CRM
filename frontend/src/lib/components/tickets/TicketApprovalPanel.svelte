@@ -17,7 +17,7 @@
    * server-side; if no rule matches, the API responds 400 and we surface that.
    *
    * `initialApprovals` is supplied by `+page.server.js` so the panel paints
-   * fully populated on first render — the post-mount fetch is only a fallback
+   * fully populated on first render. The post-mount fetch is only a fallback
    * for callers that didn't seed the data.
    *
    * @type {{
@@ -41,7 +41,7 @@
   const hasOpen = $derived(latest && latest.state === 'pending');
   const canActOnLatest = $derived(latestActionable(latest));
   // After the latest request has been cancelled or rejected, the workflow is
-  // finished but the ticket still needs approval — let the agent fire a fresh
+  // finished but the ticket still needs approval. Let the agent fire a fresh
   // request without leaving the page.
   const canRerequest = $derived(
     latest && (latest.state === 'cancelled' || latest.state === 'rejected')
@@ -70,7 +70,7 @@
   function latestActionable(entry) {
     if (!entry || entry.state !== 'pending') return false;
     // Heuristic: anyone in the rule's approver pool, OR an admin role match.
-    // The backend is authoritative — we just hide the buttons we know
+    // The backend is authoritative. We just hide the buttons we know
     // would 403 to keep the UI from teasing actions the user can't take.
     const role = entry.rule_summary?.approver_role;
     if (isAdmin && role === 'ADMIN') return true;
@@ -231,8 +231,8 @@
 
       <p class="text-xs text-[var(--text-secondary)]">
         Requested by {latest.requested_by?.email || 'unknown'}
-        {#if latest.note}
-          — <span class="italic">"{latest.note}"</span>
+        {#if latest.note},
+          <span class="italic">"{latest.note}"</span>
         {/if}
       </p>
 

@@ -18,7 +18,7 @@
   let { data, form: result } = $props();
 
   // `untrack` so a re-render after a failed save does not throw away what the
-  // person typed — `result.values` is the server's echo of the same fields.
+  // person typed; `result.values` is the server's echo of the same fields.
   let form = $state(
     untrack(() => ({
       name: '',
@@ -39,7 +39,7 @@
     const e = {};
     const name = form.name.trim();
     if (!name) e.name = 'A ticket needs a subject.';
-    // `Case.name` is max_length=64 — short for a subject line, but it is the
+    // `Case.name` is max_length=64, short for a subject line, but it is the
     // column, and a 65th character is a 400 from the serializer.
     else if (name.length > 64)
       e.name = `Subjects are capped at 64 characters (this is ${name.length}).`;
@@ -147,7 +147,7 @@
             <option value={a.id}>{a.name}</option>
           {/each}
         </select>
-        <p class="v2-hint">Cannot be changed later — the API makes it read-only after creation.</p>
+        <p class="v2-hint">Cannot be changed later. The API makes it read-only after creation.</p>
       </div>
       <div class="v2-field">
         <label for="f-owner">Assignee</label>

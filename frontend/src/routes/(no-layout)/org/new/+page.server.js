@@ -17,7 +17,7 @@ import { listPacks, applyPack } from '$lib/server/packs.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {
-  // GET /api/packs/ needs IsAuthenticated only, no org context — but a
+  // GET /api/packs/ needs IsAuthenticated only, no org context, but a
   // brand-new user creating their very first org must never have this call
   // break the page. Fall back to an empty list, which renders as just the
   // "Skip for now" option.
@@ -95,12 +95,12 @@ export const actions = {
       });
 
       // Optional vertical pack, chosen in the "What kind of business is this?"
-      // group below. Empty string — the "Skip for now" option, and the
-      // default when nothing is submitted — means do nothing.
+      // group below. Empty string. The "Skip for now" option, and the
+      // default when nothing is submitted. Means do nothing.
       const vertical = formData.get('vertical')?.toString();
       if (vertical) {
         // POST /api/packs/<id>/apply/ is ADMIN-only and derives its org from
-        // request.profile.org, i.e. from the org_id claim on the JWT — never
+        // request.profile.org, i.e. from the org_id claim on the JWT, never
         // from a body field. /api/org/ does not mint new tokens, so the
         // access token we are holding here still carries the PREVIOUS org's
         // claim (or no org claim at all, for a brand-new user's first org).
@@ -109,7 +109,7 @@ export const actions = {
         // the apply call lands on the right org as its ADMIN.
         //
         // This token is used ONLY as the bearer credential for the one
-        // applyPack() call below — it is never written to the jwt_access /
+        // applyPack() call below. It is never written to the jwt_access /
         // jwt_refresh cookies. Doing so would silently rotate the caller's
         // session to the new org mid-request (e.g. a user already in org A
         // creating org B would suddenly be sitting in org B everywhere else
@@ -156,7 +156,7 @@ export const actions = {
           const bearerOnly = { get: (name) => (name === 'jwt_access' ? access_token : undefined) };
           await applyPack(bearerOnly, vertical);
         } catch (packErr) {
-          // A pack failing to apply must never fail org creation — the org
+          // A pack failing to apply must never fail org creation, the org
           // and its admin profile already exist, already committed by the
           // /api/org/ call above. Log it and let signup succeed anyway.
           //

@@ -85,7 +85,7 @@ class TestPATAuthentication:
         pat.refresh_from_db()
         first = pat.last_used_at
         assert first is not None
-        # Second auth immediately after — within the 60s throttle window — must not rewrite
+        # Second auth immediately after, within the 60s throttle window, must not rewrite
         self.auth.authenticate(req)
         pat.refresh_from_db()
         assert pat.last_used_at == first
@@ -143,5 +143,5 @@ def test_cross_org_pat_cannot_read_other_orgs_leads(org_a, admin_profile):
     assert response.status_code == 200, response.content
     lead_ids = _collect_lead_ids(response.json())
     assert str(lead_b.id) not in lead_ids, (
-        "org B's lead leaked into an org A PAT's leads list — tenant isolation broken"
+        "org B's lead leaked into an org A PAT's leads list, tenant isolation broken"
     )

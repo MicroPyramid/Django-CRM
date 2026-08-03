@@ -3,7 +3,7 @@ import { listEstimates, convertEstimate } from '$lib/server/v2/estimates.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * The estimates worklist. `load` returns `{ estimates, totals }` — the exact
+ * The estimates worklist. `load` returns `{ estimates, totals }`. The exact
  * names the page reads; the data layer's own field is `estimates`, so there is
  * no rename to get wrong here.
  *
@@ -18,7 +18,7 @@ export const actions = {
   /**
    * Raise an invoice from an accepted estimate and open the new draft. The id
    * comes from the row, and the API decides whether this caller may convert it
-   * — a member who is neither creator nor assignee gets 403, and a second
+   *: a member who is neither creator nor assignee gets 403, and a second
    * conversion gets 400.
    */
   convert: async ({ cookies, request }) => {

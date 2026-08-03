@@ -4,8 +4,8 @@
    *
    * Retire vs delete: a product on historic invoices should be *retired*
    * (Availability → Retired), which pulls it from the line-item picker but keeps
-   * the record. Deleting is also safe — line items store their own name and
-   * price, so nothing historic is rewritten — but retiring is the honest default
+   * the record. Deleting is also safe: line items store their own name and
+   * price, so nothing historic is rewritten, but retiring is the honest default
    * for something with a past, so the form leads with it and puts delete behind
    * a confirm. Both are admin-only, enforced by the API.
    */
@@ -103,13 +103,13 @@
           name="is_active"
           value={values.is_active === false ? 'false' : 'true'}
         >
-          <option value="true">Sellable — appears in the line-item picker</option>
-          <option value="false">Retired — kept for history, hidden from the picker</option>
+          <option value="true">Sellable, appears in the line-item picker</option>
+          <option value="false">Retired, kept for history, hidden from the picker</option>
         </select>
         {#if usedOn > 0}
           <span class="v2-sub" style="font-size:11.5px">
             On <span class="v2-num">{usedOn}</span>
-            {usedOn === 1 ? 'invoice' : 'invoices'} already — retiring keeps those intact.
+            {usedOn === 1 ? 'invoice' : 'invoices'} already. Retiring keeps those intact.
           </span>
         {/if}
       </label>
@@ -137,7 +137,7 @@
           </button>
           <span class="v2-sub" style="font-size:11.5px">
             {usedOn > 0
-              ? 'This product is on invoices already — prefer Retire above.'
+              ? 'This product is on invoices already. Prefer Retire above.'
               : 'Never invoiced, so it is safe to remove.'}
           </span>
         {:else}

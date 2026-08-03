@@ -6,7 +6,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * The invoice list.
  *
  * Server load, so the JWT cookie stays server-side. Rows and the header pills
- * arrive from one API call — the totals are the API's job now, aggregated over
+ * arrive from one API call. The totals are the API's job now, aggregated over
  * the whole visible queryset rather than summed from the page.
  *
  * @type {import('./$types').PageServerLoad}
@@ -18,7 +18,7 @@ export async function load({ cookies }) {
 /** @type {import('./$types').Actions} */
 export const actions = {
   /**
-   * Send a draft, or re-send an overdue invoice as a reminder — the same POST
+   * Send a draft, or re-send an overdue invoice as a reminder, the same POST
    * either way. The mock's inline "Send" / "Send a reminder" buttons did
    * nothing; this is that button doing the thing. The API refuses to send a
    * Paid or Cancelled invoice with a 400, and those rows never show the button.

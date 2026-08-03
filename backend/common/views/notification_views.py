@@ -1,11 +1,11 @@
 """REST endpoints for in-app notifications.
 
 URL surface (mounted at /api/notifications/):
-    GET  /                  — list, optional ?unread=true&limit=20&since=<iso>
-    GET  /stream/           — SSE event stream (one event per new notification)
-    POST /<id>/read/        — mark a single notification read
-    POST /read-all/         — mark all (or all-before-iso) read
-    DELETE /<id>/           — hard-delete a notification
+    GET  /: list, optional ?unread=true&limit=20&since=<iso>
+    GET  /stream/: SSE event stream (one event per new notification)
+    POST /<id>/read/: mark a single notification read
+    POST /read-all/: mark all (or all-before-iso) read
+    DELETE /<id>/: hard-delete a notification
 
 Rules:
     - All queries filter by `recipient=request.profile`. RLS adds an org
@@ -41,8 +41,8 @@ KEEPALIVE_SECONDS = 15
 # transparently reconnects when the server closes the stream, so capping this
 # is invisible to the user but critical for the server: under ASGI the *entire*
 # stream runs inside one request (one `ThreadSensitiveContext`), so an
-# unbounded `while True` stream pins a worker thread — and any DB/redis
-# connection bound to it — for as long as the tab stays open (hours). Left
+# unbounded `while True` stream pins a worker thread, and any DB/redis
+# connection bound to it. For as long as the tab stays open (hours). Left
 # unbounded this is what slowly exhausts a shared Postgres cluster and leaves
 # workers undrainable on deploy. 5 minutes bounds the leak window and lets
 # workers recycle.
@@ -164,7 +164,7 @@ async def _aget_serialized(notif_id, recipient_id):
             return NotificationSerializer(notif).data
         finally:
             # This runs in asgiref's shared thread-sensitive executor, outside
-            # Django's request/response cycle — so `close_old_connections`
+            # Django's request/response cycle, so `close_old_connections`
             # never fires for it. Without this explicit close the connection
             # dangles open (the SSE tests need TransactionTestCase precisely
             # because of it). Close it so each fetch reclaims its connection.
@@ -194,7 +194,7 @@ async def _open_pubsub(channel: str):
     Returns ``(client, pubsub)``. Both are ``None`` if Redis is unreachable;
     the stream then runs in keepalive-only mode (the frontend's polling-since
     path provides backfill). The caller owns closing BOTH the pubsub and the
-    underlying client connection pool — closing only the pubsub leaks the
+    underlying client connection pool, closing only the pubsub leaks the
     client's pooled connections, one per dropped SSE stream.
     """
     try:
@@ -265,7 +265,7 @@ async def _stream_events(channel: str, recipient_id, *, pubsub=None):
                 except Exception:  # pragma: no cover - best effort
                     pass
                 await _aclose_redis(pubsub)
-            # Close the underlying client pool too — not just the pubsub.
+            # Close the underlying client pool too, not just the pubsub.
             await _aclose_redis(client)
 
 
@@ -294,7 +294,7 @@ def _drive_async_gen(agen):
 class _EventStreamRenderer(BaseRenderer):
     """Advertises text/event-stream for DRF content negotiation.
 
-    Never actually invoked — the view returns a StreamingHttpResponse directly.
+    Never actually invoked: the view returns a StreamingHttpResponse directly.
     Without this, an EventSource sending `Accept: text/event-stream` is
     rejected by DRF's content negotiation with HTTP 406 (no matching renderer).
     """
@@ -310,7 +310,7 @@ class NotificationStreamView(APIView):
     """GET /api/notifications/stream/
 
     Long-lived Server-Sent Events response. Requires an ASGI server in
-    production — under WSGI this view ties up one worker per connected user.
+    production, under WSGI this view ties up one worker per connected user.
     """
 
     permission_classes = (IsAuthenticated,)
@@ -325,7 +325,7 @@ class NotificationStreamView(APIView):
         # Under ASGI the entire stream runs inside one request's
         # ThreadSensitiveContext, so the connection opened by auth/middleware
         # would otherwise stay checked out for the full (possibly hours-long)
-        # stream — one leaked Postgres connection per open browser tab, which
+        # stream, one leaked Postgres connection per open browser tab, which
         # is what exhausts the shared cluster. The stream's own reads go
         # through a separate executor (see `_aget_serialized`) and close
         # themselves, so dropping this one is safe.

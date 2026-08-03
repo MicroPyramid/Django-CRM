@@ -37,8 +37,8 @@ ORG_SCOPED_TABLES = [
     "accounts",  # Note: plural
     "contacts",  # Note: plural
     "opportunity",
-    "sales_goal",  # SalesGoal quota/target — org-scoped, see opportunity/0012
-    # Both org-scoped opportunity children were live but unregistered — the
+    "sales_goal",  # SalesGoal quota/target: org-scoped, see opportunity/0012
+    # Both org-scoped opportunity children were live but unregistered, the
     # policy tooling (manage_rls --status, audits) could not see them. RLS is
     # stamped from source by common/0011 (line items) and opportunity/0013
     # (stage aging); these entries put them back under central governance.
@@ -107,7 +107,7 @@ ORG_SCOPED_TABLES = [
     # Business hours (Tier 2 business-hours-sla)
     "business_calendar",
     "business_holiday",
-    # Macros / canned responses (Tier 2 macros) — RLS is enabled by the
+    # Macros / canned responses (Tier 2 macros). RLS is enabled by the
     # migration; this entry registers the table with the central status
     # tooling (manage_rls --status, audit verifications).
     "macro",
@@ -119,7 +119,7 @@ ORG_SCOPED_TABLES = [
     "approval_rule",
     "approval",
     # MCP / programmatic access
-    # NOTE: personal_access_token is intentionally NOT RLS-protected — it is an
+    # NOTE: personal_access_token is intentionally NOT RLS-protected. It is an
     # auth-bootstrap table (looked up by token_hash before any tenant context
     # exists), mirroring the Org table. Isolation for token management is enforced
     # by explicit org+profile filters in common/views/pat_views.py.

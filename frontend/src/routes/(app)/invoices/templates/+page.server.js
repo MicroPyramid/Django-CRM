@@ -3,8 +3,8 @@ import { listInvoiceTemplates, setDefaultTemplate } from '$lib/server/v2/templat
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * The template catalogue. `load` returns `{ templates, totals }` — the names the
- * page reads — plus `can_manage`, a UX hint derived from the JWT role. The hint
+ * The template catalogue. `load` returns `{ templates, totals }`. The names the
+ * page reads, plus `can_manage`, a UX hint derived from the JWT role. The hint
  * only decides whether to draw the write buttons; the API admin-gates every
  * template write regardless, so a member who forges the POST still gets a 403.
  *

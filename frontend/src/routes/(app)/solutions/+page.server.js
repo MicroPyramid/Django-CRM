@@ -29,7 +29,7 @@ export async function load({ cookies, locals, url }) {
     status: params.get('status') ?? '',
     visibility,
     // From the JWT's own claim, so it costs no round trip. It decides which
-    // buttons render and nothing else — `assert_solution_release_access` is
+    // buttons render and nothing else; `assert_solution_release_access` is
     // the control, and it answers 403 whatever this says.
     canRelease: /** @type {any} */ (locals).profile?.role === 'ADMIN'
   };
@@ -40,7 +40,7 @@ export const actions = {
   /**
    * Release an article from the row it is on. The list is where somebody
    * notices the approved-and-invisible pile, so it is where the button
-   * belongs — walking into the article to press it is the step that leaves
+   * belongs, walking into the article to press it is the step that leaves
    * those rows sitting there.
    */
   publish: async ({ cookies, request }) => {

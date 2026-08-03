@@ -4,7 +4,7 @@ import '../config/api_config.dart';
 import '../data/models/solution.dart';
 import '../services/api_service.dart';
 
-/// Solutions (Knowledge Base) state — independent of tickets.
+/// Solutions (Knowledge Base) state, independent of tickets.
 class SolutionsListData {
   final List<Solution> solutions;
   final bool isLoading;
@@ -66,7 +66,7 @@ class SolutionsNotifier extends Notifier<SolutionsListData> {
     }
     final data = response.data!;
     // Backend may return either `{solutions: [...]}` or a bare list under
-    // a default key — accept both shapes.
+    // a default key. Accept both shapes.
     List<dynamic> list = const [];
     if (data['solutions'] is List) {
       list = data['solutions'] as List;

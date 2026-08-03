@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies (layer cached).
 # pnpm-workspace.yaml carries the install settings (onlyBuiltDependencies,
-# allowBuilds) that pnpm 10+ no longer reads from package.json — without it
+# allowBuilds) that pnpm 10+ no longer reads from package.json. Without it
 # @sentry/cli's postinstall is silently skipped and its binary never lands.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile

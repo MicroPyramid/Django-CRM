@@ -1,12 +1,12 @@
 /**
- * Weekly timesheet — the wiring behind /v2/timesheet.
+ * Weekly timesheet: the wiring behind /v2/timesheet.
  *
  * Server-only. One backend call, `GET /time-entries/timesheet/`, returns the
  * caller's own week grouped into day buckets (every day present, empty or not)
  * with week totals, the billable split, and a running-timer count. The page
  * reads it verbatim as `data.week`.
  *
- * The v2 page is always "your timesheet" — it has no profile switcher — so this
+ * The v2 page is always "your timesheet", it has no profile switcher, so this
  * layer never passes a `profile`, which also keeps it clear of the endpoint's
  * admin-only "another profile" 403. `TimesheetView` already expands `case` and
  * `invoice` to `{id, name}` / `{id, invoice_number}` and names the profile, so

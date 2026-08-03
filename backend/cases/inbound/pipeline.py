@@ -5,7 +5,7 @@ Given a parsed email and the mailbox it arrived on, decide:
   2. Does it belong to an existing Case (threading match)?
   3. Otherwise: who's the contact, and we create a new Case.
 
-Always records exactly one `EmailMessage` row — even drops — so admins have a
+Always records exactly one `EmailMessage` row, even drops, so admins have a
 forensic trail.
 """
 
@@ -74,7 +74,7 @@ def ingest(parsed: ParsedEmail, mailbox: InboundMailbox) -> IngestResult:
 
     Wraps DB writes in a transaction so a partial run leaves no half-written
     Case behind. Webhooks should ack with 200 even when this returns
-    `dropped=True` — the provider already accepted the message and a 4xx
+    `dropped=True`: the provider already accepted the message and a 4xx
     would just trigger pointless retries.
     """
     drop, reason = should_drop(parsed)
@@ -92,7 +92,7 @@ def ingest(parsed: ParsedEmail, mailbox: InboundMailbox) -> IngestResult:
         )
 
     if not parsed.message_id:
-        # Treat a missing Message-ID as an auto_submitted-style drop — without
+        # Treat a missing Message-ID as an auto_submitted-style drop. Without
         # one we can't thread or de-dupe, and legitimate human-sent mail always
         # has it. Fabricate a synthetic id for the audit row.
         synthetic_id = f"missing-msgid-{mailbox.id}-{parsed.received_at.isoformat()}"

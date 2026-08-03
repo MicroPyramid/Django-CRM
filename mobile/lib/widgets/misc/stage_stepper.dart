@@ -51,7 +51,7 @@ class StageStepper extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Lost banner — replaces the "current cell" treatment when the
+          // Lost banner, replaces the "current cell" treatment when the
           // deal is closed-lost since the lost stage doesn't appear on the
           // happy-path stepper. Tapping a forward cell still works (i.e.
           // reopening the deal into prospecting/qualified/etc.).
@@ -77,7 +77,7 @@ class StageStepper extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Closed Lost — tap a stage to reopen',
+                      'Closed Lost, tap a stage to reopen',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.danger600,
                         fontWeight: FontWeight.w600,

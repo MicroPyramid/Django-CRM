@@ -79,10 +79,10 @@ def _find_missing(
         if f"{method} {path}" in allowlist:
             continue
         if path not in operations:
-            missing.append(f"{filename}: {method} {path} — no such path in the API")
+            missing.append(f"{filename}: {method} {path}, no such path in the API")
         elif method not in operations[path]:
             missing.append(
-                f"{filename}: {method} {path} — path exists but does not accept "
+                f"{filename}: {method} {path}. Path exists but does not accept "
                 f"{method} (accepts {', '.join(sorted(operations[path]))})"
             )
     return missing

@@ -59,7 +59,7 @@
                 {/if}
               </div>
               {#if d.open && d.close}
-                <span class="v2-num" style="font-size:13px">{d.open} – {d.close}</span>
+                <span class="v2-num" style="font-size:13px">{d.open} - {d.close}</span>
               {:else}
                 <!-- Named, not blank. A blank cell reads as missing data. -->
                 <span class="v2-sub" style="font-size:12.5px">Closed</span>

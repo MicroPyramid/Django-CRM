@@ -2,7 +2,7 @@
 
 The two that matter most are tenant isolation (org A never sees org B) and
 intra-org visibility (a non-admin never finds a record they could not open from
-the list) — search is a classic place for both leaks.
+the list). Search is a classic place for both leaks.
 """
 
 import pytest
@@ -126,7 +126,7 @@ class TestGlobalSearch:
     def test_solutions_visible_to_every_member(
         self, user_client, admin_user, user_profile, org_a
     ):
-        """Knowledge base is org-wide — a non-admin who owns nothing still finds it."""
+        """Knowledge base is org-wide, a non-admin who owns nothing still finds it."""
         with impersonate(admin_user):
             Solution.objects.create(
                 org=org_a,

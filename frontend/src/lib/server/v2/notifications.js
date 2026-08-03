@@ -1,10 +1,10 @@
 /**
- * In-app notifications — the wiring behind /v2/notifications.
+ * In-app notifications: the wiring behind /v2/notifications.
  *
  * Server-only. The feed is `GET /notifications/`, which already scopes to
  * `recipient=request.profile` (a user only ever sees their own). The two writes
  * are `POST /notifications/<id>/read/` and `POST /notifications/read-all/`, both
- * recipient-scoped the same way — so nothing here can touch another person's
+ * recipient-scoped the same way, so nothing here can touch another person's
  * feed, and the page's job is only to call them.
  *
  * The one transform that matters is the LINK. `Notification.link` is a stored
@@ -12,7 +12,7 @@
  * before the producer fix carry `/cases/<id>` (which no client serves), new rows
  * carry `/tickets/<id>`. Both point at the same ticket, and on a v2 page both
  * must land inside v2. `resolvedLink` rebuilds a fresh `/tickets/<id>` from a
- * recognised prefix and returns '' for anything else — so a stored value can
+ * recognised prefix and returns '' for anything else, so a stored value can
  * never be rendered as an arbitrary href (an `http(s)://…` or `javascript:` link
  * that slipped into the column can't become a live link or an open redirect),
  * and a correctly-produced `/tickets/` link is not left pointing at the v1 route.
@@ -61,7 +61,7 @@ export async function getNotifications({ cookies }) {
     totals: {
       count: resp.count ?? results.length,
       unread: resp.unread_count ?? results.filter((n) => n.read_at === null).length,
-      // Rows still carrying the dead `/cases/` prefix — counted within the feed
+      // Rows still carrying the dead `/cases/` prefix. Counted within the feed
       // the page is showing, surfaced once as a footnote (a tripwire for a
       // producer regression, not a per-row badge).
       broken_links: results.filter(
@@ -72,7 +72,7 @@ export async function getNotifications({ cookies }) {
 }
 
 /**
- * Unread count for the nav badge — a cheap `limit=1` call that still returns the
+ * Unread count for the nav badge. A cheap `limit=1` call that still returns the
  * authoritative `unread_count` over the whole feed.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

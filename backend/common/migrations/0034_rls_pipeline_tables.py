@@ -5,11 +5,11 @@
 # task_stage all carry org_id directly, but they were absent from
 # ORG_SCOPED_TABLES and no migration ever created their policies. The apps that
 # created the tables (leads/0012, cases/0009, tasks/0009) contain no RLS SQL,
-# and common/0028 only iterates RLS_CONFIG["tables"] — which did not list them.
+# and common/0028 only iterates RLS_CONFIG["tables"], which did not list them.
 #
 # Deployed databases had the policies from an out-of-band step, so the gap was
-# invisible there. A database built purely from migrations — CI, and any fresh
-# deploy — got none, leaving these tables with no safety net beneath the ORM's
+# invisible there. A database built purely from migrations: CI, and any fresh
+# deploy, got none, leaving these tables with no safety net beneath the ORM's
 # org filters. Vertical packs write to all six on every apply, which is what
 # made the gap load-bearing rather than theoretical.
 #

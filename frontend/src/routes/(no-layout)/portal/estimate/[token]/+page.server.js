@@ -10,7 +10,7 @@ import { env } from '$env/dynamic/public';
 
 // The Django API, reached server-to-server. Absolute (not a relative `/api/...`
 // that only resolves behind a production reverse proxy) so the anonymous portal
-// works the same in dev and prod — the CSAT loader takes the same approach.
+// works the same in dev and prod. The CSAT loader takes the same approach.
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
 /** @type {import('./$types').PageServerLoad} */

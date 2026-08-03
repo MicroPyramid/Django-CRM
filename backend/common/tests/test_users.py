@@ -501,7 +501,7 @@ class TestUserStatusView:
     def test_cannot_deactivate_last_admin(
         self, admin_client, org_a, admin_user, admin_profile
     ):
-        """Deactivating the org's only admin is refused — no admin, no recovery."""
+        """Deactivating the org's only admin is refused, no admin, no recovery."""
         response = admin_client.post(
             self._url(admin_user.id),
             {"status": "Inactive"},
@@ -559,7 +559,7 @@ class TestGetTeamsAndUsersView:
 class TestProfilePrivilegeEscalation:
     """`role` and the access flags are grantable only by an admin acting on
     someone else. A member editing their own profile was able to PATCH
-    themselves to role="ADMIN" — a live org-admin escalation. These pin both
+    themselves to role="ADMIN". A live org-admin escalation. These pin both
     the block and the legitimate admin path so neither drifts.
     """
 
@@ -653,7 +653,7 @@ class TestProfilePrivilegeEscalation:
     def test_admin_cannot_change_their_own_role(
         self, admin_client, admin_user, admin_profile
     ):
-        """Even an admin cannot self-demote here — anti self-lockout."""
+        """Even an admin cannot self-demote here, anti self-lockout."""
         response = admin_client.patch(
             self._url(admin_user.id),
             {"role": "USER"},

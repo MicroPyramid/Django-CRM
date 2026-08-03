@@ -12,13 +12,13 @@
 
   /**
    * A goal is a target and a period, aimed at someone. This asks for exactly
-   * that and nothing more — v1's quota form asked for fields the model does not
+   * that and nothing more, v1's quota form asked for fields the model does not
    * even store.
    *
    * VALIDATION HERE IS A UX HINT, NOT A RULE. Everything below only decides what
-   * this page shows. The serializer enforces the same constraints server-side —
+   * this page shows. The serializer enforces the same constraints server-side:
    * a positive target, an end after the start, and (the one that matters) an
-   * assignee or team that belongs to *this* org — because curl and the mobile
+   * assignee or team that belongs to *this* org, because curl and the mobile
    * client reach the API without passing through this file. See CLAUDE.md,
    * "API Validation & Authorization".
    *
@@ -124,13 +124,13 @@
           onblur={() => (touched.name = true)}
           aria-invalid={show('name') ? 'true' : undefined}
           aria-describedby={show('name') ? 'e-name' : 'h-name'}
-          placeholder="Q3 revenue — Priya"
+          placeholder="Q3 revenue. Priya"
         />
         {#if show('name')}
           <p class="v2-error" id="e-name">{errors.name}</p>
         {:else}
           <p class="v2-hint" id="h-name">
-            What you would say out loud — “Q3 revenue — Priya”, not “Goal 14”.
+            What you would say out loud, “Q3 revenue, Priya”, not “Goal 14”.
           </p>
         {/if}
       </div>
@@ -177,7 +177,7 @@
             <option value={key}>{label}</option>
           {/each}
         </select>
-        <p class="v2-hint">A label for the window below — the dates are what actually scope it.</p>
+        <p class="v2-hint">A label for the window below. The dates are what actually scope it.</p>
       </div>
 
       <div class="v2-pair">
@@ -233,7 +233,7 @@
         </select>
         <p class="v2-hint">
           Progress is scoped to whoever this is aimed at. Only people and teams in your org appear
-          here — the server refuses any other.
+          here, the server refuses any other.
         </p>
       </div>
 

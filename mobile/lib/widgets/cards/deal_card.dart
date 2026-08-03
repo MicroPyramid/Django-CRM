@@ -47,7 +47,7 @@ class DealCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Real assignee lookup — match the first profile id from the deal against
+    // Real assignee lookup, match the first profile id from the deal against
     // the loaded users list. Falls back to the email-derived display name on
     // the Deal so we still render something when the lookup hasn't resolved.
     final users = ref.watch(usersProvider);
@@ -115,7 +115,7 @@ class DealCard extends ConsumerWidget {
                           ),
                         ),
                         // Priority badge shows for every priority that isn't
-                        // the default Medium — Low/High/Urgent all visible.
+                        // the default Medium, Low/High/Urgent all visible.
                         if (deal.priority != Priority.medium) ...[
                           const SizedBox(width: 8),
                           PriorityBadge.fromPriority(deal.priority),

@@ -1,5 +1,5 @@
 /**
- * Estimates — the fifteenth v2 module wired to the real API, and the second of
+ * Estimates: the fifteenth v2 module wired to the real API, and the second of
  * the invoices sub-pages (after products).
  *
  * Same rules as the fourteen before it: this file lives under `$lib/server`
@@ -9,14 +9,14 @@
  *
  * WHY THIS MODULE
  * The estimates worklist has one job: surface money the customer has already
- * agreed to and nobody has billed — an estimate that is `Accepted` and not yet
- * converted — and let a rep raise the invoice in one click. The fixture faked
+ * agreed to and nobody has billed. An estimate that is `Accepted` and not yet
+ * converted, and let a rep raise the invoice in one click. The fixture faked
  * both the list and that action. Wiring them turns "Raise invoice" into a real
  * `convert` call that lands on the new draft.
  *
  * WHAT THE WIRING NEEDED FROM THE BACKEND
- * The list serializer omitted the two facts the worklist turns on —
- * `converted_to_invoice` and `opportunity` — so a row could not say whether it
+ * The list serializer omitted the two facts the worklist turns on,
+ * `converted_to_invoice` and `opportunity`, so a row could not say whether it
  * had already been billed. Reading fixtures, every accepted estimate looked
  * unbilled, so the page would have offered to raise a *second* invoice for one
  * that already had one. Those two fields were added to `EstimateListSerializer`
@@ -25,21 +25,21 @@
  * TOTALS ARE COMPUTED HERE, NOT ON THE WIRE
  * The estimate list endpoint has no `totals` envelope (unlike invoices). The
  * four header figures are derived from the loaded rows, so they cover the same
- * set the table shows — the requester's, which the API already scopes (an admin
+ * set the table shows: the requester's, which the API already scopes (an admin
  * sees the org, a member sees their own and assigned). At more than 1000
  * estimates the derived figures would cover only the first page; the list is
  * requested with `limit=1000` and that ceiling is called out where it is set.
  *
  * WHAT STAYS DEFERRED
- * Creating an estimate from scratch is a builder — header, three FK pickers and
- * a line-item table — the same class of surface as the invoice builder (#48),
+ * Creating an estimate from scratch is a builder: header, three FK pickers and
+ * a line-item table, the same class of surface as the invoice builder (#48),
  * not a sub-page's worth of work. In this product an estimate is raised from a
  * deal, which is what the page's empty state has always said, so "New estimate"
  * points at the pipeline rather than a form this change would only half-build.
  */
 import { apiRequest } from '$lib/api-helpers.js';
 
-/** Statuses still awaiting the client's decision — the only ones with a live validity. */
+/** Statuses still awaiting the client's decision. The only ones with a live validity. */
 const AWAITING = ['Sent', 'Viewed'];
 
 const num = (/** @type {any} */ value) => {
@@ -86,15 +86,15 @@ function toRow(row) {
   };
 }
 
-/** Accepted and not yet billed — the row this whole page is built to surface. */
+/** Accepted and not yet billed. The row this whole page is built to surface. */
 const needsBilling = (/** @type {any} */ e) => e.status === 'Accepted' && !e.converted_invoice;
 
 /**
  * The four header figures, derived from the visible rows.
  *
- * - `accepted_unconverted` — agreed money with no invoice yet (the point).
- * - `awaiting_reply` — value of estimates the client has not answered.
- * - `expiring_within_7d` — live estimates whose validity runs out inside a week.
+ * - `accepted_unconverted`, agreed money with no invoice yet (the point).
+ * - `awaiting_reply`. Value of estimates the client has not answered.
+ * - `expiring_within_7d`. Live estimates whose validity runs out inside a week.
  *
  * @param {any[]} rows
  */
@@ -117,7 +117,7 @@ function computeTotals(rows) {
  * The estimates worklist, accepted-but-unbilled first.
  *
  * The rows follow whatever the API returns for the requester (org-wide for an
- * admin, own-and-assigned for a member — the endpoint scopes it), so the header
+ * admin, own-and-assigned for a member, the endpoint scopes it), so the header
  * figures and the table always describe the same set.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
@@ -125,7 +125,7 @@ function computeTotals(rows) {
 export async function listEstimates({ cookies }) {
   const query = new URLSearchParams();
   // One page covers every real org; totals are derived from what comes back,
-  // so anything past this ceiling would be uncounted — see the module note.
+  // so anything past this ceiling would be uncounted. See the module note.
   query.set('limit', '1000');
 
   const response = await apiRequest(`/invoices/estimates/?${query.toString()}`, {}, { cookies });
@@ -145,7 +145,7 @@ export async function listEstimates({ cookies }) {
 
 /**
  * Raise an invoice from an estimate. A bare POST through
- * `get_estimate_or_error`, so the API — not this layer — decides who may
+ * `get_estimate_or_error`, so the API, not this layer, decides who may
  * convert (creator, an assignee, or an admin) and refuses the rest, and
  * refuses a second conversion of an already-converted estimate. Returns the new
  * invoice so the caller can open it.

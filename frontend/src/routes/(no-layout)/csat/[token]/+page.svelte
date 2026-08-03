@@ -1,6 +1,6 @@
 <script>
   /**
-   * The satisfaction survey — the shortest page in the product, and the only
+   * The satisfaction survey: the shortest page in the product, and the only
    * one whose success is measured in whether people bother.
    *
    * ── ONE QUESTION, ANSWERED BEFORE THE PAGE LOADS ─────────────────────────
@@ -9,14 +9,14 @@
    * they land afterwards. It is a CONFIRMATION, not a form: the rating they
    * picked is pre-selected, and the only remaining decision is whether to say
    * anything else. The comment box is optional and below the fold of the
-   * decision — asking for prose is how a one-click survey becomes a
+   * decision. Asking for prose is how a one-click survey becomes a
    * zero-response survey.
    *
    * ── STATES ARE SERVER-DECIDED ────────────────────────────────────────────
    * Expired and unknown links come back from the API as `gone` (410); the page
    * never subtracts timestamps to work out whether a link is still live. The
    * edit window is the server's too: it stamps `editable_until`, and the POST
-   * is what rejects a late change — this page only reports the window, it does
+   * is what rejects a late change. This page only reports the window, it does
    * not enforce it.
    */
   import { enhance } from '$app/forms';
@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-  <title>How did we do? — {survey?.orgName ?? 'Feedback'}</title>
+  <title>How did we do?, {survey?.orgName ?? 'Feedback'}</title>
 </svelte:head>
 
 <PortalShell>
@@ -87,7 +87,7 @@
           <p class="ctx">
             {survey.agentName}
             {#if survey.closedAt}closed your request {relativeDays(survey.closedAt)}{:else}handled
-              your request{/if} —
+              your request{/if},
             <span class="subject">“{survey.ticketSubject}”</span>
           </p>
         </header>
@@ -122,7 +122,7 @@
                 type="button"
                 role="radio"
                 aria-checked={rating === n}
-                aria-label={SCALE_ENDS[n] ? `${n} — ${SCALE_ENDS[n]}` : `${n}`}
+                aria-label={SCALE_ENDS[n] ? `${n}. ${SCALE_ENDS[n]}` : `${n}`}
                 class="star"
                 class:on={(hover || rating) >= n}
                 onclick={() => (rating = n)}
@@ -177,7 +177,7 @@
   .wrap {
     max-width: 440px;
     margin: 0 auto;
-    /* One question and nothing else — so it sits in the middle of the screen
+    /* One question and nothing else, so it sits in the middle of the screen
        rather than clinging to the top of a 1000px viewport. */
     min-height: calc(100vh - 200px);
     display: flex;

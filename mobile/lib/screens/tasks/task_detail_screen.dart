@@ -123,7 +123,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       // Body is a Column so the composer + action button can live at the
       // bottom of the body proper, *outside* the sliver scroll view. Putting
       // a TextField inside a Scaffold.bottomNavigationBar slot didn't reliably
-      // raise the soft keyboard on Android — this layout does.
+      // raise the soft keyboard on Android. This layout does.
       body: Column(
         children: [
           Expanded(
@@ -470,7 +470,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   /// Resolve the linked parent entity (account / lead / opportunity / case)
   /// from the cached lookup providers. The backend serializes these FKs as
-  /// plain UUID strings, not nested objects — so without this lookup the
+  /// plain UUID strings, not nested objects, so without this lookup the
   /// "Related To" card silently disappears even when a parent IS attached.
   _RelatedRef? _resolveRelatedEntity() {
     final t = _task;
@@ -484,7 +484,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           break;
         }
       }
-      // No /accounts/:id route on mobile yet — show the card, but don't fake
+      // No /accounts/:id route on mobile yet. Show the card, but don't fake
       // a chevron the user can't follow.
       return _RelatedRef(
         typeLabel: 'Account',
@@ -617,7 +617,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   String _assigneeDisplayName(Map<String, dynamic> profile) {
     // ProfileSerializer wraps the user under `user_details` ({email, name, …}).
-    // Some older endpoints still return user__email at the top level — keep
+    // Some older endpoints still return user__email at the top level. Keep
     // that fallback so a payload shape change doesn't blank out the avatar.
     final details = profile['user_details'];
     String? email;
@@ -1144,7 +1144,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
     _commentController.clear();
 
-    // Use the POST response directly — it returns the refreshed comments and
+    // Use the POST response directly. It returns the refreshed comments and
     // attachments. The previous _fetchTask() refetch flashed the full-page
     // spinner (since _fetchTask always sets _isLoading=true) and would
     // silently fail if getTaskDetail returned null, leaving the new comment
@@ -1171,7 +1171,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         _isPostingComment = false;
       });
     } else {
-      // Response shape unexpected — fall back to refetch.
+      // Response shape unexpected, fall back to refetch.
       await _fetchTask();
       if (mounted) setState(() => _isPostingComment = false);
     }
@@ -1351,7 +1351,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 /// Resolved parent-entity reference for the Related-To card. `path` is null
 /// when the mobile app has no detail screen for that entity type (e.g.
-/// accounts) — the card renders without a chevron in that case.
+/// accounts), the card renders without a chevron in that case.
 class _RelatedRef {
   final String typeLabel;
   final IconData icon;

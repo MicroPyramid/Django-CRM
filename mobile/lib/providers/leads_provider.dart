@@ -21,7 +21,7 @@ class LeadDetail {
   });
 }
 
-/// Result of [LeadsNotifier.findLeadByEmail] — just enough to render the
+/// Result of [LeadsNotifier.findLeadByEmail], just enough to render the
 /// "duplicate found" hint and link to the existing lead.
 class LeadEmailMatch {
   final String id;
@@ -186,7 +186,7 @@ class LeadFilters {
       );
 }
 
-/// Paginated leads snapshot — wrapped by AsyncValue.
+/// Paginated leads snapshot, wrapped by AsyncValue.
 class LeadsListData {
   final List<Lead> leads;
   final int totalCount;
@@ -342,12 +342,12 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
         return null;
       }
 
-      // Parse the lead itself — this is the only failure that should sink
+      // Parse the lead itself. This is the only failure that should sink
       // the whole detail load. Everything else is a soft-fail.
       final Lead baseLead = Lead.fromJson(leadData);
       Lead lead = baseLead;
 
-      // Backend returns comments at the top level — prefer those over
+      // Backend returns comments at the top level. Prefer those over
       // anything embedded on the lead since they're freshly queried.
       try {
         final commentsData = data['comments'] as List<dynamic>?;
@@ -497,7 +497,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
     }
   }
 
-  /// Quick status change — optimistic local update.
+  /// Quick status change, optimistic local update.
   Future<ApiResponse<Map<String, dynamic>>> updateLeadStatus(
     String id,
     LeadStatus status,
@@ -585,7 +585,7 @@ final leadsProvider = AsyncNotifierProvider<LeadsNotifier, LeadsListData>(
   LeadsNotifier.new,
 );
 
-/// Convenience providers — read from the AsyncValue.
+/// Convenience providers. Read from the AsyncValue.
 final leadsListProvider = Provider<List<Lead>>((ref) {
   return ref.watch(leadsProvider).value?.leads ?? const [];
 });

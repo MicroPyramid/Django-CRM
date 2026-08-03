@@ -2,7 +2,7 @@
   /**
    * Editing an account.
    *
-   * The account is the record everything else hangs off — the deals, the
+   * The account is the record everything else hangs off: the deals, the
    * people, the tickets, the invoices. That shapes this form twice over:
    *
    * ── THE NAME IS UNIQUE PER ORG, CASE-INSENSITIVELY ───────────────────────
@@ -13,7 +13,7 @@
    * ── WHAT THIS FORM DOES NOT OWN ──────────────────────────────────────────
    * Contacts, teams and tags are not on it. `AccountDetailView.put` clears all
    * three unconditionally, so saving through PUT would strip every person off
-   * the account — which is why the action uses PATCH and why the summary below
+   * the account, which is why the action uses PATCH and why the summary below
    * states what is being left alone. The one relation the form does touch is
    * the owner, and even that is only sent when it changed.
    *
@@ -61,7 +61,7 @@
     // The exact regex from `flexible_phone_validator` in
     // `common/validators.py`, which Account, Contact and Lead all use.
     // Surfaced at the field, because otherwise a seeded number carrying an
-    // "x123" extension rejects the entire save without naming a field — see
+    // "x123" extension rejects the entire save without naming a field: see
     // the same guard on the leads form.
     if (form.phone && !/^[\d\s\-()+.]{7,25}$/.test(form.phone))
       e.phone = '7 to 25 characters: digits, spaces, brackets, dots, dashes. No extensions.';
@@ -200,7 +200,7 @@
       <div class="v2-field">
         <label for="f-owner">Owner</label>
         <!-- What the select was rendered with. The action compares against it
-             so an untouched owner is not sent at all — `assigned_to` is a
+             so an untouched owner is not sent at all; `assigned_to` is a
              many-to-many and this select is single, so sending it always would
              cut a two-person account down to one on every save. -->
         <input type="hidden" name="assigned_to_original" value={data.form.assigned_to} />
@@ -283,7 +283,7 @@
           <p class="v2-error">{errors.annual_revenue}</p>
         {:else}
           <p class="v2-hint">
-            What this company turns over. Not what you have sold them — that is Revenue won, and it
+            What this company turns over. Not what you have sold them. That is Revenue won, and it
             is counted from the deals.
           </p>
         {/if}

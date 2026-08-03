@@ -104,7 +104,7 @@ class TestWatchAPI:
         assert r.status_code == 204
 
     def test_cross_org_case_returns_404(self, admin_client, case_b):
-        # admin_client is in org_a; case_b is in org_b — should never be visible
+        # admin_client is in org_a; case_b is in org_b, should never be visible
         r = admin_client.post(f"/api/cases/{case_b.id}/watch/")
         assert r.status_code == 404
 
@@ -162,7 +162,7 @@ class TestWatchingListAPI:
         CaseWatcher.objects.create(
             case=case_a, profile=admin_profile, org=case_a.org
         )
-        # Another user watches a different case — must not leak.
+        # Another user watches a different case, must not leak.
         CaseWatcher.objects.create(
             case=case_b_same_org,
             profile=user_profile,

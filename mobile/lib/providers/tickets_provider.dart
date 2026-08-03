@@ -7,7 +7,7 @@ import '../data/models/solution.dart';
 import '../data/models/time_entry.dart';
 import '../services/api_service.dart';
 
-/// Paginated tickets snapshot — wrapped by AsyncValue.
+/// Paginated tickets snapshot, wrapped by AsyncValue.
 class TicketsListData {
   final List<Ticket> tickets;
   final int totalCount;
@@ -130,7 +130,7 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
         .toList();
     // CaseListView returns `cases_count` (total matching) and `offset` (next
     // page offset, or null when this was the final page). The watching view
-    // returns `count` and no offset — treat its response as a single page.
+    // returns `count` and no offset. Treat its response as a single page.
     final totalCount = (data['cases_count'] as int?) ??
         (data['count'] as int?) ??
         newTickets.length;
@@ -164,7 +164,7 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
 
       // Public + internal comments are sent in two separate arrays. We tag
       // each so the UI can render an "Internal" badge without an extra
-      // round-trip — `Comment` itself doesn't carry that flag yet.
+      // round-trip; `Comment` itself doesn't carry that flag yet.
       final List<_TaggedComment> tagged = [];
       for (final c in (response.data!['comments'] as List<dynamic>? ?? [])) {
         tagged.add(
@@ -487,7 +487,7 @@ final ticketsProvider =
       TicketsNotifier.new,
     );
 
-/// Convenience providers — read from the AsyncValue.
+/// Convenience providers. Read from the AsyncValue.
 final ticketsListProvider = Provider<List<Ticket>>((ref) {
   return ref.watch(ticketsProvider).value?.tickets ?? const [];
 });
@@ -501,7 +501,7 @@ final ticketsErrorProvider = Provider<String?>((ref) {
 });
 
 /// Bundled detail-fetch result. The mobile detail screen needs more than
-/// just the Ticket object — also activities and the per-user permission to
+/// just the Ticket object, also activities and the per-user permission to
 /// add comments.
 class TicketDetailResult {
   final Ticket ticketObj;
@@ -717,7 +717,7 @@ class TicketListFilters {
   }
 }
 
-/// Watcher list response — used by the detail screen's sidebar.
+/// Watcher list response, used by the detail screen's sidebar.
 class TicketWatchers {
   final List<Map<String, dynamic>> watchers;
   final int count;

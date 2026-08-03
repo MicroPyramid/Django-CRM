@@ -6,7 +6,7 @@
    *
    * 1. NO SECRETS. InboundMailbox carries `webhook_secret` and
    *    `imap_password_enc`. The webhook secret is what proves a delivery
-   *    really came from the provider — anything holding it can forge tickets
+   *    really came from the provider. Anything holding it can forge tickets
    *    into this org, or read the ones it forges. It is not fetched, not
    *    rendered, and not masked-but-present in the DOM. Rotation belongs
    *    behind an explicit action, not on a page you can arrive at by browsing.
@@ -56,7 +56,7 @@
           </div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 0;line-height:1.5">
             Turning an address off stops it opening tickets. It does not stop mail arriving and does
-            not bounce, so anyone writing there gets no ticket and no error — just silence.
+            not bounce, so anyone writing there gets no ticket and no error, just silence.
           </p>
         </div>
       </div>
@@ -105,7 +105,7 @@
 
     <!--
       The webhook secret is the credential that authenticates deliveries from
-      the provider. It is not on this page in any form — not shown, not
+      the provider. It is not on this page in any form, not shown, not
       masked, not sitting in the payload behind a click-to-reveal. See api.js
       for the same rule stated at the boundary.
     -->
@@ -117,7 +117,7 @@
           <p class="v2-sub" style="font-size:12.5px;margin:5px 0 0;line-height:1.5">
             Each address has a shared secret that proves a delivery really came from the provider.
             Anything holding it can post mail into this organisation as though a customer sent it,
-            so it is never rendered on a page — rotating one is an explicit action that shows the
+            so it is never rendered on a page. Rotating one is an explicit action that shows the
             new value once.
           </p>
         </div>

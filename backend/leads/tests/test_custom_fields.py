@@ -184,7 +184,7 @@ class TestLeadUpdateWithCustomFields:
     def test_patch_converted_rejects_invalid_custom_fields(
         self, admin_client, lead_a, org_a
     ):
-        """Validation must run before conversion — bad payload should 400, not
+        """Validation must run before conversion. Bad payload should 400, not
         get smuggled through."""
         _make_severity_def(org_a)
         response = admin_client.patch(

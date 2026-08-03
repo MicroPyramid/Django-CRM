@@ -85,7 +85,7 @@ class TestModelConstraints:
         TimeEntry.objects.create(
             org=org_a, case=case, profile=admin_profile, started_at=timezone.now()
         )
-        # Different profile — should NOT collide.
+        # Different profile, should NOT collide.
         TimeEntry.objects.create(
             org=org_a, case=case, profile=user_profile, started_at=timezone.now()
         )
@@ -404,7 +404,7 @@ class TestTimesheetEndpoint:
         entries = [e for d in body["days"] for e in d["entries"]]
         assert len(entries) == 1
         entry = entries[0]
-        # case is expanded to {id, name} — not the bare id the serializer emits —
+        # case is expanded to {id, name}, not the bare id the serializer emits,
         # so the page can show the ticket name and link to it.
         assert entry["case"] == {"id": str(case.id), "name": "SSO login loop"}
         # An unbilled entry carries invoice: null, so the page never links to an

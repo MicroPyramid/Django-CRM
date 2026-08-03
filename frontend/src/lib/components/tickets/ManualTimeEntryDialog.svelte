@@ -7,7 +7,7 @@
 
   /**
    * Manual time entry creation. The "now" defaults make backfilling a 30-min
-   * session straightforward — just type a description and submit.
+   * session straightforward, just type a description and submit.
    *
    * @type {{
    *   ticketId: string,

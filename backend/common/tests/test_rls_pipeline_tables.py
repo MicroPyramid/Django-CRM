@@ -3,7 +3,7 @@
 These six tables carry org_id directly but were absent from ORG_SCOPED_TABLES,
 and neither leads/0012, cases/0009 nor tasks/0009 stamped a policy. Deployed
 databases had the policies from an out-of-band step, so the gap only existed on
-databases built purely from migrations — CI, and any fresh deploy.
+databases built purely from migrations, CI, and any fresh deploy.
 
 The pytest database is built by running migrations and nothing else, which is
 precisely the environment that was broken. common/0034 closes it; these tests

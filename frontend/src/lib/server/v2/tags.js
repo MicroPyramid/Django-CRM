@@ -1,15 +1,15 @@
 /**
- * Tags — the wiring behind `/settings/tags`.
+ * Tags: the wiring behind `/settings/tags`.
  *
  * Server-only. Reads `GET /tags/?include_archived=true`, which returns every
- * tag in the org (active and archived — the page shows the "Off" ones so an
+ * tag in the org (active and archived. The page shows the "Off" ones so an
  * admin can see what's been retired), each carrying a `usage` block
  * `{ accounts, leads, opportunities, cases }` and a `totals` summary
  * `{ count, active, unused }` for the stat cards. Both are computed server-side
  * (the usage counts are org-scoped subqueries, not a client tally over rows).
  *
  * Read-only page: the only controls ("New tag", the duplicate-merge banner) are
- * not wired — deferred, like the other settings builders. No write path here.
+ * not wired, deferred, like the other settings builders. No write path here.
  */
 import { apiRequest } from '$lib/api-helpers.js';
 

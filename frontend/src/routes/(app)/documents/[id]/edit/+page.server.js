@@ -8,11 +8,11 @@ import {
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * Editing a document — rename, archive/restore, and manage who can open it.
+ * Editing a document: rename, archive/restore, and manage who can open it.
  *
  * Writing is as narrow as deleting: the uploader or an admin. `getDocumentForEdit`
- * returns `can_edit: false` for anyone else — including a user the document is
- * merely shared with, who can open it but not change it — so the form is never
+ * returns `can_edit: false` for anyone else, including a user the document is
+ * merely shared with, who can open it but not change it, so the form is never
  * drawn for someone the PUT would refuse. Both writes are gated again by the
  * backend (`_may_write` / `_may_delete`), and the detail fetch is org-scoped, so
  * a bad or foreign id 404s here.

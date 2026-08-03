@@ -91,7 +91,7 @@ class TestBoardListView:
     def test_list_boards_reports_member_role(
         self, user_client, admin_profile, user_profile, org_a
     ):
-        """A plain member sees ``my_role == 'member'`` — the frontend uses this
+        """A plain member sees ``my_role == 'member'``. The frontend uses this
         to hide the owner/admin-only column controls it could never use."""
         board = Board.objects.create(
             name="Shared Board", owner=admin_profile, org=org_a
@@ -570,7 +570,7 @@ class TestBoardTasks:
     def test_move_board_task_to_another_column(
         self, admin_client, admin_profile, admin_user, org_a
     ):
-        """PUT with a sibling column id relocates the card — the core kanban move.
+        """PUT with a sibling column id relocates the card. The core kanban move.
 
         Regression: ``column`` was read-only on the serializer, so the change was
         silently dropped and the card never left its lane (200, but no move)."""
@@ -711,7 +711,7 @@ class TestBoardTasks:
     def test_cannot_overwrite_created_by_on_update(
         self, admin_client, admin_profile, admin_user, org_a, user_b
     ):
-        """created_by is a server-derived audit fact — it FKs common.User, which
+        """created_by is a server-derived audit fact. It FKs common.User, which
         RLS does not org-scope, so it must not be mass-assignable from the body."""
         _board, todo, _doing = self._board_with_two_columns(
             admin_profile, admin_user, org_a

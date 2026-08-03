@@ -12,7 +12,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  *
  * Admin-only. The load returns `forbidden` for a non-admin (the read page only
  * links here for admins, but a direct visit must not render the form either),
- * and the save action is gated a second time by the backend — `PATCH
+ * and the save action is gated a second time by the backend, `PATCH
  * /api/org/settings/` 403s a non-admin regardless of what reaches it.
  *
  * @type {import('./$types').PageServerLoad}

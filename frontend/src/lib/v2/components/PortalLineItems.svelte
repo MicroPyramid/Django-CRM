@@ -16,7 +16,7 @@
    * Two pages each rendering their own version of that is two pages that
    * eventually disagree with each other and with the PDF. The rows below are
    * emitted in exactly that sequence, and a row is omitted only when the
-   * server sent a zero for it — never reordered, never folded together.
+   * server sent a zero for it, never reordered, never folded together.
    *
    * Nothing here recomputes a total. Every figure is the one the server sent,
    * because the invoice a customer receives and the PDF their accounts payable
@@ -88,7 +88,7 @@
 </table>
 
 <div class="v2-doc-totals">
-  <!-- Each label/amount pair is wrapped in a div — valid inside a dl, and it
+  <!-- Each label/amount pair is wrapped in a div. Valid inside a dl, and it
        keeps the rule above the total a single continuous line. A two-column
        grid draws that border as two segments with the column gap showing
        through the middle, which reads as a mistake because it is one. -->

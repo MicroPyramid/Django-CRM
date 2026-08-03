@@ -35,7 +35,7 @@ const LIVE_COUNTS = {
     return (await listTickets(event, params)).totals.open;
   },
   /**
-   * Open tasks only, and the API already counts them per requester — an
+   * Open tasks only, and the API already counts them per requester. An
    * admin's badge covers the org, a member's covers their own list. Same
    * argument as tickets: a badge counting completed tasks would only ever go
    * up.
@@ -45,8 +45,8 @@ const LIVE_COUNTS = {
   tasks: async (event) => (await listTasks(event, new URLSearchParams({ limit: '1' }))).totals.open,
   /**
    * Invoices waiting on this person: drafts to send plus anything overdue to
-   * chase, counted by the API per requester. Not the total invoice count —
-   * that is inventory, the same objection as the accounts note below — and not
+   * chase, counted by the API per requester. Not the total invoice count.
+   * That is inventory, the same objection as the accounts note below, and not
    * the outstanding *amount*, which the pills on the page already show. The
    * shell has always carried a needs-action invoice badge; this keeps it real.
    *
@@ -55,7 +55,7 @@ const LIVE_COUNTS = {
   invoices: async (event) =>
     (await listInvoices(event, new URLSearchParams({ limit: '1' }))).totals.action_needed,
   /**
-   * Approvals waiting on *this* person — the ones only they can clear (the
+   * Approvals waiting on *this* person: the ones only they can clear (the
    * inbox scopes `mine=true&state=pending` to the actionable set, and a
    * requester's own rows are excluded by the self-approval rule). This is work,
    * not inventory: it goes down as they decide, so it earns a badge.
@@ -64,7 +64,7 @@ const LIVE_COUNTS = {
    */
   approvals: async (event) => await countAwaitingApprovals(event),
   /**
-   * Unread notifications waiting on this person — `GET /notifications/` scopes
+   * Unread notifications waiting on this person; `GET /notifications/` scopes
    * to `recipient=request.profile` and reports `unread_count` over the whole
    * feed, so the badge matches the page it links to (which was the point of
    * this map). This is work, not inventory: it goes to zero as you read, so it
@@ -77,13 +77,13 @@ const LIVE_COUNTS = {
    * No `accounts` entry, deliberately, even though the module is wired.
    *
    * These badges count work: leads to call, deals to move, tickets to answer.
-   * "Accounts 10" counts inventory — it never goes down, nothing about it is
+   * "Accounts 10" counts inventory. It never goes down, nothing about it is
    * ever waiting on you, and a badge you learn to ignore teaches you to ignore
    * the ones beside it. The nav has never had an accounts count and should not
    * gain one just because the number became available.
    *
    * No `team` entry either. A people count is the same inventory objection, and
-   * the one actionable number there — live tokens on deactivated accounts — is
+   * the one actionable number there, live tokens on deactivated accounts, is
    * admin-only (the count endpoint 403s a member) and the page already surfaces
    * it prominently. A badge only some roles can compute does not fit a shell
    * that is the same for everyone.
@@ -93,18 +93,18 @@ const LIVE_COUNTS = {
 /**
  * The shell: nav counts, the org name, and vertical-pack terminology.
  *
- * The org name is display-only and comes from the JWT via `locals.org` — never
+ * The org name is display-only and comes from the JWT via `locals.org`, never
  * the client, never a fixture. Everything below runs concurrently (in sequence
  * it would add a round trip per module to every page) and starts empty: every
  * badge the sidebar renders is in LIVE_COUNTS, so a count that fails just shows
- * no badge rather than a stale number. `terminology` joins the same fan-out —
- * a failed fetch there just leaves the sidebar's hard-coded labels in place
+ * no badge rather than a stale number. `terminology` joins the same fan-out.
+ * A failed fetch there just leaves the sidebar's hard-coded labels in place
  * (every consumer reads it through `$lib/terminology.js#t()`, which always
  * takes an explicit fallback), the same "missing, not stale or broken" contract
  * as a missing count badge.
  *
- * Still worth fixing: each count builds an entire page context — accounts,
- * tags, users, industries — to answer a question about one integer. One counts
+ * Still worth fixing: each count builds an entire page context: accounts,
+ * tags, users, industries, to answer a question about one integer. One counts
  * endpoint covering every module is the right shape; N list calls is not.
  *
  * @type {import('./$types').LayoutServerLoad}
@@ -117,14 +117,14 @@ export async function load(event) {
       terminology: /** @type {Record<string, string> | undefined} */ (undefined)
     },
     // Server-derived from the JWT (never the client). Display-only: it lets the
-    // shell hide destinations a member can only reach to be turned away — the
+    // shell hide destinations a member can only reach to be turned away. The
     // backend still enforces every one of those gates, so this is UX, not a
     // security control. Defaults to the non-admin view when the claim is absent.
     role: event.locals.profile?.role ?? 'USER'
   };
 
   // countKeys' fetches and the terminology fetch are pushed into ONE
-  // Promise.allSettled call so they all fire in the same network wave — the
+  // Promise.allSettled call so they all fire in the same network wave. The
   // terminology lookup is not a second round trip, it rides the wave that was
   // already here for the badges. `results` is indexed by position: the count
   // keys first (in `countKeys` order), terminology last.

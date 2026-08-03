@@ -1,4 +1,4 @@
 # Endpoints documented in docs/api/ that deliberately do not appear in the
 # generated OpenAPI schema. One "METHOD /path/" per line, each with a comment
-# explaining why. An empty allowlist is the expected steady state — if you are
+# explaining why. An empty allowlist is the expected steady state, if you are
 # adding a line here, first check the endpoint is not simply misspelled.

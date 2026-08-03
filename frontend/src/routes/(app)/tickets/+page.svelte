@@ -20,8 +20,8 @@
    *
    * The deadline arrives from the server, where it is walked through the org's
    * business calendar and pushed forward by any time the ticket spent waiting
-   * on the customer. Recomputing it here from `opened_at + hours` — which is
-   * what the mock did — would put a second, quietly different answer on the
+   * on the customer. Recomputing it here from `opened_at + hours`, which is
+   * what the mock did, would put a second, quietly different answer on the
    * same screen.
    *
    * A progress bar only means something while there is still time on the
@@ -110,7 +110,7 @@
       title={data.showAll ? 'No tickets here yet' : 'The queue is clear'}
       body={data.showAll
         ? 'Nothing has been raised in this workspace. Tickets arrive here from email, the portal, and anyone who replies to a closed one.'
-        : 'Nothing is waiting on your team right now. Closed and rejected tickets are still here — they are just not in the way.'}
+        : 'Nothing is waiting on your team right now. Closed and rejected tickets are still here. They are just not in the way.'}
     >
       {#snippet icon()}<LifeBuoy size={21} />{/snippet}
       {#snippet actions()}

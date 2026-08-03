@@ -65,12 +65,12 @@ class IsSuperAdmin(permissions.BasePermission):
 
     Super admin is an explicit, deliberately granted flag on the user record
     (``User.is_superuser``), never inferred from the email address. Deriving it
-    from an email domain would hand platform-wide access — every org, every
-    user — to anyone who can obtain an account at that domain, turning an
+    from an email domain would hand platform-wide access: every org, every
+    user. To anyone who can obtain an account at that domain, turning an
     ordinary signup into vertical privilege escalation.
 
     Grant it with ``manage.py createsuperuser``, the Django admin, or another
-    audited path — not by handing out an email address.
+    audited path, not by handing out an email address.
     """
 
     message = "Super admin access required."

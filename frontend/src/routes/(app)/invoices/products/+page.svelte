@@ -1,7 +1,7 @@
 <script>
   /**
    * The catalogue line items are picked from. Short, boring, and the only page
-   * in Bill that is a settings screen wearing a list's clothes — so it is
+   * in Bill that is a settings screen wearing a list's clothes, so it is
    * grouped by category rather than paginated, because you come here to find
    * one thing and change its price.
    *
@@ -22,12 +22,12 @@
 
   let totals = $derived(data.totals);
   // The catalogue is org config: only an admin may add or change it. The API
-  // enforces this — these gates just keep the page from offering a write it
+  // enforces this. These gates just keep the page from offering a write it
   // would refuse. Reps still see every price, because they build line items.
   let canManage = $derived(data.can_manage);
 
   /**
-   * Grouped for reading, not for counting — the totals still come from the API.
+   * Grouped for reading, not for counting. The totals still come from the API.
    * A plain object (not a Map) because this is a throwaway computation rebuilt
    * each render, never reactive state; string category keys keep first-seen
    * order, which is the order the list already arrives in.

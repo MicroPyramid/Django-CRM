@@ -37,7 +37,7 @@ export async function apiRequest(endpoint, options = {}, locals) {
   const accessToken = cookies?.get?.('jwt_access');
 
   // A FormData body is a file upload (multipart). Do NOT set Content-Type for it
-  // — fetch has to add the multipart boundary itself, and a hand-set
+  //. Fetch has to add the multipart boundary itself, and a hand-set
   // 'application/json' would make Django parse the parts as a JSON string and
   // find neither the field nor the file. Plain-object bodies stay JSON, so every
   // existing caller is unaffected.
@@ -118,7 +118,7 @@ export async function apiRequest(endpoint, options = {}, locals) {
        * The status travels with the error.
        *
        * Callers used to decide "is this a 404?" by searching the message for
-       * the string "404" or "not found" — and Django's own message for a
+       * the string "404" or "not found", and Django's own message for a
        * missing record is "No Lead matches the given query.", which contains
        * neither. So a perfectly ordinary 404 rendered as a 500. Sniffing prose
        * to recover a number that was right there is a bug waiting for the day

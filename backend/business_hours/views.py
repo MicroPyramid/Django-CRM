@@ -1,15 +1,15 @@
 """REST endpoints for the business-hours settings page.
 
 Routes (all under /api/business-hours/):
-    GET  /calendar/                       — fetch (and create-on-demand) the
+    GET  /calendar/: fetch (and create-on-demand) the
                                             org's default calendar with its
                                             holidays.
-    PUT  /calendar/<pk>/                  — admin update of weekday hours,
+    PUT  /calendar/<pk>/: admin update of weekday hours,
                                             timezone, name. Holidays are
                                             managed via the nested endpoints
                                             below to keep payloads small.
-    POST /calendar/<pk>/holidays/         — add a single holiday.
-    DELETE /calendar/<pk>/holidays/<hid>/ — remove a single holiday.
+    POST /calendar/<pk>/holidays/: add a single holiday.
+    DELETE /calendar/<pk>/holidays/<hid>/, remove a single holiday.
 """
 
 from datetime import time

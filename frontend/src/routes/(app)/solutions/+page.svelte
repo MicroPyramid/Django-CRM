@@ -6,7 +6,7 @@
    *
    * Now on the real API, which changed one thing about that claim: publishing
    * is admin-only, so for everybody else the approved-and-invisible row is
-   * information rather than a button. It still says so — knowing a colleague
+   * information rather than a button. It still says so. Knowing a colleague
    * has to release it is worth more than a control that answers 403.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -72,7 +72,7 @@
 <FilterBar
   view={filtered ? 'Filtered, last edited first' : 'All articles, last edited first'}
   {filters}
-  meta="Published means customers can be shown it — approving it is a separate step"
+  meta="Published means customers can be shown it. Approving it is a separate step"
 />
 
 {#if form?.error}

@@ -1,18 +1,18 @@
 /**
- * Kanban boards — the wiring behind /v2/tasks/board.
+ * Kanban boards: the wiring behind /v2/tasks/board.
  *
  * Server-only. A board is read in two calls: `GET /boards/?archived=false` for
  * the picker (and to resolve the active board), then
  * `GET /boards/<id>/columns/`, which nests each column's cards. Those are
  * flattened into the `{ board, boards, columns, tasks }` shape the page joins
- * by `column_id` — the totals the page shows are derived on the page from the
+ * by `column_id`. The totals the page shows are derived on the page from the
  * live lanes, so a drag updates them without a round-trip.
  *
  * Three writes: a card move (`PUT /boards/tasks/<id>/` with the new `column`
  * and `order`, server-validated to a sibling column of the same board), adding
  * a card (`POST /boards/columns/<id>/tasks/`, any board member), and adding a
  * column (`POST /boards/<id>/columns/`, owner/admin only). The page cannot do
- * any of these anywhere the backend wouldn't — the org, the board and the role
+ * any of these anywhere the backend wouldn't, the org, the board and the role
  * are all checked server-side; this layer only carries the request.
  */
 import { apiRequest } from '$lib/api-helpers.js';
@@ -83,7 +83,7 @@ export async function getBoard({ cookies, boardId = null }) {
     columns,
     tasks,
     // Owner/admin may add or reshape columns; a plain member may not (the
-    // backend enforces it — this only decides whether to *offer* the control,
+    // backend enforces it. This only decides whether to *offer* the control,
     // so a member isn't shown a button that would 403). Adding a *card* needs
     // only membership, and anyone who can see this board already has it.
     canManageColumns: active.my_role === 'owner' || active.my_role === 'admin'
@@ -93,7 +93,7 @@ export async function getBoard({ cookies, boardId = null }) {
 /**
  * Add a column to a board. Owner/admin only, enforced by the backend
  * (`BoardColumnListCreateView`); `board` and `org` are set there from the URL
- * and the JWT, never from this body. `order` places the new lane at the end —
+ * and the JWT, never from this body. `order` places the new lane at the end,
  * the page passes the next index, since a column defaulting to 0 would jump to
  * the front of the board.
  *
@@ -112,7 +112,7 @@ export async function createColumn({ cookies }, boardId, { name, color, order })
 /**
  * Add a card to a column. Any board member may; the backend derives the card's
  * `column`, `org` and `created_by` from the URL and the JWT. The write surface
- * is deliberately narrow — title, description, priority — matching
+ * is deliberately narrow (title, description, priority) matching
  * `BoardTaskSerializer`, so nothing here can stamp a card into another board.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

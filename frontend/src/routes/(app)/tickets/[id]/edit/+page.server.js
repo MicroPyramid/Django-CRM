@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getTicketForEdit, updateTicket } from '$lib/server/v2/tickets.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
-/** Scalars this form owns. `account` is not among them — see the loader note. */
+/** Scalars this form owns. `account` is not among them. See the loader note. */
 const FIELDS = ['name', 'status', 'priority', 'case_type', 'description', 'closed_on'];
 
 /** @type {import('./$types').PageServerLoad} */
@@ -20,7 +20,7 @@ export const actions = {
     for (const field of FIELDS) {
       // Only fields the form actually submitted. A control that is absent or
       // disabled sends nothing, and "nothing" is how PATCH is told to leave a
-      // field alone — see `updateTicket`.
+      // field alone. See `updateTicket`.
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
 
@@ -28,7 +28,7 @@ export const actions = {
      * The owner is only sent when somebody actually changed it.
      *
      * `assigned_to` is many-to-many and this form offers a single select, so
-     * sending it unconditionally rewrites the whole list from one value — a
+     * sending it unconditionally rewrites the whole list from one value, a
      * ticket with two people on it silently loses one every time anybody fixes
      * a typo in the subject. The hidden `assigned_to_original` is what makes
      * "nobody touched this" distinguishable from "somebody chose this".

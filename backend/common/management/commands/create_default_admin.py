@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if User.objects.filter(is_superuser=True).exists():
-            self.stdout.write(self.style.SUCCESS("Superuser already exists — skipping."))
+            self.stdout.write(self.style.SUCCESS("Superuser already exists; skipping."))
             return
 
         email = os.environ.get("ADMIN_EMAIL", "admin@localhost")
@@ -20,7 +20,7 @@ class Command(BaseCommand):
         if not password:
             self.stdout.write(
                 self.style.WARNING(
-                    "WARNING: ADMIN_PASSWORD not set — using default 'admin'. "
+                    "WARNING: ADMIN_PASSWORD not set, using default 'admin'. "
                     "Change it immediately in production!"
                 )
             )

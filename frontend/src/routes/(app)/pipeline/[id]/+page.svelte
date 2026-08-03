@@ -20,8 +20,8 @@
   let stageIndex = $derived(OPEN_STAGES.indexOf(deal.stage));
 
   /**
-   * The discount is per line item — `OpportunityLineItem.save()` computes
-   * subtotal, then discount_amount, then total — and Opportunity has no
+   * The discount is per line item: `OpportunityLineItem.save()` computes
+   * subtotal, then discount_amount, then total, and Opportunity has no
    * discount field at all. So the footer adds up what the lines actually
    * carry; it does not derive a deal-level discount from the difference
    * between the lines and `deal.amount`. That difference cannot exist:
@@ -39,8 +39,8 @@
   {/snippet}
   {#snippet actions()}
     <!-- "Move stage" was a second button that did nothing. Stage is edited on
-         the form below, where the page can show what moving it costs — the
-         aging clock resets — instead of moving it in one anonymous click. -->
+         the form below, where the page can show what moving it costs, the
+         aging clock resets, instead of moving it in one anonymous click. -->
     <a class="v2-btn" href="/pipeline/{deal.id}/edit">Edit</a>
   {/snippet}
 </PageHeader>
@@ -76,7 +76,7 @@
         <!--
           The "next action" card that used to sit here was a fixture string.
           Opportunity has no such field and nothing derives one, so there is
-          nothing to render — a suggestion the system invented is worse than no
+          nothing to render. A suggestion the system invented is worse than no
           suggestion, because people act on it.
         -->
         <div class="v2-label" style="margin-bottom:12px">Activity</div>
@@ -148,8 +148,8 @@
       <dd>{deal.assigned_to || 'Unassigned'}</dd>
       <!--
         "Last activity" used to be here, reading a `last_activity_at` the model
-        does not have. Aging is measured from the last stage change — a
-        narrower claim, and the one the board is actually coloured by — so that
+        does not have. Aging is measured from the last stage change, a
+        narrower claim, and the one the board is actually coloured by, so that
         is what this row says now.
       -->
       <dt>Stage since</dt>
@@ -164,7 +164,7 @@
         <Avatar name="{c.first_name} {c.last_name}" size={27} />
         <div style="min-width:0">
           <div style="font-size:12.5px;font-weight:550">{c.first_name} {c.last_name}</div>
-          <!-- `relationship` — Champion, Blocker — was a fixture field. Contact
+          <!-- `relationship` (Champion, Blocker) was a fixture field. Contact
                has `title` and `department`, so the line says those. -->
           <div class="v2-sub" style="font-size:11px">
             {[c.title, c.department].filter(Boolean).join(' · ') || 'No title recorded'}
@@ -180,7 +180,7 @@
     <!--
       An "Attached" panel listing this account's invoices and tickets used to
       sit here. Both are real models, but neither is on the opportunity
-      response — filling it means two more cross-module requests per page load
+      response. Filling it means two more cross-module requests per page load
       for a rail nobody asked for. Add it back deliberately if it earns them.
     -->
   </aside>

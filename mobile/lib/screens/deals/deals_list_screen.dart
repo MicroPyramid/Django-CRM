@@ -40,16 +40,16 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   bool _isLoadingMore = false;
   int? _lastLoadMoreOffset;
 
-  // Bulk select state — populated when the user long-presses a card.
+  // Bulk select state, populated when the user long-presses a card.
   final Set<String> _selectedIds = {};
 
   // Kanban stage pager state.
   int _currentKanbanStage = 0;
 
-  // Search debounce — server-side query fires once typing pauses.
+  // Search debounce, server-side query fires once typing pauses.
   Timer? _searchDebounce;
 
-  // Active pipeline stages (excluding closed-lost for Kanban) — closed_won
+  // Active pipeline stages (excluding closed-lost for Kanban); closed_won
   // sits at the end so reps see the wins.
   static const List<DealStage> _kanbanStages = [
     DealStage.prospecting,
@@ -82,7 +82,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
         );
       }
     });
-    // When restoring Kanban, ensure we have all pages — pagination on the
+    // When restoring Kanban, ensure we have all pages. Pagination on the
     // horizontal scroll alone won't backfill a column the user hasn't seen.
     if (_viewMode == ViewMode.kanban) {
       // Defer until after the first frame so the loading indicator covers it.
@@ -193,7 +193,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   Future<void> _handleDealMoved(Deal deal, DealStage newStage) async {
     if (deal.stage == newStage) return;
 
-    // Closed stages are destructive — confirm before firing.
+    // Closed stages are destructive. Confirm before firing.
     if (newStage == DealStage.closedWon || newStage == DealStage.closedLost) {
       final confirmed = await _confirmCloseStage(deal, newStage);
       if (!confirmed) return;
@@ -215,7 +215,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
     }
 
     // Picking a card up selects it (KanbanColumn's onDragStarted), so drop the
-    // selection once the move lands — otherwise the selection app bar is left
+    // selection once the move lands. Otherwise the selection app bar is left
     // stranded over a board the user has already finished editing. Mirrors
     // _bulkChangeStage, which also clears once the stage change completes.
     _clearSelection();
@@ -276,7 +276,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   }
 
   // ---------------------------------------------------------------------
-  // Search wiring — debounce input, then drive provider's filters server-side.
+  // Search wiring, debounce input, then drive provider's filters server-side.
   // ---------------------------------------------------------------------
 
   void _onSearchChanged(String value) {
@@ -402,7 +402,7 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
   @override
   Widget build(BuildContext context) {
     // Read provider state ONCE per build to avoid re-watching from multiple
-    // getters — the previous _filteredDeals getter watched on every call.
+    // getters, the previous _filteredDeals getter watched on every call.
     final allDeals = ref.watch(dealsListProvider);
     final dealsByStage = _groupByStage(allDeals);
 

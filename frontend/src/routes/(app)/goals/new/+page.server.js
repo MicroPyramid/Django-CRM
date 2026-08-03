@@ -7,7 +7,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  *
  * Admin-only. The load returns `can_edit: false` for a non-admin so the page can
  * render an "admins only" state instead of a form, and the create action is
- * gated again by the backend — `POST /api/opportunities/goals/` 403s a non-admin
+ * gated again by the backend, `POST /api/opportunities/goals/` 403s a non-admin
  * regardless of what reaches it.
  *
  * @type {import('./$types').PageServerLoad}
@@ -24,7 +24,7 @@ export const actions = {
     /** @type {Record<string, any>} */
     const values = {};
     // Text and select fields, plus the single `target` picker that stands in
-    // for assigned_to/team. is_active is omitted on create — a new goal is
+    // for assigned_to/team. is_active is omitted on create. A new goal is
     // active (the model default), so there is nothing to choose yet.
     for (const field of [...EDITABLE_FIELDS, 'target']) {
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
