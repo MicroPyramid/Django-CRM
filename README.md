@@ -67,7 +67,7 @@ login, loading demo data, and what each service does.
 
 The full documentation (setup, self-hosting, architecture, the REST API, and contributing) is
 built from this repository's [`docs/`](docs/) with MkDocs Material and publishes to Read the Docs
-at <https://bottlecrm.readthedocs.io/>. Four starting points:
+at <https://django-crm.readthedocs.io/en/latest/>. Four starting points:
 
 - **[Getting started](docs/getting-started/docker-quick-start.md)**: Docker and manual setup, first sign-in, demo data.
 - **[Self-hosting](docs/self-hosting/requirements.md)**: requirements, production deployment, PostgreSQL and Row-Level Security, backups, security hardening.
