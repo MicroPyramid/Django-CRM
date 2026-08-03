@@ -29,8 +29,10 @@ your data.
   self-hosted CRM alternative to Salesforce, HubSpot and Pipedrive.
 - **Multi-tenant by design**: PostgreSQL Row-Level Security enforces tenant isolation in the
   database, not just in application code. Run it for a single company or as a SaaS for many.
-- **AI agents built in (MCP)**: connect Claude, Cursor, Codex, Gemini or any MCP client and let
-  it search, create and update records *as you*, inheriting your role, org and permissions.
+- **Agent-ready REST API**: point Claude, Cursor, Codex, Gemini or any agent at the API with a
+  personal access token and let it search, create and update records *as you*, inheriting your
+  role, org and permissions. An OpenAPI schema ships with it, so the agent can discover the
+  endpoints itself.
 - **Web, native mobile and API**: one Django REST backend behind a Svelte 5 web app and a
   Flutter app for iOS and Android.
 - **A stack you can actually hack on**: Django 6 / DRF and Svelte 5, not a bespoke in-house
@@ -47,7 +49,7 @@ your data.
 | **Data ownership** | Total. It is your database | Vendor-controlled | Total |
 | **Multi-tenancy** | Database-level RLS | Not applicable | Uncommon |
 | **Native mobile app** | Yes, Flutter, iOS + Android | Yes | Uncommon |
-| **AI agent access** | Built-in MCP server | Proprietary add-ons | Uncommon |
+| **AI agent access** | Full REST API, per-user tokens | Proprietary add-ons | Uncommon |
 | **Stack** | Django REST + SvelteKit | Closed source | Varies |
 | **License** | MIT | Proprietary | Varies, often GPL/AGPL |
 

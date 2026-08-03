@@ -143,7 +143,7 @@ one transaction for the same reason the refresh endpoint's does.
 ## Personal access tokens
 
 Personal access tokens (`bcrm_pat_…`, `PersonalAccessToken` in `backend/common/models.py`) are
-for agents and scripts, the MCP server integration in particular, that need to authenticate as a
+for agents and scripts that need to authenticate as a
 specific user without going through the JWT/OAuth flow on every call. A token is generated once
 (`PersonalAccessToken.generate(profile, name, ...)`), shown to the caller exactly once, and stored
 only as a SHA-256 hash (`token_hash`); the plaintext is not recoverable from the database

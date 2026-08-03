@@ -5,7 +5,7 @@ replies onto the same case automatically. This is the **only** webhook in the pr
 in one direction only: BottleCRM *receives* mail through it. Nothing in this codebase posts a
 webhook out to a URL you configure. There is no equivalent "notify my system when a case closes"
 hook. If you need BottleCRM to push events elsewhere, you're integrating through the
-[MCP server](mcp-server.md) or polling the REST API; nothing here does that for you.
+[REST API](../api/conventions.md) by polling; nothing here does that for you.
 
 ## How inbound email becomes a ticket
 

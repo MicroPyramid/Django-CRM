@@ -39,12 +39,10 @@ itself, so they aren't in the table below:
   own. See [Production deployment](../self-hosting/production-deploy.md#required-settings) and
   [Security hardening](../self-hosting/security-hardening.md#secrets) for what `ENV_TYPE=prod`
   actually requires and why it shouldn't be set casually.
-- **`BCRM_MCP_ENABLED`** and **`BCRM_BASE_URL`** are two different knobs, both read in
-  `backend/crm/asgi.py`, not `crm/settings.py`. Only `BCRM_MCP_ENABLED` (default `"true"`) gates
-  whether the optional MCP server is mounted at `/mcp` at all, anything in `0`/`false`/`no`/`off`
-  disables it, anything else (including unset) leaves it enabled. `BCRM_BASE_URL` (default
-  `http://127.0.0.1:8000`) has no bearing on whether the mount happens; it's the REST API root the
-  mounted MCP tools call once it's live. See [MCP server](../integrations/mcp-server.md) for both.
+- **`BCRM_MCP_ENABLED`** and **`BCRM_BASE_URL`** are no longer read anywhere. They gated the
+  MCP server that used to be mounted at `/mcp`, which has been removed in favour of the REST API.
+  Both are safe to delete from an existing deployment's environment. See
+  [AI agents](../integrations/ai-agents.md) for how an agent connects now.
 
 ## Reference
 

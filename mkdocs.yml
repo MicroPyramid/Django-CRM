@@ -89,7 +89,7 @@ nav:
       - Invoices and estimates: api/invoices.md
       - Endpoint index: api/endpoint-index.md
   - Integrations:
-      - MCP server: integrations/mcp-server.md
+      - AI agents: integrations/ai-agents.md
       - Inbound email: integrations/inbound-email.md
       - CSV import: integrations/csv-import.md
       - Python sample: integrations/python-sample.md

@@ -1,4 +1,8 @@
-"""Personal Access Token CRUD for the BottleCRM MCP server.
+"""Personal Access Token CRUD for programmatic REST API access.
+
+Tokens authenticate scripts, integrations and AI agents against the API under
+``/api/`` with an ``Authorization: Bearer bcrm_pat_...`` header. A token acts
+AS its owning profile and inherits that user's role, org and RLS scope.
 
 A user manages ONLY their own tokens. Both list and revoke are filtered by
 ``org=request.profile.org`` AND ``profile=request.profile`` so another user's
@@ -33,7 +37,7 @@ from common.serializer import (
 class PersonalAccessTokenListCreateView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["MCP / Tokens"], operation_id="pat_list")
+    @extend_schema(tags=["API Tokens"], operation_id="pat_list")
     def get(self, request):
         qs = PersonalAccessToken.objects.filter(
             org=request.profile.org, profile=request.profile
@@ -47,7 +51,7 @@ class PersonalAccessTokenListCreateView(APIView):
         )
 
     @extend_schema(
-        tags=["MCP / Tokens"],
+        tags=["API Tokens"],
         operation_id="pat_create",
         request=PersonalAccessTokenCreateSerializer,
     )
@@ -72,7 +76,7 @@ class PersonalAccessTokenListCreateView(APIView):
 class PersonalAccessTokenDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    @extend_schema(tags=["MCP / Tokens"], operation_id="pat_revoke")
+    @extend_schema(tags=["API Tokens"], operation_id="pat_revoke")
     def delete(self, request, pk):
         pat = get_object_or_404(
             PersonalAccessToken,
@@ -112,7 +116,7 @@ class OrgAccessTokenListView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext, IsOrgAdmin)
 
-    @extend_schema(tags=["MCP / Tokens"], operation_id="org_pat_list")
+    @extend_schema(tags=["API Tokens"], operation_id="org_pat_list")
     def get(self, request):
         now = timezone.now()
         qs = (
@@ -164,7 +168,7 @@ class OrgAccessTokenDetailView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext, IsOrgAdmin)
 
-    @extend_schema(tags=["MCP / Tokens"], operation_id="org_pat_revoke")
+    @extend_schema(tags=["API Tokens"], operation_id="org_pat_revoke")
     def delete(self, request, pk):
         pat = get_object_or_404(
             PersonalAccessToken, pk=pk, org=request.profile.org

@@ -73,7 +73,7 @@
         {
           href: '/settings/api-tokens',
           title: 'API tokens',
-          body: 'Personal access tokens for scripts, integrations and MCP clients.',
+          body: 'Personal access tokens for scripts, integrations and AI agents.',
           value: data.tokenTotals ? `${data.tokenTotals.live} live` : null,
           warn: data.tokenTotals
             ? data.tokenTotals.orphaned > 0 || data.tokenTotals.unused_90d > 0

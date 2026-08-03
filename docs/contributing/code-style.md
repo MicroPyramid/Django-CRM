@@ -23,7 +23,7 @@ that it forgot to.
 
 **But read this before running anything:** as of this writing, none of `black`, `isort`, or `ruff`
 is declared as a dependency anywhere in `backend/pyproject.toml`, not in `[project.dependencies]`,
-not in the `dev` or `docs` groups under `[dependency-groups]`, not in the `mcp` extra, and not
+not in the `dev` or `docs` groups under `[dependency-groups]`, and not
 pulled in transitively (`backend/uv.lock` has no entry for any of the three). `uv sync` on a fresh
 clone will not install any of them, and `uv run black .` fails on a fresh clone with `error: Failed
 to spawn: 'black' / Caused by: No such file or directory`. The same is true of `isort` and `ruff`.

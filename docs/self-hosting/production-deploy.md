@@ -46,11 +46,10 @@ carries this docstring:
 
 The reason given is the in-app notifications SSE (server-sent events) stream: it's an async view
 serving a long-lived connection, and running it under WSGI (Gunicorn) "will hold a worker
-hostage" for the life of each connection. `crm/asgi.py` also optionally mounts the BottleCRM MCP
-server at `/mcp` when the `mcp` extra is installed and `BCRM_MCP_ENABLED` isn't set to a falsy
-value. `uvicorn[standard]>=0.51.0` is a listed dependency alongside Gunicorn for exactly this
-path. In short: if you need the SSE notification stream (or the MCP mount) to work correctly
-under concurrent load, serve via `uvicorn crm.asgi:application`, not Gunicorn/WSGI; if you don't,
+hostage" for the life of each connection. `uvicorn[standard]>=0.51.0` is a listed dependency
+alongside Gunicorn for exactly this path. In short: if you need the SSE notification stream to
+work correctly under concurrent load, serve via `uvicorn crm.asgi:application`, not
+Gunicorn/WSGI; if you don't,
 Gunicorn against `crm.wsgi:application` is what this project bundles as its production WSGI
 dependency.
 

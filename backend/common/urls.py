@@ -101,7 +101,7 @@ urlpatterns = [
     ),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
-    # Personal Access Tokens (MCP server), a user manages ONLY their own
+    # Personal Access Tokens (REST API), a user manages ONLY their own
     path(
         "profile/tokens/",
         PersonalAccessTokenListCreateView.as_view(),

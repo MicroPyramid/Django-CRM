@@ -74,7 +74,7 @@ query the actual resource. See
 ### Personal access token
 
 `bcrm_pat_…` (`PersonalAccessToken`, `backend/common/models.py`): a token a signed-in user creates
-for themselves (`POST /api/profile/tokens/`) to authenticate scripts, the MCP server, or other
+for themselves (`POST /api/profile/tokens/`) to authenticate scripts, AI agents, or other
 programmatic access without a browser session. It authenticates as the profile that created it and
 inherits that profile's role and org in full; its `scopes` field is stored but not enforced.
 Deactivating the owning profile invalidates the token immediately; `resolve_valid_pat` checks

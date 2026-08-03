@@ -72,15 +72,6 @@ dependencies = [
     "uvicorn[standard]>=0.51.0",
 ]
 
-[project.optional-dependencies]
-# Hosted MCP server, mounted at /mcp by crm.asgi (opt-in: install with
-# `uv sync --extra mcp`). Pulls in fastmcp + starlette. The core app does not
-# depend on it, so the default install stays lean.
-mcp = ["bcrm-mcp"]
-
-[tool.uv.sources]
-bcrm-mcp = { path = "../mcp_server", editable = true }
-
 [project.urls]
 Homepage = "https://github.com/django-crm/Django-CRM"
 Repository = "https://github.com/django-crm/Django-CRM"
