@@ -210,3 +210,69 @@ class TestDelete(NotificationAPIBase):
         r = self.client.delete(f"/api/notifications/{n.id}/")
         assert r.status_code == 404
         assert Notification.objects.filter(pk=n.id).exists()
+
+
+class TestPollingRoundTrip(NotificationAPIBase):
+    """The exact loop `notifications.svelte.js` runs, now that SSE is gone.
+
+    The client keeps a high-water mark: the newest `created_at` it has
+    ingested, replayed as `?since=`. Two properties have to hold or the bell
+    either misses notifications or re-toasts the same one forever.
+    """
+
+    def _poll(self, since=None):
+        qs = {"limit": "20"}
+        if since:
+            qs["since"] = since
+        return self.client.get("/api/notifications/?" + urlencode(qs)).json()
+
+    def test_high_water_mark_does_not_replay_or_skip(self):
+        first = Notification.objects.create(
+            org=self.org_a, recipient=self.profile_a, verb="first"
+        )
+
+        initial = self._poll()
+        assert [r["verb"] for r in initial["results"]] == ["first"]
+        mark = initial["results"][0]["created_at"]
+
+        # 1. Replaying the mark must be empty, not the same row again. The
+        #    filter is `created_at__gt`, strictly greater, so the boundary row
+        #    is excluded. With `gte` the client re-toasts it every poll.
+        assert self._poll(mark)["results"] == [], (
+            "the boundary row came back: the client would re-toast it on "
+            "every single poll"
+        )
+
+        # 2. A newer row must arrive, without dragging the older one back.
+        Notification.objects.filter(pk=first.pk).update(
+            created_at=timezone.now() - timedelta(minutes=5)
+        )
+        Notification.objects.create(
+            org=self.org_a, recipient=self.profile_a, verb="second"
+        )
+        after = self._poll(mark)
+        assert [r["verb"] for r in after["results"]] == ["second"]
+
+        # And the new mark still terminates.
+        assert self._poll(after["results"][0]["created_at"])["results"] == []
+
+    def test_poll_reports_global_unread_not_the_since_window(self):
+        """The client refreshes the badge straight from the poll response.
+
+        If `unread_count` were scoped to the `since` window it would read 0 on
+        every quiet poll and the badge would clear itself while unread
+        notifications were still sitting there.
+        """
+        for verb in ("one", "two", "three"):
+            Notification.objects.create(
+                org=self.org_a, recipient=self.profile_a, verb=verb
+            )
+        mark = self._poll()["results"][0]["created_at"]
+
+        quiet = self._poll(mark)
+        assert quiet["results"] == []
+        assert quiet["count"] == 0, "count is since-scoped, as documented"
+        assert quiet["unread_count"] == 3, (
+            "unread_count must stay global or the bell badge zeroes itself "
+            "on the first quiet poll"
+        )

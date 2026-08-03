@@ -4,7 +4,6 @@ API-level coverage lives in `test_notification_api.py` once that lands.
 """
 
 from datetime import timedelta
-from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -112,68 +111,58 @@ class TestNotificationModel(NotificationModelBase):
 
 
 class TestDispatcher(NotificationModelBase):
-    def test_create_writes_row_and_publishes(self):
-        with patch("common.notifications._publish") as pub:
-            n = notifications.create(
-                self.profile_a,
-                "case.commented",
-                actor=self.actor_profile,
-                link="/cases/123",
-                data={"comment_excerpt": "hello"},
-            )
+    def test_create_writes_the_row(self):
+        n = notifications.create(
+            self.profile_a,
+            "case.commented",
+            actor=self.actor_profile,
+            link="/cases/123",
+            data={"comment_excerpt": "hello"},
+        )
         assert n is not None
         assert n.org_id == self.org_a.id
         assert n.recipient_id == self.profile_a.id
         assert n.actor_id == self.actor_profile.id
         assert n.link == "/cases/123"
         assert n.data == {"comment_excerpt": "hello"}
-        pub.assert_called_once()
-        channel, payload = pub.call_args[0]
-        assert channel == f"notif:{self.org_a.id}:{self.profile_a.id}"
-        assert payload == str(n.id)
 
     def test_create_skips_inactive_recipient(self):
         self.profile_a.is_active = False
         self.profile_a.save()
-        with patch("common.notifications._publish") as pub:
-            n = notifications.create(self.profile_a, "case.commented")
+        n = notifications.create(self.profile_a, "case.commented")
         assert n is None
-        pub.assert_not_called()
         assert not Notification.objects.filter(recipient=self.profile_a).exists()
 
     def test_create_with_entity_denormalizes_type_id_name(self):
         account = Account.objects.create(name="Acme Corp", org=self.org_a)
-        with patch("common.notifications._publish"):
-            n = notifications.create(
-                self.profile_a,
-                "account.assigned",
-                entity=account,
-            )
+        n = notifications.create(
+            self.profile_a,
+            "account.assigned",
+            entity=account,
+        )
         assert n.entity_type == "Account"
         assert n.entity_id == account.pk
         assert n.entity_name == "Acme Corp"
 
     def test_create_entity_name_override(self):
         account = Account.objects.create(name="Acme Corp", org=self.org_a)
-        with patch("common.notifications._publish"):
-            n = notifications.create(
-                self.profile_a,
-                "account.assigned",
-                entity=account,
-                entity_name="Custom Label",
-            )
+        n = notifications.create(
+            self.profile_a,
+            "account.assigned",
+            entity=account,
+            entity_name="Custom Label",
+        )
         assert n.entity_name == "Custom Label"
 
-    def test_create_does_not_raise_when_redis_publish_fails(self):
-        # Simulate redis being totally broken.
-        with patch("common.notifications._get_redis") as gr:
-            gr.return_value = type(
-                "_BrokenClient",
-                (),
-                {"publish": lambda self, *a, **kw: (_ for _ in ()).throw(RuntimeError("boom"))},
-            )()
-            # Should NOT raise. Publish is best-effort.
-            n = notifications.create(self.profile_a, "case.commented")
+    def test_create_needs_no_broker(self):
+        """The row IS the delivery mechanism.
+
+        `create()` used to publish on Redis for the SSE stream to fan out.
+        That stream is gone, so notification delivery must not depend on a
+        broker being reachable at all: clients pick the row up on their next
+        `?since=` poll. Nothing is patched here on purpose.
+        """
+        n = notifications.create(self.profile_a, "case.commented")
         assert n is not None
         assert Notification.objects.filter(pk=n.pk).exists()
 

@@ -45,12 +45,16 @@ class SetOrgContext:
         # Set org context before processing request
         self._set_org_context(request)
 
-        response = self.get_response(request)
-
-        # Reset context after request
-        self._reset_org_context()
-
-        return response
+        # The reset MUST run even when the view raises. `app.current_org` is
+        # set at SESSION scope, so it outlives the statement and the
+        # transaction; it is cleared only because we clear it. Without the
+        # finally, an exception anywhere downstream hands the connection back
+        # still carrying this tenant's org id, and the next request to reuse
+        # that connection inherits it. That is a cross-tenant read.
+        try:
+            return self.get_response(request)
+        finally:
+            self._reset_org_context()
 
     def _set_org_context(self, request):
         """
@@ -188,12 +192,14 @@ class RequireOrgContext:
         # Set org context
         self._set_org_context(request)
 
-        response = self.get_response(request)
-
-        # Reset context
-        self._reset_org_context()
-
-        return response
+        # See SetOrgContext.__call__: the reset is in a finally because
+        # `app.current_org` is SESSION-scoped and survives an exception. On a
+        # pooled or otherwise reused connection, skipping it leaks this
+        # tenant's context to whoever borrows the connection next.
+        try:
+            return self.get_response(request)
+        finally:
+            self._reset_org_context()
 
     def _is_exempt(self, path):
         """Check if path is exempt from org context requirement."""

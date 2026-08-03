@@ -160,7 +160,6 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/macros/{id}/render/` | POST |
 | `/api/notifications/` | GET |
 | `/api/notifications/read-all/` | POST |
-| `/api/notifications/stream/` | GET |
 | `/api/notifications/{id}/` | DELETE |
 | `/api/notifications/{id}/read/` | POST |
 | `/api/opportunities/` | GET, POST |

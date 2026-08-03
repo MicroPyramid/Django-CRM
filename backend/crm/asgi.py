@@ -1,15 +1,20 @@
 """ASGI entrypoint for Django-CRM.
 
-Mirror of `wsgi.py` for ASGI servers (uvicorn, hypercorn, daphne). Required
-for the in-app notifications SSE stream. Async views serving long-lived
-connections will hold a worker hostage when run under WSGI.
+Mirror of `wsgi.py` for ASGI servers (uvicorn, hypercorn, daphne). Kept so
+existing ASGI deployments keep working, but **nothing in this project requires
+it any more**. It existed for the in-app notifications SSE stream, which was
+the only async view here; that was replaced by polling on 2026-08-03.
 
-Production deploy must run an ASGI server pointing at this module:
+Prefer WSGI in production:
 
-    uvicorn crm.asgi:application --host 0.0.0.0 --port 8000
+    gunicorn crm.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 4
 
-`runserver` uses WSGI, so dev workflows for the Django app itself are
-unchanged.
+Not merely for simplicity. Under ASGI each in-flight request gets its own
+thread-sensitive executor and its own thread-local database connection, with
+no ceiling, which is what exhausted PostgreSQL twice in this project's
+history. Under WSGI the ceiling is `workers x threads`, a number you choose.
+If you do serve this module, enable pooling (`DB_POOL_ENABLED=true`, see
+crm/settings.py) so the connection count is bounded some other way.
 
 Agents and scripts reach the CRM through the REST API under `/api/`,
 authenticated with a personal access token (`Authorization: Bearer

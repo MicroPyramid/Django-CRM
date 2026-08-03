@@ -8,12 +8,12 @@
   let open = $state(false);
 
   $effect(() => {
-    notifications.startStream();
-    return () => notifications.stopStream();
+    notifications.start();
+    return () => notifications.stop();
   });
 
-  // Refresh on first open in case the stream missed any messages while
-  // we were initialising.
+  // Opening the panel is an explicit "show me now", so don't make the user
+  // wait out the poll interval.
   $effect(() => {
     if (open) notifications.fetch();
   });

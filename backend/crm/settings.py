@@ -94,6 +94,29 @@ WSGI_APPLICATION = "crm.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
+# Connection pooling (psycopg 3 + psycopg_pool, wired by Django's postgresql
+# backend). Off by default so an existing deployment does not silently change
+# its connection behaviour on upgrade; set DB_POOL_ENABLED=true to turn it on.
+#
+# Two things make this more than a performance knob here:
+#
+# 1. Every ASGI request gets its own thread-sensitive executor and therefore
+#    its own connection, with no ceiling. That is how two separate incidents
+#    exhausted PostgreSQL. `max_size` is the ceiling that was missing.
+# 2. RLS context lives in a SESSION-scoped GUC, so a reused connection carries
+#    the previous tenant's org id unless something clears it. `reset` below is
+#    that something, and pooling MUST NOT be enabled without it. See
+#    common/rls/pool.py for the full argument.
+#
+# Sizing: the pool is per PROCESS, not per host. Real peak connections are
+# roughly DB_POOL_MAX_SIZE x (uvicorn workers + celery prefork children), and
+# docker-compose.yml runs `celery -A crm worker` with no --concurrency, so each
+# worker forks one child per CPU. Multiply before comparing to PostgreSQL's
+# max_connections (default 100).
+DB_POOL_ENABLED = os.environ.get("DB_POOL_ENABLED", "False").lower() == "true"
+DB_POOL_MIN_SIZE = int(os.environ.get("DB_POOL_MIN_SIZE", "2"))
+DB_POOL_MAX_SIZE = int(os.environ.get("DB_POOL_MAX_SIZE", "10"))
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -102,8 +125,28 @@ DATABASES = {
         "PASSWORD": os.environ.get("DBPASSWORD", "postgres"),
         "HOST": os.environ.get("DBHOST", "localhost"),
         "PORT": os.environ.get("DBPORT", "5432"),
+        # Django raises ImproperlyConfigured if this is non-zero alongside a
+        # pool ("Pooling doesn't support persistent connections"). Keep it 0.
+        "CONN_MAX_AGE": 0,
+        "CONN_HEALTH_CHECKS": DB_POOL_ENABLED,
     }
 }
+
+if DB_POOL_ENABLED:
+    # Imported lazily and locally: common/rls/pool.py deliberately imports no
+    # Django, but keeping the import inside the branch means a non-pooled
+    # deployment never touches it at all.
+    from common.rls.pool import reset_rls_context
+
+    DATABASES["default"]["OPTIONS"] = {
+        "pool": {
+            "min_size": DB_POOL_MIN_SIZE,
+            "max_size": DB_POOL_MAX_SIZE,
+            # Load-bearing for tenant isolation, not a tidy-up. Removing this
+            # key turns pooling into a cross-tenant data leak.
+            "reset": reset_rls_context,
+        }
+    }
 
 
 # Password validation
