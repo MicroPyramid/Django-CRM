@@ -42,8 +42,11 @@
     <span class="v2-num">{totals.unworked_over_a_week}</span> unworked for more than a week
   {/snippet}
   {#snippet actions()}
+    <!-- Import stays unwired: /api/leads/import/ does not exist yet. Contacts
+         and cases both have import/preview/ and import/commit/; leads does not.
+         Tracked in the phase 2 plan. -->
     <button class="v2-btn"><Upload />Import</button>
-    <button class="v2-btn v2-btn-primary"><Plus />New {singular}</button>
+    <a class="v2-btn v2-btn-primary" href="/leads/new"><Plus />New {singular}</a>
   {/snippet}
 </PageHeader>
 
@@ -57,7 +60,7 @@
     >
       {#snippet icon()}<Target size={21} />{/snippet}
       {#snippet actions()}
-        <button class="v2-btn v2-btn-primary">New {singular}</button>
+        <a class="v2-btn v2-btn-primary" href="/leads/new">New {singular}</a>
         <button class="v2-btn">Import</button>
       {/snippet}
     </EmptyState>

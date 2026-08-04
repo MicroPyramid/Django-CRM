@@ -14,22 +14,95 @@
    *    unconditional, stop-processing rule appears, everything below it is
    *    dead, and "matched 0 times" on its own looks like a quiet month.
    */
+  import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { count } from '$lib/v2/format.js';
   import {
     ROUTING_STRATEGY_LABEL,
+    ROUTING_STRATEGY_NAME,
     CONDITION_FIELD_LABEL,
     CONDITION_OP_LABEL
   } from '$lib/v2/enums.js';
+  import { missingOptions, inactiveOptionLabel } from '$lib/v2/pickers.js';
   import { Plus, GripVertical, TriangleAlert, UserX } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
+
+  // `null` when the panel is closed, `'new'` when adding, or the rule object
+  // when editing that row. One panel, two modes, so two rows can never be
+  // open for edit at once.
+  let editing = $state(/** @type {any} */ (null));
+
+  // The strategy currently selected in the form, so the target picker below
+  // it (team vs. people) can switch without a round trip. Seeded from the
+  // rule being edited.
+  let strategy = $state('direct');
+
+  // The repeating condition rows being edited, as `{ field, op, value }`.
+  // Held here, rather than read off `editing`, so a row can be added or
+  // removed before submitting.
+  let conditionRows = $state(
+    /** @type {{ field: string, op: string, value: string }[]} */ ([])
+  );
+
+  function openCreate() {
+    editing = 'new';
+    strategy = 'direct';
+    conditionRows = [];
+  }
+
+  function openEdit(r) {
+    editing = r;
+    strategy = r.strategy;
+    // Joining an array value into a comma-separated string is the right
+    // editing representation for a single text input, and it round-trips: on
+    // save, `routing.js`'s `cleanConditions` splits an `in` row's value back
+    // on commas. That round trip is lossless for any value made up of
+    // entries with no comma in them, which is the whole reason this editor
+    // can stay one text input instead of its own repeating sub-list. Known
+    // limitation: a value that itself contains a literal comma cannot be
+    // expressed here, since splitting can't tell that comma apart from a
+    // separator.
+    conditionRows = r.conditions.map((c) => ({
+      field: c.field,
+      op: c.op,
+      value: Array.isArray(c.value) ? c.value.join(', ') : String(c.value ?? '')
+    }));
+  }
 
   let totals = $derived(data.totals);
+
+  // Targets the picker cannot offer, because the profile was deactivated
+  // after it was chosen. `getOrgPeopleAndTeams` only ever returns active
+  // profiles, while the rule's M2M keeps them, which is exactly what the
+  // deactivated-target flag on the card below is about. Without an option of
+  // their own the multi-select submits nothing for them, so an edit made for
+  // another reason would quietly rewrite the rotation.
+  let missingAssignees = $derived(
+    editing && editing !== 'new' ? missingOptions(data.people, editing.target_assignees) : []
+  );
+
+  /**
+   * A stored condition field the select cannot show.
+   *
+   * `custom_fields.<key>` is a first-class field everywhere else: the backend
+   * accepts it, `cleanConditions` accepts it, and `when()` below renders it.
+   * `CONDITION_FIELD_LABEL` only carries the six fixed ones, so without this
+   * the select would have no matching option, would submit nothing, and the
+   * row would be dropped or, worse, shift its neighbours.
+   */
+  function unlistedField(field) {
+    if (!field || field in CONDITION_FIELD_LABEL) return null;
+    return field.startsWith('custom_fields.')
+      ? `Custom field: ${field.slice('custom_fields.'.length)}`
+      : field;
+  }
 
   /**
    * Reachability, walked in evaluation order.
@@ -84,7 +157,9 @@
     <span class="v2-num">{count(totals.active)}</span> active rules, run in this order until one matches
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn v2-btn-primary"><Plus />New rule</button>
+    {#if data.can_edit && !editing}
+      <button class="v2-btn v2-btn-primary" onclick={openCreate}><Plus />New rule</button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -103,6 +178,231 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
+    {#if editing}
+      <SettingsFormPanel
+        title={editing === 'new' ? 'New rule' : `Edit ${editing.name}`}
+        action={editing === 'new' ? '?/create' : '?/update'}
+        error={editing === 'new' ? form?.create?.error : form?.update?.error}
+        submitLabel={editing === 'new' ? 'Add rule' : 'Save rule'}
+        oncancel={() => (editing = null)}
+        ondone={() => (editing = null)}
+      >
+        {#snippet fields()}
+          {#if editing !== 'new'}
+            <input type="hidden" name="id" value={editing.id} />
+          {/if}
+
+          <div class="v2-field">
+            <label for="r-name">Name</label>
+            <input
+              id="r-name"
+              class="v2-input"
+              name="name"
+              maxlength="128"
+              required
+              value={editing === 'new' ? '' : editing.name}
+            />
+          </div>
+
+          <div class="v2-field">
+            <label for="r-priority">Priority</label>
+            <input
+              id="r-priority"
+              class="v2-input"
+              type="number"
+              name="priority_order"
+              min="0"
+              value={editing === 'new' ? 0 : editing.priority_order}
+            />
+            <p class="v2-hint">The engine runs rules low number first and takes the first match.</p>
+          </div>
+
+          <div class="v2-field">
+            <label for="r-strategy">Then</label>
+            <select id="r-strategy" class="v2-input" name="strategy" bind:value={strategy}>
+              {#each Object.entries(ROUTING_STRATEGY_NAME) as [value, label] (value)}
+                <option {value}>{label}</option>
+              {/each}
+            </select>
+          </div>
+
+          {#if strategy === 'by_team'}
+            <div class="v2-field">
+              <label for="r-team">Team</label>
+              <select id="r-team" class="v2-input" name="target_team_id" required>
+                <option value="" disabled selected={editing === 'new' || !editing.target_team}>
+                  Choose a team
+                </option>
+                {#each data.teams as t (t.id)}
+                  <option
+                    value={t.id}
+                    selected={editing !== 'new' && editing.target_team?.id === t.id}
+                  >
+                    {t.name}
+                  </option>
+                {/each}
+              </select>
+              {#if !data.teams.length}
+                <p class="v2-hint">No teams in this org yet.</p>
+              {/if}
+            </div>
+          {:else}
+            <div class="v2-field">
+              <label for="r-people">Who</label>
+              <select
+                id="r-people"
+                class="v2-input"
+                name="target_assignee_ids"
+                multiple
+                style="height:118px"
+              >
+                <!-- A target whose profile has been deactivated is not in
+                     `data.people`, so it gets an option of its own. Dropping
+                     it would be a change to who tickets go to, made by an
+                     edit that was about something else. -->
+                {#each missingAssignees as a (a.id)}
+                  <option value={a.id} selected>{inactiveOptionLabel(a.name)}</option>
+                {/each}
+                {#each data.people as p (p.id)}
+                  <option
+                    value={p.id}
+                    selected={editing !== 'new' &&
+                      editing.target_assignees.some((a) => a.id === p.id)}
+                  >
+                    {p.name}
+                  </option>
+                {/each}
+              </select>
+              <p class="v2-hint">
+                {#if strategy === 'direct'}
+                  Direct uses only the first person selected here; the rest are ignored unless the
+                  strategy changes.
+                {:else}
+                  Round robin and least busy cycle through everyone listed here.
+                {/if}
+              </p>
+              {#if missingAssignees.length}
+                <p class="v2-hint">
+                  {missingAssignees.map((a) => a.name).join(', ')}
+                  {missingAssignees.length === 1 ? 'is' : 'are'} deactivated and still in the rotation.
+                  Deselect to take them out.
+                </p>
+              {/if}
+            </div>
+          {/if}
+
+          <div class="v2-field">
+            <label for="r-stop">Stop processing</label>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+              <input
+                id="r-stop"
+                type="checkbox"
+                name="stop_processing"
+                value="true"
+                checked={editing !== 'new' && editing.stop_processing}
+              />
+              A matching rule with this on stops the engine, so later rules never see the ticket.
+            </label>
+          </div>
+
+          {#if editing === 'new'}
+            <div class="v2-field">
+              <label for="r-active">Active</label>
+              <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+                <input id="r-active" type="checkbox" name="is_active" value="true" checked />
+                Starts matching tickets as soon as it is saved.
+              </label>
+            </div>
+          {/if}
+
+          <div class="v2-field v2-sfp-wide">
+            <label for="r-cond-0">Conditions</label>
+            <!-- One indexed name per row, not three parallel `condition_field`
+                 / `condition_op` / `condition_value` lists. A select with no
+                 matching option submits no entry at all, so parallel lists
+                 paired by position silently shifted every row after the gap.
+                 Indexed names make a row's three inputs travel together, and
+                 `readConditionRows` in `routing.js` pairs them by index. -->
+            {#each conditionRows as row, i (i)}
+              {@const unlisted = unlistedField(row.field)}
+              <div style="margin-bottom:6px">
+                <div style="display:flex;gap:7px;align-items:center">
+                  <select
+                    id={i === 0 ? 'r-cond-0' : undefined}
+                    class="v2-input"
+                    name="condition_field_{i}"
+                    bind:value={row.field}
+                  >
+                    <option value="">Choose a field</option>
+                    {#if unlisted}
+                      <!-- A stored `custom_fields.<key>` condition. The label
+                           map carries only the six fixed fields, so without
+                           this option the select would match nothing and the
+                           condition would not survive an unrelated edit. -->
+                      <option value={row.field}>{unlisted}</option>
+                    {/if}
+                    {#each Object.entries(CONDITION_FIELD_LABEL) as [value, label] (value)}
+                      <option {value}>{label}</option>
+                    {/each}
+                  </select>
+                  <select class="v2-input" name="condition_op_{i}" bind:value={row.op}>
+                    {#each Object.entries(CONDITION_OP_LABEL) as [value, label] (value)}
+                      <option {value}>{label}</option>
+                    {/each}
+                  </select>
+                  <input
+                    class="v2-input"
+                    name="condition_value_{i}"
+                    bind:value={row.value}
+                    placeholder="Value"
+                  />
+                  <button
+                    class="v2-btn v2-btn-sm"
+                    type="button"
+                    onclick={() => (conditionRows = conditionRows.filter((_, j) => j !== i))}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {#if row.op === 'in'}
+                  <!-- Only for `in`: `eq`, `contains` and `regex` all take the
+                       value as one plain string, so this hint would be wrong
+                       for them. -->
+                  <p class="v2-hint">
+                    Comma separated. Matches if any one of these values matches.
+                  </p>
+                {/if}
+              </div>
+            {/each}
+            <button
+              class="v2-btn v2-btn-sm"
+              type="button"
+              style="align-self:flex-start"
+              onclick={() => (conditionRows = [...conditionRows, { field: '', op: 'eq', value: '' }])}
+            >
+              Add a condition
+            </button>
+            {#if !conditionRows.some((row) => row.field)}
+              <p class="v2-error" style="margin-top:8px">
+                <TriangleAlert size={13} style="flex:none;margin-top:1px" />
+                <span>With no conditions this rule matches every ticket.</span>
+              </p>
+            {/if}
+          </div>
+        {/snippet}
+      </SettingsFormPanel>
+    {/if}
+
+    {#if form?.deactivate?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.deactivate.error}</p>
+    {/if}
+    {#if form?.activate?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.activate.error}</p>
+    {/if}
+    {#if form?.remove?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.remove.error}</p>
+    {/if}
+
     <div class="v2-label" style="margin-bottom:10px">In evaluation order</div>
 
     <div style="display:flex;flex-direction:column;gap:9px">
@@ -172,6 +472,35 @@
               <span class="v2-sub" style="font-size:10.5px;margin-top:4px">falls through</span>
             {/if}
           </div>
+
+          {#if data.can_edit}
+            <div class="v2-rule-actions">
+              <button class="v2-btn v2-btn-sm" type="button" onclick={() => openEdit(r)}>
+                Edit
+              </button>
+              {#if r.is_active}
+                <ConfirmAction
+                  action="?/deactivate"
+                  label="Turn off"
+                  confirmLabel="Turn off"
+                  explain="Stops matching new tickets. It stays in the list, off, until turned back on."
+                  hidden={{ id: r.id }}
+                />
+              {:else}
+                <form method="POST" action="?/activate" use:enhance>
+                  <input type="hidden" name="id" value={r.id} />
+                  <button class="v2-btn v2-btn-sm" type="submit">Turn on</button>
+                </form>
+              {/if}
+              <ConfirmAction
+                action="?/remove"
+                label="Delete"
+                confirmLabel="Delete"
+                explain="Deleted permanently. Tickets already routed by it stay where they are."
+                hidden={{ id: r.id }}
+              />
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -206,6 +535,12 @@
     align-items: flex-end;
     text-align: right;
   }
+  .v2-rule-actions {
+    flex: none;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
   .v2-rule-flag {
     display: flex;
     gap: 7px;
@@ -226,6 +561,18 @@
       flex-direction: row;
       align-items: baseline;
       gap: 5px;
+      width: 100%;
+      margin-top: 10px;
+      padding-left: 30px;
+    }
+    /* Same reflow as `.v2-rule-stat` above: a flex:none column becomes its
+       own full-width row, indented to align under the card's main content
+       rather than the grip handle. `flex-wrap` is added here (unlike the
+       stat block) because an armed `ConfirmAction` grows into a button pair
+       plus a sentence of explain text, which does not fit one line at
+       390px. */
+    .v2-rule-actions {
+      flex-wrap: wrap;
       width: 100%;
       margin-top: 10px;
       padding-left: 30px;

@@ -10,14 +10,22 @@
    *
    * Closed days and holidays are shown, not omitted. A blank row for Saturday
    * reads as missing data; "Closed" reads as a decision.
+   *
+   * "Edit hours" and "Add" open the two panels below. `data.can_edit` only
+   * decides whether those controls are offered: it is a display hint decoded
+   * from the JWT, never the authorization decision. The backend re-derives
+   * admin status from `request.profile` on every write and is what actually
+   * refuses a non-admin.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
+  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { shortDate, relativeDays } from '$lib/v2/format.js';
   import { Plus, Clock } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
   let calendar = $derived(data.calendar);
 
@@ -31,6 +39,34 @@
 
   let weekly = $derived(calendar.days.reduce((a, d) => a + hours(d), 0));
   const todayName = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(new Date());
+
+  // `null` when the panel is closed. One panel for the week, so only one
+  // edit can be in flight at a time.
+  let editingHours = $state(false);
+
+  // The week being edited, seeded from `calendar.days` when the panel opens.
+  // A day's key is its own name lower-cased ("Monday" → "monday"), the same
+  // prefix the model's fourteen flat fields use, so no separate label map is
+  // needed here. `closed` drives both the checkbox and whether the two time
+  // inputs are disabled; a closed day still carries a sensible default time
+  // so re-opening it doesn't hand back a blank field.
+  let hourRows = $state(
+    /** @type {{ day: string, key: string, open: string, close: string, closed: boolean }[]} */ ([])
+  );
+
+  function openHoursEdit() {
+    hourRows = calendar.days.map((d) => ({
+      day: d.day,
+      key: d.day.toLowerCase(),
+      open: d.open ?? '09:00',
+      close: d.close ?? '17:00',
+      closed: !d.open
+    }));
+    editingHours = true;
+  }
+
+  // `null` when the panel is closed.
+  let addingHoliday = $state(false);
 </script>
 
 <PageHeader title="Business hours">
@@ -40,7 +76,9 @@
     <span class="v2-num">{weekly}</span> hours a week
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn v2-btn-primary">Edit hours</button>
+    {#if data.can_edit && !editingHours}
+      <button class="v2-btn v2-btn-primary" onclick={openHoursEdit}>Edit hours</button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -49,6 +87,84 @@
     <div class="v2-split">
       <div>
         <div class="v2-label" style="margin-bottom:10px">Open hours</div>
+
+        {#if editingHours}
+          <SettingsFormPanel
+            title="Edit business hours"
+            action="?/updateHours"
+            error={form?.updateHours?.error}
+            submitLabel="Save hours"
+            oncancel={() => (editingHours = false)}
+            ondone={() => (editingHours = false)}
+          >
+            {#snippet fields()}
+              <div class="v2-field">
+                <label for="bh-name">Name</label>
+                <input
+                  id="bh-name"
+                  class="v2-input"
+                  name="name"
+                  maxlength="100"
+                  required
+                  value={calendar.name}
+                />
+              </div>
+
+              <div class="v2-field">
+                <label for="bh-timezone">Timezone</label>
+                <input
+                  id="bh-timezone"
+                  class="v2-input"
+                  name="timezone"
+                  maxlength="64"
+                  required
+                  value={calendar.timezone}
+                  placeholder="America/New_York"
+                />
+                <p class="v2-hint">IANA timezone name.</p>
+              </div>
+
+              <div class="v2-field v2-sfp-wide">
+                <label for="bh-day-0-open">Week</label>
+                {#each hourRows as row, i (row.key)}
+                  <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+                    <span style="width:84px;font-size:13px;flex:none">{row.day}</span>
+                    <label
+                      style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:400;flex:none"
+                    >
+                      <input
+                        type="checkbox"
+                        name="{row.key}_closed"
+                        value="true"
+                        bind:checked={row.closed}
+                      />
+                      Closed
+                    </label>
+                    <input
+                      id={i === 0 ? 'bh-day-0-open' : undefined}
+                      class="v2-input"
+                      type="time"
+                      name="{row.key}_open"
+                      bind:value={row.open}
+                      disabled={row.closed}
+                      style="width:auto"
+                    />
+                    <span class="v2-sub">to</span>
+                    <input
+                      class="v2-input"
+                      type="time"
+                      name="{row.key}_close"
+                      bind:value={row.close}
+                      disabled={row.closed}
+                      style="width:auto"
+                    />
+                  </div>
+                {/each}
+              </div>
+            {/snippet}
+          </SettingsFormPanel>
+        {/if}
+
         <div class="v2-card" style="overflow:hidden">
           {#each calendar.days as d (d.day)}
             <div class="v2-setting" style={d.day === todayName ? 'background:var(--v2-hover)' : ''}>
@@ -79,8 +195,50 @@
       <div>
         <div style="display:flex;align-items:baseline;margin-bottom:10px">
           <div class="v2-label">Holidays</div>
-          <button class="v2-btn v2-btn-sm" style="margin-left:auto"><Plus size={12} />Add</button>
+          {#if data.can_edit && !addingHoliday}
+            <button
+              class="v2-btn v2-btn-sm"
+              style="margin-left:auto"
+              onclick={() => (addingHoliday = true)}
+            >
+              <Plus size={12} />Add
+            </button>
+          {/if}
         </div>
+
+        {#if addingHoliday}
+          <SettingsFormPanel
+            title="Add holiday"
+            action="?/addHoliday"
+            error={form?.addHoliday?.error}
+            submitLabel="Add holiday"
+            oncancel={() => (addingHoliday = false)}
+            ondone={() => (addingHoliday = false)}
+          >
+            {#snippet fields()}
+              <div class="v2-field">
+                <label for="bh-holiday-date">Date</label>
+                <input id="bh-holiday-date" class="v2-input" type="date" name="date" required />
+              </div>
+              <div class="v2-field">
+                <label for="bh-holiday-name">Name</label>
+                <input
+                  id="bh-holiday-name"
+                  class="v2-input"
+                  name="name"
+                  maxlength="100"
+                  required
+                  placeholder="Christmas"
+                />
+              </div>
+            {/snippet}
+          </SettingsFormPanel>
+        {/if}
+
+        {#if form?.removeHoliday?.error}
+          <p class="v2-error" style="margin-bottom:12px">{form.removeHoliday.error}</p>
+        {/if}
+
         <div class="v2-card" style="overflow:hidden">
           {#each calendar.holidays as h (h.id)}
             <div class="v2-setting">
@@ -89,6 +247,15 @@
                 <span class="v2-sub" style="font-size:11.5px">{relativeDays(h.date)}</span>
               </div>
               <span class="v2-num" style="font-size:12.5px">{shortDate(h.date)}</span>
+              {#if data.can_edit}
+                <ConfirmAction
+                  action="?/removeHoliday"
+                  label="Remove"
+                  confirmLabel="Remove"
+                  explain="Deletes it. The day counts as working time again."
+                  hidden={{ holiday_id: h.id }}
+                />
+              {/if}
             </div>
           {:else}
             <p class="v2-sub" style="padding:14px 16px;font-size:12.5px;margin:0">
@@ -105,9 +272,16 @@
             <div style="font-weight:600;font-size:13px">What this changes</div>
             <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
               Response and resolution targets count only the time inside these hours. A ticket
-              opened at 17:20 on Friday starts its clock at
-              <span class="v2-num">{calendar.days[0].open}</span> on Monday, so the weekend does not spend
-              a four-hour target.
+              opened at 17:20 on Friday
+              {#if calendar.days[0].open}
+                starts its clock at <span class="v2-num">{calendar.days[0].open}</span> on Monday,
+              {:else}
+                <!-- Monday can be marked closed from this page now, so the
+                     fixed "Monday morning" framing can no longer assume an
+                     open time exists to quote. -->
+                starts its clock whenever the week next opens,
+              {/if}
+              so the weekend does not spend a four-hour target.
             </p>
             <p class="v2-sub" style="font-size:12px;margin:8px 0 0">
               <a href="/tickets/analytics" style="color:inherit">Service analytics</a> is measured on

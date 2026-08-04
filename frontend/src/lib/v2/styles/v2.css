@@ -1002,6 +1002,17 @@ a.v2-setting:hover {
 .v2-field {
   margin-bottom: 15px;
 }
+/* `.v2-field` carries a bottom margin for the single-column forms it was
+   written for (`/leads/new`). Inside the panel the grid's own gap does that
+   job, and both together double the spacing. */
+.v2-sfp-fields .v2-field {
+  margin-bottom: 0;
+}
+/* Opt a field out of the panel's two-column grid when it needs the whole
+   row: a textarea, a checkbox with a sentence next to it, an options list. */
+.v2-sfp-wide {
+  grid-column: 1 / -1;
+}
 .v2-field > label {
   display: block;
   font-size: 12.5px;

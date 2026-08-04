@@ -10,7 +10,7 @@ class ApiConfig {
   // ==========================================================================
 
   /// Development API URL
-  static const String _developmentUrl = 'https://msi-8000.rcdev.in';
+  static const String _developmentUrl = 'https://pc-8000.rcdev.in';
 
   /// Production API URL
   static const String _productionUrl = 'https://api.bottlecrm.io';

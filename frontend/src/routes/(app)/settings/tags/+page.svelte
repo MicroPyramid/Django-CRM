@@ -10,6 +10,7 @@
    * collide on the slug, but "Renewal" and "Renewals" slug differently while
    * meaning the same thing, and the work splits silently across them.
    */
+  import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
@@ -18,8 +19,20 @@
   import { count } from '$lib/v2/format.js';
   import { Plus, Merge, Tags as TagsIcon } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
+
+  // The "New tag" disclosure. Open while adding, closed on a successful
+  // create; a failed one stays open so the error next to the input is
+  // actually visible instead of vanishing the instant the form action
+  // returns.
+  let adding = $state(false);
+
+  // Disables the Create button while the submit is in flight, so a
+  // double-click cannot fire two creates: the second would either duplicate
+  // the tag or, for a same-named resubmit, come back as "already exists"
+  // right after the first one succeeded.
+  let busy = $state(false);
 
   let totals = $derived(data.totals);
 
@@ -62,7 +75,48 @@
     <span class="v2-num">{count(totals.active)}</span> in use across accounts, leads, deals and tickets
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn v2-btn-primary"><Plus />New tag</button>
+    {#if data.can_edit}
+      {#if adding}
+        <form
+          class="v2-tag-add-form"
+          method="POST"
+          action="?/create"
+          use:enhance={() => {
+            busy = true;
+            return async (/** @type {any} */ { result, update }) => {
+              await update();
+              busy = false;
+              // Only close on success. A failed submit (the empty-name guard, a
+              // duplicate name) has to leave the form open, or the error rendered
+              // below never gets seen: it lives inside this same `{#if adding}`
+              // block.
+              if (result.type === 'success') adding = false;
+            };
+          }}
+        >
+          {#if form?.create?.error}
+            <p class="v2-error">{form.create.error}</p>
+          {/if}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            class="v2-input"
+            name="name"
+            placeholder="Tag name"
+            required
+            autofocus
+            disabled={busy}
+          />
+          <button class="v2-btn v2-btn-primary" type="submit" disabled={busy}>Create</button>
+          <button class="v2-btn" type="button" disabled={busy} onclick={() => (adding = false)}>
+            Cancel
+          </button>
+        </form>
+      {:else}
+        <button class="v2-btn v2-btn-primary" onclick={() => (adding = true)}
+          ><Plus />New tag</button
+        >
+      {/if}
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -93,6 +147,8 @@
             one of them misses the other.
           </p>
         </div>
+        <!-- Merge stays unwired: /api/tags/<id>/merge/ does not resolve, there
+             is no backing endpoint yet. Tracked in the phase 2 plan. -->
         <button class="v2-btn v2-btn-sm" style="flex:none;align-self:center">Merge</button>
       </div>
     {/each}
@@ -169,5 +225,50 @@
     border: 1px solid var(--v2-line);
     border-radius: var(--v2-radius);
     background: var(--v2-card);
+  }
+
+  /* The inline "New tag" disclosure lives in the page header's actions row
+     (a flex container), alongside the plain Create/Cancel buttons, so it has
+     to lay out as a single line rather than stack like a full-page form. */
+  .v2-tag-add-form {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    position: relative;
+  }
+  .v2-tag-add-form .v2-input {
+    width: 200px;
+  }
+  /* The error sits above the input per the leads/new convention, but there is
+     no room to grow the header's height for it, so it floats instead of
+     pushing the row down. `right: 0` plus `white-space: normal` (rather than
+     the `nowrap` a one-line floating label would default to) let it wrap
+     within the row's own width instead of running off narrow viewports; a
+     duplicate-name rejection ("A tag with this name already exists.") is
+     long enough to hit this in practice. */
+  .v2-tag-add-form .v2-error {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    margin: 0 0 4px;
+    white-space: normal;
+  }
+  /* Below 768px `.v2-header .v2-actions` goes full width (v2.css), but this
+     form's own children do not: a 200px input plus two buttons is wider than
+     a phone screen, and a flex item does not shrink past its content's fixed
+     width on its own. Confirmed by emulating a 320px viewport: the row
+     overflowed and clipped "Cancel" before this rule existed. Wrapping the
+     input onto its own full-width line, with the buttons below it, keeps
+     everything on screen and touchable instead of cut off. */
+  @media (max-width: 768px) {
+    .v2-tag-add-form {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .v2-tag-add-form .v2-input {
+      width: 100%;
+      flex: 1 1 100%;
+    }
   }
 </style>
