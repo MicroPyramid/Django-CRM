@@ -6,7 +6,6 @@ Run with: pytest common/tests/test_users.py -v
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import Address, Profile
 
@@ -23,8 +22,16 @@ class TestUsersListView:
         assert "active_users" in response.data
 
     def test_list_users_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        """The request is refused, and refused as a response, not an exception.
+
+        DRF catches ``PermissionDenied`` in ``handle_exception`` and renders it,
+        so a test client never sees it raised. Wrapping the call in
+        ``pytest.raises`` therefore failed with DID NOT RAISE no matter how the
+        endpoint behaved, which meant this test could never have caught the
+        access opening up.
+        """
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_list_users_no_cross_org_leak(
         self, org_b_client, admin_user, admin_profile

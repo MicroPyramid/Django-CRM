@@ -36,6 +36,7 @@ from cases.serializer import (
 )
 from common.models import Profile
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 
 
 def _is_admin(profile):
@@ -257,7 +258,7 @@ class UnbilledEntriesView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get(self, request):
-        account_id = request.query_params.get("account")
+        account_id = uuid_param(request.query_params, "account")
         qs = (
             _visible_entry_qs(request.profile)
             .filter(billable=True, invoice__isnull=True, ended_at__isnull=False)
@@ -279,7 +280,7 @@ class TimesheetView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get(self, request):
-        profile_param = request.query_params.get("profile")
+        profile_param = uuid_param(request.query_params, "profile")
         target_profile_id = request.profile.id
         if profile_param and profile_param != str(request.profile.id):
             if not _is_admin(request.profile):

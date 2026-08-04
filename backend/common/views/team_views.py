@@ -14,6 +14,7 @@ from common.serializer import (
     TeamswaggerCreateSerializer,
 )
 from common.tasks import remove_users, update_team_users
+from common.validators import uuid_list_param, uuid_param
 
 
 class TeamsListView(APIView, LimitOffsetPagination):
@@ -28,10 +29,15 @@ class TeamsListView(APIView, LimitOffsetPagination):
         if params:
             if params.get("team_name"):
                 queryset = queryset.filter(name__icontains=params.get("team_name"))
-            if params.get("created_by"):
-                queryset = queryset.filter(created_by=params.get("created_by"))
-            if params.get("assigned_users"):
-                queryset = queryset.filter(users__id__in=params.get("assigned_users"))
+            created_by = uuid_param(params, "created_by")
+            if created_by:
+                queryset = queryset.filter(created_by=created_by)
+            # `get` rather than `getlist` handed `__in` a single string, which
+            # Django iterates character by character, so this filter matched
+            # nothing and said nothing about why.
+            assigned_users = uuid_list_param(params, "assigned_users")
+            if assigned_users:
+                queryset = queryset.filter(users__id__in=assigned_users)
 
         context = {}
         results_teams = self.paginate_queryset(

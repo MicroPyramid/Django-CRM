@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -121,25 +122,21 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         if params.get("status"):
             queryset = queryset.filter(status=params.get("status"))
 
-        # Filter by account
-        if params.get("account"):
-            queryset = queryset.filter(account_id=params.get("account"))
-
-        # Filter by contact
-        if params.get("contact"):
-            queryset = queryset.filter(contact_id=params.get("contact"))
-
-        # Filter by opportunity
-        if params.get("opportunity"):
-            queryset = queryset.filter(opportunity_id=params.get("opportunity"))
+        # Filter by the related record, when one was named
+        for related in ("account", "contact", "opportunity"):
+            related_id = uuid_param(params, related)
+            if related_id:
+                queryset = queryset.filter(**{f"{related}_id": related_id})
 
         # Filter by assigned user
-        if params.get("assigned_to"):
-            queryset = queryset.filter(assigned_to__id=params.get("assigned_to"))
+        assigned_to = uuid_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id=assigned_to)
 
         # Filter by created_by
-        if params.get("created_by"):
-            queryset = queryset.filter(created_by__id=params.get("created_by"))
+        created_by = uuid_param(params, "created_by")
+        if created_by:
+            queryset = queryset.filter(created_by__id=created_by)
 
         # Filter by date range
         if params.get("issue_date_gte"):

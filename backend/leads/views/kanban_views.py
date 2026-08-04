@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 from common.utils import LEAD_STATUS
 from leads.models import Lead, LeadPipeline, LeadStage
 from leads.serializer import (
@@ -71,7 +72,7 @@ class LeadKanbanView(APIView):
     def get(self, request):
         """Get kanban board data."""
         org = request.profile.org
-        pipeline_id = request.query_params.get("pipeline_id")
+        pipeline_id = uuid_param(request.query_params, "pipeline_id")
 
         # Base queryset with filters
         queryset = (
@@ -98,8 +99,9 @@ class LeadKanbanView(APIView):
 
     def _apply_filters(self, queryset, params):
         """Apply common filters to queryset."""
-        if params.get("assigned_to"):
-            queryset = queryset.filter(assigned_to__id=params.get("assigned_to"))
+        assigned_to = uuid_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id=assigned_to)
         if params.get("rating"):
             queryset = queryset.filter(rating=params.get("rating"))
         if params.get("search"):

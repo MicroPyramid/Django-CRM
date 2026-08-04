@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from contacts.models import Contact
@@ -252,12 +251,20 @@ class TestInvoiceListView:
         assert "invoice" in data
 
     def test_create_invoice_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.post(
-                "/api/invoices/",
-                {"invoice_title": "Unauthenticated Invoice"},
-                format="json",
-            )
+        """The request is refused, and refused as a response, not an exception.
+
+        DRF catches ``PermissionDenied`` in ``handle_exception`` and renders it,
+        so a test client never sees it raised. Wrapping the call in
+        ``pytest.raises`` therefore failed with DID NOT RAISE no matter how the
+        endpoint behaved, which meant this test could never have caught the
+        access opening up.
+        """
+        response = unauthenticated_client.post(
+            "/api/invoices/",
+            {"invoice_title": "Unauthenticated Invoice"},
+            format="json",
+        )
+        assert response.status_code == 403
 
     def test_org_isolation(self, org_b_client, invoice):
         """org_b_client should not see invoices belonging to org_a."""

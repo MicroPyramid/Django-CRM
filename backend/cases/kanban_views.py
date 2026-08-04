@@ -23,6 +23,7 @@ from cases.serializer import (
     CaseStageSerializer,
 )
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 from common.utils import STATUS_CHOICE
 
 
@@ -83,7 +84,7 @@ class CaseKanbanView(APIView):
     def get(self, request):
         """Get kanban board data."""
         org = request.profile.org
-        pipeline_id = request.query_params.get("pipeline_id")
+        pipeline_id = uuid_param(request.query_params, "pipeline_id")
 
         # Base queryset with filters. Merged duplicates are hidden by default
         # (matches the cases-list behavior); admins can pass show_merged=true.
@@ -112,8 +113,9 @@ class CaseKanbanView(APIView):
 
     def _apply_filters(self, queryset, params):
         """Apply common filters to queryset."""
-        if params.get("assigned_to"):
-            queryset = queryset.filter(assigned_to__id=params.get("assigned_to"))
+        assigned_to = uuid_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id=assigned_to)
         if params.get("priority"):
             queryset = queryset.filter(priority=params.get("priority"))
         if params.get("case_type"):
@@ -123,10 +125,12 @@ class CaseKanbanView(APIView):
             queryset = queryset.filter(
                 Q(name__icontains=search) | Q(description__icontains=search)
             )
-        if params.get("account"):
-            queryset = queryset.filter(account_id=params.get("account"))
-        if params.get("tags"):
-            queryset = queryset.filter(tags__id=params.get("tags"))
+        account = uuid_param(params, "account")
+        if account:
+            queryset = queryset.filter(account_id=account)
+        tags = uuid_param(params, "tags")
+        if tags:
+            queryset = queryset.filter(tags__id=tags)
         if params.get("created_at__gte"):
             queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
         if params.get("created_at__lte"):

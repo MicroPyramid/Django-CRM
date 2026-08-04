@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 from tasks.models import Task, TaskPipeline, TaskStage
 from tasks.serializer import (
     TaskKanbanCardSerializer,
@@ -106,7 +107,7 @@ class TaskKanbanView(APIView):
     def get(self, request):
         """Get kanban board data."""
         org = request.profile.org
-        pipeline_id = request.query_params.get("pipeline_id")
+        pipeline_id = uuid_param(request.query_params, "pipeline_id")
 
         # Base queryset with filters
         queryset = (
@@ -134,8 +135,9 @@ class TaskKanbanView(APIView):
 
     def _apply_filters(self, queryset, params):
         """Apply common filters to queryset."""
-        if params.get("assigned_to"):
-            queryset = queryset.filter(assigned_to__id=params.get("assigned_to"))
+        assigned_to = uuid_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id=assigned_to)
         if params.get("priority"):
             queryset = queryset.filter(priority=params.get("priority"))
         if params.get("search"):
@@ -147,16 +149,13 @@ class TaskKanbanView(APIView):
             queryset = queryset.filter(due_date__gte=params.get("due_date__gte"))
         if params.get("due_date__lte"):
             queryset = queryset.filter(due_date__lte=params.get("due_date__lte"))
-        if params.get("account"):
-            queryset = queryset.filter(account_id=params.get("account"))
-        if params.get("lead"):
-            queryset = queryset.filter(lead_id=params.get("lead"))
-        if params.get("opportunity"):
-            queryset = queryset.filter(opportunity_id=params.get("opportunity"))
-        if params.get("case"):
-            queryset = queryset.filter(case_id=params.get("case"))
-        if params.get("tags"):
-            queryset = queryset.filter(tags__id=params.get("tags"))
+        for related in ("account", "lead", "opportunity", "case"):
+            related_id = uuid_param(params, related)
+            if related_id:
+                queryset = queryset.filter(**{f"{related}_id": related_id})
+        tags = uuid_param(params, "tags")
+        if tags:
+            queryset = queryset.filter(tags__id=tags)
         return queryset
 
     def _get_status_kanban(self, queryset):

@@ -7,7 +7,6 @@ Run with: pytest common/tests/test_documents.py -v
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import Document, Profile, Teams
 
@@ -36,8 +35,16 @@ class TestDocumentListView:
         assert response.data["error"] is False
 
     def test_unauthenticated(self, unauthenticated_client):
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        """The request is refused, and refused as a response, not an exception.
+
+        DRF catches ``PermissionDenied`` in ``handle_exception`` and renders it,
+        so a test client never sees it raised. Wrapping the call in
+        ``pytest.raises`` therefore failed with DID NOT RAISE no matter how the
+        endpoint behaved, which meant this test could never have caught the
+        access opening up.
+        """
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_list_documents_context_keys(self, admin_client, org_a):
         """Document list should include all expected context keys."""

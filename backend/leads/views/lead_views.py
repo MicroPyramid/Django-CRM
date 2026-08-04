@@ -34,6 +34,7 @@ from common.serializer import (
     TeamsSerializer,
 )
 from common.utils import COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS
+from common.validators import payload_id_list, uuid_list_param, validate_uuid_list
 from contacts.models import Contact
 from leads import swagger_params
 from leads.models import Lead
@@ -114,16 +115,14 @@ class LeadListView(APIView, LimitOffsetPagination):
                 )
             if params.get("source"):
                 queryset = queryset.filter(source=params.get("source"))
-            if params.getlist("assigned_to"):
-                queryset = queryset.filter(
-                    assigned_to__id__in=params.getlist("assigned_to")
-                )
+            assigned_to = uuid_list_param(params, "assigned_to")
+            if assigned_to:
+                queryset = queryset.filter(assigned_to__id__in=assigned_to)
             if params.get("status"):
                 queryset = queryset.filter(status=params.get("status"))
-            if params.getlist("tags"):
-                queryset = queryset.filter(
-                    tags__id__in=params.getlist("tags")
-                )
+            tags = uuid_list_param(params, "tags")
+            if tags:
+                queryset = queryset.filter(tags__id__in=tags)
             if params.get("city"):
                 queryset = queryset.filter(city__icontains=params.get("city"))
             if params.get("email"):
@@ -315,16 +314,17 @@ class LeadListView(APIView, LimitOffsetPagination):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if data.get("tags", None):
-                tags = data.get("tags")
+            tags = validate_uuid_list(data.get("tags"), "tags")
+            if tags:
                 tag_objs = Tags.objects.filter(
                     id__in=tags, org=request.profile.org, is_active=True
                 )
                 lead_obj.tags.add(*tag_objs)
 
-            if data.get("contacts", None):
+            contacts = validate_uuid_list(data.get("contacts"), "contacts")
+            if contacts:
                 obj_contact = Contact.objects.filter(
-                    id__in=data.get("contacts"), org=request.profile.org
+                    id__in=contacts, org=request.profile.org
                 )
                 lead_obj.contacts.add(*obj_contact)
 
@@ -339,25 +339,13 @@ class LeadListView(APIView, LimitOffsetPagination):
 
             if data.get("teams", None):
                 teams_list = data.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 lead_obj.teams.add(*teams)
 
             if data.get("assigned_to", None):
                 assinged_to_list = data.get("assigned_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org
                 )
@@ -713,8 +701,8 @@ class LeadDetailView(APIView):
                 save_kwargs["custom_fields"] = cleaned_cf
             lead_obj = serializer.save(**save_kwargs)
             lead_obj.tags.clear()
-            if params.get("tags"):
-                tags = params.get("tags")
+            tags = validate_uuid_list(params.get("tags"), "tags")
+            if tags:
                 tag_objs = Tags.objects.filter(
                     id__in=tags, org=request.profile.org, is_active=True
                 )
@@ -735,10 +723,13 @@ class LeadDetailView(APIView):
                 if isinstance(contacts_list, str):
                     contacts_list = json.loads(contacts_list)
                 # Extract IDs if contacts_list contains objects with 'id' field
-                contact_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in contacts_list
-                ]
+                contact_ids = validate_uuid_list(
+                    [
+                        item.get("id") if isinstance(item, dict) else item
+                        for item in contacts_list
+                    ],
+                    "contacts",
+                )
                 obj_contact = Contact.objects.filter(
                     id__in=contact_ids, org=request.profile.org
                 )
@@ -747,13 +738,7 @@ class LeadDetailView(APIView):
             lead_obj.teams.clear()
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 lead_obj.teams.add(*teams)
 
@@ -763,10 +748,13 @@ class LeadDetailView(APIView):
                 if isinstance(assinged_to_list, str):
                     assinged_to_list = json.loads(assinged_to_list)
                 # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = validate_uuid_list(
+                    [
+                        item.get("id") if isinstance(item, dict) else item
+                        for item in assinged_to_list
+                    ],
+                    "assigned_to",
+                )
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org
                 )
@@ -1001,13 +989,7 @@ class LeadDetailView(APIView):
                 lead_obj.tags.clear()
                 tags = params.get("tags")
                 if tags:
-                    if isinstance(tags, str):
-                        tags = json.loads(tags)
-                    # Extract IDs if tags contains objects with 'id' field
-                    tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags
-                    ]
+                    tag_ids = payload_id_list(tags, "tags")
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
                     )
@@ -1017,13 +999,7 @@ class LeadDetailView(APIView):
                 lead_obj.contacts.clear()
                 contacts_list = params.get("contacts")
                 if contacts_list:
-                    if isinstance(contacts_list, str):
-                        contacts_list = json.loads(contacts_list)
-                    # Extract IDs if contacts_list contains objects with 'id' field
-                    contact_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in contacts_list
-                    ]
+                    contact_ids = payload_id_list(contacts_list, "contacts")
                     obj_contact = Contact.objects.filter(
                         id__in=contact_ids, org=request.profile.org
                     )
@@ -1033,13 +1009,7 @@ class LeadDetailView(APIView):
                 lead_obj.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    if isinstance(teams_list, str):
-                        teams_list = json.loads(teams_list)
-                    # Extract IDs if teams_list contains objects with 'id' field
-                    team_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in teams_list
-                    ]
+                    team_ids = payload_id_list(teams_list, "teams")
                     teams = Teams.objects.filter(
                         id__in=team_ids, org=request.profile.org
                     )
@@ -1049,13 +1019,7 @@ class LeadDetailView(APIView):
                 lead_obj.assigned_to.clear()
                 assigned_to_list = params.get("assigned_to")
                 if assigned_to_list:
-                    if isinstance(assigned_to_list, str):
-                        assigned_to_list = json.loads(assigned_to_list)
-                    # Extract IDs if assigned_to_list contains objects with 'id' field
-                    assigned_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in assigned_to_list
-                    ]
+                    assigned_ids = payload_id_list(assigned_to_list, "assigned_to")
                     profiles = Profile.objects.filter(
                         id__in=assigned_ids, org=request.profile.org
                     )
