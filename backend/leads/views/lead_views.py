@@ -892,6 +892,25 @@ class LeadDetailView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            # convert_lead_to_account only creates a Contact when the lead has
+            # an email, so converting without one yields an account and an
+            # opportunity with nobody attached. LeadCreateSerializer enforces
+            # this on the PUT path and Lead.clean() states it, but this branch
+            # runs neither: PATCH skips the serializer and a plain save() never
+            # calls full_clean().
+            if not (self.lead_obj.email or "").strip():
+                return Response(
+                    {
+                        "error": True,
+                        "errors": {
+                            "email": [
+                                "This lead needs an email address before it can be "
+                                "converted. The contact record is created from it."
+                            ]
+                        },
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             # Persist any custom_fields supplied alongside the conversion before
             # the converter runs, otherwise they'd be silently dropped because
             # this branch returns before the regular partial-update flow.

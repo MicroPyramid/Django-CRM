@@ -16,6 +16,7 @@
   import Pill from '$lib/v2/components/Pill.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
   import EmptyState from '$lib/v2/components/EmptyState.svelte';
+  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { count } from '$lib/v2/format.js';
   import { Plus, Merge, Tags as TagsIcon } from '@lucide/svelte';
 
@@ -36,6 +37,16 @@
 
   let totals = $derived(data.totals);
 
+  /**
+   * Sums the four models the backend's `_TAGGABLE` list
+   * (`backend/common/views/tags_views.py:22-27`) counts: accounts, leads,
+   * opportunities (deals) and cases (tickets). `Contact` and `Task` also
+   * declare `tags = ManyToManyField(Tags, ...)` and accept tag writes through
+   * their own APIs, plus the contacts CSV importer, but `_TAGGABLE` does not
+   * include them, so this total, and the "unused" totals card below, are
+   * partial: a tag can carry real usage on contacts or tasks and still show
+   * as unused here.
+   */
   const used = (t) => t.usage.accounts + t.usage.leads + t.usage.opportunities + t.usage.cases;
 
   let tags = $derived(
@@ -127,7 +138,7 @@
       label="Applied to nothing"
       value={count(totals.unused)}
       tone={totals.unused > 0 ? 'clay' : 'slate'}
-      detail="Safe to delete"
+      detail="Counts accounts, leads, deals and tickets only"
     />
     <StatCard label="Turned off" value={count(totals.count - totals.active)} tone="slate" />
   </div>
@@ -153,6 +164,13 @@
       </div>
     {/each}
 
+    {#if form?.archive?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.archive.error}</p>
+    {/if}
+    {#if form?.restore?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.restore.error}</p>
+    {/if}
+
     <div class="v2-label" style="margin-bottom:10px">All tags</div>
     <div class="v2-table-wrap">
       <table class="v2-table">
@@ -165,6 +183,7 @@
             <th style="text-align:right">Tickets</th>
             <th style="text-align:right">Total</th>
             <th></th>
+            {#if data.can_edit}<th></th>{/if}
           </tr>
         </thead>
         <tbody>
@@ -190,10 +209,39 @@
                   <Pill tone="clay">Unused</Pill>
                 {/if}
               </td>
+              {#if data.can_edit}
+                <td style="text-align:right">
+                  {#if t.is_active}
+                    <!-- `TagsDetailView.delete` soft-archives: it flips
+                         `is_active` to false and leaves the row (and every
+                         record's link to it) in place. "Turn off", not
+                         "Delete", says what actually happens, and the count
+                         below is the real number already computed by `used`,
+                         not a vague warning. -->
+                    <ConfirmAction
+                      action="?/archive"
+                      label="Turn off"
+                      confirmLabel="Turn off"
+                      explain={used(t) > 0
+                        ? `${used(t)} ${used(t) === 1 ? 'account, lead, deal or ticket keeps' : 'accounts, leads, deals and tickets keep'} this tag (contacts and tasks can carry it too, but are not counted here). Turning it off stops it being offered on new records. You can turn it back on.`
+                        : 'No account, lead, deal or ticket carries this tag. Contacts and tasks can also carry tags but are not counted here, so this is not the full picture. Turning it off stops it being offered on new records. You can turn it back on.'}
+                      hidden={{ id: t.id }}
+                    />
+                  {:else}
+                    <!-- Turning a tag back on restores nothing that was
+                         destroyed, so unlike "Turn off" this doesn't need the
+                         two-click confirm. -->
+                    <form method="POST" action="?/restore" use:enhance>
+                      <input type="hidden" name="id" value={t.id} />
+                      <button class="v2-btn v2-btn-sm" type="submit">Turn back on</button>
+                    </form>
+                  {/if}
+                </td>
+              {/if}
             </tr>
           {:else}
             <tr>
-              <td colspan="7">
+              <td colspan={data.can_edit ? 8 : 7}>
                 <EmptyState
                   title="No tags yet"
                   body="Tags are shared across every record type, so the first one is worth naming carefully."
@@ -209,8 +257,7 @@
 
     <p class="v2-sub" style="font-size:11.5px;margin-top:14px;max-width:64ch">
       Turning a tag off hides it from the pickers and leaves it on the records that already carry
-      it. Deleting removes it everywhere, which is why the unused ones are the only safe ones to
-      delete.
+      it. Nothing is removed, and you can turn a tag back on at any time.
     </p>
   </div>
 </div>

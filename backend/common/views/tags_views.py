@@ -68,7 +68,11 @@ def _tag_totals(org):
     return {
         "count": len(all_tags),
         "active": len(active),
-        # Active tags applied to nothing: the only ones safe to delete.
+        # Active tags applied to nothing across the models in _TAGGABLE: the
+        # "unused" figure on the settings stat card. There is no hard delete
+        # on a tag at all, here or anywhere else: TagsDetailView.delete only
+        # flips is_active to False, so this count is not measuring what is
+        # safe to remove, only what is not currently referenced.
         "unused": sum(1 for t in active if total_usage(t) == 0),
     }
 

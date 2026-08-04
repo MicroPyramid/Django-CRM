@@ -583,11 +583,16 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             )
 
     def validate_address(self, value):
-        # Postgres unique constraint already enforces (org, address); this is a
-        # nicer error than IntegrityError on the create path.
+        # Postgres enforces uniq(org, address); this is a nicer error than an
+        # IntegrityError, and it has to run on update too. When editing, the
+        # mailbox must be excluded from its own duplicate check or saving a
+        # record without changing its address would fail against itself.
         org = self.context.get("org")
-        if org and self.instance is None:
-            if InboundMailbox.objects.filter(org=org, address__iexact=value).exists():
+        if org:
+            clash = InboundMailbox.objects.filter(org=org, address__iexact=value)
+            if self.instance is not None:
+                clash = clash.exclude(pk=self.instance.pk)
+            if clash.exists():
                 raise serializers.ValidationError(
                     f"A mailbox with address {value!r} already exists for this org."
                 )

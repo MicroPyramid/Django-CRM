@@ -15,6 +15,7 @@ from cases.models import Case
 from cases.serializer import CaseSerializer
 from common import swagger_params
 from common.models import Comment, PersonalAccessToken, Profile, Teams, User
+from common.permissions import HasOrgContext
 from common.serializer import (
     BillingAddressSerializer,
     CommentSerializer,
@@ -51,7 +52,7 @@ def _valid_token_counts_by_profile(org):
 
 
 class GetTeamsAndUsersView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["users"],

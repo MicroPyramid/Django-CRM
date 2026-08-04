@@ -619,6 +619,41 @@ class TestMailboxAPI:
         response = admin_client.get(MAILBOXES_URL)
         assert response.json()["mailboxes"] == []
 
+    def test_duplicate_address_on_update_returns_400(self, admin_client, org_a):
+        """Editing a mailbox address onto another mailbox's address is a clean
+        400, not an IntegrityError. The DB constraint is uniq(org, address);
+        before this guard the update path skipped the duplicate check entirely
+        and the constraint surfaced as a bodiless 500."""
+        first = _make_mailbox(org_a, address="support@example.com")
+        second = _make_mailbox(org_a, address="sales@example.com")
+
+        response = admin_client.put(
+            f"{MAILBOXES_URL}{second.id}/",
+            {"address": "support@example.com"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert "address" in response.json()["errors"]
+        second.refresh_from_db()
+        assert second.address == "sales@example.com"
+
+    def test_update_keeping_own_address_is_allowed(self, admin_client, org_a):
+        """A mailbox may be saved with its own address unchanged. The duplicate
+        guard must exclude the instance being edited or every edit that
+        resubmits the address would 400 against itself."""
+        mailbox = _make_mailbox(org_a, address="support@example.com")
+
+        response = admin_client.put(
+            f"{MAILBOXES_URL}{mailbox.id}/",
+            {"address": "support@example.com", "default_priority": "High"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        mailbox.refresh_from_db()
+        assert mailbox.address == "support@example.com"
+
 
 # ---------------------------------------------------------------------------
 # Webhook (verification path bypassed via patch)

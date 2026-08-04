@@ -8,11 +8,13 @@
    * because the daily act on a lead is recording that you contacted them.
    *
    * WHAT IS NOT FAKED
-   * Conversion is a POST the community backend does not expose. There is no
-   * convert endpoint in `leads/urls.py`, so the Convert button stays disabled
-   * and says so, rather than pretending. The headline is derived only from
-   * fields the model actually has; where the data cannot support a sentence,
-   * there is no banner. The duplicate warning is a real query (see
+   * Conversion is not a dedicated endpoint. It is a PATCH of `status` on the
+   * ordinary lead detail URL (see `convertLead`), which runs
+   * `convert_lead_to_account` server-side: it creates an Account, a Contact
+   * when the lead has an email, and usually an Opportunity. It is a one-way
+   * door, the API refuses a repeat conversion. The headline is derived only
+   * from fields the model actually has; where the data cannot support a
+   * sentence, there is no banner. The duplicate warning is a real query (see
    * `findDuplicates`) and renders only when there is a match.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -246,14 +248,53 @@
                     : ''}. The lead stays linked, and there is no endpoint that undoes it.
                 </p>
               </div>
-              <!-- Disabled, not hidden. Conversion is a POST this backend does
-                   not expose; hiding the button would hide the goal of the page. -->
-              <button class="v2-btn" disabled title="Conversion is not available yet">
-                Convert lead
-              </button>
+              <form method="POST" action="?/convert" use:enhance>
+                <!-- `disabled={!lead.email}` is a UX hint that mirrors the
+                     server-side guard the backend enforces on this same PATCH.
+                     It is not the enforcement: a request that skips this button
+                     entirely still meets the same rule server-side. The reason
+                     is also rendered as visible text below, not only in
+                     `title`: a disabled control is out of the tab order and
+                     its title is not announced by assistive tech. -->
+                <button
+                  class="v2-btn"
+                  type="submit"
+                  disabled={!lead.email}
+                  title={lead.email
+                    ? 'Creates an account, a contact and an opportunity from this lead'
+                    : 'Add an email address to this lead first. The contact record is created from it.'}
+                >
+                  Convert lead
+                </button>
+                {#if !lead.email}
+                  <p class="v2-sub" style="margin:4px 0 0;font-size:11.5px">
+                    Add an email address first. The contact record is created from it.
+                  </p>
+                {/if}
+              </form>
             </div>
           {/if}
         </div>
+
+        {#if form?.converted}
+          <div class="v2-card" role="status" style="margin-top:12px;padding:15px 16px">
+            <div class="v2-label" style="margin-bottom:6px">Converted</div>
+            <p class="v2-sub" style="margin:0 0 8px;font-size:12.5px;line-height:1.55">
+              The account, contact and deal are ready.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <a class="v2-btn" href="/accounts/{form.account_id}">View account</a>
+              {#if form.contact_id}
+                <a class="v2-btn" href="/contacts/{form.contact_id}">View contact</a>
+              {/if}
+              {#if form.opportunity_id}
+                <a class="v2-btn" href="/pipeline/{form.opportunity_id}">View deal</a>
+              {/if}
+            </div>
+          </div>
+        {:else if form?.error}
+          <p class="note-err" style="margin-top:10px">{form.error}</p>
+        {/if}
 
         {#if lead.description}
           <div class="v2-label" style="margin:22px 0 10px">About</div>

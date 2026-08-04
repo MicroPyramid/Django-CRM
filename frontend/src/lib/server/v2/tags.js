@@ -9,8 +9,9 @@
  * (the usage counts are org-scoped subqueries, not a client tally over rows).
  *
  * "New tag" is wired: `createTag` below posts the name and the page's action
- * calls it. The duplicate-merge banner is still deferred; its "Merge" button
- * has no backing endpoint yet, see the comment on it in `+page.svelte`.
+ * calls it. Turning a tag off and back on are wired too, through `archiveTag`
+ * and `restoreTag`. The duplicate-merge banner is still deferred; its "Merge"
+ * button has no backing endpoint yet, see the comment on it in `+page.svelte`.
  *
  * CREATE IS ADMIN-ONLY, LIST IS NOT
  * `/settings` is deliberately member-readable (see the comment in
@@ -81,4 +82,46 @@ export async function createTag({ cookies }, values) {
 
   const resp = await apiRequest('/tags/', { method: 'POST', body: { name } }, { cookies });
   return resp.tag ?? resp;
+}
+
+/**
+ * Archive a tag.
+ *
+ * This is a soft delete and the copy around it must say so. `TagsDetailView`
+ * sets `is_active = False`, saves, and returns 200 with
+ * `{ error: false, message: 'Tag archived successfully' }`. It never calls
+ * `.delete()`, no hard-delete path is exposed anywhere, and every relationship
+ * to a tag from a taggable model is a ManyToManyField, so nothing is cascaded
+ * or protected. The rows that carry the tag keep it; the tag simply stops being
+ * offered. `restoreTag` puts it back.
+ *
+ * Admin-only on the backend, 403 otherwise. The page hides the control for a
+ * member using the `can_edit` hint from `getTags`, but that hint is decoded
+ * from the JWT and is display only; the backend re-derives the role and is the
+ * check that matters.
+ *
+ * No body is sent: the tag is identified by the URL and the backend derives
+ * org and actor from the token.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ * @returns {Promise<any>}
+ */
+export async function archiveTag({ cookies }, id) {
+  if (!id) throw new Error('A tag id is required to turn a tag off.');
+  return await apiRequest(`/tags/${id}/`, { method: 'DELETE' }, { cookies });
+}
+
+/**
+ * Restore an archived tag: sets `is_active = True` again. Admin-only, 200 on
+ * success. The list already includes archived tags (`?include_archived=true`),
+ * so a restored tag needs no separate fetch to become visible.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ * @returns {Promise<any>}
+ */
+export async function restoreTag({ cookies }, id) {
+  if (!id) throw new Error('A tag id is required to turn a tag back on.');
+  return await apiRequest(`/tags/${id}/restore/`, { method: 'POST' }, { cookies });
 }
