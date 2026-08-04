@@ -12,16 +12,30 @@
    */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import { money, count, shortDate } from '$lib/v2/format.js';
   import { ChevronLeft, ChevronRight, Square, Receipt } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
 
   let week = $derived(data.week);
+
+  // Disables every "Stop timer" button while a stop is in flight. Without
+  // this, a double-click fires two POSTs; the first stops the timer and the
+  // second gets a 400 "Timer is already stopped." back, so a successful stop
+  // reads as a failure.
+  let busy = $state(false);
+  const stopping = () => {
+    busy = true;
+    return async (/** @type {any} */ { update }) => {
+      await update();
+      busy = false;
+    };
+  };
 
   /** Minutes elapsed since this page loaded, added to the server's figure. */
   let sinceLoad = $state(0);
@@ -141,17 +155,36 @@
       <!-- The one thing on this page that changes while you look at it. -->
       <div class="v2-next" style="margin-bottom:16px">
         <div class="v2-next-body">
-          <div class="v2-label" style="color:var(--v2-ember)">Timer running</div>
+          <div class="v2-label" style="color:var(--v2-ember)">
+            {week.running_count === 1 ? 'Timer running' : `${week.running_count} timers running`}
+          </div>
+          {#if form?.error}
+            <!-- Stop can fail (ownership check, network). Silent failure here
+                 would repeat the exact bug this page exists to fix: a timer
+                 that keeps accruing time with nothing on screen saying so. -->
+            <p class="v2-error">{form.error}</p>
+          {/if}
           <div class="v2-next-text">
             {#each week.days as d (d.date)}
               {#each d.entries.filter((e) => e.is_running) as e (e.id)}
-                <span class="v2-num">{hm(liveMinutes(e))}</span> on
-                <a href="/tickets/{e.case.id}" style="color:inherit">{e.case.name}</a>
+                <div class="v2-running-row">
+                  <span>
+                    <span class="v2-num">{hm(liveMinutes(e))}</span> on
+                    <a href="/tickets/{e.case.id}" style="color:inherit">{e.case.name}</a>
+                  </span>
+                  <!-- One form per entry. A single shared button could not say
+                       which of several running timers it meant. -->
+                  <form method="POST" action="?/stop" use:enhance={stopping}>
+                    <input type="hidden" name="entry_id" value={e.id} />
+                    <button class="v2-btn v2-btn-primary" type="submit" disabled={busy}>
+                      <Square size={13} />Stop timer
+                    </button>
+                  </form>
+                </div>
               {/each}
             {/each}
           </div>
         </div>
-        <button class="v2-btn v2-btn-primary"><Square size={13} />Stop timer</button>
       </div>
     {/if}
 
@@ -220,3 +253,12 @@
     </p>
   </div>
 </div>
+
+<style>
+  .v2-running-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+</style>

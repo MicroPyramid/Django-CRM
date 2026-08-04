@@ -15,11 +15,15 @@
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
   import { count } from '$lib/v2/format.js';
+  import { REOPEN_TO_STATUSES } from '$lib/v2/enums.js';
   import { RotateCcw, MailX } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
+
+  let editing = $state(false);
 
   let p = $derived(data.policy);
 </script>
@@ -32,7 +36,9 @@
       : 'Closed tickets stay closed'}
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn v2-btn-primary">Edit policy</button>
+    {#if data.can_edit && !editing}
+      <button class="v2-btn v2-btn-primary" onclick={() => (editing = true)}>Edit policy</button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -61,6 +67,74 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
+    {#if editing}
+      <SettingsFormPanel
+        title="Reopen policy"
+        action="?/update"
+        error={form?.update?.error}
+        submitLabel="Save policy"
+        oncancel={() => (editing = false)}
+        ondone={() => (editing = false)}
+      >
+        {#snippet fields()}
+          <div class="v2-field v2-sfp-wide">
+            <label for="f-enabled">Reopen on customer reply</label>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+              <input
+                id="f-enabled"
+                type="checkbox"
+                name="is_enabled"
+                value="true"
+                checked={p.is_enabled}
+              />
+              Off means a reply is filed on the closed ticket and nothing else happens.
+            </label>
+          </div>
+
+          <div class="v2-field">
+            <label for="f-window">Window, in days</label>
+            <input
+              id="f-window"
+              class="v2-input"
+              type="number"
+              name="reopen_window_days"
+              min="1"
+              max="365"
+              required
+              value={p.reopen_window_days}
+            />
+            <p class="v2-hint">Counted from when the ticket was closed, in calendar days.</p>
+          </div>
+
+          <div class="v2-field">
+            <label for="f-status">Comes back as</label>
+            <select id="f-status" class="v2-input" name="reopen_to_status">
+              {#each REOPEN_TO_STATUSES as status (status)}
+                <option value={status} selected={status === p.reopen_to_status}>{status}</option>
+              {/each}
+            </select>
+            <p class="v2-hint">
+              Only these three. A ticket reopened into a closed status would close again on
+              arrival.
+            </p>
+          </div>
+
+          <div class="v2-field v2-sfp-wide">
+            <label for="f-notify">Tell the assignee</label>
+            <label style="display:flex;gap:8px;align-items:center;font-weight:400">
+              <input
+                id="f-notify"
+                type="checkbox"
+                name="notify_assigned"
+                value="true"
+                checked={p.notify_assigned}
+              />
+              The person the ticket was assigned to when it closed.
+            </label>
+          </div>
+        {/snippet}
+      </SettingsFormPanel>
+    {/if}
     <div class="v2-split">
       <div>
         <div class="v2-label" style="margin-bottom:10px">The rule</div>

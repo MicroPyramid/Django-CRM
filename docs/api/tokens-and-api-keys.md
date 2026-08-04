@@ -35,7 +35,7 @@ filter here is the only tenant boundary, not a belt over RLS's braces):
   "tokens": [
     {
       "id": "<uuid>",
-      "name": "laptop mcp",
+      "name": "reporting script",
       "token_prefix": "bcrm_pat_abc1",
       "scopes": [],
       "expires_at": null,
@@ -56,7 +56,7 @@ filter here is the only tenant boundary, not a belt over RLS's braces):
 `POST /api/profile/tokens/` (same view, `:49-69`) creates a token for the caller:
 
 ```json
-{"name": "laptop mcp", "scopes": [], "expires_at": null}
+{"name": "reporting script", "scopes": [], "expires_at": null}
 ```
 
 `name` is required (non-empty, at most 255 characters); `scopes`, if present, must be a list of
@@ -68,7 +68,7 @@ strings (at most 32); `expires_at` is optional, but if present must be in the fu
 {
   "error": false,
   "id": "<uuid>",
-  "name": "laptop mcp",
+  "name": "reporting script",
   "token_prefix": "bcrm_pat_abc1",
   "scopes": [],
   "expires_at": null,
@@ -106,7 +106,7 @@ endpoint is never the thing that has to be loosened to support oversight:
   "tokens": [
     {
       "id": "<uuid>",
-      "name": "laptop mcp",
+      "name": "reporting script",
       "token_prefix": "bcrm_pat_abc1",
       "scopes": [],
       "expires_at": null,

@@ -39,12 +39,10 @@ itself, so they aren't in the table below:
   own. See [Production deployment](../self-hosting/production-deploy.md#required-settings) and
   [Security hardening](../self-hosting/security-hardening.md#secrets) for what `ENV_TYPE=prod`
   actually requires and why it shouldn't be set casually.
-- **`BCRM_MCP_ENABLED`** and **`BCRM_BASE_URL`** are two different knobs, both read in
-  `backend/crm/asgi.py`, not `crm/settings.py`. Only `BCRM_MCP_ENABLED` (default `"true"`) gates
-  whether the optional MCP server is mounted at `/mcp` at all, anything in `0`/`false`/`no`/`off`
-  disables it, anything else (including unset) leaves it enabled. `BCRM_BASE_URL` (default
-  `http://127.0.0.1:8000`) has no bearing on whether the mount happens; it's the REST API root the
-  mounted MCP tools call once it's live. See [MCP server](../integrations/mcp-server.md) for both.
+- **`BCRM_MCP_ENABLED`** and **`BCRM_BASE_URL`** are no longer read anywhere. They gated the
+  MCP server that used to be mounted at `/mcp`, which has been removed in favour of the REST API.
+  Both are safe to delete from an existing deployment's environment. See
+  [AI agents](../integrations/ai-agents.md) for how an agent connects now.
 
 ## Reference
 
@@ -65,6 +63,20 @@ itself, so they aren't in the table below:
 | `DBPASSWORD` | `postgres` | Yes, alongside `DBUSER` | PostgreSQL password. |
 | `DBHOST` | `localhost` | No | PostgreSQL host. |
 | `DBPORT` | `5432` | No | PostgreSQL port. |
+
+### Connection pooling
+
+Pooling uses psycopg 3's `psycopg_pool` through Django's PostgreSQL backend. It is **off by default**, so upgrading does not silently change an existing deployment's connection behaviour. Turning it on also enables `CONN_HEALTH_CHECKS`; `CONN_MAX_AGE` is pinned to `0`, because Django raises `ImproperlyConfigured` ("Pooling doesn't support persistent connections") if a pool is configured alongside persistent connections.
+
+| Variable | Default | Required | Purpose |
+| --- | --- | --- | --- |
+| `DB_POOL_ENABLED` | `False` | No | `"true"` (case-insensitive) puts a `psycopg_pool.ConnectionPool` in front of the default database and installs the RLS reset callback described below. Anything else leaves the connection behaviour unchanged. |
+| `DB_POOL_MIN_SIZE` | `2` | No | Connections the pool keeps open per process even when idle. |
+| `DB_POOL_MAX_SIZE` | `10` | No | Ceiling on concurrent connections per process. This is the limit that was missing when the API exhausted PostgreSQL: under ASGI every in-flight request otherwise takes its own connection with no upper bound. |
+
+**Size this against `max_connections`, and remember the pool is per process, not per host.** Peak usage is roughly `DB_POOL_MAX_SIZE × (uvicorn workers + Celery prefork children)`, plus `DB_POOL_MIN_SIZE` held idle by each of those processes. `docker-compose.yml` runs `celery -A crm worker` with no `--concurrency`, so each worker forks one child per CPU. On an 8-core host with 3 uvicorn workers and the defaults, that is `10 × (3 + 8) = 110` connections at peak against PostgreSQL's default `max_connections` of 100.
+
+**Why the reset callback matters.** RLS context lives in `app.current_org`, a session-scoped setting that outlives the transaction and the request. `psycopg_pool` does not clear session state when a connection is returned; it only rolls back an open transaction. A pool without `common.rls.pool.reset_rls_context` therefore hands the next borrower a connection still scoped to the previous tenant. Enabling `DB_POOL_ENABLED` wires that callback in automatically, and `common/tests/test_pool_rls_isolation.py` proves both that it clears the context and that it leaves the connection in the `IDLE` state `psycopg_pool` requires. Do not configure a pool by hand without it.
 
 ### Email
 

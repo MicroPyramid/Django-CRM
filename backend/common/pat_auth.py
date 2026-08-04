@@ -69,7 +69,7 @@ class PATAuthentication(BaseAuthentication):
         request.profile = profile
         request.org = pat.org
         request.META["org"] = str(pat.org.id)
-        request.META["mcp_token_id"] = str(pat.id)
+        request.META["pat_token_id"] = str(pat.id)
 
         now = timezone.now()
         if pat.last_used_at is None or (now - pat.last_used_at).total_seconds() > 60:
@@ -87,5 +87,5 @@ class PATAuthenticationScheme(OpenApiAuthenticationExtension):
         return {
             "type": "http",
             "scheme": "bearer",
-            "description": "Personal access token (bcrm_pat_…) for agent/MCP access",
+            "description": "Personal access token (bcrm_pat_…) for script and agent access",
         }

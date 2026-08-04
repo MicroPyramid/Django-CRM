@@ -853,7 +853,7 @@ def generate_pat_raw():
 
 class PersonalAccessToken(BaseOrgModel):
     """
-    Per-user token for programmatic/agent (MCP) access.
+    Per-user token for programmatic REST API access (scripts, agents).
 
     The agent authenticates AS `profile` and inherits that user's role,
     org and RLS scope. The raw token is shown ONCE at creation and only

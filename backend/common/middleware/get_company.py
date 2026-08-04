@@ -41,7 +41,7 @@ class GetProfileAndOrg:
         request.profile = None
         request.org = None
 
-        # Personal Access Token (agent / MCP). Resolve here so org context is
+        # Personal Access Token (script / agent). Resolve here so org context is
         # set before RequireOrgContext runs (DRF auth runs too late for that).
         # MUST come before the JWT branch so a PAT bearer is never handed to
         # the JWT decoder.
@@ -94,7 +94,7 @@ class GetProfileAndOrg:
         request.profile = pat.profile
         request.org = pat.org
         request.META["org"] = str(pat.org.id)
-        request.META["mcp_token_id"] = str(pat.id)
+        request.META["pat_token_id"] = str(pat.id)
         request._pat = pat
 
     def _process_jwt_auth(self, request):

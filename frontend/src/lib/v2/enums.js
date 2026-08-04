@@ -312,6 +312,16 @@ export const ROUTING_STRATEGY_LABEL = {
   by_team: 'Anyone on'
 };
 
+/** Standalone names for the strategy select. `ROUTING_STRATEGY_LABEL` above
+ *  is a sentence fragment that runs into the target names on the rule card,
+ *  so it cannot double as an option label. */
+export const ROUTING_STRATEGY_NAME = {
+  direct: 'Direct',
+  round_robin: 'Round robin',
+  least_busy: 'Least busy',
+  by_team: 'By team'
+};
+
 /** Fields a routing condition can test, in the words the rest of the app uses. */
 export const CONDITION_FIELD_LABEL = {
   priority: 'Priority',
@@ -336,6 +346,12 @@ export const ESCALATION_ACTION_LABEL = {
   notify_and_reassign: 'Notify and reassign to'
 };
 
+/** cases.EscalationPolicy priorities, worst first. This is the display order
+ *  the escalation page sorts by, not the model's `ordering = ("priority",)`,
+ *  which sorts the CharField alphabetically and puts Low between High and
+ *  Normal. Imported by both the page and `lib/server/v2/escalation.js`. */
+export const ESCALATION_PRIORITIES = ['Urgent', 'High', 'Normal', 'Low'];
+
 /** cases.InboundMailbox.PROVIDER_CHOICES, only SES ships today. */
 export const MAILBOX_PROVIDER_LABEL = {
   ses: 'Amazon SES',
@@ -355,6 +371,16 @@ export const FIELD_TYPE_LABEL = {
   date: 'Date',
   checkbox: 'Checkbox'
 };
+
+/** The statuses a reopened ticket may come back as.
+ *
+ * `ReopenPolicySerializer.NON_TERMINAL_STATUSES` in
+ * `backend/cases/serializer.py` is the authority and rejects anything else.
+ * Reopening into a terminal status would close the ticket again on arrival,
+ * so the model's own choice list, which also carries Closed, Rejected and
+ * Duplicate, is not the list to offer.
+ */
+export const REOPEN_TO_STATUSES = ['New', 'Assigned', 'Pending'];
 
 /** Plural forms for the target model, for reading in a heading. */
 export const TARGET_MODEL_LABEL = {

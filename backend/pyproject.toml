@@ -49,7 +49,12 @@ dependencies = [
     "djangorestframework-simplejwt>=5.5.1",
     "drf-spectacular>=0.30.0",
     "django-ses>=4.7.2",
-    "psycopg2-binary>=2.9.12",
+    # psycopg 3, not psycopg2. The `pool` extra is required: Django refuses
+    # pool options under psycopg2 (ImproperlyConfigured, "Database pooling
+    # requires psycopg >= 3"), and DATABASES["default"]["OPTIONS"]["pool"] in
+    # crm/settings.py depends on it. No application code imports the driver
+    # directly, so the swap is confined to this line.
+    "psycopg[binary,pool]>=3.2.10",
     "whitenoise>=6.12.0",
     "sentry-sdk>=2.66.1",
     "django-storages>=1.14.6",
@@ -71,15 +76,6 @@ dependencies = [
     "gunicorn>=26.0.0",
     "uvicorn[standard]>=0.51.0",
 ]
-
-[project.optional-dependencies]
-# Hosted MCP server, mounted at /mcp by crm.asgi (opt-in: install with
-# `uv sync --extra mcp`). Pulls in fastmcp + starlette. The core app does not
-# depend on it, so the default install stays lean.
-mcp = ["bcrm-mcp"]
-
-[tool.uv.sources]
-bcrm-mcp = { path = "../mcp_server", editable = true }
 
 [project.urls]
 Homepage = "https://github.com/django-crm/Django-CRM"

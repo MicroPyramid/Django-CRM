@@ -456,3 +456,82 @@ async function fetchDetail(cookies, id) {
     throw err;
   }
 }
+
+/**
+ * Create a lead.
+ *
+ * Mirrors `updateLead`, with one deliberate difference: update sends only the
+ * fields the form submitted, because the API treats absent as "leave alone".
+ * Create has nothing to leave alone, so every editable field is sent and an
+ * empty one is sent as null, which is how the serializer records "no value".
+ *
+ * `org` and `created_by` are never sent. The backend derives both from the
+ * JWT, and accepting them from a form body is how a tenant boundary gets
+ * crossed. The loop below only ever reads keys named in EDITABLE_FIELDS, so an
+ * extra key in `values` cannot reach the request.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {Record<string, any>} values
+ * @returns {Promise<any>} the `LeadListView.post` response body. Confirmed against the
+ *   running backend: on success this is `{ error: false, message: "Lead Created Successfully" }`,
+ *   with no `id` field. Unlike `createDeal`'s response, which does carry one
+ *   (`OpportunityListView.post` adds it deliberately), a caller here cannot read `.id` off the
+ *   result to open the record it just created. `+page.server.js` accounts for this and falls
+ *   back to the list rather than assuming an id that is not there.
+ */
+export async function createLead({ cookies }, values) {
+  /** @type {Record<string, any>} */
+  const body = {};
+  for (const field of EDITABLE_FIELDS) {
+    const value = values[field];
+    body[field] = value === '' || value === undefined ? null : value;
+  }
+
+  if (values.opportunity_amount !== undefined) {
+    const amount = values.opportunity_amount;
+    body.opportunity_amount = amount === '' || amount == null ? null : Number(amount);
+  }
+
+  // Single-select owner, sent as the list the API expects. Empty means
+  // unassigned, which is a real state, so it is sent rather than skipped.
+  body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
+
+  return await apiRequest('/leads/', { method: 'POST', body }, { cookies });
+}
+
+/**
+ * Who the session actually is, rather than who a form claims to be. The owner
+ * select defaults to this. Empty on failure: an unassigned lead is a better
+ * outcome than a wrongly assigned one, and the select is right there.
+ *
+ * Exported for `macros.js`, which needs the same "who am I" resolution to
+ * compare against a macro's `owner.id`; a second copy of this call would be
+ * the same mistake `viewerRole` made before phase 1 consolidated it.
+ *
+ * @param {import('@sveltejs/kit').Cookies} cookies
+ */
+// Despite the name `user_obj`, `ProfileView.get` serializes `request.profile`
+// (a Profile, not a User) through `ProfileSerializer`, so `user_obj.id` below
+// is the Profile's own id. The payload key is a holdover from the API's
+// naming, not a description of what it returns.
+export async function myProfileId(cookies) {
+  try {
+    const response = await apiRequest('/profile/', {}, { cookies });
+    return response.user_obj?.id ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Everything the create form needs to render its selects, in one call.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ */
+export async function getLeadFormOptions({ cookies }) {
+  const [owners, mine] = await Promise.all([listOwners(cookies), myProfileId(cookies)]);
+  return {
+    owners,
+    defaults: { assigned_to: mine, status: 'assigned' }
+  };
+}

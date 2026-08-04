@@ -48,13 +48,11 @@ removing a dependency (for example, to pick up a transitive security fix) use `u
 instead; it re-resolves and rewrites `uv.lock` in place.
 
 `backend/pyproject.toml` currently declares two dependency groups: `dev` (`pytest`,
-`pytest-django`, `pytest-cov`) and `docs` (`mkdocs-material`), plus one optional extra, `mcp`, for
-the hosted MCP server (`uv sync --extra mcp`, not installed by default). `dev` is treated as a
+`pytest-django`, `pytest-cov`) and `docs` (`mkdocs-material`). `dev` is treated as a
 default group by `uv`, so `uv sync` on its own installs it; a plain `uv sync --group docs` installs
 `docs` **in addition to** `dev`, not instead of it: that's why CI's `docs-build` job, which runs
 exactly `uv sync --frozen --group docs`, is able to run `uv run pytest ...` in the very next step
-(see [Pull requests](pull-requests.md#what-ci-runs)). `mcp` is the one group/extra that stays out
-unless you ask for it explicitly with `--extra mcp`. See [Code style](code-style.md) before reaching
+(see [Pull requests](pull-requests.md#what-ci-runs)). See [Code style](code-style.md) before reaching
 for `uv add black` or similar. It is not as simple as it sounds in this repository.
 
 ## Frontend

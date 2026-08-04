@@ -3,19 +3,27 @@
  *
  * Server-only. Reads `GET /cases/escalation-policies/`, at most one row per
  * priority. Each row carries the policy's two halves (first_response /
- * resolution action + target), the team to notify, and. The reason the page
- * exists; `breaches_last_30d`, a server-side count of SLA breaches per
+ * resolution action + target), the team to notify, and the reason the page
+ * exists: `breaches_last_30d`, a server-side count of SLA breaches per
  * priority over the last 30 days. That count is condition-based, not sourced
  * from the escalation event log, so it still surfaces breaches under a dead
  * policy (off, or reassigning to nobody), which is the page's whole point.
  *
- * Read-only page: "Edit policy" is a deferred builder, so there is no write
- * path to wire here. The backend returns targets as full profile objects
- * (`user_details.name`) and the team as a full team object; the page only wants
- * `{ id, name }`, so flatten to that here rather than teach the component the
- * backend's nesting.
+ * The backend returns targets as full profile objects (`user_details.name`)
+ * and the team as a full team object; the page only wants `{ id, name }`, so
+ * flatten to that here rather than teach the component the backend's nesting.
+ * The same flattened shape is what the edit form uses to preselect a target.
+ *
+ * Create, edit, turn off, turn on and delete are wired below. The picker
+ * lists (`people`, `teams`) are NOT fetched here: `settings.js`'s
+ * `getSettingsHub` calls `getEscalationPolicies` and reads only `.policies`
+ * off it, so a picker fetch in this function would be a redundant request on
+ * every settings-hub load. The route's `load` fetches `getOrgPeopleAndTeams`
+ * itself, in parallel with this.
  */
 import { apiRequest } from '$lib/api-helpers.js';
+import { ESCALATION_PRIORITIES } from '$lib/v2/enums.js';
+import { viewerRole } from './organization.js';
 
 /** Profile → the `{ id, name }` the card renders, or null when unset. */
 function shapeTarget(target) {
@@ -31,7 +39,7 @@ function shapeTeam(team) {
 
 /**
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
- * @returns {Promise<{ policies: any[] }>}
+ * @returns {Promise<{ policies: any[], can_edit: boolean }>}
  */
 export async function getEscalationPolicies({ cookies }) {
   const { policies } = await apiRequest('/cases/escalation-policies/', {}, { cookies });
@@ -46,6 +54,75 @@ export async function getEscalationPolicies({ cookies }) {
       resolution_target: shapeTarget(p.resolution_target),
       notify_team: shapeTeam(p.notify_team),
       breaches_last_30d: p.breaches_last_30d ?? { first_response: 0, resolution: 0 }
-    }))
+    })),
+    // A display hint: POST/PUT/DELETE on `/cases/escalation-policies/` each
+    // start with `_is_admin(request.profile)` server-side and 403 regardless
+    // of what this says. This only decides whether the page offers the
+    // controls.
+    can_edit: viewerRole(cookies) === 'ADMIN'
   };
+}
+
+export const CREATE_FIELDS = [
+  'priority',
+  'first_response_action',
+  'resolution_action',
+  'first_response_target_id',
+  'resolution_target_id',
+  'notify_team_id',
+  'is_active'
+];
+
+/** `priority` is the natural key and is frozen after create. It is not merely
+ *  unwise to change: `EscalationPolicyDetailView.put` deletes the key from the
+ *  body before the serializer sees it, so a PUT carrying a new priority
+ *  returns 200 and changes nothing. Omitting it here means the page never
+ *  offers a control whose success is a lie. */
+export const UPDATE_FIELDS = CREATE_FIELDS.filter((f) => f !== 'priority');
+
+/** @param {string[]} allowed @param {{ [key: string]: any }} values */
+function buildBody(allowed, values) {
+  /** @type {Record<string, any>} */
+  const body = {};
+  for (const field of allowed) {
+    if (values[field] === undefined) continue;
+    body[field] = values[field];
+  }
+  for (const nullable of ['first_response_target_id', 'resolution_target_id', 'notify_team_id']) {
+    if (body[nullable] === '') body[nullable] = null;
+  }
+  if (body.is_active !== undefined) body.is_active = Boolean(body.is_active);
+  return body;
+}
+
+/** @param {{ cookies: import('@sveltejs/kit').Cookies }} event */
+export async function createEscalationPolicy({ cookies }, values) {
+  const body = buildBody(CREATE_FIELDS, values);
+  if (!ESCALATION_PRIORITIES.includes(body.priority)) {
+    throw new Error('Pick a priority for the policy.');
+  }
+  return await apiRequest('/cases/escalation-policies/', { method: 'POST', body }, { cookies });
+}
+
+/** @param {{ cookies: import('@sveltejs/kit').Cookies }} event */
+export async function updateEscalationPolicy({ cookies }, id, values) {
+  if (!id) throw new Error('Which policy? No policy id was given.');
+  const body = buildBody(UPDATE_FIELDS, values);
+  return await apiRequest(
+    `/cases/escalation-policies/${id}/`,
+    { method: 'PUT', body },
+    { cookies }
+  );
+}
+
+/**
+ * Delete a policy, permanently. `EscalationPolicyDetailView.delete` calls
+ * `obj.delete()`. The priority it covered then escalates to nobody, which is
+ * what the confirm line has to say.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ */
+export async function deleteEscalationPolicy({ cookies }, id) {
+  if (!id) throw new Error('Which policy? No policy id was given.');
+  return await apiRequest(`/cases/escalation-policies/${id}/`, { method: 'DELETE' }, { cookies });
 }

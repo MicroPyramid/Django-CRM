@@ -38,21 +38,62 @@ cd backend
 uv run gunicorn crm.wsgi:application --bind 0.0.0.0:8000
 ```
 
-There is one documented exception to WSGI, in the codebase's own words. `backend/crm/asgi.py`
-carries this docstring:
+**WSGI is the recommended path, and there is no longer a reason to prefer ASGI.** Earlier
+releases required an ASGI server (`uvicorn crm.asgi:application`) because the in-app notifications
+endpoint was a Server-Sent Events stream, and a long-lived async view holds a worker hostage under
+WSGI. That stream was removed on 2026-08-03 in favour of polling, and it was the only async code
+in the project, so nothing needs ASGI now. `backend/crm/asgi.py` still exists and still works if
+you prefer it, but it buys you nothing.
 
-> Production deploy must run an ASGI server pointing at this module:
-> `uvicorn crm.asgi:application --host 0.0.0.0 --port 8000`
+Prefer WSGI for a concrete reason beyond simplicity: **it bounds your database connections by
+construction.** Under ASGI, Django runs each request in its own thread-sensitive executor with its
+own thread-local connection and no ceiling, so concurrent requests translate one-to-one into
+PostgreSQL backends. That is what caused two connection-exhaustion incidents in this project's
+history. Under Gunicorn, peak connections are `workers × threads`, a number you set on the command
+line:
 
-The reason given is the in-app notifications SSE (server-sent events) stream: it's an async view
-serving a long-lived connection, and running it under WSGI (Gunicorn) "will hold a worker
-hostage" for the life of each connection. `crm/asgi.py` also optionally mounts the BottleCRM MCP
-server at `/mcp` when the `mcp` extra is installed and `BCRM_MCP_ENABLED` isn't set to a falsy
-value. `uvicorn[standard]>=0.51.0` is a listed dependency alongside Gunicorn for exactly this
-path. In short: if you need the SSE notification stream (or the MCP mount) to work correctly
-under concurrent load, serve via `uvicorn crm.asgi:application`, not Gunicorn/WSGI; if you don't,
-Gunicorn against `crm.wsgi:application` is what this project bundles as its production WSGI
-dependency.
+```bash
+cd backend
+uv run gunicorn crm.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 4
+```
+
+That example tops out at 12 database connections per host, plus whatever Celery uses. See
+[Database connections](#database-connections) below for pooling, which you may still want if you
+run many Gunicorn workers or a large thread count.
+
+`uvicorn[standard]>=0.51.0` remains a dependency so the ASGI path keeps working for anyone already
+deployed that way. If you serve under ASGI, read the next section before going live: bounding
+connections there is not optional.
+
+## Database connections
+
+Under ASGI, Django runs each request in its own thread-sensitive executor, and each of those gets
+its own thread-local database connection. Nothing caps that. A burst of concurrent requests
+becomes a burst of PostgreSQL backends, and `max_connections` (default `100`) is reached long
+before the application itself is under strain. This project has hit that in production.
+
+Set `DB_POOL_ENABLED=true` to put a bounded `psycopg_pool` pool in front of the database.
+`DB_POOL_MAX_SIZE` (default `10`) is the ceiling per process. Size it deliberately: the pool is
+per process, so peak usage is roughly `DB_POOL_MAX_SIZE × (uvicorn workers + Celery prefork
+children)`. See [Environment variables](../reference/environment-variables.md#connection-pooling)
+for the arithmetic and a worked example.
+
+Two things to know before enabling it:
+
+- **The pool requires psycopg 3.** That is what this project depends on
+  (`psycopg[binary,pool]`); Django raises `ImproperlyConfigured` if pool options are set under
+  psycopg2. Nothing to do unless you have pinned the driver yourself.
+- **Do not hand-roll the pool configuration.** Tenant isolation depends on `app.current_org`, a
+  session-scoped PostgreSQL setting that survives the transaction and the request. `psycopg_pool`
+  does not clear session state when a connection is returned, so a pool without the project's
+  `reset` callback serves one tenant's data to the next borrower of that connection. Setting
+  `DB_POOL_ENABLED=true` wires the callback in for you. Writing your own `OPTIONS["pool"]` block
+  without it is a cross-tenant data leak.
+
+An external pooler is a reasonable alternative, with one hard constraint: it must run in
+**session** mode. Transaction-mode pooling (PgBouncer's default) does not keep session settings
+across statements, which silently breaks the RLS context this application relies on for tenant
+isolation.
 
 ## Static files
 

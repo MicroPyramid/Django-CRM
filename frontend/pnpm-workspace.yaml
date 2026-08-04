@@ -2,3 +2,8 @@ allowBuilds:
   '@sentry/cli': true
 onlyBuiltDependencies:
   - '@sentry/cli'
+overrides:
+  # GHSA-rgw5-rvv9-x895 (high): DoS via unbounded intermediate arrays.
+  # Only reachable through dev tooling (eslint, @sentry/vite-plugin), but the
+  # transitive parents still ask for a vulnerable range, so force the patch.
+  'brace-expansion@>=4.0.0 <5.0.9': '^5.0.9'

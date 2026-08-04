@@ -49,6 +49,7 @@
  */
 import { apiRequest } from '$lib/api-helpers.js';
 import { env } from '$env/dynamic/public';
+import { getOrgPeopleAndTeams } from './org-people.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
@@ -174,32 +175,6 @@ export async function listDocuments({ cookies }) {
 }
 
 /**
- * In-org people and teams for the share pickers.
- * `/users/get-teams-and-users/` filters both to `request.profile.org`, so the
- * picker can only ever offer in-org targets, the same boundary the upload/edit
- * view enforces when it filters `shared_to`/`teams` by org, surfaced early as
- * UX.
- *
- * @param {import('@sveltejs/kit').Cookies} cookies
- */
-async function shareOptions(cookies) {
-  try {
-    const resp = await apiRequest('/users/get-teams-and-users/', {}, { cookies });
-    const people = (resp?.profiles ?? []).map((/** @type {any} */ p) => ({
-      id: p.id,
-      name: personName(p)
-    }));
-    const teams = (resp?.teams ?? []).map((/** @type {any} */ t) => ({
-      id: t.id,
-      name: t.name
-    }));
-    return { people, teams };
-  } catch {
-    return { people: [], teams: [] };
-  }
-}
-
-/**
  * The share pickers for the upload form.
  *
  * Uploading is NOT admin-only: `DocumentListView.post` gates on
@@ -212,7 +187,7 @@ async function shareOptions(cookies) {
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  */
 export async function getUploadOptions({ cookies }) {
-  const { people, teams } = await shareOptions(cookies);
+  const { people, teams } = await getOrgPeopleAndTeams(cookies);
   return { people, teams };
 }
 
@@ -233,7 +208,7 @@ export async function getDocumentForEdit({ cookies }, id) {
 
   if (!doc.can_write) return { can_edit: false };
 
-  const { people, teams } = await shareOptions(cookies);
+  const { people, teams } = await getOrgPeopleAndTeams(cookies);
   return {
     can_edit: true,
     people,

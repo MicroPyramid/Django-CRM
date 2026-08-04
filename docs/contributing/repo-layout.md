@@ -14,8 +14,6 @@ Django-CRM/
 ├── docker/              # Docker-specific config: docker/postgres/init-rls-user.sql (creates the
 │                        #   non-superuser RLS role) and docker/backend/entrypoint.sh. That's the
 │                        #   whole directory, no Redis config lives here
-├── mcp_server/          # The hosted MCP server (backend's optional `mcp` extra). See
-│                        #   Integrations → MCP server
 ├── mkdocs.yml           # Docs site config and nav
 ├── docker-compose.yml   # Full local stack. See Self-hosting → Docker
 ├── CONTRIBUTING.md      # The short version of this Contributing section

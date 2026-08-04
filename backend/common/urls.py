@@ -21,7 +21,6 @@ from common.views.notification_views import (
     NotificationListView,
     NotificationReadAllView,
     NotificationReadView,
-    NotificationStreamView,
 )
 from common.views.org_settings_views import OrgSettingsView
 from common.views.organization_views import (
@@ -101,7 +100,7 @@ urlpatterns = [
     ),
     path("org/<str:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
-    # Personal Access Tokens (MCP server), a user manages ONLY their own
+    # Personal Access Tokens (REST API), a user manages ONLY their own
     path(
         "profile/tokens/",
         PersonalAccessTokenListCreateView.as_view(),
@@ -145,11 +144,6 @@ urlpatterns = [
     ),
     # In-app notifications (per-recipient feed)
     path("notifications/", NotificationListView.as_view(), name="notifications_list"),
-    path(
-        "notifications/stream/",
-        NotificationStreamView.as_view(),
-        name="notifications_stream",
-    ),
     path(
         "notifications/read-all/",
         NotificationReadAllView.as_view(),

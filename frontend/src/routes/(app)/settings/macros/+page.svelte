@@ -15,17 +15,64 @@
    * segments and placed in elements, never through {@html}. A canned reply is
    * a string a colleague wrote; putting it in the DOM as markup would make the
    * macro editor a stored-XSS form.
+   *
+   * PERMISSIONS, WHICH ARE NOT ROLE-GATED THE WAY THE REST OF SETTINGS IS
+   * Every signed-in member may create, edit and delete their own `personal`
+   * macros; only an admin may do any of that to an `org`-scope one.
+   * `data.can_create_org` and `data.my_profile_id` are display hints decoded
+   * server-side from the JWT (see `macros.js`'s `getMacros`), never the
+   * authorization: the backend re-derives both and is what actually decides
+   * whether a write succeeds. `canWrite` below mirrors that split so a row
+   * only offers Edit/Delete when the click would not just come back as an
+   * error.
    */
+  import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { count, relativeDays } from '$lib/v2/format.js';
   import { MACRO_SCOPE_LABEL } from '$lib/v2/enums.js';
   import { Plus, TriangleAlert } from '@lucide/svelte';
 
-  /** @type {{ data: any }} */
-  let { data } = $props();
+  /** @type {{ data: any, form: any }} */
+  let { data, form } = $props();
+
+  // `null` when the panel is closed, `'new'` when adding, or the macro
+  // object when editing that row. One panel, two modes, so two rows can
+  // never be open for edit at once.
+  let editing = $state(/** @type {any} */ (null));
+
+  // The scope currently selected in the form. Bound separately from `editing`
+  // so the select works the same way in both modes: seeded from the row on
+  // edit, defaulted to 'personal' on create, since every member can make a
+  // personal macro but not every member can make an org one.
+  let scope = $state('personal');
+
+  function openCreate() {
+    editing = 'new';
+    scope = 'personal';
+  }
+
+  function openEdit(m) {
+    editing = m;
+    scope = m.scope;
+  }
+
+  /**
+   * May the signed-in viewer write this row. An org macro is writable only
+   * by an admin (`data.can_create_org`); a personal macro is writable only
+   * by its owner, compared by Profile id (`m.owner.id`, from `getMacros`'s
+   * reshape, against `data.my_profile_id`). This is a display decision, not
+   * an authorization one: the backend enforces the same split independently
+   * (403 on someone else's org macro, 404 on someone else's personal one)
+   * and would refuse the write even if this returned true by mistake.
+   */
+  function canWrite(m) {
+    return m.scope === 'org' ? data.can_create_org : m.owner?.id === data.my_profile_id;
+  }
 
   let totals = $derived(data.totals);
   let byUse = $derived([...data.macros].sort((a, b) => b.usage_count - a.usage_count));
@@ -66,7 +113,9 @@
     <span class="v2-num">{count(totals.personal)}</span> yours
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn v2-btn-primary"><Plus />New macro</button>
+    {#if !editing}
+      <button class="v2-btn v2-btn-primary" onclick={openCreate}><Plus />New macro</button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -86,6 +135,67 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
+    {#if editing}
+      <SettingsFormPanel
+        title={editing === 'new' ? 'New macro' : `Edit ${editing.title}`}
+        action={editing === 'new' ? '?/create' : '?/update'}
+        error={editing === 'new' ? form?.create?.error : form?.update?.error}
+        submitLabel={editing === 'new' ? 'Add macro' : 'Save macro'}
+        oncancel={() => (editing = null)}
+        ondone={() => (editing = null)}
+      >
+        {#snippet fields()}
+          {#if editing !== 'new'}
+            <input type="hidden" name="id" value={editing.id} />
+          {/if}
+
+          <div class="v2-field">
+            <label for="m-title">Title</label>
+            <input
+              id="m-title"
+              class="v2-input"
+              name="title"
+              maxlength="255"
+              required
+              value={editing === 'new' ? '' : editing.title}
+            />
+          </div>
+
+          <div class="v2-field">
+            <label for="m-scope">Who sees it</label>
+            <select id="m-scope" class="v2-input" name="scope" bind:value={scope}>
+              <option value="personal">Just me</option>
+              {#if data.can_create_org}
+                <option value="org">Everyone in the org</option>
+              {/if}
+            </select>
+            {#if !data.can_create_org}
+              <p class="v2-hint">Only an admin can share a macro with everyone.</p>
+            {/if}
+          </div>
+
+          <div class="v2-field v2-sfp-wide">
+            <label for="m-body">Body</label>
+            <textarea id="m-body" class="v2-input" name="body" rows="5" required
+              >{editing === 'new' ? '' : editing.body}</textarea
+            >
+            <p class="v2-hint">
+              Placeholders like %customer_name% are substituted when the macro is sent. The seven
+              supported tokens are listed to the right; anything else goes to the customer exactly
+              as typed.
+            </p>
+          </div>
+        {/snippet}
+      </SettingsFormPanel>
+    {/if}
+
+    {#if form?.delete?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.delete.error}</p>
+    {/if}
+    {#if form?.activate?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.activate.error}</p>
+    {/if}
+
     <div class="v2-split-wide">
       <div>
         <div class="v2-label" style="margin-bottom:10px">Shared with everyone</div>
@@ -170,6 +280,51 @@
     {#if m.owner}
       <div class="v2-sub" style="font-size:11px;margin-top:8px">
         {MACRO_SCOPE_LABEL[m.scope]} · {m.owner.name}
+      </div>
+    {/if}
+
+    {#if canWrite(m)}
+      <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:10px">
+        <button class="v2-btn v2-btn-sm" type="button" onclick={() => openEdit(m)}>Edit</button>
+        {#if !m.is_active}
+          <!-- Turning a macro back on restores nothing that was destroyed, so
+               unlike "Turn off"/"Delete" this doesn't need the two-click
+               confirm. A plain enhanced form posting just the id keeps the
+               request to `{ is_active: true }`; see `activateMacro`'s
+               comment for why that has to bypass `updateMacro` rather than
+               reuse it. Offered for both scopes on purpose: an org row gets
+               here by "Turn off" (soft), a personal row can only be inactive
+               from data written before the edit form stopped carrying
+               `is_active`, and either way `_get_writable` still enforces
+               admin-only for org / owner-only for personal server-side, so
+               this can never write a row `canWrite` above disagrees with. -->
+          <form method="POST" action="?/activate" use:enhance>
+            <input type="hidden" name="id" value={m.id} />
+            <button class="v2-btn v2-btn-sm" type="submit">Turn on</button>
+          </form>
+        {:else if m.scope === 'org'}
+          <!-- `MacroDetailView.delete` soft-deletes an org macro: it flips
+               `is_active` and leaves the row (and its usage count) in place.
+               "Turn off", not "Delete", says what actually happens. -->
+          <ConfirmAction
+            action="?/delete"
+            label="Turn off"
+            confirmLabel="Turn off"
+            explain="Turns it off for everyone. It stops appearing in the picker."
+            hidden={{ id: m.id }}
+          />
+        {:else}
+          <!-- A personal macro is hard-deleted, not soft-deactivated: this
+               button removes the row outright, so once it's gone there is
+               nothing left to turn back on. -->
+          <ConfirmAction
+            action="?/delete"
+            label="Delete"
+            confirmLabel="Delete"
+            explain="Deletes it permanently."
+            hidden={{ id: m.id }}
+          />
+        {/if}
       </div>
     {/if}
   </div>

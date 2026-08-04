@@ -34,6 +34,7 @@
  *   fields already in the payload, never a second aggregate query.
  */
 import { apiRequest } from '$lib/api-helpers.js';
+import { getOrgPeopleAndTeams } from './org-people.js';
 
 /** The two goal kinds the backend accepts (common/utils.py GOAL_TYPES). */
 export const GOAL_TYPES = ['REVENUE', 'DEALS_CLOSED'];
@@ -192,31 +193,6 @@ export async function listGoals({ cookies }) {
 }
 
 /**
- * In-org people and teams for the create/edit pickers.
- * `/users/get-teams-and-users/` filters both to `request.profile.org`, so the
- * picker can only ever offer in-org targets. The same boundary the serializer
- * now enforces, surfaced early as UX.
- *
- * @param {import('@sveltejs/kit').Cookies} cookies
- */
-async function targetOptions(cookies) {
-  try {
-    const resp = await apiRequest('/users/get-teams-and-users/', {}, { cookies });
-    const people = (resp?.profiles ?? []).map((/** @type {any} */ p) => ({
-      id: p.id,
-      name: personName(p)
-    }));
-    const teams = (resp?.teams ?? []).map((/** @type {any} */ t) => ({
-      id: t.id,
-      name: t.name
-    }));
-    return { people, teams };
-  } catch {
-    return { people: [], teams: [] };
-  }
-}
-
-/**
  * What the create form needs. `can_edit` gates the whole route: creating a goal
  * is admin-only server-side, and a non-admin who reaches `/goals/new` gets
  * an "admins only" state rather than a form that would 403 on submit.
@@ -225,7 +201,7 @@ async function targetOptions(cookies) {
  */
 export async function getGoalFormOptions({ cookies }) {
   if (viewerRole(cookies) !== 'ADMIN') return { can_edit: false };
-  const { people, teams } = await targetOptions(cookies);
+  const { people, teams } = await getOrgPeopleAndTeams(cookies);
   return { can_edit: true, people, teams };
 }
 
@@ -242,7 +218,7 @@ export async function getGoalForEdit({ cookies }, id) {
 
   const [raw, { people, teams }] = await Promise.all([
     apiRequest(`/opportunities/goals/${id}/`, {}, { cookies }),
-    targetOptions(cookies)
+    getOrgPeopleAndTeams(cookies)
   ]);
 
   const target = raw.assigned_to
