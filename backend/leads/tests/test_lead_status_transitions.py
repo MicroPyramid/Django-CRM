@@ -140,6 +140,47 @@ class TestConvertedIsIrreversible:
 
 
 @pytest.mark.django_db
+class TestConvertOverPatchRequiresEmail:
+    """`LeadCreateSerializer.__init__` flips `email.required = True` when the
+    incoming status is `converted`, but that only runs on the PUT path.
+    `LeadDetailView.patch` has its own conversion branch that bypasses the
+    serializer entirely, so an email-less lead converted over PATCH and
+    produced an Account and an Opportunity with nobody attached."""
+
+    def test_patch_convert_without_email_is_rejected(self, admin_client, org_a):
+        lead = _lead(org_a, email="")
+
+        response = admin_client.patch(
+            _detail_url(lead.id),
+            {"status": "converted"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert "email" in str(response.json()).lower()
+        lead.refresh_from_db()
+        assert lead.status != "converted"
+
+    def test_patch_convert_with_email_still_works(self, admin_client, org_a):
+        """The happy path must be untouched: the guard rejects only the
+        email-less case."""
+        lead = _lead(org_a, email="buyer@example.com")
+
+        response = admin_client.patch(
+            _detail_url(lead.id),
+            {"status": "converted"},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["account_id"]
+        assert body["contact_id"]
+        lead.refresh_from_db()
+        assert lead.status == "converted"
+
+
+@pytest.mark.django_db
 class TestReversibleTransitionsStillWork:
     """The check has to be able to return False, not just True.
 

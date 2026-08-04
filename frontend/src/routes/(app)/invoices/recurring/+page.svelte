@@ -53,10 +53,7 @@
     <span class="v2-num">{money(totals.monthly_run_rate)}</span> a month
   {/snippet}
   {#snippet actions()}
-    <!-- Creating a schedule is a builder (line items + FK pickers), the same
-         class as the invoice builder (#48); it stays deferred, so this button
-         is intentionally inert for now rather than pointed at a half-built form. -->
-    <button class="v2-btn v2-btn-primary"><Plus />New schedule</button>
+    <a class="v2-btn v2-btn-primary" href="/invoices/recurring/new"><Plus />New schedule</a>
   {/snippet}
 </PageHeader>
 
@@ -96,7 +93,9 @@
       body="A recurring invoice is a template plus a cadence. Set one up for anything you bill on the same day every month and stop retyping it."
     >
       {#snippet icon()}<RefreshCw size={21} />{/snippet}
-      {#snippet actions()}<button class="v2-btn v2-btn-primary">New schedule</button>{/snippet}
+      {#snippet actions()}
+        <a class="v2-btn v2-btn-primary" href="/invoices/recurring/new">New schedule</a>
+      {/snippet}
     </EmptyState>
   {:else}
     <div class="v2-table-wrap">

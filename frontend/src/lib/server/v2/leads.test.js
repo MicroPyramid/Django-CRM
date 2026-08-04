@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createLead } = await import('$lib/server/v2/leads.js');
+const { createLead, convertLead } = await import('$lib/server/v2/leads.js');
 // Cast rather than shaping a full Cookies mock: createLead only ever calls
 // `cookies.get`, and `apiRequest` itself is mocked above, so nothing here
 // touches `getAll`/`set`/`delete`/`serialize`. Without the cast svelte-check
@@ -52,5 +52,41 @@ describe('createLead', () => {
     const body = apiRequest.mock.calls[0][1].body;
     expect(body.org).toBeUndefined();
     expect(body.created_by).toBeUndefined();
+  });
+});
+
+describe('convertLead', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('PATCHes the lead detail URL with status: converted, and nothing else', async () => {
+    apiRequest.mockResolvedValue({
+      error: false,
+      account_id: 'acc-1',
+      contact_id: 'con-1',
+      opportunity_id: 'opp-1'
+    });
+    const result = await convertLead(event, 'lead-1');
+
+    expect(apiRequest).toHaveBeenCalledOnce();
+    const [endpoint, options] = apiRequest.mock.calls[0];
+    expect(endpoint).toBe('/leads/lead-1/');
+    expect(options.method).toBe('PATCH');
+    expect(options.body).toEqual({ status: 'converted' });
+    expect(result.account_id).toBe('acc-1');
+  });
+
+  it('refuses to call the API without a lead id', async () => {
+    await expect(convertLead(event, '')).rejects.toThrow(/id is required/);
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it('lets a rejected conversion (e.g. the email guard) propagate to the caller', async () => {
+    const rejection = Object.assign(new Error('{"error":true,"errors":{"email":["required"]}}'), {
+      status: 400
+    });
+    apiRequest.mockRejectedValue(rejection);
+    await expect(convertLead(event, 'lead-1')).rejects.toBe(rejection);
   });
 });

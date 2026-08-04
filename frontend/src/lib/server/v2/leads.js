@@ -524,6 +524,33 @@ export async function myProfileId(cookies) {
 }
 
 /**
+ * Convert a lead.
+ *
+ * Conversion is not a dedicated endpoint. It is a side effect of PATCHing
+ * `status: 'converted'` on the ordinary lead detail URL, which runs
+ * `convert_lead_to_account` server-side and creates an Account, a Contact when
+ * the lead has an email, and usually an Opportunity. The body carries nothing
+ * else on purpose: the backend takes no overrides for the account name, the
+ * opportunity amount, or the stage, so sending more would be silently dropped.
+ *
+ * The backend rejects a repeat conversion (`IRREVERSIBLE_STATUSES`) and, since
+ * phase 4, a conversion of a lead with no email. Both surface as a 400.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ * @returns {Promise<Record<string, any>>} the raw API response, which carries
+ *   `account_id`, and `contact_id` / `opportunity_id` that may each be null.
+ */
+export async function convertLead({ cookies }, id) {
+  if (!id) throw new Error('A lead id is required to convert.');
+  return await apiRequest(
+    `/leads/${id}/`,
+    { method: 'PATCH', body: { status: 'converted' } },
+    { cookies }
+  );
+}
+
+/**
  * Everything the create form needs to render its selects, in one call.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

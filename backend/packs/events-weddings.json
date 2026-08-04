@@ -182,7 +182,7 @@
         "stage": "Done", "ticket": "AV quote came back over the approved budget",
         "description": "Two screens, one operator. Signed off on the call." },
       { "title": "Chase the signed contract and the deposit", "status": "In Progress", "priority": "High", "due_date": "2026-08-06",
-        "stage": "In progress", "deal": "Whitmore & Castellanos wedding. 12 September",
+        "stage": "In progress", "deal": "Whitmore & Castellanos wedding, 12 September",
         "description": "Date is a peak Saturday and is only held until the deposit clears." },
       { "title": "Send the anniversary proposal to the family", "status": "New", "priority": "High", "due_date": "2026-08-04",
         "stage": "Scheduled", "deal": "Ferris golden anniversary dinner",

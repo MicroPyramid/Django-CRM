@@ -69,8 +69,10 @@ export const actions = {
       });
     }
 
+    /** @type {any} */
+    let result;
     try {
-      await updateLead({ cookies }, params.id, values);
+      result = await updateLead({ cookies }, params.id, values);
     } catch (/** @type {any} */ err) {
       // `api-helpers` flattens DRF's field errors into one string. Surface it
       // rather than a generic failure: "email: lead with this email already
@@ -78,6 +80,14 @@ export const actions = {
       return fail(400, { values, message: String(err?.message ?? 'Could not save this lead.') });
     }
 
-    return { saved: true };
+    // A save that also converted the lead (status -> "converted") carries the
+    // three created records in `result`. An ordinary field save does not, so
+    // these are null and the extra links never render.
+    return {
+      saved: true,
+      account_id: result?.account_id ?? null,
+      contact_id: result?.contact_id ?? null,
+      opportunity_id: result?.opportunity_id ?? null
+    };
   }
 };

@@ -14,12 +14,12 @@
  * (a `get_recurring_or_error` mirroring the estimate one, plus list scoping);
  * this page is the client that finally draws the writes those endpoints guard.
  *
- * THE ONE WRITE: PAUSE / RESUME
+ * THE ONE WRITE, THEN THE SECOND
  * The page's thesis is "does anyone have to do anything"; `auto_send`, and
- * whether a schedule is live or paused. Pause/resume is the one action that
- * belongs on a schedule worklist, so it is wired here (`toggle`) and everything
- * else (creating a schedule, a builder with line items and FK pickers) is
- * deferred, the same class of surface as the invoice builder (#48).
+ * whether a schedule is live or paused. Pause/resume was the first write, next
+ * to the state it changes (`toggle`). Creating a schedule is the second: a
+ * builder with line items and three FK pickers, the same shape as the invoice
+ * builder (#48), and it lives here as `createRecurringInvoice`.
  *
  * TOTALS ARE COMPUTED HERE
  * The list endpoint has no `totals` envelope. The four header figures are
@@ -165,4 +165,113 @@ export async function listRecurringInvoices({ cookies }) {
  */
 export async function toggleRecurring({ cookies }, id) {
   return apiRequest(`/invoices/recurring/${id}/toggle/`, { method: 'POST', body: {} }, { cookies });
+}
+
+/**
+ * Every field `RecurringInvoiceCreateSerializer` accepts. Anything not on this
+ * list never reaches the API, which is what keeps a forged `org`, `created_by`,
+ * or a hand-set `total_amount` out of the body. Totals are recalculated
+ * server-side on every create and update, and `org` comes from the JWT.
+ */
+export const CREATE_FIELDS = [
+  'account_id',
+  'contact_id',
+  'opportunity_id',
+  'title',
+  'is_active',
+  'client_name',
+  'client_email',
+  'frequency',
+  'custom_days',
+  'start_date',
+  'end_date',
+  'next_generation_date',
+  'payment_terms',
+  'auto_send',
+  'currency',
+  'discount_type',
+  'discount_value',
+  'tax_rate',
+  'notes',
+  'terms',
+  'line_items'
+];
+
+/**
+ * Copy only allow-listed keys. `undefined` is skipped rather than anything
+ * falsy, so an explicit empty string still travels and can clear a field, while
+ * a key the form never rendered stays absent. An empty `line_items` array is
+ * dropped: the serializer treats the field as optional and sending `[]` would
+ * be an explicit "no lines" write rather than "not specified".
+ *
+ * The allow-list applies to TOP-LEVEL keys only. `line_items` is copied through
+ * as-is, so an extra key inside a line-item object is not stripped here. That is
+ * safe because `RecurringInvoiceLineItemCreateSerializer` declares its own
+ * explicit field list and DRF drops anything else during nested
+ * `to_internal_value`, which is the check that actually matters. Stated plainly
+ * so nobody reads this function as a deeper guarantee than it gives.
+ *
+ * @param {string[]} allowed
+ * @param {Record<string, any>} values
+ * @returns {Record<string, any>}
+ */
+export function buildBody(allowed, values) {
+  /** @type {Record<string, any>} */
+  const body = {};
+  for (const key of allowed) {
+    const value = values[key];
+    if (value === undefined) continue;
+    if (key === 'line_items') {
+      if (Array.isArray(value) && value.length > 0) body[key] = value;
+      continue;
+    }
+    body[key] = value;
+  }
+  return body;
+}
+
+/**
+ * Create a recurring schedule.
+ *
+ * `POST /invoices/recurring/` has `permission_classes = (IsAuthenticated,
+ * HasOrgContext)` and no role gate, so any org member may create one. Do not
+ * hide the control behind an admin check: that would be a UX regression, not a
+ * security improvement, and the backend is the boundary either way.
+ *
+ * The four guards below are fast fails for obvious mistakes. Three mirror real
+ * server rules: `account_id` and `contact_id` are required by
+ * `RecurringInvoiceCreateSerializer` (and it also cross-checks that the
+ * contact belongs to the account), and `title` is required because
+ * `RecurringInvoice.title` is a `CharField(max_length=100)` with no
+ * `blank=True`, so DRF makes it required and non-blank there too. The
+ * `custom_days` guard does not mirror anything: the serializer has no
+ * cross-validation between `frequency` and `custom_days`, so a CUSTOM schedule
+ * with no interval is accepted server-side and then silently generates monthly
+ * via `calculate_next_date()`. That is a backend gap; this check keeps the form
+ * from walking into it.
+ *
+ * `RecurringInvoiceListView.post` (`backend/invoices/api_views.py`) wraps its
+ * result in an envelope, `{ error, message, recurring_invoice }`, exactly the
+ * trap `createTag` documents in `tags.js`: a `create*` function that resolves
+ * to the envelope instead of the record is the one the next caller reaches
+ * for `.id` on and gets `undefined`. This unwraps to `.recurring_invoice`
+ * deliberately, with the same `?? resp` fallback as `createTag`, so a change
+ * in the backend's response shape degrades to the raw envelope rather than
+ * throwing.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {Record<string, any>} values
+ * @returns {Promise<any>}
+ */
+export async function createRecurringInvoice({ cookies }, values) {
+  if (!values.account_id) throw new Error('Choose an account.');
+  if (!values.contact_id) throw new Error('Choose a contact.');
+  if (!(values.title ?? '').toString().trim()) throw new Error('Give the schedule a title.');
+  if (values.frequency === 'CUSTOM' && !values.custom_days) {
+    throw new Error('A custom frequency needs an interval in days.');
+  }
+
+  const body = buildBody(CREATE_FIELDS, values);
+  const resp = await apiRequest('/invoices/recurring/', { method: 'POST', body }, { cookies });
+  return resp.recurring_invoice ?? resp;
 }

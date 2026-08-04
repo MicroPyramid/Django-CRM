@@ -554,6 +554,39 @@ class TestGetTeamsAndUsersView:
         assert "teams" in response.data
         assert "profiles" in response.data
 
+    def test_permission_classes_include_has_org_context(self):
+        """Without HasOrgContext a valid JWT that carries no org_id claim leaves
+        request.profile as None and the view dereferences it, so the caller gets
+        an uncaught AttributeError 500 instead of a clean 403."""
+        from common.permissions import HasOrgContext
+        from common.views.user_views import GetTeamsAndUsersView
+
+        assert HasOrgContext in GetTeamsAndUsersView.permission_classes
+
+    def test_no_org_context_is_denied(self):
+        """The permission must be able to return False, not only True."""
+        from common.permissions import HasOrgContext
+
+        class _Request:
+            profile = None
+            org = None
+
+        assert HasOrgContext().has_permission(_Request(), None) is False
+
+    def test_org_context_present_is_allowed(self, admin_profile, org_a):
+        """The permission must be able to return True, not only False, so a
+        normal org member with an active profile and an org on the request
+        is let through."""
+        from unittest.mock import MagicMock
+
+        from common.permissions import HasOrgContext
+
+        request = MagicMock()
+        request.profile = admin_profile
+        request.profile.is_active = True
+        request.org = org_a
+        assert HasOrgContext().has_permission(request, None) is True
+
 
 @pytest.mark.django_db
 class TestProfilePrivilegeEscalation:

@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { addLeadNote, getLead } from '$lib/server/v2/leads.js';
+import { addLeadNote, convertLead, getLead } from '$lib/server/v2/leads.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
@@ -42,5 +43,26 @@ export const actions = {
     }
 
     return { noted: true };
+  },
+
+  /**
+   * Convert this lead. The backend owns every rule: ownership, the one-way-door
+   * check, and the email requirement. This action adds no rule of its own, it
+   * only turns the API's rejection into a readable line for the page.
+   */
+  convert: async ({ cookies, params }) => {
+    try {
+      const result = await convertLead({ cookies }, params.id);
+      return {
+        converted: true,
+        account_id: result?.account_id ?? null,
+        contact_id: result?.contact_id ?? null,
+        opportunity_id: result?.opportunity_id ?? null
+      };
+    } catch (/** @type {any} */ err) {
+      return fail(err?.status === 403 ? 403 : 400, {
+        error: readableError(err, 'Could not convert this lead.')
+      });
+    }
   }
 };

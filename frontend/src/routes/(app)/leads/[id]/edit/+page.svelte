@@ -198,10 +198,30 @@
     {#if saved}
       <div class="v2-next" style="margin-bottom:18px" role="status">
         <div class="v2-next-body">
-          <div class="v2-next-text">Saved.</div>
-          <div class="v2-sub" style="margin-top:3px">
-            Changes to “{displayName}” are on the record.
-          </div>
+          {#if result?.account_id}
+            <div class="v2-next-text">Converted.</div>
+            <div class="v2-sub" style="margin-top:3px">
+              The account, contact and deal are ready. Converting is handled on its own, so only
+              custom fields from this save were applied; every other edit on this form was not.
+              Reopen the lead and redo them.
+            </div>
+          {:else}
+            <div class="v2-next-text">Saved.</div>
+            <div class="v2-sub" style="margin-top:3px">
+              Changes to “{displayName}” are on the record.
+            </div>
+          {/if}
+          {#if result?.account_id}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <a class="v2-btn" href="/accounts/{result.account_id}">View account</a>
+              {#if result.contact_id}
+                <a class="v2-btn" href="/contacts/{result.contact_id}">View contact</a>
+              {/if}
+              {#if result.opportunity_id}
+                <a class="v2-btn" href="/pipeline/{result.opportunity_id}">View deal</a>
+              {/if}
+            </div>
+          {/if}
         </div>
         <a class="v2-btn" href="/leads/{lead.id}">Back to the lead</a>
       </div>
@@ -403,6 +423,10 @@
           An Account, a Contact and an Opportunity, with this lead's comments and attachments moved
           across. The lead stays as a converted record, and this is the last time you can change its
           status. There is no endpoint that undoes any of it.
+        </p>
+        <p style="margin-top:6px">
+          Any other change on this form, aside from custom fields, is dropped when it saves
+          alongside a conversion. Reopen the lead afterwards to redo it.
         </p>
       </div>
     {:else if statusChanged}
