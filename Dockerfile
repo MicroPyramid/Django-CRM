@@ -20,6 +20,9 @@ WORKDIR /app
 # Install uv (fast Python package manager).
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
 
+# Move the venv outside of backend so it doesn't get overwritten with the copy
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+
 # Install Python dependencies into /app/.venv (layer cached on lockfile changes)
 COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
 RUN uv sync --frozen --no-install-project
@@ -28,6 +31,6 @@ RUN uv sync --frozen --no-install-project
 COPY backend/ .
 
 # Put the venv's binaries on PATH so `python`, `gunicorn`, `celery` etc. resolve.
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/opt/venv/bin:$PATH"
 
 EXPOSE 8000
