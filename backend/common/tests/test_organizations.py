@@ -104,9 +104,14 @@ class TestOrgProfileCreateView:
         assert org_a.name in org_names
 
     def test_list_orgs_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets 401."""
+        """Unauthenticated callers are refused.
+
+        The endpoint answers 403, not the 401 this test used to assert, because
+        no authenticator offers a ``WWW-Authenticate`` challenge. Access is
+        denied either way; only the status text differs.
+        """
         response = unauthenticated_client.get(self.url)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db

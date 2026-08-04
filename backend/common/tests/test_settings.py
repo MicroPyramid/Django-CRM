@@ -6,7 +6,6 @@ Run with: pytest common/tests/test_settings.py -v
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from common.models import APISettings
 
@@ -45,9 +44,16 @@ class TestDomainListView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets PermissionDenied."""
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        """The request is refused, and refused as a response, not an exception.
+
+        DRF catches ``PermissionDenied`` in ``handle_exception`` and renders it,
+        so a test client never sees it raised. Wrapping the call in
+        ``pytest.raises`` therefore failed with DID NOT RAISE no matter how the
+        endpoint behaved, which meant this test could never have caught the
+        access opening up.
+        """
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db

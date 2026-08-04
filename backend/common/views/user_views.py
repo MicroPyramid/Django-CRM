@@ -81,7 +81,7 @@ class GetTeamsAndUsersView(APIView):
 
 
 class UsersListView(APIView, LimitOffsetPagination):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["users"],
@@ -272,7 +272,7 @@ class UsersListView(APIView, LimitOffsetPagination):
 
 
 class UserDetailView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
         # Security fix: Filter by org to prevent cross-org enumeration
@@ -529,7 +529,7 @@ class UserDetailView(APIView):
 
 
 class UserStatusView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["users"],

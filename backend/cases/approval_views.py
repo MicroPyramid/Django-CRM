@@ -34,6 +34,7 @@ from cases.serializer import (
 )
 from common.models import Activity
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 
 
 def _is_admin(profile) -> bool:
@@ -311,7 +312,7 @@ class ApprovalInboxView(APIView):
         if state and state != "all":
             qs = qs.filter(state=state)
 
-        case_id = request.query_params.get("case")
+        case_id = uuid_param(request.query_params, "case")
         if case_id:
             qs = qs.filter(case_id=case_id)
 

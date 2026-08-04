@@ -25,6 +25,7 @@ from common.models import (
     Teams,
 )
 from common.permissions import HasOrgContext
+from common.validators import payload_id_list, uuid_list_param, uuid_param
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -90,14 +91,14 @@ class TaskListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(status=params.get("status"))
             if params.get("priority"):
                 queryset = queryset.filter(priority=params.get("priority"))
-            if params.getlist("assigned_to"):
+            assigned_to = uuid_list_param(params, "assigned_to")
+            if assigned_to:
                 queryset = queryset.filter(
-                    assigned_to__id__in=params.getlist("assigned_to")
+                    assigned_to__id__in=assigned_to
                 ).distinct()
-            if params.get("tags"):
-                queryset = queryset.filter(
-                    tags__id__in=params.getlist("tags")
-                ).distinct()
+            tags = uuid_list_param(params, "tags")
+            if tags:
+                queryset = queryset.filter(tags__id__in=tags).distinct()
             if params.get("search"):
                 queryset = queryset.filter(title__icontains=params.get("search"))
             if params.get("due_date__gte"):
@@ -112,14 +113,10 @@ class TaskListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(
                     created_at__lte=params.get("created_at__lte")
                 )
-            if params.get("account"):
-                queryset = queryset.filter(account_id=params.get("account"))
-            if params.get("opportunity"):
-                queryset = queryset.filter(opportunity_id=params.get("opportunity"))
-            if params.get("case"):
-                queryset = queryset.filter(case_id=params.get("case"))
-            if params.get("lead"):
-                queryset = queryset.filter(lead_id=params.get("lead"))
+            for related in ("account", "opportunity", "case", "lead"):
+                related_id = uuid_param(params, related)
+                if related_id:
+                    queryset = queryset.filter(**{f"{related}_id": related_id})
             for raw_key, raw_value in params.items():
                 if raw_key.startswith("cf_") and raw_value:
                     cf_key = raw_key[3:]
@@ -281,13 +278,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                 )
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                if isinstance(contacts_list, str):
-                    contacts_list = json.loads(contacts_list)
-                # Extract IDs if contacts_list contains objects with 'id' field
-                contact_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in contacts_list
-                ]
+                contact_ids = payload_id_list(contacts_list, "contacts")
                 contacts = Contact.objects.filter(
                     id__in=contact_ids, org=request.profile.org
                 )
@@ -295,25 +286,13 @@ class TaskListView(APIView, LimitOffsetPagination):
 
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
                 assinged_to_list = params.get("assigned_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -582,13 +561,7 @@ class TaskDetailView(APIView):
             task_obj.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                if isinstance(contacts_list, str):
-                    contacts_list = json.loads(contacts_list)
-                # Extract IDs if contacts_list contains objects with 'id' field
-                contact_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in contacts_list
-                ]
+                contact_ids = payload_id_list(contacts_list, "contacts")
                 contacts = Contact.objects.filter(
                     id__in=contact_ids, org=request.profile.org
                 )
@@ -597,26 +570,14 @@ class TaskDetailView(APIView):
             task_obj.teams.clear()
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 task_obj.teams.add(*teams)
 
             task_obj.assigned_to.clear()
             if params.get("assigned_to"):
                 assinged_to_list = params.get("assigned_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -710,13 +671,7 @@ class TaskDetailView(APIView):
                 task_obj.contacts.clear()
                 contacts_list = params.get("contacts")
                 if contacts_list:
-                    if isinstance(contacts_list, str):
-                        contacts_list = json.loads(contacts_list)
-                    # Extract IDs if contacts_list contains objects with 'id' field
-                    contact_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in contacts_list
-                    ]
+                    contact_ids = payload_id_list(contacts_list, "contacts")
                     contacts = Contact.objects.filter(
                         id__in=contact_ids, org=request.profile.org
                     )
@@ -726,13 +681,7 @@ class TaskDetailView(APIView):
                 task_obj.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    if isinstance(teams_list, str):
-                        teams_list = json.loads(teams_list)
-                    # Extract IDs if teams_list contains objects with 'id' field
-                    team_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in teams_list
-                    ]
+                    team_ids = payload_id_list(teams_list, "teams")
                     teams = Teams.objects.filter(
                         id__in=team_ids, org=request.profile.org
                     )
@@ -742,13 +691,7 @@ class TaskDetailView(APIView):
                 task_obj.assigned_to.clear()
                 assigned_to_list = params.get("assigned_to")
                 if assigned_to_list:
-                    if isinstance(assigned_to_list, str):
-                        assigned_to_list = json.loads(assigned_to_list)
-                    # Extract IDs if assigned_to_list contains objects with 'id' field
-                    assigned_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in assigned_to_list
-                    ]
+                    assigned_ids = payload_id_list(assigned_to_list, "assigned_to")
                     profiles = Profile.objects.filter(
                         id__in=assigned_ids, org=request.profile.org, is_active=True
                     )
@@ -758,13 +701,7 @@ class TaskDetailView(APIView):
                 task_obj.tags.clear()
                 tags_list = params.get("tags")
                 if tags_list:
-                    if isinstance(tags_list, str):
-                        tags_list = json.loads(tags_list)
-                    # Extract IDs if tags_list contains objects with 'id' field
-                    tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags_list
-                    ]
+                    tag_ids = payload_id_list(tags_list, "tags")
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
                     )

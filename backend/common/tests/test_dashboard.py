@@ -8,7 +8,6 @@ import uuid
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 
 from accounts.models import Account
 from common.models import Activity
@@ -34,9 +33,16 @@ class TestDashboardView:
         assert "opportunities_count" in data
 
     def test_dashboard_unauthenticated(self, unauthenticated_client):
-        """Unauthenticated user gets PermissionDenied."""
-        with pytest.raises(PermissionDenied):
-            unauthenticated_client.get(self.url)
+        """The request is refused, and refused as a response, not an exception.
+
+        DRF catches ``PermissionDenied`` in ``handle_exception`` and renders it,
+        so a test client never sees it raised. Wrapping the call in
+        ``pytest.raises`` therefore failed with DID NOT RAISE no matter how the
+        endpoint behaved, which meant this test could never have caught the
+        access opening up.
+        """
+        response = unauthenticated_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_dashboard_counts(self, admin_client, org_a, admin_user):
         """Dashboard should return accurate counts."""

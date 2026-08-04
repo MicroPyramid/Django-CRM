@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from common.models import Profile
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 from opportunity.models import SalesGoal
 from opportunity.serializer import SalesGoalCreateSerializer, SalesGoalSerializer
 
@@ -35,10 +36,12 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
             queryset = queryset.filter(
                 period_start__lte=today, period_end__gte=today
             )
-        if params.get("assigned_to"):
-            queryset = queryset.filter(assigned_to_id=params["assigned_to"])
-        if params.get("team"):
-            queryset = queryset.filter(team_id=params["team"])
+        assigned_to = uuid_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to_id=assigned_to)
+        team = uuid_param(params, "team")
+        if team:
+            queryset = queryset.filter(team_id=team)
         if params.get("period_type"):
             queryset = queryset.filter(period_type=params["period_type"])
         if params.get("search"):

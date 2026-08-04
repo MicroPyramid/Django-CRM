@@ -6,12 +6,12 @@ from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.utils import json
 from rest_framework.views import APIView
 
 from common import swagger_params
 from common.models import Document, Profile, Teams
 from common.permissions import HasOrgContext
+from common.validators import payload_id_list
 from common.serializer import (
     DocumentCreateSerializer,
     DocumentCreateSwaggerSerializer,
@@ -74,10 +74,13 @@ class DocumentListView(APIView, LimitOffsetPagination):
             if request_post.get("status"):
                 queryset = queryset.filter(status=request_post.get("status"))
 
-            if request_post.get("shared_to"):
-                queryset = queryset.filter(
-                    shared_to__id__in=json.loads(request_post.get("shared_to"))
-                )
+            # `json.loads` on the raw value meant `?shared_to=<id>`, the
+            # obvious spelling, raised JSONDecodeError and answered 500. Only a
+            # JSON array ever worked, and a malformed id inside one answered
+            # 500 as well.
+            shared_to = payload_id_list(request_post.get("shared_to"), "shared_to")
+            if shared_to:
+                queryset = queryset.filter(shared_to__id__in=shared_to)
 
         context = {}
         profile_list = Profile.objects.filter(
@@ -194,13 +197,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
             )
             if params.get("shared_to"):
                 assinged_to_list = params.get("shared_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "shared_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -208,13 +205,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
                     doc.shared_to.add(*profiles)
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)
@@ -387,13 +378,7 @@ class DocumentDetailView(APIView):
             doc.shared_to.clear()
             if params.get("shared_to"):
                 assinged_to_list = params.get("shared_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "shared_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -403,13 +388,7 @@ class DocumentDetailView(APIView):
             doc.teams.clear()
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams:
                     doc.teams.add(*teams)

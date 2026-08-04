@@ -60,6 +60,7 @@ from common.serializer import (
     CustomFieldDefinitionSerializer,
 )
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
+from common.validators import payload_id_list, uuid_list_param, uuid_param
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
@@ -104,16 +105,17 @@ def apply_case_list_filters(queryset, params):
         queryset = queryset.filter(status=status_values[0])
     if params.get("priority"):
         queryset = queryset.filter(priority=params.get("priority"))
-    if params.get("account"):
-        queryset = queryset.filter(account=params.get("account"))
+    account = uuid_param(params, "account")
+    if account:
+        queryset = queryset.filter(account=account)
     if params.get("case_type"):
         queryset = queryset.filter(case_type=params.get("case_type"))
-    if params.getlist("assigned_to"):
-        queryset = queryset.filter(
-            assigned_to__id__in=params.getlist("assigned_to")
-        ).distinct()
-    if params.get("tags"):
-        queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+    assigned_to = uuid_list_param(params, "assigned_to")
+    if assigned_to:
+        queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
+    tags = uuid_list_param(params, "tags")
+    if tags:
+        queryset = queryset.filter(tags__id__in=tags).distinct()
     if params.get("search"):
         search = params.get("search")
         queryset = queryset.filter(
@@ -338,13 +340,7 @@ class CaseListView(APIView, LimitOffsetPagination):
 
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                if isinstance(contacts_list, str):
-                    contacts_list = json.loads(contacts_list)
-                # Extract IDs if contacts_list contains objects with 'id' field
-                contact_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in contacts_list
-                ]
+                contact_ids = payload_id_list(contacts_list, "contacts")
                 contacts = Contact.objects.filter(
                     id__in=contact_ids, org=request.profile.org
                 )
@@ -353,26 +349,14 @@ class CaseListView(APIView, LimitOffsetPagination):
 
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams.exists():
                     cases_obj.teams.add(*teams)
 
             if params.get("assigned_to"):
                 assinged_to_list = params.get("assigned_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -492,13 +476,7 @@ class CaseDetailView(APIView):
             cases_object.contacts.clear()
             if params.get("contacts"):
                 contacts_list = params.get("contacts")
-                if isinstance(contacts_list, str):
-                    contacts_list = json.loads(contacts_list)
-                # Extract IDs if contacts_list contains objects with 'id' field
-                contact_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in contacts_list
-                ]
+                contact_ids = payload_id_list(contacts_list, "contacts")
                 contacts = Contact.objects.filter(
                     id__in=contact_ids, org=request.profile.org
                 )
@@ -508,13 +486,7 @@ class CaseDetailView(APIView):
             cases_object.teams.clear()
             if params.get("teams"):
                 teams_list = params.get("teams")
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 if teams.exists():
                     cases_object.teams.add(*teams)
@@ -522,13 +494,7 @@ class CaseDetailView(APIView):
             cases_object.assigned_to.clear()
             if params.get("assigned_to"):
                 assinged_to_list = params.get("assigned_to")
-                if isinstance(assinged_to_list, str):
-                    assinged_to_list = json.loads(assinged_to_list)
-                # Extract IDs if assinged_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assinged_to_list
-                ]
+                assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org, is_active=True
                 )
@@ -879,13 +845,7 @@ class CaseDetailView(APIView):
                 cases_object.contacts.clear()
                 contacts_list = params.get("contacts")
                 if contacts_list:
-                    if isinstance(contacts_list, str):
-                        contacts_list = json.loads(contacts_list)
-                    # Extract IDs if contacts_list contains objects with 'id' field
-                    contact_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in contacts_list
-                    ]
+                    contact_ids = payload_id_list(contacts_list, "contacts")
                     contacts = Contact.objects.filter(
                         id__in=contact_ids, org=request.profile.org
                     )
@@ -895,13 +855,7 @@ class CaseDetailView(APIView):
                 cases_object.teams.clear()
                 teams_list = params.get("teams")
                 if teams_list:
-                    if isinstance(teams_list, str):
-                        teams_list = json.loads(teams_list)
-                    # Extract IDs if teams_list contains objects with 'id' field
-                    team_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in teams_list
-                    ]
+                    team_ids = payload_id_list(teams_list, "teams")
                     teams = Teams.objects.filter(
                         id__in=team_ids, org=request.profile.org
                     )
@@ -911,13 +865,7 @@ class CaseDetailView(APIView):
                 cases_object.assigned_to.clear()
                 assigned_to_list = params.get("assigned_to")
                 if assigned_to_list:
-                    if isinstance(assigned_to_list, str):
-                        assigned_to_list = json.loads(assigned_to_list)
-                    # Extract IDs if assigned_to_list contains objects with 'id' field
-                    assigned_ids = [
-                        item.get("id") if isinstance(item, dict) else item
-                        for item in assigned_to_list
-                    ]
+                    assigned_ids = payload_id_list(assigned_to_list, "assigned_to")
                     profiles = Profile.objects.filter(
                         id__in=assigned_ids, org=request.profile.org, is_active=True
                     )
@@ -927,13 +875,7 @@ class CaseDetailView(APIView):
                 cases_object.tags.clear()
                 tags_list = params.get("tags")
                 if tags_list:
-                    if isinstance(tags_list, str):
-                        tags_list = json.loads(tags_list)
-                    # Extract IDs if tags_list contains objects with 'id' field
-                    tag_ids = [
-                        tag.get("id") if isinstance(tag, dict) else tag
-                        for tag in tags_list
-                    ]
+                    tag_ids = payload_id_list(tags_list, "tags")
                     tag_objs = Tags.objects.filter(
                         id__in=tag_ids, org=request.profile.org, is_active=True
                     )

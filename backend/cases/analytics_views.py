@@ -28,6 +28,7 @@ from cases.access import is_org_admin
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common.permissions import HasOrgContext
+from common.validators import uuid_param
 
 # ---------------------------------------------------------------------------
 # Shared filter parsing
@@ -69,9 +70,9 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
 
     if priority := params.get("priority"):
         qs = qs.filter(priority=priority)
-    if team_id := params.get("team"):
+    if team_id := uuid_param(params, "team"):
         qs = qs.filter(teams=team_id)
-    if agent_id := params.get("agent"):
+    if agent_id := uuid_param(params, "agent"):
         qs = qs.filter(assigned_to=agent_id)
 
     from_dt = _parse_dt(params.get("from", ""))

@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext
+from common.validators import uuid_list_param, uuid_param
 from opportunity.models import Opportunity, StageAgingConfig
 from opportunity.serializer import (
     OpportunityKanbanCardSerializer,
@@ -122,14 +123,15 @@ class OpportunityKanbanView(APIView):
     def _apply_filters(self, queryset, params):
         if params.get("search"):
             queryset = queryset.filter(name__icontains=params.get("search"))
-        if params.get("account"):
-            queryset = queryset.filter(account_id=params.get("account"))
-        if params.getlist("assigned_to"):
-            queryset = queryset.filter(
-                assigned_to__id__in=params.getlist("assigned_to")
-            ).distinct()
-        if params.getlist("tags"):
-            queryset = queryset.filter(tags__id__in=params.getlist("tags")).distinct()
+        account = uuid_param(params, "account")
+        if account:
+            queryset = queryset.filter(account_id=account)
+        assigned_to = uuid_list_param(params, "assigned_to")
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
+        tags = uuid_list_param(params, "tags")
+        if tags:
+            queryset = queryset.filter(tags__id__in=tags).distinct()
         if params.get("closed_on__gte"):
             queryset = queryset.filter(closed_on__gte=params.get("closed_on__gte"))
         if params.get("closed_on__lte"):

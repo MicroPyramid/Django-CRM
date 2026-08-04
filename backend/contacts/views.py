@@ -33,6 +33,7 @@ from common.serializer import (
     CustomFieldDefinitionSerializer,
 )
 from common.utils import COUNTRIES
+from common.validators import payload_id_list, uuid_list_param
 from contacts import swagger_params
 from contacts.models import Contact
 from contacts.serializer import (
@@ -101,18 +102,18 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(phone__icontains=params.get("phone"))
             if params.get("email"):
                 queryset = queryset.filter(email__icontains=params.get("email"))
-            if params.getlist("assigned_to"):
+            assigned_to = uuid_list_param(params, "assigned_to")
+            if assigned_to:
                 # `getlist` to ask and `get` to read gave `__in` a single
                 # string, which Django iterates character by character -- each
                 # character then failed to parse as a UUID, so filtering by an
                 # owner answered 500.
                 queryset = queryset.filter(
-                    assigned_to__id__in=params.getlist("assigned_to")
+                    assigned_to__id__in=assigned_to
                 ).distinct()
-            if params.get("tags"):
-                queryset = queryset.filter(
-                    tags__id__in=params.getlist("tags")
-                ).distinct()
+            tags = uuid_list_param(params, "tags")
+            if tags:
+                queryset = queryset.filter(tags__id__in=tags).distinct()
             if params.get("search"):
                 search = params.get("search")
                 queryset = queryset.filter(
@@ -246,25 +247,13 @@ class ContactsListView(APIView, LimitOffsetPagination):
 
         if params.get("teams"):
             teams_list = params.get("teams")
-            if isinstance(teams_list, str):
-                teams_list = json.loads(teams_list)
-            # Extract IDs if teams_list contains objects with 'id' field
-            team_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in teams_list
-            ]
+            team_ids = payload_id_list(teams_list, "teams")
             teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         if params.get("assigned_to"):
             assinged_to_list = params.get("assigned_to")
-            if isinstance(assinged_to_list, str):
-                assinged_to_list = json.loads(assinged_to_list)
-            # Extract IDs if assinged_to_list contains objects with 'id' field
-            assigned_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in assinged_to_list
-            ]
+            assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
             profiles = Profile.objects.filter(
                 id__in=assigned_ids, org=request.profile.org
             )
@@ -478,26 +467,14 @@ class ContactDetailView(APIView):
         contact_obj.teams.clear()
         if data.get("teams"):
             teams_list = data.get("teams")
-            if isinstance(teams_list, str):
-                teams_list = json.loads(teams_list)
-            # Extract IDs if teams_list contains objects with 'id' field
-            team_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in teams_list
-            ]
+            team_ids = payload_id_list(teams_list, "teams")
             teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
             contact_obj.teams.add(*teams)
 
         contact_obj.assigned_to.clear()
         if data.get("assigned_to"):
             assinged_to_list = data.get("assigned_to")
-            if isinstance(assinged_to_list, str):
-                assinged_to_list = json.loads(assinged_to_list)
-            # Extract IDs if assinged_to_list contains objects with 'id' field
-            assigned_ids = [
-                item.get("id") if isinstance(item, dict) else item
-                for item in assinged_to_list
-            ]
+            assigned_ids = payload_id_list(assinged_to_list, "assigned_to")
             profiles = Profile.objects.filter(
                 id__in=assigned_ids, org=request.profile.org
             )
@@ -834,13 +811,7 @@ class ContactDetailView(APIView):
             contact_obj.teams.clear()
             teams_list = data.get("teams")
             if teams_list:
-                if isinstance(teams_list, str):
-                    teams_list = json.loads(teams_list)
-                # Extract IDs if teams_list contains objects with 'id' field
-                team_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in teams_list
-                ]
+                team_ids = payload_id_list(teams_list, "teams")
                 teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
                 contact_obj.teams.add(*teams)
 
@@ -848,13 +819,7 @@ class ContactDetailView(APIView):
             contact_obj.assigned_to.clear()
             assigned_to_list = data.get("assigned_to")
             if assigned_to_list:
-                if isinstance(assigned_to_list, str):
-                    assigned_to_list = json.loads(assigned_to_list)
-                # Extract IDs if assigned_to_list contains objects with 'id' field
-                assigned_ids = [
-                    item.get("id") if isinstance(item, dict) else item
-                    for item in assigned_to_list
-                ]
+                assigned_ids = payload_id_list(assigned_to_list, "assigned_to")
                 profiles = Profile.objects.filter(
                     id__in=assigned_ids, org=request.profile.org
                 )
