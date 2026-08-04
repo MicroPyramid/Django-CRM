@@ -9,6 +9,7 @@
    * information rather than a button. It still says so. Knowing a colleague
    * has to release it is worth more than a control that answers 403.
    */
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
@@ -24,17 +25,6 @@
 
   let articles = $derived(data.articles);
   let totals = $derived(data.totals);
-
-  let filters = $derived(
-    [
-      data.status ? { key: 'status', label: 'Status', value: data.status } : null,
-      data.visibility ? { key: 'visibility', label: 'Visibility', value: data.visibility } : null,
-      data.search ? { key: 'search', label: 'Search', value: data.search } : null
-    ].filter(Boolean)
-  );
-
-  /** Whether any filter is on, which decides what an empty result means. */
-  let filtered = $derived(filters.length > 0);
 </script>
 
 <PageHeader title="Knowledge base">
@@ -50,6 +40,16 @@
     <a class="v2-btn v2-btn-primary" href="/solutions/new"><Plus />New article</a>
   {/snippet}
 </PageHeader>
+
+<!-- Unconditional, unlike every other v2 list page's "filtered list" caption:
+     `solution_views.py:122-132` counts the five cards over the whole base on
+     purpose, never the filtered page, because they partition the knowledge
+     base and recomputing them inside `?status=draft` would leave the other
+     four reading zero. True whether or not a filter is applied, so it always
+     renders. -->
+<p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+  These numbers cover every article, not just the ones shown.
+</p>
 
 <div class="v2-pad" style="padding-top:14px;flex:none">
   <div class="v2-stats">
@@ -70,8 +70,8 @@
 </div>
 
 <FilterBar
-  view={filtered ? 'Filtered, last edited first' : 'All articles, last edited first'}
-  {filters}
+  page="solutions"
+  url={page.url}
   meta="Published means customers can be shown it. Approving it is a separate step"
 />
 
@@ -82,14 +82,14 @@
 <div class="v2-scroll">
   {#if articles.length === 0}
     <EmptyState
-      title={filtered ? 'No articles match that' : 'No articles yet'}
-      body={filtered
+      title={page.url.search ? 'No articles match that' : 'No articles yet'}
+      body={page.url.search
         ? 'Nothing in the knowledge base matches those filters. Clearing them shows everything.'
         : 'Write the answer once, link it from the tickets that ask for it, and stop retyping it. The first one usually comes straight out of a ticket you just resolved.'}
     >
       {#snippet icon()}<BookOpen size={21} />{/snippet}
       {#snippet actions()}
-        {#if filtered}
+        {#if page.url.search}
           <a class="v2-btn" href="/solutions">Clear filters</a>
         {/if}
         <a class="v2-btn v2-btn-primary" href="/solutions/new">New article</a>
@@ -168,7 +168,7 @@
     <p class="v2-sub v2-pad" style="font-size:12px;padding-bottom:24px">
       Showing <span class="v2-num">{articles.length}</span> of
       <span class="v2-num">{count(totals.matched)}</span>
-      {#if filtered}
+      {#if page.url.search}
         · <a href="/solutions" style="color:inherit">clear filters</a>
       {/if}
     </p>

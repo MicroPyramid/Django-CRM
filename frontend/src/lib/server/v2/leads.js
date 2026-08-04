@@ -31,6 +31,9 @@ import {
   pairForEdit
 } from '$lib/server/v2/lead-custom-fields.js';
 
+/** See the note on FILTER_FIELDS in tickets.js. */
+export const FILTER_FIELDS = ['assigned_to', 'status', 'source', 'tags'];
+
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it

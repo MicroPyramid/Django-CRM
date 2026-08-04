@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { getOrgPeopleAndTeams } = await import('./org-people.js');
+const { getOrgPeopleAndTeams, resolveMe } = await import('./org-people.js');
 
 const cookies = /** @type {any} */ ({});
 
@@ -17,13 +17,13 @@ describe('getOrgPeopleAndTeams', () => {
     apiRequest.mockReset();
   });
 
-  it('labels a person by name when there is one', async () => {
+  it('labels a person by name when there is one, and carries the email through so @me can be resolved', async () => {
     apiRequest.mockResolvedValue({
       profiles: [{ id: 'p1', user_details: { name: 'Ada Lovelace', email: 'ada@x.io' } }],
       teams: []
     });
     const { people } = await getOrgPeopleAndTeams(cookies);
-    expect(people).toEqual([{ id: 'p1', name: 'Ada Lovelace' }]);
+    expect(people).toEqual([{ id: 'p1', name: 'Ada Lovelace', email: 'ada@x.io' }]);
   });
 
   it('falls back to the email, then to Unnamed', async () => {
@@ -58,5 +58,26 @@ describe('getOrgPeopleAndTeams', () => {
   it('survives a response missing both keys', async () => {
     apiRequest.mockResolvedValue({});
     await expect(getOrgPeopleAndTeams(cookies)).resolves.toEqual({ people: [], teams: [] });
+  });
+});
+
+describe('resolveMe', () => {
+  const people = [
+    { id: 'p1', name: 'Ada', email: 'ada@x.com' },
+    { id: 'p2', name: 'Bo', email: 'bo@x.com' }
+  ];
+
+  it('matches on email, case insensitively', () => {
+    expect(resolveMe(people, 'ADA@x.com')).toBe('p1');
+  });
+
+  it('returns null when nobody matches, so the caller can hide the preset', () => {
+    // A "Mine" link that filters to nobody is worse than no link: it looks
+    // like the viewer owns nothing.
+    expect(resolveMe(people, 'nobody@x.com')).toBe(null);
+  });
+
+  it('returns null for a missing viewer email', () => {
+    expect(resolveMe(people, undefined)).toBe(null);
   });
 });

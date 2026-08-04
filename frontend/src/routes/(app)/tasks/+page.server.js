@@ -1,5 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { listTasks, setTaskDone } from '$lib/server/v2/tasks.js';
+import { listTasks, setTaskDone, FILTER_FIELDS } from '$lib/server/v2/tasks.js';
+import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
+import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
 
 /**
  * The task queue.
@@ -12,24 +14,35 @@ import { listTasks, setTaskDone } from '$lib/server/v2/tasks.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load(event) {
-  const showAll = event.url.searchParams.get('all') === '1';
-  const params = new URLSearchParams();
-  const search = event.url.searchParams.get('q');
-  if (search) params.set('search', search);
-  const priority = event.url.searchParams.get('priority');
-  if (priority) params.set('priority', priority);
+  const { url, locals } = event;
+  const showAll = url.searchParams.get('all') === '1';
 
-  const { results, totals, owners } = await listTasks(event, params);
+  const filters = readFilters(url, 'tasks');
+  const params = buildFilterQuery(FILTER_FIELDS, filters);
+  const search = url.searchParams.get('q');
+  if (search) params.set('search', search);
+
+  const [{ results, totals, owners }, orgPeople] = await Promise.all([
+    listTasks(event, params),
+    getOrgPeopleAndTeams(event.cookies)
+  ]);
+
+  // `all=1` and an explicit `?status=` both mean the viewer asked for something
+  // other than the to-do list, so the open-only strip stands down for either.
+  // Without this, `status=Completed` fetches the completed tasks and then
+  // drops all of them, and the page reads as "you have none".
+  const explicitStatus = Boolean(filters.status);
 
   return {
-    // Filtered here rather than with `?status=`, because the totals the header
-    // reads have to cover both; "3 of 11 open" needs the 11.
-    tasks: showAll ? results : results.filter((task) => !task.is_done),
+    // Filtered here rather than with `?status=` alone, because the totals the
+    // header reads have to cover both; "3 of 11 open" needs the 11.
+    tasks: showAll || explicitStatus ? results : results.filter((task) => !task.is_done),
     totals,
     owners,
     showAll,
-    filters: { q: search ?? '', priority: priority ?? '' },
-    canDelete: event.locals.profile?.role === 'ADMIN'
+    people: orgPeople.people,
+    meId: resolveMe(orgPeople.people, /** @type {any} */ (locals).user?.email),
+    canDelete: locals.profile?.role === 'ADMIN'
   };
 }
 

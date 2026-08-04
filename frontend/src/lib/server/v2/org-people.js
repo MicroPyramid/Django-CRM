@@ -36,7 +36,7 @@ function personName(profile) {
 
 /**
  * @param {import('@sveltejs/kit').Cookies} cookies
- * @returns {Promise<{ people: { id: string, name: string }[], teams: { id: string, name: string }[] }>}
+ * @returns {Promise<{ people: { id: string, name: string, email: string }[], teams: { id: string, name: string }[] }>}
  */
 export async function getOrgPeopleAndTeams(cookies) {
   try {
@@ -44,11 +44,33 @@ export async function getOrgPeopleAndTeams(cookies) {
     return {
       people: (resp?.profiles ?? []).map((/** @type {any} */ p) => ({
         id: p.id,
-        name: personName(p)
+        name: personName(p),
+        email: p.user_details?.email ?? ''
       })),
       teams: (resp?.teams ?? []).map((/** @type {any} */ t) => ({ id: t.id, name: t.name }))
     };
   } catch {
     return { people: [], teams: [] };
   }
+}
+
+/**
+ * The viewer's own PROFILE id, for the "Mine" presets.
+ *
+ * Matched by email because no id is available any other way: the JWT carries
+ * `user_email` but no profile id, and `locals.user.id` is the User id, not the
+ * Profile id that `assigned_to` filters on. Those are different tables and
+ * mixing them has silently broken checks in this codebase before.
+ *
+ * Returns null when nothing matches, and callers must then hide the preset
+ * rather than render a link that filters to nobody.
+ *
+ * @param {{id: string, email?: string}[]} people
+ * @param {string | undefined} viewerEmail
+ * @returns {string | null}
+ */
+export function resolveMe(people, viewerEmail) {
+  if (!viewerEmail) return null;
+  const wanted = viewerEmail.toLowerCase();
+  return people.find((p) => (p.email ?? '').toLowerCase() === wanted)?.id ?? null;
 }

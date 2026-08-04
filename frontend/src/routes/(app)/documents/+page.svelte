@@ -20,6 +20,7 @@
    * everyone else. The row only offers Delete where the server would allow
    * it, rather than offering it to everyone and failing on press.
    */
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -35,9 +36,6 @@
   // Uploading is open to any org member (the server checks only auth + org), so
   // the Upload button shows for everyone. Editing/deleting are the narrow writes
   //. Those are gated per row by `can_write` (creator or admin) below.
-
-  let showInactive = $state(false);
-  let visible = $derived(documents.filter((d) => showInactive || d.status === 'active'));
 
   const ICON = { pdf: FileText, sheet: FileSpreadsheet, text: FileText };
   const iconFor = (kind) => ICON[kind] ?? File;
@@ -73,12 +71,15 @@
     <span class="v2-num">{count(totals.inactive)}</span> archived
   {/snippet}
   {#snippet actions()}
-    <button class="v2-btn" type="button" onclick={() => (showInactive = !showInactive)}>
-      {showInactive ? 'Hide archived' : 'Show archived'}
-    </button>
     <a class="v2-btn v2-btn-primary" href="/documents/new"><Upload />Upload</a>
   {/snippet}
 </PageHeader>
+
+{#if page.url.search}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered list.
+  </p>
+{/if}
 
 <div class="v2-pad" style="padding-top:14px;flex:none">
   <div class="v2-stats">
@@ -94,15 +95,10 @@
   </div>
 </div>
 
-<FilterBar
-  view={showInactive ? 'All documents' : 'Active documents'}
-  filters={showInactive ? [] : [{ key: 'status', label: 'Status', value: 'Active' }]}
-  onremove={() => (showInactive = true)}
-  meta="Newest first"
-/>
+<FilterBar page="documents" url={page.url} meta="Newest first" />
 
 <div class="v2-scroll">
-  {#if visible.length === 0}
+  {#if documents.length === 0}
     <EmptyState
       title="No documents yet"
       body="Contracts, runbooks, price sheets. The things you send people often enough to stop hunting for. Share each one with the people or the team who need it; an unshared upload is visible only to you and to admins."
@@ -126,7 +122,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each visible as d (d.id)}
+          {#each documents as d (d.id)}
             {@const Icon = iconFor(d.file_kind)}
             <tr class:archived={d.status === 'inactive'}>
               <td style="white-space:normal;max-width:420px">
@@ -184,7 +180,7 @@
     </div>
 
     <p class="v2-sub v2-pad" style="font-size:12px;padding-bottom:24px">
-      Showing <span class="v2-num">{visible.length}</span> of
+      Showing <span class="v2-num">{documents.length}</span> of
       <span class="v2-num">{count(totals.count)}</span>
     </p>
   {/if}

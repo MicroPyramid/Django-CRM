@@ -9,6 +9,7 @@
    * shows a pending state while the request is in flight and takes whatever
    * the server says, rather than assuming it worked.
    */
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -48,6 +49,12 @@
   {/snippet}
 </PageHeader>
 
+{#if page.url.search}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered list.
+  </p>
+{/if}
+
 <SectionTabs set="tasks" />
 
 <div class="v2-pad" style="padding-top:14px;flex:none">
@@ -75,16 +82,7 @@
   </div>
 </div>
 
-<FilterBar
-  view={data.showAll ? 'All tasks' : 'Open tasks'}
-  filters={[
-    data.showAll ? null : { key: 'status', label: 'Status', value: 'is not Completed' },
-    data.filters.priority
-      ? { key: 'priority', label: 'Priority', value: data.filters.priority }
-      : null
-  ].filter(Boolean)}
-  meta="Newest first"
-/>
+<FilterBar page="tasks" url={page.url} people={data.people} meId={data.meId} meta="Newest first" />
 
 {#if form?.error}
   <p class="v2-pad v2-form-error" role="alert">{form.error}</p>

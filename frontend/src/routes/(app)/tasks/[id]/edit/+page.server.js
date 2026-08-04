@@ -12,7 +12,10 @@ export async function load(event) {
   const [options, tickets, deals, leads] = await Promise.allSettled([
     getTaskFormOptions(event),
     listTickets(event, new URLSearchParams({ limit: '100' })),
-    listDeals(event, new URLSearchParams({ limit: '100' })),
+    // Open deals only, matching what this picker offered before `listDeals`
+    // stopped assuming it: attaching a task to a deal you already closed is
+    // an edge case the picker does not need to carry by default.
+    listDeals(event, new URLSearchParams({ open: 'true', limit: '100' })),
     listLeads(event, new URLSearchParams({ limit: '100' }))
   ]);
   const settled = options.status === 'fulfilled' ? options.value : { owners: [], accounts: [] };

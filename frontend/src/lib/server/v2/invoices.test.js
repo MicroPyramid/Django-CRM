@@ -1,0 +1,117 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const apiRequest = vi.fn();
+vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+
+const { listInvoices, FILTER_FIELDS } = await import('$lib/server/v2/invoices.js');
+const { readFilters, buildFilterQuery } = await import('$lib/server/v2/filter-params.js');
+
+// Cast rather than shaping a full Cookies mock: listInvoices only ever calls
+// `cookies.get` (through the mocked apiRequest), so nothing here touches
+// `getAll`/`set`/`delete`/`serialize`. See the same note in leads.test.js.
+const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
+
+/** The querystring `listInvoices` actually sent to `apiRequest`. */
+function sentQuery() {
+  const [endpoint] = apiRequest.mock.calls[0];
+  return new URL(`http://x${endpoint}`).searchParams;
+}
+
+describe('listInvoices', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('defaults limit to 100 and sorts by due_date when no params are given', async () => {
+    apiRequest.mockResolvedValue({ results: [], totals: {} });
+    await listInvoices(event, undefined);
+
+    expect(apiRequest).toHaveBeenCalledOnce();
+    const query = sentQuery();
+    expect(query.get('limit')).toBe('100');
+    expect(query.get('sort')).toBe('due_date');
+  });
+
+  it('forwards a caller-supplied due_date_gte/due_date_lte through to the API querystring', async () => {
+    // Pinned against backend/invoices/api_views.py:149-152
+    // (InvoiceListView.filter_queryset), which reads the SINGLE-underscore
+    // due_date_gte / due_date_lte. Every other v2 module's date-range field
+    // uses two underscores (due_date__gte). If this regresses to the
+    // double-underscore spelling, the endpoint silently ignores the filter
+    // and returns every invoice rather than erroring, which is why this is
+    // pinned at both the readFilters layer (filter-params.test.js) and here,
+    // end to end through the URL this module actually sends.
+    apiRequest.mockResolvedValue({ results: [], totals: {} });
+    const url = new URL('http://x/invoices?due_date_gte=2026-01-01&due_date_lte=2026-01-31');
+    const params = buildFilterQuery(FILTER_FIELDS, readFilters(url, 'invoices'));
+
+    await listInvoices(event, params);
+
+    const query = sentQuery();
+    expect(query.get('due_date_gte')).toBe('2026-01-01');
+    expect(query.get('due_date_lte')).toBe('2026-01-31');
+    expect(query.has('due_date__gte')).toBe(false);
+    expect(query.has('due_date__lte')).toBe(false);
+  });
+
+  it('forwards status, account and assigned_to unmodified', async () => {
+    apiRequest.mockResolvedValue({ results: [], totals: {} });
+    const acc = 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
+    const who = 'bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb';
+    const url = new URL(`http://x/invoices?status=Overdue&account=${acc}&assigned_to=${who}`);
+    const params = buildFilterQuery(FILTER_FIELDS, readFilters(url, 'invoices'));
+
+    await listInvoices(event, params);
+
+    const query = sentQuery();
+    expect(query.get('status')).toBe('Overdue');
+    expect(query.get('account')).toBe(acc);
+    expect(query.get('assigned_to')).toBe(who);
+  });
+
+  it('drops a param the descriptor does not declare, e.g. a hand-typed contact filter', async () => {
+    apiRequest.mockResolvedValue({ results: [], totals: {} });
+    const url = new URL('http://x/invoices?contact=con-1');
+    const params = buildFilterQuery(FILTER_FIELDS, readFilters(url, 'invoices'));
+
+    await listInvoices(event, params);
+
+    expect(sentQuery().has('contact')).toBe(false);
+  });
+
+  it('falls back to response.count when totals.count is absent', async () => {
+    apiRequest.mockResolvedValue({ results: [{ id: '1' }], count: 7, totals: {} });
+    const { totals } = await listInvoices(event, new URLSearchParams());
+    expect(totals.count).toBe(7);
+  });
+
+  it('coerces every money figure in totals to a number', async () => {
+    apiRequest.mockResolvedValue({
+      results: [],
+      totals: { count: 2, outstanding: '150.50', overdue: '0', draft: null }
+    });
+    const { totals } = await listInvoices(event, new URLSearchParams());
+    expect(totals.outstanding).toBe(150.5);
+    expect(totals.overdue).toBe(0);
+    expect(totals.draft).toBe(0);
+  });
+
+  it('maps a result row through toRow, rebuilding the nested account shape', async () => {
+    apiRequest.mockResolvedValue({
+      results: [
+        {
+          id: 'inv-1',
+          invoice_number: 'INV-0001',
+          status: 'Draft',
+          account: 'acc-1',
+          account_name: 'Northwind',
+          total_amount: '500.00'
+        }
+      ],
+      totals: {}
+    });
+    const { invoices } = await listInvoices(event, new URLSearchParams());
+    expect(invoices[0].account).toEqual({ id: 'acc-1', name: 'Northwind' });
+    expect(invoices[0].total_amount).toBe(500);
+  });
+});

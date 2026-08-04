@@ -56,6 +56,20 @@ export const INVOICE_STATUSES = [
 /** Statuses a settled invoice can be in: the due date stops meaning anything. */
 const SETTLED = ['Paid', 'Cancelled'];
 
+/**
+ * Every filter param `listInvoices` will forward. See the note on
+ * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * name a key absent from this list, and `filters.test.js` enforces it.
+ *
+ * `due_date_gte` / `due_date_lte`: SINGLE underscore.
+ * `InvoiceListView.filter_queryset` (`backend/invoices/api_views.py:149-152`)
+ * reads exactly these two spellings. Every other v2 module's date-range field
+ * uses a DOUBLE underscore (`due_date__gte`); forwarding that spelling here
+ * would silently return the unfiltered list rather than erroring, which is
+ * why `filter-params.test.js` pins this one explicitly.
+ */
+export const FILTER_FIELDS = ['status', 'account', 'assigned_to', 'due_date_gte', 'due_date_lte'];
+
 const num = (/** @type {any} */ value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -150,6 +164,17 @@ function toDetail(inv) {
  * requester's, so an admin's pills cover the org and a member's cover the
  * invoices they made or were assigned. The rows follow the same rule, which is
  * the point: v1 summed the loaded page and the pills disagreed with the list.
+ *
+ * `params` (built from FILTER_FIELDS) narrows `invoices` but NOT `totals`.
+ * `InvoiceListView.get` (`backend/invoices/api_views.py:177-193`) computes
+ * `_totals` over `base`, the role-scoped queryset, deliberately BEFORE
+ * `filter_queryset` runs, with a comment reading "not just this page or the
+ * current filter". So applying a Status or Account filter changes the rows
+ * this function returns and leaves every number in `totals` exactly as it
+ * was. `invoices/+page.svelte` does not claim otherwise: unlike
+ * tasks/tickets/pipeline/accounts/estimates, it has no "these numbers
+ * describe the filtered list" line, because for this endpoint that sentence
+ * would be false.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {URLSearchParams} [params]

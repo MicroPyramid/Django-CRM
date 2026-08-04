@@ -1,9 +1,11 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import EmptyState from '$lib/v2/components/EmptyState.svelte';
   import { money, count } from '$lib/v2/format.js';
+  import { activeChips, activePresetKey } from '$lib/v2/filters.js';
   import { Plus, Building2 } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -11,20 +13,53 @@
 
   let accounts = $derived(data.accounts);
   let totals = $derived(data.totals);
+
+  /**
+   * Whether the view is actually narrowed, rather than merely carrying a query
+   * string. `page.url.search` alone is the wrong test: it fires on any param,
+   * including ones that are not filters at all. `'all'` is this page's
+   * empty-params preset, its declared default, so any other preset counts as
+   * filtered even when it sets no field a chip would show.
+   */
+  let isFiltered = $derived(
+    activeChips('accounts', page.url, { people: data.people, tags: data.tags }).length > 0 ||
+      activePresetKey('accounts', page.url, data.meId) !== 'all'
+  );
 </script>
 
 <PageHeader title="Accounts">
   {#snippet sub()}
     <!-- The count is the size of the whole result set, not of this page. -->
-    <span class="v2-num">{count(totals.count)}</span> accounts ·
-    <span class="v2-num">{count(totals.customers)}</span> with a deal won
+    <span class="v2-num">{count(totals.count)}</span> accounts
+    <!-- `customers` is counted from the rows actually loaded, because the
+         accounts endpoint returns no aggregate for it (see the note in
+         `lib/server/v2/accounts.js`). Printing it beside a whole-set count
+         when only one page is loaded states a smaller number as though it
+         covered everything, so it is shown only when this page IS the whole
+         set. A figure that disappears beats a figure that is wrong. -->
+    {#if (totals.shown ?? 0) >= (totals.count ?? 0)}
+      · <span class="v2-num">{count(totals.customers)}</span> with a deal won
+    {/if}
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn v2-btn-primary" href="/accounts/new"><Plus />New account</a>
   {/snippet}
 </PageHeader>
 
-<FilterBar view="All accounts" filters={[]} meta="Sorted by revenue won" />
+{#if isFiltered}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered list.
+  </p>
+{/if}
+
+<FilterBar
+  page="accounts"
+  url={page.url}
+  people={data.people}
+  tags={data.tags}
+  meId={data.meId}
+  meta="Sorted by revenue won"
+/>
 
 <div class="v2-scroll">
   {#if accounts.length === 0}

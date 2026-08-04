@@ -149,12 +149,34 @@ function toRow(account) {
 }
 
 /**
+ * Every filter param `listAccounts` will forward. See the note on
+ * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * name a key absent from this list, and `filters.test.js` enforces it.
+ *
+ * `industry` and `city` are `icontains` matches server-side, and `tags` and
+ * `assigned_to` are `getlist` (`AccountsListView.get_context_data`,
+ * `backend/accounts/views.py:213-226`), so more than one id can be sent for
+ * either.
+ */
+export const FILTER_FIELDS = ['assigned_to', 'tags', 'industry', 'city'];
+
+/**
  * Accounts in this org, largest lifetime value first.
  *
  * `active_accounts.open_accounts_count` is the size of the whole filtered
- * queryset; `open_accounts` is one page of it. The header counts the former.
- * Counting the rows you happen to hold is the mistake the pipeline header made
- * before `totals` existed, and it under-reports silently.
+ * queryset; `open_accounts` is one page of it. `count` below reads the
+ * former, so it does not under-report the way a header that counted only the
+ * loaded page would.
+ *
+ * There is no `totals` envelope to prefer over this derivation here, unlike
+ * `invoices.js` and `tasks.js`: `AccountsListView.get_context_data`
+ * (`backend/accounts/views.py`) never puts a `totals` key on the response, so
+ * a `response.totals ?? {...}` fallback would always fall through to the
+ * `{...}` side, dead code pretending at a capability the API does not have.
+ * `customers` is still computed from `rows`, the one page actually loaded
+ * (`limit` defaults to 25), so it DOES under-report whenever the filtered set
+ * is bigger than that page. Fixing that needs a real aggregate from the API,
+ * which is not there to read yet.
  *
  * The API narrows this list for non-admins to accounts they created or are
  * assigned to, so what comes back is already what this person may see.
@@ -183,6 +205,30 @@ export async function listAccounts({ cookies }, params) {
       inactive: inactive.close_accounts_count ?? 0,
       shown: rows.length
     }
+  };
+}
+
+/**
+ * Accounts as a flat `{id, name}` picker list, open accounts only.
+ *
+ * Same `/accounts/?limit=200` shape `contacts.js:342` already fetches for its
+ * own account picker, reused here rather than respelled a third time for the
+ * invoices and estimates filter bars, which both need an Account field.
+ *
+ * The 200 ceiling is real: an org with more open accounts than that gets a
+ * truncated picker, the same limit `contacts.js` already lives with.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @returns {Promise<{ accounts: {id: string, name: string}[] }>}
+ */
+export async function listAccountsPicker({ cookies }) {
+  const response = await apiRequest('/accounts/?limit=200', {}, { cookies });
+  const active = response.active_accounts ?? {};
+  return {
+    accounts: (active.open_accounts ?? []).map((/** @type {any} */ account) => ({
+      id: account.id,
+      name: account.name ?? ''
+    }))
   };
 }
 

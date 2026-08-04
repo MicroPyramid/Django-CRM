@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
@@ -7,6 +8,7 @@
   import EmptyState from '$lib/v2/components/EmptyState.svelte';
   import { money, count, shortDate } from '$lib/v2/format.js';
   import { STAGE_LABEL, AGING_TONE, AGING_LABEL } from '$lib/v2/enums.js';
+  import { activeChips, activePresetKey, withoutParam } from '$lib/v2/filters.js';
   import { Columns3, List, Plus } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -23,38 +25,92 @@
      render, each is just short. */
   let lanes = $derived(data.lanes);
 
-  // Only filters actually applied by the query appear as chips.
-  const FILTERS = [{ key: 'stage', label: 'Stage', value: 'is not Closed' }];
+  /**
+   * Whether the current view is actually narrowed, as opposed to merely
+   * carrying a query string. `page.url.search` alone is the wrong test: on
+   * this page `?view=board` is a layout toggle, not a filter, so a bare
+   * "Board" click from the unfiltered list would otherwise claim these
+   * numbers are filtered when nothing was. `'all'` is pipeline's own
+   * empty-params preset (see `$lib/v2/filters.js`), its declared default, so
+   * being on any other preset counts as filtered even when that preset
+   * (`open`, `stalled`) sets no field a chip would represent.
+   */
+  let isFiltered = $derived(
+    activeChips('pipeline', page.url, { people: data.people, tags: data.tags }).length > 0 ||
+      activePresetKey('pipeline', page.url, data.meId) !== 'all'
+  );
+
+  /**
+   * The List<->Board toggle used to be two static hrefs, `/pipeline` and
+   * `/pipeline?view=board`, so switching layout silently dropped every active
+   * filter. Board to List keeps every param and drops only `view`: the list
+   * can run everything the board could and more. List to Board keeps
+   * `view=board` plus only the params the board can actually honour
+   * (`data.boardFields`, always returned by `load` regardless of the current
+   * view, see the note in `+page.server.js`); the rest are deliberately
+   * dropped, and it is visible rather than silent, since the chips for them
+   * disappear along with the params.
+   */
+  let listHref = $derived(withoutParam(page.url, 'view'));
+  let boardHref = $derived.by(() => {
+    const next = new URLSearchParams();
+    next.set('view', 'board');
+    // `search` mirrors what `+page.server.js` forwards to the board itself
+    // (`kanban_views.py:123` reads it); it is not one of `boardFields`
+    // because it is not a descriptor field, just like on the list view.
+    for (const key of [...(data.boardFields ?? []), 'search']) {
+      const value = page.url.searchParams.get(key);
+      if (value) next.set(key, value);
+    }
+    return `/pipeline?${next}`;
+  });
 </script>
 
 <PageHeader title="Pipeline">
   {#snippet sub()}
-    <!-- Totals come from the API aggregate, never from the rows on screen. -->
-    <span class="v2-num">{count(totals.count)}</span> open deals ·
+    <!-- Totals come from the API aggregate, never from the rows on screen.
+         Not "open deals": the default view is now the pipeline's own "All
+         deals" preset (empty params), which includes closed stages, so a word
+         that was only ever true under the old hardcoded ?open=true would lie
+         here as soon as somebody switched presets. -->
+    <span class="v2-num">{count(totals.count)}</span> deals ·
     <span class="v2-num">{money(totals.amount_sum)}</span> ·
     <span class="v2-num">{money(totals.weighted_sum)}</span> weighted ·
     <span class="v2-num" style="color:var(--v2-rust)">{totals.stalled_count}</span> stalled
   {/snippet}
   {#snippet actions()}
     {#if view === 'board'}
-      <a class="v2-btn v2-btn-quiet" href="/pipeline"><List />List</a>
+      <a class="v2-btn v2-btn-quiet" href={listHref}><List />List</a>
       <span class="v2-btn" aria-current="true"><Columns3 />Board</span>
     {:else}
       <span class="v2-btn" aria-current="true"><List />List</span>
-      <a class="v2-btn v2-btn-quiet" href="/pipeline?view=board"><Columns3 />Board</a>
+      <a class="v2-btn v2-btn-quiet" href={boardHref}><Columns3 />Board</a>
     {/if}
     <a class="v2-btn v2-btn-primary" href="/pipeline/new"><Plus />New deal</a>
   {/snippet}
 </PageHeader>
+
+{#if isFiltered}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered pipeline.
+  </p>
+{/if}
 
 <!-- The board meta used to read "Drag a card to move a stage". There is a real
      move endpoint, but nothing here is draggable, and an interface that names
      a gesture it does not support is the specific habit this redesign exists
      to break. It says where the stage is actually changed instead. -->
 <FilterBar
-  view="All open deals"
-  filters={FILTERS}
-  meta={view === 'board' ? 'Open a deal to change its stage' : 'Sorted by value'}
+  page="pipeline"
+  url={page.url}
+  people={data.people}
+  tags={data.tags}
+  meId={data.meId}
+  onlyFields={data.onlyFields}
+  onlyPresets={data.onlyPresets}
+  meta={view === 'board'
+    ? 'Open stages only. Open a deal to change its stage'
+    : 'Sorted by value'}
 />
 
 {#if view === 'board'}
@@ -103,8 +159,8 @@
 {:else if deals.length === 0}
   <div class="v2-scroll">
     <EmptyState
-      title="No open deals"
-      body="Every deal is either closed or not created yet. Start one from an account you are already talking to, or convert a lead that is ready."
+      title="No deals here"
+      body="Nothing matches this view. Start a deal from an account you are already talking to, convert a lead that is ready, or clear a filter to see more."
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}

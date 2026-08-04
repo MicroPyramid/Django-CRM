@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -68,14 +69,6 @@
     clay: 'var(--v2-clay)',
     slate: 'var(--v2-slate)'
   };
-
-  let filters = $derived(
-    [
-      { key: 'status', label: 'Status', value: data.showAll ? 'any' : 'open' },
-      data.priority ? { key: 'priority', label: 'Priority', value: data.priority } : null,
-      data.search ? { key: 'search', label: 'Search', value: data.search } : null
-    ].filter(Boolean)
-  );
 </script>
 
 <PageHeader title="Tickets">
@@ -92,14 +85,21 @@
   {/snippet}
 </PageHeader>
 
+{#if page.url.search}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">These numbers describe the filtered queue.</p>
+{/if}
+
 <!-- Approvals and Analytics were buttons in this header that went nowhere.
      They are sibling pages, so they belong in a tab strip that also tells you
      which one you are on. -->
 <SectionTabs set="tickets" />
 
 <FilterBar
-  view={data.showAll ? 'Everything, newest first' : 'Open, newest first'}
-  {filters}
+  page="tickets"
+  url={page.url}
+  people={data.people}
+  tags={data.tags}
+  meId={data.meId}
   meta="First-reply targets come from each ticket's SLA hours"
 />
 

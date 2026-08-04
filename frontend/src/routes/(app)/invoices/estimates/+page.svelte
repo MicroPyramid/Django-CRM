@@ -8,6 +8,7 @@
    * indistinguishable and the gap only surfaced at month end. Status and
    * "has it been billed" are two separate facts and get two separate columns.
    */
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
@@ -52,6 +53,12 @@
   {/snippet}
 </PageHeader>
 
+{#if page.url.search}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered list.
+  </p>
+{/if}
+
 <SectionTabs set="invoices" />
 
 {#if form?.error}
@@ -79,8 +86,9 @@
 </div>
 
 <FilterBar
-  view="All estimates"
-  filters={[]}
+  page="estimates"
+  url={page.url}
+  accounts={data.accounts}
   meta="Accepted but unbilled first, then most recently sent"
 />
 

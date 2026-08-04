@@ -89,6 +89,15 @@ export const LEAD_STATUS_LABEL = {
   closed: 'Closed'
 };
 
+/**
+ * The statuses the leads LIST can display. `LeadListView` excludes `converted`
+ * outright and splits `closed` into a `close_leads` block the frontend never
+ * reads, so offering either as a filter option gives a permanently empty page
+ * that reads as "you have none" rather than "this page cannot show them".
+ * The full set stays in LEAD_STATUSES for the detail page's status select.
+ */
+export const LEAD_LIST_STATUSES = ['assigned', 'in process', 'recycled'];
+
 export const LEAD_SOURCES = [
   'call',
   'email',
@@ -419,3 +428,27 @@ export const BOARD_PRIORITY_TONE = {
 
 /** tasks.BoardMember.ROLE_CHOICES, board-local, unrelated to Profile.role. */
 export const BOARD_ROLE_LABEL = { owner: 'Owner', admin: 'Admin', member: 'Member' };
+
+/**
+ * Option lists for the list-page filters. Values are what goes on the wire;
+ * labels are derived where they differ.
+ *
+ * CASE_PRIORITIES is not TASK_PRIORITY. A Case is Low/Normal/High/Urgent and a
+ * Task is Low/Medium/High: "Medium" is not a valid case priority and "Normal"
+ * is not a valid task priority. See the note at TASK_STATUS above.
+ */
+export const CASE_PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'];
+export const CASE_TYPES = ['Question', 'Incident', 'Problem'];
+export const CASE_STATUSES = ['New', 'Assigned', 'Pending', 'Closed', 'Rejected', 'Duplicate'];
+export const INVOICE_STATUSES = [
+  'Draft',
+  'Sent',
+  'Viewed',
+  'Paid',
+  'Partially_Paid',
+  'Overdue',
+  'Pending',
+  'Cancelled'
+];
+export const ESTIMATE_STATUSES = ['Draft', 'Sent', 'Viewed', 'Accepted', 'Declined', 'Expired'];
+export const DOCUMENT_STATUSES = ['active', 'inactive'];

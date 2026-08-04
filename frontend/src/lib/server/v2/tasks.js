@@ -46,6 +46,15 @@ import { apiRequest } from '$lib/api-helpers.js';
 export const TASK_STATUSES = ['New', 'In Progress', 'Completed'];
 export const TASK_PRIORITIES = ['Low', 'Medium', 'High'];
 
+/** See the note on FILTER_FIELDS in tickets.js. */
+export const FILTER_FIELDS = [
+  'assigned_to',
+  'priority',
+  'status',
+  'due_date__gte',
+  'due_date__lte'
+];
+
 /**
  * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
  * local dev and an absolute URL behind object storage in prod. Resolve it

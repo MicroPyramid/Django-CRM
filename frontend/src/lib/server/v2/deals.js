@@ -79,13 +79,18 @@ function toRow(deal) {
 }
 
 /**
- * The open pipeline, largest first.
+ * The pipeline, largest first.
  *
- * `open=true` is applied by the API. The filter chip on the page says "Stage
- * is not Closed", and a chip that describes a filter the query did not run is
- * how v1 taught people the filter bar lies, the mock's own header comment
- * made that point, so the query has to honour it rather than slicing the rows
- * that happened to arrive.
+ * `open` is NOT forced here. `OpportunityListView`'s base queryset does not
+ * exclude closed stages (`opportunity_views.py:112-183`), so whether this call
+ * is scoped to the working pipeline is entirely up to whether the caller's
+ * `params` carries `?open=true`. That used to be hardcoded on every call,
+ * which meant the pipeline's own "All deals" preset (deliberately empty
+ * params, see `$lib/v2/filters.js`) could never show a closed deal no matter
+ * what the URL said, a chip and a preset that cannot change the result set is
+ * the exact failure this filter bar exists to remove. Callers that want the
+ * open pipeline specifically (the sidebar badge, the task-parent pickers) now
+ * set `open: 'true'` themselves.
  *
  * `totals` is computed server-side over the whole filtered queryset. Do not
  * recompute it from `results`: `results` is one page.
@@ -95,7 +100,6 @@ function toRow(deal) {
  */
 export async function listDeals({ cookies }, params) {
   const query = new URLSearchParams(params ?? undefined);
-  query.set('open', 'true');
   if (!query.has('limit')) query.set('limit', '25');
 
   const response = await apiRequest(`/opportunities/?${query}`, {}, { cookies });
@@ -134,6 +138,41 @@ function normaliseTotals(totals, rows) {
     stalled_count: totals.stalled_count
   };
 }
+
+/**
+ * Every filter param `listDeals` will forward. See the note on FILTER_FIELDS
+ * in tickets.js. `open` and `rotten` are deliberately absent: they are
+ * preset-only params `pipeline/+page.server.js` reads off the URL itself, the
+ * same way `all` works for tickets and tasks, not fields a person picks a
+ * value for.
+ */
+/**
+ * The filter fields and presets the BOARD can actually run.
+ *
+ * `kanban_views.py:122-137` reads only `search`, `account`, `assigned_to`,
+ * `tags` and the `closed_on` range, a narrower vocabulary than the list
+ * endpoint's. A chip for anything else would sit above cards it did not
+ * filter, while the header totals (which come from the list endpoint) DID
+ * apply it, so a number and the cards under it would describe different deals.
+ *
+ * These live here rather than in `pipeline/+page.server.js` because SvelteKit
+ * allows only a fixed set of named exports from a `+page.server.js` (`load`,
+ * `actions`, `prerender`, and a few more) and answers 500 for the whole route
+ * on any other one. Exporting them from there took the entire pipeline page
+ * down, and neither `pnpm run check` nor the unit tests noticed, because the
+ * tests import the module directly and never go through SvelteKit's router.
+ */
+export const BOARD_FIELDS = ['assigned_to', 'tags'];
+export const BOARD_PRESETS = ['mine', 'all'];
+
+export const FILTER_FIELDS = [
+  'assigned_to',
+  'stage',
+  'lead_source',
+  'amount__gte',
+  'amount__lte',
+  'tags'
+];
 
 /**
  * The board.
