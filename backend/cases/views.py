@@ -129,15 +129,22 @@ def apply_case_list_filters(queryset, params):
         # business hours, but the badges on both clients compute from
         # created_at + hours, so this filter mirrors what the user actually
         # sees on the row. Postgres-specific (INTERVAL).
+        #
+        # Every column is table-qualified. Unqualified, these resolve fine
+        # against a bare Case queryset and raise
+        # `ProgrammingError: column reference "first_response_at" is ambiguous`
+        # the moment the queryset joins a table sharing any of these names,
+        # which is what a filter combination such as `?sla_breached=true` plus
+        # a status list produced: a 500 for any authenticated caller.
         queryset = queryset.extra(
             where=[
-                "(first_response_at IS NULL "
-                "AND sla_first_response_hours IS NOT NULL "
-                "AND created_at + sla_first_response_hours "
+                '("case"."first_response_at" IS NULL '
+                'AND "case"."sla_first_response_hours" IS NOT NULL '
+                'AND "case"."created_at" + "case"."sla_first_response_hours" '
                 "* INTERVAL '1 hour' < NOW()) "
-                "OR (resolved_at IS NULL "
-                "AND sla_resolution_hours IS NOT NULL "
-                "AND created_at + sla_resolution_hours "
+                'OR ("case"."resolved_at" IS NULL '
+                'AND "case"."sla_resolution_hours" IS NOT NULL '
+                'AND "case"."created_at" + "case"."sla_resolution_hours" '
                 "* INTERVAL '1 hour' < NOW())"
             ]
         )

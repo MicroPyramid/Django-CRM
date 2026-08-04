@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
   import Avatar from '$lib/v2/components/Avatar.svelte';
@@ -12,12 +13,6 @@
 
   let contacts = $derived(data.contacts);
   let totals = $derived(data.totals);
-
-  // A chip may only claim a filter the API actually applied. `is_active=true`
-  // is sent unless the URL asks for everybody, so this one is honest.
-  let filters = $derived(
-    data.includeInactive ? [] : [{ key: 'active', label: 'Status', value: 'active' }]
-  );
 </script>
 
 <PageHeader title="Contacts">
@@ -40,7 +35,14 @@
   {/snippet}
 </PageHeader>
 
-<FilterBar view="All contacts" {filters} meta="Most recently added first" />
+<FilterBar
+  page="contacts"
+  url={page.url}
+  people={data.people}
+  tags={data.tags}
+  meId={data.meId}
+  meta="Most recently added first"
+/>
 
 <div class="v2-scroll">
   {#if contacts.length === 0}

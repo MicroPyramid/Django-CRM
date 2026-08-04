@@ -20,9 +20,16 @@ const LIVE_COUNTS = {
   /** @param {any} event */
   leads: async (event) =>
     (await listLeads(event, new URLSearchParams({ limit: '1' }))).totals.count,
-  /** @param {any} event */
+  /**
+   * Open deals only, same rule as tickets and tasks below: a badge counting
+   * closed deals would never go down. `listDeals` no longer assumes this on
+   * its own (`$lib/server/v2/deals.js`'s FILTER_FIELDS note), so it is spelled
+   * out here.
+   *
+   * @param {any} event
+   */
   pipeline: async (event) =>
-    (await listDeals(event, new URLSearchParams({ limit: '1' }))).totals.count,
+    (await listDeals(event, new URLSearchParams({ open: 'true', limit: '1' }))).totals.count,
   /**
    * Open tickets only. A support badge counting closed ones would never go
    * down, which is the same objection as the accounts note below.

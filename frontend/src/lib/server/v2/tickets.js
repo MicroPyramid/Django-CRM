@@ -126,6 +126,14 @@ function toRow(row) {
 }
 
 /**
+ * Every filter param `listTickets` will forward. The descriptor in
+ * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `filters.test.js` enforces that, because the failure mode otherwise is a chip
+ * on screen and an unfiltered list underneath it.
+ */
+export const FILTER_FIELDS = ['assigned_to', 'priority', 'case_type', 'sla_breached', 'tags'];
+
+/**
  * The queue, newest first.
  *
  * `slim=true` drops the account and contact catalogues the endpoint used to

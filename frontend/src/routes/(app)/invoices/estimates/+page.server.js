@@ -1,16 +1,31 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listEstimates, convertEstimate } from '$lib/server/v2/estimates.js';
+import { listEstimates, convertEstimate, FILTER_FIELDS } from '$lib/server/v2/estimates.js';
+import { listAccountsPicker } from '$lib/server/v2/accounts.js';
+import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
- * The estimates worklist. `load` returns `{ estimates, totals }`. The exact
- * names the page reads; the data layer's own field is `estimates`, so there is
- * no rename to get wrong here.
+ * The estimates worklist. `load` returns `{ estimates, totals, accounts }`.
+ * `estimates`/`totals` are the exact names the page reads; the data layer's
+ * own field is `estimates`, so there is no rename to get wrong here.
+ *
+ * The account picker is a separate fetch, same reasoning as every other v2
+ * list: folding it into `listEstimates` would cost every other caller of that
+ * function a request it never renders.
  *
  * @type {import('./$types').PageServerLoad}
  */
-export async function load({ cookies }) {
-  return await listEstimates({ cookies });
+export async function load({ cookies, url }) {
+  const params = buildFilterQuery(FILTER_FIELDS, readFilters(url, 'estimates'));
+
+  const [{ estimates, totals }, accountList] = await Promise.all([
+    listEstimates({ cookies }, params),
+    // A failed account fetch should cost the Account dropdown in the filter
+    // bar, not the whole worklist. Same pattern as the Tag fetch in leads.js.
+    listAccountsPicker({ cookies }).catch(() => ({ accounts: [] }))
+  ]);
+
+  return { estimates, totals, accounts: accountList.accounts ?? [] };
 }
 
 /** @type {import('./$types').Actions} */

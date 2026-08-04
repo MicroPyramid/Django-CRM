@@ -45,6 +45,15 @@ import { apiRequest } from '$lib/api-helpers.js';
 export const SOLUTION_STATUSES = ['draft', 'reviewed', 'approved'];
 
 /**
+ * Every filter param `listArticles` will forward. The descriptor in
+ * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `filters.test.js` enforces that. `visibility` is not here: it is a view
+ * param the page's own load translates to `is_published` before the query
+ * ever reaches this module, the same way contacts translates `inactive`.
+ */
+export const FILTER_FIELDS = ['status'];
+
+/**
  * The subset of a Django solution the v2 pages read.
  *
  * @param {any} row

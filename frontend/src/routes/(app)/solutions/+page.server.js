@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { listArticles, setPublished } from '$lib/server/v2/solutions.js';
+import { listArticles, setPublished, FILTER_FIELDS } from '$lib/server/v2/solutions.js';
+import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /**
@@ -9,8 +10,8 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, locals, url }) {
-  const params = new URLSearchParams();
-  for (const key of ['search', 'status', 'limit']) {
+  const params = buildFilterQuery(FILTER_FIELDS, readFilters(url, 'solutions'));
+  for (const key of ['search', 'limit']) {
     const value = url.searchParams.get(key);
     if (value) params.set(key, value);
   }

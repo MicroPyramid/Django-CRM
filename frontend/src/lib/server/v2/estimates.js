@@ -42,6 +42,18 @@ import { apiRequest } from '$lib/api-helpers.js';
 /** Statuses still awaiting the client's decision. The only ones with a live validity. */
 const AWAITING = ['Sent', 'Viewed'];
 
+/**
+ * Every filter param `listEstimates` will forward. See the note on
+ * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * name a key absent from this list, and `filters.test.js` enforces it.
+ *
+ * `EstimateListView.get` (`backend/invoices/api_views.py:1028-1036`) reads
+ * only `status` and `account`. There is no `assigned_to` filter on this
+ * endpoint, which is why the descriptor has no Owner field; this list must
+ * not grow one on its own either.
+ */
+export const FILTER_FIELDS = ['status', 'account'];
+
 const num = (/** @type {any} */ value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -120,13 +132,19 @@ function computeTotals(rows) {
  * admin, own-and-assigned for a member, the endpoint scopes it), so the header
  * figures and the table always describe the same set.
  *
+ * `params` (built from FILTER_FIELDS: `status`, `account`) is applied by
+ * `EstimateListView.get` before pagination, and the header figures below are
+ * derived from the rows this call actually gets back, so a filter narrows
+ * both the table and the totals together, unlike `listInvoices`.
+ *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {URLSearchParams} [params]
  */
-export async function listEstimates({ cookies }) {
-  const query = new URLSearchParams();
+export async function listEstimates({ cookies }, params) {
+  const query = new URLSearchParams(params ?? undefined);
   // One page covers every real org; totals are derived from what comes back,
   // so anything past this ceiling would be uncounted. See the module note.
-  query.set('limit', '1000');
+  if (!query.has('limit')) query.set('limit', '1000');
 
   const response = await apiRequest(`/invoices/estimates/?${query.toString()}`, {}, { cookies });
   const rows = (response.results ?? []).map(toRow);

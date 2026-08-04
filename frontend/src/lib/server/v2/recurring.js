@@ -130,16 +130,25 @@ function bySchedulePriority(/** @type {any} */ a, /** @type {any} */ b) {
 }
 
 /**
+ * Every filter param `listRecurringInvoices` will forward. The descriptor in
+ * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `filters.test.js` enforces that.
+ */
+export const FILTER_FIELDS = ['is_active'];
+
+/**
  * The schedules worklist. Rows follow whatever the API returns for the requester
  * (the endpoint scopes non-admins to their own and assigned), so the pills and
- * the table cover the same set.
+ * the table cover the same set. An `is_active` filter narrows the same rows the
+ * totals are derived from, so the header figures and the table always agree.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {URLSearchParams} [params]
  */
-export async function listRecurringInvoices({ cookies }) {
-  const query = new URLSearchParams();
+export async function listRecurringInvoices({ cookies }, params) {
+  const query = new URLSearchParams(params ?? undefined);
   // One page covers every real org; totals derive from what comes back.
-  query.set('limit', '1000');
+  if (!query.has('limit')) query.set('limit', '1000');
 
   const response = await apiRequest(`/invoices/recurring/?${query.toString()}`, {}, { cookies });
   const rows = (response.results ?? []).map(toRow);

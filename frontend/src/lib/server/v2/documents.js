@@ -57,6 +57,16 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 export const STATUS_CHOICES = ['active', 'inactive'];
 
 /**
+ * Every filter param `listDocuments` will forward. The descriptor in
+ * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `filters.test.js` enforces that. `status` is the only one: `tags` has no
+ * backing relation on `Document` at all, and `shared_to` is passed straight to
+ * `json.loads` by `DocumentListView.get`, so a plain `?shared_to=<uuid>` would
+ * 500 rather than filter.
+ */
+export const FILTER_FIELDS = ['status'];
+
+/**
  * The signed-in role and user id, decoded from the JWT. Display hints only:
  * `role` decides whether the page offers Upload/Edit, and `user_id` is compared
  * to a document's `created_by` to decide the per-row Edit affordance. The
@@ -159,11 +169,19 @@ function computeTotals(docs) {
  * scoped the rows to the org and, for a non-admin, to what `_visible_to`
  * allows, so every row returned here is one the viewer may open.
  *
+ * A `status` filter narrows both envelopes at once: `DocumentListView.get`
+ * applies it to the base queryset before splitting into
+ * `documents_active`/`documents_inactive`, so `?status=active` leaves the
+ * inactive envelope empty and the merge below still returns the right rows.
+ *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {URLSearchParams} [params]
  */
-export async function listDocuments({ cookies }) {
+export async function listDocuments({ cookies }, params) {
   const viewer = viewerClaims(cookies);
-  const resp = await apiRequest('/documents/?limit=1000', {}, { cookies });
+  const query = new URLSearchParams(params ?? undefined);
+  if (!query.has('limit')) query.set('limit', '1000');
+  const resp = await apiRequest(`/documents/?${query}`, {}, { cookies });
 
   const active = resp?.documents_active?.documents_active ?? [];
   const inactive = resp?.documents_inactive?.documents_inactive ?? [];

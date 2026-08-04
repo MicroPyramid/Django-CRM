@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
@@ -24,8 +25,6 @@
   let plural = $derived(t(terms, 'lead.plural', 'Leads'));
   let singular = $derived(t(terms, 'lead.singular', 'lead'));
 
-  const FILTERS = [];
-
   /**
    * The same rule the API counts with, so the highlighted rows and the
    * "unworked for more than a week" figure in the header agree. If one moves,
@@ -50,7 +49,14 @@
   {/snippet}
 </PageHeader>
 
-<FilterBar view="All leads" filters={FILTERS} meta="Least recently touched first" />
+<FilterBar
+  page="leads"
+  url={page.url}
+  people={data.people}
+  tags={data.tags}
+  meId={data.meId}
+  meta="Least recently touched first"
+/>
 
 <div class="v2-scroll">
   {#if leads.length === 0}

@@ -8,6 +8,7 @@
    * unless somebody remembers, the customer never gets billed. The failure is
    * silent and looks exactly like success. It is a column here.
    */
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
   import StatCard from '$lib/v2/components/StatCard.svelte';
@@ -59,6 +60,12 @@
 
 <SectionTabs set="invoices" />
 
+{#if page.url.search}
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered list.
+  </p>
+{/if}
+
 {#if form?.error}
   <div class="v2-pad" style="padding-top:12px;flex:none">
     <p class="rec-error" role="alert">{form.error}</p>
@@ -84,7 +91,7 @@
   </div>
 </div>
 
-<FilterBar view="All schedules" filters={[]} meta="Active first, then soonest to generate" />
+<FilterBar page="recurring" url={page.url} meta="Active first, then soonest to generate" />
 
 <div class="v2-scroll">
   {#if data.schedules.length === 0}

@@ -43,6 +43,9 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
 
+/** See the note on FILTER_FIELDS in tickets.js. */
+export const FILTER_FIELDS = ['assigned_to', 'tags', 'city'];
+
 /** DRF decimals arrive as strings. `null` stays `null`. It means "not recorded". */
 function num(value) {
   if (value === null || value === undefined || value === '') return null;

@@ -1,4 +1,5 @@
 <script>
+  import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -72,7 +73,19 @@
   </div>
 </div>
 
-<FilterBar view="All invoices" filters={[]} meta="Oldest due first" />
+<!-- No "filtered list" line here, unlike the other v2 list pages: the pills
+     above come from `totals`, which the API deliberately computes over the
+     whole role-scoped queryset regardless of the active filter (see the note
+     on `listInvoices` in `$lib/server/v2/invoices.js`). Saying "these numbers
+     describe the filtered list" would be false for this page. -->
+<FilterBar
+  page="invoices"
+  url={page.url}
+  people={data.people}
+  accounts={data.accounts}
+  meId={data.meId}
+  meta="Oldest due first"
+/>
 
 {#if form?.error}
   <p class="v2-sub v2-pad" style="color:var(--v2-rust);font-size:12.5px;padding-top:10px">
