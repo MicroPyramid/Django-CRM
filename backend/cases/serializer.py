@@ -562,6 +562,16 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    # Writable so an admin can paste a provider-issued signing key, never
+    # readable. Nothing in the codebase compares this value, so there is no
+    # caller that needs it back, and a stored credential returned by a list
+    # endpoint is reachable by anything holding an admin's session or personal
+    # access token. `has_webhook_secret` is what an admin screen needs: whether
+    # one is set, not what it is.
+    webhook_secret = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, max_length=128
+    )
+    has_webhook_secret = serializers.SerializerMethodField()
 
     class Meta:
         model = InboundMailbox
@@ -570,6 +580,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             "address",
             "provider",
             "webhook_secret",
+            "has_webhook_secret",
             "topic_arn",
             "default_priority",
             "default_case_type",
@@ -610,21 +621,28 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
                 )
         return value
 
+    def get_has_webhook_secret(self, instance) -> bool:
+        return bool(instance.webhook_secret)
+
     def to_representation(self, instance):
-        """`webhook_secret` is a per-org shared secret, the credential a sender
-        signs with. It is settable/rotatable by an admin, but it must never be
-        read back by a regular member, or every agent in the org can forge
-        inbound mail. `topic_arn` is the webhook's TopicArn pin and embeds the
-        AWS account id, so it is held to the same bar. Non-admins see the
-        mailbox config without either; both fields are only present for admins
-        (who manage the integration), and only when the view passes the request
-        in context."""
+        """`topic_arn` is the webhook's TopicArn pin and embeds the AWS account
+        id, so it is shown only to admins, who manage the integration, and only
+        when the view passes the request in context. `has_webhook_secret` rides
+        with it because both describe the same admin-only integration config.
+
+        `webhook_secret` itself is declared `write_only` above and so is never
+        in `data` to begin with. This method used to pop it for non-admins,
+        which meant admins read it back on every list and detail call. Nothing
+        reads that value: `InboundMailboxWebhookView.post` authenticates with
+        the SNS signature and the `topic_arn` pin. Returning a stored
+        credential-shaped value that no code consumes only creates a way to
+        lose it, and it would become a live leak the day a provider
+        integration starts checking it, with no change here to notice."""
         data = super().to_representation(instance)
         request = self.context.get("request")
         profile = getattr(request, "profile", None) if request else None
-        is_admin = is_org_admin(profile)
-        if not is_admin:
-            data.pop("webhook_secret", None)
+        if not is_org_admin(profile):
+            data.pop("has_webhook_secret", None)
             data.pop("topic_arn", None)
         return data
 

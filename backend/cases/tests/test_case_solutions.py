@@ -3,6 +3,7 @@
 import pytest
 
 from cases.models import Solution
+from conftest import rls_org
 
 
 @pytest.mark.django_db
@@ -31,12 +32,16 @@ class TestCaseDetailSolutions:
     def test_detail_solutions_excludes_other_org(
         self, admin_client, case_a, org_b, admin_user
     ):
-        Solution.objects.create(
-            title="Other org solution",
-            description="...",
-            org=org_b,
-            created_by=admin_user,
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org_b):
+            Solution.objects.create(
+                title="Other org solution",
+                description="...",
+                org=org_b,
+                created_by=admin_user,
+            )
         response = admin_client.get(f"/api/cases/{case_a.pk}/")
         assert response.status_code == 200
         assert response.json()["solutions"] == []
@@ -45,14 +50,18 @@ class TestCaseDetailSolutions:
 @pytest.mark.django_db
 class TestCaseSolutionLinking:
     def _solution(self, org, user, **kwargs):
-        return Solution.objects.create(
-            title=kwargs.get("title", "S"),
-            description="x",
-            org=org,
-            status=kwargs.get("status", "approved"),
-            is_published=kwargs.get("is_published", True),
-            created_by=user,
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org):
+            return Solution.objects.create(
+                title=kwargs.get("title", "S"),
+                description="x",
+                org=org,
+                status=kwargs.get("status", "approved"),
+                is_published=kwargs.get("is_published", True),
+                created_by=user,
+            )
 
     def test_link_solution(self, admin_client, case_a, org_a, admin_user):
         sol = self._solution(org_a, admin_user)

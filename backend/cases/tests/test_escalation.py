@@ -12,8 +12,23 @@ import pytest
 from django.utils import timezone
 
 from cases.models import Case, EscalationPolicy
-from cases.tasks import ESCALATION_COUNT_CAP, scan_for_breached_cases
+from cases.tasks import ESCALATION_COUNT_CAP, scan_for_breached_cases as _scan_for_breached_cases
+from conftest import restore_rls_context
+
+
+# The task clears `app.current_org` when it finishes, correctly: it walks every
+# org on a connection with no middleware, and leaving the last tenant's id
+# behind would hand that context to whatever borrows the connection next. Every
+# test below reads its own rows straight afterwards, so the module calls the
+# task through this shim rather than repeating a restore at 11 call sites.
+def scan_for_breached_cases(*args, **kwargs):
+    try:
+        return _scan_for_breached_cases(*args, **kwargs)
+    finally:
+        restore_rls_context()
+
 from common.models import Activity, Profile, Teams, User
+from conftest import rls_org
 
 POLICIES_URL = "/api/cases/escalation-policies/"
 
@@ -38,7 +53,11 @@ def _make_policy(org, target, **overrides):
         "is_active": True,
     }
     defaults.update(overrides)
-    return EscalationPolicy.objects.create(org=org, **defaults)
+    # Seeded into another tenant: the insert-check policy compares
+    # against `app.current_org`, so writing this row means being that
+    # tenant for the length of the write.
+    with rls_org(org):
+        return EscalationPolicy.objects.create(org=org, **defaults)
 
 
 def _create_breached_case(admin_user, org, priority="Urgent", hours_old=5):
@@ -78,7 +97,9 @@ class TestEscalationPolicyModel:
         _make_policy(org_a, target_a, priority="Urgent")
         _make_policy(org_b, target_b, priority="Urgent")
         assert EscalationPolicy.objects.filter(org=org_a).count() == 1
-        assert EscalationPolicy.objects.filter(org=org_b).count() == 1
+        # Counting the other tenant's rows means looking as that tenant.
+        with rls_org(org_b):
+            assert EscalationPolicy.objects.filter(org=org_b).count() == 1
 
 
 # ---------------------------------------------------------------------------
@@ -336,21 +357,26 @@ def _case_with_sla(
     """Create a case, rewind created_at, and stamp first_response_at /
     resolved_at at fixed offsets from that (rewound) created_at via .update()
     so no save()/signal side effects rewrite them."""
-    case = Case.objects.create(
-        name=f"{priority} case",
-        status="New",
-        priority=priority,
-        created_by=admin_user,
-        org=org,
-    )
+    # Seeded into another tenant: the insert-check policy compares
+    # against `app.current_org`, so writing this row means being that
+    # tenant for the length of the write.
+    with rls_org(org):
+        case = Case.objects.create(
+            name=f"{priority} case",
+            status="New",
+            priority=priority,
+            created_by=admin_user,
+            org=org,
+        )
     created_at = timezone.now() - created_ago
     fields = {"created_at": created_at}
     if first_response_after is not None:
         fields["first_response_at"] = created_at + first_response_after
     if resolved_after is not None:
         fields["resolved_at"] = created_at + resolved_after
-    Case.objects.filter(pk=case.pk).update(**fields)
-    case.refresh_from_db()
+    with rls_org(case.org):
+        Case.objects.filter(pk=case.pk).update(**fields)
+        case.refresh_from_db()
     return case
 
 

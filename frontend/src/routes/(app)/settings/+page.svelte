@@ -24,7 +24,7 @@
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import { count, shortDate } from '$lib/v2/format.js';
-  import { ChevronRight, ExternalLink, ShieldAlert } from '@lucide/svelte';
+  import { ChevronRight, ShieldAlert } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -186,19 +186,6 @@
     }
   ]);
 
-  /**
-   * The last settings route with no v2 equivalent. Named honestly and linked
-   * to v1 rather than left off: an index that omits a setting teaches people
-   * the feature does not exist.
-   */
-  const inV1 = [
-    {
-      href: '/settings/salesforce',
-      title: 'Salesforce import',
-      body: 'One-off migration. Still only in v1.'
-    }
-  ];
-
   let warnings = $derived(groups.flatMap((g) => g.items).filter((i) => i.warn).length);
 </script>
 
@@ -234,21 +221,6 @@
         {/each}
       </div>
     {/each}
-
-    {#if inV1.length}
-      <div class="v2-label" style="margin-bottom:10px">Still in v1</div>
-      <div class="v2-card" style="overflow:hidden">
-        {#each inV1 as s (s.href)}
-          <a class="v2-setting" href={s.href}>
-            <div class="v2-setting-body">
-              <b>{s.title}</b>
-              <span class="v2-sub" style="font-size:11.5px">{s.body}</span>
-            </div>
-            <ExternalLink size={14} style="color:var(--v2-slate);flex:none" />
-          </a>
-        {/each}
-      </div>
-    {/if}
 
     <!--
       The org API key is deliberately absent from this page. It is a

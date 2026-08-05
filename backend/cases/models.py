@@ -712,8 +712,11 @@ class InboundMailbox(BaseModel):
         max_length=128,
         blank=True,
         default="",
-        help_text="Shared secret used to verify webhook calls. Auto-generated "
-        "on create if left blank.",
+        help_text="Reserved for providers that sign deliveries with a shared "
+        "secret, none of which are implemented yet. Nothing compares this "
+        "value today: the SES webhook is authenticated by the SNS signature "
+        "and the topic_arn pin below. Admin-writable so a provider-issued key "
+        "can be stored, and write-only, so it is never returned by the API.",
     )
     topic_arn = models.CharField(
         max_length=256,

@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from cases.models import Case, EmailMessage
 from common.models import Activity, Attachments, Comment
+from conftest import rls_org
 
 
 def _create_comment(case, profile, body="hello"):
@@ -57,13 +58,17 @@ def _make_case(
     from crum import impersonate
 
     with impersonate(creator):
-        return Case.objects.create(
-            name=name,
-            status=status_value,
-            priority=priority,
-            external_thread_id=external_thread_id,
-            org=org,
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org):
+            return Case.objects.create(
+                name=name,
+                status=status_value,
+                priority=priority,
+                external_thread_id=external_thread_id,
+                org=org,
+            )
 
 
 @pytest.mark.django_db

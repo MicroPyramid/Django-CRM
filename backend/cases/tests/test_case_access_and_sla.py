@@ -48,6 +48,7 @@ from accounts.models import Account
 from cases.approvals import Approval, ApprovalRule
 from cases.models import Case, CaseWatcher
 from common.models import Attachments, Comment
+from conftest import rls_org
 
 CASES_URL = "/api/cases/"
 
@@ -80,7 +81,8 @@ def account_a(org_a):
 
 @pytest.fixture
 def account_b(org_b):
-    return Account.objects.create(name="Someone Else Ltd", org=org_b)
+    with rls_org(org_b):
+        return Account.objects.create(name="Someone Else Ltd", org=org_b)
 
 
 @pytest.fixture
@@ -225,16 +227,21 @@ class TestMissingAndMalformedIds:
 @pytest.mark.django_db
 class TestAttachmentDeleteIsScoped:
     def _attach(self, case, org, name="note.txt"):
-        row = Attachments(file_name=name, org=org, content_object=case)
-        row.attachment.save(name, ContentFile(b"data"), save=False)
-        row.save()
-        return row
+        # `attachment` is org-scoped, so seeding one into the other tenant has
+        # to happen as that tenant for the insert check to accept it.
+        with rls_org(org):
+            row = Attachments(file_name=name, org=org, content_object=case)
+            row.attachment.save(name, ContentFile(b"data"), save=False)
+            row.save()
+            return row
 
     def test_cannot_delete_another_orgs_attachment(self, admin_client, case_b, org_b):
         foreign = self._attach(case_b, org_b, "theirs.txt")
         response = admin_client.delete(_attachment(foreign.id))
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert Attachments.objects.filter(pk=foreign.id).exists()
+        # Proving the row survived means looking as its own tenant.
+        with rls_org(org_b):
+            assert Attachments.objects.filter(pk=foreign.id).exists()
 
     def test_uploader_can_delete_their_own(
         self, user_client, assigned_case, org_a, regular_user

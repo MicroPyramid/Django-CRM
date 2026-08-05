@@ -42,7 +42,6 @@
     Sparkles,
     Home,
     Trophy,
-    Cloud,
     RotateCcw,
     Clock,
     MessageSquareQuote,
@@ -1344,14 +1343,6 @@
               >
                 <Settings class="size-4" />
                 <span>Settings</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                inset={false}
-                onclick={() => navigateTo('/settings/salesforce')}
-                class="gap-2.5"
-              >
-                <Cloud class="size-4" />
-                <span>Salesforce</span>
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 inset={false}

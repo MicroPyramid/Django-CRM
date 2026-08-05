@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 import logging
-import secrets
 from datetime import timedelta
 
 from django.db.models import Count, Max
@@ -311,12 +310,17 @@ class InboundMailboxListCreateView(APIView):
         if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
-        data = dict(request.data)
-        # Auto-generate a webhook secret on create when the admin didn't paste one.
-        if not data.get("webhook_secret"):
-            data["webhook_secret"] = secrets.token_urlsafe(32)
+        # No webhook secret is generated here. This used to mint a
+        # `secrets.token_urlsafe(32)` when the body carried none, and nothing
+        # ever compared the result: SES delivery is authenticated by the SNS
+        # signature plus the `topic_arn` pin, both handled in
+        # `InboundMailboxWebhookView.post`. Now that the field is write-only,
+        # a generated value could not be read back either, so every mailbox
+        # would carry a secret no one holds. An empty column reads honestly as
+        # "not configured", which is also what a future provider integration
+        # needs in order to tell configured mailboxes from unconfigured ones.
         serializer = InboundMailboxSerializer(
-            data=data, context={"org": org, "request": request}
+            data=request.data, context={"org": org, "request": request}
         )
         if not serializer.is_valid():
             return Response(

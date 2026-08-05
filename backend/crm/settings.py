@@ -367,6 +367,22 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# `SecurityMiddleware` emits Strict-Transport-Security only when
+# `request.is_secure()` is true. Behind a TLS-terminating proxy (nginx, an ALB)
+# the request reaches Django over plain HTTP, so `is_secure()` is false and the
+# three HSTS settings above were inert in exactly the deployment they were
+# written for. This is what lets Django read the proxy's verdict instead.
+#
+# It is opt-in rather than on by default because the header is
+# attacker-controllable on any path that does not pass through the proxy: a
+# request sent straight to gunicorn carrying `X-Forwarded-Proto: https` makes
+# `request.is_secure()` lie. Set TRUST_PROXY_SSL_HEADER=True only when the proxy
+# is the sole ingress AND it overwrites the header rather than appending to a
+# client-supplied one. The http-to-https redirect belongs on that same proxy,
+# which is why SECURE_SSL_REDIRECT is deliberately left unset here.
+if os.environ.get("TRUST_PROXY_SSL_HEADER", "False").lower() == "true":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

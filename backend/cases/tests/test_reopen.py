@@ -15,26 +15,33 @@ from django.utils import timezone
 
 from cases.models import Case, ReopenPolicy
 from common.models import Activity, Comment
+from conftest import rls_org
 
 
 def _close_case(case, *, days_ago=1):
     """Close a case and backdate closed_on to simulate elapsed time."""
     case.status = "Closed"
     case.closed_on = timezone.now().date() - timedelta(days=days_ago)
-    case.save()
+    # Used on both tenants' cases by the org-scoping test, and the isolation
+    # policy governs UPDATE as well as INSERT.
+    with rls_org(case.org):
+        case.save()
     return case
 
 
 def _post_external_comment(case, *, text="customer reply"):
     """Simulate a customer/email-to-ticket comment (no commented_by)."""
-    return Comment.objects.create(
-        comment=text,
-        content_type=ContentType.objects.get_for_model(case),
-        object_id=case.pk,
-        commented_by=None,
-        is_internal=False,
-        org=case.org,
-    )
+    # `comment` is org-scoped and this helper is used on both tenants' cases
+    # by the org-scoping test.
+    with rls_org(case.org):
+        return Comment.objects.create(
+            comment=text,
+            content_type=ContentType.objects.get_for_model(case),
+            object_id=case.pk,
+            commented_by=None,
+            is_internal=False,
+            org=case.org,
+        )
 
 
 def _latest_activity(case, action):
@@ -226,7 +233,11 @@ class TestReopenAnalytics:
     URL = "/api/cases/reopen-policy/"
 
     def _make_case(self, org):
-        return Case.objects.create(org=org, name="C", status="New", priority="Normal")
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org):
+            return Case.objects.create(org=org, name="C", status="New", priority="Normal")
 
     def test_reopened_last_30d_counts_reopens(self, admin_client, org_a):
         case = self._make_case(org_a)

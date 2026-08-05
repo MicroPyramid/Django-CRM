@@ -20,6 +20,7 @@ from cases.models import (
 )
 from cases.routing import _matches_all
 from common.models import Activity, Profile, Teams, User
+from conftest import rls_org
 
 RULES_URL = "/api/cases/routing-rules/"
 
@@ -36,16 +37,20 @@ def _profile(org, email):
 
 def _rule(org, name, **kwargs):
     assignees = kwargs.pop("target_assignees", [])
-    rule = RoutingRule.objects.create(
-        org=org,
-        name=name,
-        priority_order=kwargs.pop("priority_order", 100),
-        is_active=kwargs.pop("is_active", True),
-        conditions=kwargs.pop("conditions", []),
-        strategy=kwargs.pop("strategy", "direct"),
-        stop_processing=kwargs.pop("stop_processing", True),
-        target_team=kwargs.pop("target_team", None),
-    )
+    # Seeded into another tenant: the insert-check policy compares
+    # against `app.current_org`, so writing this row means being that
+    # tenant for the length of the write.
+    with rls_org(org):
+        rule = RoutingRule.objects.create(
+            org=org,
+            name=name,
+            priority_order=kwargs.pop("priority_order", 100),
+            is_active=kwargs.pop("is_active", True),
+            conditions=kwargs.pop("conditions", []),
+            strategy=kwargs.pop("strategy", "direct"),
+            stop_processing=kwargs.pop("stop_processing", True),
+            target_team=kwargs.pop("target_team", None),
+        )
     if assignees:
         rule.target_assignees.set(assignees)
     return rule
@@ -59,7 +64,9 @@ def _case(org, **kwargs):
         "org": org,
     }
     defaults.update(kwargs)
-    return Case.objects.create(**defaults)
+    # The org lives in `defaults`, so the context has to come from there too.
+    with rls_org(defaults["org"]):
+        return Case.objects.create(**defaults)
 
 
 # ---------------------------------------------------------------------------

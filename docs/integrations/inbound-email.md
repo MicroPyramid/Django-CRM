@@ -65,9 +65,10 @@ Fields worth knowing when creating one:
 
 | Field | Notes |
 | --- | --- |
-| `address` | The inbound email address. On **create**, `validate_address` pre-checks for a case-insensitive duplicate in your org and returns a clean `400` if one exists (`self.instance is None` gates this. It's explicitly a create-only check). On **update** (`PUT`), that pre-check does not run at all: renaming a mailbox's `address` onto one already used elsewhere in your org skips the serializer check entirely and goes straight to `.save()`, where the database's own `UniqueConstraint` on `(org, address)` rejects it: deterministically, on every such `PUT`, not just under a race, and with no `try`/`except` around the write to turn it into a clean error. Expect an unhandled `IntegrityError` (`500`), not a `400`, if you rename a mailbox onto an address your org already has. |
+| `address` | The inbound email address. `validate_address` pre-checks for a case-insensitive duplicate in your org on **both** create and update, excluding the mailbox from its own check so saving a record without changing its address still works, and returns a clean `400` when one exists. This used to be gated on `self.instance is None`, so a `PUT` that renamed a mailbox onto an address the org already had skipped the check and hit the database's `UniqueConstraint` on `(org, address)` instead, giving an unhandled `IntegrityError` (`500`) on every such rename rather than a `400`. |
 | `provider` | Must be `ses` for the mailbox to accept mail (see above). |
-| `webhook_secret` | Auto-generated (`secrets.token_urlsafe(32)`) on create if you don't supply one. See [Securing the endpoint](#securing-the-endpoint) for what it does and does not do. |
+| `webhook_secret` | Optional, and unused today. Nothing is generated for you, and the API never returns it. See [Securing the endpoint](#securing-the-endpoint). |
+| `has_webhook_secret` | Read-only boolean, admin-only, telling you whether a secret is stored without disclosing it. |
 | `topic_arn` | Leave blank on create. It's pinned automatically from the first verified SNS `SubscriptionConfirmation`, not set by hand. See below. |
 | `default_priority`, `default_case_type` | Set directly on any new case this mailbox creates; both optional. There is no `default_status`. A new case's `status` is always `"New"`, not configurable per mailbox (see [above](#how-inbound-email-becomes-a-ticket)). |
 | `default_assignee_id` | Optional. If set, that profile is added to the new case's `assigned_to` (a many-to-many "add", not a status or ownership field of its own). |
@@ -145,13 +146,22 @@ ids, notwithstanding the source comment's stated intent not to leak that. Mailbo
 not sequential, so this isn't practically brute-forceable, but it's not the airtight non-disclosure
 the comment claims either.
 
-**`webhook_secret` is not part of this verification.** It is stored on the mailbox, auto-generated
-on create, and settable/rotatable by an admin through the mailbox CRUD endpoints above, but nothing
-in `InboundMailboxWebhookView.post` reads or compares it. The two checks above are what actually
-gate the endpoint. What `webhook_secret` (and `topic_arn`, held to the same bar) does get is
-**stripped from every API response to a non-admin caller**: `InboundMailboxSerializer.to_representation`
-pops both fields unless the requesting profile is an admin, so a regular org member who can list
-mailboxes never sees either value. Treat both as admin-only secrets when deciding who in your org
-should have access to the CRM at all, not because a leaked `webhook_secret` lets someone forge
-mail today, but because a leaked `topic_arn` embeds your AWS account id, and because the field is
-positioned to matter if a future provider integration does check it.
+**`webhook_secret` is not part of this verification.** Nothing in
+`InboundMailboxWebhookView.post` reads or compares it. The two checks above are what actually gate
+the endpoint, and the field is a placeholder for providers that sign with a shared secret, none of
+which are implemented. Two consequences follow, and both changed recently:
+
+- **Nothing generates one.** Creating a mailbox used to mint a `secrets.token_urlsafe(32)` when the
+  body carried none. A random value that no code compares, and that (see below) cannot be read back,
+  is indistinguishable from no value at all except that it makes a mailbox look configured. New
+  mailboxes now leave the column empty unless you set it.
+- **The API never returns it.** The field is `write_only`, so an admin can store a provider-issued
+  key but no response contains it. It used to be returned to admins on both the list and the detail
+  endpoint, which meant an admin's session, or any personal access token that admin had minted,
+  could read every mailbox's stored secret out of a list response. Admins get `has_webhook_secret`,
+  a boolean, instead. If you lose a stored key, overwrite it with a `PUT`.
+
+`topic_arn` is still returned, to admins only, and is stripped for regular members along with
+`has_webhook_secret`: it embeds your AWS account id. That is the reason to treat mailbox
+configuration as admin-only, rather than any forgery risk from `webhook_secret`, which cannot exist
+until a provider integration starts checking it.
