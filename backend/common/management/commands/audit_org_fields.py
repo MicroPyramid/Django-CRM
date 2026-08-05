@@ -5,9 +5,14 @@ This is part of Phase 1 multi-tenancy hardening - ensures all org-scoped
 models have proper org field values before adding NOT NULL constraints.
 
 Usage:
-    python manage.py audit_org_fields --check     # Just check for issues
+    python manage.py audit_org_fields             # Report only, changes nothing
     python manage.py audit_org_fields --fix       # Attempt to fix issues
     python manage.py audit_org_fields --verbose   # Show detailed output
+
+There is no `--check`. Reporting is what the command does when `--fix` is
+absent, and the flag that used to be advertised here was accepted by the
+parser and never read in `handle()`, so it was indistinguishable from a typo:
+the command did the same thing either way and said nothing about it.
 """
 
 from django.apps import apps
@@ -18,11 +23,6 @@ class Command(BaseCommand):
     help = "Audit and report on models with nullable org fields"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--check",
-            action="store_true",
-            help="Check for null org values without making changes",
-        )
         parser.add_argument(
             "--fix",
             action="store_true",

@@ -123,6 +123,16 @@ class Order(BaseOrgModel):
         verbose_name_plural = "Orders"
         db_table = "orders"
         ordering = ("-created_at",)
+        # Restated, not inherited. A subclass that declares its own plain
+        # `class Meta` does not pick up `indexes` from `BaseOrgModel.Meta`, so
+        # `makemigrations` read these as removed and
+        # `0003_remove_order_orders_org_id_9026a7_idx_and_more` dropped them.
+        # `PersonalAccessToken` and `PackApplication` spell it out the same
+        # way; `common/tests/test_org_index_coverage.py` now fails if a new
+        # subclass forgets.
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+        ]
 
     def __str__(self):
         return self.name
@@ -165,6 +175,10 @@ class OrderLineItem(BaseOrgModel):
         verbose_name_plural = "Order Line Items"
         db_table = "order_line_item"
         ordering = ("sort_order",)
+        # See the note on `Order.Meta`.
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+        ]
 
     def __str__(self):
         return self.name

@@ -28,10 +28,9 @@ Request body:
 }
 ```
 
-`redirect_uri` is taken from this field, not from any server-side setting. See
-[Architecture: Authentication](../architecture/authentication.md#organization-api-keys) for the
-related, dead `GOOGLE_REDIRECT_URI` config, and [Google OAuth](../self-hosting/google-oauth.md) for
-the setting that actually matters.
+`redirect_uri` is taken from this field, not from any server-side setting; there is no
+server-side redirect-URI setting to configure. See
+[Google OAuth](../self-hosting/google-oauth.md) for the settings that do matter.
 The view exchanges these with Google, decodes the returned ID token, and rejects the sign-in
 outright if Google's own `email_verified` claim is not `true`. An unverified Google address never
 reaches the database. On success:

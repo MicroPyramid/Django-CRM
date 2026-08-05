@@ -34,12 +34,8 @@ from cases.serializer import (
     ApprovalSerializer,
 )
 from common.models import Activity
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
-
-
-def _is_admin(profile) -> bool:
-    return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
 
 
 def _visible_approvals(profile, rows):
@@ -65,7 +61,7 @@ def _visible_approvals(profile, rows):
     many-to-many on watchers and another on approvers; the row set here is one
     org's approvals, already fetched with the needed relations prefetched.
     """
-    if _is_admin(profile):
+    if is_org_admin(profile):
         return list(rows)
     return [
         a
@@ -139,7 +135,7 @@ class ApprovalRuleListCreateView(APIView):
         )
 
     def post(self, request):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         serializer = ApprovalRuleSerializer(data=request.data, context={"org": org})
@@ -185,7 +181,7 @@ class ApprovalRuleDetailView(APIView):
         return Response(ApprovalRuleSerializer(rule).data)
 
     def put(self, request, pk):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         rule = self._get(pk, request.profile.org)
         if rule is None:
@@ -208,7 +204,7 @@ class ApprovalRuleDetailView(APIView):
         return Response(ApprovalRuleSerializer(rule).data)
 
     def delete(self, request, pk):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         rule = self._get(pk, request.profile.org)
         if rule is None:
@@ -546,7 +542,7 @@ class ApprovalCancelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Only the requester (or an admin) can cancel.
-        if approval.requested_by_id != request.profile.id and not _is_admin(
+        if approval.requested_by_id != request.profile.id and not is_org_admin(
             request.profile
         ):
             return Response(

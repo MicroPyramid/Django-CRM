@@ -32,12 +32,14 @@ from rest_framework.exceptions import PermissionDenied
 
 from cases.models import Case
 
+# Re-exported, not redefined. Four modules already import `is_org_admin` from
+# here, and this used to be its own copy of the rule, one of ten across the
+# backend. The single definition now lives in `common.permissions`, which
+# nothing about cases needs to be imported; this name stays so those four
+# imports keep working and so the cases access rules still read in one place.
+from common.permissions import is_org_admin  # noqa: F401
+
 _DENIED = "You do not have Permission to perform this action"
-
-
-def is_org_admin(profile):
-    """True for the two ways this codebase spells "admin"."""
-    return profile.role == "ADMIN" or bool(getattr(profile, "is_admin", False))
 
 
 def visible_cases_qs(profile):

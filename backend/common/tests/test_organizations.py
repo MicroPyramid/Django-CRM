@@ -182,6 +182,65 @@ class TestOrgUpdateView:
         response = admin_client.get(self._url(org_b.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_update_org_rejects_an_overlong_name(self, admin_client, org_a):
+        """`Org.name` is varchar(100) and this endpoint validated nothing.
+
+        It assigned `request.data["name"]` straight to the column, so on
+        PostgreSQL a longer name reached the driver as `DataError: value too
+        long for type character varying(100)` and came back as a 500. Verified
+        against the dev database before this test was written; the suite runs
+        on SQLite, which stores it happily, so unfixed code answers 200 here.
+        """
+        response = admin_client.put(
+            self._url(org_a.id),
+            {"name": "X" * 200},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "name" in response.data["errors"]
+
+        org_a.refresh_from_db()
+        assert org_a.name != "X" * 200
+
+    def test_patch_org_rejects_an_overlong_name(self, admin_client, org_a):
+        """PATCH was a copy of PUT, so it carried the same gap."""
+        response = admin_client.patch(
+            self._url(org_a.id),
+            {"name": "X" * 200},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "name" in response.data["errors"]
+
+    def test_update_org_accepts_a_name_at_the_limit(self, admin_client, org_a):
+        """The validator has to be able to say yes at exactly 100 characters."""
+        name = "X" * 100
+        response = admin_client.put(
+            self._url(org_a.id), {"name": name}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        org_a.refresh_from_db()
+        assert org_a.name == name
+
+    def test_update_org_ignores_a_client_supplied_id(self, admin_client, org_a, org_b):
+        """The id comes from the URL, which is already checked against the JWT.
+
+        Routing the body through a serializer that names `id` is only safe
+        while `id` stays read-only, so this pins it.
+        """
+        original = org_a.id
+        response = admin_client.put(
+            self._url(org_a.id),
+            {"name": "Renamed", "id": str(org_b.id)},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        org_a.refresh_from_db()
+        assert org_a.id == original
+        assert org_a.name == "Renamed"
+
 
 @pytest.mark.django_db
 class TestProfileView:

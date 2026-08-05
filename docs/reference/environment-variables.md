@@ -110,7 +110,6 @@ Pooling uses psycopg 3's `psycopg_pool` through Django's PostgreSQL backend. It 
 | --- | --- | --- | --- |
 | `DOMAIN_NAME` | `http://localhost:8000` | No, and less than it used to be | Base URL of the **backend**. Now used only as a bare `url` context value in internal notification emails (comment-mention, account activation/deactivation, and the per-record "assigned to you" emails in `leads/tasks.py`, `cases/tasks.py`, `opportunity/tasks.py`, `contacts/tasks.py`, `accounts/tasks.py`), which only reach people who already have accounts in the org. It used to build the customer-facing invoice, estimate and CSAT links too, and every one of those was broken: the builders wrote `f"{protocol}://{domain}/..."` around a value that already carried a scheme, so the emitted link had two, and the paths are frontend routes that do not exist on the backend host. Those links come from `FRONTEND_URL` via `common/links.py` now. |
 | `FRONTEND_URL` | `http://localhost:5173` | **Yes**, once self-hosted under a real domain | Base URL of the SvelteKit frontend, and the single source for every link that leaves the system in an email: the welcome email and magic-link sign-in URL (`common/tasks.py`), the emailed invoice and estimate portal links, the CSAT survey link, and the "assigned to you" invoice link (all via `common.links.frontend_url`). The customer-facing ones go to people outside the organization, so leaving the `localhost` default in a real deployment emails dead links to customers. A trailing slash is stripped, so `https://app.example.com` and `https://app.example.com/` behave the same. |
-| `SWAGGER_ROOT_URL` | `http://localhost:8000` | No | Read into a Django setting in `crm/settings.py`, but not referenced anywhere else in this codebase (backend, frontend, or mobile) as of this writing. Setting it currently has no observable effect. |
 
 ### Google OAuth
 
@@ -118,7 +117,6 @@ Pooling uses psycopg 3's `psycopg_pool` through Django's PostgreSQL backend. It 
 | --- | --- | --- | --- |
 | `GOOGLE_CLIENT_ID` | *(empty)* | No, leaving it blank disables Google sign-in | OAuth client ID sent to Google's token endpoint and used as the expected audience when verifying a mobile ID token. See [Google OAuth](../self-hosting/google-oauth.md#backend-configuration). |
 | `GOOGLE_CLIENT_SECRET` | *(empty)* | No, leaving it blank disables Google sign-in | OAuth client secret, alongside `GOOGLE_CLIENT_ID` above. |
-| `GOOGLE_REDIRECT_URI` | *(empty)* | No | Defined in `settings.py` but not read anywhere else in the backend, the redirect URI actually used in the token exchange is the one the frontend sends in the request body on each call, not this setting. Safe to leave unset even in production; see [Google OAuth](../self-hosting/google-oauth.md#backend-configuration) for why. |
 
 ### Docker bootstrap (not read by `crm/settings.py`)
 

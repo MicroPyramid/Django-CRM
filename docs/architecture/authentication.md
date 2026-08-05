@@ -216,10 +216,8 @@ Rotating it (`POST /api/org/api-key/`) invalidates the previous key immediately,
 says so. It's excluded from every nested API representation (`OrganizationSerializer` never embeds
 it) and only ever served by this one endpoint, which now requires an interactive session.
 
-One piece of related configuration to be aware of: `GOOGLE_REDIRECT_URI` is defined in
-`backend/crm/settings.py:360` but is dead, grep the backend and it's the only place that name
-appears. The actual redirect URI used in the Google OAuth code exchange
-(`GoogleOAuthCallbackView.post`) comes from the client's request body on each call
-(`request.data.get("redirect_uri")`), not from this setting. Don't spend time configuring
-`GOOGLE_REDIRECT_URI` expecting it to do anything; see
-[Google OAuth](../self-hosting/google-oauth.md) for the setting that actually matters.
+One piece of related configuration to be aware of: there is no redirect-URI setting. The
+redirect URI used in the Google OAuth code exchange (`GoogleOAuthCallbackView.post`) comes from the
+client's request body on each call (`request.data.get("redirect_uri")`). A `GOOGLE_REDIRECT_URI`
+setting used to exist in `backend/crm/settings.py`, defined and never read; it was removed. See
+[Google OAuth](../self-hosting/google-oauth.md) for the settings that do matter.

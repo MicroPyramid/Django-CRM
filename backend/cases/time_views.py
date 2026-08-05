@@ -35,18 +35,14 @@ from cases.serializer import (
     TimeEntryUpdateSerializer,
 )
 from common.models import Profile
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
-
-
-def _is_admin(profile):
-    return profile.role == "ADMIN" or getattr(profile, "is_organization_admin", False)
 
 
 def _visible_entry_qs(profile):
     """Org-scoped queryset honouring agent-vs-admin visibility."""
     qs = TimeEntry.objects.filter(org=profile.org)
-    if not _is_admin(profile):
+    if not is_org_admin(profile):
         qs = qs.filter(profile=profile)
     return qs.select_related("profile", "profile__user", "case")
 
@@ -175,7 +171,7 @@ class TimeEntryDetailView(APIView):
             entry = TimeEntry.objects.get(id=pk, org=request.profile.org)
         except TimeEntry.DoesNotExist:
             return None
-        if entry.profile_id != request.profile.id and not _is_admin(request.profile):
+        if entry.profile_id != request.profile.id and not is_org_admin(request.profile):
             return False  # Sentinel: row exists but caller is not authorized.
         return entry
 
@@ -234,7 +230,7 @@ class TimeEntryStopView(APIView):
             return Response(
                 {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
             )
-        if entry.profile_id != request.profile.id and not _is_admin(request.profile):
+        if entry.profile_id != request.profile.id and not is_org_admin(request.profile):
             return Response(
                 {"detail": "Not authorized to stop this entry."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -283,7 +279,7 @@ class TimesheetView(APIView):
         profile_param = uuid_param(request.query_params, "profile")
         target_profile_id = request.profile.id
         if profile_param and profile_param != str(request.profile.id):
-            if not _is_admin(request.profile):
+            if not is_org_admin(request.profile):
                 return Response(
                     {"detail": "Only admins can view another profile's timesheet."},
                     status=status.HTTP_403_FORBIDDEN,

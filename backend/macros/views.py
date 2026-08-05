@@ -23,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cases.models import Case
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from macros.models import Macro
 from macros.render import (
     SUPPORTED_PLACEHOLDERS,
@@ -31,14 +31,6 @@ from macros.render import (
     render_macro,
 )
 from macros.serializers import MacroSerializer
-
-
-def _is_admin(profile) -> bool:
-    if profile is None:
-        return False
-    if getattr(profile, "is_admin", False):
-        return True
-    return getattr(profile, "role", None) == "ADMIN"
 
 
 def _visible_qs(profile):
@@ -88,7 +80,7 @@ def _resolve_scope_and_owner(profile, payload, instance=None):
         raise ValueError("scope must be 'org' or 'personal'.")
 
     if desired_scope == Macro.SCOPE_ORG:
-        if not _is_admin(profile):
+        if not is_org_admin(profile):
             raise ValueError("Only admins can manage org-scope macros.")
         return desired_scope, None
     return desired_scope, profile
@@ -146,7 +138,7 @@ class MacroDetailView(APIView):
         should return as-is). Cross-org access returns 404 to mirror RLS.
         """
         macro = get_object_or_404(Macro, pk=pk, org=request.profile.org)
-        if macro.scope == Macro.SCOPE_ORG and not _is_admin(request.profile):
+        if macro.scope == Macro.SCOPE_ORG and not is_org_admin(request.profile):
             # An org macro IS visible to this non-admin; the refusal is an
             # authorization one (403), not a hidden object.
             return Response(

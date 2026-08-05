@@ -39,15 +39,15 @@ to `.env.docker` to override specific values without touching the tracked file; 
 
 The variables `.env.docker` sets: `SECRET_KEY` (an insecure placeholder. See
 [Production deployment](production-deploy.md) before this instance is anything but local),
-`DEBUG=True`, `ENV_TYPE=dev`, `ALLOWED_HOSTS=localhost,127.0.0.1,backend`, `DOMAIN_NAME` and
-`SWAGGER_ROOT_URL` (both `http://localhost:8000`), the `DBNAME`/`DBUSER`/`DBPASSWORD`/`DBHOST`/
+`DEBUG=True`, `ENV_TYPE=dev`, `ALLOWED_HOSTS=localhost,127.0.0.1,backend`,
+`DOMAIN_NAME` (`http://localhost:8000`), the `DBNAME`/`DBUSER`/`DBPASSWORD`/`DBHOST`/
 `DBPORT` the `backend` and Celery containers use to reach `db`, `POSTGRES_DB`/`POSTGRES_USER`/
 `POSTGRES_PASSWORD` (used only by the `db` service itself, to create the database and its own
 superuser role. See [PostgreSQL and RLS](postgresql-and-rls.md) for why the app never connects
 as this role), `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` (both pointing at `redis`),
 `DEFAULT_FROM_EMAIL`/`ADMIN_EMAIL`/`ADMIN_PASSWORD`, `CORS_ALLOW_ALL=True`,
-`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI` (blank. Google sign-in stays
-disabled until set), and `PUBLIC_DJANGO_API_URL=http://localhost:8000` for the frontend build.
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (blank. Google sign-in stays disabled until both
+are set), and `PUBLIC_DJANGO_API_URL=http://localhost:8000` for the frontend build.
 
 ## Running it
 

@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cases.models import Case
+from cases.parent_guards import check_parent_link
 from common.models import Activity
 from common.permissions import HasOrgContext
 
@@ -141,41 +142,14 @@ class CaseLinkParentView(APIView):
                 {"parent_id": "Parent case not found in this organization."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if parent.id == case.id:
+        # Self-parent, merged either end, cycle and depth, all four in
+        # `cases.parent_guards` so `CaseSerializer` enforces the same rules on
+        # the same records. The messages are the ones this endpoint has always
+        # returned; the walk now terminates on a cycle it did not create.
+        refusal = check_parent_link(parent, case=case)
+        if refusal:
             return Response(
-                {"parent_id": "A case cannot be its own parent."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if parent.status == "Duplicate" or case.status == "Duplicate":
-            return Response(
-                {"parent_id": "Cannot link to or from a merged case."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Cycle check: walk the parent chain upward; reject if we encounter
-        # `case`. Also enforce max depth (parent-depth + child-tree-depth).
-        cursor = parent
-        ancestors = []
-        while cursor is not None:
-            if cursor.id == case.id:
-                return Response(
-                    {"parent_id": "Linking would create a cycle."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            ancestors.append(cursor)
-            cursor = cursor.parent
-
-        parent_depth = len(ancestors)  # depth of parent (1 == parent has no parent)
-        child_subtree_depth = _max_subtree_depth(case)
-        # Resulting tree depth = parent_depth + 1 (case itself) + descendants below it.
-        resulting_depth = parent_depth + 1 + child_subtree_depth
-        if resulting_depth > TREE_MAX_DEPTH:
-            return Response(
-                {
-                    "parent_id": (
-                        f"Case tree is limited to {TREE_MAX_DEPTH} levels."
-                    )
-                },
+                {"parent_id": refusal},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -205,19 +179,6 @@ class CaseLinkParentView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
-
-def _max_subtree_depth(case, depth=0, seen=None):
-    """Depth of the deepest descendant under ``case``. ``case`` itself = 0."""
-    if seen is None:
-        seen = set()
-    if case.id in seen:
-        return depth
-    seen.add(case.id)
-    children = list(case.children.all())
-    if not children:
-        return depth
-    return max(_max_subtree_depth(c, depth + 1, seen) for c in children)
 
 
 def _open_descendants(case, out=None):

@@ -29,13 +29,13 @@ The variables `.env.docker` actually defines are:
 | `DEBUG` | `True` in the dev compose file. This is also what allows `devlogin` to run (see [First sign-in](first-sign-in.md)). |
 | `ENV_TYPE` | `dev`. |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,backend`. |
-| `DOMAIN_NAME`, `SWAGGER_ROOT_URL` | Both `http://localhost:8000`. |
+| `DOMAIN_NAME` | `http://localhost:8000`. |
 | `DBNAME`, `DBUSER`, `DBPASSWORD`, `DBHOST`, `DBPORT` | Connection details the Django `backend` (and Celery) containers use to reach `db`. |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Used only by the `db` service itself to create the database and its own superuser role. |
 | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND` | Both point at the `redis` service, database `0`. |
 | `DEFAULT_FROM_EMAIL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Console email backend (dev), and the credentials used to bootstrap a Django admin superuser. See [What you got](#what-you-got). |
 | `CORS_ALLOW_ALL` | `True` for local development. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Blank by default; Google sign-in is disabled until these are set. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Blank by default; Google sign-in is disabled until both are set. The redirect URI is not a setting: the frontend sends it in the request body on each call. |
 | `PUBLIC_DJANGO_API_URL` | The API base URL the frontend container is built against, `http://localhost:8000`. |
 
 ## Start the stack

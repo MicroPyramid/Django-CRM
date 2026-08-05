@@ -1303,9 +1303,6 @@ class ReopenPolicyView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def _is_admin(self, request):
-        return request.profile.role == "ADMIN" or request.profile.is_admin
-
     def _get_or_create_policy(self, org):
         policy = ReopenPolicy.objects.filter(org=org).first()
         if policy is None:
@@ -1318,7 +1315,7 @@ class ReopenPolicyView(APIView):
         responses={200: ReopenPolicySerializer},
     )
     def get(self, request, format=None):
-        if not self._is_admin(request):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": True, "errors": "Admin access required"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1335,7 +1332,7 @@ class ReopenPolicyView(APIView):
         responses={200: ReopenPolicySerializer},
     )
     def put(self, request, format=None):
-        if not self._is_admin(request):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": True, "errors": "Admin access required"},
                 status=status.HTTP_403_FORBIDDEN,

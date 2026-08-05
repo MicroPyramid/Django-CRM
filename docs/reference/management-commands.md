@@ -136,14 +136,18 @@ models), not every org-scoped model that exists today. A model added to the code
 command was last edited is invisible to it either way.
 
 ```bash
-uv run python manage.py audit_org_fields --check
+uv run python manage.py audit_org_fields
 uv run python manage.py audit_org_fields --fix
 uv run python manage.py audit_org_fields --verbose
 ```
 
+The audit always runs; there is no way to suppress it short of not invoking the command. A
+`--check` flag used to be accepted by the parser and never read in `handle()`, so passing it or
+omitting it produced identical output; it has been removed rather than left as a flag that means
+nothing.
+
 | Flag | What it does |
 | --- | --- |
-| `--check` | Accepted by the argument parser but **never read in `handle()`**, passing it or omitting it produces identical output. The audit itself always runs; there's no way to suppress it short of not invoking the command. |
 | `--fix` | For `common.Address` rows with a null `org`, attempts to backfill it from a related `Profile`. For `common.Tags`, `--fix` does **not** fix anything. It prints a message asking for manual review instead. For any other model that turns up with a null `org`, it also just prints "Automatic fix not implemented." |
 | `--verbose` | Two effects, one per pass: in the nullable-org pass it prints each model's field configuration (`null`, `blank`, `related_query_name`); in the required-org pass it's what makes a "Model not found" warning print at all. Without `--verbose`, a `LookupError` there is swallowed silently. |
 

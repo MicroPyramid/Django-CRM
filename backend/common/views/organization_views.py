@@ -1,7 +1,6 @@
 import secrets
 
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -83,129 +82,114 @@ class OrgProfileCreateView(APIView):
 
 
 class OrgUpdateView(APIView):
-    """
-    Update organization details
-    Only organization admins can update
+    """Read and rename the caller's own organization.
+
+    Narrow on purpose: `OrganizationSerializer` is `(id, name)`, so `name` is
+    the only thing this endpoint has ever written. The company profile, locale
+    and behaviour switches are edited through `OrgSettingsView`
+    (`/api/org/settings/`), which is what the web app uses. Two write paths
+    over the same row is not a shape worth extending, so this one is left at
+    the field it already had rather than grown into a second settings
+    endpoint.
+
+    The org id comes from the URL and is checked against `request.profile.org`
+    before anything is read or written, so a caller can only ever reach their
+    own org.
     """
 
     permission_classes = (IsAuthenticated,)
 
+    def _org_or_error(self, request, pk, *, verb="update"):
+        """Return (org, None) for an admin of this org, or (None, Response)."""
+        if not request.profile:
+            return None, Response(
+                {"error": True, "errors": "Organization context required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if str(request.profile.org.id) != str(pk):
+            return None, Response(
+                {"error": True, "errors": f"Cannot {verb} a different organization"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if verb == "update" and (
+            request.profile.role != "ADMIN"
+            and not request.profile.is_organization_admin
+        ):
+            return None, Response(
+                {
+                    "error": True,
+                    "errors": "Only organization admins can update organization details",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        org = Org.objects.filter(id=pk).first()
+        if org is None:
+            return None, Response(
+                {"error": True, "errors": "Organization not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return org, None
+
+    def _write(self, request, pk, *, partial):
+        """PUT and PATCH, which differed only in the word "Partial" in a comment.
+
+        Both used to assign `request.data["name"]` straight to the column with
+        no validation at all. `Org.name` is `varchar(100)`, so a longer name
+        reached PostgreSQL as a `DataError` and the caller got a 500 with no
+        indication of which field was wrong. The serializer carries the
+        model's own `max_length`, which is the whole reason to route through
+        one, per the API Validation rules in CLAUDE.md.
+        """
+        org, error = self._org_or_error(request, pk)
+        if error:
+            return error
+
+        update = OrganizationSerializer(org, data=request.data, partial=partial)
+        if not update.is_valid():
+            return Response(
+                {"error": True, "errors": update.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        update.save()
+
+        return Response(
+            {
+                "error": False,
+                "message": "Organization updated successfully",
+                "org": update.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     @extend_schema(
         operation_id="org_update",
-        description="Update organization details",
+        description="Rename the caller's organization",
         request=OrganizationSerializer,
         responses={200: OrganizationSerializer},
     )
     def put(self, request, pk, format=None):
-        # Check if user has admin access to this organization
-        if not request.profile:
-            return Response(
-                {"error": True, "errors": "Organization context required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Verify the organization matches the current context
-        if str(request.profile.org.id) != str(pk):
-            return Response(
-                {"error": True, "errors": "Cannot update a different organization"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Check if user is admin
-        if (
-            request.profile.role != "ADMIN"
-            and not request.profile.is_organization_admin
-        ):
-            return Response(
-                {
-                    "error": True,
-                    "errors": "Only organization admins can update organization details",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            org = Org.objects.get(id=pk)
-        except Org.DoesNotExist:
-            return Response(
-                {"error": True, "errors": "Organization not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Update fields
-        data = request.data
-        if "name" in data:
-            org.name = data["name"]
-
-        org.save()
-
-        return Response(
-            {
-                "error": False,
-                "message": "Organization updated successfully",
-                "org": OrganizationSerializer(org).data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        # `name` is `blank=True, null=True` on the model, so DRF makes it
+        # optional and a PUT without it is a no-op rather than a 400. That is
+        # what this endpoint already did; changing it would break clients that
+        # send the whole record back.
+        return self._write(request, pk, partial=False)
 
     @extend_schema(
-        operation_id="org_destroy",
-        description="Partial update organization details",
+        # Was `org_destroy`, on the PATCH handler. A generated client turned
+        # that into a `destroy()` method that performed a partial update, and
+        # the description right below it said "Partial update" at the same
+        # time. Nothing on this view deletes anything.
+        operation_id="org_partial_update",
+        description="Partially update the caller's organization",
         request=OrganizationSerializer,
         responses={200: OrganizationSerializer},
     )
     def patch(self, request, pk, format=None):
-        """Handle partial updates to an organization."""
-        # Check if user has admin access to this organization
-        if not request.profile:
-            return Response(
-                {"error": True, "errors": "Organization context required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Verify the organization matches the current context
-        if str(request.profile.org.id) != str(pk):
-            return Response(
-                {"error": True, "errors": "Cannot update a different organization"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Check if user is admin
-        if (
-            request.profile.role != "ADMIN"
-            and not request.profile.is_organization_admin
-        ):
-            return Response(
-                {
-                    "error": True,
-                    "errors": "Only organization admins can update organization details",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            org = Org.objects.get(id=pk)
-        except Org.DoesNotExist:
-            return Response(
-                {"error": True, "errors": "Organization not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Partial update fields
-        data = request.data
-        if "name" in data:
-            org.name = data["name"]
-
-        org.save()
-
-        return Response(
-            {
-                "error": False,
-                "message": "Organization updated successfully",
-                "org": OrganizationSerializer(org).data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return self._write(request, pk, partial=True)
 
     @extend_schema(
         operation_id="org_retrieve",
@@ -213,27 +197,11 @@ class OrgUpdateView(APIView):
         responses={200: OrganizationSerializer},
     )
     def get(self, request, pk, format=None):
-        # Check if user has access to this organization
-        if not request.profile:
-            return Response(
-                {"error": True, "errors": "Organization context required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Verify the organization matches the current context
-        if str(request.profile.org.id) != str(pk):
-            return Response(
-                {"error": True, "errors": "Cannot access a different organization"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            org = Org.objects.get(id=pk)
-        except Org.DoesNotExist:
-            return Response(
-                {"error": True, "errors": "Organization not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        # Read is open to every member of the org, so no role check here; the
+        # org match in `_org_or_error` is the boundary that matters.
+        org, error = self._org_or_error(request, pk, verb="access")
+        if error:
+            return error
 
         return Response(
             {"error": False, "org": OrganizationSerializer(org).data},
@@ -410,32 +378,32 @@ class ProfileView(APIView):
 
 
 class ProfileDetailView(APIView):
-    """
-    Get profile details for a specific organization
-    Requires org header
+    """The caller's own profile in whichever org their token names.
+
+    It used to say "Requires org header", and published that header as a
+    required parameter, and its 400 body told the caller to send one. There is
+    no org header: `common/middleware/get_company.py` derives the org from the
+    JWT's `org_id` claim, the PAT, or the API key. A caller following the
+    documented instruction would have added a header, seen no change, and had
+    no way to tell why.
     """
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        description="Get profile for current user in specified organization",
-        parameters=[
-            OpenApiParameter(
-                "org",
-                OpenApiTypes.UUID,
-                OpenApiParameter.HEADER,
-                required=True,
-                description="Organization ID",
-            )
-        ],
+        description=(
+            "Profile for the current user in the organization their token "
+            "names. Org context comes from the token, not from a parameter."
+        ),
         responses={200: serializer.ProfileDetailSerializer},
     )
     def get(self, request):
-        # request.profile is set by middleware based on org header
+        # Set by middleware from the token's org claim. Absent means the token
+        # carries no org, which is what `/api/org/` is for.
         if not hasattr(request, "profile") or request.profile is None:
             return Response(
-                {"error": "Organization header required"},
+                {"error": "Organization context required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

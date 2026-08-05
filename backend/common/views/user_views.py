@@ -15,7 +15,7 @@ from cases.models import Case
 from cases.serializer import CaseSerializer
 from common import swagger_params
 from common.models import Comment, PersonalAccessToken, Profile, Teams, User
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     BillingAddressSerializer,
     CommentSerializer,
@@ -293,11 +293,7 @@ class UserDetailView(APIView):
         Editing your own profile for contact details stays allowed; only the
         privileged fields are withheld, by making them read_only downstream.
         """
-        actor_is_admin = (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.user.is_superuser
-        )
+        actor_is_admin = is_org_admin(request.profile) or request.user.is_superuser
         editing_self = request.profile.id == target_profile.id
         return actor_is_admin and not editing_self
 
@@ -571,9 +567,7 @@ class UserStatusView(APIView):
                 # serializer), and an org with no admin can never invite,
                 # promote or reconfigure itself again. Refuse to deactivate the
                 # last active admin, the rule the /v2/team page advertises.
-                target_is_admin = (
-                    profile.role == "ADMIN" or profile.is_organization_admin
-                )
+                target_is_admin = is_org_admin(profile)
                 if target_is_admin and not (
                     profiles.filter(is_active=True)
                     .filter(Q(role="ADMIN") | Q(is_organization_admin=True))

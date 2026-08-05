@@ -23,24 +23,24 @@ and a CSRF `state` parameter). The client secret only ever lives on the backend.
 
 ## Backend configuration
 
-`backend/crm/settings.py` reads three Google-related variables, all defaulting to an empty string:
+`backend/crm/settings.py` reads two Google-related variables, both defaulting to an empty string:
 
 ```python
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "")
 ```
 
-`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are what the backend sends to Google's own token
-endpoint when exchanging an authorization code (see below) and what it uses as the expected audience
-when verifying a mobile ID token. Leaving either blank means every such exchange or verification
-fails, so sign-in with Google is effectively off until both are set. `.env.docker` ships all three
-blank with the comment "leave blank to disable"; `.env.example` doesn't include
-`GOOGLE_REDIRECT_URI` at all, only `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` under an "optional.
-Leave blank to disable" comment. That's consistent with the code: `GOOGLE_REDIRECT_URI` is defined
-in `settings.py` but not read anywhere else in the backend, the redirect URI actually used in the
-token exchange is the one the frontend sends in the request body on each call (see
-[The PKCE callback flow](#the-pkce-callback-flow)), not this setting.
+They are what the backend sends to Google's own token endpoint when exchanging an authorization code
+(see below) and what it uses as the expected audience when verifying a mobile ID token. Leaving
+either blank means every such exchange or verification fails, so sign-in with Google is effectively
+off until both are set. `.env.docker` and `.env.example` both ship them blank, under an "optional.
+Leave blank to disable" comment.
+
+There is deliberately no redirect-URI setting. The redirect URI used in the token exchange is the
+one the frontend sends in the request body on each call (see
+[The PKCE callback flow](#the-pkce-callback-flow)). A `GOOGLE_REDIRECT_URI` setting did exist for a
+while, read into Django and referenced nowhere, which cost operators time configuring something
+inert; it was removed rather than documented.
 
 ## The PKCE callback flow
 
