@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import Profile
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 from opportunity.models import SalesGoal
 from opportunity.serializer import SalesGoalCreateSerializer, SalesGoalSerializer
@@ -21,7 +21,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         org = request.profile.org
         queryset = SalesGoal.objects.filter(org=org)
 
-        is_admin = request.profile.role == "ADMIN" or request.user.is_superuser
+        is_admin = is_org_admin(request.profile) or request.user.is_superuser
         if not is_admin:
             queryset = queryset.filter(
                 Q(assigned_to=request.profile)
@@ -70,7 +70,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         )
 
     def post(self, request, *args, **kwargs):
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can create goals."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -109,7 +109,7 @@ class SalesGoalDetailView(APIView):
                 {"error": True, "errors": "Goal not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        is_admin = request.profile.role == "ADMIN" or request.user.is_superuser
+        is_admin = is_org_admin(request.profile) or request.user.is_superuser
         if not is_admin:
             if goal.assigned_to != request.profile and (
                 not goal.team or goal.team not in request.profile.user_teams.all()
@@ -122,7 +122,7 @@ class SalesGoalDetailView(APIView):
         return Response(serializer.data)
 
     def put(self, request, pk, *args, **kwargs):
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can update goals."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -148,7 +148,7 @@ class SalesGoalDetailView(APIView):
         )
 
     def delete(self, request, pk, *args, **kwargs):
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can delete goals."},
                 status=status.HTTP_403_FORBIDDEN,

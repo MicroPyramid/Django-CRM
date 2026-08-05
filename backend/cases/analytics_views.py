@@ -63,7 +63,7 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
         .exclude(status="Duplicate")
     )
 
-    if profile.role != "ADMIN" and not profile.is_admin:
+    if not is_org_admin(profile):
         qs = qs.filter(
             Q(created_by=profile.user) | Q(assigned_to=profile) | Q(watchers=profile)
         ).distinct()

@@ -9,6 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from common import serializer, swagger_params
 from common.models import Org, Profile
+from common.permissions import is_org_admin
 from common.serializer import (
     CreateProfileSerializer,
     OrganizationSerializer,
@@ -41,8 +42,8 @@ class OrgProfileCreateView(APIView):
 
             # now creating the profile
             profile_obj = self.model2.objects.create(user=request.user, org=org_obj)
-            # now the current user is the admin of the newly created organisation
-            profile_obj.is_organization_admin = True
+            # now the current user is the admin of the newly created organisation.
+            # `is_organization_admin` is derived from `role` in `Profile.save`.
             profile_obj.role = "ADMIN"
             profile_obj.save()
 
@@ -113,10 +114,7 @@ class OrgUpdateView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if verb == "update" and (
-            request.profile.role != "ADMIN"
-            and not request.profile.is_organization_admin
-        ):
+        if verb == "update" and not is_org_admin(request.profile):
             return None, Response(
                 {
                     "error": True,
@@ -228,10 +226,7 @@ class OrgApiKeyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            request.profile.role != "ADMIN"
-            and not request.profile.is_organization_admin
-        ):
+        if not is_org_admin(request.profile):
             return None, Response(
                 {
                     "error": True,

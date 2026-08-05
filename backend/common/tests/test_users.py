@@ -8,6 +8,7 @@ import pytest
 from rest_framework import status
 
 from common.models import Address, Profile
+from common.permissions import is_org_admin
 
 
 @pytest.mark.django_db
@@ -702,3 +703,46 @@ class TestProfilePrivilegeEscalation:
         assert response.status_code == status.HTTP_200_OK
         admin_profile.refresh_from_db()
         assert admin_profile.role == "ADMIN"
+
+    def test_admin_cannot_mint_a_hidden_admin_via_the_flag(
+        self, admin_client, regular_user, user_profile
+    ):
+        """The grant that no screen could show and no screen could take back.
+
+        `is_organization_admin` was a writable privileged field and 43 checks
+        across the backend accepted it in place of `role`. No frontend surface
+        reads or writes the column, so a member carrying it appeared, on every
+        page an operator can open, to be an ordinary member, while accounts,
+        contacts, documents, team management and the org record treated them
+        as an admin. `role` is now the only input.
+        """
+        response = admin_client.patch(
+            self._url(regular_user.id),
+            {"is_organization_admin": True},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        user_profile.refresh_from_db()
+        assert user_profile.is_organization_admin is False
+        assert user_profile.role == "USER"
+
+    def test_the_flag_grants_nothing_even_when_written_directly(
+        self, user_client, user_profile
+    ):
+        """Defence in depth for rows written before the field was closed.
+
+        A database may already hold `is_organization_admin=True` on a member,
+        from the old serializer or a direct write. Reading it back must not
+        reopen the endpoints the flag used to unlock, so this bypasses the
+        model entirely with a queryset update.
+        """
+        Profile.objects.filter(pk=user_profile.pk).update(is_organization_admin=True)
+
+        # The roster is the check that mattered: admin-only, and one of the 43
+        # that used to read the flag.
+        assert user_client.get("/api/users/").status_code == status.HTTP_403_FORBIDDEN
+
+        user_profile.refresh_from_db()
+        assert user_profile.is_organization_admin is True
+        assert is_org_admin(user_profile) is False

@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from invoices.models import Product
 from invoices.serializer import ProductSerializer
 from opportunity.models import Opportunity, OpportunityLineItem
@@ -34,7 +34,10 @@ class OpportunityLineItemListView(APIView):
                 {"error": True, "message": "Opportunity not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             if not (
                 (self.request.profile.user == opportunity.created_by)
                 or (self.request.profile in opportunity.assigned_to.all())
@@ -167,7 +170,10 @@ class OpportunityLineItemDetailView(APIView):
                 {"error": True, "message": "Opportunity not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             if not (
                 (self.request.profile.user == opportunity.created_by)
                 or (self.request.profile in opportunity.assigned_to.all())

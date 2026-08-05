@@ -18,7 +18,7 @@ from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerializer
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -117,7 +117,10 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         )
         accounts = Account.objects.filter(org=self.request.profile.org)
         contacts = Contact.objects.filter(org=self.request.profile.org)
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
@@ -414,7 +417,7 @@ class OpportunityDetailView(APIView):
         Raising beats returning a Response: a returned Response from a helper
         gets wrapped in `Response(...)` by the caller and renders as a 500.
         """
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
             return
         if self.request.profile.user_id == opportunity.created_by_id:
             return
@@ -575,7 +578,10 @@ class OpportunityDetailView(APIView):
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             if self.request.profile.user != self.object.created_by:
                 return Response(
                     {
@@ -627,10 +633,10 @@ class OpportunityDetailView(APIView):
         comment_permission = (
             self.request.profile.user_id == self.opportunity.created_by_id
             or self.request.user.is_superuser
-            or self.request.profile.role == "ADMIN"
+            or is_org_admin(self.request.profile)
         )
 
-        if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
+        if self.request.user.is_superuser or is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True, org=self.request.profile.org

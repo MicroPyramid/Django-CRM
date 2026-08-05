@@ -23,12 +23,12 @@ from cases.notifications import case_link
 from cases.serializer import CaseSerializer
 from cases.signals import _create_activity
 from common.models import Attachments, Comment
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 
 
 def _can_merge(profile, source: Case, target: Case) -> bool:
     """Admin OR the creator of BOTH cases."""
-    if profile.is_admin or profile.role == "ADMIN":
+    if is_org_admin(profile):
         return True
     user = profile.user
     return source.created_by_id == user.id and target.created_by_id == user.id

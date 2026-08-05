@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from common.lookups import get_scoped_or_404
 from common.models import APISettings, Attachments, Comment
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import LeadCommentSerializer
 from contacts.models import Contact
 from leads import swagger_params
@@ -119,7 +119,7 @@ class LeadCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -162,7 +162,7 @@ class LeadCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -201,7 +201,7 @@ class LeadCommentView(APIView):
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == self.object.commented_by
         ):
@@ -245,7 +245,7 @@ class LeadAttachmentView(APIView):
         # contacts, cases, tasks, tags and teams equivalents.
         self.object = get_scoped_or_404(self.model, pk, request.profile.org)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile.user == self.object.created_by
         ):
@@ -312,10 +312,12 @@ class CreateLeadFromSite(APIView):
                 org=api_setting.org,
             )
             lead.assigned_to.add(user)
-            # Send Email to Assigned Users
-            site_address = request.scheme + "://" + request.META["HTTP_HOST"]
+            # Send Email to Assigned Users. The task builds its own link from
+            # FRONTEND_URL; it used to be handed a base derived from this
+            # request's Host header, which named the API rather than the web
+            # app and let a caller of this endpoint influence the link.
             send_lead_assigned_emails.delay(
-                lead.id, [user.id], site_address, str(api_setting.org.id)
+                lead.id, [user.id], str(api_setting.org.id)
             )
             # Create Contact
             try:

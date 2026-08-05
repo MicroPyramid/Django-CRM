@@ -14,7 +14,7 @@ from accounts.serializer import AccountSerializer
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.utils import STAGES
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -96,7 +96,7 @@ class ApiHomeView(APIView):
         opportunities = Opportunity.objects.filter(org=org)
         tasks = Task.objects.filter(org=org)
 
-        is_admin = profile.role == "ADMIN" or request.user.is_superuser
+        is_admin = is_org_admin(profile) or request.user.is_superuser
 
         if not is_admin:
             accounts = accounts.filter(
@@ -291,7 +291,7 @@ class ApiHomeView(APIView):
             .select_related("user", "user__user")
             .order_by("-created_at")[:10]
         )
-        context["activities"] = serializer.ActivitySerializer(
+        context["activities"] = serializer.DashboardActivitySerializer(
             activities, many=True
         ).data
 
@@ -348,7 +348,7 @@ class ApiTodayView(APIView):
         today = now.date()
         yesterday = today - timedelta(days=1)
         week_end = today + timedelta(days=7)
-        is_admin = profile.role == "ADMIN" or request.user.is_superuser
+        is_admin = is_org_admin(profile) or request.user.is_superuser
         org_currency = org.default_currency or "USD"
 
         def mine(qs):
@@ -607,7 +607,7 @@ class ActivityListView(APIView):
                 description="Filter by entity type (Account, Lead, Contact, etc.)",
             ),
         ],
-        responses={200: serializer.ActivitySerializer(many=True)},
+        responses={200: serializer.DashboardActivitySerializer(many=True)},
     )
     def get(self, request, *args, **kwargs):
         if not request.profile:
@@ -631,7 +631,9 @@ class ActivityListView(APIView):
         activities = queryset.select_related("user", "user__user")[:limit]
 
         # Serialize
-        activities_data = serializer.ActivitySerializer(activities, many=True).data
+        activities_data = serializer.DashboardActivitySerializer(
+            activities, many=True
+        ).data
 
         return Response(
             {

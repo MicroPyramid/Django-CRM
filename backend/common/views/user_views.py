@@ -98,7 +98,10 @@ class UsersListView(APIView, LimitOffsetPagination):
         },
     )
     def post(self, request, format=None):
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             return Response(
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -192,7 +195,10 @@ class UsersListView(APIView, LimitOffsetPagination):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             return Response(
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -313,8 +319,7 @@ class UserDetailView(APIView):
     def get(self, request, pk, format=None):
         profile_obj = self.get_object(pk)
         if (
-            self.request.profile.role != "ADMIN"
-            and not self.request.profile.is_admin
+            not is_org_admin(self.request.profile)
             and self.request.profile.id != profile_obj.id
         ):
             return Response(
@@ -368,7 +373,7 @@ class UserDetailView(APIView):
         profile = self.get_object(pk)
         address_obj = profile.address
         if (
-            self.request.profile.role != "ADMIN"
+            not is_org_admin(self.request.profile)
             and not self.request.user.is_superuser
             and self.request.profile.id != profile.id
         ):
@@ -445,7 +450,7 @@ class UserDetailView(APIView):
         params = request.data
         profile = self.get_object(pk)
         if (
-            self.request.profile.role != "ADMIN"
+            not is_org_admin(self.request.profile)
             and not self.request.user.is_superuser
             and self.request.profile.id != profile.id
         ):
@@ -504,7 +509,7 @@ class UserDetailView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -543,7 +548,10 @@ class UserStatusView(APIView):
         },
     )
     def post(self, request, pk, format=None):
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             return Response(
                 {
                     "error": True,
@@ -570,7 +578,7 @@ class UserStatusView(APIView):
                 target_is_admin = is_org_admin(profile)
                 if target_is_admin and not (
                     profiles.filter(is_active=True)
-                    .filter(Q(role="ADMIN") | Q(is_organization_admin=True))
+                    .filter(role="ADMIN")
                     .exclude(pk=profile.pk)
                     .exists()
                 ):

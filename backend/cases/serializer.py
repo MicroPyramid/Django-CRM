@@ -16,6 +16,7 @@ from cases.models import (
 )
 from cases.parent_guards import check_parent_link
 from common.models import Profile, Teams
+from common.permissions import is_org_admin
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -621,9 +622,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get("request")
         profile = getattr(request, "profile", None) if request else None
-        is_admin = bool(
-            profile and (profile.role == "ADMIN" or getattr(profile, "is_admin", False))
-        )
+        is_admin = is_org_admin(profile)
         if not is_admin:
             data.pop("webhook_secret", None)
             data.pop("topic_arn", None)

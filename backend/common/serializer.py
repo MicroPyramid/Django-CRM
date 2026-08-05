@@ -547,13 +547,17 @@ class CreateUserSerializer(serializers.ModelSerializer):
 class CreateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
+        # `is_organization_admin` is deliberately absent. It is derived from
+        # `role` in `Profile.save`, and accepting it here was a second, hidden
+        # way to grant admin: no frontend surface shows or sets the flag, so a
+        # profile carrying it read as a plain user everywhere a human looked
+        # while `is_org_admin` answered True. One fact, one input.
         fields = (
             "role",
             "phone",
             "alternate_phone",
             "has_sales_access",
             "has_marketing_access",
-            "is_organization_admin",
         )
 
     # The fields that grant access rather than describe a person. Only an admin
@@ -561,7 +565,6 @@ class CreateProfileSerializer(serializers.ModelSerializer):
     # notes in common/views/user_views.py.
     PRIVILEGED_FIELDS = (
         "role",
-        "is_organization_admin",
         "has_sales_access",
         "has_marketing_access",
     )
@@ -620,8 +623,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 class ProfileSelfUpdateSerializer(serializers.Serializer):
     """The two fields a user may change on their OWN profile via PATCH /api/profile/.
 
-    Deliberately just ``phone`` (on Profile) and ``name`` (on User). Role, org,
-    and the ``has_*_access`` / ``is_organization_admin`` flags are NOT here:
+    Deliberately just ``phone`` (on Profile) and ``name`` (on User). Role, org
+    and the ``has_*_access`` flags are NOT here:
     those decide permissions and are an admin's to set. Leaving them out is what
     keeps this self-edit endpoint from becoming the same self-serve privilege
     escalation ``CreateProfileSerializer`` once was. A field the serializer does
@@ -989,8 +992,18 @@ class ActivityUserSerializer(serializers.Serializer):
         return obj.user.email.split("@")[0]
 
 
-class ActivitySerializer(serializers.ModelSerializer):
-    """Serializer for recent activities"""
+class DashboardActivitySerializer(serializers.ModelSerializer):
+    """Recent-activity row for the dashboard feed.
+
+    Renamed 2026-08-05. It was a second class also called
+    `ActivitySerializer`, 580 lines below the first, so it silently shadowed
+    it and **both** consumers got this shape. `cases/views.py` imports the
+    other one for the ticket activity timeline, whose frontend component reads
+    `metadata` (five places) and `created_at`; neither is in this list, so the
+    timeline rendered no metadata and an invalid date. The dashboard reads
+    `timestamp` and `humanized_time`, which is why only one of the two broke
+    visibly.
+    """
 
     user = ActivityUserSerializer(read_only=True)
     action_display = serializers.CharField(source="get_action_display", read_only=True)

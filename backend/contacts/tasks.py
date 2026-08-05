@@ -1,8 +1,8 @@
 from celery import shared_task
-from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
+from common.links import frontend_url
 from common.models import Profile
 from common.tasks import set_rls_context
 from contacts.models import Contact
@@ -20,7 +20,7 @@ def send_email_to_assigned_user(recipients, contact_id, org_id):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(f"/contacts/{contact.id}")
             context["user"] = profile.user
             context["contact"] = contact
             context["created_by"] = created_by

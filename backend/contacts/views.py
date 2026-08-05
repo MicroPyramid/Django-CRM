@@ -15,7 +15,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from rest_framework.views import APIView
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
@@ -62,7 +62,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
             .select_related("account")
             .prefetch_related("account_contacts", "assigned_to__user", "teams", "tags")
         )
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
                 | Q(created_by=self.request.profile.user)
@@ -319,7 +319,7 @@ class ContactDetailView(APIView):
         that is true for viewing but false for editing.
         """
         profile = self.request.profile
-        if profile.role == "ADMIN" or profile.is_admin:
+        if is_org_admin(profile):
             return
         if profile.user_id == contact.created_by_id:
             return
@@ -532,7 +532,7 @@ class ContactDetailView(APIView):
             assigned_dict["name"] = each.user.email
             assigned_data.append(assigned_dict)
 
-        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
+        if is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(is_active=True, org=request.profile.org).values(
                     "user__email"
@@ -631,8 +631,7 @@ class ContactDetailView(APIView):
         # work on a contact, only an admin or the person who entered it may
         # destroy the record. This comparison was already the right one.
         if (
-            self.request.profile.role != "ADMIN"
-            and not self.request.profile.is_admin
+            not is_org_admin(self.request.profile)
             and self.request.profile.user_id != self.object.created_by_id
         ):
             return Response(
@@ -857,11 +856,7 @@ class ContactCommentView(APIView):
     def put(self, request, pk, format=None):
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params)
             if serializer.is_valid():
                 serializer.save()
@@ -900,11 +895,7 @@ class ContactCommentView(APIView):
         """Handle partial updates to a comment."""
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -939,11 +930,7 @@ class ContactCommentView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == self.object.commented_by:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Comment Deleted Successfully"},
@@ -994,8 +981,7 @@ class ContactAttachmentView(APIView):
         except (DjangoValidationError, ValueError):
             raise Http404("No such attachment.")
         if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
+            is_org_admin(request.profile)
             or request.profile.user_id == self.object.created_by_id
         ):
             self.object.delete()

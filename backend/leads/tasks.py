@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 logger = logging.getLogger(__name__)
 
 from accounts.models import Account
+from common.links import frontend_url
 from common.models import Org, Profile
 from common.tasks import set_rls_context
 from leads.models import Lead
@@ -58,7 +59,7 @@ def send_email(
 
 
 @shared_task
-def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_id):
+def send_lead_assigned_emails(lead_id, new_assigned_to_list, org_id):
     set_rls_context(org_id)
     lead_instance = Lead.objects.filter(
         ~Q(status="converted"), pk=lead_id, is_active=True
@@ -71,12 +72,21 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_i
     from_email = settings.DEFAULT_FROM_EMAIL
     template_name = "assigned_to/leads_assigned.html"
 
-    url = site_address
-    url += "/leads/" + str(lead_instance.id) + "/view/"
-
+    # The `site_address` argument this used to take was built by its one caller
+    # from `request.META["HTTP_HOST"]`, on an endpoint an unauthenticated web
+    # form posts to. That named the API host, where `/leads/<id>` does not
+    # exist, and it put a client-supplied value into the link of an email this
+    # system sends to its own users.
     context = {
-        "lead_instance": lead_instance,
-        "lead_detail_url": url,
+        # `lead`, not `lead_instance`: the template's two senders used
+        # different names for the same object and it hedged with
+        # `{{ lead.title|default:lead_instance }}`. Django resolves a filter's
+        # argument eagerly, so that expression raised `VariableDoesNotExist`
+        # out of `render_to_string` for whichever sender supplied `lead`,
+        # which is the one that runs on an ordinary assignment. That email
+        # never rendered, let alone sent.
+        "lead": lead_instance,
+        "url": frontend_url(f"/leads/{lead_instance.id}"),
     }
     mail_kwargs = {"subject": subject, "from_email": from_email}
     for profile in users:
@@ -101,7 +111,7 @@ def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(f"/leads/{lead.id}")
             context["user"] = profile.user
             context["lead"] = lead
             context["created_by"] = created_by

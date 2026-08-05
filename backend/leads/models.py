@@ -239,7 +239,12 @@ class LeadPipeline(BaseModel):
     )
     is_default = models.BooleanField(
         default=False,
-        help_text="If true, new leads without explicit pipeline go here",
+        help_text=(
+            "Sorts this pipeline first in listings (see Meta.ordering) and is "
+            "limited to one per org. It does NOT route new records: a lead "
+            "created without a stage keeps stage=NULL, which is the supported "
+            "status-based kanban mode."
+        ),
     )
     is_active = models.BooleanField(default=True)
 

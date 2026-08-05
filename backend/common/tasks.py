@@ -11,8 +11,8 @@ from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from common.links import frontend_url
 from common.models import (
-    Comment,
     MagicLinkToken,
     Notification,
     Org,
@@ -143,76 +143,6 @@ def send_magic_link_email(token_id, raw_code=None):
 
 
 @shared_task
-def send_email_user_mentions(
-    comment_id,
-    called_from,
-    org_id=None,
-):
-    """Send Mail To Mentioned Users In The Comment"""
-    # Set RLS context for org-scoped queries
-    set_rls_context(org_id)
-
-    comment = Comment.objects.filter(id=comment_id).first()
-    if comment:
-        comment_text = comment.comment
-        comment_text_list = comment_text.split()
-        recipients = []
-        for comment_text in comment_text_list:
-            if comment_text.startswith("@"):
-                if comment_text.strip("@").strip(",") not in recipients:
-                    if User.objects.filter(
-                        username=comment_text.strip("@").strip(","), is_active=True
-                    ).exists():
-                        email = (
-                            User.objects.filter(
-                                username=comment_text.strip("@").strip(",")
-                            )
-                            .first()
-                            .email
-                        )
-                        recipients.append(email)
-
-        context = {}
-        context["commented_by"] = comment.commented_by
-        context["comment_description"] = comment.comment
-        subject = None
-        if called_from == "accounts":
-            subject = "New comment on Account. "
-        elif called_from == "contacts":
-            subject = "New comment on Contact. "
-        elif called_from == "leads":
-            subject = "New comment on Lead. "
-        elif called_from == "opportunity":
-            subject = "New comment on Opportunity. "
-        elif called_from == "cases":
-            subject = "New comment on Case. "
-        elif called_from == "tasks":
-            subject = "New comment on Task. "
-        elif called_from == "invoices":
-            subject = "New comment on Invoice. "
-        if subject:
-            context["url"] = settings.DOMAIN_NAME
-        else:
-            context["url"] = ""
-        # subject = 'Django CRM : comment '
-        if recipients:
-            for recipient in recipients:
-                recipients_list = [
-                    recipient,
-                ]
-                context["mentioned_user"] = recipient
-                html_content = render_to_string("comment_email.html", context=context)
-                msg = EmailMessage(
-                    subject,
-                    html_content,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=recipients_list,
-                )
-                msg.content_subtype = "html"
-                msg.send()
-
-
-@shared_task
 def send_email_user_status(
     user_id,
     status_changed_user="",
@@ -223,9 +153,11 @@ def send_email_user_status(
         context = {}
         context["message"] = "deactivated"
         context["email"] = user.email
-        context["url"] = settings.DOMAIN_NAME
-        if user.has_marketing_access:
-            context["url"] = context["url"] + "/marketing"
+        # The web app's root is the dashboard. There is no `/marketing` route,
+        # and `has_marketing_access` is a profile flag rather than a user one,
+        # so the branch that appended it could never have been reached from a
+        # `User` in the first place.
+        context["url"] = frontend_url("/")
         if user.is_active:
             context["message"] = "activated"
         context["status_changed_user"] = status_changed_user

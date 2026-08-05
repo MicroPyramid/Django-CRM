@@ -21,6 +21,8 @@ invoice or estimate endpoint through :func:`get_invoice_or_error` /
 from rest_framework import status
 from rest_framework.response import Response
 
+from common.permissions import is_org_admin
+
 from invoices.models import Estimate, Invoice, RecurringInvoice
 
 INVOICE_NOT_FOUND = "Invoice not found"
@@ -49,7 +51,7 @@ def has_object_access(request, obj):
     """
     profile = request.profile
 
-    if profile.role == "ADMIN" or request.user.is_superuser:
+    if is_org_admin(profile) or request.user.is_superuser:
         return True
 
     if obj.created_by_id and obj.created_by_id == request.user.id:

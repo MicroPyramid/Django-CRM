@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from common.lookups import get_scoped_or_404
 from common.models import Attachments, Comment
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import CommentSerializer
 from opportunity import swagger_params
 from opportunity.serializer import OpportunityCommentEditSwaggerSerializer
@@ -37,7 +37,7 @@ class OpportunityCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -81,7 +81,7 @@ class OpportunityCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -120,7 +120,7 @@ class OpportunityCommentView(APIView):
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == self.object.commented_by
         ):
@@ -172,7 +172,7 @@ class OpportunityAttachmentView(APIView):
         # the fix looking complete while the branch stayed unreachable.
         self.object = get_scoped_or_404(self.model, pk, request.profile.org)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile.user == self.object.created_by
         ):

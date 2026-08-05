@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 from common.serializer import (
     AttachmentsSerializer,
@@ -87,7 +87,6 @@ class InvoiceListView(APIView, LimitOffsetPagination):
     def get_queryset(self):
         """Get invoices filtered by org and user permissions"""
         org = self.request.profile.org
-        role = self.request.profile.role
 
         queryset = (
             self.model.objects.filter(org=org)
@@ -96,7 +95,10 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         )
 
         # Non-admin users can only see their own or assigned invoices
-        if role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
@@ -885,7 +887,7 @@ class ProductListView(APIView, LimitOffsetPagination):
         # need it to build line items), but changing it is an admin act, the
         # same posture Organization and Team settings take. A non-admin who
         # curls this endpoint is refused here, not just hidden from in the UI.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {
                     "error": True,
@@ -934,7 +936,7 @@ class ProductDetailView(APIView):
 
     def _require_admin(self, request):
         """Editing the shared catalog is admin-only; see ProductListView.post."""
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {
                     "error": True,
@@ -1007,13 +1009,15 @@ class EstimateListView(APIView, LimitOffsetPagination):
 
     def get_queryset(self):
         org = self.request.profile.org
-        role = self.request.profile.role
 
         queryset = Estimate.objects.filter(org=org).select_related(
             "account", "contact", "opportunity", "created_by", "converted_to_invoice"
         )
 
-        if role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             # created_by is a User FK; comparing it to a Profile does not just
             # silently fail here, it reaches the DB as Q(created_by=<Profile>)
             # and raised ValueError -- a 500 on every non-admin estimate list.
@@ -1349,7 +1353,7 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
         # same scoping as the invoice and estimate lists. created_by is a User
         # FK, so it is matched against request.profile.user; assigned_to holds
         # Profiles, matched against request.profile.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=request.profile.user) | Q(assigned_to=request.profile)
             ).distinct()
@@ -1548,7 +1552,7 @@ def _forbid_non_admin_template(
     reason, so it is the same gate rather than a second copy of the role check
     that could drift away from this one.
     """
-    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+    if not is_org_admin(request.profile) and not request.user.is_superuser:
         return Response(
             {"error": True, "message": message},
             status=status.HTTP_403_FORBIDDEN,
@@ -1778,8 +1782,9 @@ class InvoiceCommentDetailView(APIView):
             )
 
         # Only comment author or admin can edit
-        role = request.profile.role
-        if comment.commented_by != request.profile and role != "ADMIN":
+        if comment.commented_by != request.profile and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1805,8 +1810,9 @@ class InvoiceCommentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        role = request.profile.role
-        if comment.commented_by != request.profile and role != "ADMIN":
+        if comment.commented_by != request.profile and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1873,8 +1879,9 @@ class InvoiceAttachmentDetailView(APIView):
         # created_by is a User FK, so it must be compared against request.user --
         # comparing it to request.profile is always unequal and locks the
         # uploader out of their own attachment.
-        role = request.profile.role
-        if attachment.created_by_id != request.user.id and role != "ADMIN":
+        if attachment.created_by_id != request.user.id and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1904,7 +1911,7 @@ def _forbid_non_admin_reports(request):
     admin-only (Django superusers included), the same bar as the org and team
     settings.
     """
-    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+    if not is_org_admin(request.profile) and not request.user.is_superuser:
         return Response(
             {
                 "error": True,
@@ -2303,7 +2310,7 @@ class InvoiceFromOpportunityView(APIView):
             )
 
         # Check permission
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             if not (
                 (request.profile.user == opportunity.created_by)
                 or (request.profile in opportunity.assigned_to.all())

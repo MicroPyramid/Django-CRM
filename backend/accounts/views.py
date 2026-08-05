@@ -27,7 +27,7 @@ from rest_framework.response import Response
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.lookups import get_scoped_or_404
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from rest_framework.views import APIView
 
 from accounts import swagger_params
@@ -194,7 +194,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
         queryset = annotate_rollups(
             self.model.objects.filter(org=self.request.profile.org)
         ).order_by("-id")
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
@@ -436,7 +436,7 @@ class AccountDetailView(APIView):
         could watch an account sit in their list, be refused permission to open
         it, and still delete it outright.
         """
-        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+        if is_org_admin(self.request.profile):
             return
         if self.request.profile.user_id == account.created_by_id:
             return
@@ -565,7 +565,7 @@ class AccountDetailView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             if self.request.profile.user_id != self.object.created_by_id:
                 return Response(
                     {
@@ -593,11 +593,10 @@ class AccountDetailView(APIView):
 
         comment_permission = (
             self.request.profile.user_id == self.account.created_by_id
-            or self.request.profile.is_admin
-            or self.request.profile.role == "ADMIN"
+            or is_org_admin(self.request.profile)
         )
 
-        if self.request.profile.is_admin or self.request.profile.role == "ADMIN":
+        if is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True, org=self.request.profile.org
@@ -867,11 +866,7 @@ class AccountCommentView(APIView):
     def put(self, request, pk, format=None):
         data = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=data, partial=True)
             if data.get("comment"):
                 if serializer.is_valid():
@@ -902,11 +897,7 @@ class AccountCommentView(APIView):
         """Handle partial updates to a comment."""
         data = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -929,11 +920,7 @@ class AccountCommentView(APIView):
     @extend_schema(tags=["Accounts"], parameters=swagger_params.organization_params)
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == self.object.commented_by:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Comment Deleted Successfully"},
@@ -972,8 +959,7 @@ class AccountAttachmentView(APIView):
         except (DjangoValidationError, ValueError):
             raise Http404("No such attachment.")
         if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
+            is_org_admin(request.profile)
             or request.profile.user_id == self.object.created_by_id
         ):
             self.object.delete()

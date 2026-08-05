@@ -91,6 +91,118 @@ jobs:
           path: backend/htmlcov/
           retention-days: 14
 
+  # The job above runs on SQLite, which is fast and blind to a whole class of
+  # defect: declared varchar lengths, RLS policies, and every test carrying the
+  # `postgres_only` marker (which the SQLite job deselects, so they had never
+  # run in CI at all). Two shipped bugs were invisible to a green suite for
+  # exactly this reason; see crm/test_settings_postgres.py.
+  backend-tests-postgres:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'backend/uv.lock'
+
+      - name: Install system dependencies (WeasyPrint)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libgdk-pixbuf-2.0-0 \
+            libffi-dev \
+            shared-mime-info
+
+      # A superuser bypasses RLS, and the policies use FORCE ROW LEVEL
+      # SECURITY so even the owning role is subject to them. Running the
+      # RLS tests as `postgres` makes every isolation assertion vacuously
+      # true, the same trap RLS_SETUP.md warns about for local development.
+      # CREATEDB is what lets pytest-django build the test database.
+      - name: Create a non-superuser role for the RLS tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c \
+            "CREATE ROLE crm_ci WITH LOGIN CREATEDB PASSWORD 'crm_ci' NOSUPERUSER NOBYPASSRLS;"
+
+      - name: Install Python dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      # Run 1: the whole suite, for what SQLite cannot see. Declared varchar
+      # lengths, integrity constraints, real type coercion. It runs as the
+      # superuser, so RLS is inert here; run 2 is where isolation is tested.
+      # The reason for the split is that the shared fixtures insert rows with
+      # no `app.current_org` set, which a policy-enforcing role refuses. That
+      # is a real gap in the fixtures rather than a CI setting, and closing it
+      # is a change to almost every test file, so it is deliberately not
+      # bundled into this one. Until then the split says plainly which run
+      # covers which.
+      - name: Run the full suite against PostgreSQL
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crm.test_settings_postgres
+          SECRET_KEY: test-secret-key-for-ci
+          ADMIN_EMAIL: admin@test.com
+          DBNAME: crm_db
+          DBUSER: postgres
+          DBPASSWORD: postgres
+          DBHOST: localhost
+          DBPORT: '5432'
+        # `postgres_only` is deselected here for the same reason it runs in
+        # the next step instead: those tests assert that RLS hides rows, and
+        # this run's superuser role is not subject to any policy, so they fail
+        # here for a reason that is about the role rather than the code.
+        # No coverage: the SQLite job produces the report and the badge.
+        run: uv run pytest --no-cov --tb=short -q -m "not postgres_only"
+
+      # Run 2: the `postgres_only` tests, as a role that RLS actually binds.
+      # The SQLite job deselects these, so before this step they had never
+      # executed in CI at all. They also have to run as `crm_ci` to mean
+      # anything: as a superuser they pass whether or not a single policy
+      # exists.
+      - name: Run the RLS tests as a policy-bound role
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crm.test_settings_postgres
+          SECRET_KEY: test-secret-key-for-ci
+          ADMIN_EMAIL: admin@test.com
+          DBNAME: crm_db
+          DBUSER: crm_ci
+          DBPASSWORD: crm_ci
+          DBHOST: localhost
+          DBPORT: '5432'
+        run: uv run pytest --no-cov --tb=short -q -m postgres_only
+
+      # Undefined names and redefinitions only. The wider `ruff check .` has
+      # 68 pre-existing findings and `black --check` wants 187 files, so a
+      # blanket gate would be red on arrival and would land a reformat of the
+      # whole tree in an unrelated change. These two rules are the ones that
+      # catch defects rather than style: F811 is how `ActivitySerializer` came
+      # to be declared twice, with the second silently shadowing the first for
+      # both of its consumers.
+      - name: Lint for undefined and redefined names
+        working-directory: backend
+        run: uvx ruff check --select F811,F821 .
+
   frontend-checks:
     runs-on: ubuntu-latest
 

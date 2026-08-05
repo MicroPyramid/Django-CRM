@@ -18,12 +18,11 @@ from common.permissions import IsOrgAdmin, is_org_admin
 
 
 class _FakeProfile:
-    """Only the two attributes the rule reads.
+    """Only the attributes the rule could read.
 
     A real ``Profile`` needs an org and a user, and nothing here is about the
-    database. ``is_admin`` is deliberately absent: the rule reads
-    ``is_organization_admin``, which is the column, and the property that
-    aliases it is what half the old copies used instead.
+    database. ``is_organization_admin`` is present precisely so the tests can
+    set it to ``True`` on a member and prove it changes nothing.
     """
 
     def __init__(self, role="USER", is_organization_admin=False):
@@ -35,34 +34,36 @@ class TestBothDirections:
     def test_an_admin_by_role_is_an_admin(self):
         assert is_org_admin(_FakeProfile(role="ADMIN")) is True
 
-    def test_an_admin_by_flag_is_an_admin(self):
-        assert is_org_admin(_FakeProfile(is_organization_admin=True)) is True
-
     def test_a_plain_member_is_not(self):
         assert is_org_admin(_FakeProfile()) is False
 
+    def test_the_flag_alone_does_not_make_an_admin(self):
+        """The hidden-admin case, and the reason ``role`` is the only source.
+
+        82 checks in the backend read ``role`` alone and 43 also accepted this
+        flag, so the same profile was an admin at some endpoints and a member
+        at others. No frontend surface displays or sets the column, so the
+        half that accepted it granted a privilege the UI could neither show
+        nor revoke.
+        """
+        assert is_org_admin(_FakeProfile(is_organization_admin=True)) is False
+
     def test_a_missing_profile_is_not(self):
-        """Five of the ten copies raised ``AttributeError`` here.
+        """Five of the eleven copies raised ``AttributeError`` here.
 
         A view with no org context has no profile, so this is not theoretical:
         it decided whether the caller got a clean 403 or a 500.
         """
         assert is_org_admin(None) is False
 
-    def test_an_object_without_the_flag_is_judged_on_role_alone(self):
+    def test_an_object_with_no_role_at_all_is_not_an_admin(self):
         """Not every caller passes a full ``Profile``.
 
         ``getattr`` with a default keeps that a ``False`` rather than an
-        ``AttributeError``, which is the behaviour the two None-safe copies had
-        and the other eight did not.
+        ``AttributeError``, which is the behaviour the two None-safe copies
+        had and the other nine did not.
         """
-
-        class RoleOnly:
-            role = "USER"
-
-        assert is_org_admin(RoleOnly()) is False
-        RoleOnly.role = "ADMIN"
-        assert is_org_admin(RoleOnly()) is True
+        assert is_org_admin(object()) is False
 
 
 class TestThePermissionClassUsesTheSameRule:
@@ -91,17 +92,23 @@ def _backend_root():
 def test_no_module_defines_its_own_admin_check():
     """Guard the consolidation with the source, not with a comment.
 
-    The ten copies did not appear at once; each was written by somebody who
+    The eleven copies did not appear at once; each was written by somebody who
     needed the rule in a new module and had no reason to know it already
-    existed eight times. This fails the moment an eleventh is added, which is
-    the only thing that keeps them from coming back.
+    existed. This fails the moment a twelfth is added, which is the only thing
+    that keeps them from coming back.
+
+    ``is_org_admin`` itself is in the list of names checked. The eleventh copy
+    lived in ``tasks/access.py`` under exactly that name and so walked past the
+    first version of this test, which looked only for the private spellings: a
+    guard that watches for the wrong name is not a guard.
     """
+    canonical = _backend_root() / "common" / "permissions.py"
     offenders = []
     for path in _backend_root().rglob("*.py"):
         parts = path.parts
         if any(p in {".venv", "venv", "migrations", "node_modules"} for p in parts):
             continue
-        if path.name == Path(__file__).name:
+        if path.name == Path(__file__).name or path == canonical:
             continue
         try:
             tree = ast.parse(path.read_text())
@@ -109,7 +116,8 @@ def test_no_module_defines_its_own_admin_check():
             continue
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (
-                node.name in {"_is_admin", "is_admin_profile", "_is_org_admin"}
+                node.name
+                in {"is_org_admin", "_is_admin", "is_admin_profile", "_is_org_admin"}
             ):
                 offenders.append(f"{path.relative_to(_backend_root())}:{node.lineno}")
 
@@ -126,4 +134,40 @@ def test_a_real_profile_agrees_with_the_fake_one(admin_profile, user_profile):
     assert is_org_admin(user_profile) is False
 
     user_profile.is_organization_admin = True
-    assert is_org_admin(user_profile) is True
+    assert is_org_admin(user_profile) is False
+
+
+@pytest.mark.django_db
+class TestTheColumnCannotDisagreeWithTheRole:
+    """``Profile.save`` derives the flag, so the pair cannot drift apart.
+
+    The column stays because it is in API responses (``/api/profile/``, the
+    org list, the login payload). A field nothing can write but everything can
+    read has to be kept true, or it becomes a lie a client acts on.
+    """
+
+    def test_saving_an_admin_sets_the_flag(self, user_profile):
+        user_profile.role = "ADMIN"
+        user_profile.save()
+        user_profile.refresh_from_db()
+        assert user_profile.is_organization_admin is True
+
+    def test_saving_a_member_clears_the_flag(self, admin_profile):
+        admin_profile.role = "USER"
+        admin_profile.save()
+        admin_profile.refresh_from_db()
+        assert admin_profile.is_organization_admin is False
+
+    def test_a_flag_set_by_hand_does_not_survive_the_save(self, user_profile):
+        """The write that used to mint a hidden admin."""
+        user_profile.is_organization_admin = True
+        user_profile.save()
+        user_profile.refresh_from_db()
+        assert user_profile.is_organization_admin is False
+        assert is_org_admin(user_profile) is False
+
+    def test_the_is_admin_property_reads_the_role(self, user_profile):
+        assert user_profile.is_admin is False
+        user_profile.role = "ADMIN"
+        # Unsaved on purpose: the property must not need a round trip to agree.
+        assert user_profile.is_admin is True

@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.permissions import is_org_admin
 from common.serializer import OrgSettingsSerializer
 
 
@@ -34,7 +35,7 @@ class OrgSettingsView(APIView):
                 {"error": "Organization context required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": "Only admins can update organization settings"},
                 status=status.HTTP_403_FORBIDDEN,

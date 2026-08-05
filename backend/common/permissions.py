@@ -9,7 +9,7 @@ from rest_framework import permissions
 
 
 def is_org_admin(profile):
-    """Whether ``profile`` administers its org.
+    """Whether ``profile`` administers its org. ``role`` is the only source.
 
     A plain function and not only the ``IsOrgAdmin`` class below, because most
     callers are views that read wide and write narrow: the same endpoint is
@@ -19,19 +19,28 @@ def is_org_admin(profile):
     That is why this rule had been written out nine times, as a private
     ``_is_admin`` in nine modules, in three different spellings. Five of them
     raised ``AttributeError`` on a ``None`` profile where two returned
-    ``False``, and one reached for ``is_organization_admin`` while the rest
-    used the ``is_admin`` property that aliases it. All nine agreed for a real
-    profile, so nothing was broken; one edit that missed eight copies is how
-    that stops being true.
+    ``False``. All nine agreed for a real profile, so nothing was broken; one
+    edit that missed eight copies is how that stops being true.
+
+    **This deliberately does not consult ``is_organization_admin``.** ``ROLES``
+    has exactly two members, so that column and ``role == "ADMIN"`` are two
+    spellings of one binary fact, and the backend used to read them
+    inconsistently: 82 checks looked only at ``role`` while 43 also accepted
+    the flag, with both spellings appearing inside the same file. The flag is
+    the dangerous half of that pair, because no frontend surface displays or
+    sets it: an admin could ``PATCH`` a colleague to
+    ``{"is_organization_admin": true, "role": "USER"}`` and grant admin over
+    accounts, contacts, team management and the org record itself, invisibly
+    and irrevocably from the UI. ``Profile.save`` now derives the column from
+    ``role`` so the two cannot disagree, and ``ProfileSerializer`` no longer
+    accepts it as an input.
 
     ``None`` is not an admin. A view with no org context has no profile, and
     answering ``False`` gives it a clean 403 instead of a 500.
     """
     if profile is None:
         return False
-    if profile.role == "ADMIN":
-        return True
-    return bool(getattr(profile, "is_organization_admin", False))
+    return getattr(profile, "role", None) == "ADMIN"
 
 
 class HasOrgContext(permissions.BasePermission):
