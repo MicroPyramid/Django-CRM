@@ -11,19 +11,37 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from cases.models import Case
 from common import swagger_params
-from common.models import Tags
-from common.permissions import HasOrgContext
+from common.lookups import get_scoped_or_404
+from common.models import APISettings, Tags
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import TagsSerializer
+from contacts.models import Contact
 from leads.models import Lead
 from opportunity.models import Opportunity
+from tasks.models import Task
 
 # The models a tag can be applied to, paired with the usage key the settings
 # page shows. Each is org-scoped and carries a `tags` M2M back to Tags.
+#
+# This must list EVERY model with that M2M, not just the prominent ones. It
+# held four of the seven, and the three it left out (Contact, Task,
+# APISettings) all accept tag writes through the API, contacts through the CSV
+# importer too. A tag applied only to contacts therefore reported zero usage
+# and was counted as "unused" on the settings page, which is the one number an
+# admin uses to decide whether a tag is safe to archive.
+#
+# Hand-written on purpose, so a change shows up in a diff, and guarded by
+# `test_taggable_covers_every_model_with_a_tags_m2m`, which walks the live
+# model registry: a new taggable model fails that test instead of silently
+# under-reporting usage forever.
 _TAGGABLE = (
     ("accounts", Account),
     ("leads", Lead),
     ("opportunities", Opportunity),
     ("cases", Case),
+    ("contacts", Contact),
+    ("tasks", Task),
+    ("api_settings", APISettings),
 )
 
 
@@ -147,7 +165,7 @@ class TagsListView(APIView, LimitOffsetPagination):
     def post(self, request, *args, **kwargs):
         """Create a new tag (admin only)."""
         # Admin only for create
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can create tags"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -223,7 +241,7 @@ class TagsDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Tags"],
@@ -265,7 +283,7 @@ class TagsDetailView(APIView):
     def put(self, request, pk, *args, **kwargs):
         """Update a tag (admin only)."""
         # Admin only
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can update tags"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -347,7 +365,7 @@ class TagsDetailView(APIView):
     def delete(self, request, pk, **kwargs):
         """Archive a tag - soft delete (admin only)."""
         # Admin only
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can archive tags"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -395,7 +413,7 @@ class TagsRestoreView(APIView):
     def post(self, request, pk, **kwargs):
         """Restore an archived tag (admin only)."""
         # Admin only
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can restore tags"},
                 status=status.HTTP_403_FORBIDDEN,

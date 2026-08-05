@@ -302,6 +302,28 @@ class InvoiceLineItemCreateSerializer(serializers.ModelSerializer):
             "order",
         )
 
+    def __init__(self, *args, **kwargs):
+        request_obj = kwargs.pop("request_obj", None)
+        super().__init__(*args, **kwargs)
+        self.org = None
+        if request_obj and hasattr(request_obj, "profile"):
+            self.org = request_obj.profile.org
+
+    def validate_product(self, value):
+        """Reject a product belonging to another organization.
+
+        Only the standalone routes (`InvoiceLineItemListView.post` and
+        `InvoiceLineItemDetailView.put`) pass `request_obj`, and they are the
+        only callers that can: nested under `InvoiceCreateSerializer` this runs
+        as a child with no org context, which is why the nested path is guarded
+        by `validate_line_item_products` on the parent instead.
+        """
+        if value is not None and self.org and value.org_id != self.org.id:
+            raise serializers.ValidationError(
+                "Product not found or does not belong to your organization"
+            )
+        return value
+
 
 class EstimateLineItemCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating Estimate Line Items"""
@@ -337,6 +359,35 @@ class RecurringInvoiceLineItemCreateSerializer(serializers.ModelSerializer):
             "tax_rate",
             "order",
         )
+
+
+def validate_line_item_products(line_items, org):
+    """Reject line items that reference a product from another organization.
+
+    The three line-item create serializers above expose `product` as an
+    auto-generated PrimaryKeyRelatedField over an unscoped queryset, so a
+    product UUID belonging to any org resolves. Their parent serializer is the
+    first place with org context, which is why this is called from each
+    parent's `validate()` instead of living on the line-item serializer.
+
+    One function rather than three copies: invoices had the check and
+    estimates and recurring invoices did not, which is exactly how a guard
+    goes missing when it is written per call site. Guards create and update,
+    since `validate()` runs on both.
+    """
+    if org is None:
+        return
+    for item in line_items or []:
+        product = item.get("product")
+        if product is not None and product.org_id != org.id:
+            raise serializers.ValidationError(
+                {
+                    "line_items": (
+                        "A line item references a product from another "
+                        "organization."
+                    )
+                }
+            )
 
 
 # =============================================================================
@@ -686,22 +737,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
                     {"contact_id": "Contact does not belong to the selected account"}
                 )
 
-        # Line-item products must belong to this org. The nested line-item
-        # serializer's `product` is an auto PrimaryKeyRelatedField over an
-        # unscoped queryset (all orgs), so a cross-org product UUID resolves;
-        # this is where we have org context to reject it. Guards create + update.
-        if self.org:
-            for item in attrs.get("line_items") or []:
-                product = item.get("product")
-                if product is not None and product.org_id != self.org.id:
-                    raise serializers.ValidationError(
-                        {
-                            "line_items": (
-                                "A line item references a product from another "
-                                "organization."
-                            )
-                        }
-                    )
+        validate_line_item_products(attrs.get("line_items"), self.org)
         return attrs
 
     def create(self, validated_data):
@@ -926,6 +962,21 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
             "terms",
             "line_items",
         )
+        # Accepting a quote authorises its price, so it is a transition, not a
+        # field edit. `PublicEstimateAcceptView` enforces the source state
+        # (only Sent or Viewed), refuses an expired estimate, and records who
+        # accepted it, their email, IP and user agent. This serializer backs
+        # `PUT /api/estimates/<id>/` with `partial=True`, so leaving `status`
+        # writable let any member with access to the estimate send
+        # `{"status": "Accepted"}` and skip every one of those checks, landing
+        # an Accepted estimate with no `accepted_at`, no acceptor and no
+        # invoice. `InvoiceCreateSerializer` has always marked `status`
+        # read-only; estimates were the asymmetry, not the rule.
+        #
+        # Nothing legitimate regresses: every backend write to
+        # `estimate.status` is a guarded endpoint or a Celery task, each
+        # setting the accompanying fields in the same step.
+        read_only_fields = ("status",)
 
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)
@@ -977,6 +1028,8 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"contact_id": "Contact does not belong to the selected account"}
                 )
+
+        validate_line_item_products(attrs.get("line_items"), self.org)
         return attrs
 
     def create(self, validated_data):
@@ -1190,6 +1243,8 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"contact_id": "Contact does not belong to the selected account"}
                 )
+
+        validate_line_item_products(attrs.get("line_items"), self.org)
         return attrs
 
     def _recalculate_totals(self, instance):

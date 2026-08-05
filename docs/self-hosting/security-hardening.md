@@ -76,13 +76,24 @@ Three different credential types exist, with different blast radii if one leaks:
   and revoke any token in their org, including one belonging to a colleague who has since been
   deactivated. It's deliberately a distinct endpoint from `profile/tokens/` rather than a widened
   version of it, so the self-service guard never has to be loosened to support oversight.
-- **The org API key** (`GET`/`POST /api/org/api-key/`, `OrgApiKeyView`, admin-only) is the highest-
-  privilege of the three: `common/middleware/get_company.py`'s `_process_api_key_auth` resolves a
-  request bearing this key to the org's first active `ADMIN` profile, so a leaked org API key is
-  equivalent to a leaked admin session for that org, not a leaked user session. It's kept out of
-  every nested API representation and served only by this endpoint. If it's ever exposed: committed
-  to a repo, logged, shared over an insecure channel, rotate it with `POST /api/org/api-key/`; the
-  response is explicit that "the previous key is no longer valid" immediately on rotation.
+- **The org API key** (`GET`/`POST /api/org/api-key/`, `OrgApiKeyView`, admin-only) is the bluntest
+  of the three: `common/middleware/get_company.py`'s `_process_api_key_auth` resolves a request
+  bearing this key to the org's first active `ADMIN` profile. One key per tenant, never expiring,
+  so it cannot be revoked per integration. It is read-only and barred from the credential endpoints
+  (`common/scopes.py`), which stops a leaked key deleting records, escalating a role, or minting a
+  personal access token owned by the admin whose identity it borrowed. It still reads every record
+  in the org. It's kept out of every nested API representation and served only by this endpoint.
+  **Set `DJANGO_ORG_API_KEY_AUTH=false` once every integration uses a personal access token**, which
+  refuses the key as an authentication method entirely. If it's ever exposed: committed to a repo,
+  logged, shared over an insecure channel, rotate it with `POST /api/org/api-key/` from a signed-in
+  session; the response is explicit that "the previous key is no longer valid" immediately on
+  rotation.
+- **No token can manage a credential.** `/api/profile/tokens/`, `/api/org/tokens/` and
+  `/api/org/api-key/` are refused for any personal access token and for the org API key, whatever
+  their scopes. Both chains would otherwise defeat revocation: a token that mints tokens leaves
+  children behind when you revoke it, and a token that reads the org API key upgrades itself into a
+  credential that outlives its own revocation. Credential management requires an interactive
+  sign-in.
 
 ## What to monitor
 

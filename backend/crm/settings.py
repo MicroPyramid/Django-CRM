@@ -394,10 +394,26 @@ JWT_ALGO = "HS256"
 
 
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "http://localhost:8000")
+
+# The organization API key (`Token: <org.api_key>` header) is one non-expiring
+# key per tenant that resolves to an arbitrary active ADMIN. Even now that it is
+# read-only and barred from credential endpoints (see common/scopes.py), it
+# still reads every record in the org and cannot be revoked per-integration.
+# Personal access tokens replace it and are scoped, per-user and revocable.
+#
+# Left on by default so an upgrade breaks nothing. Set DJANGO_ORG_API_KEY_AUTH
+# to "false" once every integration has moved to a personal access token.
+ORG_API_KEY_AUTH_ENABLED = os.environ.get(
+    "DJANGO_ORG_API_KEY_AUTH", "true"
+).strip().lower() not in ("false", "0", "no", "off")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-SWAGGER_ROOT_URL = os.environ.get("SWAGGER_ROOT_URL", "http://localhost:8000")
 
 # Google OAuth Configuration
+#
+# There is no GOOGLE_REDIRECT_URI here. The redirect URI used in the token
+# exchange is the one the frontend sends in the request body on each call
+# (`common/views/auth_views.py`), so a setting of that name was read into
+# Django and never referenced again. Same for SWAGGER_ROOT_URL, which named
+# nothing: the schema is served from whatever host serves the app.
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "")

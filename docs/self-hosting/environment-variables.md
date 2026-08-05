@@ -17,8 +17,8 @@ listing `.env.docker` and then the optional, gitignored `.env.docker.local` unde
 Almost every setting in `crm/settings.py` follows the same pattern: `os.environ.get("NAME",
 <default>)`, so an unset variable falls back to a working (usually dev-oriented) default rather than
 failing. `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DBNAME`/`DBUSER`/`DBPASSWORD`/`DBHOST`/`DBPORT`,
-`EMAIL_BACKEND`, `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/
-`GOOGLE_REDIRECT_URI`, `DOMAIN_NAME`/`FRONTEND_URL`/`SWAGGER_ROOT_URL` are all read this way. A
+`EMAIL_BACKEND`, `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`,
+`DOMAIN_NAME` and `FRONTEND_URL` are all read this way. A
 smaller set of variables has no default at all: `backend/crm/server_settings.py` (imported only when
 `ENV_TYPE=prod`, see [Production deployment](production-deploy.md)) reads `AWS_BUCKET_NAME`,
 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`, `AWS_SES_REGION_ENDPOINT` and
@@ -65,12 +65,12 @@ and the Amazon SES-specific variables that come with it, is covered in full in
 
 ## Integrations
 
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI` all default to empty strings in
-`crm/settings.py`. `.env.docker` ships all three blank; `.env.example` ships `GOOGLE_CLIENT_ID` and
-`GOOGLE_CLIENT_SECRET` blank but omits `GOOGLE_REDIRECT_URI` entirely, relying on the same default.
-Google sign-in stays off until `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set, on both the backend
-and the SvelteKit frontend. See [Google OAuth](google-oauth.md) for what each one does, where to get
-the values, and why `GOOGLE_REDIRECT_URI` specifically doesn't need to be set even in production.
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` both default to empty strings in `crm/settings.py`,
+and `.env.docker` and `.env.example` ship both blank. Google sign-in stays off until they are set, on
+both the backend and the SvelteKit frontend. There is no `GOOGLE_REDIRECT_URI` setting: the redirect
+URI used in the token exchange is the one the frontend sends in the request body on each call, so a
+setting of that name was read into Django and never referenced again. See
+[Google OAuth](google-oauth.md) for what each one does and where to get the values.
 `SENTRY_DSN` is read (with no default) only inside `server_settings.py`, i.e. only when
 `ENV_TYPE=prod`; it's not consulted at all otherwise.
 

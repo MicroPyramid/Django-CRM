@@ -680,12 +680,16 @@ class TestCaseCommentView:
         )
         return case, comment
 
-    def test_update_comment_put_requires_all_fields(
+    def test_update_comment_put_edits_the_text(
         self, admin_client, admin_user, admin_profile, org_a
     ):
-        """PUT on comment with only 'comment' field fails because CommentSerializer
-        is used without partial=True, so object_id, org, and commented_by are required.
-        This returns 400 due to serializer validation failure.
+        """PUT with only `comment` edits the comment.
+
+        This used to assert a 400 and describe it as correct: the serializer
+        ran non-partial with `object_id` and `org` as required fields, so an
+        ordinary "fix my typo" edit failed validation. Those two are the
+        server's to set, are now read-only, and no longer stand between an
+        author and their own text.
         """
         _case, comment = self._create_case_with_comment(
             admin_user, admin_profile, org_a
@@ -695,9 +699,9 @@ class TestCaseCommentView:
             {"comment": "Updated comment text"},
             format="json",
         )
-        # Serializer validation fails because object_id, org, commented_by
-        # are required in non-partial mode
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_200_OK
+        comment.refresh_from_db()
+        assert comment.comment == "Updated comment text"
 
     def test_update_comment_patch(self, admin_client, admin_user, admin_profile, org_a):
         """Admin should be able to partially update via PATCH."""

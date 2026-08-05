@@ -6,7 +6,7 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * Creating a template.
  *
  * Admin-only: `POST /api/invoices/templates/` refuses a non-admin via
- * `_forbid_non_admin_template_write`, so this mirrors the products/new and
+ * `_forbid_non_admin_template`, so this mirrors the products/new and
  * goals/new pattern: `load` computes `can_manage` from `locals.profile.role`
  * (same source the list page's `load` already uses) so a non-admin who
  * navigates here directly sees an "admins only" state instead of a form the

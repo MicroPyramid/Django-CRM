@@ -58,7 +58,7 @@ def _scope_orgadmin(qs, profile):
 
 def _scope_superuser(qs, profile, user):
     """leads / opportunities / invoices rule: admin = role ADMIN or superuser."""
-    if profile.role == "ADMIN" or user.is_superuser:
+    if is_org_admin(profile) or user.is_superuser:
         return qs
     return qs.filter(_own_filter(profile)).distinct()
 

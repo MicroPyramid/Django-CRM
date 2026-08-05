@@ -25,15 +25,7 @@ from business_hours.serializers import (
     BusinessCalendarSerializer,
     BusinessHolidaySerializer,
 )
-from common.permissions import HasOrgContext
-
-
-def _is_admin(profile) -> bool:
-    if profile is None:
-        return False
-    if getattr(profile, "is_admin", False):
-        return True
-    return getattr(profile, "role", None) == "ADMIN"
+from common.permissions import HasOrgContext, is_org_admin
 
 
 def _get_or_create_default(org):
@@ -80,7 +72,7 @@ class BusinessCalendarView(APIView):
         return Response(BusinessCalendarSerializer(cal).data)
 
     def put(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -100,7 +92,7 @@ class BusinessHolidayListView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -134,7 +126,7 @@ class BusinessHolidayDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def delete(self, request, pk, hid, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,

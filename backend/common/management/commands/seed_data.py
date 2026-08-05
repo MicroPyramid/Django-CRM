@@ -718,7 +718,6 @@ class Command(BaseCommand):
                 "role": "ADMIN",
                 "has_sales_access": True,
                 "has_marketing_access": True,
-                "is_organization_admin": True,
                 "is_active": True,
             },
         )

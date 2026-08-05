@@ -12,7 +12,7 @@
    * full reasoning.
    *
    * VALIDATION HERE IS A UX HINT, NOT A RULE. `POST /api/invoices/templates/`
-   * is admin-gated (`_forbid_non_admin_template_write`) and enforces that
+   * is admin-gated (`_forbid_non_admin_template`) and enforces that
    * regardless of what this page shows; curl and the mobile client reach the
    * API without passing through here. The two colour inputs use
    * `type="color"` so the browser can only ever submit a valid six-digit hex

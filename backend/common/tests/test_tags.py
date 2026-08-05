@@ -9,13 +9,20 @@ from rest_framework import status
 
 from accounts.models import Account
 from cases.models import Case
-from common.models import Tags
+from common.models import APISettings, Tags
+from contacts.models import Contact
 from leads.models import Lead
 from opportunity.models import Opportunity
+from tasks.models import Task
 
 
 def _tag_row(response, tag_id):
     return next(r for r in response.data["tags"] if r["id"] == str(tag_id))
+
+
+def _tag_row_by_id(body, tag_id):
+    """Same lookup against an already-unwrapped response body."""
+    return next(r for r in body["tags"] if r["id"] == str(tag_id))
 
 
 @pytest.mark.django_db
@@ -168,6 +175,12 @@ class TestTagsUsageAndTotals:
         Case.objects.create(
             org=org_a, name="Ticket", status="New", priority="Normal"
         ).tags.add(tag)
+        Contact.objects.create(
+            org=org_a, first_name="Dana", last_name="Client"
+        ).tags.add(tag)
+        Task.objects.create(
+            org=org_a, title="Follow up", status="New", priority="Medium"
+        ).tags.add(tag)
 
         response = admin_client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
@@ -177,6 +190,9 @@ class TestTagsUsageAndTotals:
             "leads": 2,
             "opportunities": 1,
             "cases": 1,
+            "contacts": 1,
+            "tasks": 1,
+            "api_settings": 0,
         }
 
     def test_unused_tag_reports_zero_usage(self, admin_client, org_a):
@@ -187,7 +203,66 @@ class TestTagsUsageAndTotals:
             "leads": 0,
             "opportunities": 0,
             "cases": 0,
+            "contacts": 0,
+            "tasks": 0,
+            "api_settings": 0,
         }
+
+    @pytest.mark.parametrize("kind", ["contacts", "tasks", "api_settings"])
+    def test_a_tag_used_only_off_the_headline_models_is_not_unused(
+        self, admin_client, org_a, kind
+    ):
+        """The bug: `_TAGGABLE` held four of the seven taggable models.
+
+        A tag applied only to a contact, a task or an API setting reported zero
+        usage everywhere and was counted in the "unused" stat, telling an admin
+        it was safe to archive while it was in active use.
+        """
+        tag = Tags.objects.create(name=f"Only {kind}", slug=f"only-{kind}", org=org_a)
+        if kind == "contacts":
+            Contact.objects.create(
+                org=org_a, first_name="Dana", last_name="Client"
+            ).tags.add(tag)
+        elif kind == "tasks":
+            Task.objects.create(
+                org=org_a, title="Follow up", status="New", priority="Medium"
+            ).tags.add(tag)
+        else:
+            APISettings.objects.create(
+                org=org_a, title="Site", website="https://example.com"
+            ).tags.add(tag)
+
+        body = admin_client.get(self.url).data
+        assert _tag_row_by_id(body, tag.id)["usage"][kind] == 1
+        assert body["totals"]["unused"] == 0, (
+            f"a tag in use on {kind} was reported as unused"
+        )
+
+    def test_taggable_covers_every_model_with_a_tags_m2m(self):
+        """Guard the hand-written constant with the live model registry.
+
+        `_TAGGABLE` is written out by hand so a change shows up in a diff, which
+        is only safe if something notices when a new taggable model appears.
+        Without this, the next model to grow a `tags` M2M silently repeats the
+        bug above.
+        """
+        from django.apps import apps
+
+        from common.views.tags_views import _TAGGABLE
+
+        declared = {
+            model
+            for model in apps.get_models()
+            for field in model._meta.get_fields()
+            if field.many_to_many
+            and not field.auto_created
+            and getattr(field, "related_model", None) is Tags
+        }
+        counted = {model for _, model in _TAGGABLE}
+        assert declared == counted, (
+            "these models carry a tags M2M but their usage is never counted, so "
+            f"a tag used only on them reads as unused: {declared - counted}"
+        )
 
     def test_totals_count_active_unused(self, admin_client, org_a):
         used = Tags.objects.create(name="Used", slug="used", org=org_a)

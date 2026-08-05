@@ -1,23 +1,21 @@
+"""Schema-only parameter lists for drf-spectacular.
+
+The ``org`` header parameter that used to lead every list here is gone; see
+``common/swagger_params.py`` for why.
+"""
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
 
-organization_params_in_header = OpenApiParameter(
-    "org", OpenApiTypes.STR, OpenApiParameter.HEADER
-)
-
-organization_params = [
-    organization_params_in_header,
-]
+organization_params = []
 
 contact_list_get_params = [
-    organization_params_in_header,
     OpenApiParameter("name", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("city", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("assigned_to", OpenApiTypes.STR, OpenApiParameter.QUERY),
 ]
 
 contact_create_post_params = [
-    organization_params_in_header,
     OpenApiParameter("salutation", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("first_name", OpenApiTypes.STR, OpenApiParameter.QUERY),
     OpenApiParameter("last_name", OpenApiTypes.STR, OpenApiParameter.QUERY),

@@ -17,7 +17,7 @@
     <td class="metadata-label" style="padding:12px 16px 4px 16px;font-size:13px;color:#757575;font-weight:500;">Lead</td>
   </tr>
   <tr>
-    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ lead.title|default:lead_instance }}</td>
+    <td class="metadata-value" style="padding:0 16px 12px 16px;font-size:15px;color:#212121;">{{ lead.title }}</td>
   </tr>
   {% if source %}
   <tr>
@@ -39,7 +39,7 @@
 {% endblock metadata %}
 
 {% block button_link %}
-<a class="btn-link" href="{{ url|default:lead_detail_url }}"
+<a class="btn-link" href="{{ url }}"
    style="display:inline-block;padding:14px 32px;background-color:#EA580C;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:600;line-height:1;">
   View Lead
 </a>

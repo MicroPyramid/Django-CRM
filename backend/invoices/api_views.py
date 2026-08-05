@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 from common.serializer import (
     AttachmentsSerializer,
@@ -59,6 +59,7 @@ from invoices.serializer import (
     InvoiceSerializer,
     InvoiceTemplateCreateSerializer,
     InvoiceTemplateListSerializer,
+    InvoiceTemplateSerializer,
     PaymentCreateSerializer,
     PaymentSerializer,
     ProductCreateSerializer,
@@ -86,7 +87,6 @@ class InvoiceListView(APIView, LimitOffsetPagination):
     def get_queryset(self):
         """Get invoices filtered by org and user permissions"""
         org = self.request.profile.org
-        role = self.request.profile.role
 
         queryset = (
             self.model.objects.filter(org=org)
@@ -95,7 +95,10 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         )
 
         # Non-admin users can only see their own or assigned invoices
-        if role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             queryset = queryset.filter(
                 Q(created_by=self.request.profile.user)
                 | Q(assigned_to=self.request.profile)
@@ -653,7 +656,9 @@ class InvoiceLineItemListView(APIView):
         if error:
             return error
 
-        serializer = InvoiceLineItemCreateSerializer(data=request.data)
+        serializer = InvoiceLineItemCreateSerializer(
+            data=request.data, request_obj=request
+        )
         if serializer.is_valid():
             line_item = serializer.save(invoice=invoice, org=request.profile.org)
 
@@ -700,7 +705,7 @@ class InvoiceLineItemDetailView(APIView):
             )
 
         serializer = InvoiceLineItemCreateSerializer(
-            line_item, data=request.data, partial=True
+            line_item, data=request.data, partial=True, request_obj=request
         )
         if serializer.is_valid():
             line_item = serializer.save()
@@ -882,7 +887,7 @@ class ProductListView(APIView, LimitOffsetPagination):
         # need it to build line items), but changing it is an admin act, the
         # same posture Organization and Team settings take. A non-admin who
         # curls this endpoint is refused here, not just hidden from in the UI.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {
                     "error": True,
@@ -931,7 +936,7 @@ class ProductDetailView(APIView):
 
     def _require_admin(self, request):
         """Editing the shared catalog is admin-only; see ProductListView.post."""
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {
                     "error": True,
@@ -1004,13 +1009,15 @@ class EstimateListView(APIView, LimitOffsetPagination):
 
     def get_queryset(self):
         org = self.request.profile.org
-        role = self.request.profile.role
 
         queryset = Estimate.objects.filter(org=org).select_related(
             "account", "contact", "opportunity", "created_by", "converted_to_invoice"
         )
 
-        if role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             # created_by is a User FK; comparing it to a Profile does not just
             # silently fail here, it reaches the DB as Q(created_by=<Profile>)
             # and raised ValueError -- a 500 on every non-admin estimate list.
@@ -1346,7 +1353,7 @@ class RecurringInvoiceListView(APIView, LimitOffsetPagination):
         # same scoping as the invoice and estimate lists. created_by is a User
         # FK, so it is matched against request.profile.user; assigned_to holds
         # Profiles, matched against request.profile.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=request.profile.user) | Q(assigned_to=request.profile)
             ).distinct()
@@ -1528,22 +1535,26 @@ class RecurringInvoicePauseView(APIView):
 # =============================================================================
 
 
-def _forbid_non_admin_template_write(request):
+def _forbid_non_admin_template(
+    request, message="Only an administrator can change invoice templates."
+):
     """Return a 403 Response for non-admins, or None to allow.
 
     Invoice templates are org-wide shared config: every member reads the
     catalogue (to see how their invoices look), but changing a template: its
     colours, its default flag, its raw HTML/CSS, affects everyone in the org
     and drives the server-side PDF render. So writes (create/update/delete) are
-    admin-only, while reads stay open. Role is derived from ``request.profile``,
-    never the request body.
+    admin-only, while the catalogue read stays open. Role is derived from
+    ``request.profile``, never the request body.
+
+    ``message`` is a parameter because one read is admin-only too: fetching a
+    template's raw markup for the editor. That is the same rule for the same
+    reason, so it is the same gate rather than a second copy of the role check
+    that could drift away from this one.
     """
-    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+    if not is_org_admin(request.profile) and not request.user.is_superuser:
         return Response(
-            {
-                "error": True,
-                "message": "Only an administrator can change invoice templates.",
-            },
+            {"error": True, "message": message},
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
@@ -1574,7 +1585,7 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_create")
     def post(self, request):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1621,7 +1632,7 @@ class InvoiceTemplateDetailView(APIView):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_update")
     def put(self, request, pk):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1652,7 +1663,7 @@ class InvoiceTemplateDetailView(APIView):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_destroy")
     def delete(self, request, pk):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1668,6 +1679,47 @@ class InvoiceTemplateDetailView(APIView):
             {"error": False, "message": "Template deleted"},
             status=status.HTTP_200_OK,
         )
+
+
+class InvoiceTemplateEditorView(APIView):
+    """The only endpoint that returns a template's raw ``template_html``/``css``.
+
+    Every other read path uses ``InvoiceTemplateListSerializer``, which reports
+    booleans and a byte count in place of the markup, because that markup is
+    org-authored HTML/CSS that WeasyPrint renders into a PDF server-side: the
+    moment either field lands in a browser DOM, a PDF setting becomes stored
+    XSS.
+
+    An editor still has to load what it is editing, and it could not: the edit
+    form had no way to pre-fill the two fields it exists to change, so opening
+    it and saving silently blanked them. Serving the markup from its own
+    admin-only route keeps that fix out of the detail response every member
+    reads. A client must bind these two fields to a ``<textarea>`` value and
+    never to ``{@html}``.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(tags=["Invoice Templates"], operation_id="templates_editor_retrieve")
+    def get(self, request, pk):
+        # Role first, so the 403 does not depend on whether the id exists.
+        denied = _forbid_non_admin_template(
+            request,
+            "Only an administrator can view invoice template markup.",
+        )
+        if denied:
+            return denied
+
+        template = InvoiceTemplate.objects.filter(
+            id=pk, org=request.profile.org
+        ).first()
+        if not template:
+            return Response(
+                {"error": True, "message": "Template not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(InvoiceTemplateSerializer(template).data)
 
 
 # =============================================================================
@@ -1730,8 +1782,9 @@ class InvoiceCommentDetailView(APIView):
             )
 
         # Only comment author or admin can edit
-        role = request.profile.role
-        if comment.commented_by != request.profile and role != "ADMIN":
+        if comment.commented_by != request.profile and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1757,8 +1810,9 @@ class InvoiceCommentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        role = request.profile.role
-        if comment.commented_by != request.profile and role != "ADMIN":
+        if comment.commented_by != request.profile and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1825,8 +1879,9 @@ class InvoiceAttachmentDetailView(APIView):
         # created_by is a User FK, so it must be compared against request.user --
         # comparing it to request.profile is always unequal and locks the
         # uploader out of their own attachment.
-        role = request.profile.role
-        if attachment.created_by_id != request.user.id and role != "ADMIN":
+        if attachment.created_by_id != request.user.id and not is_org_admin(
+            request.profile
+        ):
             return Response(
                 {"error": True, "message": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1856,7 +1911,7 @@ def _forbid_non_admin_reports(request):
     admin-only (Django superusers included), the same bar as the org and team
     settings.
     """
-    if request.profile.role != "ADMIN" and not request.user.is_superuser:
+    if not is_org_admin(request.profile) and not request.user.is_superuser:
         return Response(
             {
                 "error": True,
@@ -2255,7 +2310,7 @@ class InvoiceFromOpportunityView(APIView):
             )
 
         # Check permission
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             if not (
                 (request.profile.user == opportunity.created_by)
                 or (request.profile in opportunity.assigned_to.all())

@@ -780,11 +780,7 @@ class TaskCommentView(APIView):
     def put(self, request, pk, format=None):
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
                 if serializer.is_valid():
@@ -825,11 +821,7 @@ class TaskCommentView(APIView):
         """Handle partial updates to a comment."""
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -864,11 +856,7 @@ class TaskCommentView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == self.object.commented_by:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Comment Deleted Successfully"},

@@ -84,10 +84,12 @@ Deactivating the owning profile invalidates the token immediately; `resolve_vali
 ### Organization API key
 
 `Org.api_key`: a single key per organization, not per user, managed through `GET`/`POST
-/api/org/api-key/`, admin-only in both directions. A request bearing it in the `Token` header
-authenticates as the organization's first active `ADMIN` profile rather than any specific person, so
-a leaked key is equivalent to a leaked admin session, not a leaked personal access token, which
-always authenticates as one specific individual. See
+/api/org/api-key/`, admin-only in both directions and only from an interactive session. A request
+bearing it in the `Token` header authenticates as the organization's first active `ADMIN` profile
+rather than any specific person. It is read-only and cannot reach a credential endpoint, and
+`DJANGO_ORG_API_KEY_AUTH=false` disables it outright, but it still reads every record in the org and
+cannot be revoked per integration, so a personal access token (which authenticates as one specific
+individual, expires, and carries scopes) is the better choice for anything new. See
 [Tokens and API keys: Organization API keys](../api/tokens-and-api-keys.md#organization-api-keys).
 
 ### Stage versus status

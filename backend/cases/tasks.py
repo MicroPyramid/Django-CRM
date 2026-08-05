@@ -3,7 +3,6 @@ import logging
 from datetime import timedelta
 
 from celery import shared_task
-from django.conf import settings
 from django.core.mail import EmailMessage
 from django.core.signing import TimestampSigner
 from django.db.models import Q
@@ -11,7 +10,9 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from cases.models import Case, CsatSurvey, EscalationPolicy, TimeEntry
+from cases.notifications import case_link
 from cases.workflow import TERMINAL_STATUSES
+from common.links import frontend_url
 from common.models import Activity, Org, Profile
 from common.tasks import set_rls_context
 
@@ -45,7 +46,7 @@ def send_email_to_assigned_user(recipients, case_id, org_id):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(case_link(case.id))
             context["user"] = profile.user
             context["case"] = case
             context["created_by"] = created_by
@@ -302,8 +303,7 @@ def send_csat_survey(case_id, org_id):
 
     register_portal_token_hash(survey.token_hash, org_id, "csat", survey.id)
 
-    domain = (settings.DOMAIN_NAME or "").rstrip("/")
-    link = f"{domain}/csat/{raw_token}"
+    link = frontend_url(f"/csat/{raw_token}")
     context = {
         "case": case,
         "contact": contact,

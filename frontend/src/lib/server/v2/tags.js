@@ -3,10 +3,14 @@
  *
  * Server-only. Reads `GET /tags/?include_archived=true`, which returns every
  * tag in the org (active and archived. The page shows the "Off" ones so an
- * admin can see what's been retired), each carrying a `usage` block
- * `{ accounts, leads, opportunities, cases }` and a `totals` summary
+ * admin can see what's been retired), each carrying a `usage` block, one key
+ * per model a tag can be applied to, and a `totals` summary
  * `{ count, active, unused }` for the stat cards. Both are computed server-side
  * (the usage counts are org-scoped subqueries, not a client tally over rows).
+ *
+ * The page sums whatever keys `usage` carries rather than naming them, because
+ * that block used to cover four of the seven taggable models and a tag in real
+ * use on contacts or tasks reported as unused.
  *
  * "New tag" is wired: `createTag` below posts the name and the page's action
  * calls it. Turning a tag off and back on are wired too, through `archiveTag`

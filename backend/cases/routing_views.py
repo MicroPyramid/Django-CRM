@@ -16,14 +16,10 @@ from cases.models import Case, RoutingRule, RoutingRuleState
 from cases.routing import evaluate
 from cases.serializer import RoutingRuleSerializer
 from common.models import Activity
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 
 # Window the routing page reports match / unrouted counts over.
 ROUTING_WINDOW_DAYS = 30
-
-
-def _is_admin(profile):
-    return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
 
 
 def _routing_analytics(org):
@@ -114,7 +110,7 @@ class RoutingRuleListCreateView(APIView):
         responses={201: RoutingRuleSerializer},
     )
     def post(self, request, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         serializer = RoutingRuleSerializer(
@@ -157,7 +153,7 @@ class RoutingRuleDetailView(APIView):
         responses={200: RoutingRuleSerializer},
     )
     def put(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         obj = self._get_object(pk, org)
@@ -193,7 +189,7 @@ class RoutingRuleDetailView(APIView):
         },
     )
     def delete(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         obj = self._get_object(pk, request.profile.org)
         if not obj:
@@ -237,7 +233,7 @@ class RoutingRuleTestView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         case_id = request.data.get("case_id")

@@ -2,6 +2,7 @@ import logging
 import re
 
 from celery import shared_task
+from crum import impersonate
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
@@ -10,6 +11,7 @@ from django.template.loader import render_to_string
 logger = logging.getLogger(__name__)
 
 from accounts.models import Account
+from common.links import frontend_url
 from common.models import Org, Profile
 from common.tasks import set_rls_context
 from leads.models import Lead
@@ -57,7 +59,7 @@ def send_email(
 
 
 @shared_task
-def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_id):
+def send_lead_assigned_emails(lead_id, new_assigned_to_list, org_id):
     set_rls_context(org_id)
     lead_instance = Lead.objects.filter(
         ~Q(status="converted"), pk=lead_id, is_active=True
@@ -70,12 +72,21 @@ def send_lead_assigned_emails(lead_id, new_assigned_to_list, site_address, org_i
     from_email = settings.DEFAULT_FROM_EMAIL
     template_name = "assigned_to/leads_assigned.html"
 
-    url = site_address
-    url += "/leads/" + str(lead_instance.id) + "/view/"
-
+    # The `site_address` argument this used to take was built by its one caller
+    # from `request.META["HTTP_HOST"]`, on an endpoint an unauthenticated web
+    # form posts to. That named the API host, where `/leads/<id>` does not
+    # exist, and it put a client-supplied value into the link of an email this
+    # system sends to its own users.
     context = {
-        "lead_instance": lead_instance,
-        "lead_detail_url": url,
+        # `lead`, not `lead_instance`: the template's two senders used
+        # different names for the same object and it hedged with
+        # `{{ lead.title|default:lead_instance }}`. Django resolves a filter's
+        # argument eagerly, so that expression raised `VariableDoesNotExist`
+        # out of `render_to_string` for whichever sender supplied `lead`,
+        # which is the one that runs on an ordinary assignment. That email
+        # never rendered, let alone sent.
+        "lead": lead_instance,
+        "url": frontend_url(f"/leads/{lead_instance.id}"),
     }
     mail_kwargs = {"subject": subject, "from_email": from_email}
     for profile in users:
@@ -100,7 +111,7 @@ def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(f"/leads/{lead.id}")
             context["user"] = profile.user
             context["lead"] = lead
             context["created_by"] = created_by
@@ -131,8 +142,19 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
     profile = Profile.objects.get(id=user_id)
     org = Org.objects.filter(id=company_id).first()
     for row in validated_rows:
-        if not Lead.objects.filter(title=row.get("title")).exists():
-            if re.match(email_regex, row.get("email")) is not None:
+        # The collision check was unscoped, so a title already used by another
+        # org silently suppressed the row. RLS masks this wherever it is
+        # active, but the org filter is the contract, not the safety net.
+        if not Lead.objects.filter(title=row.get("title"), org=org).exists():
+            # `email` is not a required CSV header (the form only requires
+            # `title`), so `row.get("email")` is None for a file without that
+            # column. `re.match` raises TypeError on None, and this line sits
+            # outside the per-row try, so one such file killed the whole task.
+            # The caller had already been told "Leads created Successfully",
+            # because the task is dispatched with .delay(), so the import
+            # failed in total silence.
+            email = row.get("email") or ""
+            if email and re.match(email_regex, email) is not None:
                 try:
                     lead = Lead()
                     lead.title = row.get("title", "")[:64]
@@ -156,8 +178,22 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                         ).first()
                         if company:
                             lead.company = company
-                    lead.created_by = profile
                     lead.org = org
-                    lead.save()
+                    # `created_by` is a FK to `User`; this assigned a
+                    # `Profile`, which raises ValueError before any SQL runs.
+                    # The bare `except` below swallowed it, so every row was
+                    # dropped and the import created nothing, ever, while the
+                    # caller held a "Leads created Successfully" 200.
+                    #
+                    # `BaseModel.save()` then overwrites `created_by` from
+                    # crum's current user, which is None inside a worker, so
+                    # assigning the field here is not enough on its own.
+                    # Impersonating the importer is how `seed_data` solves the
+                    # same problem, and it makes the audit trail name the
+                    # person who uploaded the file.
+                    with impersonate(profile.user):
+                        lead.save()
                 except Exception:
-                    pass
+                    logger.exception(
+                        "Skipped a row while importing leads for org %s", company_id
+                    )

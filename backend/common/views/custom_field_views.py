@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import CustomFieldDefinition
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import CustomFieldDefinitionSerializer
 
 # Each custom-field target_model → the (app_label, model) whose rows store the
@@ -31,10 +31,6 @@ _TARGET_MODELS = {
     "RecurringInvoice": ("invoices", "RecurringInvoice"),
     "Task": ("tasks", "Task"),
 }
-
-
-def _is_admin(profile):
-    return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
 
 
 def _admin_required():
@@ -154,7 +150,7 @@ class CustomFieldDefinitionListCreateView(APIView):
         responses={201: CustomFieldDefinitionSerializer},
     )
     def post(self, request, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         serializer = CustomFieldDefinitionSerializer(
@@ -195,7 +191,7 @@ class CustomFieldDefinitionDetailView(APIView):
         responses={200: CustomFieldDefinitionSerializer},
     )
     def put(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         obj = self._get_object(pk, request.profile.org)
         if not obj:
@@ -230,7 +226,7 @@ class CustomFieldDefinitionDetailView(APIView):
         },
     )
     def delete(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         obj = self._get_object(pk, request.profile.org)
         if not obj:

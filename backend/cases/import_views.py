@@ -32,7 +32,14 @@ def _can_import(profile) -> bool:
 
 
 def _read_upload(request):
-    """Return (file_bytes, error_response). One of the two will be None."""
+    """Return (file_bytes, error_response). One of the two will be None.
+
+    The size cap is enforced against the actual bytes read, not against
+    `upload.size`. `upload.size` is derived from a client-supplied
+    Content-Length header for in-memory uploads and can be zero or absent even
+    when the body is large, so trusting it for the limit check creates a
+    bypass. `contacts.import_views` already does it this way.
+    """
     upload = request.FILES.get("file")
     if not upload:
         return None, Response(
@@ -45,12 +52,13 @@ def _read_upload(request):
             {"error": True, "message": "File must have a .csv extension"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    if upload.size and upload.size > MAX_UPLOAD_BYTES:
+    file_bytes = upload.read()
+    if len(file_bytes) > MAX_UPLOAD_BYTES:
         return None, Response(
             {"error": True, "message": "File exceeds the 5 MB upload limit"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    return upload.read(), None
+    return file_bytes, None
 
 
 class CaseImportPreviewView(APIView):

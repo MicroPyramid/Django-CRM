@@ -1,10 +1,18 @@
 import logging
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 
+from common import scopes
 from common.models import Org, Profile
 
 logger = logging.getLogger(__name__)
+
+
+def _denied(reason):
+    """A 403 shaped like the one RequireOrgContext returns, so clients see one form."""
+    return JsonResponse({"detail": reason}, status=403)
 
 
 class GetProfileAndOrg:
@@ -21,7 +29,14 @@ class GetProfileAndOrg:
         self.get_response = get_response
 
     def __call__(self, request):
-        self.process_request(request)
+        # `process_request` returns a response when a non-interactive credential
+        # is refused (out-of-scope, or reaching for another credential). The
+        # return value used to be discarded, so a refusal had nowhere to go and
+        # every check had to live in a view. Short-circuiting here is what makes
+        # the scope boundary something a new view cannot forget to opt into.
+        denial = self.process_request(request)
+        if denial is not None:
+            return denial
         return self.get_response(request)
 
     def process_request(self, request):
@@ -47,19 +62,19 @@ class GetProfileAndOrg:
         # the JWT decoder.
         raw_pat = self._extract_pat(request)
         if raw_pat:
-            self._process_pat_auth(request, raw_pat)
-            return
+            return self._process_pat_auth(request, raw_pat)
 
         # Try JWT token first (primary authentication)
         if request.headers.get("Authorization"):
             self._process_jwt_auth(request)
-            return
+            return None
 
         # Fall back to API key authentication
         api_key = request.headers.get("Token")
         if api_key:
-            self._process_api_key_auth(request, api_key)
-            return
+            return self._process_api_key_auth(request, api_key)
+
+        return None
 
     def _extract_pat(self, request):
         """Return a bcrm_pat_-prefixed token from the request, else None.
@@ -72,7 +87,10 @@ class GetProfileAndOrg:
         return _extract_raw(request)
 
     def _process_pat_auth(self, request, raw):
-        """Resolve a PAT and set org context, mirroring the JWT/org-key paths.
+        """Resolve a PAT, enforce its scopes, and set org context.
+
+        Returns a 403 response when the token's scopes do not cover this request
+        or when it reaches for another credential; otherwise ``None``.
 
         On an invalid/revoked/expired PAT we leave request.org unset so that
         RequireOrgContext returns a clean 403 (the same denial the org-key path
@@ -90,12 +108,25 @@ class GetProfileAndOrg:
             # Leave org unset → RequireOrgContext denies with 403. The DRF
             # PATAuthentication class will also raise on this token, but the
             # middleware-level denial happens first.
-            return
+            return None
+
+        # The scope check runs BEFORE org context is attached. A refused request
+        # must not leave a resolved profile behind for anything downstream to
+        # act on, and it must not set the RLS session variable for a call that
+        # is not going to happen.
+        denial = scopes.check_request(pat.scopes, request.method, request.path)
+        if denial is not None:
+            logger.warning(
+                "PAT %s refused for %s %s", pat.token_prefix, request.method, request.path
+            )
+            return _denied(denial)
+
         request.profile = pat.profile
         request.org = pat.org
         request.META["org"] = str(pat.org.id)
         request.META["pat_token_id"] = str(pat.id)
         request._pat = pat
+        return None
 
     def _process_jwt_auth(self, request):
         """
@@ -155,7 +186,36 @@ class GetProfileAndOrg:
             return
 
     def _process_api_key_auth(self, request, api_key):
-        """Process API key authentication."""
+        """Process organization API key authentication.
+
+        This key is one per org, never expires, and resolves to an arbitrary
+        active ADMIN. Until this gate existed it was therefore a full admin
+        session for that tenant: it could delete records, change roles, mint a
+        personal access token owned by the human whose identity it borrowed, and
+        read and rotate itself. A key that leaks into a log or a CI variable is
+        an unbounded, unrevokable admin.
+
+        Two limits now apply, both before any view runs:
+
+        * ``ORG_API_KEY_AUTH_ENABLED`` turns the whole path off. Default True,
+          so nothing breaks on upgrade; a deployment that has migrated its
+          integrations to personal access tokens can shut the door.
+        * The key is read-only, and the credential deny-list from
+          ``common.scopes`` applies to it, so it cannot reach for another
+          credential. Both are expressed as ``ORG_API_KEY_SCOPES`` so the org
+          key and a read-only token share one implementation.
+
+        This narrows what the key can do. It does not make the key safe: it
+        still reads every record in the org. Prefer a scoped personal access
+        token; see docs/api/tokens-and-api-keys.md.
+        """
+        if not getattr(settings, "ORG_API_KEY_AUTH_ENABLED", True):
+            logger.warning("Organization API key auth is disabled; refusing request")
+            return _denied(
+                "Organization API key authentication is disabled on this "
+                "deployment. Use a personal access token."
+            )
+
         try:
             organization = Org.objects.get(api_key=api_key, is_active=True)
 
@@ -168,11 +228,24 @@ class GetProfileAndOrg:
                 logger.error("No active admin profile found for org %s", organization.id)
                 # Let DRF authentication reject this, raising AuthenticationFailed
                 # here escapes the middleware stack as a 500 instead of a 401.
-                return
+                return None
+
+            denial = scopes.check_request(
+                scopes.ORG_API_KEY_SCOPES, request.method, request.path
+            )
+            if denial is not None:
+                logger.warning(
+                    "Org API key refused for %s %s (org %s)",
+                    request.method,
+                    request.path,
+                    organization.id,
+                )
+                return _denied(denial)
 
             request.profile = profile
             request.org = organization
             request.META["org"] = str(organization.id)
+            request.META["org_api_key_auth"] = True
 
             logger.debug("Set org context from API key: org=%s", organization.id)
 
@@ -180,4 +253,6 @@ class GetProfileAndOrg:
             logger.warning("Invalid API key attempted")
             # Same as above: APIKeyAuthentication raises inside the DRF layer,
             # which turns it into a proper 401 response.
-            return
+            return None
+
+        return None

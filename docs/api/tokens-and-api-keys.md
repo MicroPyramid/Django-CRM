@@ -9,19 +9,45 @@ and [Security hardening](../self-hosting/security-hardening.md#token-surfaces).
 
 ## Personal access tokens
 
-A personal access token (`bcrm_pat_…`, `PersonalAccessToken` in `backend/common/models.py:854-907`)
-authenticates as the profile that created it and inherits that profile's role and org in full. It
-carries a `scopes` field, but nothing in the request-handling code enforces it. Read the model's
-own comment before assuming otherwise:
+A personal access token (`bcrm_pat_…`, `PersonalAccessToken` in `backend/common/models.py`)
+authenticates as the profile that created it and inherits that profile's org and role. Its `scopes`
+narrow that down, and are enforced.
 
-```python
-# NOTE: scopes are stored for forward-compatibility but are NOT enforced in
-# Phase 1: a token always inherits the owning profile's full role/permissions.
-# Do not treat `scopes` as a trust boundary until enforcement lands.
+### Scopes
+
+A scope is `<resource>:<action>`. `resource` is an API root segment (the first path segment after
+`/api/`, so `leads`, `contacts`, `invoices`, `cases`, …) or `*` for all of them. `action` is `read`
+or `write`. `read` covers `GET`/`HEAD`/`OPTIONS`; `write` covers `POST`/`PUT`/`PATCH`/`DELETE`.
+
+`write` does not imply `read`. A token that may create leads but not list them is a coherent thing
+to want, and a scope whose name understates what it grants stops being a boundary.
+
+**An empty scope list means unrestricted.** Every token issued before enforcement existed carries
+`[]`, and the behaviour has always been "inherits the owning profile's role", so treating `[]` as
+"nothing" would have revoked every live token on deploy. Omit `scopes` and you get exactly the old
+behaviour.
+
+Scopes are validated when the token is created. An unknown resource or action is a `400`, because a
+caller who misspells a resource would otherwise believe they had restricted a token and receive one
+that matches nothing at all.
+
+The vocabulary and the matcher are in `backend/common/scopes.py`; enforcement is in
+`GetProfileAndOrg`, the middleware every `/api/` request already passes through, so a new view
+cannot forget to opt in. An out-of-scope request is refused with `403` before the view runs:
+
+```json
+{"detail": "This token is not scoped for write access to leads."}
 ```
 
-(`backend/common/models.py:871-873`.) Set `scopes` if you like for your own bookkeeping; it does not
-restrict what the token can do today.
+### What no token may do, whatever its scopes
+
+`/api/profile/tokens/`, `/api/org/tokens/` and `/api/org/api-key/` are refused for any personal
+access token and for the organization API key, including a token with an empty (unrestricted) scope
+list. Sign in to manage credentials.
+
+The reason is that both chains defeat revocation. A token that can mint another token cannot be
+revoked, since revoking it leaves whatever it already created working. A token that can read the org
+API key upgrades itself into a permanent org-wide credential that outlives its own revocation.
 
 `GET /api/profile/tokens/` (`PersonalAccessTokenListCreateView`,
 `backend/common/views/pat_views.py:33-47`) lists the caller's own tokens, filtered on
@@ -59,8 +85,10 @@ filter here is the only tenant boundary, not a belt over RLS's braces):
 {"name": "reporting script", "scopes": [], "expires_at": null}
 ```
 
-`name` is required (non-empty, at most 255 characters); `scopes`, if present, must be a list of
-strings (at most 32); `expires_at` is optional, but if present must be in the future;
+`name` is required (non-empty, at most 255 characters); `scopes`, if present, must be a list of at
+most 32 `<resource>:<action>` strings drawn from the vocabulary above, and is returned
+canonicalised (lowercased, deduplicated); `expires_at` is optional, but if present must be in the
+future;
 `validate_expires_at` rejects a past timestamp with `"expires_at must be in the future."`
 (`backend/common/serializer.py:1092-1097`). On success (`201`):
 
@@ -144,12 +172,21 @@ directions, checked by hand in `_admin_org_or_error` (`:255-275`) rather than an
 permission class, but the same rule: `request.profile.role == "ADMIN"` or
 `request.profile.is_organization_admin`.
 
-Unlike a personal access token, this key doesn't authenticate as any particular person, a request
+Unlike a personal access token, this key doesn't authenticate as any particular person: a request
 bearing it in the `Token` header resolves to the org's first active `ADMIN` profile
-(`backend/common/middleware/get_company.py:157-183`), so a leaked key is equivalent to a leaked
-admin session for that org, not one user's session, and there's no way to scope it down. The org is
-always taken from `request.profile.org`, never from anything client-supplied, so a caller can only
-ever read or rotate their own org's key.
+(`backend/common/middleware/get_company.py`). The org is always taken from `request.profile.org`,
+never from anything client-supplied, so a caller can only ever read or rotate their own org's key.
+
+Two limits apply to every request made with this key, enforced in middleware before any view runs:
+
+- **Read-only.** It is evaluated as the scope list `("*:read",)`, so an unsafe method is `403`.
+- **No credential access.** The deny-list above applies, so the key cannot read itself, rotate
+  itself, or mint a personal access token owned by the admin whose identity it borrowed.
+
+Set `DJANGO_ORG_API_KEY_AUTH=false` to refuse this key as an authentication method entirely. It is
+on by default so an upgrade breaks nothing. Even read-only, one non-expiring key per tenant that
+reads every record and cannot be revoked per integration is a blunt instrument; a scoped personal
+access token is the better answer for anything new.
 
 `GET /api/org/api-key/`:
 

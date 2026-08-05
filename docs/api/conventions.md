@@ -43,6 +43,13 @@ obtained and [Tokens and API keys](tokens-and-api-keys.md) for the other two. Wh
 request authenticates as, and which org it is scoped to, is never something the request supplies
 directly. It is derived from whichever of these three the server can validate.
 
+The two non-interactive credentials are bounded in ways a signed-in session is not. A personal
+access token is limited to its `scopes` (`<resource>:<action>`, enforced in middleware before the
+view runs; an empty list means unrestricted). The organization API key is read-only. Neither may
+reach `/api/profile/tokens/`, `/api/org/tokens/` or `/api/org/api-key/` at all: credential
+management requires an interactive sign-in. See
+[Tokens and API keys](tokens-and-api-keys.md#scopes).
+
 One thing the generated OpenAPI schema does *not* reflect accurately: a large minority of
 operations (112 of the schema's 350, about a third) declare an `org` header parameter
 (`organization_params_in_header`, defined in `backend/common/swagger_params.py` and copied into the

@@ -925,11 +925,7 @@ class CaseCommentView(APIView):
     def put(self, request, pk, format=None):
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params)
             if params.get("comment"):
                 if serializer.is_valid():
@@ -969,11 +965,7 @@ class CaseCommentView(APIView):
         """Handle partial updates to a comment."""
         params = request.data
         obj = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == obj.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == obj.commented_by:
             serializer = CommentSerializer(obj, data=params, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -1008,11 +1000,7 @@ class CaseCommentView(APIView):
     )
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
-        if (
-            request.profile.role == "ADMIN"
-            or request.profile.is_admin
-            or request.profile == self.object.commented_by
-        ):
+        if is_org_admin(request.profile) or request.profile == self.object.commented_by:
             self.object.delete()
             return Response(
                 {"error": False, "message": "Comment Deleted Successfully"},
@@ -1110,7 +1098,16 @@ class CaseSolutionLinkView(APIView):
             fields={"solution_id": serializers.CharField()},
         ),
     )
-    def post(self, request, pk):
+    def post(self, request, pk, solution_pk=None):
+        # This class is routed twice: `<pk>/solutions/` for POST and
+        # `<pk>/solutions/<solution_pk>/` for DELETE. Django hands every route's
+        # captured kwargs to whichever method it dispatches, so POST to the
+        # second route arrived with an argument it had no parameter for and
+        # DELETE to the first arrived missing one. Both were an uncaught
+        # TypeError, which is a 500 on a route the client is simply using the
+        # wrong verb on. 405 is the answer to a wrong verb.
+        if solution_pk is not None:
+            self.http_method_not_allowed(request)
         case = get_case_or_404(request.profile, pk)
         # Attaching an article to a ticket changes the ticket, so it takes the
         # same permission as any other change to it. Org alone was the whole
@@ -1144,7 +1141,11 @@ class CaseSolutionLinkView(APIView):
         )
 
     @extend_schema(tags=["Cases"])
-    def delete(self, request, pk, solution_pk):
+    def delete(self, request, pk, solution_pk=None):
+        # See `post` above: reached without a solution id, this is the
+        # collection route being deleted, which is a wrong verb, not a crash.
+        if solution_pk is None:
+            self.http_method_not_allowed(request)
         case = get_case_or_404(request.profile, pk)
         assert_case_write_access(request.profile, case)
         sol = self._get_solution(solution_pk, request.profile.org)
@@ -1290,9 +1291,6 @@ class ReopenPolicyView(APIView):
 
     permission_classes = (IsAuthenticated, HasOrgContext)
 
-    def _is_admin(self, request):
-        return request.profile.role == "ADMIN" or request.profile.is_admin
-
     def _get_or_create_policy(self, org):
         policy = ReopenPolicy.objects.filter(org=org).first()
         if policy is None:
@@ -1305,7 +1303,7 @@ class ReopenPolicyView(APIView):
         responses={200: ReopenPolicySerializer},
     )
     def get(self, request, format=None):
-        if not self._is_admin(request):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": True, "errors": "Admin access required"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -1322,7 +1320,7 @@ class ReopenPolicyView(APIView):
         responses={200: ReopenPolicySerializer},
     )
     def put(self, request, format=None):
-        if not self._is_admin(request):
+        if not is_org_admin(request.profile):
             return Response(
                 {"error": True, "errors": "Admin access required"},
                 status=status.HTTP_403_FORBIDDEN,

@@ -7,7 +7,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common import swagger_params
+from common.lookups import get_scoped_or_404
 from common.models import Profile, Teams
+from common.permissions import is_org_admin
 from common.serializer import (
     TeamCreateSerializer,
     TeamsSerializer,
@@ -51,7 +53,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
         else:
             offset = 0
         context["per_page"] = 10
-        page_number = (int(self.offset / 10) + 1,)
+        page_number = int(self.offset / 10) + 1
         context["page_number"] = page_number
         context.update({"teams_count": self.count, "offset": offset})
         context["teams"] = teams
@@ -66,7 +68,12 @@ class TeamsListView(APIView, LimitOffsetPagination):
                 name="TeamsListResponse",
                 fields={
                     "per_page": serializers.IntegerField(),
-                    "page_number": serializers.ListField(),
+                    # Was ListField, which described the bug rather than the
+                    # contract: a stray trailing comma made `page_number` a
+                    # one-element tuple, so five list endpoints answered
+                    # `"page_number": [1]`. The other four declared IntegerField
+                    # and disagreed with what they actually sent.
+                    "page_number": serializers.IntegerField(),
                     "teams_count": serializers.IntegerField(),
                     "offset": serializers.IntegerField(allow_null=True),
                     "teams": TeamsSerializer(many=True),
@@ -75,7 +82,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
         },
     )
     def get(self, *args, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,
@@ -102,7 +109,7 @@ class TeamsListView(APIView, LimitOffsetPagination):
         },
     )
     def post(self, request, *args, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,
@@ -137,7 +144,7 @@ class TeamsDetailView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Teams"],
@@ -150,7 +157,7 @@ class TeamsDetailView(APIView):
         },
     )
     def get(self, request, pk, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,
@@ -179,7 +186,7 @@ class TeamsDetailView(APIView):
         },
     )
     def put(self, request, pk, *args, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,
@@ -237,7 +244,7 @@ class TeamsDetailView(APIView):
     )
     def patch(self, request, pk, *args, **kwargs):
         """Handle partial updates to a team."""
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,
@@ -276,7 +283,7 @@ class TeamsDetailView(APIView):
         },
     )
     def delete(self, request, pk, **kwargs):
-        if self.request.profile.role != "ADMIN" and not self.request.profile.is_admin:
+        if not is_org_admin(self.request.profile):
             return Response(
                 {
                     "error": True,

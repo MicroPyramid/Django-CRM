@@ -41,17 +41,13 @@ from cases.inbound.sns import (
 )
 from cases.models import EmailMessage, InboundMailbox
 from cases.serializer import InboundMailboxSerializer
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.tasks import set_rls_context
 
 logger = logging.getLogger(__name__)
 
 # Window the mailbox page reports ticket counts over.
 MAILBOX_WINDOW_DAYS = 30
-
-
-def _is_admin(profile):
-    return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
 
 
 def _mailbox_analytics(org):
@@ -312,7 +308,7 @@ class InboundMailboxListCreateView(APIView):
         responses={201: InboundMailboxSerializer},
     )
     def post(self, request, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         data = dict(request.data)
@@ -355,7 +351,7 @@ class InboundMailboxDetailView(APIView):
         responses={200: InboundMailboxSerializer},
     )
     def put(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         obj = self._get_object(pk, org)
@@ -391,7 +387,7 @@ class InboundMailboxDetailView(APIView):
         },
     )
     def delete(self, request, pk, *args, **kwargs):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         obj = self._get_object(pk, request.profile.org)
         if not obj:

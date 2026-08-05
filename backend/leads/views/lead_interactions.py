@@ -4,8 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.lookups import get_scoped_or_404
 from common.models import APISettings, Attachments, Comment
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import LeadCommentSerializer
 from contacts.models import Contact
 from leads import swagger_params
@@ -17,6 +18,25 @@ from leads.serializer import (
     LeadUploadSwaggerSerializer,
 )
 from leads.tasks import create_lead_from_file, send_lead_assigned_emails
+
+# Matches the contacts and cases importers, and the UI hint beside the control.
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+def _can_import(profile) -> bool:
+    """Mass-create requires admin or explicit sales-access permission.
+
+    Same rule as `contacts.import_views._can_import` and its cases twin. This
+    endpoint predates both and never grew the check, so any member could
+    bulk-create leads through it.
+    """
+    if profile is None:
+        return False
+    if getattr(profile, "role", None) == "ADMIN":
+        return True
+    if getattr(profile, "is_admin", False):
+        return True
+    return bool(getattr(profile, "has_sales_access", False))
 
 
 class LeadUploadView(APIView):
@@ -38,6 +58,23 @@ class LeadUploadView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        if not _can_import(request.profile):
+            return Response(
+                {"error": True, "errors": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        # The cap is measured against the bytes actually read, not against
+        # `upload.size`, which for an in-memory upload derives from a
+        # client-supplied Content-Length and can understate the body.
+        upload = request.FILES.get("leads_file")
+        if upload is not None:
+            file_bytes = upload.read()
+            upload.seek(0)
+            if len(file_bytes) > MAX_UPLOAD_BYTES:
+                return Response(
+                    {"error": True, "errors": "File exceeds the 5 MB upload limit"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         lead_form = LeadListForm(request.POST, request.FILES)
         if lead_form.is_valid():
             create_lead_from_file.delay(
@@ -62,7 +99,7 @@ class LeadCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Leads"],
@@ -82,7 +119,7 @@ class LeadCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -125,7 +162,7 @@ class LeadCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
@@ -164,7 +201,7 @@ class LeadCommentView(APIView):
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile == self.object.commented_by
         ):
@@ -201,9 +238,14 @@ class LeadAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        # Was `objects.get(pk=pk)`: no org filter, so an admin of any org could
+        # delete any attachment in the system by id, and a missing or malformed
+        # id raised out of the view as a 500 instead of answering 404. The
+        # comment view above already scopes its lookup, as do the accounts,
+        # contacts, cases, tasks, tags and teams equivalents.
+        self.object = get_scoped_or_404(self.model, pk, request.profile.org)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile.user == self.object.created_by
         ):
@@ -270,10 +312,12 @@ class CreateLeadFromSite(APIView):
                 org=api_setting.org,
             )
             lead.assigned_to.add(user)
-            # Send Email to Assigned Users
-            site_address = request.scheme + "://" + request.META["HTTP_HOST"]
+            # Send Email to Assigned Users. The task builds its own link from
+            # FRONTEND_URL; it used to be handed a base derived from this
+            # request's Host header, which named the API rather than the web
+            # app and let a caller of this endpoint influence the link.
             send_lead_assigned_emails.delay(
-                lead.id, [user.id], site_address, str(api_setting.org.id)
+                lead.id, [user.id], str(api_setting.org.id)
             )
             # Create Contact
             try:

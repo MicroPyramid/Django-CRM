@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_list_param, uuid_param
 from opportunity.models import Opportunity, StageAgingConfig
 from opportunity.serializer import (
@@ -66,7 +66,7 @@ class OpportunityKanbanView(APIView):
 
         # Match the list view's RBAC scoping so users only see opps they own
         # or are assigned to. Kanban shouldn't reveal more than the table.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             queryset = queryset.filter(
                 Q(created_by=request.profile.user)
                 | Q(assigned_to=request.profile)
@@ -160,7 +160,7 @@ class OpportunityMoveView(APIView):
         opportunity = get_object_or_404(Opportunity, pk=pk, org=org)
 
         # Match Opportunity update/delete RBAC: admin OR creator OR assignee.
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             is_owner = request.profile == opportunity.created_by
             is_assignee = request.profile in opportunity.assigned_to.all()
             if not (is_owner or is_assignee):

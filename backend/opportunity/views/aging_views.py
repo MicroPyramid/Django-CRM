@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.utils import STAGES
 from opportunity.models import StageAgingConfig
 from opportunity.serializer import StageAgingConfigSerializer
@@ -39,7 +39,7 @@ class StageAgingConfigView(APIView):
 
     def put(self, request):
         """Bulk upsert stage aging configs (admin only)."""
-        if request.profile.role != "ADMIN" and not request.user.is_superuser:
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
             return Response(
                 {"error": True, "errors": "Only admins can update aging config"},
                 status=status.HTTP_403_FORBIDDEN,

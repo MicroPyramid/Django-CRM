@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from common import swagger_params
 from common.models import Document, Profile, Teams
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import payload_id_list
 from common.serializer import (
     DocumentCreateSerializer,
@@ -64,7 +64,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
         queryset = self.model.objects.filter(org=self.request.profile.org).order_by(
             "-id"
         )
-        if not (self.request.user.is_superuser or self.request.profile.role == "ADMIN"):
+        if not (self.request.user.is_superuser or is_org_admin(self.request.profile)):
             queryset = queryset.filter(_visible_to(self.request.profile)).distinct()
 
         request_post = params
@@ -86,7 +86,7 @@ class DocumentListView(APIView, LimitOffsetPagination):
         profile_list = Profile.objects.filter(
             is_active=True, org=self.request.profile.org
         )
-        if self.request.profile.role == "ADMIN" or self.request.profile.is_admin:
+        if is_org_admin(self.request.profile):
             profiles = profile_list.order_by("user__email")
         else:
             profiles = profile_list.filter(role="ADMIN").order_by("user__email")
@@ -234,7 +234,7 @@ class DocumentDetailView(APIView):
         literally the same predicate the list uses. Doing it by hand was how
         the two drifted apart in the first place.
         """
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
             return True
         return (
             Document.objects.filter(pk=document.pk)
@@ -250,7 +250,7 @@ class DocumentDetailView(APIView):
         who uploaded it, or an admin. `created_by` is a User FK. Comparing it
         to a Profile is the bug that made this branch unreachable.
         """
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
             return True
         return document.created_by_id == self.request.profile.user_id
 
@@ -302,7 +302,7 @@ class DocumentDetailView(APIView):
         if not self._may_read(self.object):
             return self._forbidden()
         profile_list = Profile.objects.filter(org=self.request.profile.org)
-        if request.profile.role == "ADMIN" or request.user.is_superuser:
+        if is_org_admin(request.profile) or request.user.is_superuser:
             profiles = profile_list.order_by("user__email")
         else:
             profiles = profile_list.filter(role="ADMIN").order_by("user__email")

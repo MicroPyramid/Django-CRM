@@ -241,9 +241,25 @@ class Profile(BaseModel):
     def __str__(self):
         return f"{self.user.email} <{self.org.name}>"
 
+    def save(self, *args, **kwargs):
+        # `role` and `is_organization_admin` are two columns for one binary
+        # fact (`ROLES` is ADMIN/USER and nothing else), and they used to be
+        # settable independently, which let an admin mint a colleague the UI
+        # showed as a plain user and could never demote. `role` is what every
+        # surface displays and what `common.permissions.is_org_admin` reads;
+        # the column is kept because it is in API responses, so it is derived
+        # here rather than left to drift.
+        self.is_organization_admin = self.role == "ADMIN"
+        super().save(*args, **kwargs)
+
     @property
     def is_admin(self):
-        return self.is_organization_admin
+        """Alias kept for the API response and for existing callers.
+
+        Reads `role`, not the column, so it answers the same as
+        `is_org_admin` even on an unsaved instance.
+        """
+        return self.role == "ADMIN"
 
     @property
     def user_details(self):
@@ -868,9 +884,12 @@ class PersonalAccessToken(BaseOrgModel):
     name = models.CharField(max_length=255)
     token_hash = models.CharField(max_length=64, unique=True, db_index=True)
     token_prefix = models.CharField(max_length=20)
-    # NOTE: scopes are stored for forward-compatibility but are NOT enforced in
-    # Phase 1: a token always inherits the owning profile's full role/permissions.
-    # Do not treat `scopes` as a trust boundary until enforcement lands.
+    # `<resource>:<action>` strings, validated at creation and enforced on every
+    # request by `common.scopes` from the `GetProfileAndOrg` middleware. An empty
+    # list means unrestricted, which is what every token issued before
+    # enforcement carries and what this field used to mean unconditionally.
+    # See common/scopes.py for the grammar and for the credential deny-list that
+    # applies regardless of what is stored here.
     scopes = models.JSONField(default=list, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     last_used_at = models.DateTimeField(null=True, blank=True)

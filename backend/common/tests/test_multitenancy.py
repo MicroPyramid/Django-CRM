@@ -627,8 +627,17 @@ class TestPermissionClasses(MultiTenancyBaseTestCase):
         perm = IsOrgAdmin()
         self.assertTrue(perm.has_permission(request, None))
 
-    def test_is_org_admin_with_org_admin_flag(self):
-        """IsOrgAdmin allows organization_admin flag."""
+    def test_is_org_admin_refuses_the_org_admin_flag_alone(self):
+        """IsOrgAdmin reads `role` only, so the flag by itself grants nothing.
+
+        This assertion used to be the opposite. `is_organization_admin` and
+        `role == "ADMIN"` are one binary fact stored twice, and only 43 of the
+        125 admin checks in the backend consulted the flag, so the same profile
+        was an admin at some endpoints and a member at others. The flag is the
+        half no frontend surface shows or sets, which made it a grant an
+        operator could neither see nor revoke. `Profile.save` now derives it
+        from `role`; see `common/tests/test_is_org_admin.py`.
+        """
         from common.permissions import IsOrgAdmin
 
         request = MagicMock()
@@ -636,7 +645,7 @@ class TestPermissionClasses(MultiTenancyBaseTestCase):
         request.profile.role = "USER"
         request.profile.is_organization_admin = True
         perm = IsOrgAdmin()
-        self.assertTrue(perm.has_permission(request, None))
+        self.assertFalse(perm.has_permission(request, None))
 
     def test_is_org_admin_non_admin(self):
         """IsOrgAdmin denies regular user."""

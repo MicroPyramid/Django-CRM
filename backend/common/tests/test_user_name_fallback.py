@@ -35,7 +35,24 @@ class TestUserNameAutoFill:
         user.refresh_from_db()
         assert user.name == ""
 
-    def test_long_email_local_part_is_truncated_to_255(self):
-        long_local = "a" * 300
-        user = User.objects.create(email=f"{long_local}@example.com")
-        assert len(user.name) == 255
+    def test_the_longest_storable_email_still_fits_the_name_column(self):
+        """The `[:255]` in `User.save` is a belt, and it can never be reached.
+
+        `email` is an `EmailField`, so `varchar(254)`, which caps the local
+        part at 242 characters once `@example.com` is accounted for. `name` is
+        `varchar(255)`. A local part long enough to need truncating cannot be
+        stored in the first place.
+
+        This test used to assert the truncation directly, with a 300-character
+        local part and a 312-character email. SQLite does not enforce declared
+        string lengths, so it passed there and passed in CI; against
+        PostgreSQL the same line raises `StringDataRightTruncation` before
+        `name` is ever considered. It was pinning behaviour reachable only on
+        a database this project does not run in production.
+        """
+        longest_local = "a" * (254 - len("@example.com"))
+        user = User.objects.create(email=f"{longest_local}@example.com")
+
+        assert len(user.name) == 242
+        user.refresh_from_db()
+        assert user.name == longest_local

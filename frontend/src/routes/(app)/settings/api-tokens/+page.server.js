@@ -32,6 +32,23 @@ function expiryFromChoice(choice) {
   return d.toISOString();
 }
 
+/**
+ * Turn the access choice into the scope list the API enforces.
+ *
+ * `common/scopes.py` reads `<resource>:<action>` and treats an empty list as
+ * unrestricted, which is what every token issued before enforcement carries.
+ * The backend understands per-resource scopes too; this form deliberately
+ * offers only the two choices that are worth a radio button, because a picker
+ * listing thirty resources is a worse question than "may it change anything?".
+ * A caller who wants `leads:read` can create the token through the API.
+ *
+ * @param {string | undefined} choice
+ * @returns {string[]}
+ */
+function scopesFromChoice(choice) {
+  return choice === 'read' ? ['*:read'] : [];
+}
+
 /** @type {import('./$types').Actions} */
 export const actions = {
   /**
@@ -43,10 +60,11 @@ export const actions = {
     const form = await request.formData();
     const name = form.get('name')?.toString().trim();
     const expires_at = expiryFromChoice(form.get('expiry')?.toString());
+    const scopes = scopesFromChoice(form.get('access')?.toString());
     if (!name) return fail(400, { create: { error: 'Give the token a name.' } });
 
     try {
-      const res = await createToken({ cookies }, { name, expires_at });
+      const res = await createToken({ cookies }, { name, expires_at, scopes });
       // Shown once. `token` is the raw value; the list will only ever have the
       // prefix after this response is gone.
       return {

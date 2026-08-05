@@ -9,6 +9,7 @@ from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from common.links import frontend_url
 from common.models import Org, Profile
 from opportunity.models import Opportunity, SalesGoal, StageAgingConfig
 
@@ -35,7 +36,7 @@ def send_email_to_assigned_user(recipients, opportunity_id, org_id):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(f"/pipeline/{opportunity.id}")
             context["user"] = profile.user
             context["opportunity"] = opportunity
             context["created_by"] = created_by
@@ -120,7 +121,7 @@ def send_stale_deals_alert(org, stale_opps):
                 }
                 for opp, days, expected in deals
             ],
-            "url": settings.DOMAIN_NAME,
+            "url": frontend_url("/pipeline?rotten=true"),
             "deal_count": len(deals),
         }
         subject = f"[BottleCRM] {len(deals)} stale deal{'s' if len(deals) > 1 else ''} need attention"
@@ -226,7 +227,7 @@ def _send_goal_milestone_email(profile, goal, milestone_label, percent, achieved
         "milestone": milestone_label,
         "percent": percent,
         "achieved": achieved,
-        "url": settings.DOMAIN_NAME,
+        "url": frontend_url("/goals"),
     }
     subject = f"[BottleCRM] Goal '{goal.name}' reached {milestone_label}!"
     html_content = render_to_string(

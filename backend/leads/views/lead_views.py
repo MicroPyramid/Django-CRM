@@ -25,7 +25,7 @@ from common.models import (
     Teams,
     User,
 )
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     AttachmentsSerializer,
     CustomFieldDefinitionSerializer,
@@ -97,7 +97,10 @@ class LeadListView(APIView, LimitOffsetPagination):
                 "assigned_to",
             )
         ).order_by("-id")
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             queryset = queryset.filter(
                 Q(assigned_to__in=[self.request.profile])
                 | Q(created_by=self.request.profile.user)
@@ -174,7 +177,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         else:
             offset = 0
         context["per_page"] = 10
-        page_number = (int(self.offset / 10) + 1,)
+        page_number = int(self.offset / 10) + 1
         context["page_number"] = page_number
         context["open_leads"] = {
             "leads_count": self.count,
@@ -422,7 +425,7 @@ class LeadDetailView(APIView):
         from in there was wrapped in a second one and rendered as a 500 instead
         of the intended 403.
         """
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
             return
         allowed = {profile.id for profile in self.lead_obj.assigned_to.all()}
         if self.request.profile.user_id == self.lead_obj.created_by_id:
@@ -448,7 +451,7 @@ class LeadDetailView(APIView):
             assigned_dict["name"] = each.user.email
             assigned_data.append(assigned_dict)
 
-        if self.request.user.is_superuser or self.request.profile.role == "ADMIN":
+        if self.request.user.is_superuser or is_org_admin(self.request.profile):
             users_mention = list(
                 Profile.objects.filter(
                     is_active=True, org=self.request.profile.org
@@ -486,7 +489,7 @@ class LeadDetailView(APIView):
             object_id=self.lead_obj.id,
             org=self.request.profile.org,
         ).order_by("-id")
-        if self.request.profile.role == "ADMIN" or self.request.user.is_superuser:
+        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
             users = Profile.objects.filter(
                 is_active=True, org=self.request.profile.org
             ).order_by("user__email")
@@ -584,7 +587,10 @@ class LeadDetailView(APIView):
                 {"error": True, "errors": "User company doesnot match with header...."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             if not (
                 (self.request.profile.user == self.lead_obj.created_by)
                 or (self.request.profile in self.lead_obj.assigned_to.all())
@@ -846,7 +852,10 @@ class LeadDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if self.request.profile.role != "ADMIN" and not self.request.user.is_superuser:
+        if (
+            not is_org_admin(self.request.profile)
+            and not self.request.user.is_superuser
+        ):
             if not (
                 (self.request.profile.user == self.lead_obj.created_by)
                 or (self.request.profile in self.lead_obj.assigned_to.all())
@@ -1063,7 +1072,7 @@ class LeadDetailView(APIView):
     def delete(self, request, pk, **kwargs):
         self.object = self.get_object(pk)
         if (
-            request.profile.role == "ADMIN"
+            is_org_admin(request.profile)
             or request.user.is_superuser
             or request.profile.user == self.object.created_by
         ) and self.object.org == request.profile.org:

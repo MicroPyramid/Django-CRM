@@ -25,6 +25,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cases.access import assert_case_write_access, has_case_read_access
 from cases.approvals import Approval, ApprovalRule, find_matching_rule
 from cases.models import Case
 from cases.serializer import (
@@ -33,12 +34,42 @@ from cases.serializer import (
     ApprovalSerializer,
 )
 from common.models import Activity
-from common.permissions import HasOrgContext
+from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 
 
-def _is_admin(profile) -> bool:
-    return profile.role == "ADMIN" or getattr(profile, "is_admin", False)
+def _visible_approvals(profile, rows):
+    """The approvals ``profile`` may see, out of every approval in the org.
+
+    ``ApprovalSerializer.case_summary`` carries a case's name, status, priority
+    and account name, so an approval row discloses the case behind it. Listing
+    every row in the org therefore handed any member the summary of cases that
+    `cases.access` would refuse to open, which is the same read-around already
+    closed on the case detail and solution-link endpoints.
+
+    The fix cannot simply be ``visible_cases_qs``: an approver is routinely
+    somebody with no stake in the case, and giving them the decision is the
+    entire point of the queue. So a row is visible when any of four things is
+    true, and no narrower:
+
+    * the caller is an org admin,
+    * the caller may read the underlying case,
+    * the caller is in the rule's approver pool, so it is genuinely their queue,
+    * the caller filed the request, so it is their own.
+
+    Evaluated in Python rather than SQL because the read rule spans a
+    many-to-many on watchers and another on approvers; the row set here is one
+    org's approvals, already fetched with the needed relations prefetched.
+    """
+    if is_org_admin(profile):
+        return list(rows)
+    return [
+        a
+        for a in rows
+        if has_case_read_access(profile, a.case)
+        or a.can_be_acted_on_by(profile)
+        or a.requested_by_id == profile.id
+    ]
 
 
 def _approval_rule_analytics(org):
@@ -104,7 +135,7 @@ class ApprovalRuleListCreateView(APIView):
         )
 
     def post(self, request):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         org = request.profile.org
         serializer = ApprovalRuleSerializer(data=request.data, context={"org": org})
@@ -150,7 +181,7 @@ class ApprovalRuleDetailView(APIView):
         return Response(ApprovalRuleSerializer(rule).data)
 
     def put(self, request, pk):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         rule = self._get(pk, request.profile.org)
         if rule is None:
@@ -173,7 +204,7 @@ class ApprovalRuleDetailView(APIView):
         return Response(ApprovalRuleSerializer(rule).data)
 
     def delete(self, request, pk):
-        if not _is_admin(request.profile):
+        if not is_org_admin(request.profile):
             return _admin_required()
         rule = self._get(pk, request.profile.org)
         if rule is None:
@@ -208,6 +239,11 @@ class CaseRequestApprovalView(APIView):
     def post(self, request, pk):
         org = request.profile.org
         case = get_object_or_404(Case, id=pk, org=org)
+        # Filing an approval acts on the case and returns its summary, so it
+        # needs the same write access as replying on it. Org membership alone
+        # let a member who cannot open a case create a row against it and read
+        # the case's name, status, priority and account back in the response.
+        assert_case_write_access(request.profile, case)
         body = ApprovalRequestSerializer(data=request.data)
         if not body.is_valid():
             return Response(
@@ -304,7 +340,16 @@ class ApprovalInboxView(APIView):
             )
             # `rule.approvers` is now serialized on every row (the queue shows
             # who may act), so prefetch it here rather than per-call.
-            .prefetch_related("rule__approvers__user")
+            # `case__assigned_to` and `case__watchers` feed the visibility
+            # filter below, which asks `cases.access` about every row. Without
+            # them that is two queries per approval. The rule itself stays in
+            # `cases.access`, one definition, rather than being restated here
+            # in a faster form that could drift from it.
+            .prefetch_related(
+                "rule__approvers__user",
+                "case__assigned_to",
+                "case__watchers",
+            )
             .order_by("-created_at")
         )
 
@@ -321,7 +366,7 @@ class ApprovalInboxView(APIView):
             "1",
             "yes",
         )
-        rows = list(qs)
+        rows = _visible_approvals(request.profile, qs)
         if mine:
             # "Mine" = rows I can act on right now, which, like the approve
             # endpoint, excludes requests I filed myself (separation of duties).
@@ -497,7 +542,7 @@ class ApprovalCancelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Only the requester (or an admin) can cancel.
-        if approval.requested_by_id != request.profile.id and not _is_admin(
+        if approval.requested_by_id != request.profile.id and not is_org_admin(
             request.profile
         ):
             return Response(

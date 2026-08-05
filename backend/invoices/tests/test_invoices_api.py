@@ -2187,7 +2187,7 @@ class TestInvoiceTemplateWriteAuthorization:
     """Invoice templates are org-wide shared config: how every invoice reaches a
     customer. Any member reads the catalogue, but creating/editing/deleting a
     template, or flipping the org default, is admin-only (see
-    _forbid_non_admin_template_write). Both directions proven: a non-admin is
+    _forbid_non_admin_template). Both directions proven: a non-admin is
     refused, an admin is allowed.
     """
 

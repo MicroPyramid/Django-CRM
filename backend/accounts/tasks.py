@@ -1,12 +1,12 @@
 import logging
 
 from celery import shared_task
-from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template import Context, Template
 from django.template.loader import render_to_string
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
+from common.links import frontend_url
 from common.models import Profile
 from common.tasks import set_rls_context
 
@@ -79,7 +79,7 @@ def send_email_to_assigned_user(recipients, account_id, org_id):
         if profile:
             recipients_list.append(profile.user.email)
             context = {}
-            context["url"] = settings.DOMAIN_NAME
+            context["url"] = frontend_url(f"/accounts/{account.id}")
             context["user"] = profile.user
             context["account"] = account
             context["created_by"] = created_by

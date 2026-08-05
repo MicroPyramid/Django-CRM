@@ -248,6 +248,28 @@ class CommentSerializer(serializers.ModelSerializer):
             "org",
             "is_internal",
         )
+        # Which record a comment hangs off, and which org owns it, are the
+        # server's to decide. Left writable, the edit endpoints (which are
+        # `partial=True` and gated only on "you wrote it") let an author move
+        # their own comment onto any record in the org by id, including cases
+        # `cases.access` would refuse them, or restamp it into another org.
+        # `Comment.clean()` compares the new org against the new target's org,
+        # so a matching cross-org pair passed that check and saved; only the
+        # RLS policy stopped it, and RLS is the safety net, not the contract.
+        #
+        # Making them read-only also repairs the edit endpoints. This
+        # serializer is used non-partial by four PUT handlers, where
+        # `object_id` and `org` were required fields no honest client sends,
+        # so every ordinary "fix my typo" edit failed validation.
+        #
+        # Callers that legitimately set these do it through `save()`, where the
+        # value comes from the server rather than the request body.
+        read_only_fields = (
+            "commented_by",
+            "content_type",
+            "object_id",
+            "org",
+        )
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
@@ -525,13 +547,17 @@ class CreateUserSerializer(serializers.ModelSerializer):
 class CreateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
+        # `is_organization_admin` is deliberately absent. It is derived from
+        # `role` in `Profile.save`, and accepting it here was a second, hidden
+        # way to grant admin: no frontend surface shows or sets the flag, so a
+        # profile carrying it read as a plain user everywhere a human looked
+        # while `is_org_admin` answered True. One fact, one input.
         fields = (
             "role",
             "phone",
             "alternate_phone",
             "has_sales_access",
             "has_marketing_access",
-            "is_organization_admin",
         )
 
     # The fields that grant access rather than describe a person. Only an admin
@@ -539,7 +565,6 @@ class CreateProfileSerializer(serializers.ModelSerializer):
     # notes in common/views/user_views.py.
     PRIVILEGED_FIELDS = (
         "role",
-        "is_organization_admin",
         "has_sales_access",
         "has_marketing_access",
     )
@@ -598,8 +623,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 class ProfileSelfUpdateSerializer(serializers.Serializer):
     """The two fields a user may change on their OWN profile via PATCH /api/profile/.
 
-    Deliberately just ``phone`` (on Profile) and ``name`` (on User). Role, org,
-    and the ``has_*_access`` / ``is_organization_admin`` flags are NOT here:
+    Deliberately just ``phone`` (on Profile) and ``name`` (on User). Role, org
+    and the ``has_*_access`` flags are NOT here:
     those decide permissions and are an admin's to set. Leaving them out is what
     keeps this self-edit endpoint from becoming the same self-serve privilege
     escalation ``CreateProfileSerializer`` once was. A field the serializer does
@@ -967,8 +992,18 @@ class ActivityUserSerializer(serializers.Serializer):
         return obj.user.email.split("@")[0]
 
 
-class ActivitySerializer(serializers.ModelSerializer):
-    """Serializer for recent activities"""
+class DashboardActivitySerializer(serializers.ModelSerializer):
+    """Recent-activity row for the dashboard feed.
+
+    Renamed 2026-08-05. It was a second class also called
+    `ActivitySerializer`, 580 lines below the first, so it silently shadowed
+    it and **both** consumers got this shape. `cases/views.py` imports the
+    other one for the ticket activity timeline, whose frontend component reads
+    `metadata` (five places) and `created_at`; neither is in this list, so the
+    timeline rendered no metadata and an invalid date. The dashboard reads
+    `timestamp` and `humanized_time`, which is why only one of the two broke
+    visibly.
+    """
 
     user = ActivityUserSerializer(read_only=True)
     action_display = serializers.CharField(source="get_action_display", read_only=True)
@@ -1081,13 +1116,35 @@ class PersonalAccessTokenCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_scopes(self, value):
+        """Reject scopes that mean nothing, and return them canonicalised.
+
+        This used to accept any list of up to 32 arbitrary strings, from a time
+        when nothing read the field. Now that `common.scopes` enforces it, an
+        unvalidated scope is worse than none: a caller who misspells a resource
+        believes they restricted the token, and gets one that matches nothing at
+        all. Say so at creation instead.
+
+        An empty list stays valid and still means unrestricted. See the
+        `common.scopes` module docstring for why.
+        """
+        from common.scopes import normalize_scope
+
         if value in (None, ""):
             return []
         if not isinstance(value, list) or not all(isinstance(s, str) for s in value):
             raise serializers.ValidationError("scopes must be a list of strings.")
         if len(value) > 32:
             raise serializers.ValidationError("Too many scopes (max 32).")
-        return value
+
+        seen = []
+        for raw in value:
+            try:
+                scope = normalize_scope(raw)
+            except ValueError as exc:
+                raise serializers.ValidationError(str(exc)) from exc
+            if scope not in seen:
+                seen.append(scope)
+        return seen
 
     def validate_expires_at(self, value):
         from django.utils import timezone

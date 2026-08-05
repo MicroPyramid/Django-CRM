@@ -123,7 +123,6 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # Domain
 DOMAIN_NAME=http://localhost:8000
-SWAGGER_ROOT_URL=http://localhost:8000
 ```
 
 ### 5. Set up database
@@ -436,7 +435,6 @@ uv lock --upgrade
 | `CELERY_BROKER_URL` | Redis URL for Celery broker |
 | `CELERY_RESULT_BACKEND` | Redis URL for Celery results |
 | `DOMAIN_NAME` | Application domain |
-| `SWAGGER_ROOT_URL` | Swagger documentation root URL |
 
 ## Troubleshooting
 

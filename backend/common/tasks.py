@@ -11,7 +11,15 @@ from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from common.models import Comment, MagicLinkToken, Notification, Profile, Teams, User
+from common.links import frontend_url
+from common.models import (
+    MagicLinkToken,
+    Notification,
+    Org,
+    Profile,
+    Teams,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +42,21 @@ def set_rls_context(org_id):
             cursor.execute(
                 "SELECT set_config('app.current_org', %s, false)", [str(org_id)]
             )
+
+
+def clear_rls_context():
+    """Drop the RLS context a task set, mirroring the middleware's reset.
+
+    `app.current_org` is set at SESSION scope, so it outlives the statement and
+    the transaction. A task that walks several orgs and then returns leaves the
+    last one's id on the connection, and on a pooled connection that is the next
+    borrower's tenant context. Always paired with `set_rls_context` in a
+    ``finally``.
+    """
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT set_config('app.current_org', '', false)")
 
 
 @shared_task
@@ -120,76 +143,6 @@ def send_magic_link_email(token_id, raw_code=None):
 
 
 @shared_task
-def send_email_user_mentions(
-    comment_id,
-    called_from,
-    org_id=None,
-):
-    """Send Mail To Mentioned Users In The Comment"""
-    # Set RLS context for org-scoped queries
-    set_rls_context(org_id)
-
-    comment = Comment.objects.filter(id=comment_id).first()
-    if comment:
-        comment_text = comment.comment
-        comment_text_list = comment_text.split()
-        recipients = []
-        for comment_text in comment_text_list:
-            if comment_text.startswith("@"):
-                if comment_text.strip("@").strip(",") not in recipients:
-                    if User.objects.filter(
-                        username=comment_text.strip("@").strip(","), is_active=True
-                    ).exists():
-                        email = (
-                            User.objects.filter(
-                                username=comment_text.strip("@").strip(",")
-                            )
-                            .first()
-                            .email
-                        )
-                        recipients.append(email)
-
-        context = {}
-        context["commented_by"] = comment.commented_by
-        context["comment_description"] = comment.comment
-        subject = None
-        if called_from == "accounts":
-            subject = "New comment on Account. "
-        elif called_from == "contacts":
-            subject = "New comment on Contact. "
-        elif called_from == "leads":
-            subject = "New comment on Lead. "
-        elif called_from == "opportunity":
-            subject = "New comment on Opportunity. "
-        elif called_from == "cases":
-            subject = "New comment on Case. "
-        elif called_from == "tasks":
-            subject = "New comment on Task. "
-        elif called_from == "invoices":
-            subject = "New comment on Invoice. "
-        if subject:
-            context["url"] = settings.DOMAIN_NAME
-        else:
-            context["url"] = ""
-        # subject = 'Django CRM : comment '
-        if recipients:
-            for recipient in recipients:
-                recipients_list = [
-                    recipient,
-                ]
-                context["mentioned_user"] = recipient
-                html_content = render_to_string("comment_email.html", context=context)
-                msg = EmailMessage(
-                    subject,
-                    html_content,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=recipients_list,
-                )
-                msg.content_subtype = "html"
-                msg.send()
-
-
-@shared_task
 def send_email_user_status(
     user_id,
     status_changed_user="",
@@ -200,9 +153,11 @@ def send_email_user_status(
         context = {}
         context["message"] = "deactivated"
         context["email"] = user.email
-        context["url"] = settings.DOMAIN_NAME
-        if user.has_marketing_access:
-            context["url"] = context["url"] + "/marketing"
+        # The web app's root is the dashboard. There is no `/marketing` route,
+        # and `has_marketing_access` is a profile flag rather than a user one,
+        # so the branch that appended it could never have been reached from a
+        # `User` in the first place.
+        context["url"] = frontend_url("/")
         if user.is_active:
             context["message"] = "activated"
         context["status_changed_user"] = status_changed_user
@@ -382,14 +337,40 @@ NOTIFICATION_PURGE_DAYS = 90
 def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
     """Delete already-read notifications older than ``days`` days.
 
-    Schedule via celery-beat (recommended cadence: nightly). Runs once across
-    all orgs. RLS does not need a per-org context here because the query
-    targets `read_at`, which is intrinsic to the row, not org-scoped logic.
+    Schedule via celery-beat (recommended cadence: nightly). Walks orgs and sets
+    the RLS context for each, because `notification` is org-scoped.
+
+    THIS USED TO DELETE NOTHING IN PRODUCTION. The previous version ran one
+    unscoped DELETE and justified it in its own docstring: "RLS does not need a
+    per-org context here because the query targets `read_at`, which is intrinsic
+    to the row". That is not how RLS works. A policy filters which rows the
+    statement can see at all, whatever the WHERE clause names, and the isolation
+    policy is `org_id::text = NULLIF(current_setting('app.current_org', true),
+    '')`, which matches nothing when the context is empty. A Celery worker runs
+    no middleware, so the context was always empty, and under the non-superuser
+    role the deployment docs mandate, the nightly DELETE removed zero rows every
+    night while logging nothing (it only logs when `deleted` is truthy).
+
+    It passed its tests because `crm.test_settings` is SQLite, which has no RLS
+    at all. `set_rls_context` returns early on any non-Postgres vendor, so the
+    per-org loop is a no-op there and the tests still describe real behaviour on
+    both backends.
+
+    The context is cleared at the end. It is set at SESSION scope, so leaving
+    the last org's id on a pooled connection would hand that tenant's context to
+    whatever borrows the connection next.
     """
     cutoff = timezone.now() - timedelta(days=days)
-    deleted, _ = Notification.objects.filter(
-        read_at__isnull=False, read_at__lt=cutoff
-    ).delete()
+    deleted = 0
+    try:
+        for org_id in Org.objects.values_list("id", flat=True).iterator():
+            set_rls_context(org_id)
+            removed, _ = Notification.objects.filter(
+                read_at__isnull=False, read_at__lt=cutoff
+            ).delete()
+            deleted += removed
+    finally:
+        clear_rls_context()
     if deleted:
         logger.info(
             "Purged %s read notifications older than %s days", deleted, days

@@ -14,7 +14,9 @@ from cases.models import (
     RoutingRule,
     TimeEntry,
 )
+from cases.parent_guards import check_parent_link
 from common.models import Profile, Teams
+from common.permissions import is_org_admin
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -184,6 +186,18 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         attrs = super().validate(attrs)
 
         new_status = attrs.get("status", getattr(self.instance, "status", None))
+
+        # Parent linking, only when this request carries `parent`. Judging the
+        # stored parent on every save would reject an ordinary rename of a case
+        # that sits in a tree, and would make a record uneditable if its stored
+        # link were already bad.
+        if "parent" in attrs:
+            refusal = check_parent_link(
+                attrs["parent"], case=self.instance, case_status=new_status
+            )
+            if refusal:
+                raise serializers.ValidationError({"parent": refusal})
+
         if new_status != "Closed":
             return attrs
 
@@ -244,21 +258,19 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         return name
 
     def validate_parent(self, parent):
-        # Cross-org link prevention. Cycle/depth/duplicate guards live in
-        # Case.clean() and are run when the model save path triggers
-        # full_clean(); we still check here so callers get a clear error
-        # before save attempts.
+        """Cross-org link prevention only.
+
+        The rest of the linking rules moved to `validate()`, which is the
+        first place with both the incoming `status` and the record being
+        moved. This one stays a field validator because it is the check that
+        decides whether `parent` may be used at all, and because the caller
+        should get it against the `parent` field either way.
+        """
         if parent is None:
             return parent
         if parent.org_id != self.org.id:
             raise serializers.ValidationError(
                 "Parent case must belong to the same organization."
-            )
-        if self.instance and parent.id == self.instance.id:
-            raise serializers.ValidationError("A case cannot be its own parent.")
-        if parent.status == "Duplicate":
-            raise serializers.ValidationError(
-                "Cannot link to a case that has been merged."
             )
         return parent
 
@@ -610,9 +622,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get("request")
         profile = getattr(request, "profile", None) if request else None
-        is_admin = bool(
-            profile and (profile.role == "ADMIN" or getattr(profile, "is_admin", False))
-        )
+        is_admin = is_org_admin(profile)
         if not is_admin:
             data.pop("webhook_secret", None)
             data.pop("topic_arn", None)
