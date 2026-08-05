@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 
 from cases.models import Case
 from common.models import Activity
+from conftest import rls_org
 
 
 def _make_case(
@@ -26,15 +27,19 @@ def _make_case(
     closed_on=None,
 ):
     with impersonate(creator):
-        return Case.objects.create(
-            name=name,
-            status=status_value,
-            priority=priority,
-            org=org,
-            parent=parent,
-            is_problem=is_problem,
-            closed_on=closed_on,
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org):
+            return Case.objects.create(
+                name=name,
+                status=status_value,
+                priority=priority,
+                org=org,
+                parent=parent,
+                is_problem=is_problem,
+                closed_on=closed_on,
+            )
 
 
 def _activity_for(case, action):

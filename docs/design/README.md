@@ -95,15 +95,26 @@ between, so the hub at `/v2/settings` is the index and each page carries a
 `SettingsCrumb` back to it.
 
 v2 covers every one of v1's app routes except Salesforce, plus three public
-ones, plus two screens v1 never had (Documents, Notifications). What is still
-v1-only, and why:
+ones, plus two screens v1 never had (Documents, Notifications). What v2 does
+not carry, and why:
 
-- **Salesforce** (`settings/salesforce`, `settings/salesforce/import`),
-  deliberately skipped. `/api/salesforce/status|credentials|connect/` all 404;
-  there is no Salesforce app, model or URL registration in the backend, and
-  `simple-salesforce` is an installed dependency with no caller. The v1 pages
-  are a UI over an API that was never written, so a v2 copy would be a
-  redesign of nothing.
+- **Salesforce** (`settings/salesforce`, `settings/salesforce/import`), now in
+  neither v1 nor v2. The v1 pages were deleted along with the rest of v1, which
+  left two nav entries pointing at a route that no longer resolves: the account
+  dropdown in `AppSidebar.svelte` and a "Still in v1" card on the settings hub.
+  Both are removed, so nothing in the UI reaches the feature today.
+
+  **This entry used to say the API "was never written", and that was wrong.**
+  It is true of the community backend and false of the product.
+  `salesforce_imports` is an **enterprise** app, mounted at `api/salesforce/`
+  in `crm_enterprise/urls.py`, and `simple-salesforce` is a dependency of
+  `enterprise/pyproject.toml` with a real caller in `sf_client.py`. Six of the
+  seven methods on the `salesforce` client in `lib/api.js` still match its
+  routes exactly, which is why that client and `routes/api/salesforce-import-poll`
+  are kept rather than deleted: they are the data layer a v2 port would start
+  from. The seventh, `callback()`, posts to `/salesforce/callback/`, which is
+  registered in neither edition; enterprise has `credentials/` instead. A v2
+  port is real work against a real API, not a redesign of nothing.
 - **`tasks/calendar`**: a redirect stub in v1, no v2 equivalent by design.
 - **The auth and org-selection flow** (`login`, `login/verify`, `org`,
   `org/new`, `bounce`). Out of scope. It is a security surface, not a design

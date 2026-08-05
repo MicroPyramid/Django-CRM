@@ -9,6 +9,7 @@ from accounts.models import Account
 from cases.models import Case
 from common.models import Tags, Teams
 from contacts.models import Contact
+from conftest import rls_org
 
 
 def _csv(headers: list[str], rows: list[list[str]]) -> SimpleUploadedFile:
@@ -135,7 +136,11 @@ class TestImportPreview:
         self, admin_client, admin_profile, org_b, user_b
     ):
         # Account belongs to org_b but admin is in org_a, must not resolve.
-        Account.objects.create(name="Secret Co", org=org_b, created_by=user_b)
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org_b):
+            Account.objects.create(name="Secret Co", org=org_b, created_by=user_b)
         csv_file = _csv(
             ["name", "status", "priority", "account_name"],
             [["X", "New", "High", "Secret Co"]],

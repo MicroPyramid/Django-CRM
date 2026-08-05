@@ -18,6 +18,7 @@ from cases.inbound.threading import find_existing_case, short_case_id
 from cases.models import Case, EmailMessage, InboundMailbox
 from common.models import Profile, User
 from contacts.models import Contact
+from conftest import rls_org
 
 MAILBOXES_URL = "/api/cases/mailboxes/"
 
@@ -43,7 +44,11 @@ def _make_mailbox(org, **overrides):
         "is_active": True,
     }
     defaults.update(overrides)
-    return InboundMailbox.objects.create(org=org, **defaults)
+    # Seeded into another tenant: the insert-check policy compares
+    # against `app.current_org`, so writing this row means being that
+    # tenant for the length of the write.
+    with rls_org(org):
+        return InboundMailbox.objects.create(org=org, **defaults)
 
 
 def _raw_email(
@@ -551,8 +556,11 @@ class TestMailboxAPI:
         assert create.status_code == 201, create.content
         data = create.json()
         assert data["address"] == "support@acme.com"
-        # webhook_secret was auto-generated
-        assert data["webhook_secret"]
+        # No secret is minted. This used to assert one was auto-generated, and
+        # nothing has ever compared that value: SES delivery is authenticated
+        # by the SNS signature and the topic_arn pin.
+        assert "webhook_secret" not in data
+        assert data["has_webhook_secret"] is False
 
     def test_user_cannot_create(self, user_client, org_a):
         response = user_client.post(
@@ -562,9 +570,10 @@ class TestMailboxAPI:
         )
         assert response.status_code == 403
 
-    def test_non_admin_cannot_read_webhook_secret(self, user_client, org_a):
-        """webhook_secret is the credential a sender signs with. A non-admin
-        member may see the mailbox config but never the secret (list + detail)."""
+    def test_non_admin_sees_config_without_the_admin_only_fields(
+        self, user_client, org_a
+    ):
+        """A member may see the mailbox config but not the integration keys."""
         mailbox = _make_mailbox(org_a, webhook_secret="s3cr3t-value")
 
         listed = user_client.get(MAILBOXES_URL)
@@ -572,21 +581,74 @@ class TestMailboxAPI:
         rows = listed.json()["mailboxes"]
         assert len(rows) == 1
         assert rows[0]["address"] == "support@acme.com"  # config still visible
-        assert "webhook_secret" not in rows[0]  # secret stripped
+        assert "webhook_secret" not in rows[0]
+        assert "has_webhook_secret" not in rows[0]
+        assert "topic_arn" not in rows[0]
 
         detail = user_client.get(f"{MAILBOXES_URL}{mailbox.id}/")
         assert detail.status_code == 200
         assert "webhook_secret" not in detail.json()
+        assert "topic_arn" not in detail.json()
 
-    def test_admin_can_read_webhook_secret(self, admin_client, org_a):
-        """The admin who manages the integration still sees the secret."""
+    def test_admin_cannot_read_the_webhook_secret_back(self, admin_client, org_a):
+        """The inverse of an assertion this file used to make.
+
+        It read `== "s3cr3t-value"` on both list and detail, so an admin's
+        session, or any personal access token that admin had minted, could pull
+        every mailbox's stored secret out of a list endpoint. Nothing consumes
+        that value, so returning it bought nothing and would have turned into a
+        live leak the moment a provider integration started checking it. An
+        admin gets the boolean instead.
+        """
         mailbox = _make_mailbox(org_a, webhook_secret="s3cr3t-value")
 
         listed = admin_client.get(MAILBOXES_URL)
-        assert listed.json()["mailboxes"][0]["webhook_secret"] == "s3cr3t-value"
+        row = listed.json()["mailboxes"][0]
+        assert "webhook_secret" not in row
+        assert row["has_webhook_secret"] is True
+        assert row["topic_arn"] == mailbox.topic_arn  # admin-only, still returned
 
         detail = admin_client.get(f"{MAILBOXES_URL}{mailbox.id}/")
-        assert detail.json()["webhook_secret"] == "s3cr3t-value"
+        assert "webhook_secret" not in detail.json()
+        assert detail.json()["has_webhook_secret"] is True
+
+    def test_has_webhook_secret_is_false_when_none_is_stored(
+        self, admin_client, org_a
+    ):
+        _make_mailbox(org_a, webhook_secret="")
+        row = admin_client.get(MAILBOXES_URL).json()["mailboxes"][0]
+        assert row["has_webhook_secret"] is False
+
+    def test_admin_can_write_a_provider_issued_secret_without_reading_it_back(
+        self, admin_client, org_a
+    ):
+        """Write-only means writable. A pasted key must still reach the column."""
+        mailbox = _make_mailbox(org_a, webhook_secret="")
+
+        response = admin_client.put(
+            f"{MAILBOXES_URL}{mailbox.id}/",
+            {"webhook_secret": "provider-issued-key"},
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+        assert "webhook_secret" not in response.json()
+        assert response.json()["has_webhook_secret"] is True
+
+        mailbox.refresh_from_db()
+        assert mailbox.webhook_secret == "provider-issued-key"
+
+    def test_non_admin_cannot_write_the_webhook_secret(self, user_client, org_a):
+        mailbox = _make_mailbox(org_a, webhook_secret="original")
+
+        response = user_client.put(
+            f"{MAILBOXES_URL}{mailbox.id}/",
+            {"webhook_secret": "attacker-chosen"},
+            format="json",
+        )
+        assert response.status_code == 403
+
+        mailbox.refresh_from_db()
+        assert mailbox.webhook_secret == "original"
 
     def test_unsupported_provider_returns_501(self, admin_client, org_a):
         # Mailgun isn't yet wired into the webhook, but the model accepts it.
@@ -957,7 +1019,9 @@ class TestMailboxAnalytics:
 
     def test_cross_org_counts_isolated(self, admin_client, org_a, org_b):
         mbx_b = _make_mailbox(org_b, address="b@acme.com")
-        ingest(parse_raw_email(_raw_email(message_id="<d1@x.com>")), mbx_b)
+        # `ingest` writes the case and email rows for the mailbox's own org.
+        with rls_org(org_b):
+            ingest(parse_raw_email(_raw_email(message_id="<d1@x.com>")), mbx_b)
         body = self._list(admin_client)  # org_a admin
         assert all(m["address"] != "b@acme.com" for m in body["mailboxes"])
         assert body["totals"]["cases_last_30d"] == 0

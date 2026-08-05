@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from cases.approvals import Approval, ApprovalRule, find_matching_rule
 from cases.models import Case
 from common.models import Activity
+from conftest import rls_org
 
 
 def _make_case(
@@ -27,7 +28,7 @@ def _make_case(
     priority="Normal",
     case_type=None,
 ):
-    with impersonate(creator):
+    with impersonate(creator), rls_org(org):
         return Case.objects.create(
             name=name,
             status=status_value,
@@ -47,14 +48,18 @@ def _make_rule(
     approver_role="ADMIN",
     approvers=None,
 ):
-    rule = ApprovalRule.objects.create(
-        org=org,
-        name=name,
-        is_active=is_active,
-        match_priority=match_priority,
-        match_case_type=match_case_type,
-        approver_role=approver_role,
-    )
+    # Seeded into another tenant: the insert-check policy compares
+    # against `app.current_org`, so writing this row means being that
+    # tenant for the length of the write.
+    with rls_org(org):
+        rule = ApprovalRule.objects.create(
+            org=org,
+            name=name,
+            is_active=is_active,
+            match_priority=match_priority,
+            match_case_type=match_case_type,
+            approver_role=approver_role,
+        )
     if approvers:
         rule.approvers.set(approvers)
     return rule
@@ -516,7 +521,11 @@ class TestRuleCRUD:
         """Same hole on the match_team FK."""
         from common.models import Teams
 
-        team_b = Teams.objects.create(org=org_b, name="Foreign team")
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org_b):
+            team_b = Teams.objects.create(org=org_b, name="Foreign team")
         rule = _make_rule(org_a, match_priority="Urgent")
         res = admin_client.put(
             f"/api/cases/approval-rules/{rule.id}/",

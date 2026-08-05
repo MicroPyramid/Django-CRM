@@ -1,6 +1,7 @@
 """Tests for the bulk update / bulk delete Case endpoints."""
 
 import pytest
+from conftest import rls_org
 
 
 @pytest.mark.django_db
@@ -49,7 +50,10 @@ class TestBulkUpdateCases:
         )
         assert response.status_code == 200
         assert response.json()["updated"] == 1
-        case_b.refresh_from_db()
+        # `case_b` belongs to the other tenant, so reading it back means
+        # looking as that tenant.
+        with rls_org(case_b.org):
+            case_b.refresh_from_db()
         assert case_b.status != "Closed"
 
     def test_bulk_update_empty_ids(self, admin_client):
@@ -84,7 +88,10 @@ class TestBulkDeleteCases:
         )
         assert response.status_code == 200
         assert response.json()["deleted"] == 1
-        case_b.refresh_from_db()
+        # `case_b` belongs to the other tenant, so reading it back means
+        # looking as that tenant.
+        with rls_org(case_b.org):
+            case_b.refresh_from_db()
         assert case_b.is_active is True
 
     def test_bulk_delete_empty(self, admin_client):

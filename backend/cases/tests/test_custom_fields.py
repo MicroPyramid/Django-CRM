@@ -13,6 +13,7 @@ from django.db import connection
 
 from cases.models import Case
 from common.models import CustomFieldDefinition
+from conftest import rls_org
 
 pg_only = pytest.mark.skipif(
     connection.vendor != "postgresql",
@@ -191,13 +192,17 @@ class TestCaseDetailResponse:
         self, admin_client, case_a, org_a, org_b
     ):
         # A definition in a different org must not appear here.
-        CustomFieldDefinition.objects.create(
-            org=org_b,
-            target_model="Case",
-            key="other_org_field",
-            label="Other org",
-            field_type="text",
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org_b):
+            CustomFieldDefinition.objects.create(
+                org=org_b,
+                target_model="Case",
+                key="other_org_field",
+                label="Other org",
+                field_type="text",
+            )
         response = admin_client.get(f"{CASES_LIST_URL}{case_a.id}/")
         keys = [d["key"] for d in response.json()["custom_field_definitions"]]
         assert "other_org_field" not in keys

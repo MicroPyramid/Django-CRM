@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 
 from common.models import Notification, Org, Profile, User
 from common.serializer import OrgAwareRefreshToken
+from conftest import rls_org, set_rls_context
 
 
 class NotificationAPIBase(TestCase):
@@ -30,17 +31,25 @@ class NotificationAPIBase(TestCase):
         )
 
     def setUp(self):
+        # This class builds its own orgs rather than taking the `org_a`
+        # fixture, so nothing has set `app.current_org` for it and the
+        # org-scoped `notification` writes below would be refused by the insert
+        # check under a role RLS binds.
+        set_rls_context(self.org_a)
         self.client = APIClient()
         token = OrgAwareRefreshToken.for_user_and_org(self.user_a, self.org_a)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
 
     def _bulk(self, profile, n, **kw):
-        return [
-            Notification.objects.create(
-                org=profile.org, recipient=profile, verb=f"v{i}", **kw
-            )
-            for i in range(n)
-        ]
+        # Seeds for whichever org the profile belongs to, including org B in the
+        # isolation tests, so the context has to follow the rows being written.
+        with rls_org(profile.org):
+            return [
+                Notification.objects.create(
+                    org=profile.org, recipient=profile, verb=f"v{i}", **kw
+                )
+                for i in range(n)
+            ]
 
 
 class TestList(NotificationAPIBase):
@@ -60,9 +69,13 @@ class TestList(NotificationAPIBase):
     def test_list_returns_only_my_notifications(self):
         self._bulk(self.profile_a, 2)
         # Other user's row should never leak
-        Notification.objects.create(
-            org=self.org_b, recipient=self.profile_b, verb="other"
-        )
+        # Seeded as org B: the insert check compares against the session
+        # variable, so planting the other tenant's row means being that
+        # tenant for the length of the write.
+        with rls_org(self.org_b):
+            Notification.objects.create(
+                org=self.org_b, recipient=self.profile_b, verb="other"
+            )
         r = self.client.get("/api/notifications/")
         data = r.json()
         assert data["count"] == 2
@@ -145,12 +158,19 @@ class TestMarkRead(NotificationAPIBase):
         assert n.read_at == first
 
     def test_cannot_mark_read_other_users_notification(self):
-        n = Notification.objects.create(
-            org=self.org_b, recipient=self.profile_b, verb="x"
-        )
+        # Seeded as org B: the insert check compares against the session
+        # variable, so planting the other tenant's row means being that
+        # tenant for the length of the write.
+        with rls_org(self.org_b):
+            n = Notification.objects.create(
+                org=self.org_b, recipient=self.profile_b, verb="x"
+            )
         r = self.client.post(f"/api/notifications/{n.id}/read/")
         assert r.status_code == 404
-        n.refresh_from_db()
+        # Reading org B's row back needs org B's context too, for the same
+        # reason writing it did.
+        with rls_org(self.org_b):
+            n.refresh_from_db()
         assert n.read_at is None
 
 
@@ -186,11 +206,16 @@ class TestReadAll(NotificationAPIBase):
         assert new.read_at is None
 
     def test_does_not_touch_other_users(self):
-        n_other = Notification.objects.create(
-            org=self.org_b, recipient=self.profile_b, verb="other"
-        )
+        # Seeded as org B: the insert check compares against the session
+        # variable, so planting the other tenant's row means being that
+        # tenant for the length of the write.
+        with rls_org(self.org_b):
+            n_other = Notification.objects.create(
+                org=self.org_b, recipient=self.profile_b, verb="other"
+            )
         self.client.post("/api/notifications/read-all/")
-        n_other.refresh_from_db()
+        with rls_org(self.org_b):
+            n_other.refresh_from_db()
         assert n_other.read_at is None
 
 
@@ -204,12 +229,18 @@ class TestDelete(NotificationAPIBase):
         assert not Notification.objects.filter(pk=n.id).exists()
 
     def test_cannot_delete_other_users_notification(self):
-        n = Notification.objects.create(
-            org=self.org_b, recipient=self.profile_b, verb="x"
-        )
+        # Seeded as org B: the insert check compares against the session
+        # variable, so planting the other tenant's row means being that
+        # tenant for the length of the write.
+        with rls_org(self.org_b):
+            n = Notification.objects.create(
+                org=self.org_b, recipient=self.profile_b, verb="x"
+            )
         r = self.client.delete(f"/api/notifications/{n.id}/")
         assert r.status_code == 404
-        assert Notification.objects.filter(pk=n.id).exists()
+        # Same reason: proving org B's row survived means looking as org B.
+        with rls_org(self.org_b):
+            assert Notification.objects.filter(pk=n.id).exists()
 
 
 class TestPollingRoundTrip(NotificationAPIBase):

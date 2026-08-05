@@ -21,7 +21,21 @@ from django.utils import timezone
 
 from accounts.models import Account
 from cases.models import Case, TimeEntry
-from cases.tasks import auto_stop_stale_timers
+from cases.tasks import auto_stop_stale_timers as _auto_stop_stale_timers
+from conftest import restore_rls_context
+
+
+# The task clears `app.current_org` when it finishes, correctly: it walks every
+# org on a connection with no middleware, and leaving the last tenant's id
+# behind would hand that context to whatever borrows the connection next. Every
+# test below reads its own rows straight afterwards, so the module calls the
+# task through this shim rather than repeating a restore at 2 call sites.
+def auto_stop_stale_timers(*args, **kwargs):
+    try:
+        return _auto_stop_stale_timers(*args, **kwargs)
+    finally:
+        restore_rls_context()
+
 from common.models import Activity
 from invoices.models import Invoice, InvoiceLineItem
 

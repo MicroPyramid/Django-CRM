@@ -11,9 +11,19 @@ from django.utils import timezone
 from accounts.models import Account
 from common import notifications
 from common.models import Notification, Org, Profile, User
+from conftest import rls_org, set_rls_context
 
 
 class NotificationModelBase(TestCase):
+    def setUp(self):
+        # These classes build their own orgs rather than taking the `org_a`
+        # fixture, so nothing has set `app.current_org` for them. `notification`
+        # is org-scoped, and under a role RLS binds its insert check refuses a
+        # write made with no context. Per-test rather than in `setUpTestData`
+        # because a session-level `set_config` is undone when the surrounding
+        # transaction rolls back, which is exactly what `TestCase` does.
+        set_rls_context(self.org_a)
+
     @classmethod
     def setUpTestData(cls):
         cls.org_a = Org.objects.create(name="Org A")
@@ -195,6 +205,13 @@ class TestPurgeTask(NotificationModelBase):
         )
 
         deleted = purge_read_notifications()
+        # The task walks every org and clears the context on the way out, which
+        # is correct: it runs on a pooled connection with no middleware, and
+        # leaving the last org's id behind would hand that tenant's context to
+        # the next borrower. The assertions below are this test's own reads, so
+        # they need the context put back.
+        set_rls_context(self.org_a)
+
         assert deleted == 1
         assert not Notification.objects.filter(pk=old_read.pk).exists()
         assert Notification.objects.filter(pk=recent_read.pk).exists()

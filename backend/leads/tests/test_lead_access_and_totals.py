@@ -15,6 +15,7 @@ import pytest
 from django.utils import timezone
 
 from common.models import Tags
+from conftest import rls_org
 from leads.models import Lead
 
 LEADS_URL = "/api/leads/"
@@ -25,15 +26,19 @@ def _detail_url(pk):
 
 
 def _lead(org, **kw):
-    return Lead.objects.create(
-        first_name=kw.pop("first_name", "Ada"),
-        last_name=kw.pop("last_name", "Lovelace"),
-        email=kw.pop("email", "ada@example.com"),
-        status=kw.pop("status", "in process"),
-        company_name=kw.pop("company_name", "Analytical Engines"),
-        org=org,
-        **kw,
-    )
+    # `rls_org` so the tests that seed a second tenant work under a role RLS
+    # binds: `lead` carries an insert-check policy against `app.current_org`,
+    # and the ambient context is org A.
+    with rls_org(org):
+        return Lead.objects.create(
+            first_name=kw.pop("first_name", "Ada"),
+            last_name=kw.pop("last_name", "Lovelace"),
+            email=kw.pop("email", "ada@example.com"),
+            status=kw.pop("status", "in process"),
+            company_name=kw.pop("company_name", "Analytical Engines"),
+            org=org,
+            **kw,
+        )
 
 
 def _created_by(lead, user):

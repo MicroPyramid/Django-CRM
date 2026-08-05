@@ -98,8 +98,22 @@ ORG_SCOPED_TABLES = [
     # Orders
     "orders",
     "order_line_item",
-    # Security & Audit
-    "security_audit_log",
+    #
+    # `security_audit_log` is deliberately NOT here. It is a platform-level
+    # ledger, not tenant data: its `org` is `null=True` because the events it
+    # exists to record happen outside any org (LOGIN_FAILURE, API_KEY_INVALID)
+    # or deliberately straddle two (CROSS_ORG_ATTEMPT). The insert-check policy
+    # compares `org_id::text` to `app.current_org`, and `NULL = anything` is not
+    # true, so under the non-superuser role RLS_SETUP.md requires, every one of
+    # those rows was refused. `AuditLogger._log` catches the failure and writes
+    # a `logger.error`, so the audit trail was silently absent in exactly the
+    # deployments configured correctly, for exactly the hostile events. It was
+    # invisible because the dev database user is a superuser and CI ran SQLite.
+    # `common/0036` drops the policies. Nothing outside a test reads the model,
+    # and `common/tests/test_audit_log_not_exposed.py` keeps it that way: if an
+    # endpoint ever needs to serve these rows, it must do the org filtering in
+    # the ORM, because there is no policy underneath it.
+    #
     # Notifications
     "notification",
     # Case watchers (Tier 2 watchers-mentions)

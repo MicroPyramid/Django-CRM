@@ -9,6 +9,7 @@ published-only filter, q-search vs case-seed fallback, snippet, RLS.
 import pytest
 
 from cases.models import Solution
+from conftest import rls_org
 
 
 @pytest.fixture
@@ -160,13 +161,17 @@ class TestSolutionSuggestionsRls:
     def test_cross_org_solutions_invisible(
         self, admin_client, case_a, org_b
     ):
-        Solution.objects.create(
-            org=org_b,
-            title="Other org password reset",
-            description="This belongs to a different tenant.",
-            status="approved",
-            is_published=True,
-        )
+        # Seeded into another tenant: the insert-check policy compares
+        # against `app.current_org`, so writing this row means being that
+        # tenant for the length of the write.
+        with rls_org(org_b):
+            Solution.objects.create(
+                org=org_b,
+                title="Other org password reset",
+                description="This belongs to a different tenant.",
+                status="approved",
+                is_published=True,
+            )
         resp = admin_client.get(
             f"/api/cases/{case_a.id}/solution-suggestions/?q=password"
         )
