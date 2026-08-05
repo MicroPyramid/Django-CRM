@@ -1110,7 +1110,16 @@ class CaseSolutionLinkView(APIView):
             fields={"solution_id": serializers.CharField()},
         ),
     )
-    def post(self, request, pk):
+    def post(self, request, pk, solution_pk=None):
+        # This class is routed twice: `<pk>/solutions/` for POST and
+        # `<pk>/solutions/<solution_pk>/` for DELETE. Django hands every route's
+        # captured kwargs to whichever method it dispatches, so POST to the
+        # second route arrived with an argument it had no parameter for and
+        # DELETE to the first arrived missing one. Both were an uncaught
+        # TypeError, which is a 500 on a route the client is simply using the
+        # wrong verb on. 405 is the answer to a wrong verb.
+        if solution_pk is not None:
+            self.http_method_not_allowed(request)
         case = get_case_or_404(request.profile, pk)
         # Attaching an article to a ticket changes the ticket, so it takes the
         # same permission as any other change to it. Org alone was the whole
@@ -1144,7 +1153,11 @@ class CaseSolutionLinkView(APIView):
         )
 
     @extend_schema(tags=["Cases"])
-    def delete(self, request, pk, solution_pk):
+    def delete(self, request, pk, solution_pk=None):
+        # See `post` above: reached without a solution id, this is the
+        # collection route being deleted, which is a wrong verb, not a crash.
+        if solution_pk is None:
+            self.http_method_not_allowed(request)
         case = get_case_or_404(request.profile, pk)
         assert_case_write_access(request.profile, case)
         sol = self._get_solution(solution_pk, request.profile.org)

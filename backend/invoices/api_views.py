@@ -59,6 +59,7 @@ from invoices.serializer import (
     InvoiceSerializer,
     InvoiceTemplateCreateSerializer,
     InvoiceTemplateListSerializer,
+    InvoiceTemplateSerializer,
     PaymentCreateSerializer,
     PaymentSerializer,
     ProductCreateSerializer,
@@ -653,7 +654,9 @@ class InvoiceLineItemListView(APIView):
         if error:
             return error
 
-        serializer = InvoiceLineItemCreateSerializer(data=request.data)
+        serializer = InvoiceLineItemCreateSerializer(
+            data=request.data, request_obj=request
+        )
         if serializer.is_valid():
             line_item = serializer.save(invoice=invoice, org=request.profile.org)
 
@@ -700,7 +703,7 @@ class InvoiceLineItemDetailView(APIView):
             )
 
         serializer = InvoiceLineItemCreateSerializer(
-            line_item, data=request.data, partial=True
+            line_item, data=request.data, partial=True, request_obj=request
         )
         if serializer.is_valid():
             line_item = serializer.save()
@@ -1528,22 +1531,26 @@ class RecurringInvoicePauseView(APIView):
 # =============================================================================
 
 
-def _forbid_non_admin_template_write(request):
+def _forbid_non_admin_template(
+    request, message="Only an administrator can change invoice templates."
+):
     """Return a 403 Response for non-admins, or None to allow.
 
     Invoice templates are org-wide shared config: every member reads the
     catalogue (to see how their invoices look), but changing a template: its
     colours, its default flag, its raw HTML/CSS, affects everyone in the org
     and drives the server-side PDF render. So writes (create/update/delete) are
-    admin-only, while reads stay open. Role is derived from ``request.profile``,
-    never the request body.
+    admin-only, while the catalogue read stays open. Role is derived from
+    ``request.profile``, never the request body.
+
+    ``message`` is a parameter because one read is admin-only too: fetching a
+    template's raw markup for the editor. That is the same rule for the same
+    reason, so it is the same gate rather than a second copy of the role check
+    that could drift away from this one.
     """
     if request.profile.role != "ADMIN" and not request.user.is_superuser:
         return Response(
-            {
-                "error": True,
-                "message": "Only an administrator can change invoice templates.",
-            },
+            {"error": True, "message": message},
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
@@ -1574,7 +1581,7 @@ class InvoiceTemplateListView(APIView, LimitOffsetPagination):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_create")
     def post(self, request):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1621,7 +1628,7 @@ class InvoiceTemplateDetailView(APIView):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_update")
     def put(self, request, pk):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1652,7 +1659,7 @@ class InvoiceTemplateDetailView(APIView):
 
     @extend_schema(tags=["Invoice Templates"], operation_id="templates_destroy")
     def delete(self, request, pk):
-        denied = _forbid_non_admin_template_write(request)
+        denied = _forbid_non_admin_template(request)
         if denied:
             return denied
 
@@ -1668,6 +1675,47 @@ class InvoiceTemplateDetailView(APIView):
             {"error": False, "message": "Template deleted"},
             status=status.HTTP_200_OK,
         )
+
+
+class InvoiceTemplateEditorView(APIView):
+    """The only endpoint that returns a template's raw ``template_html``/``css``.
+
+    Every other read path uses ``InvoiceTemplateListSerializer``, which reports
+    booleans and a byte count in place of the markup, because that markup is
+    org-authored HTML/CSS that WeasyPrint renders into a PDF server-side: the
+    moment either field lands in a browser DOM, a PDF setting becomes stored
+    XSS.
+
+    An editor still has to load what it is editing, and it could not: the edit
+    form had no way to pre-fill the two fields it exists to change, so opening
+    it and saving silently blanked them. Serving the markup from its own
+    admin-only route keeps that fix out of the detail response every member
+    reads. A client must bind these two fields to a ``<textarea>`` value and
+    never to ``{@html}``.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(tags=["Invoice Templates"], operation_id="templates_editor_retrieve")
+    def get(self, request, pk):
+        # Role first, so the 403 does not depend on whether the id exists.
+        denied = _forbid_non_admin_template(
+            request,
+            "Only an administrator can view invoice template markup.",
+        )
+        if denied:
+            return denied
+
+        template = InvoiceTemplate.objects.filter(
+            id=pk, org=request.profile.org
+        ).first()
+        if not template:
+            return Response(
+                {"error": True, "message": "Template not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(InvoiceTemplateSerializer(template).data)
 
 
 # =============================================================================

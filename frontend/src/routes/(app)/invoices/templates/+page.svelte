@@ -121,33 +121,15 @@
 
             {#if canManage}
               <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;align-items:center">
-                <!-- Disabled on purpose, not hidden: a control that quietly
-                     does nothing is the defect this phase fixes elsewhere.
-                     The REAL reason edit is out of scope: the detail GET
-                     (`GET /invoices/templates/<id>/`) answers with
+                <!-- Live since `GET /invoices/templates/<id>/editor/` landed.
+                     This button was disabled for a real reason, not an
+                     unfinished one: the detail GET answers with
                      `InvoiceTemplateListSerializer`, same as the list, which
-                     never returns `template_html` or `template_css` (see
-                     templates.js). An edit form here could not pre-fill the
-                     custom markup, so it could not show what is actually
-                     saved. This is a data-shape gap, not a missing endpoint:
-                     `PUT /invoices/templates/<id>/` exists, is admin-gated,
-                     and is already `partial=True`
-                     (backend/invoices/api_views.py:1639), so editing every
-                     OTHER field, name, colours, logo, notes, terms, footer,
-                     is_default, would need no backend change at all.
-
-                     The reason is also rendered as visible text next to the
-                     button, not only in `title`: a disabled control is out of
-                     the tab order and its title is not announced by
-                     assistive tech. -->
-                <button
-                  class="v2-btn v2-btn-sm"
-                  disabled
-                  title="Editing isn't wired yet. The detail view never returns the custom HTML/CSS, so a form here couldn't show what's already saved. Every other field could be edited without a backend change."
-                >
-                  Edit
-                </button>
-                <span class="v2-sub" style="font-size:11px">Editing isn't wired yet</span>
+                     never returns `template_html` or `template_css`, so a form
+                     could not show what was saved and saving would have
+                     blanked it. The editor route serves those two fields on an
+                     admin-only path, leaving this page's own fetch unchanged. -->
+                <a class="v2-btn v2-btn-sm" href="/invoices/templates/{t.id}/edit">Edit</a>
                 {#if !t.is_default}
                   <!-- Named as the swap it is: one default exists at a time.
                        `is_default` is a singleton the model enforces, so this

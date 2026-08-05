@@ -38,16 +38,17 @@
   let totals = $derived(data.totals);
 
   /**
-   * Sums the four models the backend's `_TAGGABLE` list
-   * (`backend/common/views/tags_views.py:22-27`) counts: accounts, leads,
-   * opportunities (deals) and cases (tickets). `Contact` and `Task` also
-   * declare `tags = ManyToManyField(Tags, ...)` and accept tag writes through
-   * their own APIs, plus the contacts CSV importer, but `_TAGGABLE` does not
-   * include them, so this total, and the "unused" totals card below, are
-   * partial: a tag can carry real usage on contacts or tasks and still show
-   * as unused here.
+   * Total usage across every model a tag can be applied to.
+   *
+   * Summed over the keys the backend sends rather than a list written out
+   * here, so it cannot drift from `_TAGGABLE`
+   * (`backend/common/views/tags_views.py`) the way the old hard-coded four
+   * did: contacts, tasks and API settings were all missing, so a tag in real
+   * use on contacts read as unused both here and on the totals card. A test
+   * on the backend now walks the model registry to keep that list complete;
+   * this sums whatever it sends.
    */
-  const used = (t) => t.usage.accounts + t.usage.leads + t.usage.opportunities + t.usage.cases;
+  const used = (t) => Object.values(t.usage ?? {}).reduce((sum, n) => sum + (n || 0), 0);
 
   let tags = $derived(
     [...data.tags].sort((a, b) => used(b) - used(a) || a.name.localeCompare(b.name))
@@ -178,9 +179,11 @@
           <tr>
             <th>Tag</th>
             <th style="text-align:right">Accounts</th>
+            <th style="text-align:right">Contacts</th>
             <th style="text-align:right">Leads</th>
             <th style="text-align:right">Deals</th>
             <th style="text-align:right">Tickets</th>
+            <th style="text-align:right">Tasks</th>
             <th style="text-align:right">Total</th>
             <th></th>
             {#if data.can_edit}<th></th>{/if}
@@ -198,9 +201,11 @@
                 <span class="v2-sub" style="font-size:11px;margin-left:7px">{t.color}</span>
               </td>
               <td class="v2-num" style="text-align:right">{t.usage.accounts || '—'}</td>
+              <td class="v2-num" style="text-align:right">{t.usage.contacts || '—'}</td>
               <td class="v2-num" style="text-align:right">{t.usage.leads || '—'}</td>
               <td class="v2-num" style="text-align:right">{t.usage.opportunities || '—'}</td>
               <td class="v2-num" style="text-align:right">{t.usage.cases || '—'}</td>
+              <td class="v2-num" style="text-align:right">{t.usage.tasks || '—'}</td>
               <td class="v2-num" style="text-align:right;font-weight:600">{used(t) || '—'}</td>
               <td style="text-align:right">
                 {#if !t.is_active}
@@ -223,8 +228,8 @@
                       label="Turn off"
                       confirmLabel="Turn off"
                       explain={used(t) > 0
-                        ? `${used(t)} ${used(t) === 1 ? 'account, lead, deal or ticket keeps' : 'accounts, leads, deals and tickets keep'} this tag (contacts and tasks can carry it too, but are not counted here). Turning it off stops it being offered on new records. You can turn it back on.`
-                        : 'No account, lead, deal or ticket carries this tag. Contacts and tasks can also carry tags but are not counted here, so this is not the full picture. Turning it off stops it being offered on new records. You can turn it back on.'}
+                        ? `${used(t)} ${used(t) === 1 ? 'record keeps' : 'records keep'} this tag. Turning it off stops it being offered on new records, and keeps it on the ones that have it. You can turn it back on.`
+                        : 'Nothing carries this tag. Turning it off stops it being offered on new records. You can turn it back on.'}
                       hidden={{ id: t.id }}
                     />
                   {:else}

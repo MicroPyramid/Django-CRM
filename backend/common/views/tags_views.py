@@ -12,19 +12,36 @@ from accounts.models import Account
 from cases.models import Case
 from common import swagger_params
 from common.lookups import get_scoped_or_404
-from common.models import Tags
+from common.models import APISettings, Tags
 from common.permissions import HasOrgContext
 from common.serializer import TagsSerializer
+from contacts.models import Contact
 from leads.models import Lead
 from opportunity.models import Opportunity
+from tasks.models import Task
 
 # The models a tag can be applied to, paired with the usage key the settings
 # page shows. Each is org-scoped and carries a `tags` M2M back to Tags.
+#
+# This must list EVERY model with that M2M, not just the prominent ones. It
+# held four of the seven, and the three it left out (Contact, Task,
+# APISettings) all accept tag writes through the API, contacts through the CSV
+# importer too. A tag applied only to contacts therefore reported zero usage
+# and was counted as "unused" on the settings page, which is the one number an
+# admin uses to decide whether a tag is safe to archive.
+#
+# Hand-written on purpose, so a change shows up in a diff, and guarded by
+# `test_taggable_covers_every_model_with_a_tags_m2m`, which walks the live
+# model registry: a new taggable model fails that test instead of silently
+# under-reporting usage forever.
 _TAGGABLE = (
     ("accounts", Account),
     ("leads", Lead),
     ("opportunities", Opportunity),
     ("cases", Case),
+    ("contacts", Contact),
+    ("tasks", Task),
+    ("api_settings", APISettings),
 )
 
 

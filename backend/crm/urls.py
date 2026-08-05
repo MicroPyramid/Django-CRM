@@ -1,14 +1,28 @@
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views
-from django.urls import include, path
+from django.urls import include, path, register_converter
 from django.urls import re_path as url
 from django.views.generic import TemplateView
+from drf_spectacular.plumbing import DJANGO_PATH_CONVERTER_MAPPING
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+
+from common.converters import UUIDLikeConverter
+
+# Registered on the root URLconf so every app's `<uid:...>` segment resolves.
+# See common/converters.py for why this exists and why it is not `<uuid:...>`.
+register_converter(UUIDLikeConverter, "uid")
+
+# drf-spectacular maps a converter name to an OpenAPI type; an unknown one
+# falls back to a bare string. Without this the published schema would describe
+# 165 id path parameters as untyped strings, which is what `<str:pk>` gave us
+# and is less than the route now guarantees.
+DJANGO_PATH_CONVERTER_MAPPING["uid"] = OpenApiTypes.UUID
 
 app_name = "crm"
 

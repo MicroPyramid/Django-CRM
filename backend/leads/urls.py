@@ -36,23 +36,23 @@ urlpatterns = [
         "pipelines/", LeadPipelineListCreateView.as_view(), name="pipeline_list_create"
     ),
     path(
-        "pipelines/<str:pk>/", LeadPipelineDetailView.as_view(), name="pipeline_detail"
+        "pipelines/<uid:pk>/", LeadPipelineDetailView.as_view(), name="pipeline_detail"
     ),
     path(
-        "pipelines/<str:pipeline_pk>/stages/",
+        "pipelines/<uid:pipeline_pk>/stages/",
         LeadStageCreateView.as_view(),
         name="stage_create",
     ),
     path(
-        "pipelines/<str:pipeline_pk>/stages/reorder/",
+        "pipelines/<uid:pipeline_pk>/stages/reorder/",
         LeadStageReorderView.as_view(),
         name="stage_reorder",
     ),
     # Stage management
-    path("stages/<str:pk>/", LeadStageDetailView.as_view(), name="stage_detail"),
+    path("stages/<uid:pk>/", LeadStageDetailView.as_view(), name="stage_detail"),
     # Lead detail routes (must be after specific routes due to pk pattern)
-    path("<str:pk>/", LeadDetailView.as_view()),
-    path("<str:pk>/move/", LeadMoveView.as_view(), name="lead_move"),
-    path("comment/<str:pk>/", LeadCommentView.as_view()),
-    path("attachment/<str:pk>/", LeadAttachmentView.as_view()),
+    path("<uid:pk>/", LeadDetailView.as_view()),
+    path("<uid:pk>/move/", LeadMoveView.as_view(), name="lead_move"),
+    path("comment/<uid:pk>/", LeadCommentView.as_view()),
+    path("attachment/<uid:pk>/", LeadAttachmentView.as_view()),
 ]

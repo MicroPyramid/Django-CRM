@@ -6,6 +6,6 @@ app_name = "api_macros"
 
 urlpatterns = [
     path("", views.MacroListCreateView.as_view(), name="list_create"),
-    path("<str:pk>/", views.MacroDetailView.as_view(), name="detail"),
-    path("<str:pk>/render/", views.MacroRenderView.as_view(), name="render"),
+    path("<uid:pk>/", views.MacroDetailView.as_view(), name="detail"),
+    path("<uid:pk>/render/", views.MacroRenderView.as_view(), name="render"),
 ]

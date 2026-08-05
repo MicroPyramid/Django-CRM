@@ -139,6 +139,11 @@ urlpatterns = [
         api_views.InvoiceTemplateDetailView.as_view(),
         name="template_detail",
     ),
+    path(
+        "templates/<uuid:pk>/editor/",
+        api_views.InvoiceTemplateEditorView.as_view(),
+        name="template_editor",
+    ),
     # ==========================================================================
     # REPORTS
     # ==========================================================================

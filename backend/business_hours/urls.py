@@ -7,17 +7,17 @@ app_name = "api_business_hours"
 urlpatterns = [
     path("calendar/", views.BusinessCalendarView.as_view(), name="calendar_default"),
     path(
-        "calendar/<str:pk>/",
+        "calendar/<uid:pk>/",
         views.BusinessCalendarView.as_view(),
         name="calendar_detail",
     ),
     path(
-        "calendar/<str:pk>/holidays/",
+        "calendar/<uid:pk>/holidays/",
         views.BusinessHolidayListView.as_view(),
         name="holiday_list",
     ),
     path(
-        "calendar/<str:pk>/holidays/<str:hid>/",
+        "calendar/<uid:pk>/holidays/<uid:hid>/",
         views.BusinessHolidayDetailView.as_view(),
         name="holiday_detail",
     ),

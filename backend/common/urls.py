@@ -85,7 +85,7 @@ urlpatterns = [
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
-    # These literal org/… paths must precede org/<str:pk>/ so they are not
+    # These literal org/… paths must precede org/<uid:pk>/ so they are not
     # captured as a pk (org/tokens/ would otherwise resolve to OrgUpdateView
     # with pk="tokens"). org/tokens/ is ADMIN-only token oversight, separate
     # from profile/tokens/ (self-scoped) so the self guard is never widened; an
@@ -98,7 +98,7 @@ urlpatterns = [
         OrgAccessTokenDetailView.as_view(),
         name="org_pat_detail",
     ),
-    path("org/<str:pk>/", OrgUpdateView.as_view()),
+    path("org/<uid:pk>/", OrgUpdateView.as_view()),
     path("profile/", ProfileView.as_view()),
     # Personal Access Tokens (REST API), a user manages ONLY their own
     path(
@@ -114,23 +114,23 @@ urlpatterns = [
     # User management
     path("users/get-teams-and-users/", GetTeamsAndUsersView.as_view()),
     path("users/", UsersListView.as_view()),
-    path("user/<str:pk>/", UserDetailView.as_view()),
-    path("user/<str:pk>/status/", UserStatusView.as_view()),
+    path("user/<uid:pk>/", UserDetailView.as_view()),
+    path("user/<uid:pk>/status/", UserStatusView.as_view()),
     # Documents
     path("documents/", DocumentListView.as_view()),
-    path("documents/<str:pk>/", DocumentDetailView.as_view()),
+    path("documents/<uid:pk>/", DocumentDetailView.as_view()),
     # API Settings
     path("api-settings/", DomainList.as_view()),
-    path("api-settings/<str:pk>/", DomainDetailView.as_view()),
+    path("api-settings/<uid:pk>/", DomainDetailView.as_view()),
     # Activities (for dashboard recent activities)
     path("activities/", ActivityListView.as_view(), name="activities"),
     # Teams (merged from teams app)
     path("teams/", TeamsListView.as_view()),
-    path("teams/<str:pk>/", TeamsDetailView.as_view()),
+    path("teams/<uid:pk>/", TeamsDetailView.as_view()),
     # Tags
     path("tags/", TagsListView.as_view()),
-    path("tags/<str:pk>/", TagsDetailView.as_view()),
-    path("tags/<str:pk>/restore/", TagsRestoreView.as_view()),
+    path("tags/<uid:pk>/", TagsDetailView.as_view()),
+    path("tags/<uid:pk>/restore/", TagsRestoreView.as_view()),
     # Custom fields (per-org schema extension; cross-entity)
     path(
         "custom-fields/",
@@ -138,7 +138,7 @@ urlpatterns = [
         name="custom_fields_list_create",
     ),
     path(
-        "custom-fields/<str:pk>/",
+        "custom-fields/<uid:pk>/",
         CustomFieldDefinitionDetailView.as_view(),
         name="custom_field_detail",
     ),
@@ -150,12 +150,12 @@ urlpatterns = [
         name="notifications_read_all",
     ),
     path(
-        "notifications/<str:pk>/read/",
+        "notifications/<uid:pk>/read/",
         NotificationReadView.as_view(),
         name="notifications_read",
     ),
     path(
-        "notifications/<str:pk>/",
+        "notifications/<uid:pk>/",
         NotificationDetailView.as_view(),
         name="notifications_detail",
     ),
