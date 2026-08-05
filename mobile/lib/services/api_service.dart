@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../config/api_config.dart';
 
-/// Callback invoked when an authenticated request gets a 401, should hit the
-/// refresh endpoint and update the ApiService's access token, returning true
-/// if the new token is ready and the original request can be retried.
+/// Callback invoked when the access token has aged out (or, as a fallback, when
+/// a request comes back 401). Should hit the refresh endpoint and update the
+/// ApiService's access token, returning true if the new token is ready and the
+/// original request can be sent.
 typedef RefreshTokenCallback = Future<bool> Function();
 
 /// API response wrapper
@@ -36,7 +38,14 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  final http.Client _client = http.Client();
+  http.Client _client = http.Client();
+
+  /// Swap the HTTP client. Tests only: the app shares one client for the
+  /// process lifetime, and `ApiService` is a singleton.
+  @visibleForTesting
+  void setClientForTesting(http.Client client) {
+    _client = client;
+  }
 
   // Token and org getters - will be set by AuthService
   String? _accessToken;
@@ -88,16 +97,55 @@ class ApiService {
     }
   }
 
-  /// Send an HTTP request and transparently retry once on 401 after refreshing
-  /// the access token. The `send` closure must be safe to invoke twice, every
-  /// caller below builds a fresh request inside it.
+  /// How close to expiry counts as expired.
+  ///
+  /// Covers a token that would age out while the request is in flight, and
+  /// small clock differences between the phone and the server.
+  static const Duration _expiryGrace = Duration(seconds: 30);
+
+  /// True when the access token is at or near its `exp`.
+  ///
+  /// A token that will not decode returns false: refreshing cannot repair a
+  /// malformed credential, so the request carries it and the server answers.
+  bool get _accessTokenNeedsRefresh {
+    final token = _accessToken;
+    if (token == null) return false;
+    try {
+      return JwtDecoder.getExpirationDate(
+        token,
+      ).isBefore(DateTime.now().add(_expiryGrace));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Send an HTTP request, refreshing the access token first when it has aged
+  /// out. The `send` closure must be safe to invoke twice, every caller below
+  /// builds a fresh request inside it.
   Future<http.Response> _sendWithRetry({
     required bool requiresAuth,
     required Future<http.Response> Function(Map<String, String> headers) send,
   }) async {
+    // Refresh BEFORE sending, not after a rejection.
+    //
+    // This API does not answer 401 for an expired credential. `HasOrgContext`
+    // (backend `common/permissions.py`) denies with 403 before DRF's auth layer
+    // would emit a 401, and it answers the same way for a missing, malformed or
+    // expired token. So the 401 branch below never fires on expiry, and a
+    // session that aged out while the app was open stayed broken until the next
+    // cold start, where `AuthService.initialize()` does this same check once.
+    //
+    // The web client refreshes the same way, off the `exp` claim on every
+    // request (`frontend/src/hooks.server.js`), rather than off a status code.
+    if (requiresAuth && _accessTokenNeedsRefresh && _refreshCallback != null) {
+      await _refreshAccessToken();
+    }
+
     var response = await send(_buildHeaders(requiresAuth: requiresAuth))
         .timeout(ApiConfig.connectTimeout);
 
+    // Kept as a fallback for a token revoked or rotated out from under us
+    // before its `exp`, which the check above cannot see.
     if (requiresAuth &&
         response.statusCode == 401 &&
         _accessToken != null &&
@@ -267,8 +315,10 @@ class ApiService {
     bool requiresAuth = true,
   }) async {
     try {
+      // The URL only. A request body is never safe to log here: the refresh
+      // call carries the refresh token, sign-in carries the Google id token,
+      // and an ordinary create carries a customer's name, email and phone.
       debugPrint('POST $url');
-      debugPrint('Body: ${jsonEncode(body)}');
 
       final uri = Uri.parse(url);
       final encoded = jsonEncode(body);

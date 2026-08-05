@@ -100,13 +100,13 @@
                   <tr>
                     <td>{li.name}</td>
                     <td class="v2-r v2-num">{li.quantity}</td>
-                    <td class="v2-r v2-num">{money(li.unit_price)}</td>
+                    <td class="v2-r v2-num">{money(li.unit_price, deal.currency)}</td>
                     <!-- Blank, not "0", where there is no discount. A column of
                          zeroes reads as a discount that happened to be nothing. -->
                     <td class="v2-r v2-num v2-muted">
-                      {li.discount_amount > 0 ? `−${money(li.discount_amount)}` : ''}
+                      {li.discount_amount > 0 ? `−${money(li.discount_amount, deal.currency)}` : ''}
                     </td>
-                    <td class="v2-r v2-num">{money(li.total)}</td>
+                    <td class="v2-r v2-num">{money(li.total, deal.currency)}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -116,12 +116,13 @@
             >
               {#if discount > 0}
                 <span class="v2-muted">Subtotal</span>
-                <span class="v2-num v2-muted">{money(subtotal)}</span>
+                <span class="v2-num v2-muted">{money(subtotal, deal.currency)}</span>
                 <span class="v2-muted">Discounts</span>
-                <span class="v2-num v2-muted">−{money(discount)}</span>
+                <span class="v2-num v2-muted">−{money(discount, deal.currency)}</span>
               {/if}
               <span style="font-weight:650">Total</span>
-              <span class="v2-num" style="font-weight:650">{money(deal.amount)}</span>
+              <span class="v2-num" style="font-weight:650">{money(deal.amount, deal.currency)}</span
+              >
             </div>
           </div>
         {/if}

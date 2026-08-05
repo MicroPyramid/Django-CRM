@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -262,6 +263,28 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             )
         if stage in AMOUNT_REQUIRED_STAGES and not self._resolved(data, "amount"):
             errors["amount"] = "A won deal has to record what it was worth."
+
+        # `amount` stops being the client's field once the deal has line items.
+        # `OpportunityLineItem.save()` calls `recalculate_amount()`, which sets
+        # `amount` from the lines and stamps `amount_source = "CALCULATED"`.
+        # Nothing recomputed it on the deal's own update path, so a request
+        # carrying a different figure overwrote the total while leaving the
+        # source still claiming the number came from the lines. The record then
+        # asserted two incompatible things about the same money.
+        #
+        # An unchanged value is accepted rather than refused, because clients
+        # that send the whole record back on every edit (the mobile deal form
+        # does) must still be able to move the stage or the close date. Only an
+        # actual attempt to change the figure is an error.
+        if self.instance is not None and "amount" in data:
+            line_items = self.instance.line_items
+            if line_items.exists():
+                line_total = line_items.aggregate(total=Sum("total"))["total"] or 0
+                if data["amount"] != line_total:
+                    errors["amount"] = (
+                        "This deal's amount is the sum of its line items. "
+                        "Edit the line items to change it."
+                    )
 
         if errors:
             raise serializers.ValidationError(errors)

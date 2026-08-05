@@ -210,7 +210,9 @@
           <p class="v2-error" id="e-amount">{errors.amount}</p>
         {:else}
           <p class="v2-hint" id="h-amount">
-            {Number(form.amount) > 0 ? money(Number(form.amount)) : 'USD'}
+            {Number(form.amount) > 0
+              ? money(Number(form.amount), data.orgCurrency)
+              : data.orgCurrency}
           </p>
         {/if}
       </div>

@@ -1,5 +1,11 @@
 import { fail } from '@sveltejs/kit';
-import { createCard, createColumn, getBoard, moveBoardTask } from '$lib/server/v2/board.js';
+import {
+  createBoard,
+  createCard,
+  createColumn,
+  getBoard,
+  moveBoardTask
+} from '$lib/server/v2/board.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /** Map an api-helpers error to a form `fail`, preserving a 403 as a 403. */
@@ -30,6 +36,25 @@ export const actions = {
       return { success: true };
     } catch (err) {
       return toFail(err, 'Could not move the card.');
+    }
+  },
+
+  // Create the org's first board, or another one.
+  //
+  // The empty state used to send people to the mobile app for this. The mobile
+  // app has no board feature, and no client called `POST /boards/` at all, so
+  // an org that had never been handed a board through the API had no way to
+  // get one. The backend seeds the three default columns, so the board is
+  // usable as soon as it lands.
+  create: async ({ request, cookies }) => {
+    const form = await request.formData();
+    const name = String(form.get('name') || '').trim();
+    if (!name) return fail(400, { error: 'A board needs a name.' });
+    try {
+      await createBoard({ cookies }, { name });
+      return { added: 'board' };
+    } catch (err) {
+      return toFail(err, 'Could not create the board.');
     }
   },
 

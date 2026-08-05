@@ -1867,3 +1867,135 @@ class TestOpportunityNonAdminAssigned:
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
+
+
+class TestAmountIsOwnedByLineItems:
+    """A deal with line items owns its own `amount`.
+
+    `OpportunityLineItem.save()` calls `recalculate_amount()`, which writes
+    `amount` from the lines and stamps `amount_source = "CALCULATED"`. Nothing
+    recomputed it on the deal's own update path, so an ordinary PUT or PATCH
+    could set a different figure and leave the source still claiming the number
+    came from the lines.
+
+    The web edit form disables the amount input when line items exist, but a UI
+    guard is not a guard: the mobile form has no equivalent and neither does
+    curl.
+    """
+
+    @pytest.fixture()
+    def opportunity(self, admin_user, org_a):
+        _set_rls(org_a)
+        return Opportunity.objects.create(
+            name="Line Item Owned Deal",
+            stage="QUALIFICATION",
+            amount=Decimal("100.00"),
+            org=org_a,
+            created_by=admin_user,
+        )
+
+    @pytest.fixture()
+    def priced(self, opportunity, org_a):
+        """One line item of 2 x 250, so the deal is worth 500 and knows it."""
+        _set_rls(org_a)
+        OpportunityLineItem.objects.create(
+            opportunity=opportunity,
+            name="Widget",
+            quantity=2,
+            unit_price=Decimal("250.00"),
+            org=org_a,
+        )
+        opportunity.refresh_from_db()
+        return opportunity
+
+    def test_line_items_take_ownership_of_the_amount(self, priced):
+        """The premise of every test below."""
+        assert priced.amount == Decimal("500.00")
+        assert priced.amount_source == "CALCULATED"
+
+    def test_patching_a_different_amount_is_refused(self, admin_client, priced):
+        response = admin_client.patch(
+            _detail_url(priced.pk), {"amount": "9.99"}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "amount" in response.data["errors"]
+        priced.refresh_from_db()
+        assert priced.amount == Decimal("500.00")
+        assert priced.amount_source == "CALCULATED"
+
+    def test_putting_a_different_amount_is_refused(self, admin_client, priced):
+        """PUT is the verb the mobile edit form uses."""
+        response = admin_client.put(
+            _detail_url(priced.pk),
+            {
+                "name": priced.name,
+                "stage": "QUALIFICATION",
+                "amount": "9.99",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        priced.refresh_from_db()
+        assert priced.amount == Decimal("500.00")
+
+    def test_clearing_the_amount_is_refused(self, admin_client, priced):
+        response = admin_client.patch(
+            _detail_url(priced.pk), {"amount": None}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        priced.refresh_from_db()
+        assert priced.amount == Decimal("500.00")
+
+    def test_echoing_the_computed_amount_is_allowed(self, admin_client, priced):
+        """A client that sends the whole record back must still be able to edit.
+
+        This is the case that stops the rule from breaking the mobile form,
+        which posts every field on every save.
+        """
+        response = admin_client.put(
+            _detail_url(priced.pk),
+            {
+                "name": priced.name,
+                "stage": "PROPOSAL",
+                "amount": "500.00",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        priced.refresh_from_db()
+        assert priced.stage == "PROPOSAL"
+        assert priced.amount == Decimal("500.00")
+
+    def test_an_edit_that_omits_the_amount_is_allowed(self, admin_client, priced):
+        response = admin_client.patch(
+            _detail_url(priced.pk), {"description": "Still on track"}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        priced.refresh_from_db()
+        assert priced.amount == Decimal("500.00")
+
+    def test_a_deal_without_line_items_still_owns_its_amount(
+        self, admin_client, opportunity
+    ):
+        """The rule must not leak onto ordinary deals, which are typed by hand."""
+        response = admin_client.patch(
+            _detail_url(opportunity.pk), {"amount": "1234.00"}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        opportunity.refresh_from_db()
+        assert opportunity.amount == Decimal("1234.00")
+
+    def test_deleting_the_last_line_item_hands_the_amount_back(
+        self, admin_client, priced, org_a
+    ):
+        _set_rls(org_a)
+        priced.line_items.first().delete()
+        priced.refresh_from_db()
+        assert priced.amount_source == "MANUAL"
+
+        response = admin_client.patch(
+            _detail_url(priced.pk), {"amount": "42.00"}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        priced.refresh_from_db()
+        assert priced.amount == Decimal("42.00")

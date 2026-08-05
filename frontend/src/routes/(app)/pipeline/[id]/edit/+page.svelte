@@ -302,8 +302,9 @@
         {:else if amountIsCalculated}
           <p class="v2-hint" id="h-amount">
             <a href="/pipeline/{deal.id}">{server.line_item_count} line items</a> add up to
-            <span class="v2-num">{money(server.line_item_total)}</span>. The server recalculates
-            this on every save, so typing over it would not last. Edit the line items instead.
+            <span class="v2-num">{money(server.line_item_total, deal.currency)}</span>. The server
+            refuses a different figure on a deal with line items, so this cannot be typed over. Edit
+            the line items instead.
           </p>
         {:else}
           <p class="v2-hint">
