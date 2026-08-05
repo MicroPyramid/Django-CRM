@@ -41,6 +41,7 @@ from common.models import Profile, Tags, Teams
 from common.utils import COUNTRIES
 from common.validators import normalize_phone
 from contacts.models import Contact
+from contacts.services.account_link import link_primary_account
 
 
 REQUIRED_HEADERS = ("first_name", "last_name")
@@ -698,6 +699,13 @@ def _commit_validated(rows: list[ValidatedRow], org, profile) -> dict[str, Any]:
             org=org,
             created_by=profile.user,
         )
+        # A Contact joins an Account two ways: the `account` FK ("primary
+        # account this contact belongs to") and membership of `Account.contacts`.
+        # Only the M2M drives the account page's people list, so setting the FK
+        # alone put the person nowhere visible. The three interactive create
+        # paths all call this; the importer never did, so every imported contact
+        # was invisible on the account it was imported against.
+        link_primary_account(contact)
         if vr.assigned_ids:
             contact.assigned_to.set(vr.assigned_ids)
         if vr.team_ids:

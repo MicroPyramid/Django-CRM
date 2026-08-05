@@ -17,6 +17,7 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from common.links import frontend_url
 from common.models import Profile
 from common.tasks import set_rls_context
 
@@ -32,8 +33,12 @@ def send_email(invoice_id, recipients, org_id, domain="localhost", protocol="htt
         invoice_id: UUID of the invoice
         recipients: List of user profile IDs
         org_id: UUID of the organization
-        domain: Domain for URL generation
-        protocol: HTTP or HTTPS
+        domain: Ignored. Kept so a task already queued with this kwarg still
+            unpacks after deploy. Links now come from `common.links.frontend_url`,
+            because these paths live on the web app and this argument was
+            passed `settings.DOMAIN_NAME`, which names the API and carries its
+            own scheme. See that module for the four ways it was wrong.
+        protocol: Ignored, for the same reason.
     """
     from invoices.models import Invoice
 
@@ -51,7 +56,7 @@ def send_email(invoice_id, recipients, org_id, domain="localhost", protocol="htt
                 "invoice": invoice,
                 "invoice_title": invoice.invoice_title,
                 "invoice_number": invoice.invoice_number,
-                "url": f"{protocol}://{domain}/invoices/{invoice.id}",
+                "url": frontend_url(f"/invoices/{invoice.id}"),
                 "user": profile.user,
                 "assigned_by": invoice.created_by.user if invoice.created_by else None,
             }
@@ -85,8 +90,12 @@ def send_invoice_to_client(
     Args:
         invoice_id: UUID of the invoice
         org_id: UUID of the organization
-        domain: Domain for URL generation
-        protocol: HTTP or HTTPS
+        domain: Ignored. Kept so a task already queued with this kwarg still
+            unpacks after deploy. Links now come from `common.links.frontend_url`,
+            because these paths live on the web app and this argument was
+            passed `settings.DOMAIN_NAME`, which names the API and carries its
+            own scheme. See that module for the four ways it was wrong.
+        protocol: Ignored, for the same reason.
         include_pdf: Whether to attach PDF
     """
     from invoices.models import Invoice
@@ -107,7 +116,7 @@ def send_invoice_to_client(
     # Build public URL if enabled
     public_url = None
     if invoice.public_link_enabled and invoice.public_token:
-        public_url = f"{protocol}://{domain}/portal/invoice/{invoice.public_token}"
+        public_url = frontend_url(f"/portal/invoice/{invoice.public_token}")
 
     context = {
         "invoice": invoice,
@@ -345,8 +354,12 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
     Args:
         invoice_id: UUID of the invoice
         org_id: UUID of the organization
-        domain: Domain for URL generation
-        protocol: HTTP or HTTPS
+        domain: Ignored. Kept so a task already queued with this kwarg still
+            unpacks after deploy. Links now come from `common.links.frontend_url`,
+            because these paths live on the web app and this argument was
+            passed `settings.DOMAIN_NAME`, which names the API and carries its
+            own scheme. See that module for the four ways it was wrong.
+        protocol: Ignored, for the same reason.
     """
     from invoices.models import Invoice
 
@@ -369,7 +382,7 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
 
     public_url = None
     if invoice.public_link_enabled and invoice.public_token:
-        public_url = f"{protocol}://{domain}/portal/invoice/{invoice.public_token}"
+        public_url = frontend_url(f"/portal/invoice/{invoice.public_token}")
 
     context = {
         "invoice": invoice,
@@ -511,8 +524,12 @@ def send_estimate_to_client(
     Args:
         estimate_id: UUID of the estimate
         org_id: UUID of the organization
-        domain: Domain for URL generation
-        protocol: HTTP or HTTPS
+        domain: Ignored. Kept so a task already queued with this kwarg still
+            unpacks after deploy. Links now come from `common.links.frontend_url`,
+            because these paths live on the web app and this argument was
+            passed `settings.DOMAIN_NAME`, which names the API and carries its
+            own scheme. See that module for the four ways it was wrong.
+        protocol: Ignored, for the same reason.
         include_pdf: Whether to attach PDF
     """
     from invoices.models import Estimate
@@ -532,7 +549,7 @@ def send_estimate_to_client(
 
     public_url = None
     if estimate.public_link_enabled and estimate.public_token:
-        public_url = f"{protocol}://{domain}/portal/estimate/{estimate.public_token}"
+        public_url = frontend_url(f"/portal/estimate/{estimate.public_token}")
 
     context = {
         "estimate": estimate,

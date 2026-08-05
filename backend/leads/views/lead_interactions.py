@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.lookups import get_scoped_or_404
 from common.models import APISettings, Attachments, Comment
 from common.permissions import HasOrgContext
 from common.serializer import LeadCommentSerializer
@@ -98,7 +99,7 @@ class LeadCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Leads"],
@@ -237,7 +238,12 @@ class LeadAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        # Was `objects.get(pk=pk)`: no org filter, so an admin of any org could
+        # delete any attachment in the system by id, and a missing or malformed
+        # id raised out of the view as a 500 instead of answering 404. The
+        # comment view above already scopes its lookup, as do the accounts,
+        # contacts, cases, tasks, tags and teams equivalents.
+        self.object = get_scoped_or_404(self.model, pk, request.profile.org)
         if (
             request.profile.role == "ADMIN"
             or request.user.is_superuser

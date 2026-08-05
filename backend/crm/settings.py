@@ -394,6 +394,18 @@ JWT_ALGO = "HS256"
 
 
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME", "http://localhost:8000")
+
+# The organization API key (`Token: <org.api_key>` header) is one non-expiring
+# key per tenant that resolves to an arbitrary active ADMIN. Even now that it is
+# read-only and barred from credential endpoints (see common/scopes.py), it
+# still reads every record in the org and cannot be revoked per-integration.
+# Personal access tokens replace it and are scoped, per-user and revocable.
+#
+# Left on by default so an upgrade breaks nothing. Set DJANGO_ORG_API_KEY_AUTH
+# to "false" once every integration has moved to a personal access token.
+ORG_API_KEY_AUTH_ENABLED = os.environ.get(
+    "DJANGO_ORG_API_KEY_AUTH", "true"
+).strip().lower() not in ("false", "0", "no", "off")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 SWAGGER_ROOT_URL = os.environ.get("SWAGGER_ROOT_URL", "http://localhost:8000")
 

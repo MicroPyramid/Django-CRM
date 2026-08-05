@@ -123,6 +123,15 @@ class AccountSerializer(serializers.ModelSerializer):
 
 class EmailSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
+        # `AccountCreateMailView` passes `request_obj=request`, matching the
+        # call shape of `AccountCreateSerializer` next door. This class did not
+        # pop it and forwarded `**kwargs` straight to `super()`, so DRF's
+        # `Serializer.__init__` raised `TypeError` and the endpoint failed on
+        # every call it had ever received. The org is derived from the request
+        # in the view rather than here, so the value itself is not needed; the
+        # kwarg is accepted so the two sibling serializers stay callable the
+        # same way.
+        kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
 
     class Meta:

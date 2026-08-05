@@ -190,12 +190,31 @@ profile = Profile.objects.filter(
 ).first()
 ```
 
-Which makes a leaked org API key equivalent to a leaked admin session for that org, not a leaked
-individual user session. There's no way to scope it down to less than full admin, so it's the
-highest-privilege of the three credential types this page describes. Rotating it
-(`POST /api/org/api-key/`) invalidates the previous key immediately. The response is explicit
-that the old key is no longer valid. It's excluded from every nested API representation
-(`OrganizationSerializer` never embeds it) and only ever served by this one endpoint.
+Borrowing a real person's profile is what made this key so dangerous: it never expires, there is one
+per tenant so it cannot be revoked per integration, and until scope enforcement landed it could do
+anything that admin could, including delete records and mint a personal access token owned by them.
+
+Two limits now apply, both in middleware, before any view runs:
+
+- **It is read-only.** Any unsafe method (`POST`, `PUT`, `PATCH`, `DELETE`) is refused with 403. It
+  is evaluated as the scope list `("*:read",)`, so the org key and a read-only personal access token
+  go through one implementation (`common/scopes.py`).
+- **It cannot reach a credential.** `/api/profile/tokens/`, `/api/org/tokens/` and
+  `/api/org/api-key/` are on a deny-list that no scope satisfies, so the key cannot read itself,
+  rotate itself, or create a token owned by the admin whose identity it borrowed.
+
+`common.external_auth.APIKeyAuthentication` carries the same two gates. It is an independent second
+copy of the key resolution, reached when DRF authenticates a request the middleware skipped, so
+guarding one and not the other would leave the DRF layer admitting what the middleware refuses.
+
+`DJANGO_ORG_API_KEY_AUTH=false` turns the whole path off, on every endpoint. It is left on by
+default so an upgrade breaks nothing; a deployment whose integrations have all moved to personal
+access tokens should set it. Even read-only, this key reads every record in the org, so it remains
+the bluntest of the three credential types on this page. Prefer a scoped personal access token.
+
+Rotating it (`POST /api/org/api-key/`) invalidates the previous key immediately, and the response
+says so. It's excluded from every nested API representation (`OrganizationSerializer` never embeds
+it) and only ever served by this one endpoint, which now requires an interactive session.
 
 One piece of related configuration to be aware of: `GOOGLE_REDIRECT_URI` is defined in
 `backend/crm/settings.py:360` but is dead, grep the backend and it's the only place that name

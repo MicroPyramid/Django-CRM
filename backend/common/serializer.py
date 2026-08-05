@@ -1103,13 +1103,35 @@ class PersonalAccessTokenCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_scopes(self, value):
+        """Reject scopes that mean nothing, and return them canonicalised.
+
+        This used to accept any list of up to 32 arbitrary strings, from a time
+        when nothing read the field. Now that `common.scopes` enforces it, an
+        unvalidated scope is worse than none: a caller who misspells a resource
+        believes they restricted the token, and gets one that matches nothing at
+        all. Say so at creation instead.
+
+        An empty list stays valid and still means unrestricted. See the
+        `common.scopes` module docstring for why.
+        """
+        from common.scopes import normalize_scope
+
         if value in (None, ""):
             return []
         if not isinstance(value, list) or not all(isinstance(s, str) for s in value):
             raise serializers.ValidationError("scopes must be a list of strings.")
         if len(value) > 32:
             raise serializers.ValidationError("Too many scopes (max 32).")
-        return value
+
+        seen = []
+        for raw in value:
+            try:
+                scope = normalize_scope(raw)
+            except ValueError as exc:
+                raise serializers.ValidationError(str(exc)) from exc
+            if scope not in seen:
+                seen.append(scope)
+        return seen
 
     def validate_expires_at(self, value):
         from django.utils import timezone

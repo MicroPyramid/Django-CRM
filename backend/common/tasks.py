@@ -11,7 +11,15 @@ from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from common.models import Comment, MagicLinkToken, Notification, Profile, Teams, User
+from common.models import (
+    Comment,
+    MagicLinkToken,
+    Notification,
+    Org,
+    Profile,
+    Teams,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +42,21 @@ def set_rls_context(org_id):
             cursor.execute(
                 "SELECT set_config('app.current_org', %s, false)", [str(org_id)]
             )
+
+
+def clear_rls_context():
+    """Drop the RLS context a task set, mirroring the middleware's reset.
+
+    `app.current_org` is set at SESSION scope, so it outlives the statement and
+    the transaction. A task that walks several orgs and then returns leaves the
+    last one's id on the connection, and on a pooled connection that is the next
+    borrower's tenant context. Always paired with `set_rls_context` in a
+    ``finally``.
+    """
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT set_config('app.current_org', '', false)")
 
 
 @shared_task
@@ -382,14 +405,40 @@ NOTIFICATION_PURGE_DAYS = 90
 def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
     """Delete already-read notifications older than ``days`` days.
 
-    Schedule via celery-beat (recommended cadence: nightly). Runs once across
-    all orgs. RLS does not need a per-org context here because the query
-    targets `read_at`, which is intrinsic to the row, not org-scoped logic.
+    Schedule via celery-beat (recommended cadence: nightly). Walks orgs and sets
+    the RLS context for each, because `notification` is org-scoped.
+
+    THIS USED TO DELETE NOTHING IN PRODUCTION. The previous version ran one
+    unscoped DELETE and justified it in its own docstring: "RLS does not need a
+    per-org context here because the query targets `read_at`, which is intrinsic
+    to the row". That is not how RLS works. A policy filters which rows the
+    statement can see at all, whatever the WHERE clause names, and the isolation
+    policy is `org_id::text = NULLIF(current_setting('app.current_org', true),
+    '')`, which matches nothing when the context is empty. A Celery worker runs
+    no middleware, so the context was always empty, and under the non-superuser
+    role the deployment docs mandate, the nightly DELETE removed zero rows every
+    night while logging nothing (it only logs when `deleted` is truthy).
+
+    It passed its tests because `crm.test_settings` is SQLite, which has no RLS
+    at all. `set_rls_context` returns early on any non-Postgres vendor, so the
+    per-org loop is a no-op there and the tests still describe real behaviour on
+    both backends.
+
+    The context is cleared at the end. It is set at SESSION scope, so leaving
+    the last org's id on a pooled connection would hand that tenant's context to
+    whatever borrows the connection next.
     """
     cutoff = timezone.now() - timedelta(days=days)
-    deleted, _ = Notification.objects.filter(
-        read_at__isnull=False, read_at__lt=cutoff
-    ).delete()
+    deleted = 0
+    try:
+        for org_id in Org.objects.values_list("id", flat=True).iterator():
+            set_rls_context(org_id)
+            removed, _ = Notification.objects.filter(
+                read_at__isnull=False, read_at__lt=cutoff
+            ).delete()
+            deleted += removed
+    finally:
+        clear_rls_context()
     if deleted:
         logger.info(
             "Purged %s read notifications older than %s days", deleted, days

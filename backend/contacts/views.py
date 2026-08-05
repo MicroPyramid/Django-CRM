@@ -42,28 +42,9 @@ from contacts.serializer import (
     ContactSerializer,
     CreateContactSerializer,
 )
+from contacts.services.account_link import link_primary_account
 from contacts.tasks import send_email_to_assigned_user
 from tasks.serializer import TaskSerializer
-
-
-def link_primary_account(contact):
-    """Make `contact.account` show up on that account's people list.
-
-    A Contact is joined to an Account two ways -- the `account` FK, documented
-    on the model as "Primary account this contact belongs to", and membership
-    of `Account.contacts`. Nothing kept them in step, and the whole seeded org
-    demonstrates the result: not one contact has the FK set, while twelve of
-    fifteen are in the M2M. So the account field on a contact form wrote to a
-    column the account page does not read, and the person never appeared where
-    they work.
-
-    Setting the primary account now also records the membership. The reverse is
-    deliberately not true: clearing the FK leaves the membership alone, because
-    membership can be granted from the account side and losing "primary" is not
-    a statement that the person left the company.
-    """
-    if contact.account_id:
-        contact.account.contacts.add(contact)
 
 
 class ContactsListView(APIView, LimitOffsetPagination):
@@ -161,7 +142,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
         else:
             offset = 0
         context["per_page"] = 10
-        page_number = (int(self.offset / 10) + 1,)
+        page_number = int(self.offset / 10) + 1
         context["page_number"] = page_number
         # Standard DRF pagination format for frontend compatibility
         context["count"] = self.count

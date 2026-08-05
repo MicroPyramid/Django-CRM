@@ -26,6 +26,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.lookups import get_scoped_or_404
 from common.permissions import HasOrgContext
 from rest_framework.views import APIView
 
@@ -251,7 +252,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
             offset = 0
         accounts_active = AccountSerializer(results_accounts_active, many=True).data
         context["per_page"] = 10
-        page_number = (int(self.offset / 10) + 1,)
+        page_number = int(self.offset / 10) + 1
         context["page_number"] = page_number
         context["active_accounts"] = {
             "offset": offset,
@@ -856,7 +857,7 @@ class AccountCommentView(APIView):
     serializer_class = AccountCommentEditSwaggerSerializer
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Accounts"],
@@ -1000,55 +1001,108 @@ class AccountCreateMailView(APIView):
         request=EmailWriteSerializer,
     )
     def post(self, request, pk, *args, **kwargs):
-        data = request.data
-        scheduled_later = data.get("scheduled_later")
-        scheduled_date_time = data.get("scheduled_date_time")
-        # Org-scoped: unscoped, this would let anyone send mail recorded as
-        # coming *from* another organisation's account.
-        #
-        # Note this endpoint cannot currently succeed at all; `EmailSerializer`
-        # does not accept the `request_obj` kwarg the line below passes it, so
-        # every request dies with a TypeError before reaching any of this. The
-        # scoping is here so it is not missing when somebody revives the
-        # feature; see the report accompanying this change.
+        """Compose and send (or schedule) mail from one of this org's accounts.
+
+        This endpoint had never worked. Four separate defects, each of which
+        alone would have been enough:
+
+        1. It passed `request_obj=` to `EmailSerializer`, whose `__init__` does
+           not pop it and forwards `**kwargs` to `super()`. Every single call
+           raised `TypeError` before any of the logic below ran. Only
+           `AccountCreateSerializer` accepts that kwarg; this is its neighbour
+           in the same module and was given the same call shape.
+        2. `data = {}` rebound the name holding `request.data` before the code
+           read `data.get("recipients")` and `data.get("scheduled_later")` from
+           it. Both were therefore always `None`, so no recipient could ever be
+           attached: the mail would have been sent to nobody.
+        3. The `scheduled_later` branch set two attributes on `email_obj` and
+           never saved, so a scheduled mail was not recorded as scheduled.
+        4. Dispatch was gated on `data.get("scheduled_later") != "true"`, which
+           with the clobbered dict was always true, so a mail the caller asked
+           to schedule would have gone out immediately.
+
+        The org scoping on the account and on each recipient was already right
+        and is kept: without it a caller could send mail recorded as coming from
+        another tenant's account, or to another tenant's contacts.
+        """
+        params = request.data
+        scheduled_date_time = params.get("scheduled_date_time")
         account = Account.objects.filter(id=pk, org=request.profile.org).first()
-        serializer = EmailSerializer(
-            data=data,
-            request_obj=request,  # account=account,
-        )
-
-        data = {}
-        if serializer.is_valid():
-            email_obj = serializer.save(from_account=account)
-            if scheduled_later not in ["", None, False, "false"]:
-                if scheduled_date_time in ["", None]:
-                    return Response(
-                        {"error": True, "errors": serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            if data.get("recipients"):
-                contacts = json.loads(data.get("recipients"))
-                for contact in contacts:
-                    obj_contact = Contact.objects.filter(
-                        id=contact, org=request.profile.org
-                    )
-                    if obj_contact.exists():
-                        email_obj.recipients.add(contact)
-                    else:
-                        email_obj.delete()
-                        data["recipients"] = "Please enter valid recipient"
-                        return Response({"error": True, "errors": data})
-            if data.get("scheduled_later") != "true":
-                send_email.delay(email_obj.id, str(request.profile.org.id))
-            else:
-                email_obj.scheduled_later = True
-                email_obj.scheduled_date_time = scheduled_date_time
+        if account is None:
             return Response(
-                {"error": False, "message": "Email sent successfully"},
-                status=status.HTTP_200_OK,
+                {"error": True, "errors": "Account not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
+
+        serializer = EmailSerializer(data=params, request_obj=request)
+        if not serializer.is_valid():
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        scheduled_later = str(params.get("scheduled_later", "")).lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        if scheduled_later and scheduled_date_time in ("", None):
+            return Response(
+                {
+                    "error": True,
+                    "errors": {
+                        "scheduled_date_time": [
+                            "A scheduled email needs a date and time."
+                        ]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Recipients arrive as a real list, a JSON-encoded list (a multipart body
+        # cannot carry one natively), or a bare id. The old code assumed exactly
+        # one of those shapes and `json.loads` raised a 500 on the others.
+        #
+        # Resolved BEFORE the mail row is created, not after. The old shape
+        # saved first and deleted on a bad recipient, which leaves an orphan row
+        # behind for anything that fails between the two (a malformed id raises
+        # out of this call, so the compensating delete never ran).
+        recipients = payload_id_list(params.get("recipients"), "recipients")
+        valid = []
+        if recipients:
+            valid = list(
+                Contact.objects.filter(
+                    id__in=recipients, org=request.profile.org
+                ).values_list("id", flat=True)
+            )
+            if len(valid) != len(set(recipients)):
+                # One id named a contact in another org, or none at all. Refuse
+                # the whole send rather than quietly mailing the valid subset.
+                return Response(
+                    {
+                        "error": True,
+                        "errors": {"recipients": ["Please enter valid recipients."]},
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # `org` is the server's to set, never the caller's, and `AccountEmail.save`
+        # would otherwise fall back to reading it off the account.
+        email_obj = serializer.save(
+            from_account=account,
+            org=request.profile.org,
+            scheduled_later=scheduled_later,
+            scheduled_date_time=scheduled_date_time or None,
+        )
+        if valid:
+            email_obj.recipients.add(*valid)
+
+        if not scheduled_later:
+            send_email.delay(email_obj.id, str(request.profile.org.id))
+            message = "Email sent successfully"
+        else:
+            message = "Email scheduled successfully"
         return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": False, "message": message, "id": str(email_obj.id)},
+            status=status.HTTP_200_OK,
         )

@@ -81,8 +81,14 @@ export async function listOrgTokens({ cookies }) {
  * owner server-side from the JWT, so there is no way to mint one for someone
  * else. Returns the created row plus `token`, the raw value, shown once.
  *
+ * `scopes` is `<resource>:<action>` strings, validated against the vocabulary in
+ * `common/scopes.py` and enforced in middleware before the view runs. An empty
+ * list means unrestricted, which is what every token predating enforcement
+ * carries, so omitting it preserves the old behaviour rather than locking a
+ * token out of everything.
+ *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
- * @param {{ name: string, expires_at?: string | null }} body
+ * @param {{ name: string, expires_at?: string | null, scopes?: string[] }} body
  */
 export function createToken({ cookies }, body) {
   return apiRequest('/profile/tokens/', { method: 'POST', body }, { cookies });

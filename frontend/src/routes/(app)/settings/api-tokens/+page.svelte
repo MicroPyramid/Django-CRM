@@ -22,11 +22,22 @@
    * back if the account were reactivated, which is why it is surfaced in clay
    * (a loose end) rather than rust (a live breach).
    *
-   * `scopes` is not shown as a permission list, and that is deliberate. The
-   * model stores scopes for forward-compatibility but nothing enforces them:
-   * a token inherits the owning profile's full role, org and RLS scope. A UI
-   * that draws a tidy list of scopes would describe a boundary that does not
-   * exist. The page says what is actually true instead.
+   * SCOPES ARE NOW REAL, AND THIS COMMENT USED TO SAY THE OPPOSITE
+   * It read: "the model stores scopes for forward-compatibility but nothing
+   * enforces them ... a UI that draws a tidy list of scopes would describe a
+   * boundary that does not exist." That was true and worth saying. It stopped
+   * being true when `common/scopes.py` landed and the middleware began
+   * refusing out-of-scope requests before the view runs.
+   *
+   * So the form offers the choice, and the table names it per row. Two options,
+   * not thirty: the backend grammar is `<resource>:<action>` and supports
+   * `leads:read`, but a radio pair is the honest shape for a question most
+   * people answer once, and "may this token change anything?" is the part that
+   * matters. Anyone who wants finer scopes creates the token through the API.
+   *
+   * An empty scope list still means unrestricted, which is what every token
+   * issued before enforcement carries. That is why the table says "Everything
+   * <name> can" for those rows rather than pretending they are limited.
    */
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
@@ -209,6 +220,15 @@
             />
           </div>
           <div>
+            <label class="v2-label" for="token-access" style="display:block;margin-bottom:4px">
+              Access
+            </label>
+            <select id="token-access" name="access" class="v2-input" style="width:180px">
+              <option value="read" selected>Read only</option>
+              <option value="full">Everything the owner can</option>
+            </select>
+          </div>
+          <div>
             <label class="v2-label" for="token-expiry" style="display:block;margin-bottom:4px">
               Expires
             </label>
@@ -289,7 +309,13 @@
                 </td>
                 <td data-m="hide">
                   <span class="v2-sub" style="font-size:12px">
-                    Everything {(owner.name ?? '').split(' ')[0]} can
+                    {#if (t.scopes ?? []).length === 0}
+                      Everything {(owner.name ?? '').split(' ')[0]} can
+                    {:else if (t.scopes ?? []).every((/** @type {string} */ s) => s.endsWith(':read'))}
+                      Read only
+                    {:else}
+                      {(t.scopes ?? []).join(', ')}
+                    {/if}
                   </span>
                 </td>
                 <td data-m="hide">

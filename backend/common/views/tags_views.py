@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from cases.models import Case
 from common import swagger_params
+from common.lookups import get_scoped_or_404
 from common.models import Tags
 from common.permissions import HasOrgContext
 from common.serializer import TagsSerializer
@@ -223,7 +224,7 @@ class TagsDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Tags"],

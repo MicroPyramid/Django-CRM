@@ -213,3 +213,38 @@ class TestPurgeTask(NotificationModelBase):
         assert purge_read_notifications(days=90) == 0
         assert purge_read_notifications(days=1) == 1
         assert not Notification.objects.filter(pk=n.pk).exists()
+
+    def test_purge_sets_rls_context_for_every_org(self):
+        """The task must scope itself per org, or it deletes nothing in production.
+
+        `notification` is org-scoped, a Celery worker runs no middleware, and the
+        isolation policy matches no rows when `app.current_org` is empty. The
+        previous version ran one unscoped DELETE and its tests passed anyway,
+        because `crm.test_settings` is SQLite and has no RLS to fail against.
+        This asserts the call the SQLite backend cannot: that each org's id is
+        pushed into the context before its rows are touched, and that the
+        context is cleared at the end rather than left on the connection.
+        """
+        from unittest import mock
+
+        import common.tasks as tasks_module
+
+        seen = []
+        cleared = []
+
+        Notification.objects.create(
+            org=self.org_a,
+            recipient=self.profile_a,
+            verb="x",
+            read_at=timezone.now() - timedelta(days=120),
+        )
+        with mock.patch.object(
+            tasks_module, "set_rls_context", side_effect=lambda org_id: seen.append(str(org_id))
+        ), mock.patch.object(
+            tasks_module, "clear_rls_context", side_effect=lambda: cleared.append(True)
+        ):
+            tasks_module.purge_read_notifications()
+
+        assert str(self.org_a.id) in seen
+        assert str(self.org_b.id) in seen
+        assert cleared == [True]

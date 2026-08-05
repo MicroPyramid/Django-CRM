@@ -370,6 +370,30 @@ class TestImportCommit:
         # Tag was reused across both rows
         assert Tags.objects.filter(name="vip", org=org_a).count() == 1
 
+    def test_imported_contact_appears_on_its_account(
+        self, admin_client, org_a, account_a, admin_profile
+    ):
+        """Setting the FK is not enough: the account page reads the M2M.
+
+        A Contact joins an Account two ways and only `Account.contacts` drives
+        the account's people list. The importer set `account_id` and skipped
+        `link_primary_account`, which the three interactive create paths all
+        call, so an imported contact was invisible on the account it named.
+        `test_commits_in_one_transaction` asserts the FK and passes either way,
+        which is why this needs its own assertion on the membership.
+        """
+        csv_file = _csv(
+            ["first_name", "last_name", "email", "account_name"],
+            [["Carol", "Klein", "carol@example.com", "Acme Corp"]],
+        )
+        response = admin_client.post(
+            "/api/contacts/import/commit/", {"file": csv_file}, format="multipart"
+        )
+        assert response.status_code == 200, response.json()
+        carol = Contact.objects.get(email="carol@example.com")
+        assert carol.account_id == account_a.id
+        assert carol in account_a.contacts.all()
+
     def test_commit_refuses_if_any_row_invalid(
         self, admin_client, org_a, existing_contact, admin_profile
     ):

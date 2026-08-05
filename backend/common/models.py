@@ -868,9 +868,12 @@ class PersonalAccessToken(BaseOrgModel):
     name = models.CharField(max_length=255)
     token_hash = models.CharField(max_length=64, unique=True, db_index=True)
     token_prefix = models.CharField(max_length=20)
-    # NOTE: scopes are stored for forward-compatibility but are NOT enforced in
-    # Phase 1: a token always inherits the owning profile's full role/permissions.
-    # Do not treat `scopes` as a trust boundary until enforcement lands.
+    # `<resource>:<action>` strings, validated at creation and enforced on every
+    # request by `common.scopes` from the `GetProfileAndOrg` middleware. An empty
+    # list means unrestricted, which is what every token issued before
+    # enforcement carries and what this field used to mean unconditionally.
+    # See common/scopes.py for the grammar and for the credential deny-list that
+    # applies regardless of what is stored here.
     scopes = models.JSONField(default=list, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     last_used_at = models.DateTimeField(null=True, blank=True)

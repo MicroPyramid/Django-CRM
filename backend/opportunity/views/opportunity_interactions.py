@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.lookups import get_scoped_or_404
 from common.models import Attachments, Comment
 from common.permissions import HasOrgContext
 from common.serializer import CommentSerializer
@@ -16,7 +17,7 @@ class OpportunityCommentView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk):
-        return self.model.objects.get(pk=pk, org=self.request.profile.org)
+        return get_scoped_or_404(self.model, pk, self.request.profile.org)
 
     @extend_schema(
         tags=["Opportunities"],
@@ -155,11 +156,25 @@ class OpportunityAttachmentView(APIView):
         },
     )
     def delete(self, request, pk, format=None):
-        self.object = self.model.objects.get(pk=pk)
+        # Two defects here, not one.
+        #
+        # `objects.get(pk=pk)` had no org filter, so an admin of any org could
+        # delete any attachment in the system by id, and a missing or malformed
+        # id raised out of the view as a 500 rather than answering 404. The
+        # comment view above already scopes its lookup.
+        #
+        # And `request.profile == self.object.created_by` compared a `Profile`
+        # to a `User`: `created_by` is a FK to `common.User` via
+        # `UserAuditModel`. That is never equal, so the uploader branch was dead
+        # and a non-admin could not delete the attachment they had just
+        # uploaded. The leads twin already spells it `request.profile.user`.
+        # Repairing the lookup without repairing the comparison would have left
+        # the fix looking complete while the branch stayed unreachable.
+        self.object = get_scoped_or_404(self.model, pk, request.profile.org)
         if (
             request.profile.role == "ADMIN"
             or request.user.is_superuser
-            or request.profile == self.object.created_by
+            or request.profile.user == self.object.created_by
         ):
             self.object.delete()
             return Response(
