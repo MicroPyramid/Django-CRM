@@ -18,6 +18,25 @@ from leads.serializer import (
 )
 from leads.tasks import create_lead_from_file, send_lead_assigned_emails
 
+# Matches the contacts and cases importers, and the UI hint beside the control.
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+def _can_import(profile) -> bool:
+    """Mass-create requires admin or explicit sales-access permission.
+
+    Same rule as `contacts.import_views._can_import` and its cases twin. This
+    endpoint predates both and never grew the check, so any member could
+    bulk-create leads through it.
+    """
+    if profile is None:
+        return False
+    if getattr(profile, "role", None) == "ADMIN":
+        return True
+    if getattr(profile, "is_admin", False):
+        return True
+    return bool(getattr(profile, "has_sales_access", False))
+
 
 class LeadUploadView(APIView):
     model = Lead
@@ -38,6 +57,23 @@ class LeadUploadView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        if not _can_import(request.profile):
+            return Response(
+                {"error": True, "errors": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        # The cap is measured against the bytes actually read, not against
+        # `upload.size`, which for an in-memory upload derives from a
+        # client-supplied Content-Length and can understate the body.
+        upload = request.FILES.get("leads_file")
+        if upload is not None:
+            file_bytes = upload.read()
+            upload.seek(0)
+            if len(file_bytes) > MAX_UPLOAD_BYTES:
+                return Response(
+                    {"error": True, "errors": "File exceeds the 5 MB upload limit"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         lead_form = LeadListForm(request.POST, request.FILES)
         if lead_form.is_valid():
             create_lead_from_file.delay(

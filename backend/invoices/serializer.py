@@ -926,6 +926,21 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
             "terms",
             "line_items",
         )
+        # Accepting a quote authorises its price, so it is a transition, not a
+        # field edit. `PublicEstimateAcceptView` enforces the source state
+        # (only Sent or Viewed), refuses an expired estimate, and records who
+        # accepted it, their email, IP and user agent. This serializer backs
+        # `PUT /api/estimates/<id>/` with `partial=True`, so leaving `status`
+        # writable let any member with access to the estimate send
+        # `{"status": "Accepted"}` and skip every one of those checks, landing
+        # an Accepted estimate with no `accepted_at`, no acceptor and no
+        # invoice. `InvoiceCreateSerializer` has always marked `status`
+        # read-only; estimates were the asymmetry, not the rule.
+        #
+        # Nothing legitimate regresses: every backend write to
+        # `estimate.status` is a guarded endpoint or a Celery task, each
+        # setting the accompanying fields in the same step.
+        read_only_fields = ("status",)
 
     def __init__(self, *args, **kwargs):
         request_obj = kwargs.pop("request_obj", None)

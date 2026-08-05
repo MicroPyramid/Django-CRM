@@ -706,11 +706,6 @@ class ContactDetailView(APIView):
                     "comment": params.get("comment"),
                     "is_internal": str(params.get("is_internal", "")).lower()
                     in ("true", "1"),
-                    # Which record and which org are the server's to say, not
-                    # the caller's, so they are filled in here rather than read
-                    # out of the request body.
-                    "object_id": str(self.contact_obj.id),
-                    "org": str(request.profile.org_id),
                 }
             )
             if not comment_serializer.is_valid():
@@ -718,8 +713,14 @@ class ContactDetailView(APIView):
                     {"error": True, "errors": comment_serializer.errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            # Which record and which org are the server's to say, not the
+            # caller's. They now travel through `save()` rather than the
+            # `data=` dict, because they are read-only on the serializer and a
+            # read-only field supplied in `data=` is discarded without comment.
             comment_serializer.save(
                 content_type=ContentType.objects.get_for_model(Contact),
+                object_id=self.contact_obj.id,
+                org=request.profile.org,
                 commented_by=self.request.profile,
             )
 

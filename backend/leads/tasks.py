@@ -2,6 +2,7 @@ import logging
 import re
 
 from celery import shared_task
+from crum import impersonate
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
@@ -131,8 +132,19 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
     profile = Profile.objects.get(id=user_id)
     org = Org.objects.filter(id=company_id).first()
     for row in validated_rows:
-        if not Lead.objects.filter(title=row.get("title")).exists():
-            if re.match(email_regex, row.get("email")) is not None:
+        # The collision check was unscoped, so a title already used by another
+        # org silently suppressed the row. RLS masks this wherever it is
+        # active, but the org filter is the contract, not the safety net.
+        if not Lead.objects.filter(title=row.get("title"), org=org).exists():
+            # `email` is not a required CSV header (the form only requires
+            # `title`), so `row.get("email")` is None for a file without that
+            # column. `re.match` raises TypeError on None, and this line sits
+            # outside the per-row try, so one such file killed the whole task.
+            # The caller had already been told "Leads created Successfully",
+            # because the task is dispatched with .delay(), so the import
+            # failed in total silence.
+            email = row.get("email") or ""
+            if email and re.match(email_regex, email) is not None:
                 try:
                     lead = Lead()
                     lead.title = row.get("title", "")[:64]
@@ -156,8 +168,22 @@ def create_lead_from_file(validated_rows, invalid_rows, user_id, source, company
                         ).first()
                         if company:
                             lead.company = company
-                    lead.created_by = profile
                     lead.org = org
-                    lead.save()
+                    # `created_by` is a FK to `User`; this assigned a
+                    # `Profile`, which raises ValueError before any SQL runs.
+                    # The bare `except` below swallowed it, so every row was
+                    # dropped and the import created nothing, ever, while the
+                    # caller held a "Leads created Successfully" 200.
+                    #
+                    # `BaseModel.save()` then overwrites `created_by` from
+                    # crum's current user, which is None inside a worker, so
+                    # assigning the field here is not enough on its own.
+                    # Impersonating the importer is how `seed_data` solves the
+                    # same problem, and it makes the audit trail name the
+                    # person who uploaded the file.
+                    with impersonate(profile.user):
+                        lead.save()
                 except Exception:
-                    pass
+                    logger.exception(
+                        "Skipped a row while importing leads for org %s", company_id
+                    )

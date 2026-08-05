@@ -700,13 +700,27 @@ class AccountDetailView(APIView):
         # on a deleted account is a normal race, not a server fault.
         self.account_obj = self.get_object(pk=pk)
         self.assert_account_access(self.account_obj)
-        comment_serializer = CommentSerializer(data=data)
-        if comment_serializer.is_valid():
-            if data.get("comment"):
-                comment_serializer.save(
-                    account_id=self.account_obj.id,
-                    commented_by=self.request.profile,
+        # This block never created a comment. `object_id` and `org` were
+        # required fields that the client is not supposed to send, so
+        # `is_valid()` was False and the save was skipped in silence, leaving a
+        # 200 and no comment. The `save(account_id=...)` below it was dead for
+        # the same reason, and would have raised `TypeError` if reached, since
+        # `Comment` is generic and has no `account_id`. Both halves are fixed
+        # here: the target and the author come from the server, and a comment
+        # that cannot be saved says so instead of vanishing.
+        if data.get("comment"):
+            comment_serializer = CommentSerializer(data=data)
+            if not comment_serializer.is_valid():
+                return Response(
+                    {"error": True, "errors": comment_serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+            comment_serializer.save(
+                content_type=ContentType.objects.get_for_model(Account),
+                object_id=self.account_obj.id,
+                org=request.profile.org,
+                commented_by=request.profile,
+            )
 
         if self.request.FILES.get("account_attachment"):
             attachment = Attachments()

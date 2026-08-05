@@ -248,6 +248,28 @@ class CommentSerializer(serializers.ModelSerializer):
             "org",
             "is_internal",
         )
+        # Which record a comment hangs off, and which org owns it, are the
+        # server's to decide. Left writable, the edit endpoints (which are
+        # `partial=True` and gated only on "you wrote it") let an author move
+        # their own comment onto any record in the org by id, including cases
+        # `cases.access` would refuse them, or restamp it into another org.
+        # `Comment.clean()` compares the new org against the new target's org,
+        # so a matching cross-org pair passed that check and saved; only the
+        # RLS policy stopped it, and RLS is the safety net, not the contract.
+        #
+        # Making them read-only also repairs the edit endpoints. This
+        # serializer is used non-partial by four PUT handlers, where
+        # `object_id` and `org` were required fields no honest client sends,
+        # so every ordinary "fix my typo" edit failed validation.
+        #
+        # Callers that legitimately set these do it through `save()`, where the
+        # value comes from the server rather than the request body.
+        read_only_fields = (
+            "commented_by",
+            "content_type",
+            "object_id",
+            "org",
+        )
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
