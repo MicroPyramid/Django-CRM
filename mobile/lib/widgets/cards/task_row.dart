@@ -29,29 +29,33 @@ class TaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canComplete = !task.completed && (onComplete != null || onToggle != null);
+
+    final deletePane = Container(
+      color: AppColors.danger500,
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20),
+      child: const Icon(LucideIcons.trash2, color: Colors.white, size: 22),
+    );
+    final completePane = Container(
+      color: AppColors.success500,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.only(left: 20),
+      child: const Icon(LucideIcons.check, color: Colors.white, size: 22),
+    );
+
+    // Dismissible falls back to [background] for both drag directions when
+    // [secondaryBackground] is null, and asserts if you supply the secondary
+    // one alone. A completed task has no complete affordance, so its single
+    // pane is the delete one and it belongs in [background]. Supplying only
+    // [secondaryBackground] here used to trip that assert, which red-screened
+    // the task calendar on any date holding a completed task.
     return Dismissible(
       key: Key(task.id),
       direction: canComplete
           ? DismissDirection.horizontal
           : DismissDirection.endToStart,
-      background: canComplete
-          ? Container(
-              color: AppColors.success500,
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 20),
-              child: const Icon(
-                LucideIcons.check,
-                color: Colors.white,
-                size: 22,
-              ),
-            )
-          : null,
-      secondaryBackground: Container(
-        color: AppColors.danger500,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(LucideIcons.trash2, color: Colors.white, size: 22),
-      ),
+      background: canComplete ? completePane : deletePane,
+      secondaryBackground: canComplete ? deletePane : null,
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           (onComplete ?? onToggle)?.call();

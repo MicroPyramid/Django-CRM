@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/permissions.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
@@ -239,12 +240,15 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
   Widget _buildHeader() {
     final lead = _lead!;
-    // Prefix salutation/title if present (e.g. "Dr. Jane Doe").
-    final prefix = [
-      lead.salutation?.trim() ?? '',
-      lead.title?.trim() ?? '',
-    ].where((s) => s.isNotEmpty).join(' ');
-    final displayName = prefix.isEmpty ? lead.name : '$prefix ${lead.name}';
+    // Salutation only, matching `Lead.__str__` on the server, which composes
+    // salutation + first + last. `title` is the lead's subject ("Website
+    // Inquiry"), not an honorific, and prefixing it here turned Eric Scott
+    // into "Consultation Request Eric Scott" on 21 of this org's 22 leads.
+    final salutation = lead.salutation?.trim() ?? '';
+    final displayName = salutation.isEmpty
+        ? lead.name
+        : '$salutation ${lead.name}';
+    final subject = lead.title?.trim() ?? '';
 
     return Container(
       decoration: BoxDecoration(
@@ -288,6 +292,19 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              // The subject keeps its place on the screen, below the name
+              // rather than inside it.
+              if (subject.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subject,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               const SizedBox(height: 10),
               // Status badge is tap-to-change so users don't have to dig
               // through the kebab for a workflow they hit constantly.
@@ -1261,6 +1278,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
   void _showMoreOptions() {
     final isConverted = _lead!.status == LeadStatus.converted;
+    // `LeadDetailView.delete` allows admins and the lead's creator only, so an
+    // assignee who did not create it must not be offered the action.
+    final canDelete = isAdminOrOwner(
+      isAdmin: ref.read(isOrgAdminProvider),
+      currentUserKey: ref.read(currentUserProvider)?.email,
+      ownerKey: _lead!.createdByEmail,
+    );
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1324,17 +1348,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                   _confirmConvert();
                 },
               ),
-            ListTile(
-              leading: Icon(LucideIcons.trash2, color: AppColors.danger600),
-              title: Text(
-                'Delete Lead',
-                style: TextStyle(color: AppColors.danger600),
+            if (canDelete)
+              ListTile(
+                leading: Icon(LucideIcons.trash2, color: AppColors.danger600),
+                title: Text(
+                  'Delete Lead',
+                  style: TextStyle(color: AppColors.danger600),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDelete();
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete();
-              },
-            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -2145,6 +2170,12 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
                     child: Text(widget.title, style: AppTypography.h3),
                   ),
                   TextButton(
+                    // Themed buttons carry an infinite minimum width, which a Row
+                    // does not bound. Without this the row fails to lay out and the
+                    // screen paints nothing. See AppLayout.buttonMinSizeInRow.
+                    style: TextButton.styleFrom(
+                      minimumSize: AppLayout.buttonMinSizeInRow,
+                    ),
                     onPressed: () => Navigator.pop<Set<String>>(context, _selected),
                     child: const Text('Save'),
                   ),

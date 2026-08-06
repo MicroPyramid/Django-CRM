@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bottle_crm/config/api_config.dart';
 import 'package:bottle_crm/services/api_service.dart';
@@ -172,6 +173,33 @@ void main() {
 
       expect(refreshCalls, 0, reason: 'refreshing cannot repair a bad token');
       expect(sent, 'Bearer not-a-jwt');
+    });
+  });
+
+  group('network failures', () {
+    test('an offline request reports something the user can act on, not the '
+        'API hostname', () async {
+      final api = ApiService();
+      api.setAccessToken(jwtExpiring(const Duration(hours: 1)));
+      api.setOrganizationId('org-1');
+      api.setClientForTesting(
+        MockClient((request) async {
+          throw const SocketException(
+            'Failed host lookup: pc-8000.rcdev.in',
+            osError: OSError('No address associated with hostname', 7),
+          );
+        }),
+      );
+
+      final response = await api.get('/api/leads/');
+
+      expect(response.success, isFalse);
+      expect(response.message, isNotNull);
+      // The exception's own text carries the host and the URI. Neither belongs
+      // on a screen, and neither helps the person reading it.
+      expect(response.message, isNot(contains('pc-8000')));
+      expect(response.message, isNot(contains('SocketException')));
+      expect(response.message, contains('Check your connection'));
     });
   });
 }

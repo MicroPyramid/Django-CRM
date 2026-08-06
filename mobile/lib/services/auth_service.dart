@@ -214,11 +214,19 @@ class AuthService {
           name: userData['name'] as String?,
           profilePic: userData['profile_pic'] as String?,
         );
-        final orgsList = userData['organizations'] as List<dynamic>?;
-        _organizations = orgsList
-            ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
-            .toList();
       }
+
+      // `organizations` is a sibling of `user`, not a member of it. Reading it
+      // from inside `user` found nothing, so a code sign-in ended with no org
+      // list at all: the picker needs a non-empty list to appear, so it never
+      // did, while the JWT quietly carried whichever org the server had picked.
+      // The nested read is kept as a fallback in case an older build of the
+      // API is on the other end.
+      final orgsList =
+          (data['organizations'] ?? userData?['organizations']) as List<dynamic>?;
+      _organizations = orgsList
+          ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
+          .toList();
 
       // Backend returns `current_org` only when the user already belongs to an
       // org and its claim is baked into the JWT. Pre-select it so the user

@@ -457,3 +457,86 @@ class TestMagicLinkVerifyCode:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "access_token" not in response.data
+
+
+@pytest.mark.django_db
+class TestVerifyCodeOrgSelection:
+    """The code flow must not choose an org on the user's behalf.
+
+    It used to bind the session to ``profiles.first()``, an arbitrary row, and
+    return only ``current_org``. A three-org admin landed in whichever org the
+    database returned first, with no picker (the client needs an org list to
+    offer one) and the org named nowhere on screen.
+    """
+
+    url = "/api/auth/magic-link/verify-code/"
+
+    def _code_token(self, email, code="123456"):
+        from django.contrib.auth.hashers import make_password
+
+        return MagicLinkToken.objects.create(
+            email=email,
+            token=secrets.token_hex(32),
+            delivery="code",
+            code_hash=make_password(code),
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+
+    def _verify(self, client, email, code="123456"):
+        return client.post(self.url, {"email": email, "code": code}, format="json")
+
+    def test_single_org_user_is_bound_and_skips_the_picker(
+        self, unauthenticated_client, admin_user, admin_profile, org_a
+    ):
+        self._code_token(admin_user.email)
+        response = self._verify(unauthenticated_client, admin_user.email)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["current_org"]["id"] == str(org_a.id)
+        assert [o["id"] for o in response.data["organizations"]] == [str(org_a.id)]
+
+    def test_multi_org_user_is_offered_the_choice_instead_of_one_being_made(
+        self, unauthenticated_client, admin_user, admin_profile, org_a, org_b
+    ):
+        Profile.objects.create(user=admin_user, org=org_b, role="ADMIN", is_active=True)
+        self._code_token(admin_user.email)
+        response = self._verify(unauthenticated_client, admin_user.email)
+
+        assert response.status_code == status.HTTP_200_OK
+        # No org chosen for them ...
+        assert "current_org" not in response.data
+        # ... and both are offered, so the client can show a picker.
+        returned = {o["id"] for o in response.data["organizations"]}
+        assert returned == {str(org_a.id), str(org_b.id)}
+
+    def test_organizations_carry_the_role(
+        self, unauthenticated_client, admin_user, admin_profile, org_a
+    ):
+        self._code_token(admin_user.email)
+        response = self._verify(unauthenticated_client, admin_user.email)
+
+        assert response.data["organizations"][0]["role"] == "ADMIN"
+
+    def test_deactivated_membership_is_not_offered(
+        self, unauthenticated_client, admin_user, admin_profile, org_a, org_b
+    ):
+        Profile.objects.create(
+            user=admin_user, org=org_b, role="ADMIN", is_active=False
+        )
+        self._code_token(admin_user.email)
+        response = self._verify(unauthenticated_client, admin_user.email)
+
+        returned = {o["id"] for o in response.data["organizations"]}
+        assert returned == {str(org_a.id)}
+        # One active membership left, so it is still bound automatically.
+        assert response.data["current_org"]["id"] == str(org_a.id)
+
+    def test_user_with_no_org_gets_an_empty_list_not_a_missing_key(
+        self, unauthenticated_client
+    ):
+        self._code_token("orgless@example.com")
+        response = self._verify(unauthenticated_client, "orgless@example.com")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["organizations"] == []
+        assert "current_org" not in response.data

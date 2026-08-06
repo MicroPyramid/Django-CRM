@@ -165,6 +165,11 @@ class Lead {
   final List<Comment> comments;
   final List<Attachment> attachments;
   final Map<String, dynamic> customFieldValues;
+
+  /// Email of the profile that created the lead, from `LeadSerializer`'s
+  /// nested `created_by`. Carried because delete is the creator's right, not
+  /// the assignee's, so the detail sheet needs it to decide what to offer.
+  final String? createdByEmail;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool isActive;
@@ -204,6 +209,7 @@ class Lead {
     this.comments = const [],
     this.attachments = const [],
     this.customFieldValues = const {},
+    this.createdByEmail,
     required this.createdAt,
     this.updatedAt,
     this.isActive = true,
@@ -374,6 +380,11 @@ class Lead {
       comments: parsedComments,
       attachments: parsedAttachments,
       customFieldValues: parsedCustomFields,
+      // `created_by` is a nested UserSerializer on the detail route and may be
+      // absent or a bare id on lighter payloads, so read it defensively.
+      createdByEmail: json['created_by'] is Map<String, dynamic>
+          ? (json['created_by'] as Map<String, dynamic>)['email'] as String?
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -453,6 +464,7 @@ class Lead {
     List<Comment>? comments,
     List<Attachment>? attachments,
     Map<String, dynamic>? customFieldValues,
+    String? createdByEmail,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -492,6 +504,7 @@ class Lead {
       comments: comments ?? this.comments,
       attachments: attachments ?? this.attachments,
       customFieldValues: customFieldValues ?? this.customFieldValues,
+      createdByEmail: createdByEmail ?? this.createdByEmail,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,

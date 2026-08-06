@@ -371,7 +371,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'create',
                     name: 'taskCreate',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const TaskFormScreen(),
+                    // `?due=YYYY-MM-DD` carries the day the user tapped in the
+                    // calendar, which the form used to discard.
+                    builder: (context, state) => TaskFormScreen(
+                      initialDueDate: DateTime.tryParse(
+                        state.uri.queryParameters['due'] ?? '',
+                      ),
+                    ),
                   ),
                   GoRoute(
                     path: ':id',

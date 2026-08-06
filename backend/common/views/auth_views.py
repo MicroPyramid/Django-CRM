@@ -290,8 +290,12 @@ class GoogleIdTokenView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        # Get user's organizations
-        profiles = Profile.objects.filter(user=user).select_related("org")
+        # Get user's organizations. Active profiles only: `OrgSwitchView`
+        # requires `is_active=True`, so listing a deactivated membership here
+        # offered an org that answers 403 the moment it is chosen.
+        profiles = Profile.objects.filter(user=user, is_active=True).select_related(
+            "org"
+        )
         organizations = [
             {
                 "id": str(p.org.id),
@@ -871,17 +875,30 @@ class MagicLinkVerifyCodeView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        profiles = Profile.objects.filter(user=user, is_active=True)
+        profiles = list(
+            Profile.objects.filter(user=user, is_active=True)
+            .select_related("org")
+            .order_by("org__name")
+        )
+        # Same shape the Google flow returns, so a client can offer the same
+        # picker whichever way the user signed in.
+        organizations = [
+            {"id": str(p.org.id), "name": p.org.name, "role": p.role} for p in profiles
+        ]
+
+        # Bind the session to an org only when there is no choice to make.
+        # Picking `profiles.first()` out of several was an arbitrary answer to
+        # a question only the user can answer: it dropped a three-org admin
+        # into whichever org the database happened to return first, named
+        # nowhere on screen, with the picker suppressed because an org had
+        # already been chosen for them.
         default_org = None
         profile = None
-        if profiles.exists():
-            profile = profiles.first()
+        if len(profiles) == 1:
+            profile = profiles[0]
             default_org = profile.org
 
-        if default_org:
-            token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
-        else:
-            token = OrgAwareRefreshToken.for_user_and_org(user, None)
+        token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
 
         audit_log.login_success(user, default_org, request)
 
@@ -890,6 +907,7 @@ class MagicLinkVerifyCodeView(APIView):
             "access_token": str(token.access_token),
             "refresh_token": str(token),
             "user": user_serializer.data,
+            "organizations": organizations,
         }
         if default_org:
             response_data["current_org"] = {

@@ -1217,6 +1217,12 @@ class _DealFilterSheetState extends State<_DealFilterSheet> {
                   Text('Filter deals', style: AppTypography.h3),
                   const Spacer(),
                   TextButton(
+                    // Themed buttons carry an infinite minimum width, which a Row
+                    // does not bound. Without this the row fails to lay out and the
+                    // screen paints nothing. See AppLayout.buttonMinSizeInRow.
+                    style: TextButton.styleFrom(
+                      minimumSize: AppLayout.buttonMinSizeInRow,
+                    ),
                     onPressed: () =>
                         setState(() => _draft = const DealFilters()),
                     child: const Text('Reset'),

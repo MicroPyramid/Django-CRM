@@ -192,6 +192,17 @@ class ApiService {
   }
 
   /// Extract error message from response
+  /// A sentence a user can act on, instead of the exception's own text.
+  ///
+  /// `SocketException` and `ClientException` stringify with the host and the
+  /// full URI in them, so an offline screen was printing the API hostname at
+  /// the user. It is also not information they can use, and every failure that
+  /// reaches here has the same answer. A malformed body does not arrive here:
+  /// `_parseResponse` swallows that and returns null. The original exception
+  /// still goes to `debugPrint` for whoever is debugging.
+  String _networkErrorMessage(Object error) =>
+      'Cannot reach the server. Check your connection and try again.';
+
   String _extractErrorMessage(dynamic data, int statusCode) {
     if (data == null) return 'Request failed with status $statusCode';
 
@@ -269,7 +280,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('GET error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 
@@ -304,7 +319,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('GET (list) error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 
@@ -349,7 +368,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('POST error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 
@@ -383,7 +406,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('PUT error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 
@@ -416,7 +443,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('PATCH error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 
@@ -447,7 +478,11 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('DELETE error: $e');
-      return ApiResponse(success: false, message: e.toString(), statusCode: 0);
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
     }
   }
 }

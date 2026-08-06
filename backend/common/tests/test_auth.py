@@ -231,9 +231,7 @@ class TestOrgSwitchView:
 
     def test_switch_org_returns_tokens(self, admin_client, admin_user, org_b):
         """Switch org should return new access and refresh tokens."""
-        Profile.objects.create(
-            user=admin_user, org=org_b, role="ADMIN", is_active=True
-        )
+        Profile.objects.create(user=admin_user, org=org_b, role="ADMIN", is_active=True)
         response = admin_client.post(
             self.url,
             {"org_id": str(org_b.id)},
@@ -871,3 +869,43 @@ class TestFlushExpiredRefreshTokens:
         from common.tasks import flush_expired_refresh_tokens
 
         assert flush_expired_refresh_tokens() == 0
+
+
+@pytest.mark.django_db
+class TestGoogleOrgListExcludesDeactivated:
+    """A membership that `OrgSwitchView` will refuse must not be offered.
+
+    The switch endpoint requires `is_active=True`, so a deactivated profile's
+    org was an entry in the picker that answered 403 the moment it was chosen.
+    """
+
+    url = "/api/auth/google/"
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_deactivated_membership_is_not_listed(
+        self,
+        mock_request_cls,
+        mock_verify,
+        unauthenticated_client,
+        admin_user,
+        admin_profile,
+        org_a,
+        org_b,
+    ):
+        Profile.objects.create(
+            user=admin_user, org=org_b, role="ADMIN", is_active=False
+        )
+        mock_verify.return_value = {
+            "email": admin_user.email,
+            "email_verified": True,
+            "picture": "",
+        }
+
+        response = unauthenticated_client.post(
+            self.url, {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        returned = {o["id"] for o in response.data["organizations"]}
+        assert returned == {str(org_a.id)}

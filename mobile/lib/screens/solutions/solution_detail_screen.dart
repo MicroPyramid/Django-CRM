@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/permissions.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/solution.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/solutions_provider.dart';
 import '../../widgets/common/common.dart';
 
@@ -168,6 +170,20 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // `cases/kb_access.py` draws three different lines on this one screen.
+    // Reading is open to the org, which is why the article renders for
+    // everybody. Editing and deleting belong to admins and the author. Only an
+    // admin may approve or publish, and being the author deliberately does not
+    // grant it. The screen used to offer all three to everybody.
+    final isAdmin = ref.watch(isOrgAdminProvider);
+    final canWrite =
+        widget.isCreate ||
+        isAdminOrOwner(
+          isAdmin: isAdmin,
+          currentUserKey: ref.watch(currentUserProvider)?.id,
+          ownerKey: _existing?.createdById,
+        );
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -179,7 +195,7 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          if (!widget.isCreate && _existing != null)
+          if (!widget.isCreate && _existing != null && canWrite)
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(LucideIcons.trash2),
@@ -224,7 +240,7 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                             ))
                         .toList(),
                   ),
-                  if (!widget.isCreate && _existing != null) ...[
+                  if (!widget.isCreate && _existing != null && canWrite) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -270,7 +286,23 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                             ),
                           ),
                           TextButton(
+                            // The global theme sets `minimumSize:
+                            // Size.fromHeight(..)`, which is `Size(∞, h)`. In
+                            // a Column that clamps to the parent width; in a
+                            // Row it stays infinite, the layout throws, and
+                            // the whole body paints nothing. That is what made
+                            // this screen open blank with only a delete icon.
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(
+                                0,
+                                AppLayout.buttonHeightMedium,
+                              ),
+                            ),
+                            // Admin-only, per `assert_solution_release_access`,
+                            // and still only from an approved article per the
+                            // serializer. Both rules, not just the second.
                             onPressed: _isLoading ||
+                                    !isAdmin ||
                                     (!_isPublished &&
                                         _status != SolutionStatus.approved)
                                 ? null
@@ -282,11 +314,13 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  PrimaryButton(
-                    label: widget.isCreate ? 'Create solution' : 'Save changes',
-                    onPressed: _isLoading ? null : _save,
-                    isLoading: _isLoading,
-                  ),
+                  if (canWrite)
+                    PrimaryButton(
+                      label:
+                          widget.isCreate ? 'Create solution' : 'Save changes',
+                      onPressed: _isLoading ? null : _save,
+                      isLoading: _isLoading,
+                    ),
                 ],
               ),
             ),

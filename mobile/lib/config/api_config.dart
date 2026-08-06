@@ -15,6 +15,11 @@ class ApiConfig {
   /// Production API URL
   static const String _productionUrl = 'https://api.bottlecrm.io';
 
+  /// Public marketing site. Hosts the documents the app has to link to
+  /// (`/terms-of-service`, `/privacy-policy`) rather than ship its own copies,
+  /// which would drift the moment either is edited.
+  static const String marketingSite = 'https://bottlecrm.io';
+
   /// Get the current base URL based on build mode
   static String get baseUrl => kDebugMode ? _developmentUrl : _productionUrl;
 

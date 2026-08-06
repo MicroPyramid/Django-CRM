@@ -33,7 +33,16 @@ class TaskFormScreen extends ConsumerStatefulWidget {
   final String? taskId;
   final Task? initialTask;
 
-  const TaskFormScreen({super.key, this.taskId, this.initialTask});
+  /// Day to pre-fill on a new task, from the calendar cell the user tapped.
+  /// Ignored in edit mode, where the task's own due date wins.
+  final DateTime? initialDueDate;
+
+  const TaskFormScreen({
+    super.key,
+    this.taskId,
+    this.initialTask,
+    this.initialDueDate,
+  });
 
   bool get isEditMode => taskId != null;
 
@@ -65,6 +74,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       _populateFromTask(widget.initialTask!);
     } else if (widget.isEditMode) {
       _fetchTask();
+    } else {
+      _dueDate = widget.initialDueDate;
     }
   }
 

@@ -10,6 +10,11 @@ class Solution {
   final SolutionStatus status;
   final bool isPublished;
   final int caseCount;
+
+  /// Id of the user who wrote the article, from the detail route's
+  /// `created_by`. Carried because editing and deleting belong to admins and
+  /// the author, while approving and publishing belong to admins alone.
+  final String? createdById;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -20,6 +25,7 @@ class Solution {
     required this.status,
     this.isPublished = false,
     this.caseCount = 0,
+    this.createdById,
     this.createdAt,
     this.updatedAt,
   });
@@ -32,6 +38,10 @@ class Solution {
       status: SolutionStatus.fromString(json['status'] as String?),
       isPublished: json['is_published'] as bool? ?? false,
       caseCount: json['case_count'] as int? ?? 0,
+      // A bare id on the detail route; a nested object would also be readable.
+      createdById: json['created_by'] is Map<String, dynamic>
+          ? (json['created_by'] as Map<String, dynamic>)['id']?.toString()
+          : json['created_by']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -63,6 +73,7 @@ class Solution {
       status: status ?? this.status,
       isPublished: isPublished ?? this.isPublished,
       caseCount: caseCount ?? this.caseCount,
+      createdById: createdById,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

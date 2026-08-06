@@ -218,18 +218,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         value: currencyFormat.format(data.revenueMetrics.pipelineValue),
         icon: LucideIcons.dollarSign,
         color: AppColors.success500,
+        destination: AppRoutes.deals,
       ),
       _KpiCard(
+        // Counted from the open stages, so this card agrees with the Pipeline
+        // card beside it. `opportunitiesCount` counts closed deals too, which
+        // is why this once read 4 next to a pipeline holding 2.
         title: 'Open Deals',
-        value: data.opportunitiesCount.toString(),
+        value: data.revenueMetrics.openOpportunitiesCount.toString(),
         icon: LucideIcons.briefcase,
         color: AppColors.primary500,
+        destination: AppRoutes.deals,
       ),
       _KpiCard(
         title: 'Leads',
         value: data.leadsCount.toString(),
         icon: LucideIcons.users,
         color: AppColors.warning500,
+        destination: AppRoutes.leads,
       ),
       _KpiCard(
         title: 'Conversion',
@@ -756,16 +762,22 @@ class _KpiCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
+  /// Where this number lives in full. Cards that summarise a list link to it;
+  /// Conversion has no list of its own, so it stays a plain card rather than
+  /// being given an arbitrary destination.
+  final String? destination;
+
   const _KpiCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.destination,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -813,6 +825,13 @@ class _KpiCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (destination == null) return card;
+    return InkWell(
+      onTap: () => GoRouter.of(context).go(destination!),
+      borderRadius: AppLayout.borderRadiusMd,
+      child: card,
     );
   }
 }

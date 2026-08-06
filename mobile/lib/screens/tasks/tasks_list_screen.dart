@@ -547,11 +547,16 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
     final completedTasks = ref.watch(completedTasksProvider);
     final noDueDateTasks = ref.watch(noDueDateTasksProvider);
 
+    // Every group that can render below has to count here, completed included.
+    // Omitting it told any user whose visible tasks were all completed that
+    // they had none, and made the Completed filter answer "no matching tasks"
+    // for rows the server had just returned.
     final hasAnyTasks =
         overdueTasks.isNotEmpty ||
         todayTasks.isNotEmpty ||
         upcomingTasks.isNotEmpty ||
-        noDueDateTasks.isNotEmpty;
+        noDueDateTasks.isNotEmpty ||
+        completedTasks.isNotEmpty;
 
     if (!hasAnyTasks && !isLoading) {
       return _buildAllCaughtUpState();
@@ -624,7 +629,14 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
                 title: 'Completed',
                 variant: 'default',
                 tasks: completedTasks,
-                initiallyExpanded: false,
+                // Collapsed by default so it does not bury the live work, but
+                // expanded when it is the only group, since a lone collapsed
+                // header reads as an empty screen.
+                initiallyExpanded:
+                    overdueTasks.isEmpty &&
+                    todayTasks.isEmpty &&
+                    upcomingTasks.isEmpty &&
+                    noDueDateTasks.isEmpty,
                 onToggle: _toggleTask,
                 onTap: _showTaskDetail,
                 onDelete: _deleteTask,
@@ -671,7 +683,7 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: () => _navigateToCreateTask(),
+              onTap: () => _navigateToCreateTask(forDay: _selectedDay),
               child: Text(
                 'Add a task',
                 style: AppTypography.label.copyWith(
@@ -764,8 +776,13 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
     }
   }
 
-  Future<void> _navigateToCreateTask() async {
-    final result = await context.push('/tasks/create');
+  /// [forDay] carries the calendar cell the user tapped, so the form opens on
+  /// that date instead of making them pick it again.
+  Future<void> _navigateToCreateTask({DateTime? forDay}) async {
+    final path = forDay == null
+        ? '/tasks/create'
+        : '/tasks/create?due=${_formatDateKey(forDay)}';
+    final result = await context.push(path);
     if (result == true && mounted) {
       ref.read(tasksProvider.notifier).refresh();
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/permissions.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
@@ -1316,6 +1317,14 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   void _showMoreOptions() {
+    // `OpportunityDetailView.delete` allows admins and the deal's creator
+    // only. Read and edit are wider (`assert_deal_access` admits assignees
+    // too), which is why Edit stays unconditional and Delete does not.
+    final canDelete = isAdminOrOwner(
+      isAdmin: ref.read(isOrgAdminProvider),
+      currentUserKey: ref.read(currentUserProvider)?.email,
+      ownerKey: _deal?.createdByEmail,
+    );
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1343,17 +1352,18 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                 _navigateToEdit();
               },
             ),
-            ListTile(
-              leading: Icon(LucideIcons.trash2, color: AppColors.danger600),
-              title: Text(
-                'Delete Deal',
-                style: TextStyle(color: AppColors.danger600),
+            if (canDelete)
+              ListTile(
+                leading: Icon(LucideIcons.trash2, color: AppColors.danger600),
+                title: Text(
+                  'Delete Deal',
+                  style: TextStyle(color: AppColors.danger600),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDelete();
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete();
-              },
-            ),
             const SizedBox(height: 16),
           ],
         ),
