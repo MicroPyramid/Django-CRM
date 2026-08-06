@@ -495,6 +495,21 @@ class TestVerifyCodeOrgSelection:
         assert response.data["current_org"]["id"] == str(org_a.id)
         assert [o["id"] for o in response.data["organizations"]] == [str(org_a.id)]
 
+    def test_the_listed_org_says_which_currency_it_uses(
+        self, unauthenticated_client, admin_user, admin_profile, org_a
+    ):
+        """The client defaults a new deal's currency from this record, so an
+        org list without a currency made every org look like a dollar org."""
+        org_a.default_currency = "GBP"
+        org_a.save(update_fields=["default_currency"])
+        self._code_token(admin_user.email)
+
+        response = self._verify(unauthenticated_client, admin_user.email)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["organizations"][0]["default_currency"] == "GBP"
+        assert response.data["organizations"][0]["currency_symbol"] == "£"
+
     def test_multi_org_user_is_offered_the_choice_instead_of_one_being_made(
         self, unauthenticated_client, admin_user, admin_profile, org_a, org_b
     ):

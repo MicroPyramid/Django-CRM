@@ -65,7 +65,7 @@
   let valid = $derived(Object.keys(errors).length === 0);
   const show = (field) => (touched[field] || submitted) && errors[field];
 
-  const unit = (n) => (form.goal_type === 'REVENUE' ? money(n) : count(n));
+  const unit = (n) => (form.goal_type === 'REVENUE' ? money(n, data.org.currency) : count(n));
 
   /** @type {import('./$types').SubmitFunction} */
   const check = async ({ cancel }) => {

@@ -2,6 +2,15 @@
 
 A comprehensive design guide for the BottleCRM mobile app, inspired by modern CRM apps like HubSpot.
 
+> **This is the authoritative design reference for the Flutter app.** Change a
+> colour or a spacing value here. There is a second, similarly named file at
+> [`docs/DESIGN-SYSTEM.md`](./docs/DESIGN-SYSTEM.md): that one is the original
+> pre-build spec, kept for its data models and screen inventory. The two agree
+> on the values they share; where they ever diverge, this file wins.
+>
+> A third file, `Django-CRM/DESIGN_SYSTEM.md` at the repo root, is the **web**
+> design system. It describes CSS variables and does not apply here.
+
 ---
 
 ## Table of Contents

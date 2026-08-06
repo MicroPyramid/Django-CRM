@@ -84,6 +84,11 @@ function toRow(lead) {
     status: lead.status ?? 'assigned',
     source: lead.source ?? '',
     opportunity_amount: lead.opportunity_amount ? Number(lead.opportunity_amount) : null,
+    // A lead's amount is stored in the lead's own currency, which the
+    // serializer stamps from the org default at create time and the user can
+    // change afterwards. Dropping it here left every lead amount printing as
+    // dollars, the same defect the deal list had.
+    currency: lead.currency || 'USD',
     assigned_to: ownerName(lead),
     // Null means never contacted, and the column says so rather than
     // substituting `updated_at`. An edit is not a conversation, and a list

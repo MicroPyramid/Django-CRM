@@ -51,7 +51,7 @@
 <PageHeader title="Recurring">
   {#snippet sub()}
     <span class="v2-num">{count(totals.active)}</span> active schedules ·
-    <span class="v2-num">{money(totals.monthly_run_rate)}</span> a month
+    <span class="v2-num">{money(totals.monthly_run_rate, data.org.currency)}</span> a month
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn v2-btn-primary" href="/invoices/recurring/new"><Plus />New schedule</a>
@@ -76,7 +76,7 @@
   <div class="v2-stats">
     <StatCard
       label="Monthly run rate"
-      value={money(totals.monthly_run_rate)}
+      value={money(totals.monthly_run_rate, data.org.currency)}
       tone="ink"
       detail="Every active schedule, normalised to a month"
     />
@@ -150,7 +150,9 @@
                   </span>
                 {/if}
               </td>
-              <td class="v2-r v2-num" style="font-weight:600">{money(s.total_amount)}</td>
+              <td class="v2-r v2-num" style="font-weight:600"
+                >{money(s.total_amount, s.currency)}</td
+              >
               <td class="v2-r">
                 <div class="rec-next">
                   <span

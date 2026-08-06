@@ -211,8 +211,8 @@
         {:else}
           <p class="v2-hint" id="h-amount">
             {Number(form.amount) > 0
-              ? money(Number(form.amount), data.orgCurrency)
-              : data.orgCurrency}
+              ? money(Number(form.amount), data.org.currency)
+              : data.org.currency}
           </p>
         {/if}
       </div>

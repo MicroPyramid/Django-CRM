@@ -157,7 +157,7 @@
       : !contact.email && (!contact.phone || contact.do_not_call)
         ? `There is no way to reach ${contact.first_name} on this record: no email${contact.do_not_call ? ', and they asked not to be called' : ' and no phone'}.`
         : openDeals.length && !contact.owner
-          ? `${contact.first_name} is on ${openDeals.length === 1 ? openDeals[0].name : `${openDeals.length} open deals`} worth ${money(openPipeline)}, and nobody owns this record.`
+          ? `${contact.first_name} is on ${openDeals.length === 1 ? openDeals[0].name : `${openDeals.length} open deals`} worth ${money(openPipeline, data.org.currency)}, and nobody owns this record.`
           : overdueTasks.length
             ? `${overdueTasks.length === 1 ? 'A task' : `${overdueTasks.length} tasks`} naming ${contact.first_name} ${overdueTasks.length === 1 ? 'is' : 'are'} past due.`
             : null
@@ -221,7 +221,7 @@
         <div class="v2-label" style="margin-bottom:10px">
           Deals they are named on
           {#if openDeals.length}
-            <span class="v2-num" style="margin-left:6px">{money(openPipeline)}</span> open
+            <span class="v2-num" style="margin-left:6px">{money(openPipeline, data.org.currency)}</span> open
           {/if}
         </div>
         <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
@@ -243,7 +243,7 @@
                     : ''}
                 </div>
               </div>
-              <span class="v2-num" style="font-weight:600;font-size:13px">{money(d.amount)}</span>
+              <span class="v2-num" style="font-weight:600;font-size:13px">{money(d.amount, d.currency)}</span>
             </a>
           {:else}
             <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">

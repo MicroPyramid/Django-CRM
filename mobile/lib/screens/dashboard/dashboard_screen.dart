@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/dashboard_data.dart';
+import '../../data/models/deal.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../routes/app_router.dart';
@@ -25,16 +26,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final greetingName = _friendlyFirstName(user?.name, user?.email);
-    final currencySymbol =
-        authState.selectedOrganization?.currencySymbol ?? '\$';
-    final currencyFormat = NumberFormat.currency(
-      symbol: currencySymbol,
-      decimalDigits: 0,
-    );
-    final compactCurrencyFormat = NumberFormat.compactCurrency(
-      symbol: currencySymbol,
-      decimalDigits: 1,
-    );
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -76,13 +67,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
 
             // Content
-            SliverToBoxAdapter(
-              child: _buildContent(
-                dashboardAsync,
-                currencyFormat,
-                compactCurrencyFormat,
-              ),
-            ),
+            SliverToBoxAdapter(child: _buildContent(dashboardAsync)),
           ],
         ),
       ),
@@ -90,11 +75,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildContent(
-    AsyncValue<DashboardData> dashboardAsync,
-    NumberFormat currencyFormat,
-    NumberFormat compactCurrencyFormat,
-  ) {
+  Widget _buildContent(AsyncValue<DashboardData> dashboardAsync) {
     // Stale-while-loading: keep showing prior data during refresh.
     final data = dashboardAsync.value;
 
@@ -130,19 +111,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     final resolved = data ?? const DashboardData();
-    return _buildBody(resolved, currencyFormat, compactCurrencyFormat);
+    return _buildBody(resolved);
   }
 
-  Widget _buildBody(
-    DashboardData data,
-    NumberFormat currencyFormat,
-    NumberFormat compactCurrencyFormat,
-  ) {
+  Widget _buildBody(DashboardData data) {
+    // The currency belongs to the payload, not to the stored org record: no
+    // endpoint returns `currency_symbol`, so reading it there gave null and
+    // printed every amount with a dollar sign. `/api/dashboard/` reports the
+    // currency it priced these totals in, alongside them.
+    final currencyFormat = NumberFormat.compactCurrency(
+      symbol: Currency.fromString(data.revenueMetrics.currency).symbol,
+      decimalDigits: 1,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // KPI Cards
-        _buildKpiSection(data, compactCurrencyFormat),
+        _buildKpiSection(data, currencyFormat),
 
         const SizedBox(height: 16),
 
@@ -154,7 +140,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
         // Pipeline Overview
         if (data.pipelineByStage.isNotEmpty) ...[
-          _buildPipelineSection(data.pipelineByStage, compactCurrencyFormat),
+          _buildPipelineSection(
+            data.pipelineByStage,
+            currencyFormat,
+            data.revenueMetrics.otherCurrencyCount,
+          ),
           const SizedBox(height: 16),
         ],
 
@@ -243,6 +233,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         icon: LucideIcons.target,
         color: AppColors.purple500,
       ),
+      // Neither of these two summarises a list the app can open: one is a
+      // month-and-stage slice, the other a forecast. Like Conversion, they
+      // stay plain rather than link somewhere that shows something else.
+      _KpiCard(
+        title: 'Won This Month',
+        value: currencyFormat.format(data.revenueMetrics.wonThisMonth),
+        icon: LucideIcons.trophy,
+        color: AppColors.success500,
+      ),
+      _KpiCard(
+        title: 'Weighted',
+        value: currencyFormat.format(data.revenueMetrics.weightedPipeline),
+        icon: LucideIcons.scale,
+        color: AppColors.primary400,
+      ),
     ];
 
     return Padding(
@@ -328,10 +333,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildPipelineSection(
     List<PipelineStage> stages,
     NumberFormat currencyFormat,
+    int otherCurrencyCount,
   ) {
-    // Only show active pipeline stages (not closed)
+    // Only show active pipeline stages (not closed). Selecting on the deal
+    // count rather than the value, because the server prices a stage in the
+    // org's currency alone: a stage whose deals are all in another currency
+    // arrives worth zero and used to disappear from the chart entirely.
     final activeStages = stages
-        .where((s) => !s.code.contains('CLOSED') && s.value > 0)
+        .where((s) => !s.code.contains('CLOSED') && s.count > 0)
         .toList();
 
     if (activeStages.isEmpty) {
@@ -396,7 +405,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     SizedBox(
                       width: 70,
                       child: Text(
-                        currencyFormat.format(stage.value),
+                        // An unpriced stage reports what it does hold. The
+                        // alternative was a confident zero next to deals that
+                        // exist.
+                        stage.value > 0
+                            ? currencyFormat.format(stage.value)
+                            : '${stage.count} '
+                                  '${stage.count == 1 ? 'deal' : 'deals'}',
                         style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 11,
@@ -408,6 +423,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               );
             }),
+            if (otherCurrencyCount > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                otherCurrencyCount == 1
+                    ? '1 deal in another currency is not counted in these '
+                          'totals'
+                    : '$otherCurrencyCount deals in other currencies are not '
+                          'counted in these totals',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -1,6 +1,13 @@
 # CRM Mobile App Design System
 
-A comprehensive design system document for implementing the SalesPro CRM application in Flutter. This document serves as the single source of truth for colors, typography, spacing, components, and interaction patterns.
+The design system the app was originally built from, written under the working
+name "SalesPro CRM".
+
+> **For colors, typography and spacing, [`../DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)
+> is authoritative.** The two agree on the values they share, including the
+> `#2563EB` primary, so nothing here contradicts it. This file is kept for what
+> the other one does not carry: data models, navigation structure, screen
+> inventory, and the interaction and motion patterns below.
 
 ---
 

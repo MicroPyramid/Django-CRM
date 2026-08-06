@@ -67,8 +67,6 @@ class AppRoutes {
   static const String taskEdit = '/tasks/:id/edit';
   static const String more = '/more';
   static const String profile = '/more/profile';
-  static const String notifications = '/more/notifications';
-  static const String team = '/more/team';
 
   // Knowledge base
   static const String solutions = '/solutions';

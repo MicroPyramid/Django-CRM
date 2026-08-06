@@ -99,7 +99,8 @@
               </td>
               <td data-m="tag"><Pill tone={LEAD_STATUS_TONE[l.status]}>{l.status}</Pill></td>
               <td class="v2-muted" data-m="hide" style="font-size:12.5px">{l.source}</td>
-              <td class="v2-r v2-num">{l.opportunity_amount ? money(l.opportunity_amount) : '—'}</td
+              <td class="v2-r v2-num"
+                >{l.opportunity_amount ? money(l.opportunity_amount, l.currency) : '—'}</td
               >
               <!--
               `last_contacted` is the only touch the model records. Lead has

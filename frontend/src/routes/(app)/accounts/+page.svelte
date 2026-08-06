@@ -103,19 +103,19 @@
               <!-- All four figures are annotated in SQL by the API over the
                    whole related set, never derived from the rows on screen. -->
               <td class="v2-r v2-num" data-m="hide">
-                {a.won_amount ? money(a.won_amount) : '—'}
+                {a.won_amount ? money(a.won_amount, data.org.currency) : '—'}
               </td>
               <!-- Labelled on a phone: without the header row, two money
                    columns side by side are two unattributed numbers. -->
               <td class="v2-r v2-num" data-l="Pipeline">
-                {a.open_pipeline ? money(a.open_pipeline) : '—'}
+                {a.open_pipeline ? money(a.open_pipeline, data.org.currency) : '—'}
               </td>
               <td
                 class="v2-r v2-num"
                 data-l="Past due"
                 style={a.overdue_amount ? 'color:var(--v2-rust);font-weight:600' : ''}
               >
-                {a.overdue_amount ? money(a.overdue_amount) : '—'}
+                {a.overdue_amount ? money(a.overdue_amount, data.org.currency) : '—'}
               </td>
               <td>
                 {#if a.open_tickets}

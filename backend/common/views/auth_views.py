@@ -18,8 +18,34 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from common import serializer
 from common.models import Org, Profile, User
 from common.serializer import OrgAwareRefreshToken
+from common.utils import CURRENCY_SYMBOLS
 
 logger = logging.getLogger(__name__)
+
+
+def _org_payload(org, role=None):
+    """The org record every auth response hands a client.
+
+    Currency belongs here because a client picks it up at sign-in and holds it
+    for the whole session: the mobile deal and lead forms default a new
+    record's currency from it, and the dashboard prices its totals with it.
+    All three read fields that no endpoint was sending, so an org keeping its
+    books in euros still created dollar deals and drew a dollar dashboard.
+
+    ``default_currency`` is normalised rather than passed through, so a blank
+    column answers with the same "USD" the rest of the codebase assumes.
+    """
+    currency = org.default_currency or "USD"
+    payload = {
+        "id": str(org.id),
+        "name": org.name,
+        "default_currency": currency,
+        "currency_symbol": CURRENCY_SYMBOLS.get(currency, "$"),
+        "default_country": org.default_country,
+    }
+    if role is not None:
+        payload["role"] = role
+    return payload
 
 
 def _google_email_is_verified(claims):
@@ -296,14 +322,7 @@ class GoogleIdTokenView(APIView):
         profiles = Profile.objects.filter(user=user, is_active=True).select_related(
             "org"
         )
-        organizations = [
-            {
-                "id": str(p.org.id),
-                "name": p.org.name,
-                "role": p.role,
-            }
-            for p in profiles
-        ]
+        organizations = [_org_payload(p.org, role=p.role) for p in profiles]
 
         # Generate JWT token
         token = OrgAwareRefreshToken.for_user_and_org(user, None)
@@ -576,7 +595,7 @@ class OrgSwitchView(APIView):
             {
                 "access_token": str(token.access_token),
                 "refresh_token": str(token),
-                "current_org": {"id": str(profile.org.id), "name": profile.org.name},
+                "current_org": _org_payload(profile.org),
                 "profile": {
                     "id": str(profile.id),
                     "role": profile.role,
@@ -764,10 +783,7 @@ class MagicLinkVerifyView(APIView):
         }
 
         if default_org:
-            response_data["current_org"] = {
-                "id": str(default_org.id),
-                "name": default_org.name,
-            }
+            response_data["current_org"] = _org_payload(default_org)
 
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -882,9 +898,7 @@ class MagicLinkVerifyCodeView(APIView):
         )
         # Same shape the Google flow returns, so a client can offer the same
         # picker whichever way the user signed in.
-        organizations = [
-            {"id": str(p.org.id), "name": p.org.name, "role": p.role} for p in profiles
-        ]
+        organizations = [_org_payload(p.org, role=p.role) for p in profiles]
 
         # Bind the session to an org only when there is no choice to make.
         # Picking `profiles.first()` out of several was an arbitrary answer to
@@ -910,8 +924,5 @@ class MagicLinkVerifyCodeView(APIView):
             "organizations": organizations,
         }
         if default_org:
-            response_data["current_org"] = {
-                "id": str(default_org.id),
-                "name": default_org.name,
-            }
+            response_data["current_org"] = _org_payload(default_org)
         return Response(response_data, status=status.HTTP_200_OK)

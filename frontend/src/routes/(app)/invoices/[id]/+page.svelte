@@ -145,9 +145,9 @@
                     {#if li.detail}<div class="v2-table-secondary">{li.detail}</div>{/if}
                   </td>
                   <td class="v2-r v2-num">{li.quantity}</td>
-                  <td class="v2-r v2-num">{money(li.rate)}</td>
+                  <td class="v2-r v2-num">{money(li.rate, invoice.currency)}</td>
                   <td class="v2-r v2-num">{li.tax_rate}%</td>
-                  <td class="v2-r v2-num">{money(li.amount)}</td>
+                  <td class="v2-r v2-num">{money(li.amount, invoice.currency)}</td>
                 </tr>
               {:else}
                 <tr>
@@ -163,19 +163,29 @@
         <div style="display:flex;justify-content:flex-end">
           <dl class="v2-kv" style="grid-template-columns:160px 120px;width:280px">
             <dt>Subtotal</dt>
-            <dd class="v2-num" style="text-align:right">{money(invoice.subtotal)}</dd>
+            <dd class="v2-num" style="text-align:right">
+              {money(invoice.subtotal, invoice.currency)}
+            </dd>
             {#if invoice.discount_amount > 0}
               <dt>Discount</dt>
-              <dd class="v2-num" style="text-align:right">−{money(invoice.discount_amount)}</dd>
+              <dd class="v2-num" style="text-align:right">
+                −{money(invoice.discount_amount, invoice.currency)}
+              </dd>
             {/if}
             <dt>Tax</dt>
-            <dd class="v2-num" style="text-align:right">{money(invoice.tax_amount)}</dd>
+            <dd class="v2-num" style="text-align:right">
+              {money(invoice.tax_amount, invoice.currency)}
+            </dd>
             {#if invoice.shipping_amount > 0}
               <dt>Shipping</dt>
-              <dd class="v2-num" style="text-align:right">{money(invoice.shipping_amount)}</dd>
+              <dd class="v2-num" style="text-align:right">
+                {money(invoice.shipping_amount, invoice.currency)}
+              </dd>
             {/if}
             <dt>Paid</dt>
-            <dd class="v2-num" style="text-align:right">{money(invoice.amount_paid)}</dd>
+            <dd class="v2-num" style="text-align:right">
+              {money(invoice.amount_paid, invoice.currency)}
+            </dd>
             <dt style="color:var(--v2-ink);font-weight:600">Outstanding</dt>
             <dd
               class="v2-num"
@@ -183,7 +193,7 @@
                 ? 'var(--v2-rust)'
                 : 'var(--v2-moss)'}"
             >
-              {money(invoice.amount_due)}
+              {money(invoice.amount_due, invoice.currency)}
             </dd>
           </dl>
         </div>
@@ -205,7 +215,7 @@
                   name="amount"
                   class="v2-input"
                   style="width:150px"
-                  placeholder={money(invoice.amount_due)}
+                  placeholder={money(invoice.amount_due, invoice.currency)}
                   inputmode="decimal"
                 />
               </div>
@@ -213,7 +223,7 @@
             </form>
           </div>
           <p class="v2-sub" style="text-align:right;font-size:11.5px;margin-top:6px">
-            Leave the amount blank to settle the full {money(invoice.amount_due)} balance.
+            Leave the amount blank to settle the full {money(invoice.amount_due, invoice.currency)} balance.
           </p>
         {/if}
       </div>

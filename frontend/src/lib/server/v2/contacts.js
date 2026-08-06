@@ -194,6 +194,9 @@ export async function getContact({ cookies }, id) {
       name: deal.name ?? '',
       stage: deal.stage,
       amount: num(deal.amount) ?? 0,
+      // Priced in the deal's own currency, unlike the open-pipeline sum beside
+      // it, which is an addition across deals and takes the org's.
+      currency: deal.currency || 'USD',
       closed_on: deal.closed_on ?? null
     })),
     tickets: (response.cases ?? []).map((/** @type {any} */ ticket) => ({

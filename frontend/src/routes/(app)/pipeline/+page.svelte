@@ -74,8 +74,8 @@
          that was only ever true under the old hardcoded ?open=true would lie
          here as soon as somebody switched presets. -->
     <span class="v2-num">{count(totals.count)}</span> deals ·
-    <span class="v2-num">{money(totals.amount_sum, data.orgCurrency)}</span> ·
-    <span class="v2-num">{money(totals.weighted_sum, data.orgCurrency)}</span> weighted ·
+    <span class="v2-num">{money(totals.amount_sum, data.org.currency)}</span> ·
+    <span class="v2-num">{money(totals.weighted_sum, data.org.currency)}</span> weighted ·
     <span class="v2-num" style="color:var(--v2-rust)">{totals.stalled_count}</span> stalled
   {/snippet}
   {#snippet actions()}
@@ -119,7 +119,7 @@
       <section class="v2-lane">
         <div class="v2-lane-head">
           <span class="v2-label">{STAGE_LABEL[lane.stage]}</span>
-          <span class="v2-num">{count(lane.count)} · {money(lane.sum, data.orgCurrency)}</span>
+          <span class="v2-num">{count(lane.count)} · {money(lane.sum, data.org.currency)}</span>
         </div>
         <div class="v2-lane-body">
           {#if lane.truncated}

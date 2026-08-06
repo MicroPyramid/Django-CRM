@@ -67,18 +67,7 @@ export async function load(event) {
     // from this `.server.js` module (SvelteKit forbids that, the same
     // protection as `$lib/server/`); the toggle just needs to know which of
     // the CURRENT params survive the switch.
-    boardFields: BOARD_FIELDS,
-    // The currency for figures that are sums rather than one deal: the header
-    // totals and the board lane subtotals. A per-deal currency cannot label a
-    // sum, and `money()` would otherwise fall back to a hardcoded USD and
-    // print a dollar sign over a euro figure.
-    //
-    // This does not make a mixed-currency sum correct. `get_totals` in
-    // `opportunity_views.py` is `SUM(amount)` over every row regardless of
-    // currency, so on an org running more than one the total is an addition
-    // that should not have happened, and no symbol repairs it. Read from the
-    // JWT's org settings, which is also where a new deal's currency comes from.
-    orgCurrency: /** @type {any} */ (locals).org_settings?.default_currency || 'USD'
+    boardFields: BOARD_FIELDS
   };
 
   if (boardMode) {
