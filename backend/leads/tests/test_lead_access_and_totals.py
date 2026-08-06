@@ -439,3 +439,45 @@ class TestLeadDetailWrite:
         assert response.status_code == 404
         lead.refresh_from_db()
         assert lead.first_name == "Ada"
+
+
+@pytest.mark.django_db
+class TestContactCatalogueRespectsRole:
+    """The contact picker served beside the lead list.
+
+    Same shape as the `/api/accounts/` leak found in the 2026-08-05 parity
+    review, one endpoint over: org-scoped but not role-narrowed, so a member
+    could read back the first name of every contact in the org from a payload
+    that exists to populate a form. Names only here (`.values("id",
+    "first_name")`), which is why this one is smaller than its neighbour, not
+    why it should stay.
+    """
+
+    def test_member_sees_only_their_own_contacts(
+        self, user_client, user_profile, org_a, admin_user
+    ):
+        from contacts.models import Contact
+
+        mine = Contact.objects.create(first_name="Mine", last_name="C", org=org_a)
+        mine.assigned_to.add(user_profile)
+        theirs = Contact.objects.create(first_name="Theirs", last_name="C", org=org_a)
+        Contact.objects.filter(pk=theirs.pk).update(created_by=admin_user)
+
+        names = {
+            row["first_name"] for row in user_client.get(LEADS_URL).json()["contacts"]
+        }
+
+        assert "Mine" in names
+        assert "Theirs" not in names
+
+    def test_admin_still_sees_the_whole_catalogue(self, admin_client, org_a):
+        from contacts.models import Contact
+
+        Contact.objects.create(first_name="One", last_name="C", org=org_a)
+        Contact.objects.create(first_name="Two", last_name="C", org=org_a)
+
+        names = {
+            row["first_name"] for row in admin_client.get(LEADS_URL).json()["contacts"]
+        }
+
+        assert {"One", "Two"} <= names
