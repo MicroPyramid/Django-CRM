@@ -29,12 +29,7 @@ export async function getReopenPolicy({ cookies }) {
 
 /** The four fields the serializer accepts. Everything else in the GET
  *  response is a computed metric and is not writable. */
-const EDITABLE_FIELDS = [
-  'is_enabled',
-  'reopen_window_days',
-  'reopen_to_status',
-  'notify_assigned'
-];
+const EDITABLE_FIELDS = ['is_enabled', 'reopen_window_days', 'reopen_to_status', 'notify_assigned'];
 
 /**
  * Update the org's reopen policy.

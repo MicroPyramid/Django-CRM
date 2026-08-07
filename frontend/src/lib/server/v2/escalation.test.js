@@ -3,12 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const {
-  createEscalationPolicy,
-  updateEscalationPolicy,
-  deleteEscalationPolicy,
-  UPDATE_FIELDS
-} = await import('./escalation.js');
+const { createEscalationPolicy, updateEscalationPolicy, deleteEscalationPolicy, UPDATE_FIELDS } =
+  await import('./escalation.js');
 
 const cookies = /** @type {any} */ ({ get: () => 'token' });
 const event = /** @type {any} */ ({ cookies });

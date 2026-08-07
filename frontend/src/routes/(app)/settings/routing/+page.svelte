@@ -47,9 +47,7 @@
   // The repeating condition rows being edited, as `{ field, op, value }`.
   // Held here, rather than read off `editing`, so a row can be added or
   // removed before submitting.
-  let conditionRows = $state(
-    /** @type {{ field: string, op: string, value: string }[]} */ ([])
-  );
+  let conditionRows = $state(/** @type {{ field: string, op: string, value: string }[]} */ ([]));
 
   function openCreate() {
     editing = 'new';
@@ -378,7 +376,8 @@
               class="v2-btn v2-btn-sm"
               type="button"
               style="align-self:flex-start"
-              onclick={() => (conditionRows = [...conditionRows, { field: '', op: 'eq', value: '' }])}
+              onclick={() =>
+                (conditionRows = [...conditionRows, { field: '', op: 'eq', value: '' }])}
             >
               Add a condition
             </button>

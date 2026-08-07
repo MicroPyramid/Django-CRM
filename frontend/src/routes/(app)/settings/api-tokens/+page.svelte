@@ -311,7 +311,7 @@
                   <span class="v2-sub" style="font-size:12px">
                     {#if (t.scopes ?? []).length === 0}
                       Everything {(owner.name ?? '').split(' ')[0]} can
-                    {:else if (t.scopes ?? []).every((/** @type {string} */ s) => s.endsWith(':read'))}
+                    {:else if (t.scopes ?? []).every( (/** @type {string} */ s) => s.endsWith(':read') )}
                       Read only
                     {:else}
                       {(t.scopes ?? []).join(', ')}
@@ -364,10 +364,10 @@
         <div>
           <div style="font-weight:600;font-size:13px">A token is the whole account</div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
-            A token authenticates as its owner and inherits their role and organisation. There is
-            no narrower permission to give it. Issue one per integration so a single revocation
-            stops a single thing, set an expiry, and revoke anything you cannot name a use for. The
-            value is shown once when the token is created and cannot be recovered afterwards.
+            A token authenticates as its owner and inherits their role and organisation. There is no
+            narrower permission to give it. Issue one per integration so a single revocation stops a
+            single thing, set an expiry, and revoke anything you cannot name a use for. The value is
+            shown once when the token is created and cannot be recovered afterwards.
           </p>
         </div>
       </div>
