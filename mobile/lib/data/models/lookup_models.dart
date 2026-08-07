@@ -191,3 +191,65 @@ class TagLookup {
   @override
   int get hashCode => id.hashCode;
 }
+
+/// A record a task can be attached to: one id, one label, nothing else.
+///
+/// The task form used to source these from the leads, deals and tickets list
+/// providers, which hold whatever page the corresponding screen last loaded
+/// under whatever filter it last applied. On a cold app those are empty, so the
+/// picker said "Nothing to pick" for an org with twenty leads.
+class EntityLookup {
+  final String id;
+  final String label;
+
+  const EntityLookup({required this.id, required this.label});
+
+  /// A record with one naming field. [labelKeys] are tried in order and the
+  /// first non-empty one wins.
+  factory EntityLookup.fromJson(
+    Map<String, dynamic> json, {
+    required List<String> labelKeys,
+  }) {
+    return EntityLookup(
+      id: json['id']?.toString() ?? '',
+      label: _firstNonEmpty(json, labelKeys) ?? 'Untitled',
+    );
+  }
+
+  /// A person, whose name is two optional fields rather than one. Neither is
+  /// required on a lead, so [fallbackKeys] is what keeps an unnamed row
+  /// selectable instead of blank.
+  factory EntityLookup.person(
+    Map<String, dynamic> json, {
+    List<String> fallbackKeys = const [],
+  }) {
+    final name = [
+      json['first_name']?.toString().trim() ?? '',
+      json['last_name']?.toString().trim() ?? '',
+    ].where((part) => part.isNotEmpty).join(' ');
+    return EntityLookup(
+      id: json['id']?.toString() ?? '',
+      label: name.isNotEmpty
+          ? name
+          : (_firstNonEmpty(json, fallbackKeys) ?? 'Unnamed'),
+    );
+  }
+
+  static String? _firstNonEmpty(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EntityLookup &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}

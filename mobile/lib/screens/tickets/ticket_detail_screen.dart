@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
+import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
 import '../../data/models/comment.dart';
 import '../../data/models/email_message.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/tickets_provider.dart';
+import '../../services/attachment_upload.dart';
 import '../../data/models/lookup_models.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/forms/multi_select_sheet.dart';
@@ -37,13 +40,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   TicketTreeNode? _tree;
   bool _isLoading = true;
   bool _isAddingComment = false;
+  bool _isUploadingAttachment = false;
   _ThreadSegment _segment = _ThreadSegment.public;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _fetchDetail();
   }
 
@@ -178,6 +182,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Comments'),
+            Tab(text: 'Files'),
             Tab(text: 'Activity'),
           ],
         ),
@@ -191,6 +196,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               children: [
                 _buildOverview(c),
                 _buildCommentsTab(c),
+                _buildFilesTab(),
                 _buildActivityTab(),
               ],
             ),
@@ -702,6 +708,131 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         _commentController.clear();
       });
     }
+  }
+
+  // ===========================================================================
+  // FILES TAB
+  // ===========================================================================
+
+  /// Attachments on a ticket. `CaseDetailView` has always returned these and
+  /// nothing on the phone read them, so a screenshot attached to a ticket, the
+  /// single most useful thing on a support record, was invisible here.
+  Widget _buildFilesTab() {
+    final attachments = _detail?.attachments ?? const <Attachment>[];
+    if (attachments.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchDetail,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    LucideIcons.paperclip,
+                    size: 48,
+                    color: AppColors.gray400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text('No files attached', style: AppTypography.h3),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Attach a screenshot, a log, or a document.',
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  AttachFileButton(
+                    isUploading: _isUploadingAttachment,
+                    onPressed: _pickAndUploadAttachment,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _fetchDetail,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        itemCount: attachments.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemBuilder: (context, index) => index == attachments.length
+            ? Align(
+                alignment: Alignment.centerLeft,
+                child: AttachFileButton(
+                  isUploading: _isUploadingAttachment,
+                  onPressed: _pickAndUploadAttachment,
+                ),
+              )
+            : AttachmentTile(
+                attachment: attachments[index],
+                onOpen: _openAttachment,
+              ),
+      ),
+    );
+  }
+
+  Future<void> _openAttachment(Attachment attachment) async {
+    final path = attachment.filePath;
+    if (path == null || path.trim().isEmpty) {
+      _snack('No download URL available');
+      return;
+    }
+    final uri = Uri.tryParse(path);
+    if (uri == null) {
+      _snack('No download URL available');
+      return;
+    }
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && mounted) _snack('Could not open that file');
+  }
+
+  /// Attach a file to this ticket.
+  Future<void> _pickAndUploadAttachment() async {
+    if (_isUploadingAttachment || _detail == null) return;
+    setState(() => _isUploadingAttachment = true);
+
+    final result = await pickAndUploadAttachment(
+      target: AttachmentTarget.ticket,
+      recordId: widget.ticketId,
+    );
+
+    if (!mounted) return;
+    setState(() => _isUploadingAttachment = false);
+
+    if (result.cancelled) return;
+    if (!result.succeeded) {
+      _snack(result.error!);
+      return;
+    }
+
+    final attachmentsData = result.data?['attachments'];
+    if (attachmentsData is List && _detail != null) {
+      setState(() {
+        _detail = _detail!.copyWith(
+          attachments: attachmentsData
+              .whereType<Map<String, dynamic>>()
+              .map(Attachment.fromJson)
+              .toList(),
+        );
+      });
+    } else {
+      await _fetchDetail();
+    }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildActivityTab() {

@@ -103,6 +103,8 @@ Create a `.env` file in the `backend/` directory:
 
 ```env
 # Django
+# At least 32 bytes: this key also signs the JWTs, and HS256 needs one that long.
+# python -c "import secrets; print(secrets.token_urlsafe(48))"
 SECRET_KEY=your-secret-key-here
 ENV_TYPE=dev
 
@@ -423,7 +425,7 @@ uv lock --upgrade
 
 | Variable | Description |
 |----------|-------------|
-| `SECRET_KEY` | Django secret key |
+| `SECRET_KEY` | Django secret key, and the JWT signing key. At least 32 bytes |
 | `ENV_TYPE` | Environment type (`dev` or `prod`) |
 | `DBNAME` | PostgreSQL database name |
 | `DBUSER` | PostgreSQL username |

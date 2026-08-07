@@ -164,8 +164,14 @@ class RequireOrgContext:
     # with "/api/packs/" too. Adding "/api/packs/" to the prefix-matched
     # EXEMPT_PATHS list instead of here would silently strip tenant-context
     # enforcement from those write/destroy endpoints. Do not move it there.
+    # POST /api/auth/logout/ revokes the refresh token it is handed. It is
+    # reached most often when the access token has already expired, so there is
+    # no org claim to require, and demanding one would fail sign-out in exactly
+    # the case sign-out matters. Exact match: the view reads nothing but the
+    # token in the body, and no sub-path should inherit this.
     EXEMPT_EXACT_PATHS = [
         "/api/packs/",
+        "/api/auth/logout/",
     ]
 
     def __init__(self, get_response):

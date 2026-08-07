@@ -3,6 +3,8 @@
 library;
 
 export 'app_shell.dart';
+export 'attach_file_button.dart';
+export 'attachment_tile.dart';
 export 'avatar.dart';
 export 'badge.dart';
 export 'buttons.dart';

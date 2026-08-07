@@ -152,7 +152,11 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
           _buildSearchBar(),
           _buildQuickStatusChips(),
           _buildFilterBar(),
-          _buildResultsCount(tickets.length, data?.totalCount ?? 0),
+          _buildResultsCount(
+            ticketsAsync,
+            tickets.length,
+            data?.totalCount ?? 0,
+          ),
           Expanded(child: _buildList(ticketsAsync, tickets)),
         ],
       ),
@@ -358,7 +362,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   }
 
   Widget _buildFilterBar() {
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(accountOptionsProvider);
     final users = ref.watch(usersProvider);
     final tags = ref.watch(tagsProvider);
 
@@ -487,17 +491,31 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     return 'Before ${fmt(before!)}';
   }
 
-  Widget _buildResultsCount(int loadedCount, int totalCount) {
+  Widget _buildResultsCount(
+    AsyncValue<TicketsListData> async,
+    int loadedCount,
+    int totalCount,
+  ) {
+    // Until the first page lands there is no count to state. Printing
+    // "0 tickets" over a spinner reads as an empty org, which is what made a
+    // failed load take a minute to tell apart from an empty list.
+    if (async.value == null) {
+      return _countStrip(async.hasError ? '' : 'Loading');
+    }
     final unit = totalCount == 1 ? 'ticket' : 'tickets';
     final text = totalCount > 0 && loadedCount < totalCount
         ? '$loadedCount of $totalCount $unit'
         : '$totalCount $unit';
+    return _countStrip(_filters.hasAny ? '$text (filtered)' : text);
+  }
+
+  Widget _countStrip(String label) {
     return Container(
       width: double.infinity,
       color: AppColors.surfaceDim,
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
       child: Text(
-        _filters.hasAny ? '$text (filtered)' : text,
+        label,
         style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
       ),
     );

@@ -62,6 +62,9 @@ class GetProfileAndOrg:
             "/api/auth/refresh-token/",
             "/api/auth/me/",
             "/api/auth/switch-org/",
+            # Sign-out carries a refresh token, not an access token, and is
+            # reached most often when the access token has already expired.
+            "/api/auth/logout/",
             "/api/auth/magic-link/request/",
             "/api/auth/magic-link/verify/",
         ]

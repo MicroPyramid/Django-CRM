@@ -10,6 +10,7 @@ import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
 
 /// Lead Detail Screen
@@ -33,6 +34,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
   List<AssignableUser> _assignableUsers = const [];
   bool _isLoading = true;
   bool _isAddingNote = false;
+  bool _isUploadingAttachment = false;
   String? _error;
 
   @override
@@ -820,11 +822,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
                   const SizedBox(height: 16),
                   Text('No files attached', style: AppTypography.h3),
                   const SizedBox(height: 8),
+                  // This used to read "Attachments uploaded from the web
+                  // appear here", which was true and was the whole problem.
                   Text(
-                    'Attachments uploaded from the web appear here',
+                    'Attach a document, a business card, or a photo.',
                     style: AppTypography.body.copyWith(
                       color: AppColors.textSecondary,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  AttachFileButton(
+                    isUploading: _isUploadingAttachment,
+                    onPressed: _pickAndUploadAttachment,
                   ),
                 ],
               ),
@@ -838,12 +847,62 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemCount: attachments.length,
+        itemCount: attachments.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (context, index) =>
-            _AttachmentTile(attachment: attachments[index], onOpen: _openFile),
+        itemBuilder: (context, index) => index == attachments.length
+            ? Align(
+                alignment: Alignment.centerLeft,
+                child: AttachFileButton(
+                  isUploading: _isUploadingAttachment,
+                  onPressed: _pickAndUploadAttachment,
+                ),
+              )
+            : AttachmentTile(attachment: attachments[index], onOpen: _openFile),
       ),
     );
+  }
+
+  /// Attach a file to this lead.
+  ///
+  /// The lead detail POST answers with the refreshed `attachments` array, so
+  /// the tab updates without a refetch.
+  Future<void> _pickAndUploadAttachment() async {
+    if (_isUploadingAttachment || _lead == null) return;
+    setState(() => _isUploadingAttachment = true);
+
+    final result = await pickAndUploadAttachment(
+      target: AttachmentTarget.lead,
+      recordId: widget.leadId,
+    );
+
+    if (!mounted) return;
+    setState(() => _isUploadingAttachment = false);
+
+    if (result.cancelled) return;
+    if (!result.succeeded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error!),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger600,
+        ),
+      );
+      return;
+    }
+
+    final attachmentsData = result.data?['attachments'];
+    if (attachmentsData is List && _lead != null) {
+      setState(() {
+        _lead = _lead!.copyWith(
+          attachments: attachmentsData
+              .whereType<Map<String, dynamic>>()
+              .map(Attachment.fromJson)
+              .toList(),
+        );
+      });
+    } else {
+      await _fetchLead();
+    }
   }
 
   Future<void> _openFile(Attachment a) async {
@@ -2235,102 +2294,6 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
   }
 }
 
-class _AttachmentTile extends StatelessWidget {
-  final Attachment attachment;
-  final void Function(Attachment) onOpen;
-
-  const _AttachmentTile({required this.attachment, required this.onOpen});
-
-  IconData get _iconForName {
-    final lower = attachment.fileName.toLowerCase();
-    if (lower.endsWith('.pdf')) return LucideIcons.fileText;
-    if (RegExp(r'\.(png|jpg|jpeg|gif|webp|bmp)$').hasMatch(lower)) {
-      return LucideIcons.image;
-    }
-    if (RegExp(r'\.(xls|xlsx|csv)$').hasMatch(lower)) {
-      return LucideIcons.fileSpreadsheet;
-    }
-    if (RegExp(r'\.(zip|tar|gz|rar|7z)$').hasMatch(lower)) {
-      return LucideIcons.fileArchive;
-    }
-    return LucideIcons.file;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: AppLayout.borderRadiusMd,
-      child: InkWell(
-        borderRadius: AppLayout.borderRadiusMd,
-        onTap: () => onOpen(attachment),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: AppLayout.borderRadiusMd,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(_iconForName, color: AppColors.primary600, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      attachment.fileName,
-                      style: AppTypography.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (attachment.createdBy != null &&
-                            attachment.createdBy!.isNotEmpty)
-                          attachment.createdBy!,
-                        if (attachment.createdAt != null)
-                          _formatRelative(attachment.createdAt!),
-                      ].join(' · '),
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                LucideIcons.externalLink,
-                size: 16,
-                color: AppColors.textTertiary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _formatRelative(DateTime dt) {
-    final d = DateTime.now().difference(dt);
-    if (d.inDays > 30) return '${(d.inDays / 30).floor()}mo ago';
-    if (d.inDays > 0) return '${d.inDays}d ago';
-    if (d.inHours > 0) return '${d.inHours}h ago';
-    if (d.inMinutes > 0) return '${d.inMinutes}m ago';
-    return 'just now';
-  }
-}
 
 class _RatingChip extends StatelessWidget {
   final LeadRating rating;

@@ -16,8 +16,10 @@ dependencies:
   http: ^1.1.0
   google_sign_in: ^7.1.1
   shared_preferences: ^2.5.5
+  # Tokens live here, never in shared_preferences. Keystore-backed on Android,
+  # Keychain on iOS. See lib/services/token_storage.dart.
+  flutter_secure_storage: ^10.3.1
   jwt_decoder: ^2.0.1
-  package_info_plus: ^10.1.0
 
   # Firebase / Crashlytics (Android only, no iOS GoogleService-Info.plist yet)
   firebase_core: ^4.12.1
@@ -39,6 +41,9 @@ dependencies:
   # Utilities
   intl: ^0.20.2
   url_launcher: ^6.3.1
+  # Attachment picking. Chosen over image_picker because a CRM attaches
+  # contracts and PDFs at least as often as photos, and this covers both.
+  file_picker: ^11.0.3
 
   # Google Fonts for distinctive typography
   google_fonts: ^8.1.0
@@ -47,9 +52,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_driver:
-    sdk: flutter
-
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

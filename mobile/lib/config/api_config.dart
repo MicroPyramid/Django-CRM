@@ -20,8 +20,65 @@ class ApiConfig {
   /// which would drift the moment either is edited.
   static const String marketingSite = 'https://bottlecrm.io';
 
-  /// Get the current base URL based on build mode
-  static String get baseUrl => kDebugMode ? _developmentUrl : _productionUrl;
+  /// Build-time override, so somebody self-hosting points a build at their own
+  /// server without editing this file:
+  ///
+  ///     flutter build apk --release --dart-define=API_BASE_URL=https://crm.example.com
+  ///
+  /// Compile-time on purpose. A runtime setting would mean anything able to
+  /// write the app's storage could redirect every request, and every JWT with
+  /// it, to a server of its own choosing.
+  static const String _baseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
+  /// Google's Web OAuth client, the audience the backend's `GOOGLE_CLIENT_ID`
+  /// verifies against. Overridable the same way, because a self-hoster signs in
+  /// against their own Google project:
+  ///
+  ///     --dart-define=GOOGLE_SERVER_CLIENT_ID=<id>.apps.googleusercontent.com
+  ///
+  /// Not a secret. A client id is public by design; the backend is what decides
+  /// whether an ID token is acceptable.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
+  );
+
+  /// The API host this build talks to.
+  static final String baseUrl = resolveBaseUrl(
+    override: _baseUrlOverride,
+    isDebug: kDebugMode,
+  );
+
+  /// The override rules, separated from the build constants so both branches
+  /// can be tested. `flutter test` runs one build, so a `--dart-define` the
+  /// suite does not pass is a branch no test could otherwise reach.
+  @visibleForTesting
+  static String resolveBaseUrl({
+    required String override,
+    required bool isDebug,
+  }) {
+    if (override.isEmpty) {
+      return isDebug ? _developmentUrl : _productionUrl;
+    }
+    // A trailing slash would produce `https://host//api`, and the resulting 404
+    // on every request says nothing about the cause.
+    final trimmed = override.endsWith('/')
+        ? override.substring(0, override.length - 1)
+        : override;
+    // A release build talking plain HTTP puts every JWT on the wire in the
+    // clear. Refusing loudly beats falling back to the default, which would
+    // leave a self-hoster looking at somebody else's server and no explanation.
+    // `http://` stays allowed in debug: that is how anyone runs against a local
+    // Django.
+    if (!isDebug && !trimmed.startsWith('https://')) {
+      throw StateError(
+        'API_BASE_URL must start with https:// in a release build. '
+        'Got "$trimmed", which would send every token unencrypted.',
+      );
+    }
+    return trimmed;
+  }
 
   /// API base path
   static String get apiBaseUrl => '$baseUrl/api';
@@ -41,6 +98,10 @@ class ApiConfig {
 
   /// Refresh JWT token
   static String get refreshToken => '$apiBaseUrl/auth/refresh-token/';
+
+  /// Sign out: blacklists the refresh token server-side. Needs no access
+  /// token, which is what lets it work when the session has already expired.
+  static String get logout => '$apiBaseUrl/auth/logout/';
 
   /// Get current user info
   static String get me => '$apiBaseUrl/auth/me/';
@@ -207,6 +268,24 @@ class ApiConfig {
   /// Invoices management
   static String get invoices => '$apiBaseUrl/invoices/';
 
+  /// Kanban boards. The list returns only boards you own or belong to, so an
+  /// empty list is an answer and not a permission failure: creating one makes
+  /// you its owner.
+  static String get boards => '$apiBaseUrl/boards/';
+
+  /// A board's lanes, each with its cards nested under `tasks`. This is the
+  /// one call that renders a whole board.
+  static String boardLanes(String boardId) =>
+      '$apiBaseUrl/boards/$boardId/columns/';
+
+  /// POST a card into a lane. The server takes the lane from this URL, so a
+  /// card cannot be posted into another board's lane.
+  static String boardLaneCards(String laneId) =>
+      '$apiBaseUrl/boards/columns/$laneId/tasks/';
+
+  /// One card: PUT to move or edit it, DELETE to remove it.
+  static String boardCard(String cardId) => '$apiBaseUrl/boards/tasks/$cardId/';
+
   // ==========================================================================
   // USERS & TAGS ENDPOINTS
   // ==========================================================================
@@ -222,12 +301,30 @@ class ApiConfig {
   static String get customFieldDefinitions =>
       '$apiBaseUrl/custom-fields/';
 
+  /// People in the org: GET lists active and inactive, POST invites.
+  /// Admin-only server-side, 403 for everyone else on both verbs.
+  static String get orgUsers => '$apiBaseUrl/users/';
+
+  /// One person's role: PATCH `{"role": "ADMIN"|"USER"}`. Takes the USER id,
+  /// not the profile id.
+  static String orgUser(String userId) => '$apiBaseUrl/user/$userId/';
+
+  /// Activate or deactivate: POST `{"status": "Active"|"Inactive"}`. Also the
+  /// USER id. The server refuses to deactivate the last active admin.
+  static String orgUserStatus(String userId) =>
+      '$apiBaseUrl/user/$userId/status/';
+
   // ==========================================================================
   // REQUEST CONFIGURATION
   // ==========================================================================
 
   /// Connection timeout duration
   static const Duration connectTimeout = Duration(seconds: 30);
+
+  /// Uploads get longer. A 25 MB attachment (the server's limit) does not
+  /// finish in 30 seconds on a phone connection, and the timeout that fired
+  /// would look like a server fault.
+  static const Duration uploadTimeout = Duration(minutes: 3);
 
   /// Receive timeout duration
   static const Duration receiveTimeout = Duration(seconds: 30);

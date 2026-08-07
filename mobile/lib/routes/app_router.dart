@@ -9,7 +9,13 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_email_screen.dart';
 import '../screens/auth/magic_link_code_screen.dart';
+import '../screens/accounts/account_detail_screen.dart';
+import '../screens/accounts/account_form_screen.dart';
+import '../screens/accounts/accounts_list_screen.dart';
 import '../screens/auth/org_create_screen.dart';
+import '../screens/contacts/contact_detail_screen.dart';
+import '../screens/contacts/contact_form_screen.dart';
+import '../screens/contacts/contacts_list_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -25,11 +31,13 @@ import '../screens/tickets/tickets_list_screen.dart';
 import '../screens/tickets/ticket_detail_screen.dart';
 import '../screens/tickets/ticket_create_screen.dart';
 import '../screens/tickets/ticket_form_screen.dart';
+import '../screens/tasks/board_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
+import '../screens/settings/team_screen.dart';
 import '../screens/solutions/solutions_list_screen.dart';
 import '../screens/solutions/solution_detail_screen.dart';
 import '../screens/tickets/approvals_inbox_screen.dart';
@@ -64,11 +72,21 @@ class AppRoutes {
   static const String ticketCreate = '/tickets/create';
   static const String ticketEdit = '/tickets/:id/edit';
   static const String tasks = '/tasks';
+  static const String taskBoard = '/tasks/board';
   static const String taskDetail = '/tasks/:id';
   static const String taskCreate = '/tasks/create';
   static const String taskEdit = '/tasks/:id/edit';
+  static const String accounts = '/accounts';
+  static const String accountCreate = '/accounts/create';
+  static const String accountDetail = '/accounts/:id';
+  static const String accountEdit = '/accounts/:id/edit';
+  static const String contacts = '/contacts';
+  static const String contactCreate = '/contacts/create';
+  static const String contactDetail = '/contacts/:id';
+  static const String contactEdit = '/contacts/:id/edit';
   static const String more = '/more';
   static const String profile = '/more/profile';
+  static const String team = '/more/team';
 
   // Knowledge base
   static const String solutions = '/solutions';
@@ -80,6 +98,16 @@ class AppRoutes {
 
   // Analytics
   static const String ticketAnalytics = '/tickets/analytics';
+
+  /// Values for the `?view=` parameter on the leads and tasks lists. Each one
+  /// opens the list already narrowed to what one dashboard badge counted, so
+  /// the badge and the list it opens agree on a number. The filter itself is
+  /// built by `TaskFilters` / `LeadFilters`, which is where the definition
+  /// lives; these are just the names carried through the URL.
+  static const String viewOverdue = 'overdue';
+  static const String viewDueToday = 'due-today';
+  static const String viewFollowUps = 'follow-ups';
+  static const String viewHot = 'hot';
 }
 
 /// Navigation shell key for bottom navigation
@@ -194,6 +222,60 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: AppRoutes.accounts,
+        name: 'accounts',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AccountsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.accountCreate,
+        name: 'accountCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AccountFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.accountEdit,
+        name: 'accountEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AccountFormScreen(accountId: state.pathParameters['id']!),
+      ),
+      // Registered after `create` and `:id/edit` so those literal segments are
+      // not swallowed by the `:id` parameter.
+      GoRoute(
+        path: AppRoutes.accountDetail,
+        name: 'accountDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AccountDetailScreen(accountId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.contacts,
+        name: 'contacts',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ContactsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.contactCreate,
+        name: 'contactCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ContactFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.contactEdit,
+        name: 'contactEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            ContactFormScreen(contactId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.contactDetail,
+        name: 'contactDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            ContactDetailScreen(contactId: state.pathParameters['id']!),
+      ),
+      GoRoute(
         path: AppRoutes.approvalsInbox,
         name: 'approvalsInbox',
         parentNavigatorKey: _rootNavigatorKey,
@@ -210,6 +292,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.team,
+        name: 'team',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TeamScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,
@@ -254,7 +342,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.leads,
                 name: 'leads',
-                builder: (context, state) => const LeadsListScreen(),
+                // Keyed on `view` so arriving from a dashboard badge builds a
+                // fresh State. Without the key Flutter reuses the one already
+                // in this shell branch, whose initState has long since run,
+                // and the list opens unfiltered.
+                builder: (context, state) {
+                  final view = state.uri.queryParameters['view'];
+                  return LeadsListScreen(
+                    key: ValueKey('leads-$view'),
+                    initialView: view,
+                  );
+                },
                 routes: [
                   GoRoute(
                     path: 'create',
@@ -373,7 +471,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.tasks,
                 name: 'tasks',
-                builder: (context, state) => const TasksListScreen(),
+                // Keyed on `view` for the same reason as the leads branch.
+                builder: (context, state) {
+                  final view = state.uri.queryParameters['view'];
+                  return TasksListScreen(
+                    key: ValueKey('tasks-$view'),
+                    initialView: view,
+                  );
+                },
                 routes: [
                   GoRoute(
                     path: 'create',
@@ -386,6 +491,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         state.uri.queryParameters['due'] ?? '',
                       ),
                     ),
+                  ),
+                  // Before `:id`, which would otherwise swallow "board" and
+                  // ask the tasks API for a task with that id.
+                  GoRoute(
+                    path: 'board',
+                    name: 'taskBoard',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const BoardScreen(),
                   ),
                   GoRoute(
                     path: ':id',

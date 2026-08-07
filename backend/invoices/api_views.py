@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition
 from common.permissions import HasOrgContext, is_org_admin
+from common.utils import create_attachment
 from common.validators import uuid_param
 from common.serializer import (
     AttachmentsSerializer,
@@ -1842,14 +1843,8 @@ class InvoiceAttachmentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        invoice_content_type = ContentType.objects.get_for_model(Invoice)
-        attachment = Attachments.objects.create(
-            content_type=invoice_content_type,
-            object_id=invoice.id,
-            file_name=request.FILES.get("file").name,
-            attachment=request.FILES.get("file"),
-            created_by=request.user,
-            org=request.profile.org,
+        attachment = create_attachment(
+            request.FILES.get("file"), invoice, request.profile
         )
 
         return Response(

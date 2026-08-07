@@ -3,14 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
-import '../../data/models/lookup_models.dart';
 import '../../data/models/models.dart';
-import '../../providers/deals_provider.dart';
-import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/tasks_provider.dart';
-import '../../providers/tickets_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 import '../../widgets/forms/custom_fields_form.dart';
 import '../../widgets/forms/multi_select_sheet.dart';
 
@@ -65,7 +62,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   bool _isLoading = false;
   bool _isFetchingTask = false;
   String? _fetchError;
-  Task? _existingTask;
 
   @override
   void initState() {
@@ -76,6 +72,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       _fetchTask();
     } else {
       _dueDate = widget.initialDueDate;
+    }
+    if (!widget.isEditMode || widget.initialTask != null) {
+      _baseline = _snapshot();
     }
   }
 
@@ -100,8 +99,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       setState(() {
         _isFetchingTask = false;
         if (task != null) {
-          _existingTask = task;
           _populateFromTask(task);
+          _baseline = _snapshot();
         } else {
           _fetchError = 'Failed to load task';
         }
@@ -110,7 +109,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   void _populateFromTask(Task task) {
-    _existingTask = task;
     _titleController.text = task.title;
     _descriptionController.text = task.description ?? '';
     _status = task.status;
@@ -133,112 +131,55 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     }
   }
 
-  // Resolve the label for the currently-linked entity from cached lookup
-  // providers. The TaskSerializer returns FKs as plain UUIDs (not nested
-  // objects), so we have no embedded name on the edit fetch. We look it up
-  // in the same provider used by the picker. Returns null if the cache
-  // doesn't have it yet (provider not loaded); the UI falls back to a
-  // generic "Selected" hint until the provider warms up.
+  /// The options for one kind, as a still-loading-aware value.
+  ///
+  /// These are the lookup providers, not the leads/deals/tickets list
+  /// providers this screen used to read. Those hold one page of whatever the
+  /// corresponding list screen last fetched, under whatever filter it last
+  /// applied, so linking a task to a deal was only possible if the deals list
+  /// happened to be showing it.
+  Provider<AsyncValue<List<EntityLookup>>> _optionsOf(_RelatedKind kind) {
+    switch (kind) {
+      case _RelatedKind.account:
+        return accountEntityOptionsProvider;
+      case _RelatedKind.lead:
+        return leadEntityOptionsProvider;
+      case _RelatedKind.opportunity:
+        return opportunityEntityOptionsProvider;
+      case _RelatedKind.ticket:
+        return ticketEntityOptionsProvider;
+    }
+  }
+
+  // Resolve the label for the currently-linked entity. The TaskSerializer
+  // returns these FKs as plain UUIDs rather than nested objects, so the edit
+  // fetch carries no name. Returns null while the lookup is still in flight;
+  // the UI shows a generic "Selected" until then.
   String? _resolveRelatedLabel() {
     final id = _relatedId;
     final kind = _relatedKind;
     if (id == null || kind == null) return null;
-    switch (kind) {
-      case _RelatedKind.account:
-        for (final a in ref.watch(accountsProvider)) {
-          if (a.id == id) return a.name;
-        }
-        return null;
-      case _RelatedKind.lead:
-        for (final l in ref.watch(leadsListProvider)) {
-          if (l.id == id) {
-            final n = '${l.firstName} ${l.lastName}'.trim();
-            return n.isEmpty ? l.email : n;
-          }
-        }
-        return null;
-      case _RelatedKind.opportunity:
-        for (final d in ref.watch(dealsListProvider)) {
-          if (d.id == id) return d.title;
-        }
-        return null;
-      case _RelatedKind.ticket:
-        for (final t in ref.watch(ticketsListProvider)) {
-          if (t.id == id) return t.name;
-        }
-        return null;
+    for (final option in ref.watch(_optionsOf(kind)).value ?? const []) {
+      if (option.id == id) return option.label;
     }
+    return null;
   }
 
-  bool get _hasUnsavedChanges {
-    if (_existingTask != null) {
-      final t = _existingTask!;
-      return _titleController.text != t.title ||
-          _descriptionController.text != (t.description ?? '') ||
-          _status != t.status ||
-          _priority != t.priority ||
-          _dueDate != t.dueDate ||
-          !_listEq(_assigneeIds, t.assignedToIds) ||
-          _relatedId != _existingRelatedId(t) ||
-          !_mapEq(_customFields, t.customFields);
-    }
-    return _titleController.text.isNotEmpty ||
-        _descriptionController.text.isNotEmpty ||
-        _dueDate != null ||
-        _assigneeIds.isNotEmpty ||
-        _relatedId != null ||
-        _customFields.isNotEmpty;
-  }
+  /// The form as it looked when it finished loading, against the payload it
+  /// would submit now.
+  ///
+  /// The hand-listed comparison this replaces checked ten of the create
+  /// form's fields, so typing only into one of the other thirteen left
+  /// without a prompt. Comparing the payload means a field cannot be
+  /// forgotten: if it is submitted, it counts.
+  String? _baseline;
 
-  String? _existingRelatedId(Task t) =>
-      t.accountId ?? t.leadId ?? t.opportunityId ?? t.caseId;
+  /// `toString` rather than `jsonEncode`, which throws on the DateTime and
+  /// enum values these payloads carry. Key order is stable because the same
+  /// builder produces every snapshot.
+  String _snapshot() => _buildPayload().toString();
 
-  bool _listEq(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final sa = [...a]..sort();
-    final sb = [...b]..sort();
-    for (var i = 0; i < sa.length; i++) {
-      if (sa[i] != sb[i]) return false;
-    }
-    return true;
-  }
-
-  bool _mapEq(Map<String, dynamic> a, Map<String, dynamic> b) {
-    if (a.length != b.length) return false;
-    for (final k in a.keys) {
-      if (!b.containsKey(k) || a[k] != b[k]) return false;
-    }
-    return true;
-  }
-
-  Future<bool> _onWillPop() async {
-    if (!_hasUnsavedChanges) return true;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Discard',
-              style: TextStyle(color: AppColors.danger600),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
+  bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
   Map<String, dynamic> _buildPayload() {
     final payload = <String, dynamic>{
@@ -302,15 +243,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_hasUnsavedChanges,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          context.pop();
-        }
-      },
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
@@ -320,16 +255,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           scrolledUnderElevation: 1,
           leading: IconButton(
             icon: const Icon(LucideIcons.chevronLeft),
-            onPressed: () async {
-              if (_hasUnsavedChanges) {
-                final shouldPop = await _onWillPop();
-                if (shouldPop && context.mounted) {
-                  context.pop();
-                }
-              } else {
-                context.pop();
-              }
-            },
+            onPressed: _isLoading
+                ? null
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
           ),
         ),
         body: _buildBody(),
@@ -434,16 +363,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             // Cancel Button
             Center(
               child: GestureDetector(
-                onTap: () async {
-                  if (_hasUnsavedChanges) {
-                    final shouldPop = await _onWillPop();
-                    if (shouldPop && mounted) {
-                      context.pop();
-                    }
-                  } else {
-                    context.pop();
-                  }
-                },
+                onTap: () =>
+                    leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
                 child: Text(
                   'Cancel',
                   style: AppTypography.label.copyWith(
@@ -890,80 +811,21 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   Future<void> _pickEntityForKind(_RelatedKind kind) async {
-    switch (kind) {
-      case _RelatedKind.account:
-        final accounts = ref.read(accountsProvider);
-        final pick = await _pickFromList<AccountLookup>(
-          title: 'Select Account',
-          items: accounts,
-          labelOf: (a) => a.name,
-          icon: LucideIcons.building2,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.lead:
-        final leads = ref.read(leadsListProvider);
-        final pick = await _pickFromList<Lead>(
-          title: 'Select Lead',
-          items: leads,
-          labelOf: (l) {
-            final n = '${l.firstName} ${l.lastName}'.trim();
-            return n.isEmpty ? l.email : n;
-          },
-          icon: LucideIcons.user,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.opportunity:
-        final deals = ref.read(dealsListProvider);
-        final pick = await _pickFromList<Deal>(
-          title: 'Select Opportunity',
-          items: deals,
-          labelOf: (d) => d.title,
-          icon: LucideIcons.trendingUp,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.ticket:
-        final tickets = ref.read(ticketsListProvider);
-        final pick = await _pickFromList<Ticket>(
-          title: 'Select Ticket',
-          items: tickets,
-          labelOf: (t) => t.name,
-          icon: LucideIcons.lifeBuoy,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-    }
+    final pick = await _pickFromList(kind);
+    if (pick == null) return;
+    setState(() {
+      _relatedKind = kind;
+      _relatedId = pick.id;
+    });
   }
 
-  Future<T?> _pickFromList<T>({
-    required String title,
-    required List<T> items,
-    required String Function(T) labelOf,
-    required IconData icon,
-  }) {
-    return showModalBottomSheet<T>(
+  /// The sheet watches the lookup rather than being handed a list, so it can
+  /// say "loading" and "that failed" instead of showing the empty state for
+  /// all three. The empty state used to read "Open this section on the web or
+  /// create one first", which on a cold app was simply untrue.
+  Future<EntityLookup?> _pickFromList(_RelatedKind kind) {
+    final provider = _optionsOf(kind);
+    return showModalBottomSheet<EntityLookup>(
       context: context,
       backgroundColor: AppColors.surface,
       isScrollControlled: true,
@@ -988,50 +850,63 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(title, style: AppTypography.h3),
+              child: Text('Select ${kind.label}', style: AppTypography.h3),
             ),
             Expanded(
-              child: items.isEmpty
-                  ? const Center(
-                      child: EmptyState(
-                        icon: LucideIcons.inbox,
-                        title: 'Nothing to pick',
-                        description:
-                            'Open this section on the web or create one first.',
+              child: Consumer(
+                builder: (_, ref, _) => ref
+                    .watch(provider)
+                    .when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, _) => Center(
+                        child: EmptyState(
+                          icon: LucideIcons.alertCircle,
+                          title: 'Could not load ${kind.label.toLowerCase()}s',
+                          description:
+                              'Close this and try again once you are back online.',
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      controller: controller,
-                      itemCount: items.length,
-                      itemBuilder: (_, i) {
-                        final item = items[i];
-                        return InkWell(
-                          onTap: () => Navigator.pop(ctx, item),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  icon,
-                                  size: 18,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    labelOf(item),
-                                    style: AppTypography.body,
+                      data: (items) => items.isEmpty
+                          ? Center(
+                              child: EmptyState(
+                                icon: LucideIcons.inbox,
+                                title: 'No ${kind.label.toLowerCase()}s yet',
+                                description:
+                                    'Create one first, then link this task to it.',
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: controller,
+                              itemCount: items.length,
+                              itemBuilder: (_, i) => InkWell(
+                                onTap: () => Navigator.pop(ctx, items[i]),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        kind.icon,
+                                        size: 18,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          items[i].label,
+                                          style: AppTypography.body,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
                     ),
+              ),
             ),
           ],
         ),

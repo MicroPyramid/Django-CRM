@@ -47,7 +47,7 @@ from accounts.serializer import (
     TagsSerializer,
 )
 from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
-from common.validators import payload_id_list, uuid_list_param
+from common.validators import date_param, payload_id_list, uuid_list_param
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import (
@@ -217,14 +217,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 ).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
-            if params.get("created_at__gte"):
-                queryset = queryset.filter(
-                    created_at__gte=params.get("created_at__gte")
-                )
-            if params.get("created_at__lte"):
-                queryset = queryset.filter(
-                    created_at__lte=params.get("created_at__lte")
-                )
+            created_at_gte = date_param(params, "created_at__gte")
+            if created_at_gte:
+                queryset = queryset.filter(created_at__gte=created_at_gte)
+            created_at_lte = date_param(params, "created_at__lte")
+            if created_at_lte:
+                queryset = queryset.filter(created_at__lte=created_at_lte)
             # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
             for raw_key, raw_value in params.items():
                 if raw_key.startswith("cf_") and raw_value:
@@ -547,13 +545,11 @@ class AccountDetailView(APIView):
                     account_object.assigned_to.add(*profiles)
 
             if self.request.FILES.get("account_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get("account_attachment").name
-                attachment.content_object = account_object
-                attachment.attachment = self.request.FILES.get("account_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("account_attachment"),
+                    account_object,
+                    self.request.profile,
+                )
 
             assigned_to_list = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
@@ -738,13 +734,11 @@ class AccountDetailView(APIView):
             )
 
         if self.request.FILES.get("account_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get("account_attachment").name
-            attachment.content_object = self.account_obj
-            attachment.attachment = self.request.FILES.get("account_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("account_attachment"),
+                self.account_obj,
+                self.request.profile,
+            )
 
         account_content_type = ContentType.objects.get_for_model(Account)
         comments = Comment.objects.filter(

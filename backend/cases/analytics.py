@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import math
 from datetime import date, datetime, timedelta
-from datetime import timezone as dt_timezone
 from typing import Iterable, Optional
 from uuid import UUID
 
@@ -53,12 +52,27 @@ def _hours_between(later: datetime, earlier: datetime) -> float:
     return (later - earlier).total_seconds() / 3600.0
 
 
+def _day_start(d: date) -> datetime:
+    """The instant the org's day ``d`` begins.
+
+    Every bucket here is labelled with a calendar date, so its edges have to be
+    the same calendar's midnights. In Asia/Kolkata a ticket opened at 04:00
+    belongs to that day; measured against a UTC boundary it lands in the one
+    before, and the chart shows a quiet morning followed by a spike that never
+    happened. ``get_current_timezone`` returns whatever ``activate_org_timezone``
+    put there for this request, so this is the org's midnight, not the server's.
+    """
+    return datetime.combine(
+        d, datetime.min.time(), tzinfo=timezone.get_current_timezone()
+    )
+
+
 def _bucket_dates(from_dt: datetime, to_dt: datetime) -> list[date]:
-    """Inclusive list of UTC dates from from_dt to to_dt-1 day."""
+    """Inclusive list of org-local dates from from_dt to to_dt-1 day."""
     if to_dt <= from_dt:
         return []
-    start = from_dt.date()
-    end = (to_dt - timedelta(seconds=1)).date()
+    start = timezone.localdate(from_dt)
+    end = timezone.localdate(to_dt - timedelta(seconds=1))
     out: list[date] = []
     cur = start
     while cur <= end:
@@ -70,16 +84,21 @@ def _bucket_dates(from_dt: datetime, to_dt: datetime) -> list[date]:
 def _coerce_window(
     from_dt: Optional[datetime], to_dt: Optional[datetime]
 ) -> tuple[datetime, datetime]:
-    """Defaults to last 30 days; ensures both ends are tz-aware UTC."""
+    """Defaults to last 30 days; ensures both ends are tz-aware.
+
+    A naive end is read as the org's wall clock, matching how the client sent
+    it. Reading it as UTC would shift an Indian org's window by five and a half
+    hours against the days it is asking about.
+    """
     now = timezone.now()
     if to_dt is None:
         to_dt = now
     if from_dt is None:
         from_dt = to_dt - timedelta(days=30)
     if timezone.is_naive(from_dt):
-        from_dt = from_dt.replace(tzinfo=dt_timezone.utc)
+        from_dt = timezone.make_aware(from_dt)
     if timezone.is_naive(to_dt):
-        to_dt = to_dt.replace(tzinfo=dt_timezone.utc)
+        to_dt = timezone.make_aware(to_dt)
     return from_dt, to_dt
 
 
@@ -139,7 +158,7 @@ def compute_frt(
     for _id, created_at, first_response_at, _sla in rows:
         if first_response_at is None:
             continue
-        bucket = created_at.date()
+        bucket = timezone.localdate(created_at)
         by_day.setdefault(bucket, []).append(
             _hours_between(first_response_at, created_at)
         )
@@ -229,12 +248,7 @@ def compute_backlog(
 
     series: list[dict] = []
     for d in _bucket_dates(from_dt, to_dt):
-        # End-of-day in UTC. Spec note: timezone story is documented at the
-        # response level; switch to org-local end-of-day once business-hours
-        # supplies the tz consistently.
-        end_of_day = datetime.combine(
-            d + timedelta(days=1), datetime.min.time(), tzinfo=dt_timezone.utc
-        )
+        end_of_day = _day_start(d + timedelta(days=1))
         open_count = 0
         urgent_count = 0
         for created_at, resolved_at, priority in rows:
@@ -495,11 +509,7 @@ def case_ids_for_metric(
         if not bucket:
             raise ValueError("backlog drilldown requires a bucket=YYYY-MM-DD")
         target = date.fromisoformat(bucket)
-        end_of_day = datetime.combine(
-            target + timedelta(days=1),
-            datetime.min.time(),
-            tzinfo=dt_timezone.utc,
-        )
+        end_of_day = _day_start(target + timedelta(days=1))
         return qs.filter(
             Q(created_at__lt=end_of_day)
             & (Q(resolved_at__isnull=True) | Q(resolved_at__gt=end_of_day))
@@ -536,6 +546,10 @@ def case_ids_for_metric(
 # Worst-priority first, so the card leads with what hurts most. Every priority
 # is emitted even with no cases, so the shape is stable window to window.
 _SERVICE_PRIORITY_ORDER = ("Urgent", "High", "Normal", "Low")
+
+# How long the service window is when the caller does not say. The view reads
+# this too, so "no `?days=`" and "the function's default" cannot drift apart.
+DEFAULT_SERVICE_DAYS = 14
 
 
 def _business_hours_state(org_id) -> tuple[Optional[str], bool]:
@@ -702,25 +716,21 @@ def _agent_table(qs, from_dt, to_dt, now) -> list[dict]:
     return rows
 
 
-def compute_service_overview(qs: QuerySet, org_id, days: int = 14) -> dict:
+def compute_service_overview(
+    qs: QuerySet, org_id, days: int = DEFAULT_SERVICE_DAYS
+) -> dict:
     """Assemble the full /v2/tickets/analytics payload in one call.
 
     Returns `{totals, volume, first_response, by_type, by_agent}`. The window
     is the last `days` whole days (default 14, clamped to [1, 90]), anchored to
-    UTC day boundaries so `volume` has exactly `days` buckets. `qs` must be the
-    org-scoped Case queryset; this function does no visibility narrowing (the
-    endpoint is admin-only).
+    the org's day boundaries so `volume` has exactly `days` buckets and the last
+    one is the org's today. `qs` must be the org-scoped Case queryset; this
+    function does no visibility narrowing (the endpoint is admin-only).
     """
-    try:
-        days = int(days)
-    except (TypeError, ValueError):
-        days = 14
     days = max(1, min(days, 90))
 
     now = timezone.now()
-    to_dt = datetime.combine(
-        now.date() + timedelta(days=1), datetime.min.time(), tzinfo=dt_timezone.utc
-    )
+    to_dt = _day_start(timezone.localdate(now) + timedelta(days=1))
     from_dt = to_dt - timedelta(days=days)
 
     created_rows = list(
@@ -761,11 +771,11 @@ def compute_service_overview(qs: QuerySet, org_id, days: int = 14) -> dict:
     # ---- volume (opened/closed per day) ----
     opened_by_day: dict[date, int] = {}
     for _id, created_at, _fra, _sla, _prio, _ctype in created_rows:
-        d = created_at.date()
+        d = timezone.localdate(created_at)
         opened_by_day[d] = opened_by_day.get(d, 0) + 1
     closed_by_day: dict[date, int] = {}
     for _id, _created, resolved_at in resolved_rows:
-        d = resolved_at.date()
+        d = timezone.localdate(resolved_at)
         closed_by_day[d] = closed_by_day.get(d, 0) + 1
     volume = [
         {

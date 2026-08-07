@@ -25,8 +25,14 @@ from common.serializer import (
     CustomFieldDefinitionSerializer,
     ProfileSerializer,
 )
-from common.utils import CURRENCY_CODES, SOURCES, STAGES
-from common.validators import payload_id_list, uuid_list_param, uuid_param
+from common.utils import CURRENCY_CODES, SOURCES, STAGES, create_attachment
+from common.validators import (
+    date_param,
+    decimal_param,
+    payload_id_list,
+    uuid_list_param,
+    uuid_param,
+)
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 from opportunity import swagger_params
@@ -156,22 +162,24 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 ).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
-            if params.get("created_at__gte"):
-                queryset = queryset.filter(
-                    created_at__gte=params.get("created_at__gte")
-                )
-            if params.get("created_at__lte"):
-                queryset = queryset.filter(
-                    created_at__lte=params.get("created_at__lte")
-                )
-            if params.get("closed_on__gte"):
-                queryset = queryset.filter(closed_on__gte=params.get("closed_on__gte"))
-            if params.get("closed_on__lte"):
-                queryset = queryset.filter(closed_on__lte=params.get("closed_on__lte"))
-            if params.get("amount__gte"):
-                queryset = queryset.filter(amount__gte=params.get("amount__gte"))
-            if params.get("amount__lte"):
-                queryset = queryset.filter(amount__lte=params.get("amount__lte"))
+            created_at_gte = date_param(params, "created_at__gte")
+            if created_at_gte:
+                queryset = queryset.filter(created_at__gte=created_at_gte)
+            created_at_lte = date_param(params, "created_at__lte")
+            if created_at_lte:
+                queryset = queryset.filter(created_at__lte=created_at_lte)
+            closed_on_gte = date_param(params, "closed_on__gte")
+            if closed_on_gte:
+                queryset = queryset.filter(closed_on__gte=closed_on_gte)
+            closed_on_lte = date_param(params, "closed_on__lte")
+            if closed_on_lte:
+                queryset = queryset.filter(closed_on__lte=closed_on_lte)
+            amount_gte = decimal_param(params, "amount__gte")
+            if amount_gte:
+                queryset = queryset.filter(amount__gte=amount_gte)
+            amount_lte = decimal_param(params, "amount__lte")
+            if amount_lte:
+                queryset = queryset.filter(amount__lte=amount_lte)
             # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
             for raw_key, raw_value in params.items():
                 if raw_key.startswith("cf_") and raw_value:
@@ -357,15 +365,11 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 opportunity_obj.assigned_to.add(*profiles)
 
             if self.request.FILES.get("opportunity_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get(
-                    "opportunity_attachment"
-                ).name
-                attachment.content_object = opportunity_obj
-                attachment.attachment = self.request.FILES.get("opportunity_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("opportunity_attachment"),
+                    opportunity_obj,
+                    self.request.profile,
+                )
 
             recipients = list(
                 opportunity_obj.assigned_to.all().values_list("id", flat=True)
@@ -524,15 +528,11 @@ class OpportunityDetailView(APIView):
                 opportunity_object.assigned_to.add(*profiles)
 
             if self.request.FILES.get("opportunity_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get(
-                    "opportunity_attachment"
-                ).name
-                attachment.content_object = opportunity_object
-                attachment.attachment = self.request.FILES.get("opportunity_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("opportunity_attachment"),
+                    opportunity_object,
+                    self.request.profile,
+                )
 
             assigned_to_list = list(
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
@@ -743,15 +743,11 @@ class OpportunityDetailView(APIView):
             )
 
         if self.request.FILES.get("opportunity_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get(
-                "opportunity_attachment"
-            ).name
-            attachment.content_object = self.opportunity_obj
-            attachment.attachment = self.request.FILES.get("opportunity_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("opportunity_attachment"),
+                self.opportunity_obj,
+                self.request.profile,
+            )
 
         opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
         comments = Comment.objects.filter(

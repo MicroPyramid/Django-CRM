@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
+import '../data/models/attachment.dart';
 import '../data/models/ticket.dart';
 import '../data/models/comment.dart';
 import '../data/models/email_message.dart';
@@ -220,9 +221,17 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
               .map(Solution.fromJson)
               .toList();
 
+      // `CaseDetailView` has returned these all along. Nothing on the phone
+      // read them, so a screenshot attached to a ticket was invisible here.
+      final attachments = (response.data!['attachments'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(Attachment.fromJson)
+          .toList();
+
       return TicketDetailResult(
         ticketObj: ticketObj,
         activities: activities,
+        attachments: attachments,
         emails: emails,
         mergedFromCases: mergedFrom,
         linkedSolutions: linkedSolutions,
@@ -509,6 +518,7 @@ class TicketDetailResult {
   final List<EmailMessage> emails;
   final List<MergedFromSummary> mergedFromCases;
   final List<Solution> linkedSolutions;
+  final List<Attachment> attachments;
   final bool commentPermission;
   final Set<String> internalCommentIds;
 
@@ -518,9 +528,23 @@ class TicketDetailResult {
     this.emails = const [],
     this.mergedFromCases = const [],
     this.linkedSolutions = const [],
+    this.attachments = const [],
     required this.commentPermission,
     required this.internalCommentIds,
   });
+
+  TicketDetailResult copyWith({List<Attachment>? attachments}) {
+    return TicketDetailResult(
+      ticketObj: ticketObj,
+      activities: activities,
+      emails: emails,
+      mergedFromCases: mergedFromCases,
+      linkedSolutions: linkedSolutions,
+      attachments: attachments ?? this.attachments,
+      commentPermission: commentPermission,
+      internalCommentIds: internalCommentIds,
+    );
+  }
 }
 
 /// Recursive tree node returned by `/api/cases/{id}/tree/`.

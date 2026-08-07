@@ -21,7 +21,12 @@
   // Built as one string rather than conditional markup: the "quiet deals"
   // clause only makes sense when there are any, and the numbers are often zero
   // in a real org, so the copy adapts instead of reading "0 deals … have gone
-  // quiet. Those are first."
+  // quiet."
+  //
+  // It used to close with "Those are first", which was generated from a count
+  // rather than from the sort it described. Quiet deals rank below overdue
+  // invoices, so on the seeded org all seven of them fell off the end of the
+  // list the sentence had just promised to lead with.
   let subText = $derived(
     summary.count === 0
       ? 'Nothing needs you right now: you’re all clear for today.'
@@ -29,8 +34,13 @@
         ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
         : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
           `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value, data.org.currency)} ` +
-          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet. Those are first.`
+          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet.`
   );
+
+  // The queue shows the most urgent 8. Everything past that is real work with
+  // nowhere on this page to go, so name it and link each source to its own
+  // list. "That's everything" is only true when nothing was left out.
+  let hidden = $derived(Math.max(0, summary.count - summary.shown));
 </script>
 
 <PageHeader title="Today">
@@ -64,8 +74,17 @@
       </div>
     {/each}
 
-    {#if queue.length}
+    {#if queue.length && hidden === 0}
       <p class="v2-sub" style="margin:15px 0 21px;font-size:12.5px">That’s everything due today.</p>
+    {:else if queue.length}
+      <p class="v2-sub" style="margin:15px 0 21px;font-size:12.5px">
+        <span class="v2-num">{hidden}</span>
+        {hidden === 1 ? 'more is' : 'more are'} waiting:
+        {#each summary.sources as source, i (source.href)}<a
+            href={source.href}
+            style="color:inherit">{source.count} {source.label}</a
+          >{i < summary.sources.length - 1 ? ', ' : '.'}{/each}
+      </p>
     {:else}
       <div class="v2-card" style="margin-bottom:8px">
         <div class="v2-pad" style="padding:20px;text-align:center">

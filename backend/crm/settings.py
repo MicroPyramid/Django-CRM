@@ -1,4 +1,5 @@
 import os
+import warnings
 from datetime import timedelta
 
 from corsheaders.defaults import default_headers
@@ -12,9 +13,31 @@ load_dotenv()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
 
+IS_DEV_ENV = os.environ.get("ENV_TYPE", "dev") == "dev"
+
 if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
-    if os.environ.get("ENV_TYPE", "dev") != "dev":
+    if not IS_DEV_ENV:
         raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
+
+# This key also signs every JWT (see SIMPLE_JWT["SIGNING_KEY"] below). RFC 7518
+# section 3.2 requires an HMAC key at least as long as the hash it produces, so
+# HS256 needs 32 bytes. PyJWT only warns about a shorter one, on every call, and
+# a warning nobody reads is not a control.
+#
+# Raising here means a deploy fails rather than quietly signing weak tokens.
+# Lengthening the key invalidates every access and refresh token already issued,
+# so everyone is signed out once when it changes.
+JWT_MIN_SIGNING_KEY_BYTES = 32
+
+if len(SECRET_KEY.encode()) < JWT_MIN_SIGNING_KEY_BYTES:
+    message = (
+        f"SECRET_KEY is {len(SECRET_KEY.encode())} bytes. It signs every JWT, "
+        f"and HS256 needs at least {JWT_MIN_SIGNING_KEY_BYTES}. Generate one with "
+        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"`."
+    )
+    if not IS_DEV_ENV:
+        raise ValueError(message)
+    warnings.warn(message, RuntimeWarning, stacklevel=2)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"

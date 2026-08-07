@@ -9,6 +9,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/tasks_provider.dart';
+import '../../routes/app_router.dart';
 import '../../widgets/cards/task_row.dart';
 import '../../widgets/common/common.dart';
 
@@ -17,7 +18,12 @@ enum TaskViewMode { calendar, list }
 /// Tasks List Screen
 /// Calendar and List views for task management
 class TasksListScreen extends ConsumerStatefulWidget {
-  const TasksListScreen({super.key});
+  const TasksListScreen({super.key, this.initialView});
+
+  /// One of `AppRoutes.viewOverdue` / `AppRoutes.viewDueToday`, when the user
+  /// arrived by tapping the matching dashboard badge. Anything else, including
+  /// null, opens the list unfiltered.
+  final String? initialView;
 
   @override
   ConsumerState<TasksListScreen> createState() => _TasksListScreenState();
@@ -33,6 +39,10 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   TaskFilters _filters = const TaskFilters();
+  // The dashboard badge this list was opened from, while its filter is still
+  // the one in force. Cleared the moment the user changes anything, because
+  // after that the label would be describing a set it no longer selects.
+  String? _activeView;
 
   static const _searchDebounceMs = 350;
 
@@ -40,6 +50,28 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _applyInitialView();
+  }
+
+  /// Open already narrowed to what a dashboard badge counted.
+  ///
+  /// The notifier outlives this screen, so its filters have to be pushed at it
+  /// rather than passed in; the post-frame hop is because the first build is
+  /// still running when initState does. The definitions live on `TaskFilters`
+  /// so they can be tested against the server's, which is the only thing that
+  /// keeps the badge and the list showing the same number.
+  void _applyInitialView() {
+    final TaskFilters? initial = switch (widget.initialView) {
+      AppRoutes.viewOverdue => TaskFilters.overdue(DateTime.now()),
+      AppRoutes.viewDueToday => TaskFilters.dueOn(DateTime.now()),
+      _ => null,
+    };
+    if (initial == null) return;
+    _filters = initial;
+    _activeView = widget.initialView;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(tasksProvider.notifier).setFilters(initial);
+    });
   }
 
   @override
@@ -62,7 +94,10 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
   }
 
   void _applyFilters(TaskFilters next) {
-    setState(() => _filters = next);
+    setState(() {
+      _filters = next;
+      _activeView = null;
+    });
     ref.read(tasksProvider.notifier).setFilters(next);
   }
 
@@ -160,6 +195,13 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
               size: 22,
             ),
             onPressed: _toggleViewMode,
+          ),
+          // The board is a different record type, not another view of these
+          // tasks, so it is a place to go rather than a mode to toggle.
+          IconButton(
+            tooltip: 'Boards',
+            icon: const Icon(LucideIcons.squareKanban, size: 22),
+            onPressed: () => context.push(AppRoutes.taskBoard),
           ),
           IconButton(
             icon: const Icon(LucideIcons.plus, size: 22),
@@ -287,6 +329,17 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
         child: Row(
           children: [
+            if (_activeView != null) ...[
+              _TaskFilterChip(
+                label: _activeView == AppRoutes.viewOverdue
+                    ? 'Overdue'
+                    : 'Due today',
+                isActive: true,
+                icon: LucideIcons.alertTriangle,
+                onTap: _clearAllFilters,
+              ),
+              const SizedBox(width: 6),
+            ],
             _TaskFilterChip(
               label: _filters.assignedToLabel ?? 'Anyone',
               isActive: _filters.assignedToId != null,
@@ -295,8 +348,15 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             ),
             const SizedBox(width: 6),
             _TaskFilterChip(
-              label: _filters.status?.label ?? 'Status',
-              isActive: _filters.status != null,
+              // With more than one status selected there is no single label to
+              // show, and printing one of them would name a filter narrower
+              // than the list actually is.
+              label: switch (_filters.statuses.length) {
+                0 => 'Status',
+                1 => _filters.statuses.first.label,
+                final n => '$n statuses',
+              },
+              isActive: _filters.statuses.isNotEmpty,
               onTap: _showStatusFilter,
             ),
             const SizedBox(width: 6),

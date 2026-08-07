@@ -59,8 +59,13 @@ from common.serializer import (
     CommentSerializer,
     CustomFieldDefinitionSerializer,
 )
-from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
-from common.validators import payload_id_list, uuid_list_param, uuid_param
+from common.utils import (
+    CASE_TYPE,
+    PRIORITY_CHOICE,
+    STATUS_CHOICE,
+    create_attachment,
+)
+from common.validators import date_param, payload_id_list, uuid_list_param, uuid_param
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
@@ -121,10 +126,12 @@ def apply_case_list_filters(queryset, params):
         queryset = queryset.filter(
             Q(name__icontains=search) | Q(description__icontains=search)
         )
-    if params.get("created_at__gte"):
-        queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
-    if params.get("created_at__lte"):
-        queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+    created_at_gte = date_param(params, "created_at__gte")
+    if created_at_gte:
+        queryset = queryset.filter(created_at__gte=created_at_gte)
+    created_at_lte = date_param(params, "created_at__lte")
+    if created_at_lte:
+        queryset = queryset.filter(created_at__lte=created_at_lte)
     if params.get("sla_breached") == "true":
         # Wall-clock approximation matching the mobile card's
         # `isFirstResponseSlaBreached` getter; `Case.is_sla_*_breached` uses
@@ -377,13 +384,11 @@ class CaseListView(APIView, LimitOffsetPagination):
                 cases_obj.tags.add(*tag_objs)
 
             if self.request.FILES.get("case_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.content_object = cases_obj
-                attachment.attachment = self.request.FILES.get("case_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("case_attachment"),
+                    cases_obj,
+                    self.request.profile,
+                )
 
             recipients = list(cases_obj.assigned_to.all().values_list("id", flat=True))
             send_email_to_assigned_user.delay(
@@ -516,13 +521,11 @@ class CaseDetailView(APIView):
                 cases_object.tags.add(*tag_objs)
 
             if self.request.FILES.get("case_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get("case_attachment").name
-                attachment.content_object = cases_object
-                attachment.attachment = self.request.FILES.get("case_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("case_attachment"),
+                    cases_object,
+                    self.request.profile,
+                )
 
             assigned_to_list = list(
                 cases_object.assigned_to.all().values_list("id", flat=True)
@@ -744,13 +747,11 @@ class CaseDetailView(APIView):
             )
 
         if self.request.FILES.get("case_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get("case_attachment").name
-            attachment.content_object = self.cases_obj
-            attachment.attachment = self.request.FILES.get("case_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("case_attachment"),
+                self.cases_obj,
+                self.request.profile,
+            )
 
         case_content_type = ContentType.objects.get_for_model(Case)
         attachments = Attachments.objects.filter(

@@ -1,8 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     
+    <!--
+        Auto Backup is off deliberately. It defaults to on, which uploaded the
+        app's shared preferences to the user's Google Drive, and until 1.2.0
+        that file held both JWTs in the clear. It is also what
+        flutter_secure_storage asks for: a restored device has the ciphertext
+        but not the Keystore key, which raises "Failed to unwrap key".
+
+        Nothing of value is lost. Every record lives on the server, so a new
+        device needs a sign-in rather than a restore.
+    -->
     <application
         android:label="BottleCRM"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"

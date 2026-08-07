@@ -64,7 +64,11 @@ class AssignableUser {
 /// a query param on `/api/leads/`.
 class LeadFilters {
   final String? search;
-  final LeadStatus? status;
+  // A set rather than one value, because the dashboard's Hot Leads badge means
+  // "assigned or in process", which is narrower than the open-leads list's own
+  // "not converted, not closed". The filter sheet is still single-select and
+  // stores its choice as a one-element set.
+  final Set<LeadStatus> statuses;
   final LeadSource? source;
   final LeadRating? rating;
   // Assignee profile id. null = anyone (no filter).
@@ -74,25 +78,50 @@ class LeadFilters {
   final String? assignedToLabel;
   final String? tagId;
   final String? tagLabel;
+  // ISO date (yyyy-MM-dd). Follow-ups due on exactly this day.
+  final String? nextFollowUp;
 
   const LeadFilters({
     this.search,
-    this.status,
+    this.statuses = const {},
     this.source,
     this.rating,
     this.assignedToId,
     this.assignedToLabel,
     this.tagId,
     this.tagLabel,
+    this.nextFollowUp,
   });
+
+  /// The single selected status, or null when none or several are selected.
+  /// The filter sheet is single-select, so this is what it reads and shows.
+  LeadStatus? get status => statuses.length == 1 ? statuses.first : null;
+
+  /// The dashboard's "Hot Leads" badge: rated hot, and still being worked.
+  /// `ApiHomeView` scopes that count to these two statuses, which is narrower
+  /// than the open-leads list's own "not converted, not closed", so leaving
+  /// them off would show a bigger number than the badge that opened the list.
+  factory LeadFilters.hot() => const LeadFilters(
+    rating: LeadRating.hot,
+    statuses: {LeadStatus.assigned, LeadStatus.inProcess},
+  );
+
+  /// The dashboard's "Follow-ups" badge: a follow-up falling on the given day.
+  factory LeadFilters.followUpsOn(DateTime day) => LeadFilters(
+    nextFollowUp:
+        '${day.year.toString().padLeft(4, '0')}-'
+        '${day.month.toString().padLeft(2, '0')}-'
+        '${day.day.toString().padLeft(2, '0')}',
+  );
 
   bool get isEmpty =>
       (search == null || search!.isEmpty) &&
-      status == null &&
+      statuses.isEmpty &&
       source == null &&
       rating == null &&
       (assignedToId == null || assignedToId!.isEmpty) &&
-      tagId == null;
+      tagId == null &&
+      nextFollowUp == null;
 
   bool get isActive => !isEmpty;
 
@@ -106,83 +135,106 @@ class LeadFilters {
     bool rating = false,
     bool assignedTo = false,
     bool tag = false,
+    bool nextFollowUp = false,
   }) {
     return LeadFilters(
       search: search ? null : this.search,
-      status: status ? null : this.status,
+      statuses: status ? const {} : statuses,
       source: source ? null : this.source,
       rating: rating ? null : this.rating,
       assignedToId: assignedTo ? null : assignedToId,
       assignedToLabel: assignedTo ? null : assignedToLabel,
       tagId: tag ? null : tagId,
       tagLabel: tag ? null : tagLabel,
+      nextFollowUp: nextFollowUp ? null : this.nextFollowUp,
     );
   }
 
   LeadFilters withSearch(String? value) => LeadFilters(
         search: (value == null || value.isEmpty) ? null : value,
-        status: status,
+        statuses: statuses,
         source: source,
         rating: rating,
         assignedToId: assignedToId,
         assignedToLabel: assignedToLabel,
         tagId: tagId,
         tagLabel: tagLabel,
+        nextFollowUp: nextFollowUp,
       );
 
-  LeadFilters withStatus(LeadStatus? value) => LeadFilters(
+  LeadFilters withStatus(LeadStatus? value) =>
+      withStatuses(value == null ? const {} : {value});
+
+  LeadFilters withStatuses(Set<LeadStatus> value) => LeadFilters(
         search: search,
-        status: value,
+        statuses: value,
         source: source,
         rating: rating,
         assignedToId: assignedToId,
         assignedToLabel: assignedToLabel,
         tagId: tagId,
         tagLabel: tagLabel,
+        nextFollowUp: nextFollowUp,
       );
 
   LeadFilters withSource(LeadSource? value) => LeadFilters(
         search: search,
-        status: status,
+        statuses: statuses,
         source: value,
         rating: rating,
         assignedToId: assignedToId,
         assignedToLabel: assignedToLabel,
         tagId: tagId,
         tagLabel: tagLabel,
+        nextFollowUp: nextFollowUp,
       );
 
   LeadFilters withRating(LeadRating? value) => LeadFilters(
         search: search,
-        status: status,
+        statuses: statuses,
         source: source,
         rating: value,
         assignedToId: assignedToId,
         assignedToLabel: assignedToLabel,
         tagId: tagId,
         tagLabel: tagLabel,
+        nextFollowUp: nextFollowUp,
       );
 
   LeadFilters withAssignee({String? id, String? label}) => LeadFilters(
         search: search,
-        status: status,
+        statuses: statuses,
         source: source,
         rating: rating,
         assignedToId: id,
         assignedToLabel: label,
         tagId: tagId,
         tagLabel: tagLabel,
+        nextFollowUp: nextFollowUp,
       );
 
   LeadFilters withTag({String? id, String? label}) => LeadFilters(
         search: search,
-        status: status,
+        statuses: statuses,
         source: source,
         rating: rating,
         assignedToId: assignedToId,
         assignedToLabel: assignedToLabel,
         tagId: id,
         tagLabel: label,
+        nextFollowUp: nextFollowUp,
+      );
+
+  LeadFilters withNextFollowUp(String? value) => LeadFilters(
+        search: search,
+        statuses: statuses,
+        source: source,
+        rating: rating,
+        assignedToId: assignedToId,
+        assignedToLabel: assignedToLabel,
+        tagId: tagId,
+        tagLabel: tagLabel,
+        nextFollowUp: value,
       );
 }
 
@@ -253,7 +305,9 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
   }
 
   Future<LeadsListData> _fetchPage({required int offset}) async {
-    final queryParams = <String, String>{
+    // `dynamic` so a value can be a List: `Uri.replace` turns one into a
+    // repeated parameter, which is how the API takes more than one status.
+    final queryParams = <String, dynamic>{
       'limit': _pageSize.toString(),
       'offset': offset.toString(),
     };
@@ -261,7 +315,9 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
     if (f.search != null && f.search!.isNotEmpty) {
       queryParams['search'] = f.search!;
     }
-    if (f.status != null) queryParams['status'] = f.status!.value;
+    if (f.statuses.isNotEmpty) {
+      queryParams['status'] = f.statuses.map((s) => s.value).toList();
+    }
     if (f.source != null) queryParams['source'] = f.source!.value;
     if (f.rating != null) queryParams['rating'] = f.rating!.value;
     if (f.assignedToId != null && f.assignedToId!.isNotEmpty) {
@@ -269,6 +325,9 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
     }
     if (f.tagId != null && f.tagId!.isNotEmpty) {
       queryParams['tags'] = f.tagId!;
+    }
+    if (f.nextFollowUp != null && f.nextFollowUp!.isNotEmpty) {
+      queryParams['next_follow_up'] = f.nextFollowUp!;
     }
 
     final url = Uri.parse(

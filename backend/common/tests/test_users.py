@@ -615,8 +615,13 @@ class TestProfilePrivilegeEscalation:
             {"role": "ADMIN"},
             format="json",
         )
-        # read_only means the field is ignored, not rejected: 200, role unchanged.
-        assert response.status_code == status.HTTP_200_OK
+        # The field being read_only is what makes this safe, and that half has
+        # not changed. What changed is the answer: DRF drops a read_only field
+        # in silence, so this used to be a 200 reading "User Updated
+        # Successfully" over a profile that had not been updated, and both
+        # clients then told the user their role had changed.
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "role" in response.data["profile_errors"]
         user_profile.refresh_from_db()
         assert user_profile.role == "USER"
 
@@ -640,9 +645,25 @@ class TestProfilePrivilegeEscalation:
             {"email": regular_user.email, "role": "ADMIN", "phone": "+15550001111"},
             format="json",
         )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        user_profile.refresh_from_db()
+        assert user_profile.role == "USER"
+
+    def test_a_put_echoing_the_role_it_already_has_is_not_refused(
+        self, user_client, regular_user, user_profile
+    ):
+        """PUT is a whole-object update, so a client sends the fields it read
+        back, role included. Only a *different* value is a change to refuse;
+        asking for the role you already have is asking for nothing."""
+        response = user_client.put(
+            self._url(regular_user.id),
+            {"email": regular_user.email, "role": "USER", "phone": "+15550001111"},
+            format="json",
+        )
         assert response.status_code == status.HTTP_200_OK
         user_profile.refresh_from_db()
         assert user_profile.role == "USER"
+        assert user_profile.phone == "+15550001111"
 
     def test_self_escalation_attempt_grants_no_admin_access(
         self, user_client, regular_user, user_profile
@@ -655,6 +676,35 @@ class TestProfilePrivilegeEscalation:
         )
         after = user_client.get("/api/users/")
         assert after.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_a_patch_echoing_the_access_flags_is_not_refused(
+        self, user_client, regular_user, user_profile
+    ):
+        """`has_sales_access` and `has_marketing_access` are privileged too, and
+        the same echo-back rule applies to them: sending what is already stored
+        is not a change."""
+        response = user_client.patch(
+            self._url(regular_user.id),
+            {
+                "phone": "+15551112222",
+                "has_sales_access": user_profile.has_sales_access,
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_a_member_flipping_an_access_flag_is_refused(
+        self, user_client, regular_user, user_profile
+    ):
+        response = user_client.patch(
+            self._url(regular_user.id),
+            {"has_marketing_access": not user_profile.has_marketing_access},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        was = user_profile.has_marketing_access
+        user_profile.refresh_from_db()
+        assert user_profile.has_marketing_access == was
 
     def test_member_can_still_edit_own_safe_fields(
         self, user_client, regular_user, user_profile
@@ -700,7 +750,7 @@ class TestProfilePrivilegeEscalation:
             {"role": "USER"},
             format="json",
         )
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         admin_profile.refresh_from_db()
         assert admin_profile.role == "ADMIN"
 

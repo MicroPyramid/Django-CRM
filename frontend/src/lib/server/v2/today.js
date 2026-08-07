@@ -26,13 +26,21 @@ import { apiRequest } from '$lib/api-helpers.js';
  */
 export async function getToday({ cookies }) {
   const resp = await apiRequest('/dashboard/today/', {}, { cookies });
+  const queue = resp.queue ?? [];
+  const summary = resp.summary ?? {};
   return {
-    queue: resp.queue ?? [],
-    summary: resp.summary ?? {
-      count: 0,
-      quiet_deals: 0,
-      quiet_value: 0,
-      cleared_yesterday: 0
+    queue,
+    summary: {
+      count: summary.count ?? 0,
+      // `shown` is what the page is about to render and `count` is the org's
+      // real total; the page compares them before it can claim to have shown
+      // everything. Defaulting `shown` to the queue length rather than 0 keeps
+      // that comparison honest if the field is ever missing.
+      shown: summary.shown ?? queue.length,
+      sources: summary.sources ?? [],
+      quiet_deals: summary.quiet_deals ?? 0,
+      quiet_value: summary.quiet_value ?? 0,
+      cleared_yesterday: summary.cleared_yesterday ?? 0
     },
     later: resp.later ?? []
   };

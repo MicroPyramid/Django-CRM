@@ -3,6 +3,7 @@ import 'package:bottle_crm/providers/auth_provider.dart';
 import 'package:bottle_crm/screens/auth/org_create_screen.dart';
 import 'package:bottle_crm/screens/auth/org_selection_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,7 +18,9 @@ void main() {
     testWidgets('a user with no organizations is given the action', (
       tester,
     ) async {
-      await tester.pumpWidget(_host(const OrgSelectionScreen(), orgs: const []));
+      await tester.pumpWidget(
+        _host(const OrgSelectionScreen(), orgs: const []),
+      );
       await tester.pump();
 
       expect(find.text('Create an organization'), findsOneWidget);
@@ -66,6 +69,32 @@ void main() {
       );
     });
 
+    testWidgets('back after typing a name asks first', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/picker',
+        routes: [
+          GoRoute(path: '/picker', builder: (_, _) => const Text('the picker')),
+          GoRoute(path: '/new', builder: (_, _) => const OrgCreateScreen()),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authProvider.overrideWith(() => _FakeAuth(const []))],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+      router.push('/new');
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'Acme Inc.');
+      tester.state<NavigatorState>(find.byType(Navigator).last).maybePop();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes?'), findsOneWidget);
+      expect(find.text('the picker'), findsNothing);
+    });
+
     testWidgets('accepts an ordinary name', (tester) async {
       await tester.pumpWidget(_host(const OrgCreateScreen()));
       await tester.pump();
@@ -85,10 +114,11 @@ void main() {
   });
 }
 
-Widget _host(Widget screen, {List<Organization> orgs = const []}) => ProviderScope(
-  overrides: [authProvider.overrideWith(() => _FakeAuth(orgs))],
-  child: MaterialApp(home: screen),
-);
+Widget _host(Widget screen, {List<Organization> orgs = const []}) =>
+    ProviderScope(
+      overrides: [authProvider.overrideWith(() => _FakeAuth(orgs))],
+      child: MaterialApp(home: screen),
+    );
 
 class _FakeAuth extends AuthNotifier {
   _FakeAuth(this.orgs);

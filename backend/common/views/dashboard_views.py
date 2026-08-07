@@ -10,19 +10,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Account
-from accounts.serializer import AccountSerializer
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
 from common.permissions import HasOrgContext, is_org_admin
 from common.utils import STAGES
 from contacts.models import Contact
-from contacts.serializer import ContactSerializer
 from invoices.models import UNPAID_STATUSES, Invoice
 from leads.models import Lead
-from leads.serializer import LeadSerializer
 from opportunity.models import Opportunity, StageAgingConfig
-from opportunity.serializer import OpportunitySerializer
 from opportunity.workflow import DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 from tasks.models import Task
 from tasks.serializer import TaskSerializer
@@ -35,6 +31,13 @@ OPEN_STAGES = ["PROSPECTING", "QUALIFICATION", "PROPOSAL", "NEGOTIATION"]
 # terminal; listing the open ones explicitly means a new terminal status is a
 # deliberate edit here, not a silent inclusion in the "needs a reply" queue.
 OPEN_CASE_STATUSES = ["New", "Assigned", "Pending"]
+
+# How many rows the Today queue shows, and how many each of its four sources
+# contributes before ranking. Neither is a count of anything: `summary.count`
+# is derived from the sources themselves, so raising or lowering these changes
+# what is displayed and never what the header claims.
+TODAY_QUEUE_LIMIT = 8
+TODAY_SOURCE_LIMIT = 25
 
 _CURRENCY_SYMBOL = {
     "USD": "$",
@@ -94,10 +97,13 @@ class ApiHomeView(APIView):
                     "contacts_count": serializers.IntegerField(),
                     "leads_count": serializers.IntegerField(),
                     "opportunities_count": serializers.IntegerField(),
-                    "accounts": AccountSerializer(many=True),
-                    "contacts": ContactSerializer(many=True),
-                    "leads": LeadSerializer(many=True),
-                    "opportunities": OpportunitySerializer(many=True),
+                    "urgent_counts": serializers.DictField(),
+                    "pipeline_by_stage": serializers.DictField(),
+                    "revenue_metrics": serializers.DictField(),
+                    "hot_leads": serializers.ListField(),
+                    "tasks": TaskSerializer(many=True),
+                    "activities": serializer.DashboardActivitySerializer(many=True),
+                    "goal_summary": serializers.ListField(),
                 },
             )
         },
@@ -126,16 +132,17 @@ class ApiHomeView(APIView):
             opportunities = _owned_or_assigned(opportunities, profile)
             tasks = _owned_or_assigned(tasks, profile)
 
-        # Build base context (existing)
+        # Counts only. This used to serialize every account, contact, lead and
+        # opportunity in the org in full beside them: 372 KB of a 384 KB
+        # response, measured against the seeded org, none of which any caller
+        # read. The screens below want counts, the pipeline, the urgent numbers,
+        # ten hot leads and ten tasks. Whoever needs a list calls its own
+        # endpoint, which pages; these four never did.
         context = {}
         context["accounts_count"] = accounts.count()
         context["contacts_count"] = contacts.count()
         context["leads_count"] = leads.count()
         context["opportunities_count"] = opportunities.count()
-        context["accounts"] = AccountSerializer(accounts, many=True).data
-        context["contacts"] = ContactSerializer(contacts, many=True).data
-        context["leads"] = LeadSerializer(leads, many=True).data
-        context["opportunities"] = OpportunitySerializer(opportunities, many=True).data
 
         # NEW: Urgent counts for Focus Bar
         overdue_tasks = tasks.filter(
@@ -351,6 +358,10 @@ class ApiTodayView(APIView):
                         name="ApiTodaySummary",
                         fields={
                             "count": serializers.IntegerField(),
+                            "shown": serializers.IntegerField(),
+                            "sources": serializers.ListField(
+                                child=serializers.DictField()
+                            ),
                             "quiet_deals": serializers.IntegerField(),
                             "quiet_value": serializers.FloatField(),
                             "cleared_yesterday": serializers.IntegerField(),
@@ -434,14 +445,13 @@ class ApiTodayView(APIView):
 
         # ── build the queue (each source pre-ordered by urgency, capped) ────
         queue = []
+        awaiting_cases = cases.filter(first_response_at__isnull=True)
 
         # 1. Cases awaiting a first response. SLA-breached outrank in-SLA ones;
         #    High/Urgent priority render with the alarm tone.
-        for c in (
-            cases.filter(first_response_at__isnull=True)
-            .select_related("account")
-            .order_by("created_at")[:25]
-        ):
+        for c in awaiting_cases.select_related("account").order_by("created_at")[
+            :TODAY_SOURCE_LIMIT
+        ]:
             deadline = c.created_at + timedelta(hours=c.sla_first_response_hours or 4)
             breached = deadline < now
             hot = c.priority in ("High", "Urgent")
@@ -459,7 +469,9 @@ class ApiTodayView(APIView):
             )
 
         # 2. Overdue invoices.
-        for inv in invoices.select_related("account").order_by("due_date")[:25]:
+        for inv in invoices.select_related("account").order_by("due_date")[
+            :TODAY_SOURCE_LIMIT
+        ]:
             queue.append(
                 {
                     "_rank": 1,
@@ -475,7 +487,7 @@ class ApiTodayView(APIView):
 
         # 3. Quiet deals (aging). Rotten (red) outrank merely slowing (yellow).
         stage_labels = dict(STAGES)
-        for opp in quiet_opps.order_by("stage_changed_at")[:25]:
+        for opp in quiet_opps.order_by("stage_changed_at")[:TODAY_SOURCE_LIMIT]:
             rotten = (
                 opp.stage in rotten_cutoffs
                 and opp.stage_changed_at is not None
@@ -496,7 +508,7 @@ class ApiTodayView(APIView):
             )
 
         # 4. Tasks overdue or due today.
-        for t in tasks.order_by("due_date")[:25]:
+        for t in tasks.order_by("due_date")[:TODAY_SOURCE_LIMIT]:
             overdue = t.due_date is not None and t.due_date < today
             queue.append(
                 {
@@ -516,8 +528,34 @@ class ApiTodayView(APIView):
             )
 
         queue.sort(key=lambda item: item["_rank"])
-        total_urgent = len(queue)
-        queue = [{k: v for k, v in item.items() if k != "_rank"} for item in queue[:8]]
+        queue = [
+            {k: v for k, v in item.items() if k != "_rank"}
+            for item in queue[:TODAY_QUEUE_LIMIT]
+        ]
+
+        # ── the count, and where the rows that did not fit have gone ────────
+        # `len(queue)` was a third number that matched nothing on screen: it is
+        # taken after the per-source cap and before the queue cap, so the header
+        # could claim 42 over 8 rows, and an org past the source cap would get
+        # neither its true total nor its visible one. Count each source instead,
+        # and hand the page a per-source breakdown so the overflow has somewhere
+        # to go. The hrefs are literals built here, never stored values.
+        sources = [
+            {
+                "label": "tickets awaiting a reply",
+                "count": awaiting_cases.count(),
+                "href": "/tickets",
+            },
+            {
+                "label": "overdue invoices",
+                "count": invoices.count(),
+                "href": "/invoices",
+            },
+            {"label": "quiet deals", "count": quiet_deals, "href": "/pipeline"},
+            {"label": "tasks due", "count": tasks.count(), "href": "/tasks"},
+        ]
+        sources = [s for s in sources if s["count"]]
+        total_urgent = sum(s["count"] for s in sources)
 
         # ── "cleared yesterday" (a morale line) ─────────────────────────────
         # Tasks have no completed_at, so proxy with "marked Completed and last
@@ -534,6 +572,8 @@ class ApiTodayView(APIView):
 
         summary = {
             "count": total_urgent,
+            "shown": len(queue),
+            "sources": sources,
             "quiet_deals": quiet_deals,
             "quiet_value": float(quiet_value or 0),
             "cleared_yesterday": cleared_tasks.count() + cleared_cases.count(),

@@ -134,11 +134,26 @@ BottleCRM Mobile is designed to streamline your sales and customer management pr
 4. Configure OAuth consent screen
 
 #### Environment Configuration
-The app automatically switches between environments:
-- **Debug builds**: Uses development API (ngrok URL)
-- **Release builds**: Uses production API (bottlecrm.io)
+With no build flags, the app switches on build mode:
+- **Debug builds**: development API
+- **Release builds**: production API (bottlecrm.io)
 
-You can modify URLs in `lib/config/api_config.dart`
+Self-hosting points a build at your own server without editing source:
+
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://crm.example.com \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=<your-web-client-id>.apps.googleusercontent.com
+```
+
+`API_BASE_URL` must start with `https://` in a release build. The app refuses to
+start on a plain-HTTP address rather than send its JWTs unencrypted; `http://` is
+allowed in debug, where a local Django lives. A trailing slash is trimmed.
+
+Both settings are compile-time (`String.fromEnvironment`). Deliberately so: a
+runtime setting would let anything that can write the app's storage point every
+request, and every token, at a server of its choosing. The defaults still live in
+`lib/config/api_config.dart`.
 
 ## 🛠 Development
 
@@ -312,17 +327,17 @@ For detailed architectural guidelines, see [CLAUDE.md](CLAUDE.md) and [.github/c
 
 ### API Configuration
 
-The application uses environment-based API URLs configured in `lib/config/api_config.dart`:
+Every endpoint is built from one host, resolved in `lib/config/api_config.dart`:
 
-```dart
-// Development (debug builds)
-static const String _developmentUrl = 'https://b2ad5166b831.ngrok-free.app';
-
-// Production (release builds) 
-static const String _productionUrl = 'https://api.bottlecrm.io';
+```bash
+# Point a build anywhere. Release builds must be https.
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-**Environment Detection**: Automatic switching based on `kDebugMode` flag
+With no `API_BASE_URL`, the host comes from `kDebugMode`: the development server
+in debug, `https://api.bottlecrm.io` in release. See
+[Environment Configuration](#environment-configuration) above for the release
+build flags and the plain-HTTP rule.
 
 ### Authentication Setup
 
@@ -474,7 +489,8 @@ flutter doctor -v
 #### API Connection Issues
 ```bash
 # Problem: API requests failing in debug mode
-# Solution: Check ngrok tunnel status and update URL in api_config.dart
+# Solution: Point the build at a server you control, no source edit needed
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 
 # Problem: 401 Unauthorized errors
 # Solution: Clear app data and re-authenticate

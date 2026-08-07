@@ -588,6 +588,7 @@ class CreateProfileSerializer(serializers.ModelSerializer):
         # (so they are silently ignored) when the caller may not grant them.
         can_grant = kwargs.pop("can_grant_privileges", False)
         super().__init__(*args, **kwargs)
+        self._can_grant_privileges = can_grant
         self.fields["alternate_phone"].required = False
         self.fields["phone"].required = False
         if can_grant:
@@ -597,6 +598,51 @@ class CreateProfileSerializer(serializers.ModelSerializer):
                 # read_only and required are mutually exclusive in DRF, so this
                 # also drops role's requirement for the self-edit path.
                 self.fields[name].read_only = True
+
+    def validate(self, attrs):
+        """Say no out loud when a privileged field was actually being changed.
+
+        Making the fields read_only above is what makes this safe, and it is
+        the half that must never be removed. It is not the half a caller can
+        see: DRF drops a read_only field without a word, so `PATCH {"role":
+        "USER"}` on your own profile answered ``200 User Updated Successfully``
+        and changed nothing. Both clients then told the user the role had
+        changed, which is a worse failure than a refusal.
+
+        Only a *different* value is refused. A client echoing the whole profile
+        back, including the role it already has, is asking for no change and
+        gets none, the same as before.
+        """
+        if self._can_grant_privileges or self.instance is None:
+            return attrs
+        submitted = self.initial_data if isinstance(self.initial_data, dict) else {}
+        errors = {
+            name: ["Only an admin can change this, and never on themselves."]
+            for name in self.PRIVILEGED_FIELDS
+            if name in submitted
+            and not self._unchanged(submitted[name], getattr(self.instance, name))
+        }
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+    @staticmethod
+    def _unchanged(submitted, current):
+        """Is the submitted value the one already stored?
+
+        Compared as text, and as a boolean when the stored value is one, since
+        a form sends ``"true"`` where the column holds ``True``.
+        """
+        if isinstance(current, bool):
+            accepted = (
+                serializers.BooleanField.TRUE_VALUES
+                if current
+                else serializers.BooleanField.FALSE_VALUES
+            )
+            # Compared one by one rather than with `in`, because a caller can
+            # send a list or a dict here and those are not hashable.
+            return any(submitted == value for value in accepted)
+        return str(submitted) == str(current)
 
 
 class UserSerializer(serializers.ModelSerializer):

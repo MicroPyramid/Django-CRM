@@ -7,6 +7,7 @@ import '../config/api_config.dart';
 import '../data/models/auth_response.dart';
 import 'api_service.dart';
 import 'crash_reporting.dart';
+import 'token_storage.dart';
 
 /// Authentication service for BottleCRM
 ///
@@ -21,9 +22,12 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final ApiService _apiService = ApiService();
 
+  /// The two JWTs are the only things that do not live in shared preferences.
+  /// See `token_storage.dart` for why, and for the migration that empties the
+  /// old location on upgrade.
+  final TokenStorage _tokenStorage = TokenStorage();
+
   // Storage keys
-  static const String _accessTokenKey = 'jwt_token';
-  static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
   static const String _organizationsKey = 'organizations';
   static const String _selectedOrgKey = 'selected_organization';
@@ -65,11 +69,12 @@ class AuthService {
     // Initialize Google Sign-In (required in v7.1.1).
     // serverClientId is the Web OAuth client (client_type: 3 in google-services.json)
     //. This is the audience the Django backend's GOOGLE_CLIENT_ID verifies against,
-    // and it's what makes Android return a usable ID token.
+    // and it's what makes Android return a usable ID token. It lives in
+    // ApiConfig so a self-hoster can point a build at their own Google project
+    // with --dart-define instead of editing this file.
     try {
       await _googleSignIn.initialize(
-        serverClientId:
-            '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
+        serverClientId: ApiConfig.googleServerClientId,
       );
       debugPrint('AuthService: Google Sign-In initialized successfully');
     } catch (e) {
@@ -166,11 +171,10 @@ class AuthService {
   Future<bool> requestMagicCode(String email) async {
     try {
       debugPrint('AuthService: Requesting magic code for $email...');
-      final response = await _apiService.post(
-        ApiConfig.magicLinkRequest,
-        {'email': email, 'delivery': 'code'},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.magicLinkRequest, {
+        'email': email,
+        'delivery': 'code',
+      }, requiresAuth: false);
       return response.success;
     } catch (e) {
       debugPrint('AuthService: requestMagicCode error: $e');
@@ -189,11 +193,10 @@ class AuthService {
   }) async {
     try {
       debugPrint('AuthService: Verifying magic code for $email...');
-      final response = await _apiService.post(
-        ApiConfig.magicLinkVerifyCode,
-        {'email': email, 'code': code},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.magicLinkVerifyCode, {
+        'email': email,
+        'code': code,
+      }, requiresAuth: false);
 
       if (!response.success || response.data == null) {
         debugPrint(
@@ -223,7 +226,8 @@ class AuthService {
       // The nested read is kept as a fallback in case an older build of the
       // API is on the other end.
       final orgsList =
-          (data['organizations'] ?? userData?['organizations']) as List<dynamic>?;
+          (data['organizations'] ?? userData?['organizations'])
+              as List<dynamic>?;
       _organizations = orgsList
           ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
           .toList();
@@ -461,6 +465,25 @@ class AuthService {
   Future<void> signOut() async {
     debugPrint('AuthService: Signing out...');
 
+    // Tell the server first, while the token is still in hand. Clearing local
+    // state was the whole of sign-out until now, which left the refresh token
+    // valid for its full fourteen days: a phone handed on, sold, or restored
+    // from a backup still carried a working session.
+    //
+    // Deliberately not awaited into a failure path. If the request cannot be
+    // made, the user still expects to be signed out of this device, and
+    // stranding them on a logged-in screen because the network dropped is the
+    // worse outcome. `ApiService` already swallows transport errors into an
+    // unsuccessful response.
+    if (_refreshToken != null) {
+      final response = await _apiService.post(ApiConfig.logout, {
+        'refresh': _refreshToken,
+      }, requiresAuth: false);
+      if (!response.success) {
+        debugPrint('AuthService: Server sign-out failed, clearing anyway');
+      }
+    }
+
     _accessToken = null;
     _refreshToken = null;
     _currentUser = null;
@@ -483,8 +506,9 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      _accessToken = prefs.getString(_accessTokenKey);
-      _refreshToken = prefs.getString(_refreshTokenKey);
+      final tokens = await _tokenStorage.read();
+      _accessToken = tokens.access;
+      _refreshToken = tokens.refresh;
 
       final userJson = prefs.getString(_userKey);
       if (userJson != null) {
@@ -524,12 +548,8 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      if (_accessToken != null) {
-        await prefs.setString(_accessTokenKey, _accessToken!);
-      }
-      if (_refreshToken != null) {
-        await prefs.setString(_refreshTokenKey, _refreshToken!);
-      }
+      await _tokenStorage.write(access: _accessToken, refresh: _refreshToken);
+
       if (_currentUser != null) {
         await prefs.setString(
           _userKey,
@@ -574,9 +594,9 @@ class AuthService {
   /// Clear all stored authentication data
   Future<void> _clearStorage() async {
     try {
+      await _tokenStorage.clear();
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_accessTokenKey);
-      await prefs.remove(_refreshTokenKey);
       await prefs.remove(_userKey);
       await prefs.remove(_organizationsKey);
       await prefs.remove(_selectedOrgKey);

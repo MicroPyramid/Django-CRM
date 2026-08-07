@@ -23,7 +23,7 @@ from cases.serializer import (
     CaseStageSerializer,
 )
 from common.permissions import HasOrgContext, is_org_admin
-from common.validators import uuid_param
+from common.validators import date_param, uuid_param
 from common.utils import STATUS_CHOICE
 
 
@@ -131,10 +131,12 @@ class CaseKanbanView(APIView):
         tags = uuid_param(params, "tags")
         if tags:
             queryset = queryset.filter(tags__id=tags)
-        if params.get("created_at__gte"):
-            queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
-        if params.get("created_at__lte"):
-            queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+        created_at_gte = date_param(params, "created_at__gte")
+        if created_at_gte:
+            queryset = queryset.filter(created_at__gte=created_at_gte)
+        created_at_lte = date_param(params, "created_at__lte")
+        if created_at_lte:
+            queryset = queryset.filter(created_at__lte=created_at_lte)
         return queryset.distinct()
 
     def _get_status_kanban(self, queryset):

@@ -17,6 +17,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from cases.models import Case
+from common.views.dashboard_views import TODAY_QUEUE_LIMIT, TODAY_SOURCE_LIMIT
 from invoices.models import Invoice
 from opportunity.models import Opportunity
 from tasks.models import Task
@@ -57,6 +58,8 @@ class TestTodayView:
         assert set(resp.data.keys()) == {"queue", "summary", "later"}
         assert set(resp.data["summary"].keys()) == {
             "count",
+            "shown",
+            "sources",
             "quiet_deals",
             "quiet_value",
             "cleared_yesterday",
@@ -293,3 +296,122 @@ class TestTodayView:
         _set_rls(org_a)
         resp = admin_client.get(self.url)
         assert f"invoice-{foreign.id}" not in _ids(resp.data["queue"])
+
+
+@pytest.mark.django_db
+class TestTheHeaderCountMatchesThePage:
+    """The header used to read "42 things want you today" over 8 rows, and then
+    close with "That's everything due today."
+
+    `summary.count` was `len(queue)`, taken after a per-source cap of 25 and
+    before the queue cap of 8, so it was a third number that matched neither the
+    rows on screen nor the org's real total. These tests pin both ends of it: the
+    count is the true total, and the page is told how many it is showing and
+    where the rest live.
+    """
+
+    url = "/api/dashboard/today/"
+
+    def _overdue_invoices(self, org, n, created_by=None):
+        for i in range(n):
+            inv = Invoice.objects.create(
+                invoice_title=f"Overdue {i}",
+                org=org,
+                currency="USD",
+                total_amount=100 + i,
+                status="Sent",
+                due_date=_today() - _days(i + 1),
+            )
+            if created_by is not None:
+                Invoice.objects.filter(id=inv.id).update(created_by=created_by)
+
+    def test_the_count_is_the_total_and_shown_is_the_rows(self, admin_client, org_a):
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 12)
+
+        summary = admin_client.get(self.url).data["summary"]
+
+        assert summary["count"] == 12
+        assert summary["shown"] == TODAY_QUEUE_LIMIT
+
+    def test_the_page_can_tell_it_is_not_showing_everything(
+        self, admin_client, org_a
+    ):
+        """The closing line is the page's to draw, and this pair is what it
+        draws from. With more than fits, shown < count; with fewer, they agree
+        and the page may say "that's everything" truthfully."""
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 12)
+        assert admin_client.get(self.url).data["summary"]["shown"] < 12
+
+        Invoice.objects.filter(org=org_a).delete()
+        self._overdue_invoices(org_a, 3)
+        summary = admin_client.get(self.url).data["summary"]
+        assert summary["shown"] == summary["count"] == 3
+
+    def test_the_count_survives_the_per_source_cap(self, admin_client, org_a):
+        """The old count read the queue list, so an org past the 25-per-source
+        cap got 25: not its total, and not what it could see either."""
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, TODAY_SOURCE_LIMIT + 5)
+
+        summary = admin_client.get(self.url).data["summary"]
+
+        assert summary["count"] == TODAY_SOURCE_LIMIT + 5
+
+    def test_the_sources_say_where_the_overflow_went(
+        self, admin_client, org_a, admin_user
+    ):
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 10)
+        for i in range(4):
+            Task.objects.create(
+                title=f"Due today {i}",
+                org=org_a,
+                status="New",
+                priority="Medium",
+                due_date=_today(),
+                created_by=admin_user,
+            )
+
+        summary = admin_client.get(self.url).data["summary"]
+        by_label = {s["label"]: s for s in summary["sources"]}
+
+        assert by_label["overdue invoices"]["count"] == 10
+        assert by_label["overdue invoices"]["href"] == "/invoices"
+        assert by_label["tasks due"]["count"] == 4
+        assert by_label["tasks due"]["href"] == "/tasks"
+        assert sum(s["count"] for s in summary["sources"]) == summary["count"] == 14
+
+    def test_a_source_with_nothing_in_it_is_not_listed(self, admin_client, org_a):
+        """An empty source would render as a link to a page with nothing on it."""
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 2)
+
+        summary = admin_client.get(self.url).data["summary"]
+
+        assert [s["label"] for s in summary["sources"]] == ["overdue invoices"]
+
+    def test_the_count_is_scoped_to_the_member(
+        self, user_client, org_a, regular_user, admin_user
+    ):
+        """The count is derived from the same querysets the queue is, so a
+        member's header cannot leak the size of a colleague's workload."""
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 9, created_by=admin_user)
+        self._overdue_invoices(org_a, 2, created_by=regular_user)
+
+        summary = user_client.get(self.url).data["summary"]
+
+        assert summary["count"] == 2
+        assert summary["shown"] == 2
+
+    def test_the_count_stops_at_the_org_boundary(self, admin_client, org_a, org_b):
+        _set_rls(org_b)
+        self._overdue_invoices(org_b, 6)
+        _set_rls(org_a)
+        self._overdue_invoices(org_a, 1)
+
+        summary = admin_client.get(self.url).data["summary"]
+
+        assert summary["count"] == 1

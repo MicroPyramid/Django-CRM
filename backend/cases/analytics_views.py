@@ -12,19 +12,21 @@ from __future__ import annotations
 
 import csv
 from datetime import datetime, timedelta
-from datetime import timezone as dt_timezone
 from typing import Optional
 from uuid import UUID
 
 from django.db.models import Q
 from django.http import StreamingHttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cases import analytics
 from cases.access import is_org_admin
+from cases.analytics import DEFAULT_SERVICE_DAYS
 from cases.models import Case
 from cases.serializer import CaseSerializer
 from common.permissions import HasOrgContext
@@ -34,18 +36,60 @@ from common.validators import uuid_param
 # Shared filter parsing
 
 
-def _parse_dt(value: str, *, end_of_day: bool = False) -> Optional[datetime]:
-    """Accepts YYYY-MM-DD (treated as UTC midnight) or full ISO-8601."""
+def _parse_dt(
+    value: str, field: str, *, end_of_day: bool = False
+) -> Optional[datetime]:
+    """Accepts YYYY-MM-DD (the org's midnight) or full ISO-8601.
+
+    A date picker sends the day the user pointed at, not an instant. Anchoring
+    it to UTC midnight would ask an Indian org about a window that starts at
+    05:30 on the chosen day and ends at 05:30 on the day after the one they
+    picked, so the answer would silently cover the wrong 24 hours.
+
+    A value that will not parse is refused rather than dropped. Returning
+    ``None`` for it fell through to the default last-30-days window, so
+    ``?from=banana`` was answered 200 with figures for a period nobody asked
+    about, and a client with a broken date format had no way to find out. Every
+    other date-valued parameter in this API answers 400 (see
+    ``common.validators.date_param``); this one now agrees with them.
+    """
     if not value:
         return None
     try:
-        # Date-only: anchor to UTC midnight; if end_of_day, push to next day.
+        # Date-only: anchor to the org's midnight; end_of_day means the
+        # exclusive upper bound, so the whole chosen day is inside the window.
         if len(value) == 10 and value.count("-") == 2:
-            d = datetime.fromisoformat(value).replace(tzinfo=dt_timezone.utc)
-            return d + timedelta(days=1) if end_of_day else d
+            d = datetime.fromisoformat(value)
+            return timezone.make_aware(d + timedelta(days=1) if end_of_day else d)
         return datetime.fromisoformat(value)
     except ValueError:
-        return None
+        raise ValidationError(
+            {
+                field: [
+                    f"'{value}' is not a valid date. "
+                    "Use YYYY-MM-DD or an ISO-8601 timestamp."
+                ]
+            }
+        ) from None
+
+
+def _parse_days(value) -> int:
+    """The service window's length, in whole days.
+
+    Absent means the default. A value that is not a whole number is refused for
+    the same reason a malformed ``from`` is: silently answering about 14 days
+    when asked about ``banana`` looks like an answer. Out-of-range is a
+    different case and stays a clamp, which `compute_service_overview`
+    documents: 999 days is a legible request for "as much as you have".
+    """
+    if value in (None, ""):
+        return DEFAULT_SERVICE_DAYS
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValidationError(
+            {"days": [f"'{value}' is not a whole number of days."]}
+        ) from None
 
 
 def _filtered_qs(request) -> tuple[object, datetime, datetime]:
@@ -75,8 +119,8 @@ def _filtered_qs(request) -> tuple[object, datetime, datetime]:
     if agent_id := uuid_param(params, "agent"):
         qs = qs.filter(assigned_to=agent_id)
 
-    from_dt = _parse_dt(params.get("from", ""))
-    to_dt = _parse_dt(params.get("to", ""), end_of_day=True)
+    from_dt = _parse_dt(params.get("from", ""), "from")
+    to_dt = _parse_dt(params.get("to", ""), "to", end_of_day=True)
     # Coerce defaults (last 30 days) consistently with the analytics module.
     coerced_from, coerced_to = analytics._coerce_window(from_dt, to_dt)
     return qs, coerced_from, coerced_to
@@ -162,12 +206,11 @@ class AnalyticsServiceView(_AnalyticsBaseView):
             return Response(
                 {"error": True, "errors": "Admin access required"}, status=403
             )
+        days = _parse_days(request.query_params.get("days"))
         qs = Case.objects.filter(
             org=request.profile.org, is_active=True, merged_into__isnull=True
         ).exclude(status="Duplicate")
-        data = analytics.compute_service_overview(
-            qs, request.profile.org_id, request.query_params.get("days", 14)
-        )
+        data = analytics.compute_service_overview(qs, request.profile.org_id, days)
         return Response(data)
 
 
