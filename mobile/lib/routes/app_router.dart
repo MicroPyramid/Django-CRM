@@ -31,6 +31,7 @@ import '../screens/tickets/tickets_list_screen.dart';
 import '../screens/tickets/ticket_detail_screen.dart';
 import '../screens/tickets/ticket_create_screen.dart';
 import '../screens/tickets/ticket_form_screen.dart';
+import '../screens/tasks/board_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
@@ -71,6 +72,7 @@ class AppRoutes {
   static const String ticketCreate = '/tickets/create';
   static const String ticketEdit = '/tickets/:id/edit';
   static const String tasks = '/tasks';
+  static const String taskBoard = '/tasks/board';
   static const String taskDetail = '/tasks/:id';
   static const String taskCreate = '/tasks/create';
   static const String taskEdit = '/tasks/:id/edit';
@@ -489,6 +491,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         state.uri.queryParameters['due'] ?? '',
                       ),
                     ),
+                  ),
+                  // Before `:id`, which would otherwise swallow "board" and
+                  // ask the tasks API for a task with that id.
+                  GoRoute(
+                    path: 'board',
+                    name: 'taskBoard',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const BoardScreen(),
                   ),
                   GoRoute(
                     path: ':id',

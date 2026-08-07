@@ -196,6 +196,13 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             ),
             onPressed: _toggleViewMode,
           ),
+          // The board is a different record type, not another view of these
+          // tasks, so it is a place to go rather than a mode to toggle.
+          IconButton(
+            tooltip: 'Boards',
+            icon: const Icon(LucideIcons.squareKanban, size: 22),
+            onPressed: () => context.push(AppRoutes.taskBoard),
+          ),
           IconButton(
             icon: const Icon(LucideIcons.plus, size: 22),
             onPressed: () => _navigateToCreateTask(),

@@ -17,3 +17,4 @@ export 'solution.dart';
 export 'approval.dart';
 export 'attachment.dart';
 export 'team_member.dart';
+export 'board.dart';

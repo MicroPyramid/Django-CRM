@@ -268,6 +268,24 @@ class ApiConfig {
   /// Invoices management
   static String get invoices => '$apiBaseUrl/invoices/';
 
+  /// Kanban boards. The list returns only boards you own or belong to, so an
+  /// empty list is an answer and not a permission failure: creating one makes
+  /// you its owner.
+  static String get boards => '$apiBaseUrl/boards/';
+
+  /// A board's lanes, each with its cards nested under `tasks`. This is the
+  /// one call that renders a whole board.
+  static String boardLanes(String boardId) =>
+      '$apiBaseUrl/boards/$boardId/columns/';
+
+  /// POST a card into a lane. The server takes the lane from this URL, so a
+  /// card cannot be posted into another board's lane.
+  static String boardLaneCards(String laneId) =>
+      '$apiBaseUrl/boards/columns/$laneId/tasks/';
+
+  /// One card: PUT to move or edit it, DELETE to remove it.
+  static String boardCard(String cardId) => '$apiBaseUrl/boards/tasks/$cardId/';
+
   // ==========================================================================
   // USERS & TAGS ENDPOINTS
   // ==========================================================================

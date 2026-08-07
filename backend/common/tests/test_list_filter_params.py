@@ -74,7 +74,9 @@ NUMBER_PARAMS = [
 @pytest.mark.django_db
 class TestAMalformedRangeFilterIsRefusedNotCrashed:
     @pytest.mark.parametrize("url,param", DATE_PARAMS)
-    def test_a_word_where_a_date_belongs_is_a_400(self, admin_client, org_a, url, param):
+    def test_a_word_where_a_date_belongs_is_a_400(
+        self, admin_client, org_a, url, param
+    ):
         resp = admin_client.get(url, {param: "banana"})
 
         assert resp.status_code == http.HTTP_400_BAD_REQUEST
@@ -256,3 +258,94 @@ class TestFollowUpsDueOnADay:
         resp = admin_client.get("/api/leads/", {"next_follow_up": "2026-08-07"})
 
         assert resp.data["open_leads"]["open_leads"] == []
+
+
+# Every analytics endpoint takes its window through the same `_parse_dt`, so
+# one bad value has one behaviour across all seven. The drilldown and the export
+# want a metric before they will look at anything else, so they carry one.
+WINDOW_URLS = [
+    ("/api/cases/analytics/frt/", {}),
+    ("/api/cases/analytics/mttr/", {}),
+    ("/api/cases/analytics/backlog/", {}),
+    ("/api/cases/analytics/agents/", {}),
+    ("/api/cases/analytics/sla/", {}),
+    ("/api/cases/analytics/drilldown/", {"metric": "frt"}),
+    ("/api/cases/analytics/export/", {"metric": "frt"}),
+]
+
+
+@pytest.mark.django_db
+class TestAMalformedAnalyticsWindowIsRefusedNotIgnored:
+    """`?from=banana` used to be answered 200.
+
+    Unparseable text became `None`, which is also what "not sent" looks like, so
+    the endpoint fell back to its default last-30-days window and returned
+    figures for a period nobody asked about. A client with a broken date format
+    had no way to find that out, and the numbers looked plausible. This is the
+    same class as the 500s above, one step further along: not a crash, an
+    answer to a different question.
+    """
+
+    @pytest.mark.parametrize("url,extra", WINDOW_URLS)
+    @pytest.mark.parametrize("param", ["from", "to"])
+    def test_a_word_where_a_date_belongs_is_a_400(
+        self, admin_client, org_a, url, extra, param
+    ):
+        resp = admin_client.get(url, {**extra, param: "banana"})
+
+        assert resp.status_code == http.HTTP_400_BAD_REQUEST
+        assert param in resp.data
+
+    @pytest.mark.parametrize("url,extra", WINDOW_URLS)
+    def test_a_real_window_still_answers(self, admin_client, org_a, url, extra):
+        resp = admin_client.get(
+            url, {**extra, "from": "2026-08-01", "to": "2026-08-07"}
+        )
+
+        assert resp.status_code == http.HTTP_200_OK
+
+    def test_a_blank_window_means_the_default_one(self, admin_client, org_a):
+        """An unset date picker submits "", which is "no window given"."""
+        resp = admin_client.get("/api/cases/analytics/frt/", {"from": "", "to": ""})
+
+        assert resp.status_code == http.HTTP_200_OK
+
+    def test_a_full_timestamp_is_still_accepted(self, admin_client, org_a):
+        """The window takes an instant as well as a day, and always has."""
+        resp = admin_client.get(
+            "/api/cases/analytics/frt/", {"from": "2026-08-01T09:30:00Z"}
+        )
+
+        assert resp.status_code == http.HTTP_200_OK
+
+    def test_a_day_that_does_not_exist_is_a_400(self, admin_client, org_a):
+        resp = admin_client.get("/api/cases/analytics/frt/", {"from": "2026-02-31"})
+
+        assert resp.status_code == http.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestTheServiceWindowLength:
+    """`?days=` on the service dashboard, which had the same silent fallback."""
+
+    url = "/api/cases/analytics/service/"
+
+    def test_a_word_where_a_count_belongs_is_a_400(self, admin_client, org_a):
+        resp = admin_client.get(self.url, {"days": "banana"})
+
+        assert resp.status_code == http.HTTP_400_BAD_REQUEST
+        assert "days" in resp.data
+
+    def test_a_number_out_of_range_is_still_clamped(self, admin_client, org_a):
+        """Out-of-range is a legible request ("as much as you have"), so it is
+        held to the maximum rather than refused. Unreadable is not."""
+        resp = admin_client.get(self.url, {"days": "999"})
+
+        assert resp.status_code == http.HTTP_200_OK
+        assert resp.data["totals"]["window_days"] == 90
+
+    def test_no_days_at_all_is_the_default_window(self, admin_client, org_a):
+        resp = admin_client.get(self.url)
+
+        assert resp.status_code == http.HTTP_200_OK
+        assert resp.data["totals"]["window_days"] == 14

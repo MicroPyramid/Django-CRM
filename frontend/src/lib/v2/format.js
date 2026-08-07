@@ -30,14 +30,32 @@ export function initials(name) {
 }
 
 /**
+ * ISO string → Date, or null when there is nothing to render.
+ *
+ * A date-only string ("2026-08-07") names a calendar day, not an instant, and
+ * `new Date()` reads it as UTC midnight. A browser west of UTC then prints
+ * that as the day before: a due date set for Friday reads as Thursday, and a
+ * chart bucket the API labelled Friday sits under the wrong label. Appending a
+ * time is what makes it parse as local midnight instead. Anything that carries
+ * a time of day is a real instant and is left exactly as it was.
+ */
+function parseIso(value) {
+  if (!value) return null;
+  const d =
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T00:00:00`)
+      : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
  * ISO date → "8 Aug", or "8 Aug 2023" when it is not this year, otherwise a
  * deal closed three years ago reads as if it closed last week.
  * Returns an em dash for null so table cells never collapse.
  */
 export function shortDate(iso, now = new Date()) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = parseIso(iso);
+  if (!d) return '—';
   const sameYear = d.getFullYear() === now.getFullYear();
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
@@ -48,9 +66,8 @@ export function shortDate(iso, now = new Date()) {
 
 /** ISO date → "8 August 2026". */
 export function longDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = parseIso(iso);
+  if (!d) return '—';
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
@@ -60,9 +77,8 @@ export function longDate(iso) {
 
 /** Whole days between an ISO date and today. Negative = in the future. */
 export function daysSince(iso, now = new Date()) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
+  const d = parseIso(iso);
+  if (!d) return null;
   return Math.floor((now.getTime() - d.getTime()) / 86400000);
 }
 
@@ -87,9 +103,8 @@ export function relativeDays(iso, now = new Date()) {
  * you end up re-reading the whole list to find what is new.
  */
 export function relativeTime(iso, now = new Date()) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = parseIso(iso);
+  if (!d) return '—';
   const mins = Math.floor((now.getTime() - d.getTime()) / 60000);
   if (mins < 0) return relativeDays(iso, now);
   if (mins < 1) return 'just now';
@@ -101,9 +116,8 @@ export function relativeTime(iso, now = new Date()) {
 
 /** Compact age for a table cell: "12d", "3h". */
 export function shortAge(iso, now = new Date()) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = parseIso(iso);
+  if (!d) return '—';
   const mins = Math.max(0, Math.floor((now.getTime() - d.getTime()) / 60000));
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
