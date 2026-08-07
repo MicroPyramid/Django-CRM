@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Adding a lead.
    *
@@ -127,7 +128,7 @@
 
 <PageHeader title="New lead" center>
   {#snippet crumb()}
-    <a href="/leads">Leads</a> ›
+    <a href={resolve('/leads')}>Leads</a> ›
   {/snippet}
   {#snippet sub()}
     A name and a company is enough to start. The rest can wait.
@@ -308,7 +309,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit" disabled={busy}>Create lead</button>
-      <a class="v2-btn" href="/leads">Cancel</a>
+      <a class="v2-btn" href={resolve('/leads')}>Cancel</a>
     </div>
   </form>
 </div>

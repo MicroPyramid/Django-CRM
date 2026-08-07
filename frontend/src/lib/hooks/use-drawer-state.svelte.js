@@ -1,3 +1,6 @@
+import { SvelteURL } from 'svelte/reactivity';
+import { resolve } from '$app/paths';
+import { asInternalPath } from '$lib/utils/paths.js';
 import { goto } from '$app/navigation';
 
 /**
@@ -29,7 +32,7 @@ export function useDrawerState(options = {}) {
   function updateUrl(viewId, action) {
     if (!syncUrl || !page) return;
 
-    const url = new URL(page.url);
+    const url = new SvelteURL(page.url);
     if (viewId) {
       url.searchParams.set('view', viewId);
       url.searchParams.delete('action');
@@ -40,7 +43,10 @@ export function useDrawerState(options = {}) {
       url.searchParams.delete('view');
       url.searchParams.delete('action');
     }
-    goto(url.toString(), { replaceState: true, noScroll: true });
+    goto(resolve(asInternalPath(`${url.pathname}${url.search}${url.hash}`)), {
+      replaceState: true,
+      noScroll: true
+    });
   }
 
   /**

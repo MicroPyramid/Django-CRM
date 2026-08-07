@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A new invoice template: name, the two brand colours, an optional logo, and
    * the boilerplate text (notes, terms, footer) new invoices start with.
@@ -32,7 +33,7 @@
 
 <PageHeader title="New template" record center width="62ch">
   {#snippet crumb()}
-    <a href="/invoices/templates">Templates</a>
+    <a href={resolve('/invoices/templates')}>Templates</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -52,7 +53,9 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href="/invoices/templates" style="margin-top:16px">Back to templates</a>
+      <a class="v2-btn" href={resolve('/invoices/templates')} style="margin-top:16px"
+        >Back to templates</a
+      >
     </div>
   {:else}
     <form
@@ -117,8 +120,7 @@
           class="v2-input"
           name="default_notes"
           rows="3"
-          placeholder="Thanks for your business."
-          >{values.default_notes ?? ''}</textarea
+          placeholder="Thanks for your business.">{values.default_notes ?? ''}</textarea
         >
       </label>
 
@@ -128,16 +130,13 @@
           class="v2-input"
           name="default_terms"
           rows="3"
-          placeholder="Payment due within 30 days."
-          >{values.default_terms ?? ''}</textarea
+          placeholder="Payment due within 30 days.">{values.default_terms ?? ''}</textarea
         >
       </label>
 
       <label class="v2-field">
         <span class="v2-label">Footer text <span class="opt">(optional)</span></span>
-        <textarea class="v2-input" name="footer_text" rows="2"
-          >{values.footer_text ?? ''}</textarea
-        >
+        <textarea class="v2-input" name="footer_text" rows="2">{values.footer_text ?? ''}</textarea>
       </label>
 
       <label class="flag">
@@ -153,7 +152,7 @@
 
       <div style="display:flex;gap:9px;margin-top:6px">
         <button class="v2-btn v2-btn-primary" type="submit">Create template</button>
-        <a class="v2-btn" href="/invoices/templates">Cancel</a>
+        <a class="v2-btn" href={resolve('/invoices/templates')}>Cancel</a>
       </div>
     </form>
   {/if}

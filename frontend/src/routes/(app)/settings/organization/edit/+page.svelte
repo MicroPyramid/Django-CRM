@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing the organisation.
    *
@@ -136,9 +137,9 @@
 {:else}
   <PageHeader title="Edit organization" center>
     {#snippet crumb()}
-      <a href="/settings">Settings</a>
+      <a href={resolve('/settings')}>Settings</a>
       <ChevronRight size={12} />
-      <a href="/settings/organization">Organization</a>
+      <a href={resolve('/settings/organization')}>Organization</a>
     {/snippet}
   </PageHeader>
 
@@ -337,8 +338,8 @@
           {/each}
         </select>
         <p class="v2-hint">
-          When a day starts for this organisation. Changing it moves what counts as due
-          today and overdue, for everyone here.
+          When a day starts for this organisation. Changing it moves what counts as due today and
+          overdue, for everyone here.
         </p>
       </div>
 
@@ -375,7 +376,7 @@
 
       <div class="actions">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href="/settings/organization">Cancel</a>
+        <a class="v2-btn" href={resolve('/settings/organization')}>Cancel</a>
       </div>
     </form>
   </div>

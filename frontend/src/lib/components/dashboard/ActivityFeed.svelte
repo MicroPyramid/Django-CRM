@@ -1,4 +1,5 @@
 <script>
+  import { SvelteDate } from 'svelte/reactivity';
   import { Button } from '$lib/components/ui/button/index.js';
   import {
     Activity,
@@ -85,9 +86,9 @@
     const date = new Date(dateStr);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
+    const yesterday = new SvelteDate(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const weekAgo = new Date(today);
+    const weekAgo = new SvelteDate(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     if (date >= today) return 'Today';
@@ -169,7 +170,7 @@
       </div>
     {:else}
       <div class="space-y-5">
-        {#each groupedActivities as group}
+        {#each groupedActivities as group (group.category)}
           <div>
             <p
               class="mb-3 text-[10px] font-semibold tracking-widest text-[var(--text-tertiary)] uppercase"

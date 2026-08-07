@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A lead: a person you are trying to reach and, if it goes well, convert.
    *
@@ -176,7 +177,7 @@
     <Avatar name={fullName} size={42} />
   {/snippet}
   {#snippet crumb()}
-    <a href="/leads">{t(data.org?.terminology, 'lead.plural', 'Leads')}</a>
+    <a href={resolve('/leads')}>{t(data.org?.terminology, 'lead.plural', 'Leads')}</a>
     <ChevronRight size={12} />
     <span>{lead.company_name || 'No company'}</span>
   {/snippet}
@@ -193,7 +194,7 @@
     {#if lead.phone}
       <a class="v2-btn" href="tel:{lead.phone}"><Phone />Call</a>
     {/if}
-    <a class="v2-btn" href="/leads/{lead.id}/edit"><Pencil />Edit</a>
+    <a class="v2-btn" href={resolve(`/leads/${lead.id}/edit`)}><Pencil />Edit</a>
   {/snippet}
 </PageHeader>
 
@@ -223,7 +224,7 @@
             </div>
             <div style="font-size:12.5px;line-height:1.55">
               {#each duplicates as d, i (d.id)}
-                {i > 0 ? ', ' : ''}<a href="/leads/{d.id}">{d.name}</a> shares {d.matched_on}
+                {i > 0 ? ', ' : ''}<a href={resolve(`/leads/${d.id}`)}>{d.name}</a> shares {d.matched_on}
               {/each}. Merge them, or link both to one account when you convert.
             </div>
           </div>
@@ -283,12 +284,12 @@
               The account, contact and deal are ready.
             </p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a class="v2-btn" href="/accounts/{form.account_id}">View account</a>
+              <a class="v2-btn" href={resolve(`/accounts/${form.account_id}`)}>View account</a>
               {#if form.contact_id}
-                <a class="v2-btn" href="/contacts/{form.contact_id}">View contact</a>
+                <a class="v2-btn" href={resolve(`/contacts/${form.contact_id}`)}>View contact</a>
               {/if}
               {#if form.opportunity_id}
-                <a class="v2-btn" href="/pipeline/{form.opportunity_id}">View deal</a>
+                <a class="v2-btn" href={resolve(`/pipeline/${form.opportunity_id}`)}>View deal</a>
               {/if}
             </div>
           </div>
@@ -405,7 +406,12 @@
                 </span>
                 <div class="tl-body">
                   {#if e.type === 'file' && e.href}
-                    <a class="tl-file" href={e.href} target="_blank" rel="noreferrer noopener">
+                    <a
+                      class="tl-file"
+                      href={resolve(e.href)}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
                       {e.body}
                     </a>
                   {:else}
@@ -428,20 +434,20 @@
     <dl class="v2-kv">
       <dt>Email</dt>
       <dd style="font-size:12px">
-        {#if lead.email}<a href="mailto:{lead.email}" style="color:inherit">{lead.email}</a
-          >{:else}, {/if}
+        {#if lead.email}<a href="mailto:{lead.email}" style="color:inherit">{lead.email}</a>{:else},
+        {/if}
       </dd>
       <dt>Phone</dt>
       <dd class="v2-num" style="font-size:12px">
-        {#if lead.phone}<a href="tel:{lead.phone}" style="color:inherit">{lead.phone}</a
-          >{:else}, {/if}
+        {#if lead.phone}<a href="tel:{lead.phone}" style="color:inherit">{lead.phone}</a>{:else},
+        {/if}
       </dd>
       <dt>Website</dt>
       <dd style="font-size:12px">
         {#if lead.website && webHref(lead.website)}<a
             href={webHref(lead.website)}
             target="_blank"
-            rel="noreferrer noopener"
+            rel="external noreferrer noopener"
             style="color:inherit">{lead.website}</a
           >{:else}{lead.website || '—'}{/if}
       </dd>
@@ -458,7 +464,9 @@
       <dt>Industry</dt>
       <dd>{industryLabel(lead.industry) || '—'}</dd>
       <dt>Est. value</dt>
-      <dd class="v2-num">{lead.opportunity_amount ? money(lead.opportunity_amount, lead.currency) : '—'}</dd>
+      <dd class="v2-num">
+        {lead.opportunity_amount ? money(lead.opportunity_amount, lead.currency) : '—'}
+      </dd>
     </dl>
 
     <div class="v2-label v2-rail-head">Timeline</div>

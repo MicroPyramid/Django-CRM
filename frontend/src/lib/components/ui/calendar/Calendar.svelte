@@ -72,7 +72,7 @@
             }
           }}
         >
-          {#each months as month, i}
+          {#each months as month, i (month)}
             <option value={i + 1}>{month}</option>
           {/each}
         </select>
@@ -88,7 +88,7 @@
             }
           }}
         >
-          {#each years as year}
+          {#each years as year (year)}
             <option value={year}>{year}</option>
           {/each}
         </select>
@@ -101,11 +101,11 @@
       </Calendar.NextButton>
     </Calendar.Header>
 
-    {#each calendarMonths as month}
+    {#each calendarMonths as month (month.value.toString())}
       <Calendar.Grid class="w-full border-collapse space-y-1">
         <Calendar.GridHead>
           <Calendar.GridRow class="flex">
-            {#each weekdays as day}
+            {#each weekdays as day (day)}
               <Calendar.HeadCell
                 class="w-8 rounded-md text-[0.8rem] font-normal text-gray-500 dark:text-gray-400"
               >
@@ -115,9 +115,9 @@
           </Calendar.GridRow>
         </Calendar.GridHead>
         <Calendar.GridBody>
-          {#each month.weeks as week}
+          {#each month.weeks as week, weekIndex (weekIndex)}
             <Calendar.GridRow class="mt-2 flex w-full">
-              {#each week as date}
+              {#each week as date (date.toString())}
                 <Calendar.Cell {date} month={month.value} class="relative p-0 text-center text-sm">
                   <Calendar.Day
                     class="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 text-sm font-normal transition-colors hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[disabled]:text-gray-400 data-[outside-month]:text-gray-400 data-[outside-month]:opacity-50 data-[selected]:bg-blue-600 data-[selected]:text-white data-[today]:bg-gray-100 data-[today]:font-semibold dark:hover:bg-gray-800 dark:data-[selected]:bg-blue-600 dark:data-[today]:bg-gray-800"

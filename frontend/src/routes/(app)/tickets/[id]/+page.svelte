@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
@@ -114,14 +115,14 @@
     {/if}
   {/snippet}
   {#snippet crumb()}
-    <a href="/tickets">Tickets</a>
+    <a href={resolve('/tickets')}>Tickets</a>
     {#if ticket.account}
       <ChevronRight size={12} />
-      <a href="/accounts/{ticket.account.id}">{ticket.account.name}</a>
+      <a href={resolve(`/accounts/${ticket.account.id}`)}>{ticket.account.name}</a>
     {/if}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/tickets/{ticket.id}/edit"><Pencil size={12} />Edit</a>
+    <a class="v2-btn" href={resolve(`/tickets/${ticket.id}/edit`)}><Pencil size={12} />Edit</a>
     {#if ticket.is_open}
       <form method="POST" action="?/setStatus" use:enhance style="display:contents">
         {#if ticket.status !== 'Pending'}
@@ -362,7 +363,7 @@
       <div class="v2-label v2-rail-head">Account</div>
       <a
         class="v2-rail-row"
-        href="/accounts/{ticket.account.id}"
+        href={resolve(`/accounts/${ticket.account.id}`)}
         style="color:inherit;text-decoration:none"
       >
         <Avatar name={ticket.account.name} size={29} />
@@ -384,7 +385,11 @@
     {#if contacts.length}
       <div class="v2-label v2-rail-head">People</div>
       {#each contacts as c (c.id)}
-        <a class="v2-rail-row" href="/contacts/{c.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/contacts/${c.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <Avatar name={c.name} size={26} />
           <div style="font-size:12.5px;font-weight:550">{c.name}</div>
         </a>
@@ -396,7 +401,11 @@
            called these "suggested"; suggestions are a different endpoint. -->
       <div class="v2-label v2-rail-head">Linked articles</div>
       {#each articles as a (a.id)}
-        <a class="v2-rail-row" href="/solutions/{a.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/solutions/${a.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <div>
             <div style="font-size:12.5px;font-weight:550;line-height:1.35">{a.title}</div>
             <div class="v2-sub" style="font-size:11px">
@@ -419,7 +428,7 @@
             class="v2-rail-row att"
             href={f.url}
             target="_blank"
-            rel="noreferrer noopener"
+            rel="external noreferrer noopener"
             style="color:inherit;text-decoration:none"
           >
             <Paperclip size={13} />
@@ -437,7 +446,11 @@
     {#if alsoOpen.length}
       <div class="v2-label v2-rail-head">Also open here</div>
       {#each alsoOpen as t (t.id)}
-        <a class="v2-rail-row" href="/tickets/{t.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/tickets/${t.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <div>
             <div style="font-size:12.5px;font-weight:550;line-height:1.35">{t.name}</div>
             <div class="v2-sub" style="font-size:11px">

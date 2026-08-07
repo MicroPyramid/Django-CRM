@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import Timeline from '$lib/v2/components/Timeline.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
@@ -33,15 +34,15 @@
 
 <PageHeader title={deal.name} record>
   {#snippet crumb()}
-    <a href="/pipeline">Pipeline</a>
+    <a href={resolve('/pipeline')}>Pipeline</a>
     <ChevronRight size={12} />
-    <a href="/accounts/{deal.account.id}">{deal.account.name}</a>
+    <a href={resolve(`/accounts/${deal.account.id}`)}>{deal.account.name}</a>
   {/snippet}
   {#snippet actions()}
     <!-- "Move stage" was a second button that did nothing. Stage is edited on
          the form below, where the page can show what moving it costs, the
          aging clock resets, instead of moving it in one anonymous click. -->
-    <a class="v2-btn" href="/pipeline/{deal.id}/edit">Edit</a>
+    <a class="v2-btn" href={resolve(`/pipeline/${deal.id}/edit`)}>Edit</a>
   {/snippet}
 </PageHeader>
 
@@ -161,7 +162,11 @@
     {#each contacts as c (c.id)}
       <!-- A link now that `/contacts/<uuid>` resolves. These names were
            plain text because the contacts module was still fixtures. -->
-      <a class="v2-rail-row" href="/contacts/{c.id}" style="color:inherit;text-decoration:none">
+      <a
+        class="v2-rail-row"
+        href={resolve(`/contacts/${c.id}`)}
+        style="color:inherit;text-decoration:none"
+      >
         <Avatar name="{c.first_name} {c.last_name}" size={27} />
         <div style="min-width:0">
           <div style="font-size:12.5px;font-weight:550">{c.first_name} {c.last_name}</div>

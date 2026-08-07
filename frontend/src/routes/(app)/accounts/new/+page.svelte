@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A new account.
    *
@@ -94,7 +95,7 @@
 
 <PageHeader title="New account" center>
   {#snippet crumb()}
-    <a href="/accounts">Accounts</a>
+    <a href={resolve('/accounts')}>Accounts</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -250,7 +251,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Create account</button>
-      <a class="v2-btn" href="/accounts">Cancel</a>
+      <a class="v2-btn" href={resolve('/accounts')}>Cancel</a>
     </div>
   </form>
 </div>

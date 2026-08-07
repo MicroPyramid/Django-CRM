@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Status and visibility are two separate facts, and the list shows both.
    * An article can be approved and still invisible to customers; v1 showed
@@ -37,7 +38,7 @@
     <span class="v2-num">{count(totals.published)}</span> visible to customers
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/solutions/new"><Plus />New article</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/solutions/new')}><Plus />New article</a>
   {/snippet}
 </PageHeader>
 
@@ -90,10 +91,10 @@
       {#snippet icon()}<BookOpen size={21} />{/snippet}
       {#snippet actions()}
         {#if page.url.search}
-          <a class="v2-btn" href="/solutions">Clear filters</a>
+          <a class="v2-btn" href={resolve('/solutions')}>Clear filters</a>
         {/if}
-        <a class="v2-btn v2-btn-primary" href="/solutions/new">New article</a>
-        <a class="v2-btn" href="/tickets">Go to tickets</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/solutions/new')}>New article</a>
+        <a class="v2-btn" href={resolve('/tickets')}>Go to tickets</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -114,7 +115,7 @@
           {#each articles as s (s.id)}
             <tr>
               <td style="white-space:normal;max-width:460px" data-m="title">
-                <a class="v2-row-link" href="/solutions/{s.id}">
+                <a class="v2-row-link" href={resolve(`/solutions/${s.id}`)}>
                   <span class="v2-table-primary">{s.title}</span>
                 </a>
               </td>
@@ -169,7 +170,7 @@
       Showing <span class="v2-num">{articles.length}</span> of
       <span class="v2-num">{count(totals.matched)}</span>
       {#if page.url.search}
-        · <a href="/solutions" style="color:inherit">clear filters</a>
+        · <a href={resolve('/solutions')} style="color:inherit">clear filters</a>
       {/if}
     </p>
   {/if}

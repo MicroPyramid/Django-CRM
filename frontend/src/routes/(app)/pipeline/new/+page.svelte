@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { untrack, tick } from 'svelte';
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -106,7 +107,7 @@
 
 <PageHeader title="New deal" center>
   {#snippet crumb()}
-    <a href="/pipeline">Pipeline</a> ›
+    <a href={resolve('/pipeline')}>Pipeline</a> ›
   {/snippet}
   {#snippet sub()}
     Five fields to start. Everything else can wait until you know it.
@@ -345,7 +346,7 @@
 
     <div style="display:flex;gap:8px;align-items:center;margin-top:22px">
       <button class="v2-btn v2-btn-primary" type="submit">Create deal</button>
-      <a class="v2-btn" href="/pipeline">Cancel</a>
+      <a class="v2-btn" href={resolve('/pipeline')}>Cancel</a>
       <span class="v2-sub" style="margin-left:auto;font-size:12px">
         <span class="v2-num">{REQUIRED.filter((f) => !errors[f]).length}</span>
         of <span class="v2-num">{REQUIRED.length}</span> required fields done

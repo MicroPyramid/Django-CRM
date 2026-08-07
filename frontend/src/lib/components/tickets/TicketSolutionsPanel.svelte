@@ -1,12 +1,13 @@
 <script>
+  import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Plus, X, BookOpen } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
 
-  /** @type {{ ticketId: string, linked: any[], available: any[] }} */
-  let { ticketId, linked, available } = $props();
+  /** @type {{ linked: any[], available: any[] }} */
+  let { linked, available } = $props();
 
   let pickerOpen = $state(false);
   let search = $state('');
@@ -43,7 +44,7 @@
       {#if available.length === 0}
         <div class="px-1 py-2 text-xs text-[var(--text-secondary)]">
           No published solutions yet.
-          <a href="/solutions" class="text-[var(--text-primary)] underline">
+          <a href={resolve('/solutions')} class="text-[var(--text-primary)] underline">
             Visit Knowledge Base
           </a>
           to publish one, only Live articles appear here.

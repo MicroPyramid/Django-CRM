@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Documents: a model with a full API and, until now, no screen anywhere.
    * `Document` has existed since the first migration and neither v1 nor the
@@ -71,7 +72,7 @@
     <span class="v2-num">{count(totals.inactive)}</span> archived
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/documents/new"><Upload />Upload</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}><Upload />Upload</a>
   {/snippet}
 </PageHeader>
 
@@ -105,7 +106,7 @@
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/documents/new">Upload a document</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}>Upload a document</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -168,7 +169,11 @@
                    it. Reading is broader, but that is what the row already is. -->
               <td class="v2-r">
                 {#if d.can_write}
-                  <a class="edit" href="/documents/{d.id}/edit" title="Manage this document">
+                  <a
+                    class="edit"
+                    href={resolve(`/documents/${d.id}/edit`)}
+                    title="Manage this document"
+                  >
                     <Pencil size={13} />
                   </a>
                 {/if}

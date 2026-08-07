@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * New invoice.
    *
@@ -181,7 +182,7 @@
     Nothing is sent until you send it. Saving leaves it as a draft
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/invoices">Cancel</a>
+    <a class="v2-btn" href={resolve('/invoices')}>Cancel</a>
     <button type="submit" form="invoice-form" class="v2-btn v2-btn-primary" disabled={!ready}>
       Save as draft
     </button>

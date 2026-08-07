@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Where the money is.
    *
@@ -71,8 +72,8 @@
       <p>
         Invoiced and collected totals, revenue by month and accounts-receivable aging cover the
         whole organisation's money, so they are limited to admins. Your own invoices and estimates
-        are on the <a href="/invoices">Invoices</a> and
-        <a href="/invoices/estimates">Estimates</a> tabs.
+        are on the <a href={resolve('/invoices')}>Invoices</a> and
+        <a href={resolve('/invoices/estimates')}>Estimates</a> tabs.
       </p>
     </div>
   </div>
@@ -206,7 +207,10 @@
               {#each data.overdueByAccount as a (a.id)}
                 <tr>
                   <td class="v2-table-primary">
-                    <a href="/accounts/{a.id}" style="color:inherit;text-decoration:none">
+                    <a
+                      href={resolve(`/accounts/${a.id}`)}
+                      style="color:inherit;text-decoration:none"
+                    >
                       {a.name}
                     </a>
                   </td>

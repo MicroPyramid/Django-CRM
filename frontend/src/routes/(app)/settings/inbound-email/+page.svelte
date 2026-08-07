@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The addresses that turn email into tickets.
    *
@@ -119,7 +120,10 @@
             <label for="m-provider">Provider</label>
             <select id="m-provider" class="v2-input" name="provider">
               {#each PROVIDERS as p (p)}
-                <option value={p} selected={editing === 'new' ? p === 'ses' : editing.provider === p}>
+                <option
+                  value={p}
+                  selected={editing === 'new' ? p === 'ses' : editing.provider === p}
+                >
                   {MAILBOX_PROVIDER_LABEL[p]}
                 </option>
               {/each}
@@ -318,7 +322,8 @@
 
     <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
       Where a new ticket goes after it is created is decided by
-      <a href="/settings/routing" style="color:inherit">ticket routing</a>, not by these defaults.
+      <a href={resolve('/settings/routing')} style="color:inherit">ticket routing</a>, not by these
+      defaults.
     </p>
   </div>
 </div>

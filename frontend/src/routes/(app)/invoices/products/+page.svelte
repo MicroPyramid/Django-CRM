@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The catalogue line items are picked from. Short, boring, and the only page
    * in Bill that is a settings screen wearing a list's clothes, so it is
@@ -49,7 +50,9 @@
   {/snippet}
   {#snippet actions()}
     {#if canManage}
-      <a class="v2-btn v2-btn-primary" href="/invoices/products/new"><Plus />New product</a>
+      <a class="v2-btn v2-btn-primary" href={resolve('/invoices/products/new')}
+        ><Plus />New product</a
+      >
     {/if}
   {/snippet}
 </PageHeader>
@@ -66,7 +69,8 @@
         {#snippet icon()}<Package size={21} />{/snippet}
         {#snippet actions()}
           {#if canManage}
-            <a class="v2-btn v2-btn-primary" href="/invoices/products/new">New product</a>
+            <a class="v2-btn v2-btn-primary" href={resolve('/invoices/products/new')}>New product</a
+            >
           {:else}
             <span class="v2-sub" style="font-size:12px">Ask an admin to add products.</span>
           {/if}
@@ -94,7 +98,11 @@
                 {money(p.price, p.currency)}
               </span>
               {#if canManage}
-                <a class="prod-edit" href="/invoices/products/{p.id}/edit" title="Edit {p.name}">
+                <a
+                  class="prod-edit"
+                  href={resolve(`/invoices/products/${p.id}/edit`)}
+                  title="Edit {p.name}"
+                >
                   <Pencil size={14} />
                 </a>
               {/if}

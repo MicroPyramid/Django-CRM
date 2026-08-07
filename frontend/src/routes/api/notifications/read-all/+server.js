@@ -7,7 +7,7 @@ export async function POST({ request, cookies, locals }) {
   try {
     body = await request.json();
   } catch {
-    body = {};
+    // An empty or invalid body means there are no filters to forward.
   }
   await apiRequest(
     `/notifications/read-all/`,

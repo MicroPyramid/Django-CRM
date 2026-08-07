@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * What happens when a ticket blows its target.
    *
@@ -49,7 +50,8 @@
    */
   let policies = $derived(
     [...data.policies].sort(
-      (a, b) => ESCALATION_PRIORITIES.indexOf(a.priority) - ESCALATION_PRIORITIES.indexOf(b.priority)
+      (a, b) =>
+        ESCALATION_PRIORITIES.indexOf(a.priority) - ESCALATION_PRIORITIES.indexOf(b.priority)
     )
   );
 
@@ -284,7 +286,10 @@
             <select id="e-team" class="v2-input" name="notify_team_id">
               <option value="" selected={editing === 'new' || !editing.notify_team}>No team</option>
               {#each data.teams as t (t.id)}
-                <option value={t.id} selected={editing !== 'new' && editing.notify_team?.id === t.id}>
+                <option
+                  value={t.id}
+                  selected={editing !== 'new' && editing.notify_team?.id === t.id}
+                >
                   {t.name}
                 </option>
               {/each}
@@ -421,9 +426,9 @@
 
       <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
         Targets are measured on
-        <a href="/settings/business-hours" style="color:inherit">business hours</a>, so a breach
-        counts working time only. What counts as breached for each priority is set with the target
-        itself, not here.
+        <a href={resolve('/settings/business-hours')} style="color:inherit">business hours</a>, so a
+        breach counts working time only. What counts as breached for each priority is set with the
+        target itself, not here.
       </p>
     {/if}
   </div>

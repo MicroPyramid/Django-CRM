@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * The signature element. One per record, at the top, always a verb.
    * This is the one place ember earns its keep on a record page: it is
@@ -35,7 +37,7 @@
   {#if action && href}
     <a
       class="v2-btn v2-btn-primary"
-      {href}
+      href={resolve(asInternalPath(href))}
       style={tone === 'rust' ? `background:${accent};border-color:${accent}` : ''}
     >
       {action}

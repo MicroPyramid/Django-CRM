@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * The settings hub.
    *
@@ -205,7 +207,7 @@
       <div class="v2-label" style="margin-bottom:10px">{g.label}</div>
       <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
         {#each g.items as s (s.href)}
-          <a class="v2-setting" href={s.href}>
+          <a class="v2-setting" href={resolve(asInternalPath(s.href))}>
             <div class="v2-setting-body">
               <b>{s.title}</b>
               <span class="v2-sub" style="font-size:11.5px">{s.body}</span>
@@ -232,7 +234,8 @@
     <p class="v2-sub" style="font-size:11.5px;margin-top:18px;max-width:64ch">
       The organisation API key is not shown here. Credentials are never rendered on a page you can
       arrive at by browsing. See
-      <a href="/settings/api-tokens" style="color:inherit">API tokens</a> for how token values are handled.
+      <a href={resolve('/settings/api-tokens')} style="color:inherit">API tokens</a> for how token values
+      are handled.
     </p>
   </div>
 </div>

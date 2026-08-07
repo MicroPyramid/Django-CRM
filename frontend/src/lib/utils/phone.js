@@ -84,7 +84,7 @@ export async function validatePhoneNumber(phoneNumber, defaultCountry) {
       error:
         'Please enter a valid phone number (include country code like +91 for India or +1 for US)'
     };
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       error: 'Please enter a valid phone number'

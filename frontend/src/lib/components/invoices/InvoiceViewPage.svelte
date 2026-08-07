@@ -141,7 +141,7 @@
         {/if}
         {#if company?.website}
           <p>
-            Web: <a href={company.website} target="_blank" rel="noopener noreferrer"
+            Web: <a href={company.website} target="_blank" rel="external noopener noreferrer"
               >{company.website.replace(/^https?:\/\//, '')}</a
             >
           </p>
@@ -233,7 +233,7 @@
       </thead>
       <tbody>
         {#if invoice.lineItems && invoice.lineItems.length > 0}
-          {#each invoice.lineItems as item}
+          {#each invoice.lineItems as item (item.id)}
             <tr>
               <td class="desc-col">
                 {#if item.name}

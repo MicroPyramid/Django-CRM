@@ -42,7 +42,7 @@ function decodeJwtPayload(token) {
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
     return /** @type {JWTPayload} */ (JSON.parse(jsonPayload));
-  } catch (error) {
+  } catch {
     return null;
   }
 }

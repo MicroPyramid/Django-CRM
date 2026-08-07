@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
@@ -81,12 +82,14 @@
     <span class="v2-num">{count(totals.awaiting_reply)}</span> with no reply yet
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/tickets/new"><Plus />New ticket</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/tickets/new')}><Plus />New ticket</a>
   {/snippet}
 </PageHeader>
 
 {#if page.url.search}
-  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">These numbers describe the filtered queue.</p>
+  <p class="v2-sub" style="font-size:11.5px;margin:8px 0 0">
+    These numbers describe the filtered queue.
+  </p>
 {/if}
 
 <!-- Approvals and Analytics were buttons in this header that went nowhere.
@@ -114,11 +117,11 @@
     >
       {#snippet icon()}<LifeBuoy size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/tickets/new">New ticket</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/tickets/new')}>New ticket</a>
         {#if !data.showAll}
-          <a class="v2-btn" href="/tickets?all=1">Show closed too</a>
+          <a class="v2-btn" href={resolve('/tickets?all=1')}>Show closed too</a>
         {/if}
-        <a class="v2-btn" href="/solutions">Knowledge base</a>
+        <a class="v2-btn" href={resolve('/solutions')}>Knowledge base</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -141,7 +144,7 @@
             {@const p = responsePressure(t)}
             <tr>
               <td data-m="title">
-                <a class="v2-row-link" href="/tickets/{t.id}">
+                <a class="v2-row-link" href={resolve(`/tickets/${t.id}`)}>
                   <span class="v2-table-primary">{t.name}</span>
                 </a>
               </td>
@@ -154,7 +157,9 @@
               </td>
               <td class="v2-muted" style="font-size:12.5px">
                 {#if t.account}
-                  <a class="v2-row-link" href="/accounts/{t.account.id}">{t.account.name}</a>
+                  <a class="v2-row-link" href={resolve(`/accounts/${t.account.id}`)}
+                    >{t.account.name}</a
+                  >
                 {:else}
                   No account
                 {/if}
@@ -202,9 +207,9 @@
       Showing <span class="v2-num">{tickets.length}</span> of
       <span class="v2-num">{count(totals.count)}</span>
       {#if !data.showAll}
-        · <a href="/tickets?all=1" style="color:inherit">include closed</a>
+        · <a href={resolve('/tickets?all=1')} style="color:inherit">include closed</a>
       {:else}
-        · <a href="/tickets" style="color:inherit">open only</a>
+        · <a href={resolve('/tickets')} style="color:inherit">open only</a>
       {/if}
     </p>
   {/if}

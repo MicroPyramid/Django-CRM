@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import EmptyState from '$lib/v2/components/EmptyState.svelte';
   import { FileQuestion, Lock, TriangleAlert } from '@lucide/svelte';
@@ -48,7 +49,7 @@
       {#if status >= 500}
         <button class="v2-btn v2-btn-primary" onclick={() => location.reload()}>Try again</button>
       {/if}
-      <a class="v2-btn" href="/">Back to Today</a>
+      <a class="v2-btn" href={resolve('/')}>Back to Today</a>
     {/snippet}
   </EmptyState>
 

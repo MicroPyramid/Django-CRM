@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing a task.
    *
@@ -30,9 +31,9 @@
 
 <PageHeader title="Edit task" record center width="62ch">
   {#snippet crumb()}
-    <a href="/tasks">Tasks</a>
+    <a href={resolve('/tasks')}>Tasks</a>
     <ChevronRight size={12} />
-    <a href="/tasks/{data.task.id}">{data.task.title}</a>
+    <a href={resolve(`/tasks/${data.task.id}`)}>{data.task.title}</a>
     <ChevronRight size={12} />
     <span>Edit</span>
   {/snippet}
@@ -128,7 +129,7 @@
 
     <div style="display:flex;gap:9px;margin-top:6px">
       <button class="v2-btn v2-btn-primary" type="submit">Save</button>
-      <a class="v2-btn" href="/tasks/{data.task.id}">Cancel</a>
+      <a class="v2-btn" href={resolve(`/tasks/${data.task.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

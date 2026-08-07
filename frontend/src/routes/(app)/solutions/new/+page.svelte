@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * New knowledge-base article.
    *
@@ -82,13 +83,13 @@
 
 <PageHeader title="New article" center width="760px">
   {#snippet crumb()}
-    <a href="/solutions"><ChevronLeft size={13} />Knowledge base</a>
+    <a href={resolve('/solutions')}><ChevronLeft size={13} />Knowledge base</a>
   {/snippet}
   {#snippet sub()}
     Write the answer once, attach it to every ticket that asks
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/solutions">Cancel</a>
+    <a class="v2-btn" href={resolve('/solutions')}>Cancel</a>
     <button
       class="v2-btn v2-btn-primary"
       type="submit"

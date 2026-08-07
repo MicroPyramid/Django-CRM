@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 /**
  * API Client for Django REST Framework Backend
  *
@@ -176,7 +177,7 @@ async function performTokenRefresh() {
     // Refresh token expired or invalid
     clearAuthData();
     if (typeof window !== 'undefined') {
-      goto('/login');
+      goto(resolve('/login'));
     }
     return null;
   } catch (error) {
@@ -317,7 +318,7 @@ export const auth = {
   logout() {
     clearAuthData();
     if (typeof window !== 'undefined') {
-      goto('/login');
+      goto(resolve('/login'));
     }
   }
 };

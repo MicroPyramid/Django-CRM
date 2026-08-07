@@ -67,7 +67,6 @@ export const actions = {
   selectOrg: async ({ request, cookies }) => {
     const formData = await request.formData();
     const orgId = formData.get('org_id')?.toString();
-    const orgName = formData.get('org_name')?.toString();
 
     if (!orgId || !UUID_RE.test(orgId)) {
       return fail(400, { error: 'Invalid Organization ID' });
@@ -96,7 +95,7 @@ export const actions = {
         }
       );
 
-      const { access_token, refresh_token, current_org } = response.data;
+      const { access_token, refresh_token } = response.data;
 
       // Update cookies with new tokens that have org context embedded
       cookies.set('jwt_access', access_token, {

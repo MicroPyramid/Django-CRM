@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing a lead.
    *
@@ -181,9 +182,9 @@
 
 <PageHeader title="Edit {displayName}" center>
   {#snippet crumb()}
-    <a href="/leads">Leads</a>
+    <a href={resolve('/leads')}>Leads</a>
     <ChevronRight size={12} />
-    <a href="/leads/{lead.id}">{displayName}</a>
+    <a href={resolve(`/leads/${lead.id}`)}>{displayName}</a>
   {/snippet}
   {#snippet sub()}
     Currently <Pill tone={LEAD_STATUS_TONE[originalStatus]}
@@ -213,17 +214,17 @@
           {/if}
           {#if result?.account_id}
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-              <a class="v2-btn" href="/accounts/{result.account_id}">View account</a>
+              <a class="v2-btn" href={resolve(`/accounts/${result.account_id}`)}>View account</a>
               {#if result.contact_id}
-                <a class="v2-btn" href="/contacts/{result.contact_id}">View contact</a>
+                <a class="v2-btn" href={resolve(`/contacts/${result.contact_id}`)}>View contact</a>
               {/if}
               {#if result.opportunity_id}
-                <a class="v2-btn" href="/pipeline/{result.opportunity_id}">View deal</a>
+                <a class="v2-btn" href={resolve(`/pipeline/${result.opportunity_id}`)}>View deal</a>
               {/if}
             </div>
           {/if}
         </div>
-        <a class="v2-btn" href="/leads/{lead.id}">Back to the lead</a>
+        <a class="v2-btn" href={resolve(`/leads/${lead.id}`)}>Back to the lead</a>
       </div>
     {/if}
 
@@ -534,7 +535,11 @@
                 id="f-cf-{f.key}"
                 name="cf_{f.key}"
                 class="v2-input"
-                type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                type={f.field_type === 'number'
+                  ? 'number'
+                  : f.field_type === 'date'
+                    ? 'date'
+                    : 'text'}
                 step={f.field_type === 'number' ? 'any' : undefined}
                 bind:value={f.value}
                 onblur={() => (touched[`cf_${f.key}`] = true)}
@@ -553,7 +558,7 @@
       <button class="v2-btn v2-btn-primary" type="submit" disabled={saving}>
         {saving ? 'Saving…' : 'Save changes'}
       </button>
-      <a class="v2-btn" href="/leads/{lead.id}">Cancel</a>
+      <a class="v2-btn" href={resolve(`/leads/${lead.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

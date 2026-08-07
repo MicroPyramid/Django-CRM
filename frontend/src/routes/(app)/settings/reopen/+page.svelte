@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Whether a customer's reply can bring a closed ticket back.
    *
@@ -114,8 +115,7 @@
               {/each}
             </select>
             <p class="v2-hint">
-              Only these three. A ticket reopened into a closed status would close again on
-              arrival.
+              Only these three. A ticket reopened into a closed status would close again on arrival.
             </p>
           </div>
 
@@ -217,7 +217,7 @@
 
         <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
           Which addresses accept replies at all is set in
-          <a href="/settings/inbound-email" style="color:inherit">inbound email</a>.
+          <a href={resolve('/settings/inbound-email')} style="color:inherit">inbound email</a>.
         </p>
       </div>
     </div>

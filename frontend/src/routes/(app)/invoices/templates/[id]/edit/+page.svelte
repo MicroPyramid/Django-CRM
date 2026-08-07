@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing an invoice template: the brand fields, the boilerplate text, and
    * the two markup fields no other page in this app is allowed to receive.
@@ -34,7 +35,7 @@
 
 <PageHeader title={data.template?.name ?? 'Edit template'} record center width="72ch">
   {#snippet crumb()}
-    <a href="/invoices/templates">Templates</a>
+    <a href={resolve('/invoices/templates')}>Templates</a>
     <ChevronRight size={12} />
     <span>Edit</span>
   {/snippet}
@@ -53,7 +54,9 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href="/invoices/templates" style="margin-top:16px">Back to templates</a>
+      <a class="v2-btn" href={resolve('/invoices/templates')} style="margin-top:16px"
+        >Back to templates</a
+      >
     </div>
   {:else}
     <form
@@ -98,19 +101,25 @@
 
       <label class="v2-field">
         <span class="v2-label">
-          Logo <span class="opt">{data.template?.has_logo ? '(replaces the current one)' : '(optional)'}</span>
+          Logo <span class="opt"
+            >{data.template?.has_logo ? '(replaces the current one)' : '(optional)'}</span
+          >
         </span>
         <input class="v2-input" type="file" name="logo" accept="image/*" />
       </label>
 
       <label class="v2-field">
         <span class="v2-label">Default notes <span class="opt">(optional)</span></span>
-        <textarea class="v2-input" name="default_notes" rows="3">{values.default_notes ?? ''}</textarea>
+        <textarea class="v2-input" name="default_notes" rows="3"
+          >{values.default_notes ?? ''}</textarea
+        >
       </label>
 
       <label class="v2-field">
         <span class="v2-label">Default terms <span class="opt">(optional)</span></span>
-        <textarea class="v2-input" name="default_terms" rows="3">{values.default_terms ?? ''}</textarea>
+        <textarea class="v2-input" name="default_terms" rows="3"
+          >{values.default_terms ?? ''}</textarea
+        >
       </label>
 
       <label class="v2-field">
@@ -124,8 +133,8 @@
           <strong>Custom layout</strong>
           <div class="v2-sub" style="margin-top:2px">
             Filling these in replaces the whole printed document, the line-item table and the totals
-            included. Nothing checks that what you write still prints an amount due. Leave both empty
-            to use the built-in layout. Emptying a field that has markup in it now clears it.
+            included. Nothing checks that what you write still prints an amount due. Leave both
+            empty to use the built-in layout. Emptying a field that has markup in it now clears it.
           </div>
         </div>
       </div>
@@ -146,14 +155,14 @@
 
       {#if data.template?.is_default}
         <p class="v2-sub" style="font-size:11.5px;margin:0 0 16px">
-          This is the org default, so these changes apply to every new invoice. Which template is the
-          default is changed from the templates page, not here.
+          This is the org default, so these changes apply to every new invoice. Which template is
+          the default is changed from the templates page, not here.
         </p>
       {/if}
 
       <div style="display:flex;gap:9px;margin-top:6px">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href="/invoices/templates">Cancel</a>
+        <a class="v2-btn" href={resolve('/invoices/templates')}>Cancel</a>
       </div>
     </form>
   {/if}

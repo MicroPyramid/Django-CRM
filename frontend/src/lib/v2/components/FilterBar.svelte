@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * One filter system, for every v2 list page.
    *
@@ -128,7 +130,7 @@
         <a
           class="v2-menu-item"
           class:v2-menu-item-on={preset.key === activeKey}
-          href={presetHref(preset)}
+          href={resolve(asInternalPath(presetHref(preset)))}
         >
           {preset.label}
         </a>
@@ -140,7 +142,9 @@
     <span class="v2-chip">
       <b>{chip.label}</b>
       {chip.value}
-      <a href={chip.href} aria-label="Remove the {chip.label} filter"><X size={12} /></a>
+      <a href={resolve(asInternalPath(chip.href))} aria-label="Remove the {chip.label} filter"
+        ><X size={12} /></a
+      >
     </span>
   {/each}
 
@@ -240,7 +244,7 @@
 
         <div class="v2-filter-actions">
           <button class="v2-btn v2-btn-primary v2-btn-sm" type="submit">Apply</button>
-          <a class="v2-btn v2-btn-sm" href={url.pathname}>Clear all</a>
+          <a class="v2-btn v2-btn-sm" href={resolve(asInternalPath(url.pathname))}>Clear all</a>
         </div>
       </form>
     </details>

@@ -1,4 +1,7 @@
 <script>
+  import { SvelteMap } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * Render a comment body with `@username` tokens upgraded to styled chips.
    *
@@ -18,7 +21,7 @@
 
   const lookup = $derived(() => {
     /** @type {Map<string, { id?: string, email?: string }>} */
-    const m = new Map();
+    const m = new SvelteMap();
     for (const c of candidates) {
       if (!c?.username) continue;
       m.set(c.username.toLowerCase(), { id: c.id, email: c.email });
@@ -49,8 +52,8 @@
 </script>
 
 <span class="whitespace-pre-wrap"
-  >{#each tokens as t}{#if t.type === 'text'}{t.value}{:else if t.resolved && t.resolved.id}<a
-        href={`/users/${t.resolved.id}`}
+  >{#each tokens as t, index (index)}{#if t.type === 'text'}{t.value}{:else if t.resolved && t.resolved.id}<a
+        href={resolve(asInternalPath(`/users/${t.resolved.id}`))}
         class="rounded bg-[var(--color-primary-default)]/10 px-1 font-medium text-[var(--color-primary-default)] hover:underline"
         >@{t.username}</a
       >{:else}@{t.username}{/if}{/each}</span

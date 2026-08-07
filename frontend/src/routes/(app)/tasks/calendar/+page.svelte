@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The task calendar. One month at a time, dated tasks sitting on the day they
    * are due. The view that answers "what is coming" the way a list can't.
@@ -41,18 +42,22 @@
     <div class="v2-cal-nav">
       <a
         class="v2-btn v2-btn-icon"
-        href="?month={data.prevMonth}"
+        href={resolve(`/tasks/calendar?month=${data.prevMonth}`)}
         aria-label="Previous month"
         data-sveltekit-noscroll
       >
         <ChevronLeft size={15} />
       </a>
       {#if !data.isThisMonth}
-        <a class="v2-btn v2-btn-sm" href="?month={data.thisMonth}" data-sveltekit-noscroll>Today</a>
+        <a
+          class="v2-btn v2-btn-sm"
+          href={resolve(`/tasks/calendar?month=${data.thisMonth}`)}
+          data-sveltekit-noscroll>Today</a
+        >
       {/if}
       <a
         class="v2-btn v2-btn-icon"
-        href="?month={data.nextMonth}"
+        href={resolve(`/tasks/calendar?month=${data.nextMonth}`)}
         aria-label="Next month"
         data-sveltekit-noscroll
       >
@@ -93,7 +98,7 @@
                 <a
                   class="v2-cal-chip"
                   class:v2-cal-chip-done={t.is_done}
-                  href="/tasks/{t.id}"
+                  href={resolve(`/tasks/${t.id}`)}
                   title={t.title}
                 >
                   <i class="v2-cal-dot" style="background:{dot(t)}"></i>
@@ -127,7 +132,11 @@
           </div>
           <div class="v2-cal-agenda-list">
             {#each day.tasks as t (t.id)}
-              <a class="v2-cal-chip" class:v2-cal-chip-done={t.is_done} href="/tasks/{t.id}">
+              <a
+                class="v2-cal-chip"
+                class:v2-cal-chip-done={t.is_done}
+                href={resolve(`/tasks/${t.id}`)}
+              >
                 <i class="v2-cal-dot" style="background:{dot(t)}"></i>
                 <span class="v2-cal-chip-text">{t.title}</span>
                 {#if t.overdue}<span class="v2-cal-overdue">overdue</span>{/if}
@@ -141,7 +150,7 @@
 
   <p class="v2-sub v2-pad v2-cal-foot">
     Tasks without a due date don't appear here,
-    <a href="/tasks" style="color:inherit">see the task list</a>.
+    <a href={resolve('/tasks')} style="color:inherit">see the task list</a>.
     {#if data.truncated}
       This month has more scheduled tasks than fit on the calendar; the list shows them all.
     {/if}

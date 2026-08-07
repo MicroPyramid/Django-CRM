@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Network, Loader2, Link as LinkIcon, Unlink, Asterisk } from '@lucide/svelte';
@@ -156,7 +157,7 @@
       <button
         type="button"
         class="min-w-0 flex-1 truncate text-left hover:text-[var(--color-primary-default)]"
-        onclick={() => goto(`/tickets/${n.id}`)}
+        onclick={() => goto(resolve(`/tickets/${n.id}`))}
       >
         {n.name}
         {#if n.is_problem}

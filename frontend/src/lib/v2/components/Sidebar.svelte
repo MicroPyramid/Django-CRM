@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { page } from '$app/state';
   import {
     Sun,
@@ -152,7 +154,7 @@
     {#each group.items as item (item.href)}
       <a
         class="v2-link"
-        href={item.href}
+        href={resolve(asInternalPath(item.href))}
         aria-current={isActive(item.href, item.exact) ? 'page' : undefined}
       >
         <item.icon />
@@ -174,7 +176,7 @@
          than in Serve, where it would read as a queue the team shares. -->
     <a
       class="v2-link"
-      href="/notifications"
+      href={resolve('/notifications')}
       aria-current={isActive('/notifications', false) ? 'page' : undefined}
     >
       <Bell />
@@ -183,11 +185,11 @@
         <span class="v2-count">{counts.notifications}</span>
       {/if}
     </a>
-    <a class="v2-link" href="/profile">
+    <a class="v2-link" href={resolve('/profile')}>
       <CircleUser />
       Your profile
     </a>
-    <a class="v2-link" href="/support">
+    <a class="v2-link" href={resolve('/support')}>
       <CircleHelp />
       Help
     </a>
@@ -206,7 +208,7 @@
     <!-- Leaving the app. Last in the list, and a plain link. /logout is a
          server load that clears the auth cookies and redirects to /login, so a
          GET navigation is all it takes and no data-fetching component follows. -->
-    <a class="v2-link" href="/logout" data-sveltekit-reload>
+    <a class="v2-link" href={resolve('/logout')} data-sveltekit-reload>
       <LogOut />
       Sign out
     </a>

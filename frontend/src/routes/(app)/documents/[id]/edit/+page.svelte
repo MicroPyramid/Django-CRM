@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { untrack, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { enhance } from '$app/forms';
@@ -78,7 +79,7 @@
 
 {#if !data.can_edit}
   <PageHeader title="Manage document">
-    {#snippet crumb()}<a href="/documents">Documents</a> ›{/snippet}
+    {#snippet crumb()}<a href={resolve('/documents')}>Documents</a> ›{/snippet}
   </PageHeader>
   <div class="v2-pad" style="padding-top:40px">
     <NextAction
@@ -88,7 +89,7 @@
   </div>
 {:else}
   <PageHeader title="Manage document" center>
-    {#snippet crumb()}<a href="/documents">Documents</a> ›{/snippet}
+    {#snippet crumb()}<a href={resolve('/documents')}>Documents</a> ›{/snippet}
     {#snippet sub()}{data.document.title}{/snippet}
   </PageHeader>
 
@@ -186,7 +187,7 @@
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:22px">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href="/documents">Cancel</a>
+        <a class="v2-btn" href={resolve('/documents')}>Cancel</a>
       </div>
     </form>
 

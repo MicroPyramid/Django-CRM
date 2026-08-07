@@ -1,4 +1,7 @@
 <script>
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -53,7 +56,7 @@
    */
   let listHref = $derived(withoutParam(page.url, 'view'));
   let boardHref = $derived.by(() => {
-    const next = new URLSearchParams();
+    const next = new SvelteURLSearchParams();
     next.set('view', 'board');
     // `search` mirrors what `+page.server.js` forwards to the board itself
     // (`kanban_views.py:123` reads it); it is not one of `boardFields`
@@ -80,13 +83,13 @@
   {/snippet}
   {#snippet actions()}
     {#if view === 'board'}
-      <a class="v2-btn v2-btn-quiet" href={listHref}><List />List</a>
+      <a class="v2-btn v2-btn-quiet" href={resolve(asInternalPath(listHref))}><List />List</a>
       <span class="v2-btn" aria-current="true"><Columns3 />Board</span>
     {:else}
       <span class="v2-btn" aria-current="true"><List />List</span>
-      <a class="v2-btn v2-btn-quiet" href={boardHref}><Columns3 />Board</a>
+      <a class="v2-btn v2-btn-quiet" href={resolve(asInternalPath(boardHref))}><Columns3 />Board</a>
     {/if}
-    <a class="v2-btn v2-btn-primary" href="/pipeline/new"><Plus />New deal</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/pipeline/new')}><Plus />New deal</a>
   {/snippet}
 </PageHeader>
 
@@ -108,9 +111,7 @@
   meId={data.meId}
   onlyFields={data.onlyFields}
   onlyPresets={data.onlyPresets}
-  meta={view === 'board'
-    ? 'Open stages only. Open a deal to change its stage'
-    : 'Sorted by value'}
+  meta={view === 'board' ? 'Open stages only. Open a deal to change its stage' : 'Sorted by value'}
 />
 
 {#if view === 'board'}
@@ -132,7 +133,7 @@
             </p>
           {/if}
           {#each lane.rows as d (d.id)}
-            <a class="v2-deal-card" href="/pipeline/{d.id}">
+            <a class="v2-deal-card" href={resolve(`/pipeline/${d.id}`)}>
               <div style="font-weight:600;letter-spacing:-0.012em;line-height:1.3">{d.name}</div>
               <div class="v2-sub" style="margin-top:2px">{d.account.name}</div>
               <div style="margin-top:9px">
@@ -164,8 +165,8 @@
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/pipeline/new">New deal</a>
-        <a class="v2-btn" href="/leads">Go to leads</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/pipeline/new')}>New deal</a>
+        <a class="v2-btn" href={resolve('/leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>
   </div>
@@ -188,7 +189,7 @@
           {#each deals as d (d.id)}
             <tr>
               <td>
-                <a class="v2-row-link" href="/pipeline/{d.id}">
+                <a class="v2-row-link" href={resolve(`/pipeline/${d.id}`)}>
                   <div class="v2-table-primary">{d.name}</div>
                   <div class="v2-table-secondary">{d.account.name}</div>
                 </a>

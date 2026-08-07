@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Notifications, as a page rather than a 360px dropdown.
    *
@@ -138,7 +139,7 @@
               Show read too
             </button>
           {/if}
-          <a class="v2-btn" href="/tickets">Go to tickets</a>
+          <a class="v2-btn" href={resolve('/tickets')}>Go to tickets</a>
         {/snippet}
       </EmptyState>
     {:else}
@@ -163,7 +164,9 @@
                 {verbPhrase(n)}
                 {#if n.entity_name}
                   {#if n.resolved_link}
-                    <a href={n.resolved_link} onclick={() => markRead(n)}>{n.entity_name}</a>
+                    <a href={resolve(n.resolved_link)} onclick={() => markRead(n)}
+                      >{n.entity_name}</a
+                    >
                   {:else}
                     <span class="entity">{n.entity_name}</span>
                   {/if}

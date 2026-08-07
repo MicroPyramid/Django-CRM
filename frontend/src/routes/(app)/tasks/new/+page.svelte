@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A new task.
    *
@@ -30,7 +31,7 @@
 
 <PageHeader title="New task" record center width="62ch">
   {#snippet crumb()}
-    <a href="/tasks">Tasks</a>
+    <a href={resolve('/tasks')}>Tasks</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -143,7 +144,7 @@
 
     <div style="display:flex;gap:9px;margin-top:6px">
       <button class="v2-btn v2-btn-primary" type="submit">Create task</button>
-      <a class="v2-btn" href="/tasks">Cancel</a>
+      <a class="v2-btn" href={resolve('/tasks')}>Cancel</a>
     </div>
   </form>
 </div>

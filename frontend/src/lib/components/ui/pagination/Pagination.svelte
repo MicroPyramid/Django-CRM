@@ -1,6 +1,5 @@
 <script>
   import { ChevronLeft, ChevronRight, ChevronsUpDown } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { cn } from '$lib/utils.js';
 
@@ -100,7 +99,7 @@
           </Popover.Trigger>
           <Popover.Content align="end" class="w-28 p-1.5">
             <div class="flex flex-col gap-0.5">
-              {#each limitOptions as option}
+              {#each limitOptions as option (option)}
                 <button
                   type="button"
                   class={cn(

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Every row here is a decision, so every row carries the decision. v1 sent
    * you into the case, then into a modal, to answer a yes/no question that was
@@ -113,7 +114,7 @@
                   <span class="v2-num">{shortAge(a.created_at)}</span>
                 </div>
                 <a
-                  href="/tickets/{a.case.id}"
+                  href={resolve(`/tickets/${a.case.id}`)}
                   style="color:inherit;font-weight:600;font-size:14px;text-decoration:none"
                 >
                   {a.case.name}
@@ -202,7 +203,7 @@
           >
             <div style="flex:1;min-width:0">
               <a
-                href="/tickets/{a.case.id}"
+                href={resolve(`/tickets/${a.case.id}`)}
                 style="color:inherit;font-size:13px;font-weight:550;text-decoration:none"
               >
                 {a.case.name}
@@ -266,8 +267,8 @@
          here rather than left for someone to discover via a stuck queue. -->
     {#if rules.some((r) => r.is_active && r.approver_role === 'MANAGER' && !r.approvers.length)}
       <p class="v2-sub" style="font-size:12px;margin-top:12px">
-        One active rule is cleared by managers, but this org has only admins and members. Nobody
-        can clear it. Name approvers on the rule, or set it to admin.
+        One active rule is cleared by managers, but this org has only admins and members. Nobody can
+        clear it. Name approvers on the rule, or set it to admin.
       </p>
     {/if}
   </div>

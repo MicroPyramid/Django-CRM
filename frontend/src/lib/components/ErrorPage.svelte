@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button/index.js';
   import { ArrowLeft, Home, Compass, Users, FileText, Ticket, BarChart3 } from '@lucide/svelte';
@@ -44,7 +46,7 @@
 
   function goBack() {
     if (typeof history !== 'undefined' && history.length > 1) history.back();
-    else goto('/');
+    else goto(resolve('/'));
   }
 </script>
 
@@ -76,7 +78,7 @@
 
     <!-- Primary actions -->
     <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-      <Button onclick={() => goto('/')} class="gap-2">
+      <Button onclick={() => goto(resolve('/'))} class="gap-2">
         <Home class="h-4 w-4" />
         Go to dashboard
       </Button>
@@ -98,7 +100,7 @@
         <div class="flex flex-wrap items-center justify-center gap-2">
           {#each quickLinks as link (link.href)}
             <a
-              href={link.href}
+              href={resolve(asInternalPath(link.href))}
               class="border-border/60 bg-background hover:border-primary/40 hover:bg-accent hover:text-foreground text-muted-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
             >
               <link.icon class="h-3.5 w-3.5" />

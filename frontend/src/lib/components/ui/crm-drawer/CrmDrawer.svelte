@@ -1,9 +1,9 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { X, Trash2, Maximize2 } from '@lucide/svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
   import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-  import { Separator } from '$lib/components/ui/separator/index.js';
   import { cn } from '$lib/utils.js';
   import CrmPropertyRow from './CrmPropertyRow.svelte';
 
@@ -142,7 +142,7 @@
             <Skeleton class="h-9 w-64 rounded-lg" />
           </div>
           <div class="space-y-2 px-6 pb-8">
-            {#each { length: 6 } as _}
+            {#each { length: 6 } as _, index (index)}
               <div class="bg-muted/20 flex items-center gap-4 rounded-lg px-3 py-3">
                 <Skeleton class="h-6 w-6 rounded-md" />
                 <Skeleton class="h-4 w-24" />
@@ -179,7 +179,7 @@
             <div class="flex items-center gap-1">
               {#if fullPageHref && mode !== 'create'}
                 <a
-                  href={fullPageHref}
+                  href={resolve(asInternalPath(fullPageHref))}
                   aria-label="Open full page"
                   title="Open full page"
                   class="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"

@@ -11,7 +11,6 @@
     Trash2,
     UserPlus
   } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
   import { formatRelativeDate } from '$lib/utils/formatting.js';
   import { notifications } from '$lib/stores/notifications.svelte.js';
 

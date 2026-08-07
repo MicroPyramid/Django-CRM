@@ -4,7 +4,6 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { Textarea } from '$lib/components/ui/textarea/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-  import { Separator } from '$lib/components/ui/separator/index.js';
   import { formatRelativeDate, getInitials } from '$lib/utils/formatting.js';
   import * as api from '$lib/api.js';
   import MentionBody from './MentionBody.svelte';
@@ -41,13 +40,8 @@
   } = $props();
 
   // State
-  let comments = $state([]);
+  let comments = $derived(initialComments);
   let showAllComments = $state(false);
-
-  // Sync with initialComments prop changes
-  $effect(() => {
-    comments = initialComments;
-  });
   let newComment = $state('');
   let isSubmitting = $state(false);
   let deletingCommentId = $state(null);
@@ -59,7 +53,6 @@
     showAllComments ? comments : comments.slice(0, initialDisplayCount)
   );
   const hasMoreComments = $derived(comments.length > initialDisplayCount);
-  const hiddenCount = $derived(comments.length - initialDisplayCount);
 
   // Get API module based on entity type
   function getApiModule() {

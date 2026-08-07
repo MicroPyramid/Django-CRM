@@ -1,8 +1,8 @@
 <script>
   import { Clock, AlertTriangle, PauseCircle } from '@lucide/svelte';
 
-  /** @type {{ ticketItem: any, formOptions: any }} */
-  let { ticketItem, formOptions } = $props();
+  /** @type {{ ticketItem: any }} */
+  let { ticketItem } = $props();
 
   function fmt(d) {
     if (!d) return '—';
@@ -114,7 +114,7 @@
     >
       <h3 class="mb-2 text-sm font-medium text-[var(--text-secondary)]">Tags</h3>
       <div class="flex flex-wrap gap-1">
-        {#each ticketItem.tags as tag}
+        {#each ticketItem.tags as tag (tag.id ?? tag.name)}
           <span class="rounded-md bg-[var(--surface-sunken)] px-2 py-0.5 text-xs">{tag.name}</span>
         {/each}
       </div>

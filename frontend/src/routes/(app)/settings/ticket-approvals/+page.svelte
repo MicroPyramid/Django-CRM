@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * What gates a ticket close, and who can clear it.
    *
@@ -212,7 +213,10 @@
             <select id="a-team" class="v2-input" name="match_team_id">
               <option value="" selected={editing === 'new' || !editing.match_team}>Any team</option>
               {#each data.teams as t (t.id)}
-                <option value={t.id} selected={editing !== 'new' && editing.match_team?.id === t.id}>
+                <option
+                  value={t.id}
+                  selected={editing !== 'new' && editing.match_team?.id === t.id}
+                >
                   {t.name}
                 </option>
               {/each}
@@ -298,7 +302,7 @@
             <div style="flex:none;text-align:right">
               {#if r.pending_count}
                 <a
-                  href="/tickets/approvals"
+                  href={resolve('/tickets/approvals')}
                   class="v2-sub"
                   style="font-size:12px;display:inline-flex;align-items:center;gap:2px"
                 >

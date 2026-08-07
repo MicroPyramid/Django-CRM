@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
@@ -50,7 +51,7 @@
     <span class="v2-num">{money(totals.outstanding, data.org.currency)}</span> outstanding
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/invoices/new"><Plus />New invoice</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/invoices/new')}><Plus />New invoice</a>
   {/snippet}
 </PageHeader>
 
@@ -114,8 +115,8 @@
     >
       {#snippet icon()}<Receipt size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/invoices/new">New invoice</a>
-        <a class="v2-btn" href="/pipeline">Go to pipeline</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/invoices/new')}>New invoice</a>
+        <a class="v2-btn" href={resolve('/pipeline')}>Go to pipeline</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -137,7 +138,7 @@
             {@const late = isLate(inv)}
             <tr>
               <td>
-                <a class="v2-row-link" href="/invoices/{inv.id}">
+                <a class="v2-row-link" href={resolve(`/invoices/${inv.id}`)}>
                   <span class="v2-table-primary v2-num" style="font-size:13px"
                     >{inv.invoice_number}</span
                   >

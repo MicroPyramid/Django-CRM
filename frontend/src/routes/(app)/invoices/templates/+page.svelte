@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * How an invoice looks when it reaches a customer.
    *
@@ -48,7 +49,9 @@
   {/snippet}
   {#snippet actions()}
     {#if canManage}
-      <a class="v2-btn v2-btn-primary" href="/invoices/templates/new"><Plus />New template</a>
+      <a class="v2-btn v2-btn-primary" href={resolve('/invoices/templates/new')}
+        ><Plus />New template</a
+      >
     {/if}
   {/snippet}
 </PageHeader>
@@ -129,7 +132,9 @@
                      could not show what was saved and saving would have
                      blanked it. The editor route serves those two fields on an
                      admin-only path, leaving this page's own fetch unchanged. -->
-                <a class="v2-btn v2-btn-sm" href="/invoices/templates/{t.id}/edit">Edit</a>
+                <a class="v2-btn v2-btn-sm" href={resolve(`/invoices/templates/${t.id}/edit`)}
+                  >Edit</a
+                >
                 {#if !t.is_default}
                   <!-- Named as the swap it is: one default exists at a time.
                        `is_default` is a singleton the model enforces, so this

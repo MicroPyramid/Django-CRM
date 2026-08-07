@@ -1,3 +1,4 @@
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 /**
  * In-app notifications store.
  *
@@ -159,7 +160,7 @@ class NotificationsStore {
     if (this.#polling || document.visibilityState === 'hidden') return;
     this.#polling = true;
     try {
-      const qs = new URLSearchParams({ limit: String(PANEL_LIMIT) });
+      const qs = new SvelteURLSearchParams({ limit: String(PANEL_LIMIT) });
       if (this.#since) qs.set('since', this.#since);
       const res = await window.fetch(`/api/notifications/?${qs}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { untrack } from 'svelte';
   import { page } from '$app/stores';
   import { afterNavigate, goto } from '$app/navigation';
@@ -6,18 +8,15 @@
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Avatar, AvatarFallback, gradientFor } from '$lib/components/ui/avatar/index.js';
+  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar/index.js';
 
   import {
-    LayoutDashboard,
     Target,
     Users,
     Building,
     Briefcase,
     CheckSquare,
     HelpCircle,
-    ChevronRight,
     ChevronDown,
     PanelLeftClose,
     PanelLeft,
@@ -367,7 +366,7 @@
    * @param {string} url
    */
   const navigateTo = (url) => {
-    goto(url);
+    goto(resolve(asInternalPath(url)));
   };
 </script>
 
@@ -381,7 +380,7 @@
   >
     <div class="flex items-center gap-2">
       <a
-        href="/org"
+        href={resolve('/org')}
         data-sveltekit-preload-data="off"
         class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--sidebar-accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--sidebar-ring)] focus-visible:outline-none"
       >
@@ -424,7 +423,7 @@
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-px">
-          {#each workspaceItems as item}
+          {#each workspaceItems as item (item.key ?? item.href)}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
                 open={openDropdowns[item.key ?? ''] || false}
@@ -483,7 +482,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
-                      {#each item.children as navChild}
+                      {#each item.children as navChild (navChild.href)}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
@@ -493,7 +492,7 @@
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props}>
+                              <a href={resolve(asInternalPath(navChild.href))} {...props}>
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
@@ -533,7 +532,7 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      href={item.href}
+                      href={resolve(asInternalPath(item.href))}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
                     >
@@ -580,7 +579,7 @@
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-px">
-          {#each recordsItems as item}
+          {#each recordsItems as item (item.key ?? item.href)}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
                 open={openDropdowns[item.key ?? ''] || false}
@@ -639,7 +638,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
-                      {#each item.children as navChild}
+                      {#each item.children as navChild (navChild.href)}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
@@ -649,7 +648,7 @@
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props}>
+                              <a href={resolve(asInternalPath(navChild.href))} {...props}>
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
@@ -689,7 +688,7 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      href={item.href}
+                      href={resolve(asInternalPath(item.href))}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
                     >
@@ -736,7 +735,7 @@
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-px">
-          {#each workItems as item}
+          {#each workItems as item (item.key ?? item.href)}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
                 open={openDropdowns[item.key ?? ''] || false}
@@ -795,7 +794,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
-                      {#each item.children as navChild}
+                      {#each item.children as navChild (navChild.href)}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
@@ -805,7 +804,7 @@
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props}>
+                              <a href={resolve(asInternalPath(navChild.href))} {...props}>
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
@@ -845,7 +844,7 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      href={item.href}
+                      href={resolve(asInternalPath(item.href))}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
                     >
@@ -892,7 +891,7 @@
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-px">
-          {#each revenueItems as item}
+          {#each revenueItems as item (item.key ?? item.href)}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
                 open={openDropdowns[item.key ?? ''] || false}
@@ -951,7 +950,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
-                      {#each item.children as navChild}
+                      {#each item.children as navChild (navChild.href)}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
@@ -961,7 +960,7 @@
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props}>
+                              <a href={resolve(asInternalPath(navChild.href))} {...props}>
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
@@ -1001,7 +1000,7 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      href={item.href}
+                      href={resolve(asInternalPath(item.href))}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
                     >
@@ -1048,7 +1047,7 @@
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu class="space-y-px">
-          {#each supportItems as item}
+          {#each supportItems as item (item.key ?? item.href)}
             {#if item.type === 'dropdown' && item.children}
               <Collapsible.Root
                 open={openDropdowns[item.key ?? ''] || false}
@@ -1107,7 +1106,7 @@
                   </Collapsible.Trigger>
                   <Collapsible.Content>
                     <Sidebar.MenuSub class="mt-0.5 mb-1 ml-0 space-y-px border-none p-0">
-                      {#each item.children as navChild}
+                      {#each item.children as navChild (navChild.href)}
                         <Sidebar.MenuSubItem>
                           <Sidebar.MenuSubButton
                             isActive={currentPath === navChild.href}
@@ -1117,7 +1116,7 @@
                               : 'text-[color:var(--sidebar-muted)] hover:bg-[color:var(--sidebar-accent)] hover:text-[color:var(--sidebar-foreground)]'}"
                           >
                             {#snippet child({ props })}
-                              <a href={navChild.href} {...props}>
+                              <a href={resolve(asInternalPath(navChild.href))} {...props}>
                                 {#if currentPath === navChild.href}
                                   <span
                                     aria-hidden="true"
@@ -1157,7 +1156,7 @@
                 >
                   {#snippet child({ props })}
                     <a
-                      href={item.href}
+                      href={resolve(asInternalPath(item.href))}
                       {...props}
                       data-sveltekit-preload-data={item.preload || 'hover'}
                     >

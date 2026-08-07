@@ -1,4 +1,5 @@
 <script>
+  import { SvelteSet } from 'svelte/reactivity';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Loader2, Link as LinkIcon } from '@lucide/svelte';
@@ -37,7 +38,7 @@
       const res = await fetch(`/api/cases/${ticketId}/tree/`);
       if (!res.ok) return;
       const data = await res.json();
-      const ids = new Set([ticketId]);
+      const ids = new SvelteSet([ticketId]);
       const walk = (n) => {
         if (!n) return;
         ids.add(n.id);

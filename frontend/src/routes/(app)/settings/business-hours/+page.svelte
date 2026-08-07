@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The calendar every response target is measured against.
    *
@@ -284,8 +285,8 @@
               so the weekend does not spend a four-hour target.
             </p>
             <p class="v2-sub" style="font-size:12px;margin:8px 0 0">
-              <a href="/tickets/analytics" style="color:inherit">Service analytics</a> is measured on
-              this calendar.
+              <a href={resolve('/tickets/analytics')} style="color:inherit">Service analytics</a> is measured
+              on this calendar.
             </p>
           </div>
         </div>

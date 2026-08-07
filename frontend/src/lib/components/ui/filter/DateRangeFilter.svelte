@@ -234,7 +234,7 @@
             Quick select
           </span>
         </div>
-        {#each presets as preset, i}
+        {#each presets as preset, i (preset.label)}
           <Button
             variant="ghost"
             size="sm"

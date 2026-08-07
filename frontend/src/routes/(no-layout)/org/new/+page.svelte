@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import '../../../../app.css';
   import '$lib/v2/styles/v2.css';
   import { enhance } from '$app/forms';
@@ -32,7 +33,7 @@
   $effect(() => {
     if (form?.data) {
       const timer = setTimeout(() => {
-        goto('/org');
+        goto(resolve('/org'));
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -45,7 +46,7 @@
 
 <div class="v2-root v2-auth">
   <div class="v2-auth-box">
-    <a href="/" class="v2-auth-brand">
+    <a href={resolve('/')} class="v2-auth-brand">
       <img src={imgLogo} alt="" />
       <b>BottleCRM</b>
     </a>
@@ -95,8 +96,8 @@
             {/each}
           </select>
           <p class="v2-hint">
-            Sets when a day starts here, so "due today" and "overdue" mean what your team
-            expects. You can change it later in Settings.
+            Sets when a day starts here, so "due today" and "overdue" mean what your team expects.
+            You can change it later in Settings.
           </p>
         </div>
 
@@ -182,7 +183,7 @@
     </div>
 
     <div class="v2-auth-foot">
-      <a href="/org" style="display:inline-flex;align-items:center;gap:5px">
+      <a href={resolve('/org')} style="display:inline-flex;align-items:center;gap:5px">
         <ArrowLeft size={13} /> Back to organisations
       </a>
     </div>

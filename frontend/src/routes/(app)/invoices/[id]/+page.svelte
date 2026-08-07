@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
@@ -35,12 +36,12 @@
 
 <PageHeader title={invoice.invoice_number} record>
   {#snippet crumb()}
-    <a href="/invoices">Invoices</a>
+    <a href={resolve('/invoices')}>Invoices</a>
     <ChevronRight size={12} />
-    <a href="/accounts/{invoice.account.id}">{invoice.account.name}</a>
+    <a href={resolve(`/accounts/${invoice.account.id}`)}>{invoice.account.name}</a>
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/invoices/{invoice.id}/pdf" target="_blank" rel="noopener">
+    <a class="v2-btn" href={resolve(`/invoices/${invoice.id}/pdf`)} target="_blank" rel="noopener">
       Download PDF
     </a>
     <form method="POST" action="?/duplicate" use:enhance={working} style="display:inline">
@@ -256,7 +257,7 @@
 
     <div class="v2-label v2-rail-head">Bill to</div>
     <a
-      href="/accounts/{invoice.account.id}"
+      href={resolve(`/accounts/${invoice.account.id}`)}
       class="v2-sub"
       style="font-size:12.5px;line-height:1.65;text-decoration:none;display:block"
     >

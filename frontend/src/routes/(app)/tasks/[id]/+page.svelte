@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * One task: what it is, what it is attached to, who is on it, and the one
    * control that finishes it.
@@ -164,7 +165,7 @@
     </form>
   {/snippet}
   {#snippet crumb()}
-    <a href="/tasks">Tasks</a>
+    <a href={resolve('/tasks')}>Tasks</a>
     <ChevronRight size={12} />
     <span>{task.status}</span>
   {/snippet}
@@ -176,7 +177,7 @@
     ].join(' · ')}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/tasks/{task.id}/edit">Edit</a>
+    <a class="v2-btn" href={resolve(`/tasks/${task.id}/edit`)}>Edit</a>
     {#if canDelete}
       <form method="POST" action="?/delete" use:enhance>
         <button class="v2-btn" type="submit">Delete</button>
@@ -307,7 +308,12 @@
                 </span>
                 <div class="tl-body">
                   {#if e.type === 'file' && e.href}
-                    <a class="tl-file" href={e.href} target="_blank" rel="noreferrer noopener">
+                    <a
+                      class="tl-file"
+                      href={resolve(e.href)}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
                       {e.body}
                     </a>
                   {:else}
@@ -347,7 +353,7 @@
       <dt>Attached to</dt>
       <dd>
         {#if task.related}
-          <a href={task.related.href}>{task.related.name}</a>
+          <a href={resolve(task.related.href)}>{task.related.name}</a>
           <span class="v2-sub" style="display:block;font-size:11.5px">{task.related.kind}</span>
         {:else}
           <span class="v2-muted">nothing</span>
@@ -388,7 +394,7 @@
       <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:8px">
         {#each contacts as person (person.id)}
           <a
-            href="/contacts/{person.id}"
+            href={resolve(`/contacts/${person.id}`)}
             style="display:flex;gap:8px;align-items:center;color:inherit;text-decoration:none;font-size:12.5px"
           >
             <Avatar name={person.name} size={20} />

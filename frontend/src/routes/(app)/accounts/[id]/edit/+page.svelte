@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing an account.
    *
@@ -107,9 +108,9 @@
 
 <PageHeader title="Edit {account.name}" center>
   {#snippet crumb()}
-    <a href="/accounts">Accounts</a>
+    <a href={resolve('/accounts')}>Accounts</a>
     <ChevronRight size={12} />
-    <a href="/accounts/{account.id}">{account.name}</a>
+    <a href={resolve(`/accounts/${account.id}`)}>{account.name}</a>
   {/snippet}
   {#snippet sub()}
     {[
@@ -132,7 +133,7 @@
           <div class="v2-next-text">Saved.</div>
           <div class="v2-sub" style="margin-top:3px">“{account.name}” has been updated.</div>
         </div>
-        <a class="v2-btn" href="/accounts/{account.id}">Back to the account</a>
+        <a class="v2-btn" href={resolve(`/accounts/${account.id}`)}>Back to the account</a>
       </div>
     {/if}
 
@@ -339,7 +340,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-      <a class="v2-btn" href="/accounts/{account.id}">Cancel</a>
+      <a class="v2-btn" href={resolve(`/accounts/${account.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

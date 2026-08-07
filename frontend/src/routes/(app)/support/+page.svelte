@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * Help.
    *
@@ -103,11 +105,14 @@
   <!-- Centred column, not left-hugging: on a wide screen the header and body
        share one 840px column down the middle (same pattern as the form pages).
        max-width caps it; margin-inline centres it. -->
-  <div class="v2-pad" style="padding-top:18px;padding-bottom:32px;max-width:840px;margin-inline:auto">
+  <div
+    class="v2-pad"
+    style="padding-top:18px;padding-bottom:32px;max-width:840px;margin-inline:auto"
+  >
     <div class="v2-label" style="margin-bottom:10px">Start here</div>
     <div class="cards">
       {#each SELF_SERVE as c (c.href)}
-        <a class="v2-card card" href={c.href}>
+        <a class="v2-card card" href={resolve(asInternalPath(c.href))}>
           <c.icon size={17} />
           <div>
             <b>{c.title}</b>
@@ -122,7 +127,7 @@
       {#each CONTACT as c (c.href)}
         <a
           class="v2-card card"
-          href={c.href}
+          href={resolve(asInternalPath(c.href))}
           rel={c.external ? 'noreferrer noopener' : undefined}
           target={c.external ? '_blank' : undefined}
         >

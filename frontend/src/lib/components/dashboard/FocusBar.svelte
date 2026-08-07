@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { AlertCircle, Calendar, Phone, Flame, Zap } from '@lucide/svelte';
 
   /**
@@ -85,9 +87,9 @@
 
       <!-- Items -->
       <div class="flex flex-1 items-center gap-1 overflow-x-auto sm:gap-2">
-        {#each visibleItems as item}
+        {#each visibleItems as item (item.href)}
           <a
-            href={item.href}
+            href={resolve(asInternalPath(item.href))}
             class="group flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-2 transition-all duration-200 hover:bg-white/50 sm:gap-2.5 sm:px-4 dark:hover:bg-white/5"
           >
             <div

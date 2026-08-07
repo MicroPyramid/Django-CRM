@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Quota, read against the calendar.
    *
@@ -79,7 +80,7 @@
   {/snippet}
   {#snippet actions()}
     {#if data.can_edit}
-      <a class="v2-btn v2-btn-primary" href="/goals/new"><Plus />New goal</a>
+      <a class="v2-btn v2-btn-primary" href={resolve('/goals/new')}><Plus />New goal</a>
     {/if}
   {/snippet}
 </PageHeader>
@@ -118,7 +119,7 @@
         {#snippet icon()}<Target size={21} />{/snippet}
         {#snippet actions()}
           {#if data.can_edit}
-            <a class="v2-btn v2-btn-primary" href="/goals/new">New goal</a>
+            <a class="v2-btn v2-btn-primary" href={resolve('/goals/new')}>New goal</a>
           {/if}
         {/snippet}
       </EmptyState>
@@ -143,7 +144,7 @@
                     <Pill tone={statusTone(g)}>{statusLabel(g)}</Pill>
                     {#if data.can_edit}
                       <a
-                        href="/goals/{g.id}/edit"
+                        href={resolve(`/goals/${g.id}/edit`)}
                         style="font-size:11px;color:var(--v2-slate);text-decoration:none">Edit</a
                       >
                     {/if}
@@ -224,7 +225,10 @@
                 <div style="flex:1;min-width:0">
                   <div style="font-size:12.5px;font-weight:550">{row.user}</div>
                   <div class="v2-sub v2-num" style="font-size:11px">
-                    {money(row.achieved, data.org.currency)} of {money(row.target, data.org.currency)}
+                    {money(row.achieved, data.org.currency)} of {money(
+                      row.target,
+                      data.org.currency
+                    )}
                   </div>
                 </div>
                 <!-- Uncapped on purpose: 104% is the interesting number, and
@@ -243,8 +247,8 @@
           </div>
 
           <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
-            Ranked on attainment against each person's own target, not on raw revenue. Otherwise
-            the biggest patch wins every quarter regardless of who worked hardest.
+            Ranked on attainment against each person's own target, not on raw revenue. Otherwise the
+            biggest patch wins every quarter regardless of who worked hardest.
           </p>
         </div>
       </div>

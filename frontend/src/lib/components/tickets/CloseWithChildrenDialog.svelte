@@ -1,6 +1,5 @@
 <script>
   import { invalidateAll } from '$app/navigation';
-  import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { Loader2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';

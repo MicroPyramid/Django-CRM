@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Your own account.
    *
@@ -187,7 +188,7 @@
             <Lock size={14} style="color:var(--v2-slate);flex:none" />
             <Pill tone={ROLE_TONE[p.role]}>{ROLE_LABEL[p.role]}</Pill>
           </div>
-          <a class="v2-setting" href="/settings/api-tokens">
+          <a class="v2-setting" href={resolve('/settings/api-tokens')}>
             <div class="v2-setting-body">
               <b>API tokens</b>
               <span class="v2-sub" style="font-size:11.5px">
@@ -211,19 +212,19 @@
 
         <div class="v2-label" style="margin-bottom:10px">Where your work shows up</div>
         <div class="v2-card" style="overflow:hidden">
-          <a class="v2-setting" href="/goals">
+          <a class="v2-setting" href={resolve('/goals')}>
             <div class="v2-setting-body">
               <b>Goals</b>
               <span class="v2-sub" style="font-size:11.5px">Your quota and how it is pacing</span>
             </div>
           </a>
-          <a class="v2-setting" href="/timesheet">
+          <a class="v2-setting" href={resolve('/timesheet')}>
             <div class="v2-setting-body">
               <b>Timesheet</b>
               <span class="v2-sub" style="font-size:11.5px">Hours you have logged this week</span>
             </div>
           </a>
-          <a class="v2-setting" href="/tasks">
+          <a class="v2-setting" href={resolve('/tasks')}>
             <div class="v2-setting-body">
               <b>Tasks</b>
               <span class="v2-sub" style="font-size:11.5px">What is assigned to you</span>

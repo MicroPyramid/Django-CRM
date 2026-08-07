@@ -2,7 +2,6 @@
   import { ChevronDown, Check, X, Tag, Hash } from '@lucide/svelte';
   import { cn } from '$lib/utils.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { getTagColorClass } from '$lib/constants/colors.js';
 
   /**
    * @typedef {{
@@ -60,7 +59,6 @@
     onchange?.([]);
   }
 
-  const selectedTags = $derived(tags.filter((t) => selectedIds.includes(t.id)));
   const hasSelection = $derived(selectedIds.length > 0);
 
   /**

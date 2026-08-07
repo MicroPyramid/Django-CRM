@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing a ticket.
    *
@@ -67,9 +68,9 @@
 
 <PageHeader title="Edit ticket" center>
   {#snippet crumb()}
-    <a href="/tickets">Tickets</a>
+    <a href={resolve('/tickets')}>Tickets</a>
     <ChevronRight size={12} />
-    <a href="/tickets/{ticket.id}">{ticket.name}</a>
+    <a href={resolve(`/tickets/${ticket.id}`)}>{ticket.name}</a>
   {/snippet}
 </PageHeader>
 
@@ -206,8 +207,9 @@
 
     <p class="v2-sub" style="font-size:12px;margin:6px 0 0">
       {#if data.server.account}
-        Linked to <a href="/accounts/{data.server.account.id}">{data.server.account.name}</a>, which
-        cannot be changed after the ticket is raised.
+        Linked to <a href={resolve(`/accounts/${data.server.account.id}`)}
+          >{data.server.account.name}</a
+        >, which cannot be changed after the ticket is raised.
       {:else}
         Not linked to an account, and that cannot be changed after the ticket is raised.
       {/if}
@@ -223,7 +225,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save ticket</button>
-      <a class="v2-btn" href="/tickets/{ticket.id}">Cancel</a>
+      <a class="v2-btn" href={resolve(`/tickets/${ticket.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

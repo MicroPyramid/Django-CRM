@@ -1,4 +1,6 @@
 <script>
+  import { SvelteDate } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Flame, Phone, Mail, ChevronRight, Calendar, Sparkles } from '@lucide/svelte';
@@ -52,12 +54,12 @@
   function formatFollowUp(dateStr) {
     if (!dateStr) return 'No follow-up set';
     const date = new Date(dateStr);
-    const today = new Date();
+    const today = new SvelteDate();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
+    const tomorrow = new SvelteDate(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const dateOnly = new Date(date);
+    const dateOnly = new SvelteDate(date);
     dateOnly.setHours(0, 0, 0, 0);
 
     if (dateOnly.getTime() === today.getTime()) return 'Today';
@@ -76,7 +78,7 @@
   function isOverdue(dateStr) {
     if (!dateStr) return false;
     const date = new Date(dateStr);
-    const today = new Date();
+    const today = new SvelteDate();
     today.setHours(0, 0, 0, 0);
     return date < today;
   }
@@ -129,7 +131,7 @@
         {#each leads as lead (lead.id)}
           {@const config = ratingConfig[lead.rating || 'HOT'] || ratingConfig.HOT}
           <a
-            href="/leads?view={lead.id}"
+            href={resolve(`/leads?view=${lead.id}`)}
             class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
           >
             <!-- Lead info -->

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Raising a ticket.
    *
@@ -64,7 +65,7 @@
 
 <PageHeader title="New ticket" center>
   {#snippet crumb()}
-    <a href="/tickets">Tickets</a>
+    <a href={resolve('/tickets')}>Tickets</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -183,7 +184,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Raise ticket</button>
-      <a class="v2-btn" href="/tickets">Cancel</a>
+      <a class="v2-btn" href={resolve('/tickets')}>Cancel</a>
     </div>
   </form>
 </div>

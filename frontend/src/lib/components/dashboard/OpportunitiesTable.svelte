@@ -1,4 +1,7 @@
 <script>
+  import { SvelteDate } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Progress } from '$lib/components/ui/progress/index.js';
@@ -74,7 +77,7 @@
   function getDaysUntilClose(closeDateStr) {
     if (!closeDateStr) return null;
     const closeDate = new Date(closeDateStr);
-    const today = new Date();
+    const today = new SvelteDate();
     today.setHours(0, 0, 0, 0);
     const diffTime = closeDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -140,7 +143,7 @@
           {@const daysUntilClose = getDaysUntilClose(opp.closed_on)}
           {@const config = stageConfig[opp.stage] || stageConfig.PROSPECTING}
           <a
-            href="/opportunities?view={opp.id}"
+            href={resolve(asInternalPath(`/opportunities?view=${opp.id}`))}
             class="group block px-5 py-3.5 transition-all duration-200 hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
           >
             <!-- Top row: Name and Amount -->
