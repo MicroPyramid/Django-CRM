@@ -1,5 +1,6 @@
 import 'package:bottle_crm/data/models/app_notification.dart';
 import 'package:bottle_crm/data/models/custom_field_definition.dart';
+import 'package:bottle_crm/data/models/escalation_policy.dart';
 import 'package:bottle_crm/data/models/macro.dart';
 import 'package:bottle_crm/data/models/invoice.dart';
 import 'package:bottle_crm/data/models/time_entry.dart';
@@ -25,6 +26,8 @@ import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
 import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
+import 'package:bottle_crm/screens/settings/escalation_policy_form_sheet.dart';
+import 'package:bottle_crm/screens/settings/escalation_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
@@ -158,6 +161,59 @@ void main() {
             child: ElevatedButton(
               onPressed: () =>
                   showRoutingRuleFormSheet(context, existing: existing),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// The escalation list. The fixture leaves Low unconfigured on purpose, so
+  /// the note about priorities with no policy at all has something to say.
+  Widget escalationApp({required bool isAdmin, bool empty = false}) =>
+      ProviderScope(
+        overrides: [
+          escalationProvider.overrideWith(
+            empty ? _FakeNoEscalation.new : _FakeEscalation.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: EscalationScreen()),
+      );
+
+  /// The policy form over a button. `people` omits the deactivated target for
+  /// the same reason it does in the routing form: the real lookup returns
+  /// `Profile.objects.filter(is_active=True)`, so a policy pointing at somebody
+  /// turned off is the case where opening the form could empty it.
+  Widget escalationFormApp({
+    EscalationPolicy? existing,
+    List<String> available = const ['Urgent', 'Low'],
+  }) => ProviderScope(
+    overrides: [
+      usersProvider.overrideWithValue(const [
+        UserLookup(
+          id: 'a1',
+          email: 'ada@example.com',
+          name: 'Ada',
+          role: 'USER',
+          isActive: true,
+        ),
+      ]),
+      teamsProvider.overrideWithValue(const [
+        TeamLookup(id: 't1', name: 'Support'),
+      ]),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () => showEscalationPolicyFormSheet(
+                context,
+                existing: existing,
+                availablePriorities: available,
+              ),
               child: const Text('open'),
             ),
           ),
@@ -1181,6 +1237,326 @@ void main() {
       expect(find.text('Cai (deactivated)'), findsOneWidget);
     });
   });
+
+  group('escalation policies at 390px', () {
+    testWidgets('render without overflowing', (tester) async {
+      await pump(tester, escalationApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fit with the system font scaled up', (tester) async {
+      await pump(tester, escalationApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sort by severity, not alphabetically', (tester) async {
+      // The model orders the CharField, which puts Low between High and
+      // Normal. Both clients override it.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      final urgent = tester.getTopLeft(find.text('Urgent')).dy;
+      final high = tester.getTopLeft(find.text('High')).dy;
+      expect(
+        urgent,
+        lessThan(high),
+        reason: 'alphabetical order would put High first',
+      );
+      // The third card is below the fold on a phone, which is itself the
+      // assertion that it sorts last.
+      expect(find.text('Normal'), findsNothing);
+      await tester.scrollUntilVisible(find.text('Normal'), 200);
+      expect(find.text('Normal'), findsOneWidget);
+    });
+
+    testWidgets('stack the two halves rather than columning them', (
+      tester,
+    ) async {
+      // The web puts them side by side and collapses to one column below
+      // 768px. Two columns at 390px does not overflow, it just leaves each
+      // outcome sentence about twenty characters wide, so nothing but this
+      // catches it.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      final first = tester.getTopLeft(find.text('MISSED FIRST RESPONSE').first);
+      final second = tester.getTopLeft(find.text('MISSED RESOLUTION').first);
+      expect(second.dy, greaterThan(first.dy));
+      expect(second.dx, first.dx);
+    });
+
+    testWidgets('call a half with a team but no target dead', (tester) async {
+      // The combination the web reported as live. `_scan_org` guards the
+      // dispatch on the target being set, so a team alone is never told.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      expect(
+        find.text(
+          'Nothing. No target is set, and the Support team is not notified '
+          'on its own.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('total the breaches that reached nobody', (tester) async {
+      // 11 on the dead High half, plus both halves of the policy that is off.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      expect(
+        find.textContaining('19 breaches in the last 30 days told nobody'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('say a dead half acted on none of its breaches', (
+      tester,
+    ) async {
+      await pump(tester, escalationApp(isAdmin: true));
+      expect(
+        find.text('11 in the last 30 days, none of them acted on'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('warn that a reassign half never notifies the team', (
+      tester,
+    ) async {
+      // The other half of the same correction: `_dispatch_breach` builds a
+      // recipient list only for the two notify actions.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      expect(
+        find.text(
+          'The Support team is not notified here: this half only reassigns.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Reassign to Ada.'), findsOneWidget);
+    });
+
+    testWidgets('name the priorities with no policy at all', (tester) async {
+      // Otherwise invisible: breach counts are attached to policies, so an
+      // unconfigured priority contributes no row and no number.
+      await pump(tester, escalationApp(isAdmin: true));
+
+      expect(
+        find.textContaining('Low has no policy, so breaches at that priority'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a member sees the policies but no write controls', (
+      tester,
+    ) async {
+      await pump(tester, escalationApp(isAdmin: false));
+
+      expect(find.text('Urgent'), findsOneWidget);
+      expect(find.byTooltip('New policy'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Edit'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Delete'), findsNothing);
+    });
+
+    testWidgets('the delete confirm says it is permanent and offers the '
+        'reversible option', (tester) async {
+      await pump(tester, escalationApp(isAdmin: true));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Delete').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete the Urgent policy?'), findsOneWidget);
+      expect(find.textContaining('gone for good'), findsOneWidget);
+      expect(find.textContaining('turn it off instead'), findsOneWidget);
+    });
+
+    testWidgets('a turned-off policy offers Turn on, not Turn off', (
+      tester,
+    ) async {
+      await pump(tester, escalationApp(isAdmin: true));
+      await tester.scrollUntilVisible(find.text('Turned off'), 200);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(OutlinedButton, 'Turn on'), findsOneWidget);
+    });
+
+    testWidgets('an org with no policies is told what that means', (
+      tester,
+    ) async {
+      await pump(tester, escalationApp(isAdmin: true, empty: true));
+      expect(find.text('No escalation policies'), findsOneWidget);
+      expect(
+        find.textContaining('escalates to nobody'),
+        findsOneWidget,
+        reason: 'an empty list is a working state with a consequence',
+      );
+    });
+  });
+
+  group('the escalation policy form at 390px', () {
+    Future<void> open(
+      WidgetTester tester, {
+      EscalationPolicy? existing,
+      double textScale = 1.0,
+    }) async {
+      await pump(
+        tester,
+        escalationFormApp(existing: existing),
+        textScale: textScale,
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders without overflowing', (tester) async {
+      await open(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await open(tester, textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('warns that a half with no target does nothing yet', (
+      tester,
+    ) async {
+      // A create starts with both targets on Nobody, and the warning is not
+      // tied to the action: Notify with nobody picked is as dead as Reassign
+      // with nobody picked.
+      await open(tester);
+      expect(find.text(escalationNoTargetHint), findsNWidgets(2));
+    });
+
+    testWidgets('offers only the priorities with no policy yet', (
+      tester,
+    ) async {
+      await open(tester);
+      // The priority select is the first dropdown on the sheet.
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+
+      // Urgent and Low are free in the fixture; High and Normal are taken, and
+      // offering them would only produce a 400 the admin could be spared.
+      expect(find.text('Low'), findsWidgets);
+      expect(find.text('High'), findsNothing);
+      expect(find.text('Normal'), findsNothing);
+    });
+
+    testWidgets('freezes the priority on an edit rather than offering it', (
+      tester,
+    ) async {
+      // `EscalationPolicyDetailView.put` strips the key from the body, so a
+      // control here would report a change it did not make.
+      await open(tester, existing: _urgentPolicy());
+
+      expect(find.textContaining('fixed after it is created'), findsOneWidget);
+      expect(
+        find.widgetWithText(DropdownButtonFormField<String>, 'Priority'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('keeps a deactivated target the picker cannot offer', (
+      tester,
+    ) async {
+      await open(tester, existing: _deactivatedTargetPolicy());
+
+      expect(find.text('Cai (deactivated)'), findsOneWidget);
+      expect(
+        find.textContaining('waits for somebody who cannot sign in'),
+        findsOneWidget,
+      );
+    });
+  });
+}
+
+/// A policy set on Urgent, both halves live.
+EscalationPolicy _urgentPolicy() => EscalationPolicy.fromJson(const {
+  'id': 'e1',
+  'priority': 'Urgent',
+  'is_active': true,
+  'first_response_action': 'notify',
+  'resolution_action': 'reassign',
+  'first_response_target': {
+    'id': 'a1',
+    'is_active': true,
+    'user_details': {'name': 'Ada', 'email': 'ada@example.com'},
+  },
+  'resolution_target': {
+    'id': 'a1',
+    'is_active': true,
+    'user_details': {'name': 'Ada', 'email': 'ada@example.com'},
+  },
+  'notify_team': {'id': 't1', 'name': 'Support'},
+  'breaches_last_30d': {'first_response': 3, 'resolution': 2},
+});
+
+/// A policy whose first-response target is somebody deactivated. The engine
+/// still escalates to them, with no active filter.
+EscalationPolicy _deactivatedTargetPolicy() => EscalationPolicy.fromJson(const {
+  'id': 'e9',
+  'priority': 'High',
+  'is_active': true,
+  'first_response_action': 'notify',
+  'resolution_action': 'notify',
+  'first_response_target': {
+    'id': 'c1',
+    'is_active': false,
+    'user_details': {'name': 'Cai', 'email': 'cai@example.com'},
+  },
+  'resolution_target': null,
+  'notify_team': null,
+  'breaches_last_30d': {'first_response': 0, 'resolution': 0},
+});
+
+/// Three policies covering every state a card has to draw, and Low left
+/// unconfigured so the "no policy at all" note has something to say.
+///
+/// The High policy is the case the web read wrong: a `notify` half with a team
+/// and no target. Its 11 breaches are the ones that reached nobody while the
+/// row looked configured.
+class _FakeEscalation extends EscalationNotifier {
+  @override
+  Future<EscalationState> build() async => EscalationState(
+    policies: sortedEscalationPolicies([
+      _urgentPolicy(),
+      EscalationPolicy.fromJson(const {
+        'id': 'e2',
+        'priority': 'High',
+        'is_active': true,
+        'first_response_action': 'notify',
+        'resolution_action': 'notify_and_reassign',
+        'first_response_target': null,
+        'resolution_target': {
+          'id': 'b1',
+          'is_active': true,
+          'user_details': {'name': 'Brin', 'email': 'brin@example.com'},
+        },
+        'notify_team': {'id': 't1', 'name': 'Support'},
+        'breaches_last_30d': {'first_response': 11, 'resolution': 1},
+      }),
+      EscalationPolicy.fromJson(const {
+        'id': 'e3',
+        'priority': 'Normal',
+        'is_active': false,
+        'first_response_action': 'notify',
+        'resolution_action': 'notify',
+        'first_response_target': {
+          'id': 'a1',
+          'is_active': true,
+          'user_details': {'name': 'Ada', 'email': 'ada@example.com'},
+        },
+        'resolution_target': {
+          'id': 'a1',
+          'is_active': true,
+          'user_details': {'name': 'Ada', 'email': 'ada@example.com'},
+        },
+        'notify_team': null,
+        'breaches_last_30d': {'first_response': 4, 'resolution': 4},
+      }),
+    ]),
+  );
+}
+
+class _FakeNoEscalation extends EscalationNotifier {
+  @override
+  Future<EscalationState> build() async => const EscalationState();
 }
 
 /// A tag set with every state the screen has to draw: a duplicate pair, a name

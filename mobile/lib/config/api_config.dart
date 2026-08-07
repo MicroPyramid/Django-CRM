@@ -407,6 +407,17 @@ class ApiConfig {
   /// this one. Both ids are re-resolved inside the caller's org server-side.
   static String tagMerge(String id) => '$apiBaseUrl/tags/$id/merge/';
 
+  /// Escalation policies, at most one per priority. Each row arrives with
+  /// `breaches_last_30d`, a server-side count the list has no other way to get.
+  static String get escalationPolicies =>
+      '$apiBaseUrl/cases/escalation-policies/';
+
+  /// One escalation policy. PUT is partial, so a one-key body is legal, and it
+  /// strips `priority` before the serializer sees it. DELETE is a HARD delete
+  /// here, unlike custom fields and tags.
+  static String escalationPolicy(String id) =>
+      '$apiBaseUrl/cases/escalation-policies/$id/';
+
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
   /// Query with `?target_model=Case&active_only=true`. Pass
   /// `include_counts=false` unless you need `records_missing_value`: computing

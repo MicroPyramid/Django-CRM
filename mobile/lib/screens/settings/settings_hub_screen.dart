@@ -60,6 +60,12 @@ class SettingsHubScreen extends StatelessWidget {
               onTap: () => context.push(AppRoutes.settingsRouting),
             ),
             MenuRow(
+              icon: LucideIcons.bellOff,
+              label: 'Escalation',
+              description: 'What happens when a ticket misses its SLA target',
+              onTap: () => context.push(AppRoutes.settingsEscalation),
+            ),
+            MenuRow(
               icon: LucideIcons.messageSquareQuote,
               label: 'Saved replies',
               description: 'Canned answers to insert into a ticket reply',

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/custom_field_definition.dart';
+import '../data/models/escalation_policy.dart';
 import '../data/models/macro.dart';
 import '../data/models/routing_rule.dart';
 import '../data/models/tag.dart';
@@ -10,8 +11,8 @@ import '../services/api_service.dart';
 
 /// The org settings cluster.
 ///
-/// Custom fields, saved replies and tags are the pages of the cluster that
-/// have reached the phone. The rest (routing, escalation, inbound email, ticket
+/// Custom fields, saved replies, tags, routing and escalation are the pages of
+/// the cluster that have reached the phone. The rest (inbound email, ticket
 /// approvals, business hours, reopen rules) share the same shape, so they will
 /// land beside these rather than in files of their own.
 ///
@@ -588,4 +589,86 @@ class RoutingRulesNotifier extends AsyncNotifier<RoutingRulesState> {
 final routingRulesProvider =
     AsyncNotifierProvider<RoutingRulesNotifier, RoutingRulesState>(
       RoutingRulesNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
+// Escalation policies, which decide what happens when a ticket misses its SLA
+// ---------------------------------------------------------------------------
+
+/// The policies, worst priority first, and what they add up to.
+class EscalationState {
+  const EscalationState({this.policies = const []});
+
+  /// Sorted by severity in [_fetch], not left in the server's alphabetical
+  /// `ordering = ("priority",)`.
+  final List<EscalationPolicy> policies;
+
+  /// Policies that do nothing at all when a ticket breaches.
+  int get dead => policies.where((p) => p.isDead).length;
+
+  /// Breaches in the last 30 days that reached nobody. Derived from the same
+  /// rows the list shows, so the headline can never disagree with the cards
+  /// under it.
+  int get breachesGoingNowhere =>
+      policies.fold(0, (sum, p) => sum + p.breachesGoingNowhere);
+
+  List<String> get unconfigured => unconfiguredEscalationPriorities(policies);
+}
+
+class EscalationNotifier extends AsyncNotifier<EscalationState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<EscalationState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<EscalationState> _fetch() async {
+    final response = await _api.get(ApiConfig.escalationPolicies);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load escalation policies');
+    }
+    final policies = listFromEnvelope(response.data!, const [
+      'policies',
+    ]).map(EscalationPolicy.fromJson).toList();
+    return EscalationState(policies: sortedEscalationPolicies(policies));
+  }
+
+  Future<String?> createPolicy(Map<String, dynamic> payload) async {
+    final response = await _api.post(ApiConfig.escalationPolicies, payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  Future<String?> updatePolicy(String id, Map<String, dynamic> payload) async {
+    final response = await _api.put(ApiConfig.escalationPolicy(id), payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Stop the policy firing, reversibly. The alternative [deletePolicy] points
+  /// at, and the reason that control has to explain itself.
+  Future<String?> deactivatePolicy(String id) =>
+      updatePolicy(id, escalationActivePayload(false));
+
+  Future<String?> activatePolicy(String id) =>
+      updatePolicy(id, escalationActivePayload(true));
+
+  /// Permanent. `EscalationPolicyDetailView.delete` calls `obj.delete()`.
+  Future<String?> deletePolicy(String id) async {
+    final response = await _api.delete(ApiConfig.escalationPolicy(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final escalationProvider =
+    AsyncNotifierProvider<EscalationNotifier, EscalationState>(
+      EscalationNotifier.new,
     );
