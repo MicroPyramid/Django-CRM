@@ -11,7 +11,7 @@ from django.utils import timezone
 from accounts.models import Account
 from common import notifications
 from common.models import Notification, Org, Profile, User
-from conftest import rls_org, set_rls_context
+from conftest import set_rls_context
 
 
 class NotificationModelBase(TestCase):

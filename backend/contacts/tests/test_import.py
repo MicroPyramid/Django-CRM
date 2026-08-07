@@ -14,7 +14,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Account
-from common.models import Profile, Tags, Teams
+from common.models import Tags, Teams
 from contacts.models import Contact
 
 
@@ -437,8 +437,6 @@ class TestImportCommit:
         from django.db import IntegrityError
 
         from contacts.services import csv_import
-
-        original_create = csv_import.Contact.objects.create
 
         def racing_create(**kwargs):
             raise IntegrityError("duplicate key value violates unique constraint")

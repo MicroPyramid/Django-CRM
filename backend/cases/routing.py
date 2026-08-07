@@ -20,9 +20,9 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Iterable
 
-from django.db import connection, transaction
+from django.db import transaction
 from django.db.models import Count, Q
 
 from cases.models import RoutingRule, RoutingRuleState

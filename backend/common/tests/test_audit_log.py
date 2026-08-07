@@ -17,7 +17,6 @@ import pytest
 from django.test import RequestFactory
 
 from common.audit_log import AuditLogger, SecurityAuditLog
-from common.models import Org, User
 
 
 @pytest.mark.django_db

@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.utils import timezone
 
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 from leads.models import Lead
 
@@ -1869,7 +1869,6 @@ class TestLeadModelProperties:
 
     def test_days_since_last_contact_with_last_contacted(self, admin_user, org_a):
         """days_since_last_contact uses last_contacted when set."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1895,7 +1894,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_true(self, admin_user, org_a):
         """is_stale returns True when >30 days without contact."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1911,7 +1909,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_false_for_converted(self, admin_user, org_a):
         """is_stale returns False for converted leads."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1927,7 +1924,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_false_for_closed(self, admin_user, org_a):
         """is_stale returns False for closed leads."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1943,7 +1939,6 @@ class TestLeadModelProperties:
 
     def test_days_until_follow_up(self, admin_user, org_a):
         """days_until_follow_up returns days until next follow-up."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1969,7 +1964,6 @@ class TestLeadModelProperties:
 
     def test_is_follow_up_overdue_true(self, admin_user, org_a):
         """is_follow_up_overdue returns True when follow-up date passed."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(

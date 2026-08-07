@@ -17,7 +17,7 @@ Entry-scoped (registered at the project root under ``/api/time-entries/``):
 """
 
 from collections import OrderedDict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.db import IntegrityError, transaction
 from django.db.models import Sum

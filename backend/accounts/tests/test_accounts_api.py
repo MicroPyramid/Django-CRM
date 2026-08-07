@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
-from common.models import Attachments, Comment, Org, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
 
@@ -961,7 +961,6 @@ class TestAccountSerializerValidation:
 
     def test_account_create_serializer_default_currency(self, admin_client, org_a):
         """AccountCreateSerializer.create() should default currency from org when annual_revenue is set."""
-        from accounts.serializer import AccountCreateSerializer
 
         # The serializer create method checks for currency default - test via API
         # We need annual_revenue but no currency

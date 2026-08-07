@@ -3260,7 +3260,6 @@ class TestPublicEstimateAcceptDecline:
 
     def test_accept_on_expiry_day_still_allowed(self, estimate):
         """is_expired is strictly past the date. The last day still counts."""
-        import datetime
 
         estimate.status = "Sent"
         estimate.expiry_date = timezone.localdate()

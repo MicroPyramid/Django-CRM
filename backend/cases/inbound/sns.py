@@ -54,7 +54,7 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, build_opener
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509.oid import NameOID
@@ -148,7 +148,7 @@ def _fetch_signing_cert(url: str, *, timeout: float = 5.0) -> bytes:
         raise SNSVerificationError(f"SigningCertURL must end in .pem: {url!r}")
     # `_OPENER` refuses redirects, so the host checked above is the host we talk
     # to. The pinning cannot be sidestepped by a 3xx.
-    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310. Host pinned
+    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310  # host pinned
         return response.read()
 
 
@@ -259,7 +259,7 @@ def confirm_subscription(payload: dict, *, fetch=None, timeout: float = 5.0) -> 
     # stays the single place redirect policy is decided.
     fetch = fetch or _OPENER.open
     try:
-        with fetch(url, timeout=timeout) as response:  # noqa: S310. Host pinned
+        with fetch(url, timeout=timeout) as response:  # noqa: S310  # host pinned
             response.read()
     except Exception:
         logger.exception("Failed to confirm SNS subscription at %s", url)

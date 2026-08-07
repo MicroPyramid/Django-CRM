@@ -419,7 +419,6 @@ class TestMagicLinkVerifyCode:
 
     def test_verify_code_ignores_link_tokens(self, unauthenticated_client):
         """A delivery=link token must not satisfy verify-code, even with same email."""
-        from django.contrib.auth.hashers import make_password
 
         # Link-style token (no code_hash, delivery=link by default)
         MagicLinkToken.objects.create(

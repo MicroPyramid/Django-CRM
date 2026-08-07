@@ -14,11 +14,10 @@ Run with: pytest common/tests/test_models.py -v
 """
 
 import uuid
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 
 from accounts.models import Account
 from common.models import (
@@ -28,9 +27,7 @@ from common.models import (
     CommentFiles,
     Document,
     Org,
-    Profile,
     Teams,
-    User,
 )
 
 

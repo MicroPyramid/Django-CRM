@@ -7,9 +7,7 @@ from django.utils import timezone
 
 from cases.models import Case, CaseWatcher
 from cases.notifications import (
-    MENTION_RE,
     case_link,
-    dispatch_for_comment,
     parse_mentions,
     resolve_mentions,
 )
@@ -95,7 +93,7 @@ class TestDispatchForComment:
         self, case_a, admin_profile, org_a
     ):
         bob = _make_profile(org_a, email="bob@org.com")
-        c = _comment(case_a, "hey @bob please review", by=admin_profile)
+        _comment(case_a, "hey @bob please review", by=admin_profile)
 
         # Sanity: notifications were dispatched via the signal handler.
         assert Notification.objects.filter(
@@ -107,7 +105,7 @@ class TestDispatchForComment:
 
     def test_actor_is_not_self_mentioned(self, case_a, admin_profile, org_a):
         # admin's email local-part is "admin"
-        c = _comment(case_a, "I'm just thinking out loud @admin", by=admin_profile)
+        _comment(case_a, "I'm just thinking out loud @admin", by=admin_profile)
         assert not Notification.objects.filter(
             recipient=admin_profile, verb="case.mentioned"
         ).exists()
@@ -146,7 +144,7 @@ class TestDispatchForComment:
         self, case_a, admin_profile, org_a
     ):
         bob = _make_profile(org_a, email="bob@org.com")
-        first = _comment(case_a, "@bob first", by=admin_profile)
+        _comment(case_a, "@bob first", by=admin_profile)
         # Move the prior notification's created_at back 2 minutes.
         Notification.objects.filter(recipient=bob, verb="case.mentioned").update(
             created_at=timezone.now() - timedelta(minutes=2)
@@ -234,6 +232,6 @@ class TestNotificationLinkIsReachable:
 
     def test_no_notification_still_points_at_cases(self, case_a, admin_profile, org_a):
         """The other direction: nothing anywhere may emit the dead prefix."""
-        bob = _make_profile(org_a, email="bob@org.com")
+        _make_profile(org_a, email="bob@org.com")
         _comment(case_a, "hey @bob", by=admin_profile)
         assert not Notification.objects.filter(link__startswith="/cases/").exists()

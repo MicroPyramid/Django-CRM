@@ -169,7 +169,7 @@ class TestRottenFilterAPI:
 
     def test_rotten_filter_returns_stale_deals(self, admin_client, org_a, admin_user):
         # Create a rotten deal (PROSPECTING > 21 days)
-        rotten = Opportunity.objects.create(
+        Opportunity.objects.create(
             name="Rotten Deal",
             stage="PROSPECTING",
             org=org_a,
@@ -177,7 +177,7 @@ class TestRottenFilterAPI:
             stage_changed_at=timezone.now() - timedelta(days=25),
         )
         # Create a fresh deal
-        fresh = Opportunity.objects.create(
+        Opportunity.objects.create(
             name="Fresh Deal",
             stage="PROSPECTING",
             org=org_a,

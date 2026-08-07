@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Profile
 from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 from opportunity.models import SalesGoal

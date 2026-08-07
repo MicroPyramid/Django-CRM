@@ -7,7 +7,6 @@ Run with: pytest common/tests/test_auth.py -v
 
 import base64
 import json
-import uuid
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
@@ -15,7 +14,7 @@ import pytest
 from django.utils import timezone
 from rest_framework import status
 
-from common.models import Org, Profile, User
+from common.models import Profile, User
 from common.serializer import OrgAwareRefreshToken
 
 

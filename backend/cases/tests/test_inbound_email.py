@@ -686,7 +686,7 @@ class TestMailboxAPI:
         400, not an IntegrityError. The DB constraint is uniq(org, address);
         before this guard the update path skipped the duplicate check entirely
         and the constraint surfaced as a bodiless 500."""
-        first = _make_mailbox(org_a, address="support@example.com")
+        _make_mailbox(org_a, address="support@example.com")
         second = _make_mailbox(org_a, address="sales@example.com")
 
         response = admin_client.put(

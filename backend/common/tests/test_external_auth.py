@@ -12,7 +12,7 @@ from django.test import RequestFactory
 from rest_framework.exceptions import AuthenticationFailed
 
 from common.external_auth import APIKeyAuthentication
-from common.models import Org, Profile, User
+from common.models import Profile
 
 
 @pytest.mark.django_db

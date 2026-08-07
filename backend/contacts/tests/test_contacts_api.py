@@ -23,7 +23,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from rest_framework import status
 
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
 

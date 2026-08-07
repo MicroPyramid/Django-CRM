@@ -192,16 +192,23 @@ jobs:
           DBPORT: '5432'
         run: uv run pytest --no-cov --tb=short -q -m postgres_only
 
-      # Undefined names and redefinitions only. The wider `ruff check .` has
-      # 68 pre-existing findings and `black --check` wants 187 files, so a
-      # blanket gate would be red on arrival and would land a reformat of the
-      # whole tree in an unrelated change. These two rules are the ones that
-      # catch defects rather than style: F811 is how `ActivitySerializer` came
-      # to be declared twice, with the second silently shadowing the first for
-      # both of its consumers.
-      - name: Lint for undefined and redefined names
+      # Pyflakes rules only: undefined names, unused imports and variables,
+      # redefinitions, star imports. These catch defects rather than style.
+      # F811 is how `ActivitySerializer` came to be declared twice, with the
+      # second silently shadowing the first for both of its consumers, and the
+      # unused-import rule is what found three imports left behind by the
+      # timezone sweep plus two `# noqa` comments that suppressed nothing.
+      #
+      # `E` and `I` stay out for now. They are style, and the 118 I001 findings
+      # are a whole-tree import reorder that belongs in its own change rather
+      # than riding along with whatever else is in flight.
+      #
+      # `uv run`, not `uvx`: ruff is a locked dev dependency, so CI and a
+      # developer's machine check against the same version and a ruff release
+      # cannot turn this red overnight.
+      - name: Lint (pyflakes rules)
         working-directory: backend
-        run: uvx ruff check --select F811,F821 .
+        run: uv run ruff check --select F .
 
   frontend-checks:
     runs-on: ubuntu-latest

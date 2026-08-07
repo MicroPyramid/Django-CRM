@@ -31,14 +31,20 @@ def _import_settings(secret_key, env_type):
 
     ``load_dotenv()`` does not override variables already in the environment, so
     what is passed here wins over the developer's own ``.env``.
+
+    ``FRONTEND_URL`` is pinned to a public value because it carries its own
+    production guard (see ``test_frontend_url_guard.py``), and its default is a
+    loopback URL. Without this, every ``env_type="production"`` case below would
+    fail the import for a reason that has nothing to do with the signing key.
     """
     env = {
         key: value
         for key, value in os.environ.items()
-        if key not in ("SECRET_KEY", "ENV_TYPE")
+        if key not in ("SECRET_KEY", "ENV_TYPE", "FRONTEND_URL")
     }
     env["SECRET_KEY"] = secret_key
     env["ENV_TYPE"] = env_type
+    env["FRONTEND_URL"] = "https://app.example.com"
     return subprocess.run(
         [sys.executable, "-W", "always", "-c", "import crm.settings"],
         cwd=BACKEND_DIR,

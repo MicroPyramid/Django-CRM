@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.db.models import DecimalField, F, Q, Sum
 from django.db.models.functions import Coalesce

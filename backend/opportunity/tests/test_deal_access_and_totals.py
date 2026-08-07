@@ -333,7 +333,7 @@ class TestDealListTotals:
         """A rep's header counts the rep's deals. The same subset the list
         shows them, since the queryset is already narrowed before totalling."""
         _created_by(_deal(org_a, name="Theirs", amount=Decimal("500")), admin_user)
-        mine = _created_by(
+        _created_by(
             _deal(org_a, name="Mine", amount=Decimal("300")), user_profile.user
         )
         totals = user_client.get(OPPORTUNITIES_LIST_URL).data["totals"]

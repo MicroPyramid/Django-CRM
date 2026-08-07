@@ -22,7 +22,6 @@ import io
 import pytest
 from rest_framework import status
 
-from common.models import Org
 from leads.models import Lead
 from leads.tasks import create_lead_from_file
 

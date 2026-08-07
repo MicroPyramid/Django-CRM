@@ -155,5 +155,8 @@ A few more the same module reads, worth setting deliberately rather than leaving
 defaults: `CORS_ALLOWED_ORIGINS` (comma-separated, defaults to the two local dev frontend
 origins) and `CORS_ALLOW_ALL` (`CORS_ORIGIN_ALLOW_ALL`, `.env.docker` sets this `True` for local
 development. Leave it `False` in production and rely on `CORS_ALLOWED_ORIGINS` instead), and
-`DOMAIN_NAME`/`FRONTEND_URL`, which are interpolated into emails (magic links, notifications) and
-so need to point at your real, public hostnames.
+and `FRONTEND_URL`, which is interpolated into every emailed link (magic-link sign-in, the
+customer's invoice and estimate portal, the CSAT survey, internal notifications) and so needs to
+point at your real, public hostname. `FRONTEND_URL` is now checked at startup: with `ENV_TYPE`
+set to anything but `dev`, a loopback or non-absolute value raises rather than mailing a dead
+link to a customer. `DOMAIN_NAME` no longer reaches any emitted link and can be left alone.

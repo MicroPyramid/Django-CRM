@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from cases import analytics
 from cases.models import Case
-from common.models import Profile, User
 
 
 def _utc(year, month, day, hour=0):

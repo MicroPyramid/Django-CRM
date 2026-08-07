@@ -8,7 +8,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 
-from common.models import Document, Profile, Teams
+from common.models import Document, Teams
 
 
 @pytest.mark.django_db

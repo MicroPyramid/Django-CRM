@@ -473,7 +473,7 @@ class TestLeaderboardAPI:
         ) - timedelta(days=1)
 
         # Create goals for both users
-        goal1 = SalesGoal.objects.create(
+        SalesGoal.objects.create(
             name="Admin Goal",
             goal_type="REVENUE",
             target_value=Decimal("100000"),
@@ -483,7 +483,7 @@ class TestLeaderboardAPI:
             assigned_to=admin_profile,
             org=org_a,
         )
-        goal2 = SalesGoal.objects.create(
+        SalesGoal.objects.create(
             name="User Goal",
             goal_type="REVENUE",
             target_value=Decimal("50000"),

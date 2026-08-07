@@ -167,7 +167,7 @@ class TestCaseDetailResponse:
     def test_detail_includes_definitions_and_values(
         self, admin_client, case_a, org_a
     ):
-        defn = _make_severity_def(org_a)
+        _make_severity_def(org_a)
         case_a.custom_fields = {"severity": "S2"}
         case_a.save()
 
