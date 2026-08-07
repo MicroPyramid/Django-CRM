@@ -18,34 +18,34 @@ void main() {
   Solution article({
     String author = 'author-1',
     SolutionStatus status = SolutionStatus.draft,
-  }) =>
-      Solution(
-        id: 'sol-1',
-        title: 'Parity probe solution',
-        description: 'Seeded so the solution detail route can be driven.',
-        status: status,
-        isPublished: false,
-        createdById: author,
-      );
+  }) => Solution(
+    id: 'sol-1',
+    title: 'Parity probe solution',
+    description: 'Seeded so the solution detail route can be driven.',
+    status: status,
+    isPublished: false,
+    createdById: author,
+  );
 
-  Widget host(Solution solution, {required String role, required String userId}) =>
-      ProviderScope(
-        overrides: [
-          authProvider.overrideWith(() => _FakeAuth(role: role, userId: userId)),
-          solutionsProvider.overrideWith(() => _FakeSolutions(solution)),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.light,
-          home: const SolutionDetailScreen(solutionId: 'sol-1'),
-        ),
-      );
+  Widget host(
+    Solution solution, {
+    required String role,
+    required String userId,
+  }) => ProviderScope(
+    overrides: [
+      authProvider.overrideWith(() => _FakeAuth(role: role, userId: userId)),
+      solutionsProvider.overrideWith(() => _FakeSolutions(solution)),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.light,
+      home: const SolutionDetailScreen(solutionId: 'sol-1'),
+    ),
+  );
 
   testWidgets('an existing solution renders its title and body', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      host(article(), role: 'ADMIN', userId: 'admin-1'),
-    );
+    await tester.pumpWidget(host(article(), role: 'ADMIN', userId: 'admin-1'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -61,7 +61,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        host(article(author: 'someone-else'), role: 'USER', userId: 'member-1'),
+        host(
+          article(author: 'someone-else'),
+          role: 'USER',
+          userId: 'member-1',
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -76,7 +80,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        host(article(author: 'member-1'), role: 'USER', userId: 'member-1'),
+        host(
+          article(author: 'member-1'),
+          role: 'USER',
+          userId: 'member-1',
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -124,7 +132,11 @@ void main() {
 
     testWidgets('an admin may not publish a draft', (tester) async {
       await tester.pumpWidget(
-        host(article(author: 'someone-else'), role: 'ADMIN', userId: 'admin-1'),
+        host(
+          article(author: 'someone-else'),
+          role: 'ADMIN',
+          userId: 'admin-1',
+        ),
       );
       await tester.pumpAndSettle();
 

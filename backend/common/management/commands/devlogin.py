@@ -30,7 +30,7 @@ class Command(BaseCommand):
             "--org",
             help=(
                 "Optional org name or UUID. If supplied, the token is bound to "
-                "this org (skips the post-login orgswitch step)."
+                "this org (skips the post-login org-switch step)."
             ),
         )
         parser.add_argument(
@@ -89,16 +89,39 @@ class Command(BaseCommand):
         if org:
             self.stdout.write(f"bound to org:  {org.name} ({org.id})")
         else:
+            # `/api/auth/orgswitch/` was printed here and resolves to nothing.
+            # The route is `auth/switch-org/` (`common/urls.py`, name
+            # `switch_org`), and in practice you do not call it by hand: a
+            # token with no org claim lands you on `/org` to pick one.
             self.stdout.write(
-                "bound to org:  (none. Call /api/auth/orgswitch/ from the UI)"
+                "bound to org:  (none. You will land on /org to pick one, "
+                "which POSTs /api/auth/switch-org/)"
             )
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("=== Paste into browser devtools ==="))
-        self.stdout.write(
-            f"localStorage.setItem('access_token', '{access}');\n"
-            f"localStorage.setItem('refresh_token', '{refresh}');\n"
-            "location.reload();"
-        )
+        # Cookies, not localStorage. `frontend/src/hooks.server.js` reads
+        # `jwt_access`, `jwt_refresh` and `org` off the request cookies and
+        # redirects to /login when they are absent; nothing server-side can
+        # see localStorage, so the snippet this used to print looked like it
+        # worked and left you on the login page. The httpOnly flag the app
+        # sets on its own cookies is a write-side attribute, so a plain
+        # `document.cookie` value of the same name is read back identically.
+        one_year = 60 * 60 * 24 * 365
+        lines = [
+            f"const y = {one_year};",
+            f"document.cookie = `jwt_access={access}; path=/; max-age=${{y}}; samesite=lax`;",
+            f"document.cookie = `jwt_refresh={refresh}; path=/; max-age=${{y}}; samesite=lax`;",
+        ]
+        if org:
+            lines.append(
+                f"document.cookie = `org={org.id}; path=/; max-age=${{y}}; samesite=lax`;"
+            )
+        else:
+            # Without an org claim the shell sends you to /org to pick one, so
+            # setting an `org` cookie here would contradict the token.
+            lines.append("// no --org, so you will land on /org to pick one")
+        lines.append("location.reload();")
+        self.stdout.write("\n".join(lines))
 
     def _resolve_org(self, org_arg: str) -> Org:
         from django.core.exceptions import ValidationError

@@ -52,37 +52,43 @@ void main() {
 
       await api.get(ApiConfig.leads);
 
-      expect(refreshCalls, 1, reason: 'expiry must trigger exactly one refresh');
+      expect(
+        refreshCalls,
+        1,
+        reason: 'expiry must trigger exactly one refresh',
+      );
       // One send, not two: the token was renewed on the way out, so there is
       // nothing to retry. Before this fix the count was one send and zero
       // refreshes, because the 401 branch never saw a 401.
       expect(sentTokens, hasLength(1));
     });
 
-    test('the request carries the refreshed token, not the expired one',
-        () async {
-      final api = ApiService();
-      final expired = jwtExpiring(const Duration(minutes: -5));
-      final fresh = jwtExpiring(const Duration(hours: 1));
-      String? sent;
+    test(
+      'the request carries the refreshed token, not the expired one',
+      () async {
+        final api = ApiService();
+        final expired = jwtExpiring(const Duration(minutes: -5));
+        final fresh = jwtExpiring(const Duration(hours: 1));
+        String? sent;
 
-      api.setAccessToken(expired);
-      api.setRefreshCallback(() async {
-        api.setAccessToken(fresh);
-        return true;
-      });
-      api.setClientForTesting(
-        MockClient((request) async {
-          sent = request.headers['Authorization'];
-          return http.Response('{}', 200);
-        }),
-      );
+        api.setAccessToken(expired);
+        api.setRefreshCallback(() async {
+          api.setAccessToken(fresh);
+          return true;
+        });
+        api.setClientForTesting(
+          MockClient((request) async {
+            sent = request.headers['Authorization'];
+            return http.Response('{}', 200);
+          }),
+        );
 
-      await api.get(ApiConfig.leads);
+        await api.get(ApiConfig.leads);
 
-      expect(sent, 'Bearer $fresh');
-      expect(sent, isNot('Bearer $expired'));
-    });
+        expect(sent, 'Bearer $fresh');
+        expect(sent, isNot('Bearer $expired'));
+      },
+    );
 
     test('a live token is sent as-is, with no refresh round-trip', () async {
       final api = ApiService();
@@ -146,8 +152,9 @@ void main() {
       // this exemption the expired token would trigger a refresh, whose own
       // request would trigger another, and `_refreshInFlight` would return the
       // future that is waiting on it.
-      await api.post(ApiConfig.refreshToken, {'refresh': 'x'},
-          requiresAuth: false);
+      await api.post(ApiConfig.refreshToken, {
+        'refresh': 'x',
+      }, requiresAuth: false);
 
       expect(refreshCalls, 0);
     });

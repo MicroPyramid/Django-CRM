@@ -160,7 +160,9 @@ class AuthNotifier extends Notifier<AuthState> {
     final ok = await _authService.requestMagicCode(email);
     state = state.copyWith(
       isLoading: false,
-      error: ok ? null : 'Could not send code. Check your connection and try again.',
+      error: ok
+          ? null
+          : 'Could not send code. Check your connection and try again.',
     );
     return ok;
   }
@@ -172,7 +174,10 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final ok = await _authService.signInWithMagicCode(email: email, code: code);
+      final ok = await _authService.signInWithMagicCode(
+        email: email,
+        code: code,
+      );
       if (!ok) {
         state = state.copyWith(
           isLoading: false,
@@ -307,7 +312,9 @@ class AuthNotifier extends Notifier<AuthState> {
 }
 
 /// Provider for authentication state
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
 
 /// Provider for checking if user is authenticated
 final isAuthenticatedProvider = Provider<bool>((ref) {

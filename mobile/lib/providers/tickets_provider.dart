@@ -45,9 +45,13 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
   Future<TicketsListData> build() =>
       _fetchPage(offset: 0, filters: const TicketListFilters());
 
-  Future<void> refresh({TicketListFilters filters = const TicketListFilters()}) async {
+  Future<void> refresh({
+    TicketListFilters filters = const TicketListFilters(),
+  }) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _fetchPage(offset: 0, filters: filters));
+    state = await AsyncValue.guard(
+      () => _fetchPage(offset: 0, filters: filters),
+    );
   }
 
   Future<void> loadMore({
@@ -58,8 +62,10 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     if (state.isLoading) return;
 
     state = await AsyncValue.guard(() async {
-      final next =
-          await _fetchPage(offset: current.currentOffset, filters: filters);
+      final next = await _fetchPage(
+        offset: current.currentOffset,
+        filters: filters,
+      );
       return current.copyWith(
         tickets: [...current.tickets, ...next.tickets],
         totalCount: next.totalCount,
@@ -92,12 +98,14 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     if (filters.caseType != null) singleParams['case_type'] = filters.caseType!;
     if (filters.slaBreached) singleParams['sla_breached'] = 'true';
     if (filters.createdAfter != null) {
-      singleParams['created_at__gte'] =
-          filters.createdAfter!.toUtc().toIso8601String();
+      singleParams['created_at__gte'] = filters.createdAfter!
+          .toUtc()
+          .toIso8601String();
     }
     if (filters.createdBefore != null) {
-      singleParams['created_at__lte'] =
-          filters.createdBefore!.toUtc().toIso8601String();
+      singleParams['created_at__lte'] = filters.createdBefore!
+          .toUtc()
+          .toIso8601String();
     }
 
     // Multi-value params must be repeated. http's Uri only takes the last
@@ -115,8 +123,9 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
       extra.add('tags=${Uri.encodeQueryComponent(id)}');
     }
 
-    final base =
-        Uri.parse(endpoint).replace(queryParameters: singleParams).toString();
+    final base = Uri.parse(
+      endpoint,
+    ).replace(queryParameters: singleParams).toString();
     final url = extra.isEmpty ? base : '$base&${extra.join('&')}';
 
     final response = await _apiService.get(url);
@@ -132,12 +141,12 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     // CaseListView returns `cases_count` (total matching) and `offset` (next
     // page offset, or null when this was the final page). The watching view
     // returns `count` and no offset. Treat its response as a single page.
-    final totalCount = (data['cases_count'] as int?) ??
+    final totalCount =
+        (data['cases_count'] as int?) ??
         (data['count'] as int?) ??
         newTickets.length;
     final nextOffset = data['offset'] as int?;
-    final hasMore =
-        filters.watchingOnly ? false : nextOffset != null;
+    final hasMore = filters.watchingOnly ? false : nextOffset != null;
 
     return TicketsListData(
       tickets: newTickets,
@@ -202,18 +211,19 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
           .map(EmailMessage.fromJson)
           .toList();
 
-      final mergedFrom = (response.data!['merged_from_cases']
-                  as List<dynamic>? ??
-              [])
-          .whereType<Map<String, dynamic>>()
-          .map((m) => MergedFromSummary(
-                id: m['id']?.toString() ?? '',
-                name: m['name']?.toString() ?? '',
-                mergedAt: m['merged_at'] != null
-                    ? DateTime.tryParse(m['merged_at'].toString())
-                    : null,
-              ))
-          .toList();
+      final mergedFrom =
+          (response.data!['merged_from_cases'] as List<dynamic>? ?? [])
+              .whereType<Map<String, dynamic>>()
+              .map(
+                (m) => MergedFromSummary(
+                  id: m['id']?.toString() ?? '',
+                  name: m['name']?.toString() ?? '',
+                  mergedAt: m['merged_at'] != null
+                      ? DateTime.tryParse(m['merged_at'].toString())
+                      : null,
+                ),
+              )
+              .toList();
 
       final linkedSolutions =
           (response.data!['solutions'] as List<dynamic>? ?? [])
@@ -223,10 +233,11 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
 
       // `CaseDetailView` has returned these all along. Nothing on the phone
       // read them, so a screenshot attached to a ticket was invisible here.
-      final attachments = (response.data!['attachments'] as List<dynamic>? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(Attachment.fromJson)
-          .toList();
+      final attachments =
+          (response.data!['attachments'] as List<dynamic>? ?? [])
+              .whereType<Map<String, dynamic>>()
+              .map(Attachment.fromJson)
+              .toList();
 
       return TicketDetailResult(
         ticketObj: ticketObj,
@@ -316,7 +327,9 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
   Future<List<TimeEntry>> fetchTimeEntries(String id) async {
     try {
       // Backend returns a bare array, not an envelope.
-      final response = await _apiService.getList(ApiConfig.ticketTimeEntries(id));
+      final response = await _apiService.getList(
+        ApiConfig.ticketTimeEntries(id),
+      );
       if (!response.success || response.data == null) return const [];
       return response.data!
           .whereType<Map<String, dynamic>>()
@@ -345,10 +358,10 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     String description = '',
   }) async {
     try {
-      return await _apiService.post(
-        ApiConfig.ticketTimerStart(id),
-        {'billable': billable, 'description': description},
-      );
+      return await _apiService.post(ApiConfig.ticketTimerStart(id), {
+        'billable': billable,
+        'description': description,
+      });
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
@@ -357,10 +370,7 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
   /// Stop a running timer by entry id.
   Future<ApiResponse<Map<String, dynamic>>> stopTimer(String entryId) async {
     try {
-      return await _apiService.post(
-        ApiConfig.timeEntryStop(entryId),
-        const {},
-      );
+      return await _apiService.post(ApiConfig.timeEntryStop(entryId), const {});
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
@@ -406,10 +416,9 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     String? parentId,
   ) async {
     try {
-      return await _apiService.post(
-        ApiConfig.ticketLinkParent(id),
-        {'parent_id': parentId},
-      );
+      return await _apiService.post(ApiConfig.ticketLinkParent(id), {
+        'parent_id': parentId,
+      });
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
@@ -421,10 +430,9 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     bool cascade = true,
   }) async {
     try {
-      return await _apiService.post(
-        ApiConfig.ticketCloseWithChildren(id),
-        {'cascade': cascade},
-      );
+      return await _apiService.post(ApiConfig.ticketCloseWithChildren(id), {
+        'cascade': cascade,
+      });
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
     }
@@ -491,10 +499,9 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
   }
 }
 
-final ticketsProvider =
-    AsyncNotifierProvider<TicketsNotifier, TicketsListData>(
-      TicketsNotifier.new,
-    );
+final ticketsProvider = AsyncNotifierProvider<TicketsNotifier, TicketsListData>(
+  TicketsNotifier.new,
+);
 
 /// Convenience providers. Read from the AsyncValue.
 final ticketsListProvider = Provider<List<Ticket>>((ref) {
@@ -687,31 +694,32 @@ class TicketListFilters {
       tagIds: tagIds ?? this.tagIds,
       watchingOnly: watchingOnly ?? this.watchingOnly,
       slaBreached: slaBreached ?? this.slaBreached,
-      createdAfter:
-          clearCreatedAfter ? null : (createdAfter ?? this.createdAfter),
-      createdBefore:
-          clearCreatedBefore ? null : (createdBefore ?? this.createdBefore),
+      createdAfter: clearCreatedAfter
+          ? null
+          : (createdAfter ?? this.createdAfter),
+      createdBefore: clearCreatedBefore
+          ? null
+          : (createdBefore ?? this.createdBefore),
     );
   }
 
   /// JSON-encode for SharedPreferences. ISO-8601 for dates; default field
   /// values are not omitted so we get a stable round-trip on decode.
   Map<String, dynamic> toJson() => {
-        'search': search,
-        if (status != null) 'status': status,
-        'statusList': statusList,
-        if (priority != null) 'priority': priority,
-        if (accountId != null) 'accountId': accountId,
-        if (caseType != null) 'caseType': caseType,
-        'assigneeIds': assigneeIds,
-        'tagIds': tagIds,
-        'watchingOnly': watchingOnly,
-        'slaBreached': slaBreached,
-        if (createdAfter != null)
-          'createdAfter': createdAfter!.toIso8601String(),
-        if (createdBefore != null)
-          'createdBefore': createdBefore!.toIso8601String(),
-      };
+    'search': search,
+    if (status != null) 'status': status,
+    'statusList': statusList,
+    if (priority != null) 'priority': priority,
+    if (accountId != null) 'accountId': accountId,
+    if (caseType != null) 'caseType': caseType,
+    'assigneeIds': assigneeIds,
+    'tagIds': tagIds,
+    'watchingOnly': watchingOnly,
+    'slaBreached': slaBreached,
+    if (createdAfter != null) 'createdAfter': createdAfter!.toIso8601String(),
+    if (createdBefore != null)
+      'createdBefore': createdBefore!.toIso8601String(),
+  };
 
   factory TicketListFilters.fromJson(Map<String, dynamic> json) {
     return TicketListFilters(

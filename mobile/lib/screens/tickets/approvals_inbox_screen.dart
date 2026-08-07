@@ -68,8 +68,7 @@ class _ApprovalsInboxScreenState extends ConsumerState<ApprovalsInboxScreen>
     );
     if (reason == null || reason.isEmpty) return;
     setState(() => _isBusy = true);
-    final res =
-        await ref.read(approvalsProvider.notifier).reject(a.id, reason);
+    final res = await ref.read(approvalsProvider.notifier).reject(a.id, reason);
     if (!mounted) return;
     setState(() => _isBusy = false);
     if (res.success) {

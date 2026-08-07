@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.utils.text import slugify
@@ -436,6 +437,124 @@ class TagsRestoreView(APIView):
                 "error": False,
                 "message": "Tag restored successfully",
                 "tag": TagsSerializer(tag_obj).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class TagsMergeView(APIView):
+    """Move every record off one tag and onto another, then archive the source.
+
+    The settings page has long shown a "these two look like the same tag"
+    banner with a Merge button that did nothing, because this endpoint did not
+    exist. Duplicates are the tag problem that matters: anyone filtering by
+    "Invoice" silently misses everything tagged "Invoices".
+
+    The move below is two queries per record rather than a bulk repoint of the
+    through tables. Django has no bulk M2M move, and doing it by hand means
+    naming each model's through-table FK column, which is exactly the kind of
+    per-model detail that goes stale. A merge is a rare admin action bounded
+    by one org's records, so the loop is the cheaper thing to be right about.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(
+        tags=["Tags"],
+        operation_id="tags_merge",
+        parameters=swagger_params.organization_params,
+        request=inline_serializer(
+            name="TagMergeRequest",
+            fields={"into": serializers.UUIDField()},
+        ),
+        responses={
+            200: inline_serializer(
+                name="TagMergeResponse",
+                fields={
+                    "error": serializers.BooleanField(),
+                    "message": serializers.CharField(),
+                    "tag": TagsSerializer(),
+                    "moved": serializers.IntegerField(),
+                },
+            )
+        },
+    )
+    def post(self, request, pk, **kwargs):
+        """Merge the tag at `pk` into the tag named by `into` (admin only)."""
+        if not is_org_admin(request.profile) and not request.user.is_superuser:
+            return Response(
+                {"error": True, "errors": "Only admins can merge tags"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        org = request.profile.org
+        # Both ends are looked up inside the caller's org. `into` arrives from
+        # the request body, so without the org filter it would be the whole
+        # point of failure: an id from another tenant would let this endpoint
+        # stamp that tenant's tag onto this org's records. RLS would catch it
+        # in production and does not in dev, where the app's DB role is a
+        # superuser, so the explicit filter is the contract.
+        source = get_scoped_or_404(Tags, pk, org)
+
+        into = request.data.get("into")
+        if not into:
+            return Response(
+                {"error": True, "errors": {"into": ["This field is required."]}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        target = get_scoped_or_404(Tags, into, org)
+
+        if target.pk == source.pk:
+            return Response(
+                {
+                    "error": True,
+                    "errors": {"into": ["A tag cannot merge into itself."]},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not target.is_active:
+            # Validate the destination state, not just that it resolves.
+            # Merging onto an archived tag hides every moved record behind a
+            # tag the page shows as "Off", which reads as data loss.
+            return Response(
+                {
+                    "error": True,
+                    "errors": {
+                        "into": ["Restore that tag before merging records onto it."]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        moved = 0
+        with transaction.atomic():
+            for _key, model in _TAGGABLE:
+                # Org-filtered for the same reason as the lookups above, and
+                # `_TAGGABLE` rather than a hand-written list of the prominent
+                # models: it is the registry a test walks the model graph to
+                # keep complete, so a taggable model added later is merged too
+                # instead of quietly keeping the source tag alive.
+                for obj in model.objects.filter(tags=source, org=org):
+                    obj.tags.add(target)
+                    obj.tags.remove(source)
+                    moved += 1
+
+            # Archived, not deleted. Nothing hard-deletes a tag anywhere in
+            # this file, and a merge is the case where that matters most: if
+            # the merge was a mistake, the name still exists to restore.
+            source.is_active = False
+            source.updated_by = request.user
+            source.save()
+
+        return Response(
+            {
+                "error": False,
+                "message": (
+                    f"Merged {source.name!r} into {target.name!r}. "
+                    f"{moved} record(s) moved."
+                ),
+                "tag": TagsSerializer(target).data,
+                "moved": moved,
             },
             status=status.HTTP_200_OK,
         )

@@ -83,10 +83,9 @@ class _MagicLinkCodeScreenState extends ConsumerState<MagicLinkCodeScreen> {
       _errorMessage = null;
     });
 
-    final ok = await ref.read(authProvider.notifier).signInWithMagicCode(
-          email: widget.email,
-          code: code,
-        );
+    final ok = await ref
+        .read(authProvider.notifier)
+        .signInWithMagicCode(email: widget.email, code: code);
 
     if (!mounted) return;
 
@@ -100,7 +99,8 @@ class _MagicLinkCodeScreenState extends ConsumerState<MagicLinkCodeScreen> {
         context.go(AppRoutes.dashboard);
       }
     } else {
-      final error = ref.read(authProvider).error ??
+      final error =
+          ref.read(authProvider).error ??
           'Invalid or expired code. Please try again.';
       setState(() {
         _isVerifying = false;
@@ -118,8 +118,9 @@ class _MagicLinkCodeScreenState extends ConsumerState<MagicLinkCodeScreen> {
       _errorMessage = null;
     });
 
-    final ok =
-        await ref.read(authProvider.notifier).requestMagicCode(widget.email);
+    final ok = await ref
+        .read(authProvider.notifier)
+        .requestMagicCode(widget.email);
 
     if (!mounted) return;
     setState(() => _isResending = false);

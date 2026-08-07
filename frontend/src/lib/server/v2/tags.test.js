@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createTag, archiveTag, restoreTag } = await import('$lib/server/v2/tags.js');
+const { createTag, archiveTag, restoreTag, mergeTags } = await import('$lib/server/v2/tags.js');
 // Cast rather than shaping a full Cookies mock, matching leads.test.js:
 // createTag only ever calls `cookies.get`, and `apiRequest` itself is mocked
 // above, so nothing here touches `getAll`/`set`/`delete`/`serialize`. Without
@@ -99,6 +99,56 @@ describe('restoreTag', () => {
 
   it('refuses an empty id', async () => {
     await expect(restoreTag(event, '')).rejects.toThrow(/id/i);
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe('mergeTags', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('POSTs only the destination id to the source tag route', async () => {
+    // The URL carries the tag being emptied and the body carries the one
+    // being kept. Nothing else is sent: org and actor come off the token, and
+    // `TagsMergeView` resolves BOTH ids inside the caller's org, which is the
+    // check that stops an `into` from another tenant.
+    apiRequest.mockResolvedValue({ error: false, tag: { id: 'keep', name: 'Invoice' }, moved: 12 });
+
+    await mergeTags(event, 'drop', 'keep');
+
+    const [endpoint, options] = apiRequest.mock.calls[0];
+    expect(endpoint).toBe('/tags/drop/merge/');
+    expect(options.method).toBe('POST');
+    expect(options.body).toEqual({ into: 'keep' });
+  });
+
+  it('returns the surviving tag and how many records moved', async () => {
+    apiRequest.mockResolvedValue({ error: false, tag: { id: 'keep', name: 'Invoice' }, moved: 12 });
+
+    const result = await mergeTags(event, 'drop', 'keep');
+
+    expect(result.tag.name).toBe('Invoice');
+    expect(result.moved).toBe(12);
+  });
+
+  it('reports zero rather than undefined when the response omits the count', async () => {
+    // `moved` drives the page's "12 records moved" line. `undefined` there
+    // renders as blank, which reads as "nothing happened" for a merge that
+    // may well have moved everything.
+    apiRequest.mockResolvedValue({ error: false, tag: { id: 'keep', name: 'Invoice' } });
+
+    const result = await mergeTags(event, 'drop', 'keep');
+
+    expect(result.moved).toBe(0);
+  });
+
+  it('refuses to call the API with either id missing', async () => {
+    // A merge with one end blank would POST to `/tags//merge/` or send
+    // `{into: ''}`, and the second is the one that could resolve to something
+    // unintended. Fail before the request, not after.
+    await expect(mergeTags(event, '', 'keep')).rejects.toThrow();
+    await expect(mergeTags(event, 'drop', '')).rejects.toThrow();
     expect(apiRequest).not.toHaveBeenCalled();
   });
 });

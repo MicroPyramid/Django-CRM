@@ -33,9 +33,9 @@ class ApprovalsNotifier extends Notifier<List<Approval>> {
 
     final url = params.isEmpty
         ? ApiConfig.approvals
-        : Uri.parse(ApiConfig.approvals)
-            .replace(queryParameters: params)
-            .toString();
+        : Uri.parse(
+            ApiConfig.approvals,
+          ).replace(queryParameters: params).toString();
     final response = await _api.get(url);
     if (!response.success || response.data == null) {
       state = const [];
@@ -62,10 +62,7 @@ class ApprovalsNotifier extends Notifier<List<Approval>> {
     return _api.post(ApiConfig.approvalApprove(id), const {});
   }
 
-  Future<ApiResponse<Map<String, dynamic>>> reject(
-    String id,
-    String reason,
-  ) {
+  Future<ApiResponse<Map<String, dynamic>>> reject(String id, String reason) {
     return _api.post(ApiConfig.approvalReject(id), {'reason': reason});
   }
 
@@ -74,7 +71,6 @@ class ApprovalsNotifier extends Notifier<List<Approval>> {
   }
 }
 
-final approvalsProvider =
-    NotifierProvider<ApprovalsNotifier, List<Approval>>(
-      ApprovalsNotifier.new,
-    );
+final approvalsProvider = NotifierProvider<ApprovalsNotifier, List<Approval>>(
+  ApprovalsNotifier.new,
+);

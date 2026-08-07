@@ -46,10 +46,9 @@ class AssignableUser {
     String label = '';
     String? pic;
     if (details is Map<String, dynamic>) {
-      label =
-          (details['name'] as String?)?.trim().isNotEmpty == true
-              ? details['name'] as String
-              : (details['email'] as String? ?? '');
+      label = (details['name'] as String?)?.trim().isNotEmpty == true
+          ? details['name'] as String
+          : (details['email'] as String? ?? '');
       pic = details['profile_pic'] as String?;
     }
     return AssignableUser(
@@ -151,91 +150,91 @@ class LeadFilters {
   }
 
   LeadFilters withSearch(String? value) => LeadFilters(
-        search: (value == null || value.isEmpty) ? null : value,
-        statuses: statuses,
-        source: source,
-        rating: rating,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: nextFollowUp,
-      );
+    search: (value == null || value.isEmpty) ? null : value,
+    statuses: statuses,
+    source: source,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withStatus(LeadStatus? value) =>
       withStatuses(value == null ? const {} : {value});
 
   LeadFilters withStatuses(Set<LeadStatus> value) => LeadFilters(
-        search: search,
-        statuses: value,
-        source: source,
-        rating: rating,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: nextFollowUp,
-      );
+    search: search,
+    statuses: value,
+    source: source,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withSource(LeadSource? value) => LeadFilters(
-        search: search,
-        statuses: statuses,
-        source: value,
-        rating: rating,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: nextFollowUp,
-      );
+    search: search,
+    statuses: statuses,
+    source: value,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withRating(LeadRating? value) => LeadFilters(
-        search: search,
-        statuses: statuses,
-        source: source,
-        rating: value,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: nextFollowUp,
-      );
+    search: search,
+    statuses: statuses,
+    source: source,
+    rating: value,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withAssignee({String? id, String? label}) => LeadFilters(
-        search: search,
-        statuses: statuses,
-        source: source,
-        rating: rating,
-        assignedToId: id,
-        assignedToLabel: label,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: nextFollowUp,
-      );
+    search: search,
+    statuses: statuses,
+    source: source,
+    rating: rating,
+    assignedToId: id,
+    assignedToLabel: label,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withTag({String? id, String? label}) => LeadFilters(
-        search: search,
-        statuses: statuses,
-        source: source,
-        rating: rating,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: id,
-        tagLabel: label,
-        nextFollowUp: nextFollowUp,
-      );
+    search: search,
+    statuses: statuses,
+    source: source,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: id,
+    tagLabel: label,
+    nextFollowUp: nextFollowUp,
+  );
 
   LeadFilters withNextFollowUp(String? value) => LeadFilters(
-        search: search,
-        statuses: statuses,
-        source: source,
-        rating: rating,
-        assignedToId: assignedToId,
-        assignedToLabel: assignedToLabel,
-        tagId: tagId,
-        tagLabel: tagLabel,
-        nextFollowUp: value,
-      );
+    search: search,
+    statuses: statuses,
+    source: source,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: value,
+  );
 }
 
 /// Paginated leads snapshot, wrapped by AsyncValue.
@@ -343,8 +342,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
 
     // Backend returns open_leads + close_leads in two sub-objects.
     final openLeadsData = data['open_leads'] as Map<String, dynamic>?;
-    final openLeadsList =
-        openLeadsData?['open_leads'] as List<dynamic>? ?? [];
+    final openLeadsList = openLeadsData?['open_leads'] as List<dynamic>? ?? [];
     final openLeadsCount = openLeadsData?['leads_count'] as int? ?? 0;
 
     final closeLeadsData = data['close_leads'] as Map<String, dynamic>?;
@@ -447,7 +445,9 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
             .toList();
       } catch (e, st) {
         // ignore: avoid_print
-        print('[leads_provider] custom_field_definitions parse failed: $e\n$st');
+        print(
+          '[leads_provider] custom_field_definitions parse failed: $e\n$st',
+        );
       }
 
       List<AssignableUser> users = const [];
@@ -483,10 +483,9 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
     final trimmed = email.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final url = Uri.parse(ApiConfig.leads).replace(queryParameters: {
-        'email': trimmed,
-        'limit': '5',
-      }).toString();
+      final url = Uri.parse(
+        ApiConfig.leads,
+      ).replace(queryParameters: {'email': trimmed, 'limit': '5'}).toString();
       final response = await _apiService.get(url);
       if (!response.success || response.data == null) return null;
 
@@ -494,9 +493,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
       Iterable<dynamic> rows = const [];
       final openLeads = data['open_leads'] as Map<String, dynamic>?;
       if (openLeads != null) {
-        rows = [
-          ...((openLeads['open_leads'] as List<dynamic>?) ?? const []),
-        ];
+        rows = [...((openLeads['open_leads'] as List<dynamic>?) ?? const [])];
       }
       final closeLeads = data['close_leads'] as Map<String, dynamic>?;
       if (closeLeads != null) {
@@ -591,9 +588,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
           state = AsyncValue.data(
             current.copyWith(
               leads: current.leads.where((l) => l.id != id).toList(),
-              totalCount: current.totalCount > 0
-                  ? current.totalCount - 1
-                  : 0,
+              totalCount: current.totalCount > 0 ? current.totalCount - 1 : 0,
             ),
           );
         }

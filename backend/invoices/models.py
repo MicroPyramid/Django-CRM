@@ -675,6 +675,15 @@ class Payment(BaseModel):
         invoice.amount_paid = total_paid
         invoice.amount_due = invoice.total_amount - total_paid
 
+        # A cancelled invoice's status is not payment-derived. Without this the
+        # block below would move it to Paid or Partially_Paid and quietly undo
+        # the cancellation. `PaymentCreateSerializer.validate` stops the API
+        # from getting here, but the totals still have to be right for any
+        # other caller (a deleted payment, a data fix, a management command).
+        if invoice.status == "Cancelled":
+            invoice.save(update_fields=["amount_paid", "amount_due"])
+            return
+
         # Update status based on payment
         if invoice.amount_due <= 0:
             invoice.status = "Paid"

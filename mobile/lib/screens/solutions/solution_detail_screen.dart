@@ -65,9 +65,9 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
 
   Future<void> _save() async {
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title is required')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Title is required')));
       return;
     }
     setState(() => _isLoading = true);
@@ -92,7 +92,9 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
     if (res.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.isCreate ? 'Solution created' : 'Solution updated'),
+          content: Text(
+            widget.isCreate ? 'Solution created' : 'Solution updated',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -155,16 +157,17 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
     );
     if (ok != true) return;
     setState(() => _isLoading = true);
-    final res =
-        await ref.read(solutionsProvider.notifier).delete(_existing!.id);
+    final res = await ref
+        .read(solutionsProvider.notifier)
+        .delete(_existing!.id);
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (res.success) {
       context.pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.message ?? 'Delete failed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(res.message ?? 'Delete failed')));
     }
   }
 
@@ -232,12 +235,13 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                   Wrap(
                     spacing: 8,
                     children: SolutionStatus.values
-                        .map((s) => ChoiceChip(
-                              label: Text(s.label),
-                              selected: _status == s,
-                              onSelected: (_) =>
-                                  setState(() => _status = s),
-                            ))
+                        .map(
+                          (s) => ChoiceChip(
+                            label: Text(s.label),
+                            selected: _status == s,
+                            onSelected: (_) => setState(() => _status = s),
+                          ),
+                        )
                         .toList(),
                   ),
                   if (!widget.isCreate && _existing != null && canWrite) ...[
@@ -301,7 +305,8 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                             // Admin-only, per `assert_solution_release_access`,
                             // and still only from an approved article per the
                             // serializer. Both rules, not just the second.
-                            onPressed: _isLoading ||
+                            onPressed:
+                                _isLoading ||
                                     !isAdmin ||
                                     (!_isPublished &&
                                         _status != SolutionStatus.approved)
@@ -316,8 +321,9 @@ class _SolutionDetailScreenState extends ConsumerState<SolutionDetailScreen> {
                   const SizedBox(height: 24),
                   if (canWrite)
                     PrimaryButton(
-                      label:
-                          widget.isCreate ? 'Create solution' : 'Save changes',
+                      label: widget.isCreate
+                          ? 'Create solution'
+                          : 'Save changes',
                       onPressed: _isLoading ? null : _save,
                       isLoading: _isLoading,
                     ),

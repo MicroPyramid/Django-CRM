@@ -38,15 +38,15 @@ class _TicketApprovalPanelState extends ConsumerState<TicketApprovalPanel> {
   /// Direct fetch. Keeps the inbox screen's shared `approvalsProvider`
   /// state untouched when the user opens a ticket.
   Future<void> _load() async {
-    final url = Uri.parse(ApiConfig.approvals).replace(
-      queryParameters: {'state': 'all', 'case': widget.ticketId},
-    ).toString();
+    final url = Uri.parse(ApiConfig.approvals)
+        .replace(queryParameters: {'state': 'all', 'case': widget.ticketId})
+        .toString();
     final response = await _api.get(url);
     final approvals = (response.success && response.data != null)
         ? ((response.data!['approvals'] as List<dynamic>? ?? [])
-            .whereType<Map<String, dynamic>>()
-            .map(Approval.fromJson)
-            .toList())
+              .whereType<Map<String, dynamic>>()
+              .map(Approval.fromJson)
+              .toList())
         : const <Approval>[];
     if (!mounted) return;
     setState(() {
@@ -99,8 +99,7 @@ class _TicketApprovalPanelState extends ConsumerState<TicketApprovalPanel> {
     );
     if (reason == null || reason.isEmpty) return;
     setState(() => _isBusy = true);
-    final res =
-        await ref.read(approvalsProvider.notifier).reject(a.id, reason);
+    final res = await ref.read(approvalsProvider.notifier).reject(a.id, reason);
     if (!mounted) return;
     setState(() => _isBusy = false);
     if (res.success) {
@@ -331,11 +330,7 @@ class _TicketApprovalPanelState extends ConsumerState<TicketApprovalPanel> {
         children: [
           Row(
             children: [
-              Icon(
-                LucideIcons.shieldCheck,
-                size: 16,
-                color: AppColors.gray600,
-              ),
+              Icon(LucideIcons.shieldCheck, size: 16, color: AppColors.gray600),
               const SizedBox(width: 8),
               Text(
                 'APPROVAL',

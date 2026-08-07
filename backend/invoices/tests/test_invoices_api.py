@@ -464,6 +464,172 @@ class TestInvoicePayments:
         assert len(data) >= 1
 
 
+@pytest.mark.django_db
+class TestCancelledInvoiceTakesNoPayment:
+    """A cancelled invoice is not owed, so no payment may be recorded on it.
+
+    Before this rule both payment endpoints checked only the amount. A
+    cancelled invoice keeps a non-zero ``amount_due``, so the amount passed,
+    and ``Payment.save()`` -> ``update_invoice_payment()`` then wrote ``status``
+    with no condition on it. The result was not just an accepted payment: the
+    invoice moved out of Cancelled to Paid or Partially_Paid, undoing the
+    cancellation. ``send`` and ``cancel`` both refuse that transition, so this
+    was the one way round them.
+
+    Both endpoints are covered because both reach the same serializer, and
+    fixing only ``mark-paid`` would have left ``payments`` wide open.
+    """
+
+    @pytest.fixture
+    def cancelled_invoice(self, invoice_with_balance):
+        invoice_with_balance.status = "Cancelled"
+        invoice_with_balance.save(update_fields=["status"])
+        return invoice_with_balance
+
+    def test_mark_paid_refuses_a_cancelled_invoice(
+        self, admin_client, cancelled_invoice
+    ):
+        response = admin_client.post(
+            f"/api/invoices/{cancelled_invoice.id}/mark-paid/",
+            {"amount": "500.00", "payment_method": "CASH"},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "cancelled invoice" in str(response.json()["errors"])
+
+    def test_payments_endpoint_refuses_a_cancelled_invoice(
+        self, admin_client, cancelled_invoice
+    ):
+        response = admin_client.post(
+            f"/api/invoices/{cancelled_invoice.id}/payments/",
+            {
+                "amount": "500.00",
+                "payment_date": "2026-02-01",
+                "payment_method": "CASH",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "cancelled invoice" in str(response.json()["errors"])
+
+    def test_a_refused_payment_leaves_the_invoice_cancelled(
+        self, admin_client, cancelled_invoice
+    ):
+        admin_client.post(
+            f"/api/invoices/{cancelled_invoice.id}/mark-paid/",
+            {"amount": "500.00", "payment_method": "CASH"},
+            format="json",
+        )
+
+        cancelled_invoice.refresh_from_db()
+        # The point of the rule. Without it this read "Partially_Paid".
+        assert cancelled_invoice.status == "Cancelled"
+        assert cancelled_invoice.amount_paid == 0
+        assert Payment.objects.filter(invoice=cancelled_invoice).count() == 0
+
+    def test_the_same_payment_is_accepted_before_cancellation(
+        self, admin_client, invoice_with_balance
+    ):
+        """The other branch: the rule has to be able to answer both ways.
+
+        Identical request against the identical invoice, differing only in
+        status, so a check that always refused would fail here.
+        """
+        response = admin_client.post(
+            f"/api/invoices/{invoice_with_balance.id}/mark-paid/",
+            {"amount": "500.00", "payment_method": "CASH"},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.status == "Partially_Paid"
+
+    def test_cancelling_after_a_payment_still_works(
+        self, admin_client, invoice_with_balance
+    ):
+        """A part-paid invoice can still be cancelled.
+
+        The new rule bites on the payment, not on the cancel, so the ordinary
+        sequence (take a deposit, then cancel the job) is untouched.
+        """
+        admin_client.post(
+            f"/api/invoices/{invoice_with_balance.id}/mark-paid/",
+            {"amount": "500.00", "payment_method": "CASH"},
+            format="json",
+        )
+        response = admin_client.post(f"/api/invoices/{invoice_with_balance.id}/cancel/")
+
+        assert response.status_code == 200
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.status == "Cancelled"
+        # The money that did change hands is still recorded.
+        assert invoice_with_balance.amount_paid == Decimal("500.00")
+
+
+@pytest.mark.django_db
+class TestPaymentTotalsDoNotResurrectACancelledInvoice:
+    """The model-level half, for callers that never touch the serializer.
+
+    ``update_invoice_payment`` runs from ``Payment.save()`` and
+    ``Payment.delete()``, so a management command, a data fix or a deleted
+    payment can reach it directly. It has to keep the totals right without
+    moving a cancelled invoice's status.
+    """
+
+    def test_a_payment_created_directly_does_not_uncancel(self, invoice_with_balance):
+        invoice_with_balance.status = "Cancelled"
+        invoice_with_balance.save(update_fields=["status"])
+
+        Payment.objects.create(
+            invoice=invoice_with_balance,
+            amount=Decimal("1000.00"),
+            payment_date="2026-02-01",
+            payment_method="CASH",
+            org=invoice_with_balance.org,
+        )
+
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.status == "Cancelled"
+        # Totals are still maintained: the guard skips the status, not the sums.
+        assert invoice_with_balance.amount_paid == Decimal("1000.00")
+        assert invoice_with_balance.amount_due == Decimal("0.00")
+
+    def test_a_live_invoice_still_flips_to_paid(self, invoice_with_balance):
+        """The other branch, so the guard is not simply always taken."""
+        Payment.objects.create(
+            invoice=invoice_with_balance,
+            amount=Decimal("1000.00"),
+            payment_date="2026-02-01",
+            payment_method="CASH",
+            org=invoice_with_balance.org,
+        )
+
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.status == "Paid"
+        assert invoice_with_balance.paid_at is not None
+
+    def test_deleting_a_payment_does_not_uncancel(self, invoice_with_balance):
+        payment = Payment.objects.create(
+            invoice=invoice_with_balance,
+            amount=Decimal("400.00"),
+            payment_date="2026-02-01",
+            payment_method="CASH",
+            org=invoice_with_balance.org,
+        )
+        invoice_with_balance.refresh_from_db()
+        invoice_with_balance.status = "Cancelled"
+        invoice_with_balance.save(update_fields=["status"])
+
+        payment.delete()
+
+        invoice_with_balance.refresh_from_db()
+        assert invoice_with_balance.status == "Cancelled"
+        assert invoice_with_balance.amount_paid == 0
+
+
 # ---------------------------------------------------------------------------
 # Invoice List Filters & Sorting
 # ---------------------------------------------------------------------------
@@ -1629,6 +1795,92 @@ class TestEstimateActions:
         response = admin_client.post(f"/api/invoices/estimates/{fake_id}/send/")
         assert response.status_code == 404
 
+    # ------------------------------------------------------------------
+    # A settled or lapsed quote is not sendable.
+    #
+    # `EstimateSendView` had no status check at all, while `InvoiceSendView`
+    # refused Paid and Cancelled with a comment explaining why. Re-sending
+    # mailed the client a quote they had already declined and overwrote
+    # `sent_at`, losing the record of when it first went out. The accept
+    # endpoint was already guarded, so this never let a lapsed quote be
+    # accepted; it was the send half that was missing.
+    # ------------------------------------------------------------------
+
+    @pytest.mark.parametrize("state", ["Accepted", "Declined", "Expired"])
+    @patch("invoices.tasks.send_estimate_to_client.delay")
+    def test_a_settled_estimate_cannot_be_sent(
+        self, mock_send, admin_client, estimate, state
+    ):
+        estimate.status = state
+        estimate.save()
+
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
+
+        assert response.status_code == 400
+        assert state.lower() in response.json()["message"]
+        # No mail, and the timestamp of the real send is untouched.
+        mock_send.assert_not_called()
+        estimate.refresh_from_db()
+        assert estimate.sent_at is None
+
+    @patch("invoices.tasks.send_estimate_to_client.delay")
+    def test_a_lapsed_estimate_cannot_be_sent_before_the_task_relabels_it(
+        self, mock_send, admin_client, estimate
+    ):
+        """The gap between the expiry date passing and the daily task running.
+
+        `check_expired_estimates` flips Sent to Expired once a day, so an
+        estimate reads as "Sent" while `is_expired` is already true. A guard
+        that only tested the status would send a lapsed quote on any day the
+        task had not run yet.
+        """
+        estimate.status = "Sent"
+        estimate.expiry_date = timezone.localdate() - datetime.timedelta(days=1)
+        estimate.save()
+
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
+
+        assert response.status_code == 400
+        assert "expired on" in response.json()["message"]
+        mock_send.assert_not_called()
+
+    @patch("invoices.tasks.send_estimate_to_client.delay")
+    def test_an_estimate_expiring_today_can_still_be_sent(
+        self, mock_send, admin_client, estimate
+    ):
+        """The boundary, and the other branch of the expiry check.
+
+        `is_expired` is `today > expiry_date`, so the last day is inclusive.
+        A check written with `>=` would refuse a quote on the very day it is
+        still valid, which is the day it most needs sending.
+        """
+        estimate.status = "Sent"
+        estimate.expiry_date = timezone.localdate()
+        estimate.save()
+
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
+
+        assert response.status_code == 200
+        mock_send.assert_called_once()
+
+    @pytest.mark.parametrize("state", ["Draft", "Sent", "Viewed"])
+    @patch("invoices.tasks.send_estimate_to_client.delay")
+    def test_a_live_estimate_still_sends(
+        self, mock_send, admin_client, estimate, state
+    ):
+        """The other branch of the status check, so it is not always-refuse."""
+        estimate.status = state
+        estimate.save()
+
+        response = admin_client.post(f"/api/invoices/estimates/{estimate.id}/send/")
+
+        assert response.status_code == 200
+        assert response.json()["error"] is False
+        mock_send.assert_called_once()
+        estimate.refresh_from_db()
+        # Draft is promoted; Sent and Viewed keep the status they had.
+        assert estimate.status == ("Sent" if state == "Draft" else state)
+
     @patch("invoices.api_views.generate_estimate_pdf")
     @patch("invoices.api_views.generate_estimate_filename")
     def test_estimate_pdf_success(
@@ -1848,6 +2100,129 @@ class TestRecurringInvoiceListView:
         data = response.json()
         assert data["error"] is False
         assert data["recurring_invoice"]["title"] == "New Recurring"
+
+    # ------------------------------------------------------------------
+    # A CUSTOM cadence needs its interval.
+    #
+    # `calculate_next_date` tests `frequency == "CUSTOM" and self.custom_days`
+    # and otherwise falls through to a monthly step. So a CUSTOM schedule
+    # saved without an interval was accepted and then billed monthly forever,
+    # while the list kept describing it as "Custom". The client asked for one
+    # thing and the server quietly did another, which is why this is a 400 and
+    # not a default.
+    # ------------------------------------------------------------------
+
+    @pytest.mark.parametrize("interval", [None, 0])
+    def test_a_custom_cadence_without_an_interval_is_refused(
+        self, admin_client, account_for_invoice, contact_for_invoice, interval
+    ):
+        payload = {
+            "title": "Custom cadence",
+            "account_id": str(account_for_invoice.id),
+            "contact_id": str(contact_for_invoice.id),
+            "frequency": "CUSTOM",
+            "start_date": "2026-03-01",
+            "next_generation_date": "2026-03-01",
+            "currency": "USD",
+        }
+        if interval is not None:
+            # Zero is falsy in `calculate_next_date`, so it behaved exactly
+            # like a missing interval and has to be refused the same way.
+            payload["custom_days"] = interval
+
+        response = admin_client.post("/api/invoices/recurring/", payload, format="json")
+
+        assert response.status_code == 400
+        assert "custom_days" in response.json()["errors"]
+        assert RecurringInvoice.objects.filter(title="Custom cadence").count() == 0
+
+    def test_a_custom_cadence_with_an_interval_is_accepted(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
+        """The other branch, so the rule is not simply always-refuse."""
+        response = admin_client.post(
+            "/api/invoices/recurring/",
+            {
+                "title": "Every ten days",
+                "account_id": str(account_for_invoice.id),
+                "contact_id": str(contact_for_invoice.id),
+                "frequency": "CUSTOM",
+                "custom_days": 10,
+                "start_date": "2026-03-01",
+                "next_generation_date": "2026-03-01",
+                "currency": "USD",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        created = RecurringInvoice.objects.get(title="Every ten days")
+        assert created.custom_days == 10
+        # The interval is honoured rather than silently falling back to a month.
+        assert created.calculate_next_date() == datetime.date(2026, 3, 11)
+
+    def test_a_non_custom_cadence_needs_no_interval(
+        self, admin_client, account_for_invoice, contact_for_invoice
+    ):
+        """The rule must not leak onto the other six frequencies."""
+        response = admin_client.post(
+            "/api/invoices/recurring/",
+            {
+                "title": "Quarterly",
+                "account_id": str(account_for_invoice.id),
+                "contact_id": str(contact_for_invoice.id),
+                "frequency": "QUARTERLY",
+                "start_date": "2026-03-01",
+                "next_generation_date": "2026-03-01",
+                "currency": "USD",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+
+    def test_switching_an_existing_schedule_to_custom_needs_an_interval(
+        self, admin_client, recurring_invoice
+    ):
+        """The PUT path, which reads `frequency` from the request.
+
+        Sending only `frequency` here is the natural way to change a cadence,
+        and the guard has to fire on it rather than only on create.
+        """
+        response = admin_client.put(
+            f"/api/invoices/recurring/{recurring_invoice.id}/",
+            {"frequency": "CUSTOM"},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "custom_days" in response.json()["errors"]
+        recurring_invoice.refresh_from_db()
+        assert recurring_invoice.frequency != "CUSTOM"
+
+    def test_editing_a_custom_schedule_without_resending_frequency_is_fine(
+        self, admin_client, recurring_invoice
+    ):
+        """A partial update must read the STORED frequency, not an absent one.
+
+        Without the `partial` branch this passes for the wrong reason: absent
+        `frequency` reads as not-CUSTOM and the rule never fires. With a stored
+        CUSTOM schedule that already has an interval, the edit has to succeed.
+        """
+        recurring_invoice.frequency = "CUSTOM"
+        recurring_invoice.custom_days = 10
+        recurring_invoice.save()
+
+        response = admin_client.put(
+            f"/api/invoices/recurring/{recurring_invoice.id}/",
+            {"title": "Renamed"},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        recurring_invoice.refresh_from_db()
+        assert recurring_invoice.title == "Renamed"
+        assert recurring_invoice.custom_days == 10
 
     def test_create_recurring_with_line_items(
         self, admin_client, account_for_invoice, contact_for_invoice

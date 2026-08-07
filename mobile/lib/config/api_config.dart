@@ -94,7 +94,8 @@ class ApiConfig {
   static String get magicLinkRequest => '$apiBaseUrl/auth/magic-link/request/';
 
   /// Verify a 6-digit OTP code and exchange it for JWT tokens
-  static String get magicLinkVerifyCode => '$apiBaseUrl/auth/magic-link/verify-code/';
+  static String get magicLinkVerifyCode =>
+      '$apiBaseUrl/auth/magic-link/verify-code/';
 
   /// Refresh JWT token
   static String get refreshToken => '$apiBaseUrl/auth/refresh-token/';
@@ -174,8 +175,7 @@ class ApiConfig {
   static String ticketWatch(String id) => '$apiBaseUrl/cases/$id/watch/';
 
   /// List watchers on a ticket.
-  static String ticketWatchers(String id) =>
-      '$apiBaseUrl/cases/$id/watchers/';
+  static String ticketWatchers(String id) => '$apiBaseUrl/cases/$id/watchers/';
 
   /// Tickets the current user is watching.
   static String get ticketsWatching => '$apiBaseUrl/cases/watching/';
@@ -192,8 +192,7 @@ class ApiConfig {
   static String ticketTree(String id) => '$apiBaseUrl/cases/$id/tree/';
 
   /// Link this ticket to a parent (or detach by sending null parent_id).
-  static String ticketLinkParent(String id) =>
-      '$apiBaseUrl/cases/$id/link/';
+  static String ticketLinkParent(String id) => '$apiBaseUrl/cases/$id/link/';
 
   /// Close this ticket and optionally its descendants.
   static String ticketCloseWithChildren(String id) =>
@@ -215,12 +214,19 @@ class ApiConfig {
   static String timeEntryStop(String entryId) =>
       '$apiBaseUrl/time-entries/$entryId/stop/';
 
+  /// A week of the caller's own time, grouped into day buckets.
+  ///
+  /// `start` and `end` are inclusive YYYY-MM-DD. The endpoint also takes a
+  /// `profile` parameter, which this app never sends: passing anyone else's is
+  /// admin-only and answers 403, and the screen is "your week" by design.
+  static String timesheet({required String start, required String end}) =>
+      '$apiBaseUrl/time-entries/timesheet/?start=$start&end=$end';
+
   /// Solutions (Knowledge Base). List/create.
   static String get solutions => '$apiBaseUrl/cases/solutions/';
 
   /// Solution detail (GET / PUT / DELETE).
-  static String solutionDetail(String id) =>
-      '$apiBaseUrl/cases/solutions/$id/';
+  static String solutionDetail(String id) => '$apiBaseUrl/cases/solutions/$id/';
 
   /// Publish a solution (must be status=approved).
   static String solutionPublish(String id) =>
@@ -265,8 +271,68 @@ class ApiConfig {
   static String get analyticsAgents => '$apiBaseUrl/cases/analytics/agents/';
   static String get analyticsSla => '$apiBaseUrl/cases/analytics/sla/';
 
-  /// Invoices management
+  /// Invoices management.
+  ///
+  /// The list takes `search`, `status`, `account`, `contact`, `opportunity`,
+  /// `assigned_to`, `created_by`, `issue_date_gte`/`_lte`, `due_date_gte`/`_lte`
+  /// and `sort` (one of created_at, due_date, issue_date, total_amount, status,
+  /// optionally `-` prefixed). It answers `{count, next, previous, results,
+  /// totals}`, where `totals` is deliberately computed over everything the
+  /// caller can see rather than over the current filter or page.
   static String get invoices => '$apiBaseUrl/invoices/';
+
+  static String invoice(String id) => '$apiBaseUrl/invoices/$id/';
+
+  /// Emails the invoice to its client and stamps `sent_at`. A Draft becomes
+  /// Sent; the server refuses a Paid or Cancelled invoice with a 400.
+  static String invoiceSend(String id) => '$apiBaseUrl/invoices/$id/send/';
+
+  /// Records a payment. Despite the name it takes a partial `amount`, and
+  /// defaults to the whole outstanding balance when none is given. The server
+  /// rejects an amount that is zero, negative, or above `amount_due`.
+  static String invoiceMarkPaid(String id) =>
+      '$apiBaseUrl/invoices/$id/mark-paid/';
+
+  /// Cancels the invoice. Refused with a 400 when it is already Cancelled, or
+  /// when it is Paid.
+  static String invoiceCancel(String id) => '$apiBaseUrl/invoices/$id/cancel/';
+
+  /// Payments already recorded against one invoice.
+  static String invoicePayments(String id) =>
+      '$apiBaseUrl/invoices/$id/payments/';
+
+  /// Estimates (quotes). Takes `search`, `status` and `account`.
+  static String get estimates => '$apiBaseUrl/invoices/estimates/';
+
+  /// Raises an invoice from the estimate. Refused with a 400 once one exists.
+  static String estimateConvert(String id) =>
+      '$apiBaseUrl/invoices/estimates/$id/convert/';
+
+  static String estimateSend(String id) =>
+      '$apiBaseUrl/invoices/estimates/$id/send/';
+
+  /// Recurring billing schedules. Takes `is_active=true|false`.
+  static String get recurringInvoices => '$apiBaseUrl/invoices/recurring/';
+
+  /// Flips a schedule between paused and running. The server toggles from the
+  /// stored value rather than taking a target state, so this must never be
+  /// sent twice for one intent.
+  static String recurringToggle(String id) =>
+      '$apiBaseUrl/invoices/recurring/$id/toggle/';
+
+  /// The product catalogue. Reading is open to any member; creating, editing
+  /// and deleting are admin-only and answer 403 otherwise.
+  static String get products => '$apiBaseUrl/invoices/products/';
+  static String product(String id) => '$apiBaseUrl/invoices/products/$id/';
+
+  /// PDF templates. This list never carries the raw HTML or CSS: only the
+  /// admin-only editor endpoint does, and this app does not call it.
+  static String get invoiceTemplates => '$apiBaseUrl/invoices/templates/';
+
+  /// Reports. Both are admin-only and answer 403 to everyone else.
+  static String get invoiceReportDashboard =>
+      '$apiBaseUrl/invoices/reports/dashboard/';
+  static String get invoiceReportAging => '$apiBaseUrl/invoices/reports/aging/';
 
   /// Kanban boards. The list returns only boards you own or belong to, so an
   /// empty list is an answer and not a permission failure: creating one makes
@@ -287,6 +353,28 @@ class ApiConfig {
   static String boardCard(String cardId) => '$apiBaseUrl/boards/tasks/$cardId/';
 
   // ==========================================================================
+  // NOTIFICATIONS
+  // ==========================================================================
+
+  /// The signed-in user's own feed. Every query here is scoped to
+  /// `recipient=request.profile` server-side, so there is no id to pass and no
+  /// way to ask for someone else's.
+  ///
+  /// `?unread=true` narrows it and `?limit=` caps it at 100. Delivery is by
+  /// polling with `?since=<iso>`; there is no stream.
+  static String notifications({int limit = 50}) =>
+      '$apiBaseUrl/notifications/?limit=$limit';
+
+  /// Mark one notification read. Idempotent: re-marking does not move the
+  /// timestamp backwards.
+  static String notificationRead(String id) =>
+      '$apiBaseUrl/notifications/$id/read/';
+
+  /// Mark every unread notification read.
+  static String get notificationsReadAll =>
+      '$apiBaseUrl/notifications/read-all/';
+
+  // ==========================================================================
   // USERS & TAGS ENDPOINTS
   // ==========================================================================
 
@@ -298,8 +386,7 @@ class ApiConfig {
 
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
   /// Query with `?target_model=Case&active_only=true`.
-  static String get customFieldDefinitions =>
-      '$apiBaseUrl/custom-fields/';
+  static String get customFieldDefinitions => '$apiBaseUrl/custom-fields/';
 
   /// People in the org: GET lists active and inactive, POST invites.
   /// Admin-only server-side, 403 for everyone else on both verbs.

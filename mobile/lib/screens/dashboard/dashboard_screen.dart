@@ -8,6 +8,7 @@ import '../../data/models/dashboard_data.dart';
 import '../../data/models/deal.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../routes/app_router.dart';
 
 /// Dashboard Screen
@@ -64,6 +65,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
+              actions: const [_NotificationBell()],
             ),
 
             // Content
@@ -1037,6 +1039,60 @@ class _TaskItem extends StatelessWidget {
         ),
         if (showDivider) const Divider(height: 1, indent: 24),
       ],
+    );
+  }
+}
+
+/// The bell, with the unread count on it.
+///
+/// It lives on the dashboard because that is the screen people open first and
+/// the one they return to; a notification nobody is told about is a
+/// notification that did not happen. The count is the server's figure over the
+/// whole feed, not over the page of rows fetched, so it does not under-report
+/// once there are more than fifty.
+class _NotificationBell extends ConsumerWidget {
+  const _NotificationBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadNotificationCountProvider);
+    return IconButton(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      tooltip: unread == 0
+          ? 'Notifications'
+          : '$unread unread ${unread == 1 ? 'notification' : 'notifications'}',
+      onPressed: () => context.push(AppRoutes.notifications),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(LucideIcons.bell, size: 21, color: AppColors.textSecondary),
+          if (unread > 0)
+            Positioned(
+              top: -3,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 15),
+                decoration: BoxDecoration(
+                  color: AppColors.danger600,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  // Past 99 the exact number stops being the point and the
+                  // badge stops fitting.
+                  unread > 99 ? '99+' : '$unread',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

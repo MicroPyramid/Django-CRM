@@ -63,8 +63,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       _error = null;
     });
 
-    final detail =
-        await ref.read(dealsProvider.notifier).getDealDetail(widget.dealId);
+    final detail = await ref
+        .read(dealsProvider.notifier)
+        .getDealDetail(widget.dealId);
 
     if (mounted) {
       setState(() {
@@ -471,10 +472,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
           ],
 
           // Assigned to: every assignee, not just the first.
-          _buildCard(
-            title: 'Assigned To',
-            child: _buildAssigneesContent(deal),
-          ),
+          _buildCard(title: 'Assigned To', child: _buildAssigneesContent(deal)),
           const SizedBox(height: 16),
 
           // Teams, backend exposes teams on Opportunity; render names only.
@@ -504,9 +502,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [
-                  for (final t in deal.labels) LabelPill(label: t),
-                ],
+                children: [for (final t in deal.labels) LabelPill(label: t)],
               ),
             ),
             const SizedBox(height: 16),
@@ -530,9 +526,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
           children: [
             Text(
               '$clamped%',
-              style: AppTypography.h3.copyWith(
-                color: _probabilityColor(deal),
-              ),
+              style: AppTypography.h3.copyWith(color: _probabilityColor(deal)),
             ),
             Text(
               _probabilityHint(deal),
@@ -640,8 +634,10 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                   ),
                 ),
                 Text(
-                  _formatMoney(product.unitPrice * product.quantity,
-                      deal.currency),
+                  _formatMoney(
+                    product.unitPrice * product.quantity,
+                    deal.currency,
+                  ),
                   style: AppTypography.label.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -945,9 +941,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                         .toLowerCase();
                     final isAdmin =
                         ref.watch(selectedOrgProvider)?.role == 'ADMIN';
-                    final isAuthor = currentEmail != null &&
-                        comment.commentedByEmail?.toLowerCase() ==
-                            currentEmail;
+                    final isAuthor =
+                        currentEmail != null &&
+                        comment.commentedByEmail?.toLowerCase() == currentEmail;
                     final canModify = isAuthor || isAdmin;
                     return _NoteCard(
                       text: comment.comment,
@@ -956,8 +952,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                       onEdit: canModify
                           ? () => _editComment(comment.id, comment.comment)
                           : null,
-                      onDelete:
-                          canModify ? () => _deleteComment(comment.id) : null,
+                      onDelete: canModify
+                          ? () => _deleteComment(comment.id)
+                          : null,
                     );
                   },
                 ),
@@ -1032,8 +1029,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     final text = _noteController.text.trim();
     if (text.isEmpty) return;
     setState(() => _isAddingNote = true);
-    final result =
-        await ref.read(dealsProvider.notifier).addComment(widget.dealId, text);
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .addComment(widget.dealId, text);
     if (!mounted) return;
     setState(() => _isAddingNote = false);
     if (result.success) {
@@ -1066,8 +1064,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   }
 
   Future<void> _deleteComment(String commentId) async {
-    final result =
-        await ref.read(dealsProvider.notifier).deleteComment(commentId);
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .deleteComment(commentId);
     if (!mounted) return;
     if (result.success) {
       await _fetchDeal();
@@ -1273,8 +1272,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                 label: 'Mark as Lost',
                 icon: LucideIcons.xCircle,
                 color: AppColors.danger600,
-                onPressed:
-                    _isUpdatingStage ? null : () => _handleMarkLost(),
+                onPressed: _isUpdatingStage ? null : () => _handleMarkLost(),
               ),
             ],
           ),
@@ -1299,7 +1297,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     if (newStage == _deal!.stage) return;
     final wasLost = _deal!.stage == DealStage.closedLost;
     final isReopen =
-        wasLost && newStage != DealStage.closedLost && newStage != DealStage.closedWon;
+        wasLost &&
+        newStage != DealStage.closedLost &&
+        newStage != DealStage.closedWon;
     final dialogTitle = isReopen
         ? 'Reopen as ${newStage.displayName}?'
         : 'Move to ${newStage.displayName}?';
@@ -1443,8 +1443,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       ),
     );
     if (confirmed != true) return;
-    final result =
-        await ref.read(dealsProvider.notifier).deleteDeal(widget.dealId);
+    final result = await ref
+        .read(dealsProvider.notifier)
+        .deleteDeal(widget.dealId);
     if (!mounted) return;
     if (result.success) {
       _snack('Deal deleted');
@@ -1534,7 +1535,8 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
 
   /// Format the deal's main amount using the deal's own currency (not the
   /// org default). Opportunities can be in any currency.
-  String _formatDealAmount(Deal deal) => _formatMoney(deal.value, deal.currency);
+  String _formatDealAmount(Deal deal) =>
+      _formatMoney(deal.value, deal.currency);
 
   String _formatMoney(double value, Currency currency) {
     final symbol = currency.symbol;
@@ -1955,7 +1957,6 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-
 enum _TimelineKind { created, comment, attachment }
 
 class _TimelineEvent {
@@ -1983,7 +1984,10 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, tint) = switch (event.kind) {
       _TimelineKind.created => (LucideIcons.sparkles, AppColors.success600),
-      _TimelineKind.comment => (LucideIcons.messageSquare, AppColors.primary600),
+      _TimelineKind.comment => (
+        LucideIcons.messageSquare,
+        AppColors.primary600,
+      ),
       _TimelineKind.attachment => (LucideIcons.paperclip, AppColors.warning600),
     };
     return IntrinsicHeight(
@@ -2002,9 +2006,7 @@ class _TimelineRow extends StatelessWidget {
                 child: Icon(icon, size: 14, color: tint),
               ),
               if (!isLast)
-                Expanded(
-                  child: Container(width: 2, color: AppColors.border),
-                ),
+                Expanded(child: Container(width: 2, color: AppColors.border)),
             ],
           ),
           const SizedBox(width: 12),

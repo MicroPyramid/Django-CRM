@@ -1282,6 +1282,39 @@ class EstimateSendView(APIView):
         if error:
             return error
 
+        # A settled quote must not be re-sent, the same rule InvoiceSendView
+        # applies for the same reason: sending overwrites sent_at and mails the
+        # client about a quote that is closed. Accepted belongs here too, since
+        # an agreed quote should be converted rather than re-quoted.
+        if estimate.status in ("Accepted", "Declined", "Expired"):
+            return Response(
+                {
+                    "error": True,
+                    "message": f"Cannot send a {estimate.status.lower()} estimate",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Checked separately from the status above, not folded into it.
+        # `check_expired_estimates` flips Sent/Viewed to Expired on a daily
+        # schedule, so between the expiry date passing and that task running an
+        # estimate reads as "Sent" while `is_expired` is already true. Testing
+        # only the status would send a quote at a price that has lapsed on any
+        # day the task has not run yet. `PublicEstimateAcceptView` asks the
+        # same question in the same order for the same reason.
+        if estimate.is_expired:
+            return Response(
+                {
+                    "error": True,
+                    "message": (
+                        f"This estimate expired on {estimate.expiry_date}. "
+                        "Update the expiry date or raise a new quote before "
+                        "sending it."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Update status and sent_at
         if estimate.status == "Draft":
             estimate.status = "Sent"

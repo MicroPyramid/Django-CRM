@@ -110,10 +110,8 @@ class _TicketSolutionsPanelState extends ConsumerState<TicketSolutionsPanel> {
         minChildSize: 0.4,
         maxChildSize: 0.95,
         expand: false,
-        builder: (ctx, controller) => _SolutionPickerSheet(
-          solutions: candidates,
-          controller: controller,
-        ),
+        builder: (ctx, controller) =>
+            _SolutionPickerSheet(solutions: candidates, controller: controller),
       ),
     );
     if (picked != null) await _link(picked);
@@ -179,14 +177,15 @@ class _TicketSolutionsPanelState extends ConsumerState<TicketSolutionsPanel> {
             ),
             const SizedBox(height: 6),
             ..._suggestions
-                .where((s) =>
-                    !widget.linked.map((l) => l.id).contains(s.id))
+                .where((s) => !widget.linked.map((l) => l.id).contains(s.id))
                 .take(3)
-                .map((s) => _SuggestionRow(
-                      solution: s,
-                      onLink: () => _link(s),
-                      isBusy: _isBusy,
-                    )),
+                .map(
+                  (s) => _SuggestionRow(
+                    solution: s,
+                    onLink: () => _link(s),
+                    isBusy: _isBusy,
+                  ),
+                ),
           ],
         ],
       ),
@@ -218,9 +217,7 @@ class _LinkedSolutionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 solution.title,
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -305,10 +302,12 @@ class _SolutionPickerSheetState extends State<_SolutionPickerSheet> {
     final filtered = _q.isEmpty
         ? widget.solutions
         : widget.solutions
-            .where((s) =>
-                s.title.toLowerCase().contains(_q.toLowerCase()) ||
-                s.description.toLowerCase().contains(_q.toLowerCase()))
-            .toList();
+              .where(
+                (s) =>
+                    s.title.toLowerCase().contains(_q.toLowerCase()) ||
+                    s.description.toLowerCase().contains(_q.toLowerCase()),
+              )
+              .toList();
     return Column(
       children: [
         Container(

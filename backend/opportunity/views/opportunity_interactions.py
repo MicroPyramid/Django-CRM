@@ -41,18 +41,22 @@ class OpportunityCommentView(APIView):
             or request.user.is_superuser
             or request.profile == obj.commented_by
         ):
+            # No `if params.get("comment")` guard here: a body with a blank or
+            # absent `comment` used to fall out of this branch and hit the 403
+            # below, which told an author they may not edit their own comment.
+            # `comment` is a non-blank CharField, so the serializer answers
+            # with a 400 naming the field.
             serializer = CommentSerializer(obj, data=params)
-            if params.get("comment"):
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        {"error": False, "message": "Comment Submitted"},
-                        status=status.HTTP_200_OK,
-                    )
+            if serializer.is_valid():
+                serializer.save()
                 return Response(
-                    {"error": True, "errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
                 )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,

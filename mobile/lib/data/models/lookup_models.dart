@@ -43,13 +43,34 @@ class ContactLookup {
   final String? email;
   final String? phone;
 
+  /// The `account` FK, from `account_detail`, NOT the `Account.contacts` M2M.
+  ///
+  /// The FK is the one the invoice serializer cross-checks ("Contact does not
+  /// belong to the selected account"), so it is the one a picker has to filter
+  /// on. It is also usually null: measured on the seeded org, 0 of 15 contacts
+  /// had it set while 12 were in the M2M. That is why an unset value means
+  /// "attaches to anyone" here rather than "belongs to nobody", and why
+  /// filtering strictly on equality would empty the picker.
+  final String? accountId;
+  final String? accountName;
+
   const ContactLookup({
     required this.id,
     required this.firstName,
     required this.lastName,
     this.email,
     this.phone,
+    this.accountId,
+    this.accountName,
   });
+
+  /// Whether this contact may be billed on an invoice for [forAccountId].
+  ///
+  /// Mirrors `InvoiceCreateSerializer.validate`, which refuses only when the
+  /// contact carries a *different* account. A contact with no account passes
+  /// for any of them.
+  bool billableFor(String? forAccountId) =>
+      accountId == null || accountId!.isEmpty || accountId == forAccountId;
 
   String get fullName => '$firstName $lastName'.trim();
 
@@ -66,6 +87,14 @@ class ContactLookup {
       lastName: json['last_name'] as String? ?? '',
       email: json['primary_email'] as String? ?? json['email'] as String?,
       phone: json['mobile_number'] as String? ?? json['phone'] as String?,
+      // `account_detail` is the resolved FK, `{id, name}` or null. The bare
+      // `account` key is read too so a leaner payload still populates this.
+      accountId: json['account_detail'] is Map<String, dynamic>
+          ? (json['account_detail'] as Map<String, dynamic>)['id']?.toString()
+          : json['account']?.toString(),
+      accountName: json['account_detail'] is Map<String, dynamic>
+          ? (json['account_detail'] as Map<String, dynamic>)['name'] as String?
+          : null,
     );
   }
 

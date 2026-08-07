@@ -137,10 +137,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     );
   }
 
-  Widget _buildLeadsList(
-    AsyncValue<LeadsListData> async,
-    List<Lead> leads,
-  ) {
+  Widget _buildLeadsList(AsyncValue<LeadsListData> async, List<Lead> leads) {
     final data = async.value;
 
     if (async.isLoading && (data == null || data.leads.isEmpty)) {
@@ -531,7 +528,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               Navigator.pop(context);
             },
           ),
-          ...LeadSource.values.where((s) => s != LeadSource.none).map(
+          ...LeadSource.values
+              .where((s) => s != LeadSource.none)
+              .map(
                 (source) => _FilterOption(
                   label: source.displayName,
                   isSelected: _filters.source == source,

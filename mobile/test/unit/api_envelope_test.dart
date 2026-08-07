@@ -65,8 +65,10 @@ void main() {
         ],
       };
 
-      expect(listFromEnvelope(body, const ['results', 'contacts']).single['id'],
-          'c1');
+      expect(
+        listFromEnvelope(body, const ['results', 'contacts']).single['id'],
+        'c1',
+      );
     });
 
     test('skips a path whose value is not a list', () {
@@ -77,8 +79,10 @@ void main() {
         ],
       };
 
-      expect(listFromEnvelope(body, const ['tags', 'results']).single['id'],
-          't1');
+      expect(
+        listFromEnvelope(body, const ['tags', 'results']).single['id'],
+        't1',
+      );
     });
 
     test('returns empty rather than throwing when nothing matches', () {
@@ -96,10 +100,10 @@ void main() {
         ],
       };
 
-      expect(
-        listFromEnvelope(body, const ['profiles']).map((r) => r['id']),
-        ['p1', 'p2'],
-      );
+      expect(listFromEnvelope(body, const ['profiles']).map((r) => r['id']), [
+        'p1',
+        'p2',
+      ]);
     });
   });
 }

@@ -544,10 +544,19 @@ class TestAccountCommentView:
         response = user_client.delete(f"/api/accounts/comment/{comment.id}/")
         assert response.status_code == 403
 
-    def test_edit_comment_without_comment_text(
+    def test_edit_comment_without_comment_text_is_400(
         self, admin_client, admin_profile, org_a
     ):
-        """PUT without 'comment' field should return 403 (no update performed)."""
+        """A missing `comment` is a bad request, not a permission problem.
+
+        This asserted `status_code in (200, 403)`, which cannot fail whichever
+        way the handler branched, and the comment underneath described the
+        defect as the design: `if data.get("comment")` sat inside the
+        authorization branch, so an empty body fell past it onto the 403 and
+        the author was told they may not edit their own comment. This PUT was
+        also the one built on a partial serializer, so simply dropping the
+        guard would have answered 200 and saved nothing.
+        """
         account = Account.objects.create(name="No Comment Text", org=org_a)
         comment = self._create_comment(account, admin_profile, org_a)
         response = admin_client.put(
@@ -555,10 +564,36 @@ class TestAccountCommentView:
             {},
             format="json",
         )
-        # The view returns 403 when there's no comment field in the request
-        # because the inner condition `if data.get("comment")` fails, skipping
-        # to the outer permission check return
-        assert response.status_code in (200, 403)
+        assert response.status_code == 400
+        assert "comment" in response.json()["errors"]
+
+    def test_edit_comment_with_blank_text_is_400(
+        self, admin_client, admin_profile, org_a
+    ):
+        """The other half of the same guard: `""` is falsy too."""
+        account = Account.objects.create(name="Blank Comment Text", org=org_a)
+        comment = self._create_comment(account, admin_profile, org_a)
+        response = admin_client.put(
+            f"/api/accounts/comment/{comment.id}/",
+            {"comment": ""},
+            format="json",
+        )
+        assert response.status_code == 400
+        comment.refresh_from_db()
+        assert comment.comment != ""
+
+    def test_stranger_still_gets_403_for_an_empty_body(
+        self, user_client, admin_profile, org_a, user_profile
+    ):
+        """Authorization is still checked before the body is."""
+        account = Account.objects.create(name="Empty Body Perm", org=org_a)
+        comment = self._create_comment(account, admin_profile, org_a)
+        response = user_client.put(
+            f"/api/accounts/comment/{comment.id}/",
+            {},
+            format="json",
+        )
+        assert response.status_code == 403
 
     def test_patch_comment(self, admin_client, admin_profile, org_a):
         """Test partial update of a comment via PATCH."""

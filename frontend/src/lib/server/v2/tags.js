@@ -14,8 +14,9 @@
  *
  * "New tag" is wired: `createTag` below posts the name and the page's action
  * calls it. Turning a tag off and back on are wired too, through `archiveTag`
- * and `restoreTag`. The duplicate-merge banner is still deferred; its "Merge"
- * button has no backing endpoint yet, see the comment on it in `+page.svelte`.
+ * and `restoreTag`. The duplicate-merge banner is wired as of 2026-08-07
+ * through `mergeTags` and `POST /tags/<id>/merge/`, which did not exist when
+ * the banner was built.
  *
  * CREATE IS ADMIN-ONLY, LIST IS NOT
  * `/settings` is deliberately member-readable (see the comment in
@@ -128,4 +129,35 @@ export async function archiveTag({ cookies }, id) {
 export async function restoreTag({ cookies }, id) {
   if (!id) throw new Error('A tag id is required to turn a tag back on.');
   return await apiRequest(`/tags/${id}/restore/`, { method: 'POST' }, { cookies });
+}
+
+/**
+ * Merge `id` into `into`: every record in the org carrying `id` gets `into`
+ * instead, and `id` is archived.
+ *
+ * Only the two ids are sent. Both are resolved inside the caller's org by
+ * `TagsMergeView`, which is the check that matters: `into` arrives in a
+ * request body, so an unscoped lookup there would let an admin stamp another
+ * tenant's tag onto their own records. Admin-only, 403 otherwise, the same
+ * split as `createTag` and `archiveTag`.
+ *
+ * This is not reversible by re-running it the other way. The source is
+ * archived rather than deleted, so the name survives and `restoreTag` brings
+ * it back, but the records have moved and nothing remembers which ones came
+ * from where. The page confirms before submitting for that reason.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id the tag to empty out
+ * @param {string} into the tag to keep
+ * @returns {Promise<{ tag: any, moved: number }>} the surviving tag and how
+ *   many records changed hands, which is what the page reports back.
+ */
+export async function mergeTags({ cookies }, id, into) {
+  if (!id || !into) throw new Error('Two tags are required to merge.');
+  const resp = await apiRequest(
+    `/tags/${id}/merge/`,
+    { method: 'POST', body: { into } },
+    { cookies }
+  );
+  return { tag: resp.tag ?? null, moved: resp.moved ?? 0 };
 }

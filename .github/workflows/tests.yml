@@ -2,7 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    # Every branch, not just master. `pull_request` below already gates the
+    # merge, so the branch filter here only decided whether work-in-progress
+    # got feedback before a PR existed, and the answer was no. `'**'` matches
+    # branch names containing slashes; naming `branches` at all is also what
+    # keeps tag pushes from triggering a second run of the same commit.
+    branches: ['**']
     paths:
       - 'backend/**'
       - 'frontend/**'
@@ -21,6 +26,14 @@ on:
       - '.readthedocs.yaml'
       - '.coveragerc'
       - '.github/workflows/tests.yml'
+
+# Running on every branch push means a branch with an open PR would otherwise
+# bill two identical runs per push, and a rapid series of pushes would queue
+# runs for commits nobody is waiting on any more. One group per ref, newest
+# wins.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-tests:

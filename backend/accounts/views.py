@@ -875,18 +875,25 @@ class AccountCommentView(APIView):
         data = request.data
         obj = self.get_object(pk)
         if is_org_admin(request.profile) or request.profile == obj.commented_by:
-            serializer = CommentSerializer(obj, data=data, partial=True)
-            if data.get("comment"):
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        {"error": False, "message": "Comment Submitted"},
-                        status=status.HTTP_200_OK,
-                    )
+            # No `if data.get("comment")` guard here: a body with a blank or
+            # absent `comment` used to fall out of this branch and hit the 403
+            # below, which told an author they may not edit their own comment.
+            # Dropping the guard alone would have traded that for a silent
+            # no-op 200, because this was the one comment PUT built on a
+            # partial serializer. It is non-partial now, like the other four,
+            # so an empty body is a 400 naming the field. `patch` below stays
+            # partial, which is what PATCH means.
+            serializer = CommentSerializer(obj, data=data)
+            if serializer.is_valid():
+                serializer.save()
                 return Response(
-                    {"error": True, "errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
                 )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,

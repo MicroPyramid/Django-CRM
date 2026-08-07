@@ -100,10 +100,7 @@ class KanbanColumn extends StatelessWidget {
                                 borderRadius: AppLayout.borderRadiusLg,
                                 child: SizedBox(
                                   width: width - 24,
-                                  child: DealCard(
-                                    deal: deal,
-                                    isDragging: true,
-                                  ),
+                                  child: DealCard(deal: deal, isDragging: true),
                                 ),
                               ),
                               childWhenDragging: Opacity(
@@ -228,8 +225,7 @@ class KanbanColumn extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
                 color: highlighted ? stage.color : AppColors.textTertiary,
-                fontWeight:
-                    highlighted ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: highlighted ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],

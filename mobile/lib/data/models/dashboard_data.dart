@@ -76,7 +76,8 @@ class RevenueMetrics {
   factory RevenueMetrics.fromJson(Map<String, dynamic> json) {
     return RevenueMetrics(
       pipelineValue: (json['pipeline_value'] as num?)?.toDouble() ?? 0,
-      openOpportunitiesCount: (json['open_opportunities_count'] as num?)?.toInt() ?? 0,
+      openOpportunitiesCount:
+          (json['open_opportunities_count'] as num?)?.toInt() ?? 0,
       weightedPipeline: (json['weighted_pipeline'] as num?)?.toDouble() ?? 0,
       wonThisMonth: (json['won_this_month'] as num?)?.toDouble() ?? 0,
       conversionRate: (json['conversion_rate'] as num?)?.toDouble() ?? 0,

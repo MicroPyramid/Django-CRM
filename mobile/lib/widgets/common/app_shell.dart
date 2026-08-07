@@ -25,11 +25,7 @@ class _NavBranch {
 }
 
 const _navBranches = <_NavBranch>[
-  _NavBranch(
-    label: 'Home',
-    icon: LucideIcons.layoutDashboard,
-    branches: [0],
-  ),
+  _NavBranch(label: 'Home', icon: LucideIcons.layoutDashboard, branches: [0]),
   _NavBranch(label: 'Leads', icon: LucideIcons.users, branches: [1]),
   _NavBranch(label: 'Deals', icon: LucideIcons.briefcase, branches: [2]),
   _NavBranch(label: 'Tickets', icon: LucideIcons.ticket, branches: [3]),

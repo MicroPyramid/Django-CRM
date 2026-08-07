@@ -83,10 +83,14 @@ class _TicketTimePanelState extends ConsumerState<TicketTimePanel> {
     // 409: user has a running timer on another ticket. The backend includes
     // `running_case_id` so we can offer a one-tap jump to stop it there.
     final otherCaseId = res.data?['running_case_id']?.toString();
-    if (res.statusCode == 409 && otherCaseId != null && otherCaseId.isNotEmpty) {
+    if (res.statusCode == 409 &&
+        otherCaseId != null &&
+        otherCaseId.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('You already have a running timer on another ticket.'),
+          content: const Text(
+            'You already have a running timer on another ticket.',
+          ),
           backgroundColor: AppColors.danger600,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 6),
@@ -135,15 +139,15 @@ class _TicketTimePanelState extends ConsumerState<TicketTimePanel> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: const _ManualEntrySheet(),
       ),
     );
     if (result == null || !mounted) return;
     setState(() => _isBusy = true);
-    final res = await ref.read(ticketsProvider.notifier).addManualTimeEntry(
+    final res = await ref
+        .read(ticketsProvider.notifier)
+        .addManualTimeEntry(
           widget.ticketId,
           startedAt: result.startedAt,
           endedAt: result.endedAt,
@@ -316,7 +320,8 @@ class _RunningTimerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = entry.liveDuration;
-    final running = '${d.inHours.toString().padLeft(2, '0')}:'
+    final running =
+        '${d.inHours.toString().padLeft(2, '0')}:'
         '${(d.inMinutes % 60).toString().padLeft(2, '0')}:'
         '${(d.inSeconds % 60).toString().padLeft(2, '0')}';
     return Container(

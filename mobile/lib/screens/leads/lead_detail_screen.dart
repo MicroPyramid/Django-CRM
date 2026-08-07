@@ -926,7 +926,8 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       if (lead.addressLine != null && lead.addressLine!.trim().isNotEmpty)
         lead.addressLine!.trim(),
       [
-        if (lead.city != null && lead.city!.trim().isNotEmpty) lead.city!.trim(),
+        if (lead.city != null && lead.city!.trim().isNotEmpty)
+          lead.city!.trim(),
         if (lead.state != null && lead.state!.trim().isNotEmpty)
           lead.state!.trim(),
         if (lead.postcode != null && lead.postcode!.trim().isNotEmpty)
@@ -1284,9 +1285,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
     // DELETE returns only {error, message}, remove locally.
     if (_lead != null) {
-      final filtered = _lead!.comments
-          .where((c) => c.id != commentId)
-          .toList();
+      final filtered = _lead!.comments.where((c) => c.id != commentId).toList();
       setState(() {
         _lead = _lead!.copyWith(comments: filtered);
       });
@@ -1397,7 +1396,10 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
             ),
             if (!isConverted)
               ListTile(
-                leading: Icon(LucideIcons.gitBranch, color: AppColors.success600),
+                leading: Icon(
+                  LucideIcons.gitBranch,
+                  color: AppColors.success600,
+                ),
                 title: Text(
                   'Convert Lead',
                   style: TextStyle(color: AppColors.success700),
@@ -1454,16 +1456,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
           idOf: (u) => u.id,
           labelOf: (u) => u.label,
           subtitleOf: (u) => null,
-          leadingOf: (u) =>
-              UserAvatar(name: u.label, imageUrl: u.profilePic, size: AvatarSize.xs),
+          leadingOf: (u) => UserAvatar(
+            name: u.label,
+            imageUrl: u.profilePic,
+            size: AvatarSize.xs,
+          ),
         );
       },
     );
     if (saved == null) return;
-    await _patchLead(
-      {'assigned_to': saved.toList()},
-      successMessage: 'Assignees updated',
-    );
+    await _patchLead({
+      'assigned_to': saved.toList(),
+    }, successMessage: 'Assignees updated');
   }
 
   Future<void> _showTagsSheet() async {
@@ -1525,10 +1529,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     if (picked == null) return;
     final iso =
         '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-    await _patchLead(
-      {'next_follow_up': iso},
-      successMessage: 'Follow-up set for ${_formatDate(picked)}',
-    );
+    await _patchLead({
+      'next_follow_up': iso,
+    }, successMessage: 'Follow-up set for ${_formatDate(picked)}');
   }
 
   Future<void> _shareLead() async {
@@ -1790,8 +1793,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  bool get _hasPhone =>
-      _lead?.phone != null && _lead!.phone!.trim().isNotEmpty;
+  bool get _hasPhone => _lead?.phone != null && _lead!.phone!.trim().isNotEmpty;
   bool get _hasEmail => (_lead?.email.trim().isNotEmpty ?? false);
 
   Future<void> _launch(Uri uri, {String? failureLabel}) async {
@@ -2201,8 +2203,10 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
         ? widget.items
         : widget.items
               .where(
-                (i) =>
-                    widget.labelOf(i).toLowerCase().contains(_query.toLowerCase()),
+                (i) => widget
+                    .labelOf(i)
+                    .toLowerCase()
+                    .contains(_query.toLowerCase()),
               )
               .toList();
     return DraggableScrollableSheet(
@@ -2225,9 +2229,7 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(widget.title, style: AppTypography.h3),
-                  ),
+                  Expanded(child: Text(widget.title, style: AppTypography.h3)),
                   TextButton(
                     // Themed buttons carry an infinite minimum width, which a Row
                     // does not bound. Without this the row fails to lay out and the
@@ -2235,7 +2237,8 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
                     style: TextButton.styleFrom(
                       minimumSize: AppLayout.buttonMinSizeInRow,
                     ),
-                    onPressed: () => Navigator.pop<Set<String>>(context, _selected),
+                    onPressed: () =>
+                        Navigator.pop<Set<String>>(context, _selected),
                     child: const Text('Save'),
                   ),
                 ],
@@ -2293,7 +2296,6 @@ class _MultiSelectSheetState<T> extends State<_MultiSelectSheet<T>> {
     );
   }
 }
-
 
 class _RatingChip extends StatelessWidget {
   final LeadRating rating;
@@ -2359,7 +2361,10 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, tint) = switch (event.kind) {
       _TimelineKind.created => (LucideIcons.sparkles, AppColors.success600),
-      _TimelineKind.comment => (LucideIcons.messageSquare, AppColors.primary600),
+      _TimelineKind.comment => (
+        LucideIcons.messageSquare,
+        AppColors.primary600,
+      ),
       _TimelineKind.attachment => (LucideIcons.paperclip, AppColors.warning600),
     };
     return IntrinsicHeight(
@@ -2378,9 +2383,7 @@ class _TimelineRow extends StatelessWidget {
                 child: Icon(icon, size: 14, color: tint),
               ),
               if (!isLast)
-                Expanded(
-                  child: Container(width: 2, color: AppColors.border),
-                ),
+                Expanded(child: Container(width: 2, color: AppColors.border)),
             ],
           ),
           const SizedBox(width: 12),
