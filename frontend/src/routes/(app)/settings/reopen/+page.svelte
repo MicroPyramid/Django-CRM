@@ -51,11 +51,18 @@
       tone="ink"
       detail="Closed, then a reply landed in time"
     />
+    <!-- "n/a" rather than 0 while the policy is off. `_evaluate_reopen` returns
+         `None` on `if not policy["is_enabled"]` BEFORE it compares the window,
+         and the `out_of_reopen_window` flag this metric counts is written only
+         for the "out_of_window" return. So with reopening off nothing is ever
+         flagged and the count is always zero, in exactly the state where every
+         reply to a closed ticket reopens nothing. A plain 0 there is
+         reassurance about the one thing certainly happening. -->
     <StatCard
       label="Missed the window"
-      value={count(p.replies_after_window_30d)}
-      tone={p.replies_after_window_30d > 0 ? 'clay' : 'slate'}
-      detail="Replies that reopened nothing"
+      value={p.is_enabled ? count(p.replies_after_window_30d) : 'n/a'}
+      tone={p.is_enabled && p.replies_after_window_30d > 0 ? 'clay' : 'slate'}
+      detail={p.is_enabled ? 'Replies that reopened nothing' : 'Not counted while reopening is off'}
     />
     <StatCard
       label="Median reply"
@@ -188,15 +195,38 @@
           <div style="display:flex;gap:10px;align-items:flex-start">
             <RotateCcw size={16} style="color:var(--v2-slate);flex:none;margin-top:2px" />
             <p class="v2-sub" style="font-size:12.5px;margin:0;line-height:1.5">
-              A reply inside the window puts the ticket back in the queue as
-              <b style="font-weight:600;color:var(--v2-ink)">{p.reopen_to_status}</b>, keeping its
-              history and its original number. It is the same ticket, not a new one, so first
-              response and resolution are still measured against the original open.
+              {#if p.is_enabled}
+                A reply inside the window puts the ticket back in the queue as
+                <b style="font-weight:600;color:var(--v2-ink)">{p.reopen_to_status}</b>, keeping its
+                history and its original number. It is the same ticket, not a new one, so first
+                response and resolution are still measured against the original open.
+              {:else}
+                <!-- Present tense, and the policy is off, so this cannot be
+                     written as though a reply still reopened anything. -->
+                Nothing. A reply is filed on the closed ticket, the ticket stays closed and nobody is
+                told. Turned on, a reply inside the window would put it back in the queue as
+                <b style="font-weight:600;color:var(--v2-ink)">{p.reopen_to_status}</b>, keeping its
+                history and its number.
+              {/if}
             </p>
           </div>
         </div>
 
-        {#if p.replies_after_window_30d > 0}
+        {#if !p.is_enabled}
+          <div class="v2-card" style="padding:15px 16px;margin-top:12px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <MailX size={16} style="color:var(--v2-clay);flex:none;margin-top:2px" />
+              <div>
+                <div style="font-weight:600;font-size:13px">Nothing is counting the misses</div>
+                <p class="v2-sub" style="font-size:12.5px;margin:5px 0 0;line-height:1.5">
+                  With reopening off, a reply to a closed ticket is filed and nothing else happens,
+                  and nothing records it as having missed anything. The figure above is a zero
+                  because nothing is measured, not because nothing is being lost.
+                </p>
+              </div>
+            </div>
+          </div>
+        {:else if p.replies_after_window_30d > 0}
           <div class="v2-card" style="padding:15px 16px;margin-top:12px">
             <div style="display:flex;gap:10px;align-items:flex-start">
               <MailX size={16} style="color:var(--v2-clay);flex:none;margin-top:2px" />

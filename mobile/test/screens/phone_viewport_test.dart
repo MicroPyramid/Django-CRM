@@ -1,7 +1,9 @@
 import 'package:bottle_crm/data/models/app_notification.dart';
+import 'package:bottle_crm/data/models/business_calendar.dart';
 import 'package:bottle_crm/data/models/custom_field_definition.dart';
 import 'package:bottle_crm/data/models/escalation_policy.dart';
 import 'package:bottle_crm/data/models/macro.dart';
+import 'package:bottle_crm/data/models/reopen_policy.dart';
 import 'package:bottle_crm/data/models/invoice.dart';
 import 'package:bottle_crm/data/models/time_entry.dart';
 import 'package:bottle_crm/data/models/timesheet.dart';
@@ -25,12 +27,15 @@ import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
+import 'package:bottle_crm/screens/settings/business_hours_form_sheet.dart';
+import 'package:bottle_crm/screens/settings/business_hours_screen.dart';
 import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/escalation_policy_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/escalation_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
+import 'package:bottle_crm/screens/settings/reopen_screen.dart';
 import 'package:bottle_crm/screens/settings/routing_rule_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/routing_screen.dart';
 import 'package:bottle_crm/screens/settings/tags_screen.dart';
@@ -221,6 +226,67 @@ void main() {
       ),
     ),
   );
+
+  /// The business-hours screen. `alwaysOn` is the state the engine reads as
+  /// 24/7 rather than as permanently shut.
+  Widget businessHoursApp({
+    required bool isAdmin,
+    bool alwaysOn = false,
+    bool noHolidays = false,
+  }) => ProviderScope(
+    overrides: [
+      businessHoursProvider.overrideWith(
+        noHolidays
+            ? _FakeNoHolidayCalendar.new
+            : alwaysOn
+            ? _FakeClosedCalendar.new
+            : _FakeCalendar.new,
+      ),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: const MaterialApp(home: BusinessHoursScreen()),
+  );
+
+  /// The holiday sheet over a button, with a calendar that already carries
+  /// 25 December so the duplicate warning has something to warn about.
+  Widget holidayFormApp() => MaterialApp(
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            onPressed: () => showHolidayFormSheet(context, _calendar()),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget weekFormApp() => MaterialApp(
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            onPressed: () => showBusinessHoursFormSheet(context, _calendar()),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// The reopen screen. The read is admin-only server-side, so `isAdmin` here
+  /// decides whether the screen issues it at all.
+  Widget reopenApp({required bool isAdmin, bool policyOff = false}) =>
+      ProviderScope(
+        overrides: [
+          reopenPolicyProvider.overrideWith(
+            policyOff ? _FakeReopenOff.new : _FakeReopen.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: ReopenScreen()),
+      );
 
   /// A button that opens the picker, so the sheet is rendered the way it is
   /// really reached: over a screen, with the keyboard inset in play.
@@ -1463,6 +1529,274 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+  group('business hours at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, businessHoursApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, businessHoursApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('names a closed day rather than leaving it blank', (
+      tester,
+    ) async {
+      // A blank cell reads as missing data, "Closed" reads as a decision.
+      await pump(tester, businessHoursApp(isAdmin: true));
+      expect(find.text('Closed'), findsWidgets);
+      expect(find.text('09:00 to 17:00'), findsWidgets);
+    });
+
+    testWidgets('says a calendar with no open day runs the clock anyway', (
+      tester,
+    ) async {
+      // The finding. `_has_any_open_window` false means the calendar is
+      // dropped and the SLA runs on the wall clock, so every row reading
+      // Closed means the opposite of what it looks like.
+      await pump(tester, businessHoursApp(isAdmin: true, alwaysOn: true));
+
+      expect(
+        find.textContaining('targets run around the clock'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('expires four hours after the ticket arrives'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not cry wolf on an ordinary week', (tester) async {
+      await pump(tester, businessHoursApp(isAdmin: true));
+      expect(find.textContaining('around the clock'), findsNothing);
+    });
+
+    testWidgets('says what an empty holiday list means', (tester) async {
+      await pump(tester, businessHoursApp(isAdmin: true, noHolidays: true));
+      expect(
+        find.textContaining('Targets keep running on public holidays'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a member sees the week but no write controls', (tester) async {
+      await pump(tester, businessHoursApp(isAdmin: false));
+
+      expect(find.text('Monday'), findsOneWidget);
+      expect(find.byTooltip('Edit hours'), findsNothing);
+      expect(find.text('Add'), findsNothing);
+      expect(find.byTooltip('Remove this holiday'), findsNothing);
+    });
+
+    testWidgets('the remove confirm says the day counts as work again', (
+      tester,
+    ) async {
+      await pump(tester, businessHoursApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.byTooltip('Remove this holiday'),
+        200,
+      );
+      await tester.tap(find.byTooltip('Remove this holiday').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove Xmas?'), findsOneWidget);
+      expect(
+        find.textContaining('counts as working time again'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('the business-hours forms at 390px', () {
+    Future<void> openWeek(WidgetTester tester, {double textScale = 1.0}) async {
+      await pump(tester, weekFormApp(), textScale: textScale);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the week form renders without overflowing', (tester) async {
+      await openWeek(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the week form fits with the font scaled up', (tester) async {
+      await openWeek(tester, textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the week form warns live when the last day is closed', (
+      tester,
+    ) async {
+      await openWeek(tester);
+      // Close the five open days; the warning appears as the last one goes.
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byType(Switch).at(i));
+        await tester.pumpAndSettle();
+      }
+      expect(
+        find.textContaining('targets run around the clock'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the holiday form warns before writing a date already taken', (
+      tester,
+    ) async {
+      // The POST answers 200 with the row already stored and throws the typed
+      // name away, so the warning has to come before the write.
+      await pump(tester, holidayFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Pick a date'), findsOneWidget);
+    });
+  });
+
+  group('reopen policy at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, reopenApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, reopenApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member is told why rather than shown a failed request', (
+      tester,
+    ) async {
+      // `ReopenPolicyView.get` is admin-only, unlike every other read in this
+      // cluster, so the screen gates the read rather than issuing it.
+      await pump(tester, reopenApp(isAdmin: false));
+
+      expect(find.text('Administrators only'), findsOneWidget);
+      expect(find.byTooltip('Edit policy'), findsNothing);
+    });
+
+    testWidgets('shows the three figures behind the window', (tester) async {
+      await pump(tester, reopenApp(isAdmin: true));
+      expect(find.text('6'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('2d'), findsOneWidget);
+    });
+
+    testWidgets('says the misses reached nobody while the policy is on', (
+      tester,
+    ) async {
+      await pump(tester, reopenApp(isAdmin: true));
+      expect(
+        find.textContaining('Those customers are still waiting'),
+        findsOneWidget,
+      );
+    });
+
+    // Present tense: with the policy off, nothing brings a ticket back, so the
+    // explanation cannot be written as though a reply still did. Two tests
+    // rather than one, because re-pumping a second ProviderScope over the first
+    // keeps the element tree and the assertions cross-contaminate.
+    testWidgets('does not describe a reopen that cannot happen', (
+      tester,
+    ) async {
+      await pump(tester, reopenApp(isAdmin: true, policyOff: true));
+      await tester.scrollUntilVisible(
+        find.textContaining('Which addresses accept replies'),
+        300,
+      );
+      expect(find.textContaining('Turned on, a reply'), findsOneWidget);
+    });
+
+    testWidgets('describes it plainly while the policy is on', (tester) async {
+      await pump(tester, reopenApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.textContaining('Which addresses accept replies'),
+        300,
+      );
+      expect(find.textContaining('Turned on, a reply'), findsNothing);
+      expect(
+        find.textContaining('A reopened ticket is the same ticket'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('refuses to report a zero it did not measure', (tester) async {
+      // The finding. With reopening off, `_evaluate_reopen` returns before the
+      // window comparison and nothing is ever flagged, so a plain 0 here is
+      // reassurance about the one thing certainly happening.
+      await pump(tester, reopenApp(isAdmin: true, policyOff: true));
+
+      expect(find.text('n/a'), findsOneWidget);
+      expect(
+        find.textContaining('not because nothing is being lost'),
+        findsOneWidget,
+      );
+    });
+  });
+}
+
+/// A working week with one holiday, which is what most orgs look like.
+BusinessCalendar _calendar({bool alwaysOn = false, bool holidays = true}) {
+  final json = <String, dynamic>{
+    'id': 'c1',
+    'name': 'Support desk',
+    'timezone': 'Asia/Kolkata',
+    'is_default': true,
+    'holidays': holidays
+        ? const [
+            {'id': 'h1', 'date': '2026-12-25', 'name': 'Xmas'},
+          ]
+        : const [],
+  };
+  const open = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday'};
+  for (final (_, key) in businessWeekdays) {
+    final isOpen = !alwaysOn && open.contains(key);
+    json['${key}_open'] = isOpen ? '09:00:00' : null;
+    json['${key}_close'] = isOpen ? '17:00:00' : null;
+  }
+  return BusinessCalendar.fromJson(json);
+}
+
+class _FakeCalendar extends BusinessHoursNotifier {
+  @override
+  Future<BusinessCalendar> build() async => _calendar();
+}
+
+class _FakeClosedCalendar extends BusinessHoursNotifier {
+  @override
+  Future<BusinessCalendar> build() async => _calendar(alwaysOn: true);
+}
+
+class _FakeNoHolidayCalendar extends BusinessHoursNotifier {
+  @override
+  Future<BusinessCalendar> build() async => _calendar(holidays: false);
+}
+
+class _FakeReopen extends ReopenPolicyNotifier {
+  @override
+  Future<ReopenPolicy> build() async => ReopenPolicy.fromJson(const {
+    'is_enabled': true,
+    'reopen_window_days': 7,
+    'reopen_to_status': 'Pending',
+    'notify_assigned': true,
+    'reopened_last_30d': 6,
+    'replies_after_window_30d': 4,
+    'median_days_to_reply': 2,
+  });
+}
+
+class _FakeReopenOff extends ReopenPolicyNotifier {
+  @override
+  Future<ReopenPolicy> build() async => ReopenPolicy.fromJson(const {
+    'is_enabled': false,
+    'reopen_window_days': 7,
+    'reopen_to_status': 'Pending',
+    'notify_assigned': true,
+    'reopened_last_30d': 1,
+    'replies_after_window_30d': 0,
+    'median_days_to_reply': 9,
   });
 }
 

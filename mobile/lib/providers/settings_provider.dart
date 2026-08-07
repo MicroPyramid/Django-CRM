@@ -2,18 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
+import '../data/models/business_calendar.dart';
 import '../data/models/custom_field_definition.dart';
 import '../data/models/escalation_policy.dart';
 import '../data/models/macro.dart';
+import '../data/models/reopen_policy.dart';
 import '../data/models/routing_rule.dart';
 import '../data/models/tag.dart';
 import '../services/api_service.dart';
 
 /// The org settings cluster.
 ///
-/// Custom fields, saved replies, tags, routing and escalation are the pages of
-/// the cluster that have reached the phone. The rest (inbound email, ticket
-/// approvals, business hours, reopen rules) share the same shape, so they will
+/// Custom fields, saved replies, tags, routing, escalation, business hours and
+/// reopen rules are the pages of the cluster that have reached the phone. The
+/// rest (inbound email, ticket approvals) share the same shape, so they will
 /// land beside these rather than in files of their own.
 ///
 /// Every write here is admin-only server-side. The screens hide the controls
@@ -671,4 +673,158 @@ class EscalationNotifier extends AsyncNotifier<EscalationState> {
 final escalationProvider =
     AsyncNotifierProvider<EscalationNotifier, EscalationState>(
       EscalationNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
+// Business hours, the calendar every SLA target is measured against
+// ---------------------------------------------------------------------------
+
+/// The org's default calendar.
+///
+/// Reading is open to any member: `BusinessCalendarView.get` carries only
+/// `IsAuthenticated, HasOrgContext`, and the admin check sits on the PUT and on
+/// both holiday verbs. So the screen shows the week to everyone and hides only
+/// the controls, which is what the web does.
+class BusinessHoursNotifier extends AsyncNotifier<BusinessCalendar> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<BusinessCalendar> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  /// The GET creates the calendar if the org has none, so a first read is a
+  /// write server-side. Nothing here depends on that; it is why the screen
+  /// never has an empty state.
+  Future<BusinessCalendar> _fetch() async {
+    final response = await _api.get(ApiConfig.businessCalendar);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load business hours');
+    }
+    return BusinessCalendar.fromJson(response.data!);
+  }
+
+  /// Save the week, the name and the timezone.
+  ///
+  /// PUTs the calendar's own url. The id comes from the loaded calendar rather
+  /// than from anything the screen holds, so there is nothing to point at
+  /// another org's row.
+  Future<String?> saveHours({
+    required List<BusinessDay> days,
+    required String name,
+    required String timezone,
+  }) async {
+    final calendar = state.value;
+    if (calendar == null) return 'The calendar has not loaded yet.';
+    final response = await _api.put(
+      ApiConfig.businessCalendarDetail(calendar.id),
+      businessHoursPayload(days: days, name: name, timezone: timezone),
+    );
+    if (!response.success) return _businessMessage(response);
+    await refresh();
+    return null;
+  }
+
+  /// Add a holiday, and say whether it was actually added.
+  ///
+  /// `existingName` is non-null when the POST answered 200 rather than 201,
+  /// which means the date was already on the calendar and the row that came
+  /// back is the one that was already there. The name typed into the form was
+  /// discarded. That is a normal outcome server-side, but it is not the same
+  /// event as adding a holiday, and reporting both as "added" is how a name
+  /// silently fails to change.
+  Future<({String? error, String? existingName})> addHoliday({
+    required String date,
+    required String name,
+  }) async {
+    final calendar = state.value;
+    if (calendar == null) {
+      return (error: 'The calendar has not loaded yet.', existingName: null);
+    }
+    final response = await _api.post(
+      ApiConfig.businessHolidays(calendar.id),
+      holidayPayload(date: date, name: name),
+    );
+    if (!response.success) {
+      return (error: _businessMessage(response), existingName: null);
+    }
+    final wasExisting = response.statusCode == 200;
+    final returnedName = response.data?['name']?.toString();
+    await refresh();
+    return (
+      error: null,
+      existingName: wasExisting ? (returnedName ?? name) : null,
+    );
+  }
+
+  /// Permanent. `BusinessHolidayDetailView.delete` calls `holiday.delete()`.
+  Future<String?> removeHoliday(String holidayId) async {
+    final calendar = state.value;
+    if (calendar == null) return 'The calendar has not loaded yet.';
+    final response = await _api.delete(
+      ApiConfig.businessHoliday(calendar.id, holidayId),
+    );
+    if (!response.success) return _businessMessage(response);
+    await refresh();
+    return null;
+  }
+}
+
+/// The business-hours views answer `{"error": "Only admins can update business
+/// hours."}`, a string under `error` where the rest of the app puts a map under
+/// `errors`. [_message] alone would miss it and report "Something went wrong"
+/// for the one refusal a user can act on.
+String _businessMessage(dynamic response) {
+  final error = response.data?['error'];
+  if (error is String && error.trim().isNotEmpty) return error;
+  return _message(response);
+}
+
+final businessHoursProvider =
+    AsyncNotifierProvider<BusinessHoursNotifier, BusinessCalendar>(
+      BusinessHoursNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
+// Reopen policy, whether a customer's reply brings a closed ticket back
+// ---------------------------------------------------------------------------
+
+/// The org's reopen policy and its three 30-day metrics.
+///
+/// **`ReopenPolicyView.get` is admin-only**, unlike every other read in this
+/// cluster, so the screen gates the read on role rather than showing a member a
+/// 403 they can do nothing about.
+class ReopenPolicyNotifier extends AsyncNotifier<ReopenPolicy> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<ReopenPolicy> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<ReopenPolicy> _fetch() async {
+    final response = await _api.get(ApiConfig.reopenPolicy);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load the reopen policy');
+    }
+    return ReopenPolicy.fromJson(response.data!);
+  }
+
+  Future<String?> savePolicy(Map<String, dynamic> payload) async {
+    final response = await _api.put(ApiConfig.reopenPolicy, payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final reopenPolicyProvider =
+    AsyncNotifierProvider<ReopenPolicyNotifier, ReopenPolicy>(
+      ReopenPolicyNotifier.new,
     );

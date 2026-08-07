@@ -418,6 +418,30 @@ class ApiConfig {
   static String escalationPolicy(String id) =>
       '$apiBaseUrl/cases/escalation-policies/$id/';
 
+  /// The org's default business calendar, created on first read. Reading is
+  /// open to any member; every write below is admin-only.
+  static String get businessCalendar => '$apiBaseUrl/business-hours/calendar/';
+
+  /// The calendar's own detail url, which is what PUT goes to. The collection
+  /// path above does not accept one.
+  static String businessCalendarDetail(String id) =>
+      '$apiBaseUrl/business-hours/calendar/$id/';
+
+  /// Holidays on a calendar. POST is idempotent on date: a date already stored
+  /// answers 200 with the EXISTING row, name included, and creates nothing.
+  static String businessHolidays(String calendarId) =>
+      '$apiBaseUrl/business-hours/calendar/$calendarId/holidays/';
+
+  /// One holiday. DELETE is a hard delete and the day counts as working time
+  /// again at once.
+  static String businessHoliday(String calendarId, String holidayId) =>
+      '$apiBaseUrl/business-hours/calendar/$calendarId/holidays/$holidayId/';
+
+  /// The org's reopen policy, a singleton created on first read. **GET is
+  /// admin-only here**, unlike the business calendar, so the screen that reads
+  /// it has to gate on role rather than show a member a 403.
+  static String get reopenPolicy => '$apiBaseUrl/cases/reopen-policy/';
+
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
   /// Query with `?target_model=Case&active_only=true`. Pass
   /// `include_counts=false` unless you need `records_missing_value`: computing

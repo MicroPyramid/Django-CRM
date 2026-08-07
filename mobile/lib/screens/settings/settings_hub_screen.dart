@@ -66,6 +66,18 @@ class SettingsHubScreen extends StatelessWidget {
               onTap: () => context.push(AppRoutes.settingsEscalation),
             ),
             MenuRow(
+              icon: LucideIcons.clock,
+              label: 'Business hours',
+              description: 'The week every response target is measured against',
+              onTap: () => context.push(AppRoutes.settingsBusinessHours),
+            ),
+            MenuRow(
+              icon: LucideIcons.rotateCcw,
+              label: 'Reopen policy',
+              description: 'Whether a reply brings a closed ticket back',
+              onTap: () => context.push(AppRoutes.settingsReopen),
+            ),
+            MenuRow(
               icon: LucideIcons.messageSquareQuote,
               label: 'Saved replies',
               description: 'Canned answers to insert into a ticket reply',

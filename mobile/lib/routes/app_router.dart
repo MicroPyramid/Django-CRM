@@ -39,7 +39,9 @@ import '../screens/settings/custom_fields_screen.dart';
 import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
+import '../screens/settings/business_hours_screen.dart';
 import '../screens/settings/escalation_screen.dart';
+import '../screens/settings/reopen_screen.dart';
 import '../screens/settings/routing_screen.dart';
 import '../screens/settings/settings_hub_screen.dart';
 import '../screens/settings/tags_screen.dart';
@@ -114,6 +116,8 @@ class AppRoutes {
   static const String settingsTags = '/more/settings/tags';
   static const String settingsRouting = '/more/settings/routing';
   static const String settingsEscalation = '/more/settings/escalation';
+  static const String settingsBusinessHours = '/more/settings/business-hours';
+  static const String settingsReopen = '/more/settings/reopen';
 
   /// Your own week of logged time. Not under `/more`: it is a workspace
   /// destination reached from the dashboard as often as from the menu, and a
@@ -455,6 +459,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsEscalation',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const EscalationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsBusinessHours,
+        name: 'settingsBusinessHours',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const BusinessHoursScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsReopen,
+        name: 'settingsReopen',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ReopenScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,
