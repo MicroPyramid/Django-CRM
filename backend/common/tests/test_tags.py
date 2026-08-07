@@ -442,3 +442,258 @@ class TestTagsDetailView:
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
+class TestTagsMergeView:
+    """POST /api/tags/<pk>/merge/ with `{"into": <tag id>}`.
+
+    The settings page has shown a "these two look like the same tag" banner
+    since it was built, with a Merge button wired to nothing because this
+    endpoint did not exist.
+    """
+
+    def _url(self, pk):
+        return f"/api/tags/{pk}/merge/"
+
+    def _pair(self, org):
+        source = Tags.objects.create(name="Invoices", slug="invoices", org=org)
+        target = Tags.objects.create(name="Invoice", slug="invoice", org=org)
+        return source, target
+
+    def test_merge_moves_records_across_every_taggable_model(self, admin_client, org_a):
+        """Every model in `_TAGGABLE`, not just the prominent four.
+
+        The same registry that under-counted usage decides what a merge walks,
+        so a model missing from it would keep the source tag after the source
+        was archived: a tag applied to records but invisible in the UI.
+        """
+        source, target = self._pair(org_a)
+        account = Account.objects.create(org=org_a, name="Acme")
+        lead = Lead.objects.create(org=org_a)
+        deal = Opportunity.objects.create(org=org_a, name="Deal")
+        case = Case.objects.create(
+            org=org_a, name="Ticket", status="New", priority="Normal"
+        )
+        contact = Contact.objects.create(
+            org=org_a, first_name="Dana", last_name="Client"
+        )
+        task = Task.objects.create(
+            org=org_a, title="Follow up", status="New", priority="Medium"
+        )
+        setting = APISettings.objects.create(
+            org=org_a, title="Site", website="https://example.com"
+        )
+        records = [account, lead, deal, case, contact, task, setting]
+        for record in records:
+            record.tags.add(source)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["moved"] == len(records)
+        for record in records:
+            tags = set(record.tags.all())
+            assert target in tags, f"{type(record).__name__} did not get the target tag"
+            assert source not in tags, f"{type(record).__name__} kept the source tag"
+
+    def test_merge_archives_the_source_rather_than_deleting_it(
+        self, admin_client, org_a
+    ):
+        """Nothing hard-deletes a tag anywhere in this module, and a merge is
+        where that matters most: if it was a mistake, the name survives."""
+        source, target = self._pair(org_a)
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        source.refresh_from_db()
+        assert source.is_active is False
+        assert Tags.objects.filter(pk=source.pk).exists()
+
+    def test_a_record_carrying_both_tags_is_not_double_counted(
+        self, admin_client, org_a
+    ):
+        source, target = self._pair(org_a)
+        account = Account.objects.create(org=org_a, name="Both")
+        account.tags.add(source, target)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.data["moved"] == 1
+        assert list(account.tags.all()) == [target]
+
+    def test_merge_leaves_records_on_other_tags_alone(self, admin_client, org_a):
+        source, target = self._pair(org_a)
+        bystander = Tags.objects.create(name="Urgent", slug="urgent", org=org_a)
+        account = Account.objects.create(org=org_a, name="Acme")
+        account.tags.add(source, bystander)
+
+        admin_client.post(self._url(source.pk), {"into": str(target.pk)}, format="json")
+
+        assert set(account.tags.all()) == {target, bystander}
+
+    # Authorization
+
+    def test_non_admin_cannot_merge(self, user_client, org_a):
+        source, target = self._pair(org_a)
+        account = Account.objects.create(org=org_a, name="Acme")
+        account.tags.add(source)
+
+        response = user_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert list(account.tags.all()) == [source]
+        source.refresh_from_db()
+        assert source.is_active is True
+
+    def test_unauthenticated_cannot_merge(self, unauthenticated_client, org_a):
+        source, target = self._pair(org_a)
+        response = unauthenticated_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    # Tenancy
+
+    def test_cannot_merge_into_another_orgs_tag(self, admin_client, org_a, org_b):
+        """The crown-jewel case: `into` comes from the request body.
+
+        Without the org filter on that lookup, an admin could stamp another
+        tenant's tag row onto their own records, and the foreign org's tag
+        list would start reporting usage it cannot see. Proven on SQLite,
+        where RLS is inert, so only the ORM filter can be doing the scoping.
+        """
+        source = Tags.objects.create(name="Ours", slug="ours", org=org_a)
+        theirs = Tags.objects.create(name="Theirs", slug="theirs", org=org_b)
+        account = Account.objects.create(org=org_a, name="Acme")
+        account.tags.add(source)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(theirs.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert list(account.tags.all()) == [source]
+        source.refresh_from_db()
+        assert source.is_active is True
+
+    def test_cannot_merge_another_orgs_tag(self, admin_client, org_a, org_b):
+        theirs = Tags.objects.create(name="Theirs", slug="theirs", org=org_b)
+        target = Tags.objects.create(name="Ours", slug="ours", org=org_a)
+
+        response = admin_client.post(
+            self._url(theirs.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        theirs.refresh_from_db()
+        assert theirs.is_active is True
+
+    def test_merge_only_moves_this_orgs_records(self, admin_client, org_a, org_b):
+        """A tag row can be attached to a foreign org's record at the DB level.
+
+        The merge loop filters by org for the same reason the usage subquery
+        does, so a record in another org keeps whatever it had.
+        """
+        source, target = self._pair(org_a)
+        ours = Account.objects.create(org=org_a, name="Ours")
+        theirs = Account.objects.create(org=org_b, name="Theirs")
+        ours.tags.add(source)
+        theirs.tags.add(source)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.data["moved"] == 1
+        assert list(ours.tags.all()) == [target]
+        assert list(theirs.tags.all()) == [source]
+
+    # Validation
+
+    def test_missing_into_is_400(self, admin_client, org_a):
+        source, _target = self._pair(org_a)
+        response = admin_client.post(self._url(source.pk), {}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "into" in response.data["errors"]
+
+    def test_merging_a_tag_into_itself_is_400(self, admin_client, org_a):
+        source, _target = self._pair(org_a)
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(source.pk)}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        source.refresh_from_db()
+        assert source.is_active is True
+
+    def test_merging_onto_an_archived_tag_is_400(self, admin_client, org_a):
+        """Validate the destination state, not just that it resolves.
+
+        Merging onto an archived tag hides every moved record behind a tag the
+        settings page renders as "Off", which reads as data loss.
+        """
+        source, target = self._pair(org_a)
+        target.is_active = False
+        target.save()
+        account = Account.objects.create(org=org_a, name="Acme")
+        account.tags.add(source)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert list(account.tags.all()) == [source]
+
+    def test_merging_an_archived_source_is_allowed(self, admin_client, org_a):
+        """The reverse is fine: cleaning up an archived duplicate that still
+        carries records is exactly what this endpoint is for."""
+        source, target = self._pair(org_a)
+        source.is_active = False
+        source.save()
+        account = Account.objects.create(org=org_a, name="Acme")
+        account.tags.add(source)
+
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(target.pk)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert list(account.tags.all()) == [target]
+
+    def test_unknown_into_is_404(self, admin_client, org_a):
+        import uuid
+
+        source, _target = self._pair(org_a)
+        response = admin_client.post(
+            self._url(source.pk), {"into": str(uuid.uuid4())}, format="json"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_malformed_into_is_404_not_500(self, admin_client, org_a):
+        """`into` is a client-supplied string. A non-UUID used to be the shape
+        that reached the DB and raised, which is the malformed-id 500 class."""
+        source, _target = self._pair(org_a)
+        response = admin_client.post(
+            self._url(source.pk), {"into": "banana"}, format="json"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_unknown_source_is_404(self, admin_client, org_a):
+        import uuid
+
+        _source, target = self._pair(org_a)
+        response = admin_client.post(
+            self._url(uuid.uuid4()), {"into": str(target.pk)}, format="json"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND

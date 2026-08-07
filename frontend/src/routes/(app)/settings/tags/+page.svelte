@@ -57,12 +57,12 @@
   /**
    * Tags that probably mean the same thing.
    *
-   * A suggestion, computed over the complete list. Settings lists are not
-   * paginated, so this is not an aggregate over rows we cannot see. It is
-   * deliberately crude (case, spacing, punctuation and a trailing plural) and
-   * it never merges anything: it puts two names next to each other and lets a
-   * person decide, because "Invoice" and "Invoices" might genuinely be two
-   * ideas in some org.
+   * A suggestion, computed over every active tag in the org. Settings lists
+   * are not paginated, so this is not an aggregate over rows we cannot see.
+   * The match is deliberately crude (case, spacing, punctuation and a
+   * trailing plural), and it decides nothing on its own: it puts two names
+   * next to each other and offers the merge, because "Invoice" and "Invoices"
+   * might genuinely be two ideas in some org.
    */
   const normalise = (name) =>
     name
@@ -73,11 +73,30 @@
   let duplicateGroups = $derived.by(() => {
     /** @type {Map<string, any[]>} */
     const groups = new Map();
-    for (const t of data.tags) {
+    // Active tags only. The list itself is fetched with
+    // `?include_archived=true` so an admin can see what has been turned off,
+    // but an archived tag is not offered on new records and so cannot be
+    // splitting anyone's work: it is not a duplicate, it is a former one.
+    // Grouping over the full list also meant the banner never went away.
+    // Turning one of the pair off used to leave it nagging forever, and once
+    // Merge was wired that got worse: the merge archives the tag it empties,
+    // so the banner would come straight back offering to merge a tag that no
+    // longer had any records.
+    for (const t of data.tags.filter((/** @type {any} */ t) => t.is_active)) {
       const key = normalise(t.name);
       groups.set(key, [...(groups.get(key) ?? []), t]);
     }
-    return [...groups.values()].filter((g) => g.length > 1);
+    return [...groups.values()]
+      .filter((g) => g.length > 1)
+      .map((g) => {
+        // Most-used first, so `keep` is the tag the org already voted for and
+        // a merge moves the smaller pile. `keep` is necessarily active now
+        // that the grouping is, which matters because `TagsMergeView` refuses
+        // an archived destination: moving records onto a tag the page renders
+        // as "Off" reads as data loss.
+        const ranked = [...g].sort((a, b) => used(b) - used(a) || a.name.localeCompare(b.name));
+        return { all: ranked, keep: ranked[0], merge: ranked.slice(1) };
+      });
   });
 </script>
 
@@ -147,23 +166,49 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
-    {#each duplicateGroups as group (group[0].id)}
+    {#each duplicateGroups as group (group.all[0].id)}
       <div class="v2-tag-banner">
         <Merge size={16} style="color:var(--v2-clay);flex:none;margin-top:1px" />
         <div>
           <div style="font-weight:600;font-size:13px">
-            {group.map((t) => t.name).join(' and ')} look like the same tag
+            {group.all.map((t) => t.name).join(' and ')} look like the same tag
           </div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 0;line-height:1.5">
-            {group.map((t) => `${t.name} is on ${used(t)} records`).join('; ')}. Anyone filtering by
-            one of them misses the other.
+            {group.all.map((t) => `${t.name} is on ${used(t)} records`).join('; ')}. Anyone
+            filtering by one of them misses the other.
           </p>
         </div>
-        <!-- Merge stays unwired: /api/tags/<id>/merge/ does not resolve, there
-             is no backing endpoint yet. Tracked in the phase 2 plan. -->
-        <button class="v2-btn v2-btn-sm" style="flex:none;align-self:center">Merge</button>
+        {#if data.can_edit}
+          <!-- One control per tag being emptied, rather than one "Merge" for
+               the group: the endpoint takes a pair, and a group of three needs
+               a person to say which two go where. Confirmed, because unlike
+               "Turn off" this cannot be undone by clicking the other button.
+               The source is archived so its name survives, but nothing records
+               which records came from where. -->
+          <div style="flex:none;align-self:center;display:flex;gap:6px">
+            {#each group.merge as loser (loser.id)}
+              <ConfirmAction
+                action="?/merge"
+                label={group.merge.length > 1 ? `Merge ${loser.name}` : 'Merge'}
+                confirmLabel="Merge"
+                explain={`${used(loser)} ${used(loser) === 1 ? 'record moves' : 'records move'} from ${loser.name} to ${group.keep.name}, and ${loser.name} is turned off. Records already on ${group.keep.name} are untouched. This cannot be undone by merging back.`}
+                hidden={{ id: loser.id, into: group.keep.id }}
+              />
+            {/each}
+          </div>
+        {/if}
       </div>
     {/each}
+
+    {#if form?.merge?.error}
+      <p class="v2-error" style="margin-bottom:12px">{form.merge.error}</p>
+    {/if}
+    {#if form?.merged}
+      <p class="v2-sub" style="margin-bottom:12px">
+        Merged into {form.merged.name}. {count(form.merged.moved)}
+        {form.merged.moved === 1 ? 'record' : 'records'} moved.
+      </p>
+    {/if}
 
     {#if form?.archive?.error}
       <p class="v2-error" style="margin-bottom:12px">{form.archive.error}</p>

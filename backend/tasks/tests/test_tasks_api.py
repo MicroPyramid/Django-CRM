@@ -942,10 +942,17 @@ class TestTaskCommentView:
         response = user_client.delete(f"/api/tasks/comment/{comment.id}/")
         assert response.status_code == 403
 
-    def test_put_comment_without_comment_field(
+    def test_put_comment_without_comment_field_is_400_not_403(
         self, admin_client, admin_user, admin_profile, org_a
     ):
-        """PUT without 'comment' field should return 403 (falls through)."""
+        """A missing `comment` is a bad request, not a permission problem.
+
+        This asserted 403 and the comment underneath ("falls through") named
+        the defect without treating it as one: `if params.get("comment")` sat
+        inside the authorization branch, so an empty body skipped the
+        serializer and landed on the 403, telling the author they may not edit
+        their own comment.
+        """
         _task, comment = self._create_task_with_comment(
             admin_user, admin_profile, org_a
         )
@@ -954,7 +961,38 @@ class TestTaskCommentView:
             {},
             format="json",
         )
-        # When comment field is missing, the view returns 403
+        assert response.status_code == 400
+        assert "comment" in response.json()["errors"]
+
+    def test_put_blank_comment_is_400(
+        self, admin_client, admin_user, admin_profile, org_a
+    ):
+        """The other half of the same guard: `""` is falsy too."""
+        _task, comment = self._create_task_with_comment(
+            admin_user, admin_profile, org_a
+        )
+        original = comment.comment
+        response = admin_client.put(
+            f"/api/tasks/comment/{comment.id}/",
+            {"comment": ""},
+            format="json",
+        )
+        assert response.status_code == 400
+        comment.refresh_from_db()
+        assert comment.comment == original
+
+    def test_stranger_still_gets_403_for_an_empty_body(
+        self, user_client, admin_user, admin_profile, org_a
+    ):
+        """Authorization is still checked before the body is."""
+        _task, comment = self._create_task_with_comment(
+            admin_user, admin_profile, org_a
+        )
+        response = user_client.put(
+            f"/api/tasks/comment/{comment.id}/",
+            {},
+            format="json",
+        )
         assert response.status_code == 403
 
 

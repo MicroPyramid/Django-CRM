@@ -927,18 +927,24 @@ class CaseCommentView(APIView):
         params = request.data
         obj = self.get_object(pk)
         if is_org_admin(request.profile) or request.profile == obj.commented_by:
+            # No `if params.get("comment")` guard around the block below. It
+            # used to sit here, and a body with a blank or absent `comment`
+            # fell out of the authorization branch entirely and landed on the
+            # 403 at the bottom, telling an author they may not edit their own
+            # comment when the real answer is that the field is required.
+            # `comment` is a non-blank CharField, so the serializer already
+            # answers that with a 400 naming the field.
             serializer = CommentSerializer(obj, data=params)
-            if params.get("comment"):
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        {"error": False, "message": "Comment Submitted"},
-                        status=status.HTTP_200_OK,
-                    )
+            if serializer.is_valid():
+                serializer.save()
                 return Response(
-                    {"error": True, "errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": False, "message": "Comment Submitted"},
+                    status=status.HTTP_200_OK,
                 )
+            return Response(
+                {"error": True, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             {
                 "error": True,

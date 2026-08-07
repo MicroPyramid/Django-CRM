@@ -825,6 +825,40 @@ class TestOpportunityCommentView:
         response = user_client.delete(_comment_url(comment.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_put_without_comment_field_is_400_not_403(
+        self, admin_client, comment_fixture
+    ):
+        """A missing `comment` is a bad request, not a permission problem.
+
+        `if params.get("comment")` used to sit inside the authorization
+        branch, so a body the serializer would have rejected fell out of the
+        branch entirely and hit the 403 at the bottom of the handler. This
+        view had no test for the case at all; the same defect was pinned as
+        correct behaviour in the cases, tasks and accounts suites.
+        """
+        _, comment = comment_fixture
+        response = admin_client.put(_comment_url(comment.id), {}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "comment" in response.data["errors"]
+
+    def test_put_blank_comment_is_400(self, admin_client, comment_fixture):
+        """The other half of the same guard: `""` is falsy too."""
+        _, comment = comment_fixture
+        response = admin_client.put(
+            _comment_url(comment.id), {"comment": ""}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        comment.refresh_from_db()
+        assert comment.comment == "Original opp comment"
+
+    def test_stranger_still_gets_403_for_an_empty_body(
+        self, user_client, comment_fixture, user_profile
+    ):
+        """Authorization is still checked before the body is."""
+        _, comment = comment_fixture
+        response = user_client.put(_comment_url(comment.id), {}, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
 
 @pytest.mark.django_db
 class TestOpportunityAttachmentView:

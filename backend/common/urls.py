@@ -39,7 +39,12 @@ from common.views.pat_views import (
     PersonalAccessTokenListCreateView,
 )
 from common.views.settings_views import DomainDetailView, DomainList
-from common.views.tags_views import TagsDetailView, TagsListView, TagsRestoreView
+from common.views.tags_views import (
+    TagsDetailView,
+    TagsListView,
+    TagsMergeView,
+    TagsRestoreView,
+)
 from common.views.team_views import TeamsDetailView, TeamsListView
 from common.views.user_views import (
     GetTeamsAndUsersView,
@@ -136,6 +141,7 @@ urlpatterns = [
     path("tags/", TagsListView.as_view()),
     path("tags/<uid:pk>/", TagsDetailView.as_view()),
     path("tags/<uid:pk>/restore/", TagsRestoreView.as_view()),
+    path("tags/<uid:pk>/merge/", TagsMergeView.as_view()),
     # Custom fields (per-org schema extension; cross-entity)
     path(
         "custom-fields/",

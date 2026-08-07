@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { getTags, createTag, archiveTag, restoreTag } from '$lib/server/v2/tags.js';
+import { getTags, createTag, archiveTag, restoreTag, mergeTags } from '$lib/server/v2/tags.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -76,5 +76,44 @@ export const actions = {
       });
     }
     return { restored: true };
+  },
+
+  // Moves every record off one tag and onto another, then archives the one it
+  // emptied. Same admin-only split as the three above: `can_edit` decides
+  // whether the button renders, `TagsMergeView` decides whether it works.
+  //
+  // Both ids come off the form, and neither is trusted here. The backend
+  // resolves each inside the caller's org, which is what stops an `into` from
+  // another tenant, so this branch only turns the refusal into copy.
+  async merge(event) {
+    const form = await event.request.formData();
+    const id = form.get('id')?.toString() ?? '';
+    const into = form.get('into')?.toString() ?? '';
+    if (!id || !into) {
+      return fail(400, { merge: { error: 'Those tags could not be identified.' } });
+    }
+
+    let result;
+    try {
+      result = await mergeTags(event, id, into);
+    } catch (/** @type {any} */ err) {
+      if (err?.status === 403) {
+        return fail(403, { merge: { error: 'Only an admin can merge tags.' } });
+      }
+      return fail(400, {
+        merge: { error: readableError(err, 'Could not merge those tags.') }
+      });
+    }
+
+    // `moved` is the whole point of reporting anything back: a merge that
+    // moved nothing looks identical to one that moved two hundred records,
+    // and the second is the one an admin wants to have seen before they close
+    // the page.
+    return {
+      merged: {
+        name: result.tag?.name ?? '',
+        moved: result.moved
+      }
+    };
   }
 };

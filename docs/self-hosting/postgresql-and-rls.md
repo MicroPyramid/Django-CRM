@@ -80,7 +80,9 @@ uv run python manage.py migrate
 ```
 
 The set of tables that get policies is centralized in `ORG_SCOPED_TABLES` in
-`backend/common/rls/__init__.py`: at the time of writing this list has 61 entries, spanning core
+`backend/common/rls/__init__.py`. Read the count from that list rather than from here: it moves in
+both directions (`security_audit_log` was removed from it when `common/0036` dropped its policies,
+which is why an earlier draft of this page said 61). The list spans core
 records (`lead`, `accounts`, `contacts`, `opportunity`, `case`, `task`, `invoice`, ...), supporting
 data (`comment`, `attachments`, `document`, `activity`, `tags`, ...), Kanban boards and pipeline
 stage tables, invoicing/estimate/recurring-invoice tables, and more. One deliberate exception:

@@ -751,14 +751,57 @@ class TestCaseCommentView:
         response = user_client.delete(f"/api/cases/comment/{comment.id}/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_put_comment_without_comment_field(
+    def test_put_comment_without_comment_field_is_400_not_403(
         self, admin_client, admin_user, admin_profile, org_a
     ):
-        """PUT without 'comment' field should return 403."""
+        """A missing `comment` is a bad request, not a permission problem.
+
+        This asserted 403 and called it correct. The `if params.get("comment")`
+        guard sat inside the authorization branch, so a body the serializer
+        would have rejected fell out of the branch entirely and hit the 403 at
+        the bottom of the handler: the caller was told they may not edit their
+        own comment, which is both wrong and unactionable.
+        """
         _case, comment = self._create_case_with_comment(
             admin_user, admin_profile, org_a
         )
         response = admin_client.put(
+            f"/api/cases/comment/{comment.id}/",
+            {},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "comment" in response.json()["errors"]
+
+    def test_put_blank_comment_is_400(
+        self, admin_client, admin_user, admin_profile, org_a
+    ):
+        """The other half of the same guard: `""` is falsy too."""
+        _case, comment = self._create_case_with_comment(
+            admin_user, admin_profile, org_a
+        )
+        response = admin_client.put(
+            f"/api/cases/comment/{comment.id}/",
+            {"comment": ""},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        comment.refresh_from_db()
+        assert comment.comment == "Original comment"
+
+    def test_a_stranger_still_gets_403_for_an_empty_body(
+        self, user_client, admin_user, admin_profile, org_a
+    ):
+        """Authorization is still checked first, and still wins.
+
+        The fix moved a validation failure out of the 403 branch. It must not
+        have moved the authorization check with it: someone who may not touch
+        this comment learns nothing about whether their body was well formed.
+        """
+        _case, comment = self._create_case_with_comment(
+            admin_user, admin_profile, org_a
+        )
+        response = user_client.put(
             f"/api/cases/comment/{comment.id}/",
             {},
             format="json",

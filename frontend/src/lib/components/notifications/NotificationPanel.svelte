@@ -127,7 +127,7 @@
               <span class="min-w-0 flex-1">
                 <span class="block text-sm leading-snug">
                   <span class="font-medium">{actorLabel(n)}</span>
-                  {' '}{verbLabel(n)}{n.entity_name ? `, ${n.entity_name}` : ''}
+                  {verbLabel(n)}{n.entity_name ? `, ${n.entity_name}` : ''}
                 </span>
                 {#if n.data?.comment_excerpt}
                   <span class="mt-0.5 line-clamp-2 block text-xs text-[var(--text-secondary)]">
