@@ -46,6 +46,12 @@ class SettingsHubScreen extends StatelessWidget {
               description: 'Extra fields on leads, deals, tickets and the rest',
               onTap: () => context.push(AppRoutes.settingsCustomFields),
             ),
+            MenuRow(
+              icon: LucideIcons.tags,
+              label: 'Tags',
+              description: 'The labels shared across every record type',
+              onTap: () => context.push(AppRoutes.settingsTags),
+            ),
             const _SectionHeader('Tickets'),
             MenuRow(
               icon: LucideIcons.messageSquareQuote,

@@ -7,6 +7,7 @@ import 'package:bottle_crm/data/models/timesheet.dart';
 import 'package:bottle_crm/data/models/estimate.dart';
 import 'package:bottle_crm/data/models/product.dart';
 import 'package:bottle_crm/data/models/recurring_invoice.dart';
+import 'package:bottle_crm/data/models/tag.dart';
 import 'package:bottle_crm/providers/invoice_extras_provider.dart';
 import 'package:bottle_crm/providers/invoices_provider.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
@@ -24,6 +25,7 @@ import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
+import 'package:bottle_crm/screens/settings/tags_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +101,16 @@ void main() {
       myEmailProvider.overrideWithValue(myEmail),
     ],
     child: const MaterialApp(home: MacrosScreen()),
+  );
+
+  /// Both answers again: a member reads the tag list, and every write on it is
+  /// admin-only.
+  Widget tagsApp({required bool isAdmin, bool empty = false}) => ProviderScope(
+    overrides: [
+      tagSettingsProvider.overrideWith(empty ? _FakeNoTags.new : _FakeTags.new),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: const MaterialApp(home: TagsScreen()),
   );
 
   /// A button that opens the picker, so the sheet is rendered the way it is
@@ -563,6 +575,7 @@ void main() {
       // this app disagreeing with the API about who may look.
       await pump(tester, settingsHubApp());
       expect(find.text('Custom fields'), findsOneWidget);
+      expect(find.text('Tags'), findsOneWidget);
     });
 
     testWidgets('custom fields render without overflowing', (tester) async {
@@ -841,6 +854,173 @@ void main() {
       expect(find.text('Just you'), findsOneWidget);
     });
   });
+
+  group('tags at 390px', () {
+    testWidgets('render without overflowing', (tester) async {
+      await pump(tester, tagsApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fit with the system font scaled up', (tester) async {
+      // The rows that earn this: a duplicate banner carrying two names, a
+      // sentence about both, and a merge button, over a tag name long enough
+      // to wrap on its own.
+      await pump(tester, tagsApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member sees the tags but no write controls', (tester) async {
+      await pump(tester, tagsApp(isAdmin: false));
+
+      expect(find.text('Renewals'), findsOneWidget, reason: 'the read is open');
+      expect(find.byTooltip('New tag'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Turn off'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Turn back on'), findsNothing);
+    });
+
+    testWidgets('a member is still told two tags overlap', (tester) async {
+      // Worth something without the merge: they can stop using one today.
+      await pump(tester, tagsApp(isAdmin: false));
+
+      expect(
+        find.textContaining('look like the same tag'),
+        findsOneWidget,
+        reason: 'the banner is a read, not an action',
+      );
+      expect(find.textContaining('Merge'), findsNothing);
+    });
+
+    testWidgets('the merge button names the tag that survives', (tester) async {
+      // Which way a merge runs is the whole question, and it is not reversible
+      // by pressing the other button.
+      await pump(tester, tagsApp(isAdmin: true));
+
+      expect(
+        find.widgetWithText(OutlinedButton, 'Merge into Renewals'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('turning a tag off never promises a delete', (tester) async {
+      // The server soft-archives: the row stays and every record keeps the
+      // tag. Saying Delete would promise a removal that does not happen.
+      await pump(tester, tagsApp(isAdmin: true));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Turn off').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Turn off Renewals?'), findsOneWidget);
+      expect(find.textContaining('9 records keep this tag'), findsOneWidget);
+      expect(find.textContaining('turn it back on'), findsOneWidget);
+      expect(find.textContaining('Delete'), findsNothing);
+    });
+
+    testWidgets('the merge confirm says it cannot be undone', (tester) async {
+      await pump(tester, tagsApp(isAdmin: true));
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Merge into Renewals'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Merge Renewal into Renewals?'), findsOneWidget);
+      expect(
+        find.textContaining('2 records move from Renewal to Renewals'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('cannot be undone'), findsOneWidget);
+    });
+
+    testWidgets('a turned-off tag offers Turn back on, not Turn off', (
+      tester,
+    ) async {
+      await pump(tester, tagsApp(isAdmin: true));
+
+      expect(
+        find.widgetWithText(OutlinedButton, 'Turn back on'),
+        findsOneWidget,
+      );
+      expect(find.text('Turned off'), findsOneWidget);
+    });
+
+    testWidgets('a row says where the tag is actually used', (tester) async {
+      // The web has a column per record type; a phone row has one line, so it
+      // lists the non-zero ones and every one of them, so the parts sum to the
+      // total beside them.
+      await pump(tester, tagsApp(isAdmin: true));
+
+      expect(find.text('9 leads'), findsOneWidget);
+      expect(find.text('2 leads, 1 ticket'), findsOneWidget);
+    });
+
+    testWidgets('an unused tag is called out while it is still on', (
+      tester,
+    ) async {
+      await pump(tester, tagsApp(isAdmin: true));
+      // Below the fold on a phone, which is the point of scrolling to it: the
+      // badge has to survive the list, not just the first screenful.
+      await tester.scrollUntilVisible(find.text('Dormant'), 200);
+      await tester.pumpAndSettle();
+      expect(find.text('Unused'), findsOneWidget);
+    });
+
+    testWidgets('an org with no tags gets the empty state', (tester) async {
+      await pump(tester, tagsApp(isAdmin: true, empty: true));
+      expect(find.text('No tags yet'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+}
+
+/// A tag set with every state the screen has to draw: a duplicate pair, a name
+/// long enough to wrap, a tag applied to nothing, and one already turned off.
+class _FakeTags extends TagsNotifier {
+  @override
+  Future<TagsState> build() async => TagsState(
+    tags: sortedTags([
+      Tag.fromJson(const {
+        'id': 't1',
+        'name': 'Renewals',
+        'slug': 'renewals',
+        'is_active': true,
+        'usage': {'leads': 9},
+      }),
+      Tag.fromJson(const {
+        'id': 't2',
+        'name': 'Renewal',
+        'slug': 'renewal',
+        'is_active': true,
+        'usage': {'leads': 2},
+      }),
+      Tag.fromJson(const {
+        'id': 't3',
+        'name': 'Escalated by the customer success team',
+        'slug': 'escalated-by-the-customer-success-team',
+        'is_active': true,
+        'usage': {'leads': 2, 'cases': 1},
+      }),
+      Tag.fromJson(const {
+        'id': 't4',
+        'name': 'Dormant',
+        'slug': 'dormant',
+        'is_active': true,
+        'usage': {'leads': 0},
+      }),
+      Tag.fromJson(const {
+        'id': 't5',
+        'name': 'Legacy import',
+        'slug': 'legacy-import',
+        'is_active': false,
+        'usage': {'leads': 4},
+      }),
+    ]),
+    count: 5,
+    active: 4,
+    unused: 1,
+  );
+}
+
+class _FakeNoTags extends TagsNotifier {
+  @override
+  Future<TagsState> build() async => const TagsState();
 }
 
 /// One estimate still to convert, one already billed.

@@ -381,8 +381,21 @@ class ApiConfig {
   /// Get teams and users (for assignment dropdowns)
   static String get teamsAndUsers => '$apiBaseUrl/users/get-teams-and-users/';
 
-  /// Tags management
+  /// Tags management. Active tags only by default; the settings screen passes
+  /// `?include_archived=true` because it is the one that turns a tag back on
+  /// and cannot offer that for a row it never fetched.
   static String get tags => '$apiBaseUrl/tags/';
+
+  /// One tag. DELETE turns it off (a soft archive: the row and every record's
+  /// link to it stay), and nothing hard-deletes a tag anywhere.
+  static String tag(String id) => '$apiBaseUrl/tags/$id/';
+
+  /// Turn an archived tag back on.
+  static String tagRestore(String id) => '$apiBaseUrl/tags/$id/restore/';
+
+  /// Move every record off this tag onto the one named by `into`, then archive
+  /// this one. Both ids are re-resolved inside the caller's org server-side.
+  static String tagMerge(String id) => '$apiBaseUrl/tags/$id/merge/';
 
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
   /// Query with `?target_model=Case&active_only=true`. Pass

@@ -4,14 +4,15 @@ import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/custom_field_definition.dart';
 import '../data/models/macro.dart';
+import '../data/models/tag.dart';
 import '../services/api_service.dart';
 
 /// The org settings cluster.
 ///
-/// Custom fields is the first of the cluster's pages to reach the phone. The
-/// rest (routing, escalation, inbound email, ticket approvals, macros, tags,
-/// business hours, reopen rules) share the same shape, so they will land
-/// beside this rather than in files of their own.
+/// Custom fields, saved replies and tags are the pages of the cluster that
+/// have reached the phone. The rest (routing, escalation, inbound email, ticket
+/// approvals, business hours, reopen rules) share the same shape, so they will
+/// land beside these rather than in files of their own.
 ///
 /// Every write here is admin-only server-side. The screens hide the controls
 /// from everyone else, which is UX: `CustomFieldDefinitionListCreateView.post`
@@ -358,3 +359,137 @@ int _int(dynamic totals, String key, int fallback) {
   if (totals is Map && totals[key] is int) return totals[key] as int;
   return fallback;
 }
+
+// ---------------------------------------------------------------------------
+// Tags, the labels shared across every record type
+// ---------------------------------------------------------------------------
+
+/// Every tag in the org, active and archived, plus the totals above the list.
+class TagsState {
+  const TagsState({
+    this.tags = const [],
+    this.count = 0,
+    this.active = 0,
+    this.unused = 0,
+  });
+
+  /// Ranked by [sortedTags]: most used first, then by name.
+  final List<Tag> tags;
+
+  /// From the server's `totals`, computed over the org's whole tag set. Note
+  /// `unused` counts only ACTIVE tags applied to nothing, so it is not the
+  /// same as "safe to remove": nothing removes a tag at all.
+  final int count;
+  final int active;
+  final int unused;
+
+  int get archived => count - active;
+
+  List<TagDuplicateGroup> get duplicates => duplicateTagGroups(tags);
+}
+
+class TagsNotifier extends AsyncNotifier<TagsState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<TagsState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  /// `include_archived=true`, because this screen offers turning a tag back on
+  /// and cannot do that for a row it never fetched. The record-form tag picker
+  /// is a separate read (`tagsLookupProvider`) and keeps the default, so it
+  /// never offers a turned-off tag on a new record.
+  Future<TagsState> _fetch() async {
+    final url = Uri.parse(
+      ApiConfig.tags,
+    ).replace(queryParameters: {'include_archived': 'true'}).toString();
+    final response = await _api.get(url);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load tags');
+    }
+    final body = response.data!;
+    final tags = sortedTags(
+      listFromEnvelope(body, const [
+        'tags',
+        'results',
+      ]).map(Tag.fromJson).toList(),
+    );
+    final totals = body['totals'];
+    return TagsState(
+      tags: tags,
+      count: _int(totals, 'count', tags.length),
+      active: _int(totals, 'active', tags.where((t) => t.isActive).length),
+      unused: _int(
+        totals,
+        'unused',
+        tags.where((t) => t.isActive && t.used == 0).length,
+      ),
+    );
+  }
+
+  /// Create a tag, or revive one that was turned off under the same name.
+  ///
+  /// `TagsListView.post` does both from one branchless-looking call: an
+  /// archived tag whose slug matches is reactivated and answered 200, a genuine
+  /// create is answered 201. That difference is worth surfacing, because the
+  /// two outcomes are not the same thing. A revived tag arrives with its old
+  /// colour and description, and every record that carried it before still
+  /// does, so an admin who typed a name expecting a fresh label has just
+  /// re-adopted a pile of old ones.
+  Future<({String? error, bool revived})> createTag(String name) async {
+    final response = await _api.post(ApiConfig.tags, tagCreatePayload(name));
+    if (!response.success) return (error: _message(response), revived: false);
+    await refresh();
+    return (error: null, revived: response.statusCode == 200);
+  }
+
+  /// Turn a tag off. A soft archive server-side, which is why nothing on the
+  /// screen calls this Delete. See [tagArchiveExplanation].
+  Future<String?> archiveTag(String id) async {
+    final response = await _api.delete(ApiConfig.tag(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Turn an archived tag back on. Its own endpoint, not a PUT: `TagsDetailView
+  /// .put` requires a name and would rewrite the row, and this control has
+  /// nothing to say about the name.
+  Future<String?> restoreTag(String id) async {
+    final response = await _api.post(ApiConfig.tagRestore(id), const {});
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Merge `from` into `into`, and report how many records changed hands.
+  ///
+  /// `moved` is the whole point of reporting anything back: a merge that moved
+  /// nothing looks identical to one that moved two hundred records, and the
+  /// second is the one an admin wants to have seen before they close the page.
+  Future<({String? error, int moved})> mergeTags({
+    required String from,
+    required String into,
+  }) async {
+    final response = await _api.post(
+      ApiConfig.tagMerge(from),
+      tagMergePayload(into),
+    );
+    if (!response.success) return (error: _message(response), moved: 0);
+    final moved = response.data?['moved'];
+    await refresh();
+    return (error: null, moved: moved is int ? moved : 0);
+  }
+}
+
+/// Named for the screen rather than the resource, because `tagsProvider` is
+/// already the record-form picker's flattened list in `lookup_provider.dart`
+/// and six screens read it. These are two reads of one endpoint with different
+/// contracts, not one list two places want, so they keep separate names.
+final tagSettingsProvider = AsyncNotifierProvider<TagsNotifier, TagsState>(
+  TagsNotifier.new,
+);

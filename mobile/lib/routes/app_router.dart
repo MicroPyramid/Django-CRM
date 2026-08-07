@@ -40,6 +40,7 @@ import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/settings_hub_screen.dart';
+import '../screens/settings/tags_screen.dart';
 import '../screens/settings/team_screen.dart';
 import '../screens/solutions/solutions_list_screen.dart';
 import '../screens/solutions/solution_detail_screen.dart';
@@ -108,6 +109,7 @@ class AppRoutes {
   static const String settings = '/more/settings';
   static const String settingsCustomFields = '/more/settings/custom-fields';
   static const String settingsMacros = '/more/settings/macros';
+  static const String settingsTags = '/more/settings/tags';
 
   /// Your own week of logged time. Not under `/more`: it is a workspace
   /// destination reached from the dashboard as often as from the menu, and a
@@ -431,6 +433,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsMacros',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const MacrosScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsTags,
+        name: 'settingsTags',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TagsScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,
