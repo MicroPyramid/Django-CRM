@@ -207,11 +207,16 @@
           <div class="v2-setting">
             <div class="v2-setting-body">
               <b>Close child tickets with the parent</b>
-              <!-- Only the DEFAULT state of the prompt; the endpoint still
-                   requires explicit confirmation either way. -->
+              <!-- Only the DEFAULT state of the prompt; the person closing the
+                   ticket still confirms. This used to claim the prompt without
+                   saying where it is, and there is no such prompt on the web:
+                   `close-with-children` has no caller in `frontend/src`, so
+                   closing a parent here leaves its children open. The phone is
+                   the client that asks, and the one this setting reaches. -->
               <span class="v2-sub" style="font-size:11.5px">
-                Sets how the prompt starts when you close a parent. It never closes a child on its
-                own. You still confirm.
+                Sets how the close prompt starts on the mobile app, which offers to close a parent's
+                open children with it. On the web there is no such prompt yet: closing a parent
+                leaves its children open.
               </span>
             </div>
             <Pill tone={org.auto_close_children_on_parent_close ? 'clay' : 'slate'}>

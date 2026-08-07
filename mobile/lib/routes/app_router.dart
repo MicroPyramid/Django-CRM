@@ -39,8 +39,11 @@ import '../screens/settings/custom_fields_screen.dart';
 import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
+import '../screens/settings/api_tokens_screen.dart';
 import '../screens/settings/business_hours_screen.dart';
 import '../screens/settings/escalation_screen.dart';
+import '../screens/settings/organization_edit_screen.dart';
+import '../screens/settings/organization_screen.dart';
 import '../screens/settings/reopen_screen.dart';
 import '../screens/settings/routing_screen.dart';
 import '../screens/settings/settings_hub_screen.dart';
@@ -118,6 +121,10 @@ class AppRoutes {
   static const String settingsEscalation = '/more/settings/escalation';
   static const String settingsBusinessHours = '/more/settings/business-hours';
   static const String settingsReopen = '/more/settings/reopen';
+  static const String settingsApiTokens = '/more/settings/api-tokens';
+  static const String settingsOrganization = '/more/settings/organization';
+  static const String settingsOrganizationEdit =
+      '/more/settings/organization/edit';
 
   /// Your own week of logged time. Not under `/more`: it is a workspace
   /// destination reached from the dashboard as often as from the menu, and a
@@ -471,6 +478,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsReopen',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ReopenScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsApiTokens,
+        name: 'settingsApiTokens',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApiTokensScreen(),
+      ),
+      // The edit route is declared before the read one so `/organization/edit`
+      // is never captured as a sub-path of `/organization`.
+      GoRoute(
+        path: AppRoutes.settingsOrganizationEdit,
+        name: 'settingsOrganizationEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrganizationEditScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsOrganization,
+        name: 'settingsOrganization',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrganizationScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,

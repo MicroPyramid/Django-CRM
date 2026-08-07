@@ -114,6 +114,32 @@ class TestOrgTokenList:
         body = admin_client.get(LIST_URL).json()
         assert body["totals"]["unused_90d"] == 1
 
+    def test_a_token_just_issued_is_not_unused_for_90_days(
+        self, admin_client, admin_profile
+    ):
+        # last_used_at is null for a token issued three years ago AND for one
+        # issued a minute ago. Counting on null alone put the token you had just
+        # created into "unused for 90+ days" on the very next reload.
+        PersonalAccessToken.generate(profile=admin_profile, name="brand new")
+
+        body = admin_client.get(LIST_URL).json()
+        assert body["totals"]["unused_90d"] == 0
+
+    def test_a_never_used_token_counts_once_it_is_old_enough(
+        self, admin_client, admin_profile
+    ):
+        # The other half: never used is still the strongest signal there is, so
+        # an old one has to count. created_at is what dates it.
+        _, forgotten = PersonalAccessToken.generate(
+            profile=admin_profile, name="forgotten"
+        )
+        PersonalAccessToken.objects.filter(pk=forgotten.pk).update(
+            created_at=timezone.now() - timedelta(days=120)
+        )
+
+        body = admin_client.get(LIST_URL).json()
+        assert body["totals"]["unused_90d"] == 1
+
     def test_no_secret_ever_serialized(self, admin_client, admin_profile):
         raw, _ = PersonalAccessToken.generate(profile=admin_profile, name="cli")
         body = admin_client.get(LIST_URL).json()

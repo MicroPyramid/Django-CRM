@@ -401,3 +401,25 @@ class TicketParentSummary {
     );
   }
 }
+
+/// What to say after closing a parent ticket.
+///
+/// **Counted from the response, not from `child_count`.** The server closes the
+/// open *descendants*, the whole subtree, and returns their ids in
+/// `cascaded_case_ids`. `child_count` is neither of those: it counts direct
+/// children whether they were already closed or not. Reporting it claimed
+/// "and 3 linked" when three children were already closed and nothing happened,
+/// and understated a deep tree where more than the direct children closed.
+String cascadeCloseMessage({required bool cascade, required int cascaded}) {
+  if (!cascade) return 'Ticket closed';
+  if (cascaded == 0) {
+    return 'Ticket closed. Nothing linked was open, so nothing else changed.';
+  }
+  return 'Ticket closed, and $cascaded linked '
+      '${cascaded == 1 ? 'ticket' : 'tickets'} with it';
+}
+
+/// The ids the close endpoint reports as cascaded, counted defensively: a body
+/// without the key means nothing was cascaded, not an unknown number.
+int cascadedCount(Map<String, dynamic>? body) =>
+    (body?['cascaded_case_ids'] as List?)?.length ?? 0;

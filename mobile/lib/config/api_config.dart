@@ -127,6 +127,49 @@ class ApiConfig {
   /// use one vocabulary (see `common/org_time.py`).
   static String get timezones => '$apiBaseUrl/org/timezones/';
 
+  /// The org's own settings. GET is open to any member (the company profile is
+  /// not a secret), PATCH is admin-only. Always acts on the caller's own org:
+  /// there is no id in the path, so there is nothing to scope.
+  ///
+  /// The org API key is not on this payload in any form. It authenticates as
+  /// the org's first admin and is rotated through `OrgApiKeyView` alone.
+  static String get orgSettings => '$apiBaseUrl/org/settings/';
+
+  /// Vertical packs available to apply. Needs authentication but no org
+  /// context, because its first caller is someone creating their first org.
+  static String get packs => '$apiBaseUrl/packs/';
+
+  /// Apply one pack. Admin-only, additive-only, and safe to repeat: a pack
+  /// already applied reports everything skipped rather than refusing.
+  static String packApply(String packId) => '$apiBaseUrl/packs/$packId/apply/';
+
+  /// Delete the demo records a pack created for this org, and nothing else.
+  /// Admin-only. A sample record the org has since attached real work to is
+  /// deliberately kept and reported in `retained_by_type`.
+  static String get packSampleData => '$apiBaseUrl/packs/sample-data/';
+
+  // ==========================================================================
+  // API TOKENS
+  // ==========================================================================
+
+  /// **The admin's org-wide oversight list.** Every token in the org, so a
+  /// deactivated owner's row and a forgotten one can be found. ADMIN-only: a
+  /// member gets 403, which is why the screen gates on role.
+  ///
+  /// Only `token_prefix` is ever returned. The server keeps a SHA-256 hash and
+  /// no raw value exists to fetch.
+  static String get orgTokens => '$apiBaseUrl/org/tokens/';
+
+  /// Revoke any token in the org. Admin-only, org-scoped, idempotent. Separate
+  /// from the self-scoped path below so the "a user manages only their own"
+  /// guard there is never widened.
+  static String orgToken(String id) => '$apiBaseUrl/org/tokens/$id/';
+
+  /// Create a token **for yourself**. The server sets the owner from the
+  /// caller's own profile, so there is no way to mint one for someone else.
+  /// The raw value comes back once, in this response, and never again.
+  static String get profileTokens => '$apiBaseUrl/profile/tokens/';
+
   // ==========================================================================
   // DASHBOARD
   // ==========================================================================

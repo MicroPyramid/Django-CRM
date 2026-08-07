@@ -83,6 +83,19 @@ class SettingsHubScreen extends StatelessWidget {
               description: 'Canned answers to insert into a ticket reply',
               onTap: () => context.push(AppRoutes.settingsMacros),
             ),
+            const _SectionHeader('Organization'),
+            MenuRow(
+              icon: LucideIcons.building2,
+              label: 'Organization',
+              description: 'Company details printed on documents, and defaults',
+              onTap: () => context.push(AppRoutes.settingsOrganization),
+            ),
+            MenuRow(
+              icon: LucideIcons.keyRound,
+              label: 'API tokens',
+              description: 'Programmatic access, and what to revoke',
+              onTap: () => context.push(AppRoutes.settingsApiTokens),
+            ),
             const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -7,10 +7,13 @@ import '../../core/theme/theme.dart';
 import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
 import '../../data/models/comment.dart';
+import 'close_with_children_dialog.dart';
 import 'macro_picker_sheet.dart';
 import '../../data/models/email_message.dart';
+import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../services/attachment_upload.dart';
 import '../../data/models/lookup_models.dart';
@@ -1808,46 +1811,30 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   }
 
   Future<void> _closeWithChildren(Ticket c) async {
-    bool cascade = true;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Close ticket'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Close "${c.name}"? This ticket has ${c.childCount} '
-                'linked ticket${c.childCount == 1 ? '' : 's'}.',
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Checkbox(
-                    value: cascade,
-                    onChanged: (v) => setLocal(() => cascade = v ?? true),
-                  ),
-                  const Expanded(child: Text('Also close linked tickets')),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Close ticket'),
-            ),
-          ],
-        ),
-      ),
+    // **The org setting decides how this prompt starts.** That is the whole of
+    // what `Org.auto_close_children_on_parent_close` does for a person:
+    // `CaseCloseWithChildrenView` reads it only when the caller omits
+    // `cascade`, and this app always sends it, so hardcoding `true` here made
+    // the setting inert. The settings screen says "starts ticked"/"starts
+    // unticked"; this is the line that has to make that true.
+    final orgSettings = await ref
+        .read(orgSettingsProvider.future)
+        .catchError(
+          // A settings read that fails must not block closing a ticket. Falling
+          // back to the model default (false) is the safer of the two: it offers
+          // not to close children rather than offering to.
+          (_) => const OrgSettings(),
+        );
+    if (!mounted) return;
+
+    final choice = await showCloseWithChildrenDialog(
+      context,
+      ticketName: c.name,
+      childCount: c.childCount,
+      startsTicked: orgSettings.autoCloseChildren,
     );
-    if (confirmed != true) return;
+    if (choice == null || !mounted) return;
+    final cascade = choice.cascade;
 
     final res = await ref
         .read(ticketsProvider.notifier)
@@ -1859,9 +1846,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              cascade
-                  ? 'Closed ticket and ${c.childCount} linked'
-                  : 'Ticket closed',
+              cascadeCloseMessage(
+                cascade: cascade,
+                cascaded: cascadedCount(res.data),
+              ),
             ),
             behavior: SnackBarBehavior.floating,
           ),

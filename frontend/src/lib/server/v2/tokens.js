@@ -11,8 +11,13 @@
  * spot the two rows worth acting on. One whose owner was deactivated, and one
  * nobody has used in months. That is inherently cross-user, so it reads a NEW
  * admin-gated endpoint (`GET /api/org/tokens/`). The pre-existing
- * `/api/profile/tokens/` stays self-scoped and untouched. A user managing
- * their own tokens is a separate surface, not this one.
+ * `/api/profile/tokens/` stays self-scoped and untouched.
+ *
+ * A consequence worth naming rather than implying: because this whole page is
+ * admin-gated, **a member has no way to issue themselves a token in either
+ * client**. `/api/profile/tokens/` is open to them and would work; nothing
+ * calls it on their behalf. A self-service surface is a page neither app has
+ * yet, not one that exists elsewhere. Recorded in `mobile/docs/PARITY.md`.
  *
  * WHAT THE MOCK ASSERTED THAT THE BACKEND DOES NOT
  * The fixture's headline was "a token whose owner was deactivated keeps working

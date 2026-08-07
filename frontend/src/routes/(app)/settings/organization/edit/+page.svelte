@@ -167,7 +167,11 @@
         >
           <TriangleAlert size={17} style="color:var(--v2-rust);flex:none" />
           <div class="v2-next-body">
-            <div style="font-weight:600">Two fields to check</div>
+            <!-- Counted, not assumed. Only two fields are checked here, but one
+                 of them failing on its own is the common case. -->
+            <div style="font-weight:600">
+              {Object.keys(errors).length === 1 ? 'One field to check' : 'Two fields to check'}
+            </div>
             <div class="v2-sub" style="margin-top:2px">Nothing has been saved yet.</div>
           </div>
         </div>
@@ -369,8 +373,9 @@
           <option value="false">Offer it off. The close prompt starts unticked</option>
         </select>
         <p class="v2-hint">
-          Only sets how the prompt starts. Closing a parent never closes a child on its own, the
-          person still confirms.
+          Only sets how the prompt starts, and only on the mobile app, which is where closing a
+          parent offers to close its open children. The person still confirms. Closing a parent on
+          the web leaves its children open, with no prompt.
         </p>
       </div>
 

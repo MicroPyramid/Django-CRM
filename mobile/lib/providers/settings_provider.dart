@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
+import '../data/models/access_token.dart';
 import '../data/models/business_calendar.dart';
 import '../data/models/custom_field_definition.dart';
 import '../data/models/escalation_policy.dart';
 import '../data/models/macro.dart';
+import '../data/models/org_settings.dart';
 import '../data/models/reopen_policy.dart';
 import '../data/models/routing_rule.dart';
 import '../data/models/tag.dart';
@@ -13,10 +15,11 @@ import '../services/api_service.dart';
 
 /// The org settings cluster.
 ///
-/// Custom fields, saved replies, tags, routing, escalation, business hours and
-/// reopen rules are the pages of the cluster that have reached the phone. The
-/// rest (inbound email, ticket approvals) share the same shape, so they will
-/// land beside these rather than in files of their own.
+/// Custom fields, saved replies, tags, routing, escalation, business hours,
+/// reopen rules, API tokens and the organization itself are the pages of the
+/// cluster that have reached the phone. The rest (inbound email, ticket
+/// approvals) share the same shape, so they will land beside these rather than
+/// in files of their own.
 ///
 /// Every write here is admin-only server-side. The screens hide the controls
 /// from everyone else, which is UX: `CustomFieldDefinitionListCreateView.post`
@@ -828,3 +831,265 @@ final reopenPolicyProvider =
     AsyncNotifierProvider<ReopenPolicyNotifier, ReopenPolicy>(
       ReopenPolicyNotifier.new,
     );
+
+// ---------------------------------------------------------------------------
+// API tokens, the admin's org-wide oversight
+// ---------------------------------------------------------------------------
+
+/// Every token in the org, with the totals the screen ranks by.
+///
+/// **`OrgAccessTokenListView` is admin-only**, like the reopen policy and
+/// unlike the rest of this cluster, so the screen gates the read on role.
+///
+/// A raw token value never lives in this state. [createToken] returns it to its
+/// one caller and the screen shows it once; nothing here keeps a copy, and
+/// nothing anywhere logs one.
+class AccessTokensState {
+  const AccessTokensState({
+    this.tokens = const [],
+    this.totals = const TokenTotals(),
+  });
+
+  final List<AccessToken> tokens;
+  final TokenTotals totals;
+
+  /// The ids "revoke them all" acts on, re-derived from the rows the server
+  /// sent rather than from anything a screen holds.
+  List<String> get orphanedIds => orphanedTokenIds(tokens);
+}
+
+class AccessTokensNotifier extends AsyncNotifier<AccessTokensState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<AccessTokensState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<AccessTokensState> _fetch() async {
+    final response = await _api.get(ApiConfig.orgTokens);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load tokens');
+    }
+    final rows = listFromEnvelope(response.data!, [
+      'tokens',
+    ]).map(AccessToken.fromJson).toList();
+    return AccessTokensState(
+      tokens: sortedTokens(rows),
+      totals: TokenTotals.fromJson(
+        (response.data!['totals'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+    );
+  }
+
+  /// Create a token for the signed-in user and return the raw value, once.
+  ///
+  /// Posts to the SELF-scoped endpoint: the owner is the caller's own profile,
+  /// set server-side. `value` is the only time the raw token exists on this
+  /// device; the caller shows it and drops it.
+  Future<({String? error, String? value, String? name})> createToken({
+    required String name,
+    required String expiryChoice,
+    required String accessChoice,
+  }) async {
+    final response = await _api.post(
+      ApiConfig.profileTokens,
+      tokenCreatePayload(
+        name: name,
+        expiryChoice: expiryChoice,
+        accessChoice: accessChoice,
+        now: DateTime.now(),
+      ),
+    );
+    if (!response.success) {
+      return (error: _message(response), value: null, name: null);
+    }
+    final raw = response.data?['token']?.toString();
+    await refresh();
+    if (raw == null || raw.isEmpty) {
+      // A 2xx with no value should not happen, and silently showing nothing
+      // would look like the token was never created. It was.
+      return (
+        error:
+            'The token was created but its value did not come back. '
+            'Revoke it and create another.',
+        value: null,
+        name: null,
+      );
+    }
+    return (
+      error: null,
+      value: raw,
+      name: response.data?['name']?.toString() ?? name.trim(),
+    );
+  }
+
+  /// Revoke one token: admin-scoped, so an admin can retire a colleague's.
+  /// Idempotent server-side.
+  Future<String?> revokeToken(String id) async {
+    final response = await _api.delete(ApiConfig.orgToken(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Revoke every live token on a deactivated owner.
+  ///
+  /// The ids come from the loaded rows, not from the screen, so this can only
+  /// ever act on the orphaned set the server itself reported. One failure does
+  /// not strand the rest; the count returned is what actually went through.
+  Future<({String? error, int revoked})> revokeOrphaned() async {
+    final ids = state.value?.orphanedIds ?? const [];
+    if (ids.isEmpty) return (error: null, revoked: 0);
+
+    var done = 0;
+    String? failure;
+    for (final id in ids) {
+      final response = await _api.delete(ApiConfig.orgToken(id));
+      if (response.success) {
+        done += 1;
+      } else {
+        failure ??= _message(response);
+      }
+    }
+    await refresh();
+    return (error: done == 0 ? failure : null, revoked: done);
+  }
+}
+
+final accessTokensProvider =
+    AsyncNotifierProvider<AccessTokensNotifier, AccessTokensState>(
+      AccessTokensNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
+// Organization settings, and the vertical packs that seed one
+// ---------------------------------------------------------------------------
+
+/// The org's own settings.
+///
+/// The read is open to any member; every write is admin-only server-side.
+///
+/// Kept apart from [orgPacksProvider] rather than fetched together, because the
+/// ticket screen reads this to seed its cascade checkbox and has no use for a
+/// pack list. One question, one request.
+class OrgSettingsNotifier extends AsyncNotifier<OrgSettings> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<OrgSettings> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<OrgSettings> _fetch() async {
+    final response = await _api.get(ApiConfig.orgSettings);
+    if (!response.success || response.data == null) {
+      throw Exception(
+        response.message ?? 'Failed to load organization settings',
+      );
+    }
+    return OrgSettings.fromJson(response.data!);
+  }
+
+  /// Save the org. Admin-only server-side; a member's PATCH is a 403 whatever
+  /// this app shows.
+  Future<String?> save(Map<String, dynamic> payload) async {
+    final response = await _api.patch(ApiConfig.orgSettings, payload);
+    if (!response.success) return _orgMessage(response);
+    await refresh();
+    return null;
+  }
+
+  /// Apply a pack. Additive-only and safe to repeat, so there is deliberately
+  /// no guard against re-applying the one already applied.
+  ///
+  /// The refresh matters: applying writes `org.vertical`, which is what the
+  /// screen reads to mark a pack as applied.
+  Future<({String? error, PackApplyReport? report})> applyPack(
+    String packId,
+  ) async {
+    final response = await _api.post(ApiConfig.packApply(packId), const {});
+    if (!response.success || response.data == null) {
+      return (error: _orgMessage(response), report: null);
+    }
+    final report = PackApplyReport.fromJson(response.data!);
+    await refresh();
+    return (error: null, report: report);
+  }
+
+  /// Delete the demo records a pack created for this org.
+  ///
+  /// `retained` counts sample records kept because real work has since been
+  /// attached to them. That is a normal outcome, not a partial failure, and
+  /// reporting only `deleted` would show a smaller number than expected with
+  /// no explanation.
+  Future<({String? error, int deleted, int retained})> clearSampleData() async {
+    final response = await _api.delete(ApiConfig.packSampleData);
+    if (!response.success || response.data == null) {
+      return (error: _orgMessage(response), deleted: 0, retained: 0);
+    }
+    final retainedByType =
+        (response.data!['retained_by_type'] as Map?)?.values ?? const [];
+    var retained = 0;
+    for (final value in retainedByType) {
+      if (value is num) retained += value.round();
+    }
+    await refresh();
+    return (
+      error: null,
+      deleted: (response.data!['deleted'] as num?)?.round() ?? 0,
+      retained: retained,
+    );
+  }
+}
+
+/// These endpoints refuse with a bare `{"error": "..."}` (the pack views and
+/// `OrgSettingsView` both do) rather than the `errors` map `_message` reads, so
+/// the reason reaches the user instead of a generic failure.
+String _orgMessage(dynamic response) {
+  final error = response.data?['error'];
+  if (error is String && error.trim().isNotEmpty) return error;
+  return _message(response);
+}
+
+final orgSettingsProvider =
+    AsyncNotifierProvider<OrgSettingsNotifier, OrgSettings>(
+      OrgSettingsNotifier.new,
+    );
+
+/// The vertical packs available to apply.
+///
+/// Its own provider, so the organization screen is the only thing that pays for
+/// it. A failure yields an empty list rather than propagating: a pack list that
+/// will not load must not be the reason the org details do not render, which is
+/// the fallback the web load already established for the identical call.
+final orgPacksProvider = FutureProvider<List<VerticalPack>>((ref) async {
+  final response = await ApiService().get(ApiConfig.packs);
+  if (!response.success || response.data == null) return const [];
+  return listFromEnvelope(response.data!, [
+    'packs',
+  ]).map(VerticalPack.fromJson).toList();
+});
+
+/// The IANA zones the org form's timezone picker may offer.
+///
+/// Fetched once per session. A failure falls back to UTC alone rather than an
+/// empty picker, because a picker with no entries cannot save at all.
+final orgTimezonesProvider = FutureProvider<List<TimezoneOption>>((ref) async {
+  final response = await ApiService().get(ApiConfig.timezones);
+  if (!response.success || response.data == null) {
+    return const [TimezoneOption(name: 'UTC', offsetMinutes: 0)];
+  }
+  final zones = listFromEnvelope(response.data!, [
+    'timezones',
+  ]).map(TimezoneOption.fromJson).toList();
+  return zones.isEmpty
+      ? const [TimezoneOption(name: 'UTC', offsetMinutes: 0)]
+      : zones;
+});

@@ -1,8 +1,10 @@
+import 'package:bottle_crm/data/models/access_token.dart';
 import 'package:bottle_crm/data/models/app_notification.dart';
 import 'package:bottle_crm/data/models/business_calendar.dart';
 import 'package:bottle_crm/data/models/custom_field_definition.dart';
 import 'package:bottle_crm/data/models/escalation_policy.dart';
 import 'package:bottle_crm/data/models/macro.dart';
+import 'package:bottle_crm/data/models/org_settings.dart';
 import 'package:bottle_crm/data/models/reopen_policy.dart';
 import 'package:bottle_crm/data/models/invoice.dart';
 import 'package:bottle_crm/data/models/time_entry.dart';
@@ -27,12 +29,17 @@ import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
+import 'package:bottle_crm/screens/settings/api_token_form_sheet.dart';
+import 'package:bottle_crm/screens/settings/api_tokens_screen.dart';
 import 'package:bottle_crm/screens/settings/business_hours_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/business_hours_screen.dart';
 import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/escalation_policy_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/escalation_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
+import 'package:bottle_crm/screens/settings/organization_edit_screen.dart';
+import 'package:bottle_crm/screens/settings/organization_screen.dart';
+import 'package:bottle_crm/screens/tickets/close_with_children_dialog.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
 import 'package:bottle_crm/screens/settings/reopen_screen.dart';
@@ -273,6 +280,69 @@ void main() {
         ),
       ),
     ),
+  );
+
+  /// The API tokens screen. The list is admin-only server-side, so `isAdmin`
+  /// here decides whether the screen issues it at all.
+  Widget tokensApp({required bool isAdmin, bool orphaned = false}) =>
+      ProviderScope(
+        overrides: [
+          accessTokensProvider.overrideWith(
+            orphaned ? _FakeOrphanedTokens.new : _FakeTokens.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: ApiTokensScreen()),
+      );
+
+  /// A button that opens the create sheet, so it renders the way it is really
+  /// reached: over a screen, with the keyboard inset in play.
+  Widget tokenFormApp() => MaterialApp(
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => ElevatedButton(
+          onPressed: () => showApiTokenFormSheet(context),
+          child: const Text('open'),
+        ),
+      ),
+    ),
+  );
+
+  /// The organization screen. The read is open to any member, so `isAdmin` only
+  /// decides which controls show.
+  Widget organizationApp({required bool isAdmin, bool cascadeOn = false}) =>
+      ProviderScope(
+        overrides: [
+          orgSettingsProvider.overrideWith(
+            cascadeOn ? _FakeOrgCascadeOn.new : _FakeOrg.new,
+          ),
+          orgPacksProvider.overrideWith(
+            (ref) async => [
+              VerticalPack.fromJson(const {
+                'id': 'real-estate',
+                'name': 'Real estate',
+                'description': 'Listings, viewings and offers',
+                'version': '1',
+              }),
+            ],
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: OrganizationScreen()),
+      );
+
+  Widget organizationEditApp({required bool isAdmin}) => ProviderScope(
+    overrides: [
+      orgSettingsProvider.overrideWith(_FakeOrg.new),
+      orgTimezonesProvider.overrideWith(
+        (ref) async => const [
+          TimezoneOption(name: 'Asia/Kolkata', offsetMinutes: 330),
+          TimezoneOption(name: 'UTC', offsetMinutes: 0),
+        ],
+      ),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: const MaterialApp(home: OrganizationEditScreen()),
   );
 
   /// The reopen screen. The read is admin-only server-side, so `isAdmin` here
@@ -1735,6 +1805,254 @@ void main() {
       );
     });
   });
+
+  group('API tokens at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, tokensApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, tokensApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member is told why rather than shown a failed request', (
+      tester,
+    ) async {
+      // `/api/org/tokens/` is admin-only: it lists every token in the org.
+      await pump(tester, tokensApp(isAdmin: false));
+
+      expect(find.text('Administrators only'), findsOneWidget);
+      expect(find.text('New token'), findsNothing);
+    });
+
+    testWidgets('shows the prefix and never a full value', (tester) async {
+      await pump(tester, tokensApp(isAdmin: true));
+
+      expect(find.textContaining('bcrm_pat_abc...'), findsWidgets);
+      // The row carries no raw token because the server keeps only a hash.
+      expect(find.textContaining('bcrm_pat_abcdefgh'), findsNothing);
+    });
+
+    testWidgets('does not call a token issued today unused for 90 days', (
+      tester,
+    ) async {
+      // The finding: null last_used_at is not "long ago", and the row has to
+      // agree with the count the card shows.
+      await pump(tester, tokensApp(isAdmin: true));
+
+      // Any phrasing of it: the row must say nothing at all about neglect.
+      expect(find.textContaining('never used'), findsNothing);
+      expect(find.textContaining('unused for'), findsNothing);
+    });
+
+    testWidgets('offers to clear the loose end when an owner is gone', (
+      tester,
+    ) async {
+      await pump(tester, tokensApp(isAdmin: true, orphaned: true));
+
+      expect(find.textContaining('deactivated account'), findsWidgets);
+      expect(find.text('Revoke it'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the create sheet fits over the keyboard inset', (
+      tester,
+    ) async {
+      await pump(tester, tokenFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Create token'), findsOneWidget);
+    });
+
+    testWidgets('warns before a token that never expires', (tester) async {
+      await pump(tester, tokenFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('has to be revoked by hand'), findsNothing);
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Never').last);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('revoked by hand'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('organization at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, organizationApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, organizationApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member reads it, and is offered no write', (tester) async {
+      // GET /api/org/settings/ is open to any member: the company profile is
+      // not a secret, and members legitimately see the currency and address.
+      await pump(tester, organizationApp(isAdmin: false));
+
+      // Twice: the header, and again as the trading name.
+      expect(find.text('MicroPyramid'), findsNWidgets(2));
+      expect(find.byTooltip('Edit details'), findsNothing);
+      expect(find.text('Clear sample data'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.textContaining('limited to administrators'),
+        300,
+      );
+      expect(find.textContaining('limited to administrators'), findsOneWidget);
+      // Still nothing to press once the pack section is on screen.
+      expect(find.text('Apply'), findsNothing);
+      expect(find.text('Clear sample data'), findsNothing);
+    });
+
+    testWidgets('says the cascade switch starts the prompt unticked', (
+      tester,
+    ) async {
+      await pump(tester, organizationApp(isAdmin: true));
+      await tester.scrollUntilVisible(find.text('Starts unticked'), 300);
+
+      expect(find.text('Starts unticked'), findsOneWidget);
+      expect(find.textContaining('starts with'), findsOneWidget);
+    });
+
+    testWidgets('says ticked when the setting is on', (tester) async {
+      // Two tests rather than one: re-pumping a second ProviderScope over the
+      // first keeps the element tree and the assertions cross-contaminate.
+      await pump(tester, organizationApp(isAdmin: true, cascadeOn: true));
+      await tester.scrollUntilVisible(find.text('Starts ticked'), 300);
+
+      expect(find.text('Starts ticked'), findsOneWidget);
+    });
+
+    testWidgets('never shows the organization API key', (tester) async {
+      await pump(tester, organizationApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.textContaining('The organization API key is not here'),
+        300,
+      );
+      expect(
+        find.textContaining('The organization API key is not here'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('the close-with-children prompt at 390px', () {
+    /// A button that opens the prompt, so it renders the way it is reached.
+    Widget closePromptApp({required bool startsTicked}) => MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showCloseWithChildrenDialog(
+              context,
+              ticketName: 'Printer offline in the Hyderabad office',
+              childCount: 3,
+              startsTicked: startsTicked,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+
+    Future<void> openPrompt(WidgetTester tester, {required bool ticked}) async {
+      await pump(tester, closePromptApp(startsTicked: ticked));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('starts unticked when the org setting is off', (tester) async {
+      // The finding: this was hardcoded to `true`, so
+      // `auto_close_children_on_parent_close` reached nobody. The settings
+      // screen says "starts unticked"; this is what makes that true.
+      await openPrompt(tester, ticked: false);
+
+      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('starts ticked when the org setting is on', (tester) async {
+      await openPrompt(tester, ticked: true);
+
+      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the person can still override either way', (tester) async {
+      await openPrompt(tester, ticked: false);
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+    });
+
+    testWidgets('a long subject and the checkbox fit side by side', (
+      tester,
+    ) async {
+      await openPrompt(tester, ticked: true);
+      expect(tester.takeException(), isNull);
+      expect(find.text('Also close linked tickets'), findsOneWidget);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, closePromptApp(startsTicked: true), textScale: 1.5);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('organization edit at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, organizationEditApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, organizationEditApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member sees the notice, not the form', (tester) async {
+      // The courtesy, not the control: PATCH refuses a non-admin regardless.
+      await pump(tester, organizationEditApp(isAdmin: false));
+
+      expect(find.text('Administrators only'), findsOneWidget);
+      expect(find.text('Save changes'), findsNothing);
+    });
+
+    testWidgets('shows the stored timezone even though it is one of many', (
+      tester,
+    ) async {
+      // A picker that cannot display the stored value would either throw or
+      // quietly submit its first entry, moving the org somewhere it never
+      // chose. Scrolled explicitly on the form's own list: the text fields
+      // each carry a Scrollable of their own.
+      await pump(tester, organizationEditApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.text('Save changes'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+
+      expect(find.textContaining('Asia/Kolkata'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
 
 /// A working week with one holiday, which is what most orgs look like.
@@ -2371,4 +2689,99 @@ class _FakeMacros extends MacrosNotifier {
     inactiveCount: 1,
     brokenCount: 1,
   );
+}
+
+/// Two live tokens, both used recently enough not to be flagged, and one issued
+/// today that has never been used.
+AccessTokensState _tokenState({bool orphaned = false}) {
+  final now = DateTime.now();
+  String ago(int days) => now.subtract(Duration(days: days)).toIso8601String();
+
+  Map<String, dynamic> row({
+    required String id,
+    required String name,
+    String? lastUsed,
+    bool ownerActive = true,
+  }) => {
+    'id': id,
+    'name': name,
+    'token_prefix': 'bcrm_pat_abc',
+    'scopes': const <String>[],
+    'expires_at': null,
+    'last_used_at': lastUsed,
+    'created_at': ago(1),
+    'revoked_at': null,
+    'is_live': true,
+    'owner': {
+      'id': 'p1',
+      'name': 'Ada Lovelace',
+      'role': 'ADMIN',
+      'is_active': ownerActive,
+    },
+  };
+
+  final tokens = [
+    AccessToken.fromJson(
+      row(id: 't1', name: 'Nightly export', lastUsed: ago(2)),
+    ),
+    // Never used, issued yesterday: the row that used to read "never used" in
+    // warning colour the moment it was created.
+    AccessToken.fromJson(
+      row(id: 't2', name: 'Just made', ownerActive: !orphaned),
+    ),
+  ];
+  return AccessTokensState(
+    tokens: sortedTokens(tokens),
+    totals: TokenTotals(
+      count: 2,
+      live: 2,
+      orphaned: orphaned ? 1 : 0,
+      unused90d: 0,
+    ),
+  );
+}
+
+class _FakeTokens extends AccessTokensNotifier {
+  @override
+  Future<AccessTokensState> build() async => _tokenState();
+}
+
+class _FakeOrphanedTokens extends AccessTokensNotifier {
+  @override
+  Future<AccessTokensState> build() async => _tokenState(orphaned: true);
+}
+
+/// A configured org, with the cascade switch off, which is the model default.
+OrgSettings _org({bool cascade = false}) => OrgSettings.fromJson({
+  'id': 'org-1',
+  'name': 'MicroPyramid',
+  'company_name': 'MicroPyramid Informatics Pvt Ltd',
+  'address_line': '12 Road',
+  'city': 'Hyderabad',
+  'state': 'Telangana',
+  'postcode': '500081',
+  'country': 'IN',
+  'phone': '+91 40 1234',
+  'email': 'hello@example.com',
+  'website': 'https://example.com',
+  'tax_id': 'GSTIN123',
+  'default_currency': 'USD',
+  'default_country': 'IN',
+  'currency_symbol': '\$',
+  'timezone': 'Asia/Kolkata',
+  'csat_enabled': true,
+  'auto_close_children_on_parent_close': cascade,
+  'vertical': '',
+  'member_count': 4,
+  'created_at': '2026-01-05T10:00:00Z',
+});
+
+class _FakeOrg extends OrgSettingsNotifier {
+  @override
+  Future<OrgSettings> build() async => _org();
+}
+
+class _FakeOrgCascadeOn extends OrgSettingsNotifier {
+  @override
+  Future<OrgSettings> build() async => _org(cascade: true);
 }
