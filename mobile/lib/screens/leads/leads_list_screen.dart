@@ -97,7 +97,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
         children: [
           _buildSearchBar(),
           _buildFilterBar(),
-          _buildResultsCount(leads.length, data?.totalCount ?? 0),
+          _buildResultsCount(leadsAsync, leads.length, data?.totalCount ?? 0),
           Expanded(child: _buildLeadsList(leadsAsync, leads)),
         ],
       ),
@@ -306,11 +306,25 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     );
   }
 
-  Widget _buildResultsCount(int loadedCount, int totalCount) {
+  Widget _buildResultsCount(
+    AsyncValue<LeadsListData> async,
+    int loadedCount,
+    int totalCount,
+  ) {
+    // Until the first page lands there is no count to state. Printing
+    // "0 leads" over a spinner reads as an empty org, which is what made a
+    // failed load take a minute to tell apart from an empty list.
+    if (async.value == null) {
+      return _countStrip(async.hasError ? '' : 'Loading');
+    }
     final isFiltered = _filters.isActive;
     final label = isFiltered
         ? '$loadedCount of $totalCount lead${totalCount == 1 ? '' : 's'} (filtered)'
         : '$totalCount lead${totalCount == 1 ? '' : 's'}';
+    return _countStrip(label);
+  }
+
+  Widget _countStrip(String label) {
     return Container(
       width: double.infinity,
       color: AppColors.surfaceDim,

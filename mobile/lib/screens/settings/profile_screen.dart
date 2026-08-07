@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/profile.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 
 /// Profile view/edit screen.
 ///
@@ -36,6 +36,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _nameController.text = profile.user.name ?? '';
     _phoneController.text = profile.phone ?? '';
     setState(() => _editing = true);
+  }
+
+  /// Only counts while the fields are actually on screen. Outside edit mode
+  /// the controllers still hold whatever was last typed, and prompting about
+  /// that on the way out would be nonsense.
+  bool get _hasUnsavedChanges {
+    if (!_editing) return false;
+    final profile = ref.read(profileProvider).value;
+    if (profile == null) return false;
+    return _nameController.text.trim() != (profile.user.name ?? '') ||
+        _phoneController.text.trim() != (profile.phone ?? '');
   }
 
   void _cancelEdit() {
@@ -78,34 +89,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(profileProvider);
-    return Scaffold(
-      backgroundColor: AppColors.surfaceDim,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          if (async.value != null && !_editing)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                onPressed: () => _enterEdit(async.value!),
-                icon: const Icon(LucideIcons.edit3, size: 20),
-                tooltip: 'Edit profile',
-                color: AppColors.primary600,
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _saving,
+      child: Scaffold(
+        backgroundColor: AppColors.surfaceDim,
+        appBar: AppBar(
+          title: const Text('Profile'),
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft),
+            onPressed: _saving
+                ? null
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
+          ),
+          actions: [
+            if (async.value != null && !_editing)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  onPressed: () => _enterEdit(async.value!),
+                  icon: const Icon(LucideIcons.edit3, size: 20),
+                  tooltip: 'Edit profile',
+                  color: AppColors.primary600,
+                ),
               ),
-            ),
-        ],
-      ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _buildError(e),
-        data: (profile) => _buildBody(profile),
+          ],
+        ),
+        body: async.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => _buildError(e),
+          data: (profile) => _buildBody(profile),
+        ),
       ),
     );
   }
@@ -251,7 +269,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _InfoRow(
           icon: LucideIcons.phone,
           label: 'Phone',
-          value: profile.phone?.trim().isNotEmpty == true ? profile.phone! : '—',
+          value: profile.phone?.trim().isNotEmpty == true
+              ? profile.phone!
+              : '—',
         ),
         _sectionHeader('Organization'),
         if (profile.org != null)

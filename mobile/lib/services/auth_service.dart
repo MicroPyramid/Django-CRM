@@ -7,6 +7,7 @@ import '../config/api_config.dart';
 import '../data/models/auth_response.dart';
 import 'api_service.dart';
 import 'crash_reporting.dart';
+import 'token_storage.dart';
 
 /// Authentication service for BottleCRM
 ///
@@ -21,9 +22,12 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final ApiService _apiService = ApiService();
 
+  /// The two JWTs are the only things that do not live in shared preferences.
+  /// See `token_storage.dart` for why, and for the migration that empties the
+  /// old location on upgrade.
+  final TokenStorage _tokenStorage = TokenStorage();
+
   // Storage keys
-  static const String _accessTokenKey = 'jwt_token';
-  static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
   static const String _organizationsKey = 'organizations';
   static const String _selectedOrgKey = 'selected_organization';
@@ -166,11 +170,10 @@ class AuthService {
   Future<bool> requestMagicCode(String email) async {
     try {
       debugPrint('AuthService: Requesting magic code for $email...');
-      final response = await _apiService.post(
-        ApiConfig.magicLinkRequest,
-        {'email': email, 'delivery': 'code'},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.magicLinkRequest, {
+        'email': email,
+        'delivery': 'code',
+      }, requiresAuth: false);
       return response.success;
     } catch (e) {
       debugPrint('AuthService: requestMagicCode error: $e');
@@ -189,11 +192,10 @@ class AuthService {
   }) async {
     try {
       debugPrint('AuthService: Verifying magic code for $email...');
-      final response = await _apiService.post(
-        ApiConfig.magicLinkVerifyCode,
-        {'email': email, 'code': code},
-        requiresAuth: false,
-      );
+      final response = await _apiService.post(ApiConfig.magicLinkVerifyCode, {
+        'email': email,
+        'code': code,
+      }, requiresAuth: false);
 
       if (!response.success || response.data == null) {
         debugPrint(
@@ -223,7 +225,8 @@ class AuthService {
       // The nested read is kept as a fallback in case an older build of the
       // API is on the other end.
       final orgsList =
-          (data['organizations'] ?? userData?['organizations']) as List<dynamic>?;
+          (data['organizations'] ?? userData?['organizations'])
+              as List<dynamic>?;
       _organizations = orgsList
           ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
           .toList();
@@ -483,8 +486,9 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      _accessToken = prefs.getString(_accessTokenKey);
-      _refreshToken = prefs.getString(_refreshTokenKey);
+      final tokens = await _tokenStorage.read();
+      _accessToken = tokens.access;
+      _refreshToken = tokens.refresh;
 
       final userJson = prefs.getString(_userKey);
       if (userJson != null) {
@@ -524,12 +528,8 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      if (_accessToken != null) {
-        await prefs.setString(_accessTokenKey, _accessToken!);
-      }
-      if (_refreshToken != null) {
-        await prefs.setString(_refreshTokenKey, _refreshToken!);
-      }
+      await _tokenStorage.write(access: _accessToken, refresh: _refreshToken);
+
       if (_currentUser != null) {
         await prefs.setString(
           _userKey,
@@ -574,9 +574,9 @@ class AuthService {
   /// Clear all stored authentication data
   Future<void> _clearStorage() async {
     try {
+      await _tokenStorage.clear();
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_accessTokenKey);
-      await prefs.remove(_refreshTokenKey);
       await prefs.remove(_userKey);
       await prefs.remove(_organizationsKey);
       await prefs.remove(_selectedOrgKey);

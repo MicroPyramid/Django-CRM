@@ -10,6 +10,7 @@ import '../../providers/lookup_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/forms/custom_fields_form.dart';
 import '../../widgets/forms/multi_select_sheet.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 
 /// Shared create / edit form for tickets.
 class TicketFormScreen extends ConsumerStatefulWidget {
@@ -44,8 +45,24 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.isEditMode) _fetchTicket();
+    if (widget.isEditMode) {
+      _fetchTicket();
+    } else {
+      _baseline = _snapshot();
+    }
   }
+
+  /// The form as it looked when it finished loading. Comparing against the
+  /// payload the form would submit means a field added later is covered
+  /// automatically, unlike a hand-listed comparison that has to be remembered.
+  String? _baseline;
+
+  /// `toString` rather than `jsonEncode`, which throws on the DateTime and
+  /// enum values these payloads can carry. Key order is stable because the
+  /// same builder produces every snapshot.
+  String _snapshot() => _buildPayload().toString();
+
+  bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
   @override
   void dispose() {
@@ -80,6 +97,9 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
         _fetchError = 'Failed to load ticket';
       }
     });
+    // After the fields hold the saved values, so an untouched edit form is
+    // clean rather than dirty against an empty baseline.
+    _baseline = _snapshot();
   }
 
   Map<String, dynamic> _buildPayload() {
@@ -111,8 +131,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!widget.isEditMode &&
-        (_accountId == null || _accountId!.isEmpty)) {
+    if (!widget.isEditMode && (_accountId == null || _accountId!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please select an account.'),
@@ -125,7 +144,9 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
     if (_status == TicketStatus.closed && _closedOn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please set a closed-on date for closed tickets.'),
+          content: const Text(
+            'Please set a closed-on date for closed tickets.',
+          ),
           backgroundColor: AppColors.danger600,
           behavior: SnackBarBehavior.floating,
         ),
@@ -166,19 +187,26 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text(widget.isEditMode ? 'Edit Ticket' : 'New Ticket'),
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _isLoading,
+      child: Scaffold(
         backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
+        appBar: AppBar(
+          title: Text(widget.isEditMode ? 'Edit Ticket' : 'New Ticket'),
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft),
+            onPressed: _isLoading
+                ? null
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
+          ),
         ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -307,7 +335,8 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
             const SizedBox(height: 16),
             Center(
               child: GestureDetector(
-                onTap: () => context.pop(),
+                onTap: () =>
+                    leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
                 child: Text(
                   'Cancel',
                   style: AppTypography.label.copyWith(
@@ -327,9 +356,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
     // Renders nothing if the org has no Case custom fields.
     return Consumer(
       builder: (context, ref, _) {
-        final asyncDefs = ref.watch(
-          customFieldDefinitionsProvider('Case'),
-        );
+        final asyncDefs = ref.watch(customFieldDefinitionsProvider('Case'));
         final defs = asyncDefs.value ?? const [];
         if (defs.isEmpty) return const SizedBox.shrink();
         return Column(
@@ -497,8 +524,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
                           spacing: 6,
                           runSpacing: 4,
                           children: [
-                            for (final l in selectedLabels)
-                              LabelPill(label: l),
+                            for (final l in selectedLabels) LabelPill(label: l),
                           ],
                         ),
                 ),

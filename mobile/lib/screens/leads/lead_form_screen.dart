@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 
 // Salutation choices match the web form's hard-coded list and the backend's
 // LEAD_SALUTATION column (free-text, but the UI restricts to these values).
@@ -614,8 +615,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         ? _formatAmount(lead.opportunityAmount!)
         : '';
     _currency = lead.currency ?? ref.read(selectedOrgProvider)?.defaultCurrency;
-    _probabilityController.text =
-        lead.probability != null ? lead.probability.toString() : '';
+    _probabilityController.text = lead.probability != null
+        ? lead.probability.toString()
+        : '';
     _closeDate = lead.closeDate;
     _addressLineController.text = lead.addressLine ?? '';
     _cityController.text = lead.city ?? '';
@@ -676,8 +678,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                   ? _formatAmount(lead.opportunityAmount!)
                   : '') ||
           (_currency ?? '') != (lead.currency ?? '') ||
-          _probabilityController.text !=
-              (lead.probability?.toString() ?? '') ||
+          _probabilityController.text != (lead.probability?.toString() ?? '') ||
           _closeDate != lead.closeDate ||
           _addressLineController.text != (lead.addressLine ?? '') ||
           _cityController.text != (lead.city ?? '') ||
@@ -719,35 +720,6 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       if (a[k]?.toString() != b[k]?.toString()) return false;
     }
     return true;
-  }
-
-  Future<bool> _onWillPop() async {
-    if (!_hasUnsavedChanges) return true;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Discard',
-              style: TextStyle(color: AppColors.danger600),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
   }
 
   Map<String, dynamic> _buildPayload() {
@@ -801,8 +773,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     final phone = _phoneController.text.trim();
     if (phone.isNotEmpty) {
       payload['phone'] = phone;
-    } else if (widget.isEditMode &&
-        (_existingLead?.phone ?? '').isNotEmpty) {
+    } else if (widget.isEditMode && (_existingLead?.phone ?? '').isNotEmpty) {
       // User cleared the phone in edit mode, null clears the column.
       payload['phone'] = null;
     }
@@ -1016,18 +987,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      // While saving, swallow back navigation so the in-flight request
-      // doesn't get orphaned by the form unmounting.
-      canPop: !_hasUnsavedChanges && !_isLoading,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        if (_isLoading) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          context.pop();
-        }
-      },
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
@@ -1039,16 +1001,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             icon: const Icon(LucideIcons.chevronLeft),
             onPressed: _isLoading
                 ? null
-                : () async {
-                    if (_hasUnsavedChanges) {
-                      final shouldPop = await _onWillPop();
-                      if (shouldPop && context.mounted) {
-                        context.pop();
-                      }
-                    } else {
-                      context.pop();
-                    }
-                  },
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
           ),
         ),
         body: _buildBody(),
@@ -1347,9 +1301,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           maxLength: 50,
           textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
-          validator: (v) => (v == null || v.trim().isEmpty)
-              ? 'Last name is required'
-              : null,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Last name is required' : null,
         ),
       ],
     );
@@ -1393,9 +1346,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           keyboardType: TextInputType.phone,
           maxLength: 20,
           textInputAction: TextInputAction.next,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(_phoneAllowed),
-          ],
+          inputFormatters: [FilteringTextInputFormatter.allow(_phoneAllowed)],
           onSubmitted: (_) => _normalizePhoneInPlace(),
           validator: (value) {
             final v = (value ?? '').trim();
@@ -1520,9 +1471,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       _duplicateLeadId = null;
       _duplicateLeadLabel = null;
     });
-    final match = await ref
-        .read(leadsProvider.notifier)
-        .findLeadByEmail(email);
+    final match = await ref.read(leadsProvider.notifier).findLeadByEmail(email);
     if (!mounted) return;
     setState(() {
       _checkingDuplicate = false;
@@ -1718,9 +1667,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                 onTap: _isLoading
                     ? null
                     : () => _pickDate(
-                          initial: _closeDate,
-                          onSelect: (d) => setState(() => _closeDate = d),
-                        ),
+                        initial: _closeDate,
+                        onSelect: (d) => setState(() => _closeDate = d),
+                      ),
                 onClear: _closeDate == null || _isLoading
                     ? null
                     : () => setState(() => _closeDate = null),
@@ -1824,10 +1773,10 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             onTap: _isLoading
                 ? null
                 : () => _pickDate(
-                      initial: _lastContacted,
-                      onSelect: (d) => setState(() => _lastContacted = d),
-                      lastDate: DateTime.now(),
-                    ),
+                    initial: _lastContacted,
+                    onSelect: (d) => setState(() => _lastContacted = d),
+                    lastDate: DateTime.now(),
+                  ),
             onClear: _lastContacted == null || _isLoading
                 ? null
                 : () => setState(() => _lastContacted = null),
@@ -1841,9 +1790,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
             onTap: _isLoading
                 ? null
                 : () => _pickDate(
-                      initial: _nextFollowUp,
-                      onSelect: (d) => setState(() => _nextFollowUp = d),
-                    ),
+                    initial: _nextFollowUp,
+                    onSelect: (d) => setState(() => _nextFollowUp = d),
+                  ),
             onClear: _nextFollowUp == null || _isLoading
                 ? null
                 : () => setState(() => _nextFollowUp = null),
@@ -1940,8 +1889,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           onChanged: (v) {
             _customFieldValues[def.key] =
                 def.fieldType == CustomFieldType.number
-                    ? (v.trim().isEmpty ? null : v.trim())
-                    : v;
+                ? (v.trim().isEmpty ? null : v.trim())
+                : v;
           },
         );
       case CustomFieldType.textarea:
@@ -1968,11 +1917,11 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
           onTap: _isLoading
               ? null
               : () => _pickDate(
-                    initial: dt,
-                    onSelect: (d) => setState(() {
-                      _customFieldValues[def.key] = _formatDate(d);
-                    }),
-                  ),
+                  initial: dt,
+                  onSelect: (d) => setState(() {
+                    _customFieldValues[def.key] = _formatDate(d);
+                  }),
+                ),
           onClear: dt == null || _isLoading
               ? null
               : () => setState(() => _customFieldValues[def.key] = null),
@@ -1986,9 +1935,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         return _PickerField(
           label: label,
           value: selected.value.isEmpty ? 'Select' : selected.label,
-          onTap: _isLoading
-              ? null
-              : () => _showCustomDropdownPicker(def),
+          onTap: _isLoading ? null : () => _showCustomDropdownPicker(def),
         );
       case CustomFieldType.checkbox:
         final value = _customFieldValues[def.key] == true;
@@ -2159,8 +2106,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                         color: isSelected
                             ? Colors.white
                             : AppColors.textSecondary,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -2261,8 +2209,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
   }
 
   void _showSourcePicker() {
-    final sources =
-        LeadSource.values.where((s) => s != LeadSource.none).toList();
+    final sources = LeadSource.values
+        .where((s) => s != LeadSource.none)
+        .toList();
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -2496,10 +2445,7 @@ class _PickerField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 12),
-                ],
+                if (leading != null) ...[leading!, const SizedBox(width: 12)],
                 Expanded(
                   child: Text(
                     value,
@@ -2609,8 +2555,7 @@ class _SearchablePickerSheet extends StatefulWidget {
   });
 
   @override
-  State<_SearchablePickerSheet> createState() =>
-      _SearchablePickerSheetState();
+  State<_SearchablePickerSheet> createState() => _SearchablePickerSheetState();
 }
 
 class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
@@ -2622,8 +2567,8 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
     final filtered = q.isEmpty
         ? widget.options
         : widget.options
-            .where((o) => o.label.toLowerCase().contains(q))
-            .toList();
+              .where((o) => o.label.toLowerCase().contains(q))
+              .toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,

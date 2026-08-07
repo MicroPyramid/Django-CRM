@@ -6,6 +6,7 @@ import '../../config/api_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
 import '../../services/api_service.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 
 /// Creating an organization from the phone.
 ///
@@ -103,100 +104,110 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
     context.go(AppRoutes.dashboard);
   }
 
+  /// The timezone is a guess the screen made, not something the user typed,
+  /// so only a name counts as work worth keeping.
+  bool get _hasUnsavedChanges => _nameController.text.trim().isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('New Organization'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  enabled: !_submitting,
-                  decoration: const InputDecoration(
-                    labelText: 'Organization name',
-                    hintText: 'e.g. Acme Inc.',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    final name = value?.trim() ?? '';
-                    if (name.isEmpty) return 'Give the organization a name';
-                    // Mirrors the server's `validate_name`, which is the rule
-                    // that actually decides. This only saves a round trip.
-                    if (RegExp(r'''[~!@#$%^&*()+{}":;'/\[\]]''').hasMatch(name)) {
-                      return 'Letters, numbers, spaces, hyphens and dots only';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                if (_loadingZones)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(),
-                  )
-                else
-                  DropdownButtonFormField<String>(
-                    initialValue: _timezone,
-                    isExpanded: true,
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _submitting,
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: const Text('New Organization'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.words,
+                    enabled: !_submitting,
                     decoration: const InputDecoration(
-                      labelText: 'Time zone',
+                      labelText: 'Organization name',
+                      hintText: 'e.g. Acme Inc.',
                       border: OutlineInputBorder(),
                     ),
-                    items: _zones
-                        .map(
-                          (zone) => DropdownMenuItem(
-                            value: zone.name,
-                            child: Text(
-                              zone.label,
-                              overflow: TextOverflow.ellipsis,
+                    validator: (value) {
+                      final name = value?.trim() ?? '';
+                      if (name.isEmpty) return 'Give the organization a name';
+                      // Mirrors the server's `validate_name`, which is the rule
+                      // that actually decides. This only saves a round trip.
+                      if (RegExp(
+                        r'''[~!@#$%^&*()+{}":;'/\[\]]''',
+                      ).hasMatch(name)) {
+                        return 'Letters, numbers, spaces, hyphens and dots only';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  if (_loadingZones)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: LinearProgressIndicator(),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: _timezone,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Time zone',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _zones
+                          .map(
+                            (zone) => DropdownMenuItem(
+                              value: zone.name,
+                              child: Text(
+                                zone.label,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _submitting
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _timezone = value);
-                            }
-                          },
-                  ),
-                const SizedBox(height: 6),
-                Text(
-                  'Sets when a day starts here, so "due today" and "overdue" '
-                  'mean what your team expects. You can change it later in '
-                  'Settings.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _submitting ? null : _submit,
-                    child: _submitting
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Create organization'),
+                          .toList(),
+                      onChanged: _submitting
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                setState(() => _timezone = value);
+                              }
+                            },
+                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Sets when a day starts here, so "due today" and "overdue" '
+                    'mean what your team expects. You can change it later in '
+                    'Settings.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _submitting ? null : _submit,
+                      child: _submitting
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Create organization'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

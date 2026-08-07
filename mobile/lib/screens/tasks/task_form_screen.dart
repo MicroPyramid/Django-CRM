@@ -11,6 +11,7 @@ import '../../providers/lookup_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 import '../../widgets/forms/custom_fields_form.dart';
 import '../../widgets/forms/multi_select_sheet.dart';
 
@@ -211,35 +212,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     return true;
   }
 
-  Future<bool> _onWillPop() async {
-    if (!_hasUnsavedChanges) return true;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Discard',
-              style: TextStyle(color: AppColors.danger600),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-
   Map<String, dynamic> _buildPayload() {
     final payload = <String, dynamic>{
       'title': _titleController.text.trim(),
@@ -302,15 +274,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_hasUnsavedChanges,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          context.pop();
-        }
-      },
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
@@ -320,16 +286,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           scrolledUnderElevation: 1,
           leading: IconButton(
             icon: const Icon(LucideIcons.chevronLeft),
-            onPressed: () async {
-              if (_hasUnsavedChanges) {
-                final shouldPop = await _onWillPop();
-                if (shouldPop && context.mounted) {
-                  context.pop();
-                }
-              } else {
-                context.pop();
-              }
-            },
+            onPressed: _isLoading
+                ? null
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
           ),
         ),
         body: _buildBody(),
@@ -434,16 +394,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             // Cancel Button
             Center(
               child: GestureDetector(
-                onTap: () async {
-                  if (_hasUnsavedChanges) {
-                    final shouldPop = await _onWillPop();
-                    if (shouldPop && mounted) {
-                      context.pop();
-                    }
-                  } else {
-                    context.pop();
-                  }
-                },
+                onTap: () =>
+                    leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
                 child: Text(
                   'Cancel',
                   style: AppTypography.label.copyWith(

@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/forms/unsaved_changes.dart';
 import '../../widgets/forms/custom_fields_form.dart';
 
 /// Deal Form Screen - Reusable for both Create and Edit
@@ -282,35 +283,6 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     return true;
   }
 
-  Future<bool> _onWillPop() async {
-    if (!_hasUnsavedChanges) return true;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Discard',
-              style: TextStyle(color: AppColors.danger600),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-
   Deal _buildDeal() {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     final probability =
@@ -533,18 +505,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      // While saving, swallow back navigation so the in-flight request doesn't
-      // get orphaned by the form unmounting.
-      canPop: !_hasUnsavedChanges && !_isLoading,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        if (_isLoading) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          context.pop();
-        }
-      },
+    return UnsavedChangesGuard(
+      hasUnsavedChanges: () => _hasUnsavedChanges,
+      isSaving: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
@@ -556,16 +519,8 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
             icon: const Icon(LucideIcons.chevronLeft),
             onPressed: _isLoading
                 ? null
-                : () async {
-                    if (_hasUnsavedChanges) {
-                      final shouldPop = await _onWillPop();
-                      if (shouldPop && context.mounted) {
-                        context.pop();
-                      }
-                    } else {
-                      context.pop();
-                    }
-                  },
+                : () =>
+                      leaveForm(context, hasUnsavedChanges: _hasUnsavedChanges),
           ),
         ),
         body: _buildBody(),
