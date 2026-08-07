@@ -42,6 +42,17 @@ import '../screens/solutions/solutions_list_screen.dart';
 import '../screens/solutions/solution_detail_screen.dart';
 import '../screens/tickets/approvals_inbox_screen.dart';
 import '../screens/tickets/ticket_analytics_screen.dart';
+import '../screens/timesheet/timesheet_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
+import '../screens/invoices/invoices_list_screen.dart';
+import '../screens/invoices/invoice_detail_screen.dart';
+import '../screens/invoices/estimates_list_screen.dart';
+import '../screens/invoices/recurring_list_screen.dart';
+import '../screens/invoices/products_list_screen.dart';
+import '../screens/invoices/invoice_templates_screen.dart';
+import '../screens/invoices/invoice_reports_screen.dart';
+import '../screens/invoices/new_invoice_screen.dart';
+import '../screens/invoices/new_recurring_screen.dart';
 
 // Shell
 import '../widgets/common/app_shell.dart';
@@ -87,6 +98,29 @@ class AppRoutes {
   static const String more = '/more';
   static const String profile = '/more/profile';
   static const String team = '/more/team';
+
+  /// Your own week of logged time. Not under `/more`: it is a workspace
+  /// destination reached from the dashboard as often as from the menu, and a
+  /// path that says where it lives is the one that survives being linked to.
+  static const String timesheet = '/timesheet';
+
+  /// The notification feed. Matches the web app's `/notifications`.
+  static const String notifications = '/notifications';
+
+  /// Invoices. Matches the web app's `/invoices` and `/invoices/[id]`.
+  static const String invoices = '/invoices';
+  static const String invoiceDetail = '/invoices/:id';
+
+  /// The sibling pages under invoices, matching the web's own paths. Declared
+  /// BEFORE `invoiceDetail` in the route table: `/invoices/:id` would swallow
+  /// every one of these as an id otherwise.
+  static const String invoiceNew = '/invoices/new';
+  static const String recurringNew = '/invoices/recurring/new';
+  static const String estimates = '/invoices/estimates';
+  static const String recurring = '/invoices/recurring';
+  static const String products = '/invoices/products';
+  static const String invoiceTemplates = '/invoices/templates';
+  static const String invoiceReports = '/invoices/reports';
 
   // Knowledge base
   static const String solutions = '/solutions';
@@ -286,6 +320,77 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'ticketAnalytics',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const TicketAnalyticsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.timesheet,
+        name: 'timesheet',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TimesheetScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        name: 'notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoices,
+        name: 'invoices',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InvoicesListScreen(),
+      ),
+      // These five must stay above `invoiceDetail`. go_router matches in
+      // declaration order, so `/invoices/:id` placed first would treat
+      // "estimates" as an invoice id and every sibling page would 404 through
+      // the detail screen instead of opening.
+      GoRoute(
+        path: AppRoutes.invoiceNew,
+        name: 'invoiceNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const NewInvoiceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.recurringNew,
+        name: 'recurringNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const NewRecurringScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.estimates,
+        name: 'estimates',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const EstimatesListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.recurring,
+        name: 'recurring',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RecurringListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.products,
+        name: 'products',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ProductsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceTemplates,
+        name: 'invoiceTemplates',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InvoiceTemplatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceReports,
+        name: 'invoiceReports',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InvoiceReportsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceDetail,
+        name: 'invoiceDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            InvoiceDetailScreen(invoiceId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: AppRoutes.profile,

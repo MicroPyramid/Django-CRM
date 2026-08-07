@@ -52,11 +52,11 @@ class Solution {
   }
 
   Map<String, dynamic> toCreatePayload() => {
-        'title': title,
-        'description': description,
-        'status': status.value,
-        'is_published': isPublished,
-      };
+    'title': title,
+    'description': description,
+    'status': status.value,
+    'is_published': isPublished,
+  };
 
   Solution copyWith({
     String? id,

@@ -23,7 +23,10 @@ void main() {
           authProvider.overrideWith(() => _FakeAuth()),
           dashboardProvider.overrideWith(() => _FakeDashboard()),
         ],
-        child: MaterialApp(theme: AppTheme.light, home: const DashboardScreen()),
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const DashboardScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -63,7 +66,11 @@ class _FakeDashboard extends DashboardNotifier {
 class _FakeAuth extends AuthNotifier {
   @override
   AuthState build() {
-    const org = Organization(id: 'org-1', name: 'Test Org', currencySymbol: r'$');
+    const org = Organization(
+      id: 'org-1',
+      name: 'Test Org',
+      currencySymbol: r'$',
+    );
     return AuthState(
       user: const AuthUser(id: 'user-1', email: 'user@example.com'),
       organizations: [org],

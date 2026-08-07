@@ -38,9 +38,7 @@ void main() {
     testWidgets('still shows the empty state when there are no tasks at all', (
       tester,
     ) async {
-      final notifier = _FakeTasksNotifier(
-        const TasksListData(hasMore: false),
-      );
+      final notifier = _FakeTasksNotifier(const TasksListData(hasMore: false));
 
       await tester.pumpWidget(_testApp(notifier));
       await tester.pumpAndSettle();

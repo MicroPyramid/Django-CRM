@@ -72,11 +72,7 @@ void main() {
 
     test('an unknown creator does not block an admin', () {
       expect(
-        isAdminOrOwner(
-          isAdmin: true,
-          currentUserKey: null,
-          ownerKey: null,
-        ),
+        isAdminOrOwner(isAdmin: true, currentUserKey: null, ownerKey: null),
         isTrue,
       );
     });

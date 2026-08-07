@@ -42,10 +42,13 @@ class _MagicLinkEmailScreenState extends ConsumerState<MagicLinkEmailScreen> {
     setState(() => _isLoading = false);
 
     if (ok) {
-      context.push('${AppRoutes.magicLinkCode}?email=${Uri.encodeQueryComponent(email)}');
+      context.push(
+        '${AppRoutes.magicLinkCode}?email=${Uri.encodeQueryComponent(email)}',
+      );
     } else {
       final error =
-          ref.read(authProvider).error ?? 'Could not send code. Please try again.';
+          ref.read(authProvider).error ??
+          'Could not send code. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),

@@ -322,7 +322,8 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
         if (a is Map<String, dynamic>) attachments.add(Attachment.fromJson(a));
       }
       final defs = <CustomFieldDefinition>[];
-      for (final d in (data['custom_field_definitions'] as List<dynamic>? ?? [])) {
+      for (final d
+          in (data['custom_field_definitions'] as List<dynamic>? ?? [])) {
         if (d is Map<String, dynamic>) {
           defs.add(CustomFieldDefinition.fromJson(d));
         }

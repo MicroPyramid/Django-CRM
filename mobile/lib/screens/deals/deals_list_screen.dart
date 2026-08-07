@@ -157,7 +157,10 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
     // Update which stage is "current" based on scroll offset (PageScrollPhysics
     // snaps to columns so the offset is a clean multiple of columnWidth).
     final columnWidth = MediaQuery.of(context).size.width * 0.85 + 12;
-    final idx = (pos.pixels / columnWidth).round().clamp(0, _kanbanStages.length - 1);
+    final idx = (pos.pixels / columnWidth).round().clamp(
+      0,
+      _kanbanStages.length - 1,
+    );
     if (idx != _currentKanbanStage) {
       setState(() => _currentKanbanStage = idx);
     }
@@ -321,7 +324,10 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
               leading: Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: s.color,
+                  shape: BoxShape.circle,
+                ),
               ),
               title: Text(s.displayName),
               onTap: () => Navigator.pop(context, s),
@@ -453,7 +459,10 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
       scrolledUnderElevation: 1,
       actions: [
         IconButton(
-          icon: Icon(_showSearch ? LucideIcons.x : LucideIcons.search, size: 22),
+          icon: Icon(
+            _showSearch ? LucideIcons.x : LucideIcons.search,
+            size: 22,
+          ),
           onPressed: () {
             setState(() {
               _showSearch = !_showSearch;
@@ -513,7 +522,9 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
 
   Future<void> _toggleViewMode() async {
     setState(() {
-      _viewMode = _viewMode == ViewMode.kanban ? ViewMode.list : ViewMode.kanban;
+      _viewMode = _viewMode == ViewMode.kanban
+          ? ViewMode.list
+          : ViewMode.kanban;
     });
     await _savePref(_kViewModePrefKey, _viewMode.name);
     if (_viewMode == ViewMode.kanban) {
@@ -544,7 +555,11 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(LucideIcons.x, color: AppColors.textTertiary, size: 16),
+                  icon: Icon(
+                    LucideIcons.x,
+                    color: AppColors.textTertiary,
+                    size: 16,
+                  ),
                   onPressed: () {
                     _searchController.clear();
                     _onSearchChanged('');
@@ -553,7 +568,10 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
               : null,
           filled: true,
           fillColor: AppColors.gray100,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
@@ -575,7 +593,8 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
         }
       }
     }
-    final mineActive = myProfileId != null &&
+    final mineActive =
+        myProfileId != null &&
         filters.assignedToIds.length == 1 &&
         filters.assignedToIds.first == myProfileId;
 
@@ -736,15 +755,19 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
             if (primary != null) ...[
               _SummaryChip(
                 icon: LucideIcons.dollarSign,
-                label: _formatCurrency(primary.totalValue, primary.currency.symbol),
-                sublabel: summary.loadedSubset
-                    ? '~ Pipeline'
-                    : 'Pipeline',
+                label: _formatCurrency(
+                  primary.totalValue,
+                  primary.currency.symbol,
+                ),
+                sublabel: summary.loadedSubset ? '~ Pipeline' : 'Pipeline',
               ),
               const SizedBox(width: 8),
               _SummaryChip(
                 icon: LucideIcons.target,
-                label: _formatCurrency(primary.weightedValue, primary.currency.symbol),
+                label: _formatCurrency(
+                  primary.weightedValue,
+                  primary.currency.symbol,
+                ),
                 sublabel: 'Forecast',
               ),
               const SizedBox(width: 8),
@@ -962,7 +985,10 @@ class _DealsListScreenState extends ConsumerState<DealsListScreen> {
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(color: stage.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: stage.color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 10),
           Text(
@@ -1075,8 +1101,8 @@ class _QuickChip extends StatelessWidget {
               color: onTap == null
                   ? AppColors.gray400
                   : selected
-                      ? AppColors.primary600
-                      : AppColors.textSecondary,
+                  ? AppColors.primary600
+                  : AppColors.textSecondary,
             ),
             const SizedBox(width: 6),
             Text(
@@ -1085,8 +1111,8 @@ class _QuickChip extends StatelessWidget {
                 color: onTap == null
                     ? AppColors.gray400
                     : selected
-                        ? AppColors.primary600
-                        : AppColors.textPrimary,
+                    ? AppColors.primary600
+                    : AppColors.textPrimary,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
@@ -1131,7 +1157,9 @@ class _SummaryChip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
+                style: AppTypography.label.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 sublabel,
@@ -1272,7 +1300,9 @@ class _DealFilterSheetState extends State<_DealFilterSheet> {
                             label: u.displayName,
                             selected: _draft.assignedToIds.contains(u.id),
                             onTap: () => setState(() {
-                              final next = List<String>.from(_draft.assignedToIds);
+                              final next = List<String>.from(
+                                _draft.assignedToIds,
+                              );
                               if (next.contains(u.id)) {
                                 next.remove(u.id);
                               } else {
@@ -1312,8 +1342,9 @@ class _DealFilterSheetState extends State<_DealFilterSheet> {
                   _dateRangePicker(
                     fromValue: _draft.createdFrom,
                     toValue: _draft.createdTo,
-                    onFromChanged: (d) =>
-                        setState(() => _draft = _draft.copyWith(createdFrom: d)),
+                    onFromChanged: (d) => setState(
+                      () => _draft = _draft.copyWith(createdFrom: d),
+                    ),
                     onToChanged: (d) =>
                         setState(() => _draft = _draft.copyWith(createdTo: d)),
                   ),
@@ -1322,8 +1353,9 @@ class _DealFilterSheetState extends State<_DealFilterSheet> {
                   _dateRangePicker(
                     fromValue: _draft.closingFrom,
                     toValue: _draft.closingTo,
-                    onFromChanged: (d) =>
-                        setState(() => _draft = _draft.copyWith(closingFrom: d)),
+                    onFromChanged: (d) => setState(
+                      () => _draft = _draft.copyWith(closingFrom: d),
+                    ),
                     onToChanged: (d) =>
                         setState(() => _draft = _draft.copyWith(closingTo: d)),
                   ),
@@ -1448,7 +1480,11 @@ class _DealFilterSheetState extends State<_DealFilterSheet> {
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.calendar, size: 16, color: AppColors.textSecondary),
+              Icon(
+                LucideIcons.calendar,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 8),
               Text(
                 value == null ? label : fmt.format(value),
@@ -1526,8 +1562,7 @@ class _SelectableChip extends StatelessWidget {
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color:
-                    selected ? AppColors.primary600 : AppColors.textPrimary,
+                color: selected ? AppColors.primary600 : AppColors.textPrimary,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

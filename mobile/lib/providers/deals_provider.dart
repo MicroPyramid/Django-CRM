@@ -269,11 +269,13 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
       queryParams['rotten'] = 'true';
     }
 
-    final url = Uri.parse(
-      ApiConfig.opportunities,
-    ).replace(queryParameters: queryParams.map(
-      (k, v) => MapEntry(k, v is List ? v : v.toString()),
-    )).toString();
+    final url = Uri.parse(ApiConfig.opportunities)
+        .replace(
+          queryParameters: queryParams.map(
+            (k, v) => MapEntry(k, v is List ? v : v.toString()),
+          ),
+        )
+        .toString();
     final response = await _apiService.get(url);
 
     if (!response.success || response.data == null) {
@@ -342,8 +344,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
       }
 
       final data = response.data!;
-      final dealData =
-          data['opportunity_obj'] as Map<String, dynamic>?;
+      final dealData = data['opportunity_obj'] as Map<String, dynamic>?;
       if (dealData == null) {
         // ignore: avoid_print
         print('[deals_provider] getDealDetail($id): missing opportunity_obj');
@@ -394,7 +395,9 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
             .toList();
       } catch (e, st) {
         // ignore: avoid_print
-        print('[deals_provider] custom_field_definitions parse failed: $e\n$st');
+        print(
+          '[deals_provider] custom_field_definitions parse failed: $e\n$st',
+        );
       }
 
       List<AssignableUser> users = const [];
@@ -665,8 +668,7 @@ final activeDealsTotalCountProvider = Provider<int>((ref) {
   // not just the loaded page. If the filter set already pins to non-closed
   // stages (rotten=true, or stage != closed_*), prefer that; otherwise fall
   // back to scanning the loaded subset.
-  final loadedClosed =
-      data.deals.where((d) => d.stage.isClosed).length;
+  final loadedClosed = data.deals.where((d) => d.stage.isClosed).length;
   return (data.totalCount - loadedClosed).clamp(0, data.totalCount);
 });
 
@@ -716,17 +718,18 @@ final pipelineSummaryProvider = Provider<PipelineSummary>((ref) {
     a.weighted += d.value * (d.probability / 100.0);
     a.count += 1;
   }
-  final buckets = acc.entries
-      .map(
-        (e) => PipelineBucket(
-          currency: e.key,
-          totalValue: e.value.total,
-          weightedValue: e.value.weighted,
-          count: e.value.count,
-        ),
-      )
-      .toList()
-    ..sort((a, b) => b.totalValue.compareTo(a.totalValue));
+  final buckets =
+      acc.entries
+          .map(
+            (e) => PipelineBucket(
+              currency: e.key,
+              totalValue: e.value.total,
+              weightedValue: e.value.weighted,
+              count: e.value.count,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => b.totalValue.compareTo(a.totalValue));
   // We can only mark "complete" when we've loaded every page; that lets the
   // UI add a tilde to the chip when the totals are an undercount.
   final loadedSubset = data.hasMore;

@@ -34,7 +34,9 @@ class _SolutionsListScreenState extends ConsumerState<SolutionsListScreen> {
   }
 
   void _applyFilters() {
-    ref.read(solutionsProvider.notifier).refresh(
+    ref
+        .read(solutionsProvider.notifier)
+        .refresh(
           search: _search.isEmpty ? null : _search,
           status: _status,
           publishedOnly: _publishedOnly ? true : null,

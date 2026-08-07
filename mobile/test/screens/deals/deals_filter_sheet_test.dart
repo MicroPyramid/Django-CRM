@@ -21,7 +21,10 @@ void main() {
           authProvider.overrideWith(() => _FakeAuth()),
           dealsProvider.overrideWith(() => _FakeDeals()),
         ],
-        child: MaterialApp(theme: AppTheme.light, home: const DealsListScreen()),
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const DealsListScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -47,7 +50,11 @@ class _FakeDeals extends DealsNotifier {
 class _FakeAuth extends AuthNotifier {
   @override
   AuthState build() {
-    const org = Organization(id: 'org-1', name: 'Test Org', currencySymbol: r'$');
+    const org = Organization(
+      id: 'org-1',
+      name: 'Test Org',
+      currencySymbol: r'$',
+    );
     return AuthState(
       user: const AuthUser(id: 'user-1', email: 'user@example.com'),
       organizations: [org],

@@ -56,6 +56,24 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               description: 'The people at those companies',
               onTap: () => context.push(AppRoutes.contacts),
             ),
+            _MenuItem(
+              icon: LucideIcons.clock,
+              label: 'Timesheet',
+              description: 'The hours you logged this week',
+              onTap: () => context.push(AppRoutes.timesheet),
+            ),
+            _MenuItem(
+              icon: LucideIcons.bell,
+              label: 'Notifications',
+              description: 'Mentions and comments on your tickets',
+              onTap: () => context.push(AppRoutes.notifications),
+            ),
+            _MenuItem(
+              icon: LucideIcons.receipt,
+              label: 'Invoices',
+              description: 'What is owed, and what has been paid',
+              onTap: () => context.push(AppRoutes.invoices),
+            ),
 
             // Account Section
             _buildSectionHeader('Account'),

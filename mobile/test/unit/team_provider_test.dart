@@ -177,20 +177,19 @@ void main() {
       expect(data.tokensOnDeactivated, 2);
     });
 
-    test('the only admin is identified so the controls can be withheld',
-        () async {
-      final data = await container.read(teamProvider.future);
+    test(
+      'the only admin is identified so the controls can be withheld',
+      () async {
+        final data = await container.read(teamProvider.future);
 
-      expect(data.adminCount, 1);
-      expect(data.lastAdmin?.userId, 'user-admin');
-    });
+        expect(data.adminCount, 1);
+        expect(data.lastAdmin?.userId, 'user-admin');
+      },
+    );
 
     test('with two admins there is no last admin to protect', () {
       final data = TeamListData(
-        active: [
-          _member('a', 'ADMIN'),
-          _member('b', 'ADMIN'),
-        ],
+        active: [_member('a', 'ADMIN'), _member('b', 'ADMIN')],
       );
 
       expect(data.lastAdmin, isNull);

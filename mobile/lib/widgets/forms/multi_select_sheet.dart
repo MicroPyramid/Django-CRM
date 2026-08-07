@@ -110,9 +110,7 @@ class _MultiSelectSheetState<T> extends State<MultiSelectSheet<T>> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: Row(
             children: [
-              Expanded(
-                child: Text(widget.title, style: AppTypography.h3),
-              ),
+              Expanded(child: Text(widget.title, style: AppTypography.h3)),
               TextButton(
                 // Themed buttons carry an infinite minimum width, which a Row
                 // does not bound. Without this the row fails to lay out and the
@@ -120,8 +118,7 @@ class _MultiSelectSheetState<T> extends State<MultiSelectSheet<T>> {
                 style: TextButton.styleFrom(
                   minimumSize: AppLayout.buttonMinSizeInRow,
                 ),
-                onPressed: () =>
-                    Navigator.pop(context, _selected.toList()),
+                onPressed: () => Navigator.pop(context, _selected.toList()),
                 child: const Text('Done'),
               ),
             ],

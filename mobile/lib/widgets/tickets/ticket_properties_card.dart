@@ -47,7 +47,8 @@ class TicketPropertiesCard extends StatelessWidget {
             deadline: ticket.firstResponseSlaDeadline,
             met: ticket.firstResponseAt != null,
             metAt: ticket.firstResponseAt,
-            breached: ticket.isFirstResponseSlaBreached ||
+            breached:
+                ticket.isFirstResponseSlaBreached ||
                 ticket.isFirstResponseSlaBreachedFromApi,
             paused: ticket.slaPausedAt != null,
           ),
@@ -192,9 +193,7 @@ class TicketPropertiesCard extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: iconColor),
         const SizedBox(width: 10),
-        Expanded(
-          child: Text(label, style: AppTypography.label),
-        ),
+        Expanded(child: Text(label, style: AppTypography.label)),
         Text(
           trailing,
           style: AppTypography.label.copyWith(

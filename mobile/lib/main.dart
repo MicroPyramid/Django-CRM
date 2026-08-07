@@ -24,8 +24,9 @@ void main() async {
           options: DefaultFirebaseOptions.currentPlatform,
         );
         // Off in debug to avoid spamming the Crashlytics console with dev noise.
-        await FirebaseCrashlytics.instance
-            .setCrashlyticsCollectionEnabled(!kDebugMode);
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+          !kDebugMode,
+        );
         FlutterError.onError =
             FirebaseCrashlytics.instance.recordFlutterFatalError;
         PlatformDispatcher.instance.onError = (error, stack) {

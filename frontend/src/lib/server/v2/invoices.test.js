@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { listInvoices, FILTER_FIELDS } = await import('$lib/server/v2/invoices.js');
+const { listInvoices, getInvoice, FILTER_FIELDS } = await import('$lib/server/v2/invoices.js');
 const { readFilters, buildFilterQuery } = await import('$lib/server/v2/filter-params.js');
 
 // Cast rather than shaping a full Cookies mock: listInvoices only ever calls
@@ -113,5 +113,42 @@ describe('listInvoices', () => {
     const { invoices } = await listInvoices(event, new URLSearchParams());
     expect(invoices[0].account).toEqual({ id: 'acc-1', name: 'Northwind' });
     expect(invoices[0].total_amount).toBe(500);
+  });
+});
+
+describe('is_settled', () => {
+  // The detail page gates both destructive actions on `!invoice.is_settled`
+  // alone: the Cancel button in the header and the record-payment form in the
+  // totals card. That is only correct while SETTLED covers BOTH terminal
+  // statuses. The Cancel guard used to carry a second `status !== 'Cancelled'`
+  // test, which was dead weight given SETTLED and has been removed, so this is
+  // now the only thing standing between a narrowed SETTLED and a Cancel button
+  // offered on an already-cancelled invoice. Both endpoints answer 400 there,
+  // so the damage would be a dead button rather than a bad write, but a button
+  // that cannot work should not be drawn.
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  /** @param {string} status */
+  async function settledFor(status) {
+    apiRequest.mockResolvedValue({ invoice: { id: 'inv-1', status } });
+    const { invoice } = await getInvoice(event, 'inv-1');
+    return invoice.is_settled;
+  }
+
+  it('is true for a paid invoice', async () => {
+    expect(await settledFor('Paid')).toBe(true);
+  });
+
+  it('is true for a cancelled invoice', async () => {
+    // InvoiceCancelView refuses to cancel one twice, so the button must go.
+    expect(await settledFor('Cancelled')).toBe(true);
+  });
+
+  it('is false for every status that is still in play', async () => {
+    for (const status of ['Draft', 'Sent', 'Viewed', 'Partially_Paid', 'Overdue', 'Pending']) {
+      expect(await settledFor(status), status).toBe(false);
+    }
   });
 });

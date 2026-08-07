@@ -37,9 +37,7 @@ class CustomFieldsForm extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncDefs = ref.watch(
-      customFieldDefinitionsProvider(targetModel),
-    );
+    final asyncDefs = ref.watch(customFieldDefinitionsProvider(targetModel));
 
     return asyncDefs.when(
       loading: () => const Padding(
@@ -116,9 +114,7 @@ class _CustomFieldInput extends StatelessWidget {
       label: _label(),
       controller: TextEditingController(text: value?.toString() ?? ''),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
-      ],
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))],
       onChanged: (v) {
         if (v.isEmpty) {
           onChanged(null);
@@ -277,13 +273,8 @@ class _CustomFieldInput extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Checkbox(
-              value: checked,
-              onChanged: (v) => onChanged(v ?? false),
-            ),
-            Expanded(
-              child: Text(_label(), style: AppTypography.body),
-            ),
+            Checkbox(value: checked, onChanged: (v) => onChanged(v ?? false)),
+            Expanded(child: Text(_label(), style: AppTypography.body)),
           ],
         ),
       ),

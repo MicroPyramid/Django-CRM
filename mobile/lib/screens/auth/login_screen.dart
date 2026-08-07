@@ -302,9 +302,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           TextSpan(
             text: 'Terms',
             style: linkStyle,
-            recognizer: _recognizerFor(
-              'https://bottlecrm.io/terms-of-service',
-            ),
+            recognizer: _recognizerFor('https://bottlecrm.io/terms-of-service'),
           ),
           const TextSpan(text: ' and '),
           TextSpan(

@@ -124,43 +124,54 @@ class TicketCard extends StatelessWidget {
     final pills = <Widget>[];
 
     if (ticketItem.isProblem) {
-      pills.add(_pill(
-        icon: LucideIcons.alertOctagon,
-        label: 'Problem',
-        bg: AppColors.warning100,
-        fg: AppColors.warning700,
-      ));
+      pills.add(
+        _pill(
+          icon: LucideIcons.alertOctagon,
+          label: 'Problem',
+          bg: AppColors.warning100,
+          fg: AppColors.warning700,
+        ),
+      );
     }
     if (ticketItem.parentSummary != null) {
-      pills.add(_pill(
-        icon: LucideIcons.cornerDownRight,
-        label: 'Sub-ticket',
-        bg: AppColors.primary100,
-        fg: AppColors.primary700,
-      ));
+      pills.add(
+        _pill(
+          icon: LucideIcons.cornerDownRight,
+          label: 'Sub-ticket',
+          bg: AppColors.primary100,
+          fg: AppColors.primary700,
+        ),
+      );
     }
     if (ticketItem.childCount > 0) {
-      pills.add(_pill(
-        icon: LucideIcons.gitBranch,
-        label: '${ticketItem.childCount} '
-            'child${ticketItem.childCount == 1 ? '' : 'ren'}',
-        bg: AppColors.gray100,
-        fg: AppColors.gray700,
-      ));
+      pills.add(
+        _pill(
+          icon: LucideIcons.gitBranch,
+          label:
+              '${ticketItem.childCount} '
+              'child${ticketItem.childCount == 1 ? '' : 'ren'}',
+          bg: AppColors.gray100,
+          fg: AppColors.gray700,
+        ),
+      );
     }
 
     const maxTags = 2;
     final shownTags = ticketItem.tags.take(maxTags).toList();
     final overflow = ticketItem.tags.length - shownTags.length;
     for (final tag in shownTags) {
-      pills.add(_pill(label: tag, bg: AppColors.gray100, fg: AppColors.gray700));
+      pills.add(
+        _pill(label: tag, bg: AppColors.gray100, fg: AppColors.gray700),
+      );
     }
     if (overflow > 0) {
-      pills.add(_pill(
-        label: '+$overflow',
-        bg: AppColors.gray100,
-        fg: AppColors.gray600,
-      ));
+      pills.add(
+        _pill(
+          label: '+$overflow',
+          bg: AppColors.gray100,
+          fg: AppColors.gray600,
+        ),
+      );
     }
 
     return Wrap(spacing: 4, runSpacing: 4, children: pills);
@@ -244,7 +255,8 @@ class TicketCard extends StatelessWidget {
   Widget _buildAssignees() {
     if (ticketItem.assignedTo.isEmpty) return const SizedBox.shrink();
     final first = ticketItem.assignedTo.first;
-    final email = (first['user_details']?['email'] as String?) ??
+    final email =
+        (first['user_details']?['email'] as String?) ??
         (first['email'] as String?) ??
         '';
     final name = email.isNotEmpty ? email.split('@').first : 'User';
@@ -280,7 +292,8 @@ class TicketCard extends StatelessWidget {
   Widget _buildSlaChip() {
     // Distinguish first-response vs resolution breaches with a tooltip-y
     // label rather than a separate chip. Keeps the card compact.
-    final isResolution = ticketItem.isResolutionSlaBreached &&
+    final isResolution =
+        ticketItem.isResolutionSlaBreached &&
         !ticketItem.isFirstResponseSlaBreached;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

@@ -52,9 +52,9 @@ class SolutionsNotifier extends Notifier<SolutionsListData> {
 
     final url = params.isEmpty
         ? ApiConfig.solutions
-        : Uri.parse(ApiConfig.solutions)
-            .replace(queryParameters: params)
-            .toString();
+        : Uri.parse(
+            ApiConfig.solutions,
+          ).replace(queryParameters: params).toString();
 
     final response = await _api.get(url);
     if (!response.success || response.data == null) {
@@ -81,8 +81,10 @@ class SolutionsNotifier extends Notifier<SolutionsListData> {
   }
 
   Future<Solution?> getById(String id) async {
-    final cached =
-        state.solutions.where((s) => s.id == id).cast<Solution?>().firstOrNull;
+    final cached = state.solutions
+        .where((s) => s.id == id)
+        .cast<Solution?>()
+        .firstOrNull;
     if (cached != null) return cached;
     final response = await _api.get(ApiConfig.solutionDetail(id));
     if (!response.success || response.data == null) return null;
@@ -115,25 +117,22 @@ class SolutionsNotifier extends Notifier<SolutionsListData> {
   }
 
   Future<ApiResponse<Map<String, dynamic>>> publish(String id) async {
-    final response =
-        await _api.post(ApiConfig.solutionPublish(id), const {});
+    final response = await _api.post(ApiConfig.solutionPublish(id), const {});
     if (response.success) await refresh();
     return response;
   }
 
   Future<ApiResponse<Map<String, dynamic>>> unpublish(String id) async {
-    final response =
-        await _api.post(ApiConfig.solutionUnpublish(id), const {});
+    final response = await _api.post(ApiConfig.solutionUnpublish(id), const {});
     if (response.success) await refresh();
     return response;
   }
 
   /// Link a solution to a ticket.
   Future<bool> linkToTicket(String ticketId, String solutionId) async {
-    final response = await _api.post(
-      ApiConfig.ticketSolutionLink(ticketId),
-      {'solution_id': solutionId},
-    );
+    final response = await _api.post(ApiConfig.ticketSolutionLink(ticketId), {
+      'solution_id': solutionId,
+    });
     return response.success;
   }
 
@@ -147,10 +146,12 @@ class SolutionsNotifier extends Notifier<SolutionsListData> {
 
   /// Solution suggestions for a ticket (KB typeahead).
   Future<List<Solution>> suggestionsFor(String ticketId) async {
-    final response =
-        await _api.get(ApiConfig.ticketSolutionSuggestions(ticketId));
+    final response = await _api.get(
+      ApiConfig.ticketSolutionSuggestions(ticketId),
+    );
     if (!response.success || response.data == null) return const [];
-    final list = (response.data!['suggestions'] as List<dynamic>?) ??
+    final list =
+        (response.data!['suggestions'] as List<dynamic>?) ??
         (response.data!['solutions'] as List<dynamic>?) ??
         const [];
     return list

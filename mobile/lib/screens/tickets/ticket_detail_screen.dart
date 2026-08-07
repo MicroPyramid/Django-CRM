@@ -414,7 +414,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       _ThreadSegment.emails => const <Comment>[],
     };
 
-    final canCompose = (_detail?.commentPermission ?? false) &&
+    final canCompose =
+        (_detail?.commentPermission ?? false) &&
         _segment != _ThreadSegment.emails;
 
     return Column(
@@ -504,10 +505,18 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       ),
       child: Row(
         children: [
-          chip(_ThreadSegment.public, 'Public', LucideIcons.messageSquare,
-              publicCount),
-          chip(_ThreadSegment.internal, 'Internal', LucideIcons.lock,
-              internalCount),
+          chip(
+            _ThreadSegment.public,
+            'Public',
+            LucideIcons.messageSquare,
+            publicCount,
+          ),
+          chip(
+            _ThreadSegment.internal,
+            'Internal',
+            LucideIcons.lock,
+            internalCount,
+          ),
           chip(_ThreadSegment.emails, 'Emails', LucideIcons.mail, emailsCount),
         ],
       ),
@@ -586,8 +595,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                     color: AppColors.textTertiary,
                   ),
                   filled: true,
-                  fillColor:
-                      isInternal ? AppColors.warning50 : AppColors.gray100,
+                  fillColor: isInternal
+                      ? AppColors.warning50
+                      : AppColors.gray100,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -666,18 +676,19 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       final tagged = <_TaggedCommentLocal>[];
       for (final c in (data['comments'] as List<dynamic>? ?? [])) {
         if (c is Map<String, dynamic>) {
-          tagged.add(_TaggedCommentLocal(
-            comment: Comment.fromJson(c),
-            isInternal: false,
-          ));
+          tagged.add(
+            _TaggedCommentLocal(
+              comment: Comment.fromJson(c),
+              isInternal: false,
+            ),
+          );
         }
       }
       for (final c in (data['internal_notes'] as List<dynamic>? ?? [])) {
         if (c is Map<String, dynamic>) {
-          tagged.add(_TaggedCommentLocal(
-            comment: Comment.fromJson(c),
-            isInternal: true,
-          ));
+          tagged.add(
+            _TaggedCommentLocal(comment: Comment.fromJson(c), isInternal: true),
+          );
         }
       }
       tagged.sort(
@@ -900,10 +911,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                       ),
                       child: Row(
                         children: [
-                          UserAvatar(
-                            name: u.displayName,
-                            size: AvatarSize.xs,
-                          ),
+                          UserAvatar(name: u.displayName, size: AvatarSize.xs),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -1123,8 +1131,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       leadingOf: (u) => UserAvatar(name: u.displayName, size: AvatarSize.xs),
     );
     if (result == null) return;
-    await _applyUpdate({'assigned_to': result.map((u) => u.id).toList()},
-        'Reassigned');
+    await _applyUpdate({
+      'assigned_to': result.map((u) => u.id).toList(),
+    }, 'Reassigned');
   }
 
   Future<void> _changeStatus(Ticket c) async {
@@ -1177,10 +1186,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       ),
     );
     if (confirmed != true) return;
-    await _applyUpdate(
-      {'status': TicketStatus.closed.value, 'closed_on': _todayIso()},
-      'Ticket closed',
-    );
+    await _applyUpdate({
+      'status': TicketStatus.closed.value,
+      'closed_on': _todayIso(),
+    }, 'Ticket closed');
   }
 
   Future<void> _mergeInto(Ticket c) async {
@@ -1215,10 +1224,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         minChildSize: 0.4,
         maxChildSize: 0.95,
         expand: false,
-        builder: (ctx, controller) => _TicketPickerSheet(
-          tickets: candidates,
-          controller: controller,
-        ),
+        builder: (ctx, controller) =>
+            _TicketPickerSheet(tickets: candidates, controller: controller),
       ),
     );
     if (target == null) return;
@@ -1540,7 +1547,11 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.arrowUp, size: 14, color: AppColors.gray500),
+                    Icon(
+                      LucideIcons.arrowUp,
+                      size: 14,
+                      color: AppColors.gray500,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -1699,10 +1710,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     if (!mounted) return;
     final candidates = ref
         .read(ticketsListProvider)
-        .where((t) =>
-            t.id != c.id &&
-            t.status != TicketStatus.duplicate &&
-            t.id != c.parentSummary?.id)
+        .where(
+          (t) =>
+              t.id != c.id &&
+              t.status != TicketStatus.duplicate &&
+              t.id != c.parentSummary?.id,
+        )
         .toList();
     if (candidates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1727,10 +1740,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         minChildSize: 0.4,
         maxChildSize: 0.95,
         expand: false,
-        builder: (ctx, controller) => _TicketPickerSheet(
-          tickets: candidates,
-          controller: controller,
-        ),
+        builder: (ctx, controller) =>
+            _TicketPickerSheet(tickets: candidates, controller: controller),
       ),
     );
     if (parent == null) return;
@@ -1790,9 +1801,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                     value: cascade,
                     onChanged: (v) => setLocal(() => cascade = v ?? true),
                   ),
-                  const Expanded(
-                    child: Text('Also close linked tickets'),
-                  ),
+                  const Expanded(child: Text('Also close linked tickets')),
                 ],
               ),
             ],
@@ -2100,13 +2109,15 @@ class _TicketPickerSheetState extends State<_TicketPickerSheet> {
     final filtered = _query.isEmpty
         ? widget.tickets
         : widget.tickets
-            .where((t) =>
-                t.name.toLowerCase().contains(_query.toLowerCase()) ||
-                (t.accountName?.toLowerCase().contains(
+              .where(
+                (t) =>
+                    t.name.toLowerCase().contains(_query.toLowerCase()) ||
+                    (t.accountName?.toLowerCase().contains(
                           _query.toLowerCase(),
                         ) ??
-                    false))
-            .toList();
+                        false),
+              )
+              .toList();
     return Column(
       children: [
         Container(
@@ -2228,10 +2239,7 @@ class _EmailTile extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isInbound
                       ? AppColors.primary100
@@ -2278,9 +2286,7 @@ class _EmailTile extends StatelessWidget {
           if (email.subject != null && email.subject!.isNotEmpty) ...[
             Text(
               email.subject!,
-              style: AppTypography.label.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.label.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
           ],
@@ -2365,11 +2371,7 @@ class _ActivityTile extends StatelessWidget {
               color: _iconBg(action),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              _iconFor(action),
-              size: 14,
-              color: _iconColor(action),
-            ),
+            child: Icon(_iconFor(action), size: 14, color: _iconColor(action)),
           ),
           const SizedBox(width: 12),
           Expanded(

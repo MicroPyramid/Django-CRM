@@ -61,7 +61,8 @@ class DealCard extends ConsumerWidget {
         }
       }
     }
-    final assigneeLabel = assignee?.displayName ??
+    final assigneeLabel =
+        assignee?.displayName ??
         (deal.assignedTo == 'Unassigned' ? null : deal.assignedTo);
 
     return GestureDetector(
@@ -348,11 +349,7 @@ class DealCardCompact extends StatelessWidget {
   final Deal deal;
   final VoidCallback? onTap;
 
-  const DealCardCompact({
-    super.key,
-    required this.deal,
-    this.onTap,
-  });
+  const DealCardCompact({super.key, required this.deal, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -423,5 +420,4 @@ class DealCardCompact extends StatelessWidget {
       ),
     );
   }
-
 }

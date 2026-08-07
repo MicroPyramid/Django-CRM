@@ -591,7 +591,9 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
                       onToggle: () => _toggleTask(task),
                       onTap: () => _showTaskDetail(task),
                       onDelete: () => _deleteTask(task),
-                      onComplete: task.completed ? null : () => _toggleTask(task),
+                      onComplete: task.completed
+                          ? null
+                          : () => _toggleTask(task),
                     );
                   },
                 ),
@@ -1024,7 +1026,9 @@ class _TasksListScreenState extends ConsumerState<TasksListScreen> {
             },
           ),
           // Task model only supports Low/Medium/High at the backend level.
-          ...Priority.values.where((p) => p != Priority.urgent).map(
+          ...Priority.values
+              .where((p) => p != Priority.urgent)
+              .map(
                 (p) => _TaskFilterOption(
                   label: p.label,
                   isSelected: _filters.priority == p,
@@ -1073,14 +1077,18 @@ class _TaskFilterChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 13,
-                color: isActive ? AppColors.primary700 : AppColors.textSecondary,
+                color: isActive
+                    ? AppColors.primary700
+                    : AppColors.textSecondary,
               ),
               const SizedBox(width: 5),
             ],
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: isActive ? AppColors.primary700 : AppColors.textSecondary,
+                color: isActive
+                    ? AppColors.primary700
+                    : AppColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w600 : null,
               ),
             ),

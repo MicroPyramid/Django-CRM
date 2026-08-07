@@ -46,9 +46,14 @@
     <form method="POST" action="?/duplicate" use:enhance={working} style="display:inline">
       <button class="v2-btn" disabled={busy}>Duplicate</button>
     </form>
-    {#if !invoice.is_settled && invoice.status !== 'Cancelled'}
+    {#if !invoice.is_settled}
       <!-- In the header, not the rail: the rail is hidden below 1180px, and a
-           destructive action a phone cannot reach is worse than one it can. -->
+           destructive action a phone cannot reach is worse than one it can.
+
+           One condition is the whole rule. `is_settled` is Paid or Cancelled
+           (SETTLED in $lib/server/v2/invoices.js), which is exactly what
+           InvoiceCancelView refuses, so a second `status !== 'Cancelled'`
+           test here could never change the answer. It used to be there. -->
       <form method="POST" action="?/cancel" use:enhance={working} style="display:inline">
         <button class="v2-btn" disabled={busy} style="color:var(--v2-rust)">Cancel</button>
       </form>

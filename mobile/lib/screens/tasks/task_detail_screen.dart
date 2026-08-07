@@ -141,65 +141,63 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: _getHeaderColor(),
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.chevronLeft,
-                  size: 20,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              onPressed: () => context.pop(),
+      expandedHeight: 200,
+      pinned: true,
+      backgroundColor: _getHeaderColor(),
+      leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            LucideIcons.chevronLeft,
+            size: 20,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        onPressed: () => context.pop(),
+      ),
+      actions: [
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              shape: BoxShape.circle,
             ),
-            actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.pencil,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                onPressed: () async {
-                  final result = await context.push(
-                    '/tasks/${widget.taskId}/edit',
-                  );
-                  if (result == true && mounted) {
-                    _fetchTask();
-                  }
-                },
-              ),
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.moreVertical,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                onPressed: () => _showMoreOptions(),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
-          );
+            child: const Icon(
+              LucideIcons.pencil,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          onPressed: () async {
+            final result = await context.push('/tasks/${widget.taskId}/edit');
+            if (result == true && mounted) {
+              _fetchTask();
+            }
+          },
+        ),
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.moreVertical,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          onPressed: () => _showMoreOptions(),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(background: _buildHeader()),
+    );
   }
 
   Color _getHeaderColor() {
@@ -330,7 +328,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   Widget _buildContent() {
     final task = _task!;
     final related = _resolveRelatedEntity();
-    final defs = _detail?.customFieldDefinitions ?? const <CustomFieldDefinition>[];
+    final defs =
+        _detail?.customFieldDefinitions ?? const <CustomFieldDefinition>[];
     final comments = _detail?.comments ?? const <Comment>[];
     final attachments = _detail?.attachments ?? const <Attachment>[];
     final createdByLabel = task.createdByName?.isNotEmpty == true
@@ -405,9 +404,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             _buildCard(
               title: 'Custom Fields',
               icon: LucideIcons.listChecks,
-              child: Column(
-                children: _buildCustomFieldRows(defs),
-              ),
+              child: Column(children: _buildCustomFieldRows(defs)),
             ),
             const SizedBox(height: 16),
           ],
@@ -457,11 +454,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 ),
                 if (createdByLabel.isNotEmpty) ...[
                   const Divider(height: 20),
-                  _buildInfoRow(
-                    'Created by',
-                    createdByLabel,
-                    LucideIcons.user,
-                  ),
+                  _buildInfoRow('Created by', createdByLabel, LucideIcons.user),
                 ],
                 if (task.updatedAt != null) ...[
                   const Divider(height: 20),
@@ -790,9 +783,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ),
         const SizedBox(width: 8),
         Material(
-          color: _isPostingComment
-              ? AppColors.gray400
-              : AppColors.primary600,
+          color: _isPostingComment ? AppColors.gray400 : AppColors.primary600,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
@@ -1331,10 +1322,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     if (path == null || path.isEmpty) return;
     final uri = Uri.tryParse(path);
     if (uri == null) return;
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

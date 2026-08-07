@@ -416,7 +416,10 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
     """Serializer for recording Payments.
 
     Pass the target invoice via ``context={"invoice": invoice}`` so the amount
-    can be bounded by the outstanding balance.
+    can be bounded by the outstanding balance and the invoice's status can be
+    checked. Both endpoints that record a payment (``mark-paid`` and
+    ``payments``) go through here, which is why the rules live on the
+    serializer rather than in either view.
     """
 
     class Meta:
@@ -428,6 +431,27 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
             "reference_number",
             "notes",
         )
+
+    def validate(self, attrs):
+        """Refuse a payment against an invoice that is not owed.
+
+        A cancelled invoice is the case that matters. It can still carry a
+        non-zero ``amount_due``, so the amount check below passes, and
+        ``Payment.save()`` calls ``update_invoice_payment()``, which writes
+        ``status`` unconditionally. The effect was not merely an accepted
+        payment: it moved the invoice out of Cancelled to Paid or
+        Partially_Paid, silently undoing the cancellation. Neither ``send``
+        nor ``cancel`` would allow that transition.
+
+        A *paid* invoice needs no rule here: it has nothing outstanding, so
+        ``validate_amount`` already rejects every amount as above the balance.
+        """
+        invoice = self.context.get("invoice")
+        if invoice is not None and invoice.status == "Cancelled":
+            raise serializers.ValidationError(
+                "Cannot record a payment against a cancelled invoice."
+            )
+        return attrs
 
     def validate_amount(self, value):
         # Payment totals are a SUM over this invoice's payments, so a zero or
@@ -1241,6 +1265,36 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
             if contact and contact.account_id and contact.account_id != account_id:
                 raise serializers.ValidationError(
                     {"contact_id": "Contact does not belong to the selected account"}
+                )
+
+        # A CUSTOM cadence is meaningless without its interval.
+        #
+        # `calculate_next_date` reads `if self.frequency == "CUSTOM" and
+        # self.custom_days:` and otherwise falls through to its final
+        # `return current + relativedelta(months=1)`. So a CUSTOM schedule with
+        # no interval was accepted and then billed monthly forever, with the
+        # list still describing it as "Custom": the client asked for one thing
+        # and the server quietly did another. Zero is caught by the same rule,
+        # because it is falsy there and behaves identically to missing.
+        #
+        # `partial` guards the PUT path: an update that does not mention
+        # frequency must be read against the stored value, not against an
+        # absent one.
+        frequency = attrs.get("frequency")
+        if frequency is None and self.partial and self.instance is not None:
+            frequency = self.instance.frequency
+        if frequency == "CUSTOM":
+            custom_days = attrs.get("custom_days")
+            if custom_days is None and self.partial and self.instance is not None:
+                custom_days = self.instance.custom_days
+            if not custom_days:
+                raise serializers.ValidationError(
+                    {
+                        "custom_days": (
+                            "A custom frequency needs an interval in days. "
+                            "Without one the schedule would bill monthly."
+                        )
+                    }
                 )
 
         validate_line_item_products(attrs.get("line_items"), self.org)

@@ -172,8 +172,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     if (_filters.statusList.isEmpty && _filters.status == null) return 'all';
     if (_filters.statusList.isNotEmpty) {
       final s = _filters.statusList.toSet();
-      if (s.length == _openStatuses.length &&
-          s.containsAll(_openStatuses)) {
+      if (s.length == _openStatuses.length && s.containsAll(_openStatuses)) {
         return 'open';
       }
       if (s.length == 1 && s.first == 'Closed') return 'closed';
@@ -193,28 +192,28 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
           _quickChip(
             label: 'All',
             isActive: mode == 'all',
-            onTap: () => _applyFilters(_filters.copyWith(
-              clearStatus: true,
-              clearStatusList: true,
-            )),
+            onTap: () => _applyFilters(
+              _filters.copyWith(clearStatus: true, clearStatusList: true),
+            ),
           ),
           const SizedBox(width: 6),
           _quickChip(
             label: 'Open',
             isActive: mode == 'open',
-            onTap: () => _applyFilters(_filters.copyWith(
-              clearStatus: true,
-              statusList: _openStatuses,
-            )),
+            onTap: () => _applyFilters(
+              _filters.copyWith(clearStatus: true, statusList: _openStatuses),
+            ),
           ),
           const SizedBox(width: 6),
           _quickChip(
             label: 'Closed',
             isActive: mode == 'closed',
-            onTap: () => _applyFilters(_filters.copyWith(
-              clearStatus: true,
-              statusList: const ['Closed'],
-            )),
+            onTap: () => _applyFilters(
+              _filters.copyWith(
+                clearStatus: true,
+                statusList: const ['Closed'],
+              ),
+            ),
           ),
         ],
       ),
@@ -366,8 +365,9 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     final users = ref.watch(usersProvider);
     final tags = ref.watch(tagsProvider);
 
-    final selectedAccount =
-        accounts.where((a) => a.id == _filters.accountId).firstOrNull;
+    final selectedAccount = accounts
+        .where((a) => a.id == _filters.accountId)
+        .firstOrNull;
     final assigneeLabels = users
         .where((u) => _filters.assigneeIds.contains(u.id))
         .map((u) => u.displayName)
@@ -422,7 +422,8 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
             const SizedBox(width: 6),
             _FilterChip(
               label: _formatDateRange(),
-              isActive: _filters.createdAfter != null ||
+              isActive:
+                  _filters.createdAfter != null ||
                   _filters.createdBefore != null,
               onTap: _pickDateRange,
             ),
@@ -486,7 +487,8 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
     if (after == null && before == null) return 'Date';
     String fmt(DateTime d) =>
         '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
-    if (after != null && before != null) return '${fmt(after)} → ${fmt(before)}';
+    if (after != null && before != null)
+      return '${fmt(after)} → ${fmt(before)}';
     if (after != null) return 'After ${fmt(after)}';
     return 'Before ${fmt(before!)}';
   }
@@ -662,8 +664,9 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   }
 
   Future<void> _pickAssignees(List<UserLookup> users) async {
-    final initial =
-        users.where((u) => _filters.assigneeIds.contains(u.id)).toList();
+    final initial = users
+        .where((u) => _filters.assigneeIds.contains(u.id))
+        .toList();
     final result = await MultiSelectSheet.show<UserLookup>(
       context: context,
       title: 'Filter by Assignee',
@@ -691,17 +694,19 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
       searchText: (t) => t.name,
     );
     if (result != null) {
-      _applyFilters(_filters.copyWith(tagIds: result.map((t) => t.id).toList()));
+      _applyFilters(
+        _filters.copyWith(tagIds: result.map((t) => t.id).toList()),
+      );
     }
   }
 
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
-    final initial = (_filters.createdAfter != null ||
-            _filters.createdBefore != null)
+    final initial =
+        (_filters.createdAfter != null || _filters.createdBefore != null)
         ? DateTimeRange(
-            start: _filters.createdAfter ??
-                now.subtract(const Duration(days: 30)),
+            start:
+                _filters.createdAfter ?? now.subtract(const Duration(days: 30)),
             end: _filters.createdBefore ?? now,
           )
         : null;

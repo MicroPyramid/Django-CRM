@@ -31,7 +31,9 @@ class _TicketAnalyticsScreenState extends ConsumerState<TicketAnalyticsScreen> {
   }
 
   void _apply() {
-    ref.read(analyticsProvider.notifier).setQuery(
+    ref
+        .read(analyticsProvider.notifier)
+        .setQuery(
           AnalyticsQuery(
             from: _range.start,
             to: _range.end,

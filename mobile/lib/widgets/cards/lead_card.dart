@@ -173,8 +173,7 @@ class LeadCard extends StatelessWidget {
   Widget _buildFooter(BuildContext context) {
     final hasValue =
         lead.opportunityAmount != null && lead.opportunityAmount! > 0;
-    final hasAssignee =
-        lead.assignedTo != null && lead.assignedTo!.isNotEmpty;
+    final hasAssignee = lead.assignedTo != null && lead.assignedTo!.isNotEmpty;
     final hasPhone = lead.phone != null && lead.phone!.trim().isNotEmpty;
     final hasEmail = lead.email.trim().isNotEmpty;
 
@@ -182,7 +181,8 @@ class LeadCard extends StatelessWidget {
       children: [
         StatusBadge.fromLeadStatus(lead.status),
         const SizedBox(width: 6),
-        if (hasValue) _ValuePill(amount: lead.opportunityAmount!, currency: lead.currency),
+        if (hasValue)
+          _ValuePill(amount: lead.opportunityAmount!, currency: lead.currency),
         const Spacer(),
         if (hasAssignee) ...[
           Tooltip(
@@ -199,14 +199,16 @@ class LeadCard extends StatelessWidget {
           _CardActionIcon(
             icon: LucideIcons.phone,
             tooltip: 'Call ${lead.phone}',
-            onTap: () => _launch(context, Uri(scheme: 'tel', path: lead.phone!)),
+            onTap: () =>
+                _launch(context, Uri(scheme: 'tel', path: lead.phone!)),
           ),
         if (hasPhone && hasEmail) const SizedBox(width: 2),
         if (hasEmail)
           _CardActionIcon(
             icon: LucideIcons.mail,
             tooltip: 'Email ${lead.email}',
-            onTap: () => _launch(context, Uri(scheme: 'mailto', path: lead.email)),
+            onTap: () =>
+                _launch(context, Uri(scheme: 'mailto', path: lead.email)),
           ),
         if (!hasPhone && !hasEmail) ...[
           // Fall back to the source pill when no actions are available.
@@ -219,7 +221,11 @@ class LeadCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(lead.source.icon, size: 11, color: AppColors.textSecondary),
+                Icon(
+                  lead.source.icon,
+                  size: 11,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 3),
                 Text(
                   lead.source.displayName,
@@ -238,9 +244,9 @@ class LeadCard extends StatelessWidget {
   Future<void> _launch(BuildContext context, Uri uri) async {
     final ok = await launchUrl(uri);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open ${uri.scheme}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open ${uri.scheme}')));
     }
   }
 

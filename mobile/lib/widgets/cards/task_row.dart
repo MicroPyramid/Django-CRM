@@ -28,7 +28,8 @@ class TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canComplete = !task.completed && (onComplete != null || onToggle != null);
+    final canComplete =
+        !task.completed && (onComplete != null || onToggle != null);
 
     final deletePane = Container(
       color: AppColors.danger500,
@@ -175,7 +176,8 @@ class TaskRow extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
-                          if (!task.completed && task.status != TaskStatus.newTask)
+                          if (!task.completed &&
+                              task.status != TaskStatus.newTask)
                             _StatusChip(status: task.status),
                           ...task.tags.take(3).map((t) => _TagChip(label: t)),
                           if (task.tags.length > 3)
