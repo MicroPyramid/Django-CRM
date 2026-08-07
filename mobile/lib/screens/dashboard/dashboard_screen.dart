@@ -303,24 +303,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     label: 'Overdue',
                     count: counts.overdueTasks,
                     color: AppColors.danger500,
+                    route: '${AppRoutes.tasks}?view=${AppRoutes.viewOverdue}',
                   ),
                 if (counts.tasksDueToday > 0)
                   _UrgentBadge(
                     label: 'Due Today',
                     count: counts.tasksDueToday,
                     color: AppColors.warning500,
+                    route: '${AppRoutes.tasks}?view=${AppRoutes.viewDueToday}',
                   ),
                 if (counts.followupsToday > 0)
                   _UrgentBadge(
                     label: 'Follow-ups',
                     count: counts.followupsToday,
                     color: AppColors.primary500,
+                    route: '${AppRoutes.leads}?view=${AppRoutes.viewFollowUps}',
                   ),
                 if (counts.hotLeads > 0)
                   _UrgentBadge(
                     label: 'Hot Leads',
                     count: counts.hotLeads,
                     color: AppColors.success500,
+                    route: '${AppRoutes.leads}?view=${AppRoutes.viewHot}',
                   ),
               ],
             ),
@@ -871,10 +875,17 @@ class _UrgentBadge extends StatelessWidget {
   final int count;
   final Color color;
 
+  /// Where tapping the badge goes. Each destination opens its list already
+  /// narrowed to the same set this number counted, so the list length agrees
+  /// with the badge. A badge with nowhere honest to land would be worse than
+  /// one that does nothing, so this is required rather than optional.
+  final String route;
+
   const _UrgentBadge({
     required this.label,
     required this.count,
     required this.color,
+    required this.route,
   });
 
   @override
@@ -882,26 +893,32 @@ class _UrgentBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+        InkWell(
+          onTap: () => context.go(route),
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 3),
-              Text(label, style: TextStyle(fontSize: 10, color: color)),
-            ],
+                const SizedBox(width: 3),
+                Text(label, style: TextStyle(fontSize: 10, color: color)),
+                const SizedBox(width: 2),
+                Icon(LucideIcons.chevronRight, size: 11, color: color),
+              ],
+            ),
           ),
         ),
       ],

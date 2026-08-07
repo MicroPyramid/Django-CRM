@@ -47,7 +47,7 @@ from accounts.serializer import (
     TagsSerializer,
 )
 from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
-from common.validators import payload_id_list, uuid_list_param
+from common.validators import date_param, payload_id_list, uuid_list_param
 from accounts.tasks import send_email, send_email_to_assigned_user
 from cases.serializer import CaseSerializer
 from common.models import (
@@ -217,14 +217,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 ).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
-            if params.get("created_at__gte"):
-                queryset = queryset.filter(
-                    created_at__gte=params.get("created_at__gte")
-                )
-            if params.get("created_at__lte"):
-                queryset = queryset.filter(
-                    created_at__lte=params.get("created_at__lte")
-                )
+            created_at_gte = date_param(params, "created_at__gte")
+            if created_at_gte:
+                queryset = queryset.filter(created_at__gte=created_at_gte)
+            created_at_lte = date_param(params, "created_at__lte")
+            if created_at_lte:
+                queryset = queryset.filter(created_at__lte=created_at_lte)
             # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
             for raw_key, raw_value in params.items():
                 if raw_key.startswith("cf_") and raw_value:

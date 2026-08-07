@@ -39,7 +39,13 @@ from common.utils import (
     LEAD_STATUS,
     create_attachment,
 )
-from common.validators import payload_id_list, uuid_list_param, validate_uuid_list
+from common.validators import (
+    choice_list_param,
+    date_param,
+    payload_id_list,
+    uuid_list_param,
+    validate_uuid_list,
+)
 from contacts.models import Contact
 from leads import swagger_params
 from leads.models import Lead
@@ -126,8 +132,15 @@ class LeadListView(APIView, LimitOffsetPagination):
             assigned_to = uuid_list_param(params, "assigned_to")
             if assigned_to:
                 queryset = queryset.filter(assigned_to__id__in=assigned_to)
-            if params.get("status"):
-                queryset = queryset.filter(status=params.get("status"))
+            # Repeatable, like the tasks list. The dashboard's Hot Leads count
+            # means "assigned or in process", which is narrower than the
+            # "not converted, not closed" set this list already shows, so no
+            # single-value filter could reproduce it.
+            statuses = choice_list_param(
+                params, "status", [value for value, _label in LEAD_STATUS]
+            )
+            if statuses:
+                queryset = queryset.filter(status__in=statuses)
             tags = uuid_list_param(params, "tags")
             if tags:
                 queryset = queryset.filter(tags__id__in=tags)
@@ -145,22 +158,23 @@ class LeadListView(APIView, LimitOffsetPagination):
                     | Q(company_name__icontains=search)
                     | Q(email__icontains=search)
                 )
-            if params.get("created_at__gte"):
-                queryset = queryset.filter(
-                    created_at__gte=params.get("created_at__gte")
-                )
-            if params.get("created_at__lte"):
-                queryset = queryset.filter(
-                    created_at__lte=params.get("created_at__lte")
-                )
-            if params.get("close_date__gte"):
-                queryset = queryset.filter(
-                    close_date__gte=params.get("close_date__gte")
-                )
-            if params.get("close_date__lte"):
-                queryset = queryset.filter(
-                    close_date__lte=params.get("close_date__lte")
-                )
+            created_at_gte = date_param(params, "created_at__gte")
+            if created_at_gte:
+                queryset = queryset.filter(created_at__gte=created_at_gte)
+            created_at_lte = date_param(params, "created_at__lte")
+            if created_at_lte:
+                queryset = queryset.filter(created_at__lte=created_at_lte)
+            close_date_gte = date_param(params, "close_date__gte")
+            if close_date_gte:
+                queryset = queryset.filter(close_date__gte=close_date_gte)
+            close_date_lte = date_param(params, "close_date__lte")
+            if close_date_lte:
+                queryset = queryset.filter(close_date__lte=close_date_lte)
+            # Exact day, because the one caller is "follow-ups due today" and a
+            # range would be two parameters for a question nobody asks.
+            next_follow_up = date_param(params, "next_follow_up")
+            if next_follow_up:
+                queryset = queryset.filter(next_follow_up=next_follow_up)
             # Custom-field filters: ?cf_<key>=<value> -> custom_fields contains pair.
             for raw_key, raw_value in params.items():
                 if raw_key.startswith("cf_") and raw_value:

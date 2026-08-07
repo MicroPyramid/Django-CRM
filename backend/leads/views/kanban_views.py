@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext, is_org_admin
-from common.validators import uuid_param
+from common.validators import date_param, uuid_param
 from common.utils import LEAD_STATUS
 from leads.models import Lead, LeadPipeline, LeadStage
 from leads.serializer import (
@@ -115,10 +115,12 @@ class LeadKanbanView(APIView):
             )
         if params.get("source"):
             queryset = queryset.filter(source=params.get("source"))
-        if params.get("created_at__gte"):
-            queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
-        if params.get("created_at__lte"):
-            queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+        created_at_gte = date_param(params, "created_at__gte")
+        if created_at_gte:
+            queryset = queryset.filter(created_at__gte=created_at_gte)
+        created_at_lte = date_param(params, "created_at__lte")
+        if created_at_lte:
+            queryset = queryset.filter(created_at__lte=created_at_lte)
         return queryset
 
     def _get_status_kanban(self, queryset):

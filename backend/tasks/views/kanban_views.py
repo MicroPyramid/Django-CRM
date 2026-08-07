@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext, is_org_admin
-from common.validators import uuid_param
+from common.validators import date_param, uuid_param
 from tasks.models import Task, TaskPipeline, TaskStage
 from tasks.serializer import (
     TaskKanbanCardSerializer,
@@ -145,10 +145,12 @@ class TaskKanbanView(APIView):
             queryset = queryset.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
             )
-        if params.get("due_date__gte"):
-            queryset = queryset.filter(due_date__gte=params.get("due_date__gte"))
-        if params.get("due_date__lte"):
-            queryset = queryset.filter(due_date__lte=params.get("due_date__lte"))
+        due_date_gte = date_param(params, "due_date__gte")
+        if due_date_gte:
+            queryset = queryset.filter(due_date__gte=due_date_gte)
+        due_date_lte = date_param(params, "due_date__lte")
+        if due_date_lte:
+            queryset = queryset.filter(due_date__lte=due_date_lte)
         for related in ("account", "lead", "opportunity", "case"):
             related_id = uuid_param(params, related)
             if related_id:

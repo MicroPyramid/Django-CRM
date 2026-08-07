@@ -65,7 +65,7 @@ from common.utils import (
     STATUS_CHOICE,
     create_attachment,
 )
-from common.validators import payload_id_list, uuid_list_param, uuid_param
+from common.validators import date_param, payload_id_list, uuid_list_param, uuid_param
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
 
@@ -126,10 +126,12 @@ def apply_case_list_filters(queryset, params):
         queryset = queryset.filter(
             Q(name__icontains=search) | Q(description__icontains=search)
         )
-    if params.get("created_at__gte"):
-        queryset = queryset.filter(created_at__gte=params.get("created_at__gte"))
-    if params.get("created_at__lte"):
-        queryset = queryset.filter(created_at__lte=params.get("created_at__lte"))
+    created_at_gte = date_param(params, "created_at__gte")
+    if created_at_gte:
+        queryset = queryset.filter(created_at__gte=created_at_gte)
+    created_at_lte = date_param(params, "created_at__lte")
+    if created_at_lte:
+        queryset = queryset.filter(created_at__lte=created_at_lte)
     if params.get("sla_breached") == "true":
         # Wall-clock approximation matching the mobile card's
         # `isFirstResponseSlaBreached` getter; `Case.is_sla_*_breached` uses

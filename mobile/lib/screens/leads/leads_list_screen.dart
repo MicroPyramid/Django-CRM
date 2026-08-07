@@ -14,7 +14,12 @@ import '../../widgets/common/common.dart';
 
 /// Leads list screen: searchable, filterable, paginated against the server.
 class LeadsListScreen extends ConsumerStatefulWidget {
-  const LeadsListScreen({super.key});
+  const LeadsListScreen({super.key, this.initialView});
+
+  /// One of `AppRoutes.viewFollowUps` / `AppRoutes.viewHot`, when the user
+  /// arrived by tapping the matching dashboard badge. Anything else, including
+  /// null, opens the list unfiltered.
+  final String? initialView;
 
   @override
   ConsumerState<LeadsListScreen> createState() => _LeadsListScreenState();
@@ -26,6 +31,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
 
   LeadFilters _filters = const LeadFilters();
   Timer? _searchDebounce;
+  // The dashboard badge this list was opened from, while its filter is still
+  // the one in force. Cleared the moment the user changes anything.
+  String? _activeView;
 
   static const _searchDebounceMs = 350;
 
@@ -33,6 +41,28 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _applyInitialView();
+  }
+
+  /// Open already narrowed to what a dashboard badge counted.
+  ///
+  /// The notifier outlives this screen, so its filters have to be pushed at it
+  /// rather than passed in; the post-frame hop is because the first build is
+  /// still running when initState does. The definitions live on `LeadFilters`
+  /// so they can be tested against the server's, which is the only thing that
+  /// keeps the badge and the list showing the same number.
+  void _applyInitialView() {
+    final LeadFilters? initial = switch (widget.initialView) {
+      AppRoutes.viewFollowUps => LeadFilters.followUpsOn(DateTime.now()),
+      AppRoutes.viewHot => LeadFilters.hot(),
+      _ => null,
+    };
+    if (initial == null) return;
+    _filters = initial;
+    _activeView = widget.initialView;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(leadsProvider.notifier).setFilters(initial);
+    });
   }
 
   void _onScroll() {
@@ -51,7 +81,10 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   }
 
   void _applyFilters(LeadFilters next) {
-    setState(() => _filters = next);
+    setState(() {
+      _filters = next;
+      _activeView = null;
+    });
     ref.read(leadsProvider.notifier).setFilters(next);
   }
 
@@ -233,6 +266,19 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
         child: Row(
           children: [
+            if (_activeView != null) ...[
+              _FilterChip(
+                label: _activeView == AppRoutes.viewHot
+                    ? 'Hot leads'
+                    : 'Follow-ups today',
+                isActive: true,
+                icon: _activeView == AppRoutes.viewHot
+                    ? LucideIcons.flame
+                    : LucideIcons.calendarClock,
+                onTap: _clearAll,
+              ),
+              const SizedBox(width: 6),
+            ],
             _FilterChip(
               label: _filters.assignedToLabel ?? 'Owner',
               isActive: _filters.assignedToId != null,
@@ -241,8 +287,15 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
             const SizedBox(width: 6),
             _FilterChip(
-              label: _filters.status?.displayName ?? 'Status',
-              isActive: _filters.status != null,
+              // With more than one status selected there is no single label to
+              // show, and printing one of them would name a filter narrower
+              // than the list actually is.
+              label: switch (_filters.statuses.length) {
+                0 => 'Status',
+                1 => _filters.statuses.first.displayName,
+                final n => '$n statuses',
+              },
+              isActive: _filters.statuses.isNotEmpty,
               onTap: _showStatusFilter,
             ),
             const SizedBox(width: 6),

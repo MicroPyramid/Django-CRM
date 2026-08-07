@@ -16,3 +16,4 @@ export 'time_entry.dart';
 export 'solution.dart';
 export 'approval.dart';
 export 'attachment.dart';
+export 'team_member.dart';

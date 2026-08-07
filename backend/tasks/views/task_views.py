@@ -26,7 +26,13 @@ from common.models import (
 )
 from common.permissions import HasOrgContext
 from common.utils import create_attachment
-from common.validators import payload_id_list, uuid_list_param, uuid_param
+from common.validators import (
+    choice_list_param,
+    date_param,
+    payload_id_list,
+    uuid_list_param,
+    uuid_param,
+)
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -88,8 +94,15 @@ class TaskListView(APIView, LimitOffsetPagination):
         if params:
             if params.get("title"):
                 queryset = queryset.filter(title__icontains=params.get("title"))
-            if params.get("status"):
-                queryset = queryset.filter(status=params.get("status"))
+            # Repeatable: `?status=New&status=In Progress` is the only way to
+            # ask for "still open", which is what the dashboard's Overdue and
+            # Due Today counts mean. A single `?status=New` behaves exactly as
+            # it did, so no existing caller changes.
+            statuses = choice_list_param(
+                params, "status", [value for value, _label in Task.STATUS_CHOICES]
+            )
+            if statuses:
+                queryset = queryset.filter(status__in=statuses)
             if params.get("priority"):
                 queryset = queryset.filter(priority=params.get("priority"))
             assigned_to = uuid_list_param(params, "assigned_to")
@@ -102,18 +115,18 @@ class TaskListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(tags__id__in=tags).distinct()
             if params.get("search"):
                 queryset = queryset.filter(title__icontains=params.get("search"))
-            if params.get("due_date__gte"):
-                queryset = queryset.filter(due_date__gte=params.get("due_date__gte"))
-            if params.get("due_date__lte"):
-                queryset = queryset.filter(due_date__lte=params.get("due_date__lte"))
-            if params.get("created_at__gte"):
-                queryset = queryset.filter(
-                    created_at__gte=params.get("created_at__gte")
-                )
-            if params.get("created_at__lte"):
-                queryset = queryset.filter(
-                    created_at__lte=params.get("created_at__lte")
-                )
+            due_date_gte = date_param(params, "due_date__gte")
+            if due_date_gte:
+                queryset = queryset.filter(due_date__gte=due_date_gte)
+            due_date_lte = date_param(params, "due_date__lte")
+            if due_date_lte:
+                queryset = queryset.filter(due_date__lte=due_date_lte)
+            created_at_gte = date_param(params, "created_at__gte")
+            if created_at_gte:
+                queryset = queryset.filter(created_at__gte=created_at_gte)
+            created_at_lte = date_param(params, "created_at__lte")
+            if created_at_lte:
+                queryset = queryset.filter(created_at__lte=created_at_lte)
             for related in ("account", "opportunity", "case", "lead"):
                 related_id = uuid_param(params, related)
                 if related_id:

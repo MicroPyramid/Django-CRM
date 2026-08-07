@@ -19,8 +19,6 @@ class MoreScreen extends ConsumerStatefulWidget {
 }
 
 class _MoreScreenState extends ConsumerState<MoreScreen> {
-  bool _darkMode = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,42 +80,24 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             _buildSectionHeader('Team'),
             _MenuItem(
               icon: LucideIcons.users,
-              label: 'Team Management',
-              description: 'Manage team members and roles',
-              onTap: () => _showComingSoon('Team Management'),
+              label: 'Team',
+              description: 'Who is in this org, and what they can do',
+              onTap: () => context.push(AppRoutes.team),
             ),
 
-            // Preferences Section
-            _buildSectionHeader('Preferences'),
-            _ToggleMenuItem(
-              icon: LucideIcons.moon,
-              label: 'Dark Mode',
-              value: _darkMode,
-              onChanged: (value) {
-                setState(() => _darkMode = value);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      value ? 'Dark mode enabled' : 'Dark mode disabled',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-            _MenuItem(
-              icon: LucideIcons.globe,
-              label: 'Language',
-              value: 'English',
-              onTap: () => _showLanguagePicker(),
-            ),
+            // Preferences used to be a section here, holding a Dark Mode
+            // switch that repainted nothing and then announced "Dark mode
+            // enabled", and a Language picker offering three languages the app
+            // has never had a single string in. Both are gone rather than
+            // relabelled: honouring the theme is a repaint of 1,472 hardcoded
+            // colour references, and there is no localisation to select.
 
             // Support Section
             _buildSectionHeader('Support'),
             _MenuItem(
               icon: LucideIcons.helpCircle,
               label: 'Help Center',
-              onTap: () => _showComingSoon('Help Center'),
+              onTap: () => _openOnTheWeb('/docs', 'Help Center'),
             ),
             _MenuItem(
               icon: LucideIcons.fileText,
@@ -291,75 +271,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     }
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showLanguagePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.gray300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Select Language', style: AppTypography.h3),
-            ),
-            _LanguageOption(
-              label: 'English',
-              isSelected: true,
-              onTap: () => Navigator.pop(context),
-            ),
-            _LanguageOption(
-              label: 'Spanish',
-              isSelected: false,
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('Spanish language');
-              },
-            ),
-            _LanguageOption(
-              label: 'French',
-              isSelected: false,
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('French language');
-              },
-            ),
-            _LanguageOption(
-              label: 'German',
-              isSelected: false,
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('German language');
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _handleSignOut() {
     showDialog(
       context: context,
@@ -404,14 +315,12 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? description;
-  final String? value;
   final VoidCallback onTap;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     this.description,
-    this.value,
     required this.onTap,
   });
 
@@ -456,113 +365,12 @@ class _MenuItem extends StatelessWidget {
               ),
             ),
 
-            // Value
-            if (value != null) ...[
-              Text(
-                value!,
-                style: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-
             // Chevron
             Icon(
               LucideIcons.chevronRight,
               size: 20,
               color: AppColors.textTertiary,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Toggle Menu Item Widget
-class _ToggleMenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _ToggleMenuItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.gray100)),
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Icon(icon, size: 22, color: AppColors.textSecondary),
-
-          const SizedBox(width: 14),
-
-          // Label
-          Expanded(
-            child: Text(
-              label,
-              style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-
-          // Toggle
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeTrackColor: AppColors.primary200,
-            activeThumbColor: AppColors.primary600,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Language Option Widget
-class _LanguageOption extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LanguageOption({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: AppTypography.body.copyWith(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? AppColors.primary600
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Icon(LucideIcons.check, size: 20, color: AppColors.primary600),
           ],
         ),
       ),

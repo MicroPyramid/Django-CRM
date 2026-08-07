@@ -5,10 +5,12 @@ Common validators for CRM models.
 import json
 import re
 import uuid as uuid_module
+from decimal import Decimal
 from zoneinfo import available_timezones
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import RegexValidator
+from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
@@ -128,6 +130,83 @@ def uuid_list_param(params, field: str) -> list:
     if hasattr(params, "getlist"):
         return validate_uuid_list(params.getlist(field), field)
     return validate_uuid_list(params.get(field), field)
+
+
+def validate_date(value, field: str) -> str:
+    """Return ``value`` unchanged if the ORM will be able to parse it as a date.
+
+    The same defect ``validate_uuid`` closes, wearing a different type. Range
+    filters (``due_date__gte``, ``created_at__lte``, ``close_date__gte``, ...)
+    take raw query-string text and hand it to a date or datetime lookup.
+    Django parses it while building the query and raises
+    ``django.core.exceptions.ValidationError`` on anything malformed, which
+    DRF's handler does not translate, so ``?due_date__gte=banana`` answered 500
+    rather than 400.
+
+    Accepts a plain date and a full timestamp alike, because the datetime
+    columns here (``created_at``) are filtered with both. The value is returned
+    as text rather than as a parsed object so the lookup keeps behaving exactly
+    as it did: passing a ``date`` into a ``DateTimeField`` lookup changes how
+    Django interprets midnight, and this is a 500-to-400 fix, not a semantics
+    change.
+    """
+    text = str(value).strip()
+    if parse_date(text) is None and parse_datetime(text) is None:
+        raise DRFValidationError(
+            {field: [f"'{value}' is not a valid date. Use YYYY-MM-DD."]}
+        ) from None
+    return text
+
+
+def date_param(params, field: str):
+    """A single date-valued query parameter, or ``None`` when absent or blank."""
+    value = params.get(field)
+    if value in (None, ""):
+        return None
+    return validate_date(value, field)
+
+
+def decimal_param(params, field: str):
+    """A single number-valued query parameter, or ``None`` when absent or blank.
+
+    ``?amount__gte=banana`` answered 500 for the same reason the date and id
+    filters did: the text reaches a ``DecimalField`` lookup and Django raises
+    on the way to the query. Returned as text so the lookup is unchanged.
+    """
+    value = params.get(field)
+    if value in (None, ""):
+        return None
+    try:
+        # `Decimal` happily parses "NaN" and "Infinity", which are not numbers
+        # any column here can be compared against, so reject them by name.
+        if not Decimal(str(value).strip()).is_finite():
+            raise ValueError
+    except (ArithmeticError, TypeError, ValueError):
+        raise DRFValidationError(
+            {field: [f"'{value}' is not a valid number."]}
+        ) from None
+    return value
+
+
+def choice_list_param(params, field: str, allowed) -> list:
+    """Every value for a repeatable choice-valued query parameter.
+
+    ``?status=New&status=In Progress`` is how a caller asks for either of two
+    statuses. A single ``?status=New`` still yields a one-item list, so a view
+    can move from ``filter(status=...)`` to ``filter(status__in=...)`` without
+    breaking a client that only ever sends one.
+
+    Values outside ``allowed`` are dropped rather than rejected: an unknown
+    status matches no row anyway, and a stale bookmark should return an empty
+    list, not a 400. Dropping them all leaves ``[]``, which every caller reads
+    as "no filter", so an entirely bogus value widens rather than narrows. That
+    is the same thing ``?status=Nope`` did before this existed.
+    """
+    values = (
+        params.getlist(field) if hasattr(params, "getlist") else [params.get(field)]
+    )
+    allowed = set(allowed)
+    return [v for v in values if v in allowed]
 
 
 def normalize_phone(phone: str) -> str:

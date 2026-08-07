@@ -283,6 +283,19 @@ class ApiConfig {
   static String get customFieldDefinitions =>
       '$apiBaseUrl/custom-fields/';
 
+  /// People in the org: GET lists active and inactive, POST invites.
+  /// Admin-only server-side, 403 for everyone else on both verbs.
+  static String get orgUsers => '$apiBaseUrl/users/';
+
+  /// One person's role: PATCH `{"role": "ADMIN"|"USER"}`. Takes the USER id,
+  /// not the profile id.
+  static String orgUser(String userId) => '$apiBaseUrl/user/$userId/';
+
+  /// Activate or deactivate: POST `{"status": "Active"|"Inactive"}`. Also the
+  /// USER id. The server refuses to deactivate the last active admin.
+  static String orgUserStatus(String userId) =>
+      '$apiBaseUrl/user/$userId/status/';
+
   // ==========================================================================
   // REQUEST CONFIGURATION
   // ==========================================================================

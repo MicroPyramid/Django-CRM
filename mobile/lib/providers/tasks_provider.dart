@@ -47,7 +47,11 @@ class TaskDetailResult {
 /// triggering a refetch.
 class TaskFilters {
   final String? search;
-  final TaskStatus? status;
+  // A set rather than one value, because the dashboard's Overdue and Due Today
+  // badges both mean "New or In Progress". The filter sheet still offers one
+  // status at a time and stores it as a single-element set; the API takes a
+  // repeated `?status=` for each member.
+  final Set<TaskStatus> statuses;
   final Priority? priority;
   // Assignee profile id. null = anyone (no filter).
   final String? assignedToId;
@@ -61,7 +65,7 @@ class TaskFilters {
 
   const TaskFilters({
     this.search,
-    this.status,
+    this.statuses = const {},
     this.priority,
     this.assignedToId,
     this.assignedToLabel,
@@ -69,9 +73,39 @@ class TaskFilters {
     this.dueDateLte,
   });
 
+  /// The single selected status, or null when none or several are selected.
+  /// The filter sheet is single-select, so this is what it reads and shows.
+  TaskStatus? get status => statuses.length == 1 ? statuses.first : null;
+
+  /// Statuses a task can still be acted on in. The dashboard's Overdue and Due
+  /// Today counts are both scoped to these, so a list opened from either badge
+  /// has to be scoped the same way or it shows a different number than the
+  /// badge the user tapped.
+  static const openStatuses = {TaskStatus.newTask, TaskStatus.inProgress};
+
+  /// The dashboard's "Overdue" badge: still open, and due before today.
+  /// Mirrors `ApiHomeView`'s `due_date__lt=today`; `__lte` on the day before
+  /// is the same set for a date column and is what the list endpoint takes.
+  factory TaskFilters.overdue(DateTime today) => TaskFilters(
+    statuses: openStatuses,
+    dueDateLte: _isoDay(today.subtract(const Duration(days: 1))),
+  );
+
+  /// The dashboard's "Due Today" badge: still open, due on the given day.
+  factory TaskFilters.dueOn(DateTime day) => TaskFilters(
+    statuses: openStatuses,
+    dueDateGte: _isoDay(day),
+    dueDateLte: _isoDay(day),
+  );
+
+  static String _isoDay(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
   bool get isEmpty =>
       (search == null || search!.isEmpty) &&
-      status == null &&
+      statuses.isEmpty &&
       priority == null &&
       (assignedToId == null || assignedToId!.isEmpty);
 
@@ -80,6 +114,7 @@ class TaskFilters {
   TaskFilters copyWith({
     String? search,
     TaskStatus? status,
+    Set<TaskStatus>? statuses,
     Priority? priority,
     String? assignedToId,
     String? assignedToLabel,
@@ -88,7 +123,7 @@ class TaskFilters {
   }) {
     return TaskFilters(
       search: search ?? this.search,
-      status: status ?? this.status,
+      statuses: statuses ?? (status != null ? {status} : this.statuses),
       priority: priority ?? this.priority,
       assignedToId: assignedToId ?? this.assignedToId,
       assignedToLabel: assignedToLabel ?? this.assignedToLabel,
@@ -108,7 +143,7 @@ class TaskFilters {
   }) {
     return TaskFilters(
       search: search ? null : this.search,
-      status: status ? null : this.status,
+      statuses: status ? const {} : statuses,
       priority: priority ? null : this.priority,
       assignedToId: assignedTo ? null : assignedToId,
       assignedToLabel: assignedTo ? null : assignedToLabel,
@@ -187,7 +222,9 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
   }
 
   Future<TasksListData> _fetchPage({required int offset}) async {
-    final queryParams = <String, String>{
+    // `dynamic` so a value can be a List: `Uri.replace` turns one into a
+    // repeated parameter, which is how the API takes more than one status.
+    final queryParams = <String, dynamic>{
       'limit': _pageSize.toString(),
       'offset': offset.toString(),
     };
@@ -195,7 +232,9 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
     if (f.search != null && f.search!.isNotEmpty) {
       queryParams['search'] = f.search!;
     }
-    if (f.status != null) queryParams['status'] = f.status!.value;
+    if (f.statuses.isNotEmpty) {
+      queryParams['status'] = f.statuses.map((s) => s.value).toList();
+    }
     if (f.priority != null) queryParams['priority'] = f.priority!.label;
     if (f.assignedToId != null && f.assignedToId!.isNotEmpty) {
       queryParams['assigned_to'] = f.assignedToId!;
