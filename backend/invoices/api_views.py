@@ -20,13 +20,13 @@ from rest_framework.views import APIView
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.models import Attachments, Comment, CustomFieldDefinition
 from common.permissions import HasOrgContext, is_org_admin
-from common.utils import create_attachment
-from common.validators import uuid_param
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
     CustomFieldDefinitionSerializer,
 )
+from common.utils import create_attachment
+from common.validators import uuid_param
 from invoices.models import (
     UNPAID_STATUSES,
     Estimate,
@@ -2034,7 +2034,7 @@ class RevenueReportView(APIView):
         group_by = request.GET.get("group_by", "month")  # day, week, month, year
 
         if not start_date:
-            start_date = (timezone.localdate() - timedelta(days=365))
+            start_date = timezone.localdate() - timedelta(days=365)
         else:
             start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
 

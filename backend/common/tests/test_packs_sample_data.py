@@ -214,7 +214,9 @@ def test_apply_creates_every_sample_entity_type(org_a, admin_profile, pack_id):
         ("leads", Lead),
     ):
         created = model.objects.filter(org=org_a, is_sample=True).count()
-        assert created == len(sample[key]), f"{pack_id}: expected {len(sample[key])} {key}, got {created}"
+        assert created == len(sample[key]), (
+            f"{pack_id}: expected {len(sample[key])} {key}, got {created}"
+        )
 
 
 @pytest.mark.django_db
@@ -349,7 +351,10 @@ def test_clear_does_not_raise_when_a_sample_account_has_a_protected_invoice(
     apply_pack(org_a, get_pack("real-estate"), admin_profile)
     account = Account.objects.get(org=org_a, name="Cedar Grove Estates")
     invoice = Invoice.objects.create(
-        org=org_a, invoice_title="A real invoice", invoice_number="INV-REAL-1", account=account
+        org=org_a,
+        invoice_title="A real invoice",
+        invoice_number="INV-REAL-1",
+        account=account,
     )
 
     result = clear_sample_data(org_a, admin_profile)  # must not raise

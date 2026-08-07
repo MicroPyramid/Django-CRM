@@ -14,7 +14,6 @@ from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
-
 # E.164 format: +[country code][number] (max 15 digits total)
 # Examples: +12025551234, +442071234567
 e164_phone_validator = RegexValidator(
@@ -52,9 +51,7 @@ def validate_uuid(value, field: str) -> str:
     try:
         uuid_module.UUID(str(value))
     except (AttributeError, TypeError, ValueError):
-        raise DRFValidationError(
-            {field: [f"'{value}' is not a valid id."]}
-        ) from None
+        raise DRFValidationError({field: [f"'{value}' is not a valid id."]}) from None
     return value
 
 

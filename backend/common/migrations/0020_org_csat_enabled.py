@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('common', '0019_activity_analytics_idx'),
+        ("common", "0019_activity_analytics_idx"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='org',
-            name='csat_enabled',
+            model_name="org",
+            name="csat_enabled",
             field=models.BooleanField(default=True),
         ),
     ]

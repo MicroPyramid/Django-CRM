@@ -96,8 +96,6 @@ class TestCaseSolutionLinking:
     def test_unlink_solution(self, admin_client, case_a, org_a, admin_user):
         sol = self._solution(org_a, admin_user)
         case_a.solutions.add(sol)
-        response = admin_client.delete(
-            f"/api/cases/{case_a.pk}/solutions/{sol.pk}/"
-        )
+        response = admin_client.delete(f"/api/cases/{case_a.pk}/solutions/{sol.pk}/")
         assert response.status_code == 204
         assert sol not in case_a.solutions.all()

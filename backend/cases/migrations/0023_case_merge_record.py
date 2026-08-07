@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cases', '0022_approvalrule_approval_and_more'),
+        ("cases", "0022_approvalrule_approval_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='case',
-            name='merge_record',
+            model_name="case",
+            name="merge_record",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

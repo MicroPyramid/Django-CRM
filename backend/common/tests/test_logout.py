@@ -29,9 +29,7 @@ def _tokens(user, org, profile):
 class TestSigningOutRevokes:
     """The whole point: after logout, the refresh token is dead."""
 
-    def test_the_refresh_token_stops_working(
-        self, admin_user, org_a, admin_profile
-    ):
+    def test_the_refresh_token_stops_working(self, admin_user, org_a, admin_profile):
         client = APIClient()
         token = _tokens(admin_user, org_a, admin_profile)
 
@@ -50,9 +48,7 @@ class TestSigningOutRevokes:
         after = client.post(REFRESH_URL, {"refresh": live_refresh}, format="json")
         assert after.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_it_works_without_an_access_token(
-        self, admin_user, org_a, admin_profile
-    ):
+    def test_it_works_without_an_access_token(self, admin_user, org_a, admin_profile):
         # The case the endpoint exists for. A phone that sat in a pocket
         # presses Sign Out with an access token that expired hours ago. If
         # logout demanded authentication it would fail here, leaving the
@@ -80,9 +76,7 @@ class TestSigningOutRevokes:
 
         client.post(URL, {"refresh": str(phone)}, format="json")
 
-        still_good = client.post(
-            REFRESH_URL, {"refresh": str(desktop)}, format="json"
-        )
+        still_good = client.post(REFRESH_URL, {"refresh": str(desktop)}, format="json")
         assert still_good.status_code == status.HTTP_200_OK
 
 
@@ -103,9 +97,7 @@ class TestSigningOutIsSafeToRepeat:
         assert again.status_code == status.HTTP_200_OK
 
     def test_a_garbage_token_is_not_a_server_error(self):
-        response = APIClient().post(
-            URL, {"refresh": "not-a-jwt"}, format="json"
-        )
+        response = APIClient().post(URL, {"refresh": "not-a-jwt"}, format="json")
         assert response.status_code == status.HTTP_200_OK
 
     def test_a_missing_token_is_a_bad_request(self):
@@ -130,9 +122,7 @@ class TestSigningOutCannotReachAnotherSession:
 
         # Revoking is scoped to the token presented, not to the user, the org,
         # or anything the caller could name in the body.
-        survived = client.post(
-            REFRESH_URL, {"refresh": str(victim)}, format="json"
-        )
+        survived = client.post(REFRESH_URL, {"refresh": str(victim)}, format="json")
         assert survived.status_code == status.HTTP_200_OK
 
     def test_a_body_naming_someone_else_changes_nothing(
@@ -153,7 +143,5 @@ class TestSigningOutCannotReachAnotherSession:
         )
         assert response.status_code == status.HTTP_200_OK
 
-        survived = client.post(
-            REFRESH_URL, {"refresh": str(victim)}, format="json"
-        )
+        survived = client.post(REFRESH_URL, {"refresh": str(victim)}, format="json")
         assert survived.status_code == status.HTTP_200_OK

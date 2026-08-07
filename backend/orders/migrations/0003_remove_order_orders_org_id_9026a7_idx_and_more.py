@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("orders", "0002_replace_null_with_default_empty_on_char_fields"),
     ]

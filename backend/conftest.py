@@ -203,9 +203,7 @@ def user_profile(regular_user, org_a):
 
 @pytest.fixture
 def profile_b(user_b, org_b):
-    return Profile.objects.create(
-        user=user_b, org=org_b, role="ADMIN", is_active=True
-    )
+    return Profile.objects.create(user=user_b, org=org_b, role="ADMIN", is_active=True)
 
 
 def _make_authenticated_client(user, org, profile):

@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 from contacts.models import Contact
+
 from .parser import ParsedEmail
 
 logger = logging.getLogger(__name__)

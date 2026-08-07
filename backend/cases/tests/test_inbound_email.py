@@ -17,8 +17,8 @@ from cases.inbound.spam import should_drop
 from cases.inbound.threading import find_existing_case, short_case_id
 from cases.models import Case, EmailMessage, InboundMailbox
 from common.models import Profile, User
-from contacts.models import Contact
 from conftest import rls_org
+from contacts.models import Contact
 
 MAILBOXES_URL = "/api/cases/mailboxes/"
 
@@ -612,9 +612,7 @@ class TestMailboxAPI:
         assert "webhook_secret" not in detail.json()
         assert detail.json()["has_webhook_secret"] is True
 
-    def test_has_webhook_secret_is_false_when_none_is_stored(
-        self, admin_client, org_a
-    ):
+    def test_has_webhook_secret_is_false_when_none_is_stored(self, admin_client, org_a):
         _make_mailbox(org_a, webhook_secret="")
         row = admin_client.get(MAILBOXES_URL).json()["mailboxes"][0]
         assert row["has_webhook_secret"] is False
@@ -686,7 +684,7 @@ class TestMailboxAPI:
         400, not an IntegrityError. The DB constraint is uniq(org, address);
         before this guard the update path skipped the duplicate check entirely
         and the constraint surfaced as a bodiless 500."""
-        first = _make_mailbox(org_a, address="support@example.com")
+        _make_mailbox(org_a, address="support@example.com")
         second = _make_mailbox(org_a, address="sales@example.com")
 
         response = admin_client.put(

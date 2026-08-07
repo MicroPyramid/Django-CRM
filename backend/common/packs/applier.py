@@ -41,7 +41,9 @@ class _Report:
     def add_created(self, type_: str, name: str) -> None:
         self.created.append({"type": type_, "name": name})
 
-    def add_skipped(self, type_: str, name: str, reason: str = "already exists") -> None:
+    def add_skipped(
+        self, type_: str, name: str, reason: str = "already exists"
+    ) -> None:
         self.skipped.append({"type": type_, "name": name, "reason": reason})
 
     def as_dict(self) -> dict:
@@ -269,7 +271,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     # real record (or renaming another tag onto this slug) is harmless,
     # nothing destructive keys off it.
     sample_tag, _ = Tags.objects.get_or_create(
-        org=org, slug=SAMPLE_TAG_SLUG, defaults={"name": SAMPLE_TAG_NAME, "color": "gray"}
+        org=org,
+        slug=SAMPLE_TAG_SLUG,
+        defaults={"name": SAMPLE_TAG_NAME, "color": "gray"},
     )
 
     def finish(obj):
@@ -298,7 +302,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
 
     for spec in sample.get("accounts") or []:
         obj = _create_sample(
-            report, "sample_account", spec["name"],
+            report,
+            "sample_account",
+            spec["name"],
             lambda s=spec: Account.objects.create(
                 org=org,
                 name=s["name"],
@@ -320,7 +326,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     for spec in sample.get("contacts") or []:
         name = f"{spec.get('first_name', '')} {spec.get('last_name', '')}".strip()
         obj = _create_sample(
-            report, "sample_contact", name,
+            report,
+            "sample_contact",
+            name,
             lambda s=spec: Contact.objects.create(
                 org=org,
                 first_name=s["first_name"],
@@ -350,7 +358,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
 
     for spec in sample.get("deals") or []:
         obj = _create_sample(
-            report, "sample_deal", spec["name"],
+            report,
+            "sample_deal",
+            spec["name"],
             lambda s=spec: Opportunity.objects.create(
                 org=org,
                 name=s["name"],
@@ -373,7 +383,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     case_stages = {s.name: s for s in CaseStage.objects.filter(org=org)}
     for spec in sample.get("tickets") or []:
         obj = _create_sample(
-            report, "sample_ticket", spec["name"],
+            report,
+            "sample_ticket",
+            spec["name"],
             lambda s=spec: Case.objects.create(
                 org=org,
                 name=s["name"],
@@ -399,7 +411,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     leads: dict[str, Lead] = {}
     for spec in sample.get("leads") or []:
         obj = _create_sample(
-            report, "sample_lead", spec["title"],
+            report,
+            "sample_lead",
+            spec["title"],
             lambda s=spec: Lead.objects.create(
                 org=org,
                 title=s["title"],
@@ -425,7 +439,9 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     task_stages = {s.name: s for s in TaskStage.objects.filter(org=org)}
     for spec in sample.get("tasks") or []:
         obj = _create_sample(
-            report, "sample_task", spec["title"],
+            report,
+            "sample_task",
+            spec["title"],
             lambda s=spec: Task.objects.create(
                 org=org,
                 title=s["title"],
@@ -584,7 +600,7 @@ def apply_pack(org, pack: dict, actor) -> dict:
     # actor must belong to org. _apply_sample_data does
     # lead.assigned_to.add(actor) with no further org check of its own, so
     # without this guard a caller that passes a mismatched (org, actor) pair
-    #; e.g. an org-B apply given an org-A profile: creates cross-org
+    # ; e.g. an org-B apply given an org-A profile: creates cross-org
     # assignments: an org-A profile ends up assigned to org-B's leads, and
     # that profile can then read those leads through an ordinary "my leads"
     # query, which is a tenant-isolation break. This is enforced here, not
@@ -617,9 +633,7 @@ def apply_pack(org, pack: dict, actor) -> dict:
 
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT pg_advisory_xact_lock(hashtext(%s))", [str(org.id)]
-            )
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [str(org.id)])
 
     report = _Report()
     _apply_pipelines(org, pack, report)

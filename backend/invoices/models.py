@@ -412,9 +412,8 @@ class Invoice(AssignableMixin, BaseModel):
     def generate_invoice_number(self):
         """Generate unique invoice number: INV-YYYYMMDD-XXXX"""
         from django.db import transaction
-        from django.db.models import Max
+        from django.db.models import IntegerField, Max
         from django.db.models.functions import Cast, Substr
-        from django.db.models import IntegerField
 
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         prefix = f"INV-{date_str}-"
@@ -870,9 +869,8 @@ class Estimate(AssignableMixin, BaseModel):
     def generate_estimate_number(self):
         """Generate unique estimate number: EST-YYYYMMDD-XXXX"""
         from django.db import transaction
-        from django.db.models import Max
+        from django.db.models import IntegerField, Max
         from django.db.models.functions import Cast, Substr
-        from django.db.models import IntegerField
 
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         prefix = f"EST-{date_str}-"
@@ -1125,6 +1123,7 @@ class RecurringInvoice(AssignableMixin, BaseModel):
     def calculate_next_date(self):
         """Calculate the next generation date based on frequency"""
         from datetime import timedelta
+
         from dateutil.relativedelta import relativedelta
 
         current = self.next_generation_date

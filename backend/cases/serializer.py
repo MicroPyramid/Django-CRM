@@ -729,9 +729,9 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
         if org is None:
             org = self.context.get("org") if hasattr(self, "context") else None
         if org is not None:
-            self.fields["target_assignee_ids"].child_relation.queryset = (
-                Profile.objects.filter(org=org)
-            )
+            self.fields[
+                "target_assignee_ids"
+            ].child_relation.queryset = Profile.objects.filter(org=org)
             self.fields["target_team_id"].queryset = Teams.objects.filter(org=org)
 
     def validate_conditions(self, value):
@@ -993,9 +993,9 @@ class ApprovalRuleSerializer(serializers.ModelSerializer):
             # approver_ids/match_team_id accept ANY org's rows, so a PUT (whose
             # view does not re-run the POST's manual org check) could attach a
             # foreign-tenant Profile or Team to the rule.
-            self.fields["approver_ids"].child_relation.queryset = (
-                Profile.objects.filter(org=org)
-            )
+            self.fields[
+                "approver_ids"
+            ].child_relation.queryset = Profile.objects.filter(org=org)
             self.fields["match_team_id"].queryset = Teams.objects.filter(org=org)
 
 

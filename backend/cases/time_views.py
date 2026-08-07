@@ -17,7 +17,7 @@ Entry-scoped (registered at the project root under ``/api/time-entries/``):
 """
 
 from collections import OrderedDict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
@@ -52,8 +52,8 @@ class TimeEntryListCreateView(APIView):
 
     def get(self, request, pk):
         case = get_object_or_404(Case, id=pk, org=request.profile.org)
-        entries = _visible_entry_qs(request.profile).filter(case=case).order_by(
-            "-started_at"
+        entries = (
+            _visible_entry_qs(request.profile).filter(case=case).order_by("-started_at")
         )
         return Response(TimeEntrySerializer(entries, many=True).data)
 
@@ -75,9 +75,7 @@ class TimeEntryListCreateView(APIView):
                 {"detail": str(exc).splitlines()[0][:200]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response(
-            TimeEntrySerializer(entry).data, status=status.HTTP_201_CREATED
-        )
+        return Response(TimeEntrySerializer(entry).data, status=status.HTTP_201_CREATED)
 
 
 class TimeEntryStartView(APIView):
@@ -114,9 +112,7 @@ class TimeEntryStartView(APIView):
             description=(request.data.get("description") or "").strip(),
             billable=bool(request.data.get("billable", False)),
         )
-        return Response(
-            TimeEntrySerializer(entry).data, status=status.HTTP_201_CREATED
-        )
+        return Response(TimeEntrySerializer(entry).data, status=status.HTTP_201_CREATED)
 
 
 class TimeSummaryView(APIView):
@@ -178,9 +174,7 @@ class TimeEntryDetailView(APIView):
     def put(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:
-            return Response(
-                {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         if entry is False:
             return Response(
                 {"detail": "Not authorized to edit this entry."},
@@ -197,9 +191,7 @@ class TimeEntryDetailView(APIView):
     def delete(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:
-            return Response(
-                {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         if entry is False:
             return Response(
                 {"detail": "Not authorized to delete this entry."},
@@ -227,9 +219,7 @@ class TimeEntryStopView(APIView):
             .first()
         )
         if entry is None:
-            return Response(
-                {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         if entry.profile_id != request.profile.id and not is_org_admin(request.profile):
             return Response(
                 {"detail": "Not authorized to stop this entry."},
@@ -290,9 +280,7 @@ class TimesheetView(APIView):
             start = self._parse_date(request.query_params.get("start"))
             end = self._parse_date(request.query_params.get("end"))
         except ValueError as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         if start is None or end is None:
             today = timezone.localdate()
             # Default to this Mon..Sun (ISO week).

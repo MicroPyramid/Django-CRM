@@ -1,6 +1,7 @@
 import os
 import warnings
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
@@ -11,13 +12,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-dev-key-please-change-in-production"
+)
 
 IS_DEV_ENV = os.environ.get("ENV_TYPE", "dev") == "dev"
 
 if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
     if not IS_DEV_ENV:
-        raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
+        raise ValueError(
+            "SECRET_KEY must be set to a secure value in non-dev environments"
+        )
 
 # This key also signs every JWT (see SIMPLE_JWT["SIGNING_KEY"] below). RFC 7518
 # section 3.2 requires an HMAC key at least as long as the hash it produces, so
@@ -33,7 +38,7 @@ if len(SECRET_KEY.encode()) < JWT_MIN_SIGNING_KEY_BYTES:
     message = (
         f"SECRET_KEY is {len(SECRET_KEY.encode())} bytes. It signs every JWT, "
         f"and HS256 needs at least {JWT_MIN_SIGNING_KEY_BYTES}. Generate one with "
-        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"`."
+        '`python -c "import secrets; print(secrets.token_urlsafe(48))"`.'
     )
     if not IS_DEV_ENV:
         raise ValueError(message)
@@ -223,7 +228,11 @@ if ENV_TYPE == "dev":
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     MEDIA_URL = "/media/"
 elif ENV_TYPE == "prod":
-    from .server_settings import *  # noqa: F401
+    # A star import is the point here: server_settings.py is an operator-supplied
+    # override file, so its names are not knowable from this side. The old
+    # suppression said F401 (unused import), which is not the code a star import
+    # raises, so it suppressed nothing.
+    from .server_settings import *  # noqa: F403
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@localhost")
@@ -240,7 +249,9 @@ if "django_ses" in EMAIL_BACKEND:
 
 # celery Tasks
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+)
 
 
 LOGGING = {
@@ -454,6 +465,34 @@ ORG_API_KEY_AUTH_ENABLED = os.environ.get(
     "DJANGO_ORG_API_KEY_AUTH", "true"
 ).strip().lower() not in ("false", "0", "no", "off")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+
+# Every link this system puts in an email is built from this one value, via
+# `common.links.frontend_url`: the magic-link sign-in URL, the customer's
+# invoice and estimate portal links, the CSAT survey, and the internal
+# "assigned to you" notifications. Left at the dev default in production it
+# mails customers a link to a port on their own machine, and mails a sign-in
+# token to one, and neither failure shows up anywhere on the server.
+#
+# Checked here rather than at send time because there is no good answer at send
+# time: the email has already been composed and the alternative is dropping it
+# silently. A deploy that fails to start is the loud version of the same news.
+if not IS_DEV_ENV:
+    _frontend = urlparse(FRONTEND_URL)
+    if _frontend.scheme not in ("http", "https") or not _frontend.netloc:
+        raise ValueError(
+            f"FRONTEND_URL is {FRONTEND_URL!r}, which is not an absolute URL. "
+            "Every emailed link is built from it, and a value without a scheme "
+            "and host produces a relative path, which is not a link at all "
+            "inside an email. Set it to the web app's public base URL, for "
+            "example https://app.example.com."
+        )
+    if _frontend.hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+        raise ValueError(
+            f"FRONTEND_URL is {FRONTEND_URL!r}, which points at this machine. "
+            "It is emailed to customers (invoice and estimate portal links, "
+            "the CSAT survey) and carries the magic-link sign-in URL. Set it to "
+            "the web app's public base URL, for example https://app.example.com."
+        )
 
 # Google OAuth Configuration
 #

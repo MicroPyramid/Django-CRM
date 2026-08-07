@@ -8,9 +8,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.mark.django_db
@@ -26,14 +24,10 @@ class TestLeadPipelineListCreateView:
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Sales Pipeline"
-        assert LeadPipeline.objects.filter(
-            name="Sales Pipeline", org=org_a
-        ).exists()
+        assert LeadPipeline.objects.filter(name="Sales Pipeline", org=org_a).exists()
 
     def test_list_pipelines(self, admin_client, admin_user, org_a):
-        LeadPipeline.objects.create(
-            name="Pipeline A", org=org_a, created_by=admin_user
-        )
+        LeadPipeline.objects.create(name="Pipeline A", org=org_a, created_by=admin_user)
         response = admin_client.get("/api/leads/pipelines/")
         assert response.status_code == 200
         data = response.json()
@@ -109,9 +103,7 @@ class TestLeadPipelineDetailView:
         pipeline = LeadPipeline.objects.create(
             name="Empty Pipeline", org=org_a, created_by=admin_user
         )
-        response = admin_client.delete(
-            f"/api/leads/pipelines/{pipeline.id}/"
-        )
+        response = admin_client.delete(f"/api/leads/pipelines/{pipeline.id}/")
         assert response.status_code == 204
 
     def test_delete_pipeline_with_leads_fails(self, admin_client, admin_user, org_a):
@@ -358,9 +350,7 @@ class TestLeadStageViews:
             org=org_a,
             created_by=admin_user,
         )
-        LeadStage.objects.create(
-            pipeline=pipeline, name="Only", order=0, org=org_a
-        )
+        LeadStage.objects.create(pipeline=pipeline, name="Only", order=0, org=org_a)
         response = admin_client.post(
             f"/api/leads/pipelines/{pipeline.id}/stages/reorder/",
             {"stage_ids": ["00000000-0000-0000-0000-000000000001"]},

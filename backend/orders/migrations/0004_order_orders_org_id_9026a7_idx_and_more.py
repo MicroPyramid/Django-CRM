@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0008_account_is_sample"),
         ("common", "0034_rls_pipeline_tables"),

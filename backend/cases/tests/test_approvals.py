@@ -7,16 +7,15 @@ request flow, the inbox endpoint, and the four state transitions
 
 from __future__ import annotations
 
-
 import pytest
 from crum import impersonate
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from cases.approvals import Approval, ApprovalRule, find_matching_rule
 from cases.models import Case
 from common.models import Activity
 from conftest import rls_org
-from django.utils import timezone
 
 
 def _make_case(
@@ -94,9 +93,9 @@ class TestRuleMatching:
             match_case_type="Incident",
         )
         chosen = find_matching_rule(case)
-        assert (
-            chosen == specific
-        ), f"More-specific rule should win, got: {chosen.name if chosen else None}"
+        assert chosen == specific, (
+            f"More-specific rule should win, got: {chosen.name if chosen else None}"
+        )
         # Unused but covers the broader rule still being a candidate.
         assert broad.matches(case) is True
 

@@ -26,6 +26,7 @@ from accounts.models import Account
 from common.models import Comment
 from tasks.models import Task
 
+
 @pytest.fixture
 def task_a(admin_user, org_a):
     return Task.objects.create(
@@ -120,9 +121,7 @@ class TestOrdinaryEditStillWorks:
         comment_on_task.refresh_from_db()
         assert comment_on_task.comment == "Fixed my typo"
 
-    def test_a_third_party_still_cannot_edit(
-        self, user_client, comment_on_task
-    ):
+    def test_a_third_party_still_cannot_edit(self, user_client, comment_on_task):
         """Author-or-admin gating is untouched by the field change."""
         response = user_client.put(
             f"/api/tasks/comment/{comment_on_task.id}/",

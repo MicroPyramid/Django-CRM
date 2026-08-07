@@ -170,9 +170,7 @@ class OrgAccessTokenDetailView(APIView):
 
     @extend_schema(tags=["API Tokens"], operation_id="org_pat_revoke")
     def delete(self, request, pk):
-        pat = get_object_or_404(
-            PersonalAccessToken, pk=pk, org=request.profile.org
-        )
+        pat = get_object_or_404(PersonalAccessToken, pk=pk, org=request.profile.org)
         if pat.revoked_at is None:
             pat.revoked_at = timezone.now()
             pat.save(update_fields=["revoked_at"])

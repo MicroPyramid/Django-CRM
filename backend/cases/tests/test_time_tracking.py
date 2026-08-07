@@ -22,7 +22,9 @@ from django.utils import timezone
 from accounts.models import Account
 from cases.models import Case, TimeEntry
 from cases.tasks import auto_stop_stale_timers as _auto_stop_stale_timers
+from common.models import Activity
 from conftest import restore_rls_context
+from invoices.models import Invoice, InvoiceLineItem
 
 
 # The task clears `app.current_org` when it finishes, correctly: it walks every
@@ -35,9 +37,6 @@ def auto_stop_stale_timers(*args, **kwargs):
         return _auto_stop_stale_timers(*args, **kwargs)
     finally:
         restore_rls_context()
-
-from common.models import Activity
-from invoices.models import Invoice, InvoiceLineItem
 
 
 def _make_case(org, creator, name="Sample case"):
@@ -105,9 +104,7 @@ class TestModelConstraints:
         )
         assert TimeEntry.objects.filter(case=case, ended_at__isnull=True).count() == 2
 
-    def test_save_recomputes_duration_minutes(
-        self, admin_user, admin_profile, org_a
-    ):
+    def test_save_recomputes_duration_minutes(self, admin_user, admin_profile, org_a):
         case = _make_case(org_a, admin_user)
         start = timezone.now() - timedelta(minutes=45)
         end = timezone.now() - timedelta(minutes=15)
@@ -267,9 +264,7 @@ class TestManualEntry:
             == 1
         )
 
-    def test_end_before_start_rejected(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_end_before_start_rejected(self, admin_client, admin_user, org_a):
         case = _make_case(org_a, admin_user)
         start = timezone.now()
         end = start - timedelta(minutes=10)
@@ -298,9 +293,7 @@ class TestManualEntry:
 
 @pytest.mark.django_db
 class TestDetail:
-    def test_owner_can_edit(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_owner_can_edit(self, admin_client, admin_user, admin_profile, org_a):
         case = _make_case(org_a, admin_user)
         entry = _entry(
             case,
@@ -607,17 +600,13 @@ class TestSignalAndAutoStop:
             admin_profile,
             started_at=timezone.now() - timedelta(minutes=10),
         )
-        admin_client.post(
-            f"/api/time-entries/{entry.id}/stop/", {}, format="json"
-        )
+        admin_client.post(f"/api/time-entries/{entry.id}/stop/", {}, format="json")
         assert (
             Activity.objects.filter(entity_id=case.id, action="TIME_LOGGED").count()
             == 1
         )
 
-    def test_auto_stop_kills_stale_timer(
-        self, admin_user, admin_profile, org_a
-    ):
+    def test_auto_stop_kills_stale_timer(self, admin_user, admin_profile, org_a):
         case = _make_case(org_a, admin_user)
         old_start = timezone.now() - timedelta(hours=15)
         entry = TimeEntry.objects.create(
@@ -629,9 +618,7 @@ class TestSignalAndAutoStop:
         assert entry.ended_at is not None
         assert entry.auto_stopped is True
 
-    def test_auto_stop_leaves_recent_timer(
-        self, admin_user, admin_profile, org_a
-    ):
+    def test_auto_stop_leaves_recent_timer(self, admin_user, admin_profile, org_a):
         case = _make_case(org_a, admin_user)
         recent_start = timezone.now() - timedelta(hours=2)
         entry = TimeEntry.objects.create(

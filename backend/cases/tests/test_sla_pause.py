@@ -8,8 +8,6 @@ import pytest
 from django.utils import timezone
 
 from business_hours.models import BusinessCalendar
-from cases.models import Case
-
 
 _UTC = ZoneInfo("UTC")
 

@@ -113,7 +113,10 @@ class TestScopesAllow:
         with nothing usable is refused rather than treated as unrestricted.
         """
         assert scopes.scopes_allow(["not-a-scope"], "GET", "/api/leads/") is False
-        assert scopes.scopes_allow(["not-a-scope", "leads:read"], "GET", "/api/leads/") is True
+        assert (
+            scopes.scopes_allow(["not-a-scope", "leads:read"], "GET", "/api/leads/")
+            is True
+        )
 
 
 class TestCredentialPaths:
@@ -129,7 +132,9 @@ class TestCredentialPaths:
     def test_credential_paths_are_denied(self, path):
         assert scopes.credential_path_denial(path) is not None
 
-    @pytest.mark.parametrize("path", ["/api/leads/", "/api/org/settings/", "/api/profile/"])
+    @pytest.mark.parametrize(
+        "path", ["/api/leads/", "/api/org/settings/", "/api/profile/"]
+    )
     def test_ordinary_paths_are_not_denied(self, path):
         assert scopes.credential_path_denial(path) is None
 
@@ -141,7 +146,10 @@ class TestCredentialPaths:
         credential that outlives its own revocation.
         """
         assert scopes.check_request([], "GET", "/api/org/api-key/") is not None
-        assert scopes.check_request(["*:write"], "POST", "/api/profile/tokens/") is not None
+        assert (
+            scopes.check_request(["*:write"], "POST", "/api/profile/tokens/")
+            is not None
+        )
 
     def test_check_request_allows_an_ordinary_scoped_read(self):
         assert scopes.check_request(["leads:read"], "GET", "/api/leads/") is None

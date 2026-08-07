@@ -30,13 +30,12 @@ from django.db.models import Q
 from django.http import Http404
 from rest_framework.exceptions import PermissionDenied
 
-from tasks.models import Task
-
 # Re-exported, not redefined, the same arrangement `cases.access` uses. This
 # was an eleventh copy of the admin rule and the only one that had taken the
 # canonical name, so the guard test looking for private spellings walked past
 # it. It read `role == "ADMIN" or is_admin`, which is now one fact and not two.
 from common.permissions import is_org_admin  # noqa: F401
+from tasks.models import Task
 
 _DENIED = "You do not have Permission to perform this action"
 

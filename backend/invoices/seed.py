@@ -826,16 +826,16 @@ class InvoiceSeeder:
     def clear_invoice_data(self):
         """Clear all invoice-related data in reverse dependency order."""
         from invoices.models import (
-            Payment,
+            Estimate,
+            EstimateLineItem,
+            Invoice,
             InvoiceHistory,
             InvoiceLineItem,
-            Invoice,
-            EstimateLineItem,
-            Estimate,
-            RecurringInvoiceLineItem,
-            RecurringInvoice,
-            Product,
             InvoiceTemplate,
+            Payment,
+            Product,
+            RecurringInvoice,
+            RecurringInvoiceLineItem,
         )
 
         # Delete in reverse dependency order

@@ -43,9 +43,7 @@ class TestUsersListView:
         # Collect all user emails across active and inactive lists
         active = response.data["active_users"]["active_users"]
         inactive = response.data["inactive_users"]["inactive_users"]
-        all_emails = [
-            p["user_details"]["email"] for p in active
-        ] + [
+        all_emails = [p["user_details"]["email"] for p in active] + [
             p["user_details"]["email"] for p in inactive
         ]
         assert admin_user.email not in all_emails
@@ -346,9 +344,7 @@ class TestUserDetailView:
         response = user_client.get(self._url(admin_user.id))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_update_user_non_admin_own(
-        self, user_client, regular_user, user_profile
-    ):
+    def test_update_user_non_admin_own(self, user_client, regular_user, user_profile):
         """Non-admin can update their own profile."""
         response = user_client.put(
             self._url(regular_user.id),
@@ -443,9 +439,7 @@ class TestUserStatusView:
     def _url(self, user_id):
         return f"/api/user/{user_id}/status/"
 
-    def test_activate_user(
-        self, admin_client, org_a, regular_user, user_profile
-    ):
+    def test_activate_user(self, admin_client, org_a, regular_user, user_profile):
         """Admin can activate a user."""
         user_profile.is_active = False
         user_profile.save()
@@ -458,9 +452,7 @@ class TestUserStatusView:
         user_profile.refresh_from_db()
         assert user_profile.is_active is True
 
-    def test_deactivate_user(
-        self, admin_client, org_a, regular_user, user_profile
-    ):
+    def test_deactivate_user(self, admin_client, org_a, regular_user, user_profile):
         """Admin can deactivate a user."""
         response = admin_client.post(
             self._url(regular_user.id),
@@ -471,9 +463,7 @@ class TestUserStatusView:
         user_profile.refresh_from_db()
         assert user_profile.is_active is False
 
-    def test_invalid_status(
-        self, admin_client, org_a, regular_user, user_profile
-    ):
+    def test_invalid_status(self, admin_client, org_a, regular_user, user_profile):
         """Invalid status value returns 400."""
         response = admin_client.post(
             self._url(regular_user.id),

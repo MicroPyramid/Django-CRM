@@ -11,9 +11,18 @@ from decimal import Decimal, InvalidOperation
 from common.custom_fields import SUPPORTED_TARGETS, validate_definition_options
 
 TOP_LEVEL_KEYS = {
-    "id", "version", "name", "description", "terminology",
-    "lead_pipeline", "case_pipeline", "task_pipeline",
-    "custom_fields", "tags", "products", "sample_data",
+    "id",
+    "version",
+    "name",
+    "description",
+    "terminology",
+    "lead_pipeline",
+    "case_pipeline",
+    "task_pipeline",
+    "custom_fields",
+    "tags",
+    "products",
+    "sample_data",
 }
 
 #  is_default is a recognised key on both, not a typo, but is rejected by
@@ -21,15 +30,26 @@ TOP_LEVEL_KEYS = {
 # genuinely unknown keys. See _reject_is_default for why this matters.
 PIPELINE_KEYS = {"name", "description", "stages", "is_default"}
 STAGE_KEYS = {
-    "name", "order", "color", "stage_type", "maps_to_status", "wip_limit",
+    "name",
+    "order",
+    "color",
+    "stage_type",
+    "maps_to_status",
+    "wip_limit",
     "is_default",
 }
 # win_probability exists on LeadStage only (leads/models.py:296).
 LEAD_STAGE_KEYS = STAGE_KEYS | {"win_probability"}
 
 CUSTOM_FIELD_KEYS = {
-    "target", "key", "label", "field_type", "options",
-    "is_required", "is_filterable", "display_order",
+    "target",
+    "key",
+    "label",
+    "field_type",
+    "options",
+    "is_required",
+    "is_filterable",
+    "display_order",
 }
 FIELD_TYPES = {"text", "textarea", "number", "dropdown", "date", "checkbox"}
 
@@ -37,33 +57,82 @@ TAG_KEYS = {"name", "color", "description"}
 PRODUCT_KEYS = {"name", "sku", "price", "currency", "category", "description"}
 
 SAMPLE_LEAD_KEYS = {
-    "title", "first_name", "last_name", "email", "phone",
-    "source", "status", "stage", "custom_fields",
-    "opportunity_amount", "currency",
+    "title",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "source",
+    "status",
+    "stage",
+    "custom_fields",
+    "opportunity_amount",
+    "currency",
 }
 SAMPLE_ACCOUNT_KEYS = {
-    "name", "email", "phone", "website", "industry", "city", "country",
-    "description", "custom_fields",
+    "name",
+    "email",
+    "phone",
+    "website",
+    "industry",
+    "city",
+    "country",
+    "description",
+    "custom_fields",
 }
 SAMPLE_CONTACT_KEYS = {
-    "first_name", "last_name", "email", "phone", "title", "department",
-    "organization", "account", "city", "country", "description", "custom_fields",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "title",
+    "department",
+    "organization",
+    "account",
+    "city",
+    "country",
+    "description",
+    "custom_fields",
 }
 SAMPLE_DEAL_KEYS = {
-    "name", "account", "stage", "amount", "currency", "probability",
-    "closed_on", "lead_source", "description", "custom_fields",
+    "name",
+    "account",
+    "stage",
+    "amount",
+    "currency",
+    "probability",
+    "closed_on",
+    "lead_source",
+    "description",
+    "custom_fields",
 }
 SAMPLE_TICKET_KEYS = {
-    "name", "status", "priority", "case_type", "account", "contacts",
-    "stage", "description", "custom_fields",
+    "name",
+    "status",
+    "priority",
+    "case_type",
+    "account",
+    "contacts",
+    "stage",
+    "description",
+    "custom_fields",
 }
 SAMPLE_TASK_KEYS = {
-    "title", "status", "priority", "due_date", "description", "stage",
-    "account", "deal", "ticket", "lead", "custom_fields",
+    "title",
+    "status",
+    "priority",
+    "due_date",
+    "description",
+    "stage",
+    "account",
+    "deal",
+    "ticket",
+    "lead",
+    "custom_fields",
 }
 
 # Every entity `sample_data` understands, in the order the applier creates them
-#. A later entity may reference an earlier one by name, never the reverse.
+# . A later entity may reference an earlier one by name, never the reverse.
 # Tasks are last because a task is the only row that can point at any of the
 # other five. common.packs.applier imports this rather than restating it.
 SAMPLE_ENTITY_KEYS = ("accounts", "contacts", "deals", "tickets", "leads", "tasks")
@@ -200,7 +269,9 @@ def _validate_custom_field(where: str, field: dict) -> None:
     _reject_unknown(where, field, CUSTOM_FIELD_KEYS)
     target = field.get("target")
     if target not in SUPPORTED_TARGETS:
-        raise PackValidationError(f"{where}: target {target!r} is not a supported entity")
+        raise PackValidationError(
+            f"{where}: target {target!r} is not a supported entity"
+        )
     if not field.get("key"):
         raise PackValidationError(f"{where}: key is required")
     if not field.get("label"):
@@ -298,7 +369,9 @@ def _reference_index(where: str, rows: list, key_of, label: str) -> set[str]:
     return seen
 
 
-def _check_reference(where: str, value, field: str, known: set[str], target: str) -> None:
+def _check_reference(
+    where: str, value, field: str, known: set[str], target: str
+) -> None:
     if value is None:
         return
     if value not in known:
@@ -383,28 +456,42 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         _reject_unknown(at, row, SAMPLE_CONTACT_KEYS)
         _require(at, row, "first_name", "last_name")
         _validate_choice(at, row.get("country"), "country", countries)
-        _check_reference(at, row.get("account"), "account", known_accounts, "sample account")
+        _check_reference(
+            at, row.get("account"), "account", known_accounts, "sample account"
+        )
 
     for i, row in enumerate(deals):
         at = f"{where}.deals[{i}]"
         _reject_unknown(at, row, SAMPLE_DEAL_KEYS)
         _require(at, row, "name")
         _validate_choice(at, row.get("stage"), "stage", {c for c, _l in STAGES})
-        _validate_choice(at, row.get("lead_source"), "lead_source", {c for c, _l in SOURCES})
+        _validate_choice(
+            at, row.get("lead_source"), "lead_source", {c for c, _l in SOURCES}
+        )
         _validate_choice(at, row.get("currency"), "currency", currencies)
         _validate_date(at, row.get("closed_on"), "closed_on")
-        _check_reference(at, row.get("account"), "account", known_accounts, "sample account")
+        _check_reference(
+            at, row.get("account"), "account", known_accounts, "sample account"
+        )
 
     for i, row in enumerate(tickets):
         at = f"{where}.tickets[{i}]"
         _reject_unknown(at, row, SAMPLE_TICKET_KEYS)
         # status and priority have no model default and are not nullable.
         _require(at, row, "name", "status", "priority")
-        _validate_choice(at, row.get("status"), "status", {c for c, _l in STATUS_CHOICE})
-        _validate_choice(at, row.get("priority"), "priority", {c for c, _l in PRIORITY_CHOICE})
-        _validate_choice(at, row.get("case_type"), "case_type", {c for c, _l in CASE_TYPE})
+        _validate_choice(
+            at, row.get("status"), "status", {c for c, _l in STATUS_CHOICE}
+        )
+        _validate_choice(
+            at, row.get("priority"), "priority", {c for c, _l in PRIORITY_CHOICE}
+        )
+        _validate_choice(
+            at, row.get("case_type"), "case_type", {c for c, _l in CASE_TYPE}
+        )
         _validate_choice(at, row.get("stage"), "stage", case_stages)
-        _check_reference(at, row.get("account"), "account", known_accounts, "sample account")
+        _check_reference(
+            at, row.get("account"), "account", known_accounts, "sample account"
+        )
         for name in row.get("contacts") or []:
             _check_reference(at, name, "contacts", known_contacts, "sample contact")
 
@@ -412,7 +499,9 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         at = f"{where}.tasks[{i}]"
         _reject_unknown(at, row, SAMPLE_TASK_KEYS)
         _require(at, row, "title", "status", "priority")
-        _validate_choice(at, row.get("status"), "status", {c for c, _l in Task.STATUS_CHOICES})
+        _validate_choice(
+            at, row.get("status"), "status", {c for c, _l in Task.STATUS_CHOICES}
+        )
         _validate_choice(
             at, row.get("priority"), "priority", {c for c, _l in Task.PRIORITY_CHOICES}
         )
@@ -424,9 +513,13 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
                 f"{at}: a task may link to at most one parent, got {parents} "
                 "(tasks.Task.clean rejects more, and Task.save runs full_clean)"
             )
-        _check_reference(at, row.get("account"), "account", known_accounts, "sample account")
+        _check_reference(
+            at, row.get("account"), "account", known_accounts, "sample account"
+        )
         _check_reference(at, row.get("deal"), "deal", known_deals, "sample deal")
-        _check_reference(at, row.get("ticket"), "ticket", known_tickets, "sample ticket")
+        _check_reference(
+            at, row.get("ticket"), "ticket", known_tickets, "sample ticket"
+        )
         _check_reference(at, row.get("lead"), "lead", known_leads, "sample lead")
 
     for i, row in enumerate(leads):

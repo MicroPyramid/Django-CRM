@@ -4,15 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('common', '0023_alter_customfielddefinition_target_model'),
+        ("common", "0023_alter_customfielddefinition_target_model"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='customfielddefinition',
-            name='target_model',
-            field=models.CharField(choices=[('Account', 'Account'), ('Case', 'Case'), ('Contact', 'Contact'), ('Estimate', 'Estimate'), ('Invoice', 'Invoice'), ('Lead', 'Lead'), ('Opportunity', 'Opportunity'), ('RecurringInvoice', 'Recurring Invoice'), ('Task', 'Task')], max_length=32),
+            model_name="customfielddefinition",
+            name="target_model",
+            field=models.CharField(
+                choices=[
+                    ("Account", "Account"),
+                    ("Case", "Case"),
+                    ("Contact", "Contact"),
+                    ("Estimate", "Estimate"),
+                    ("Invoice", "Invoice"),
+                    ("Lead", "Lead"),
+                    ("Opportunity", "Opportunity"),
+                    ("RecurringInvoice", "Recurring Invoice"),
+                    ("Task", "Task"),
+                ],
+                max_length=32,
+            ),
         ),
     ]

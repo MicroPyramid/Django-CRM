@@ -24,7 +24,10 @@ from common.links import frontend_url
 class TestFrontendUrl:
     @override_settings(FRONTEND_URL="https://app.example.com")
     def test_builds_absolute_url(self):
-        assert frontend_url("/portal/invoice/abc") == "https://app.example.com/portal/invoice/abc"
+        assert (
+            frontend_url("/portal/invoice/abc")
+            == "https://app.example.com/portal/invoice/abc"
+        )
 
     @override_settings(FRONTEND_URL="https://app.example.com/")
     def test_strips_a_trailing_slash_on_the_base(self):

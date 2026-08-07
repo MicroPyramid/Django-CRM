@@ -316,7 +316,7 @@ def send_csat_survey(case_id, org_id):
         # Template missing in dev: fall back to a plain link so the task
         # still records the survey row + token. Production has the template.
         html = (
-            f'<p>Hi {contact.first_name or "there"},</p>'
+            f"<p>Hi {contact.first_name or 'there'},</p>"
             f'<p>How did we do on case "{case.name}"?</p>'
             f'<p><a href="{link}">Rate your experience</a></p>'
         )

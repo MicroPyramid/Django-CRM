@@ -161,7 +161,7 @@ class AuditLogger:
             event_type,
             user_id,
             org_id,
-            request_info.get('ip_address'),
+            request_info.get("ip_address"),
             success,
         )
 

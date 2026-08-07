@@ -34,9 +34,9 @@ class TestCaseSignalActivities:
         assert response.status_code == 200
         case_id = response.json()["id"]
         rows = list(
-            Activity.objects.filter(
-                entity_type="Case", entity_id=case_id
-            ).values_list("action", flat=True)
+            Activity.objects.filter(entity_type="Case", entity_id=case_id).values_list(
+                "action", flat=True
+            )
         )
         assert "CREATE" in rows
 
@@ -103,9 +103,7 @@ class TestCaseSignalActivities:
             created_by=admin_user,
         )
         case_a.solutions.add(sol)
-        rows = [
-            r for r in _case_activities(case_a) if r.action == "LINKED_SOLUTION"
-        ]
+        rows = [r for r in _case_activities(case_a) if r.action == "LINKED_SOLUTION"]
         assert len(rows) == 1
         assert rows[0].metadata == {"solution_id": str(sol.pk)}
 
@@ -156,27 +154,19 @@ class TestActivityFeedAPI:
                 {"status": status},
                 content_type="application/json",
             )
-        response = admin_client.get(
-            f"/api/cases/{case_a.pk}/activities/?limit=2"
-        )
+        response = admin_client.get(f"/api/cases/{case_a.pk}/activities/?limit=2")
         assert response.status_code == 200
         body = response.json()
         assert "activities" in body
         assert len(body["activities"]) == 2
         assert body["count"] >= 5
 
-    def test_activities_endpoint_cross_org_isolated(
-        self, admin_client, case_b
-    ):
+    def test_activities_endpoint_cross_org_isolated(self, admin_client, case_b):
         response = admin_client.get(f"/api/cases/{case_b.pk}/activities/")
         assert response.status_code == 404
 
-    def test_activities_endpoint_unauthenticated(
-        self, unauthenticated_client, case_a
-    ):
-        response = unauthenticated_client.get(
-            f"/api/cases/{case_a.pk}/activities/"
-        )
+    def test_activities_endpoint_unauthenticated(self, unauthenticated_client, case_a):
+        response = unauthenticated_client.get(f"/api/cases/{case_a.pk}/activities/")
         # DRF without a WWW-Authenticate challenge returns 403 here, matching
         # every other Cases endpoint.
         assert response.status_code in (401, 403)

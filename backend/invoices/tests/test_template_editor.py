@@ -93,9 +93,7 @@ class TestOnlyAdminsAndOnlyThisOrg:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "template_html" not in response.content.decode()
 
-    def test_a_member_is_refused_before_the_id_is_looked_up(
-        self, user_client, org_a
-    ):
+    def test_a_member_is_refused_before_the_id_is_looked_up(self, user_client, org_a):
         """A 404 here would tell a member which template ids exist."""
         missing = InvoiceTemplate(id="00000000-0000-0000-0000-000000000000")
         response = user_client.get(_editor_url(missing))
@@ -124,7 +122,11 @@ class TestTheEditRoundTrip:
 
         response = admin_client.put(
             f"/api/invoices/templates/{template.id}/",
-            {k: v for k, v in loaded.items() if k not in ("id", "created_at", "updated_at")},
+            {
+                k: v
+                for k, v in loaded.items()
+                if k not in ("id", "created_at", "updated_at")
+            },
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK, response.content

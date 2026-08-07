@@ -7,7 +7,6 @@ from rest_framework import serializers
 
 from business_hours.models import BusinessCalendar, BusinessHoliday
 
-
 _WEEKDAY_FIELDS = (
     "monday_open",
     "monday_close",
@@ -59,7 +58,9 @@ class BusinessCalendarSerializer(serializers.ModelSerializer):
             open_field = _WEEKDAY_FIELDS[i]
             close_field = _WEEKDAY_FIELDS[i + 1]
             open_val = attrs.get(open_field, getattr(self.instance, open_field, None))
-            close_val = attrs.get(close_field, getattr(self.instance, close_field, None))
+            close_val = attrs.get(
+                close_field, getattr(self.instance, close_field, None)
+            )
             if (open_val is None) != (close_val is None):
                 raise serializers.ValidationError(
                     {open_field: "Open and close must be both set or both null."}

@@ -237,9 +237,7 @@ class TestDocumentUpdate:
         doc.refresh_from_db()
         assert doc.title == "Before"
 
-    def test_admin_can_update_anyones_document(
-        self, admin_client, regular_user, org_a
-    ):
+    def test_admin_can_update_anyones_document(self, admin_client, regular_user, org_a):
         """The permissive direction for an admin: not the creator, still allowed."""
         doc = _doc(org_a, regular_user, title="Before")
         response = admin_client.patch(
@@ -299,9 +297,7 @@ class TestDocumentUpdate:
         doc.refresh_from_db()
         assert doc.title == "Before"
 
-    def test_creator_can_update_via_put(
-        self, user_client, regular_user, org_a
-    ):
+    def test_creator_can_update_via_put(self, user_client, regular_user, org_a):
         """The creator keeps full edit rights through PUT, not just PATCH."""
         doc = _doc(org_a, regular_user, title="Before")
         response = user_client.put(

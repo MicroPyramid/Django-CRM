@@ -104,9 +104,7 @@ class TestPerOrgConfig:
 
     def test_custom_expected_days(self, org_a, opportunity):
         # Set custom config: 5 days expected for PROSPECTING
-        StageAgingConfig.objects.create(
-            org=org_a, stage="PROSPECTING", expected_days=5
-        )
+        StageAgingConfig.objects.create(org=org_a, stage="PROSPECTING", expected_days=5)
         opportunity.stage_changed_at = timezone.now() - timedelta(days=6)
         opportunity.save(update_fields=["stage_changed_at"])
 
@@ -126,9 +124,7 @@ class TestPerOrgConfig:
 
     def test_custom_config_red_threshold(self, org_a, opportunity):
         # Set custom config: 5 days expected → rotten at 5 * 1.5 = 7.5
-        StageAgingConfig.objects.create(
-            org=org_a, stage="PROSPECTING", expected_days=5
-        )
+        StageAgingConfig.objects.create(org=org_a, stage="PROSPECTING", expected_days=5)
         opportunity.stage_changed_at = timezone.now() - timedelta(days=8)
         opportunity.save(update_fields=["stage_changed_at"])
 
@@ -169,7 +165,7 @@ class TestRottenFilterAPI:
 
     def test_rotten_filter_returns_stale_deals(self, admin_client, org_a, admin_user):
         # Create a rotten deal (PROSPECTING > 21 days)
-        rotten = Opportunity.objects.create(
+        Opportunity.objects.create(
             name="Rotten Deal",
             stage="PROSPECTING",
             org=org_a,
@@ -177,7 +173,7 @@ class TestRottenFilterAPI:
             stage_changed_at=timezone.now() - timedelta(days=25),
         )
         # Create a fresh deal
-        fresh = Opportunity.objects.create(
+        Opportunity.objects.create(
             name="Fresh Deal",
             stage="PROSPECTING",
             org=org_a,
@@ -253,7 +249,9 @@ class TestStaleDealsTask:
     """Test the Celery task for detecting stale deals."""
 
     @patch("opportunity.tasks.send_stale_deals_alert")
-    def test_task_detects_stale_deals(self, mock_alert, org_a, admin_user, admin_profile):
+    def test_task_detects_stale_deals(
+        self, mock_alert, org_a, admin_user, admin_profile
+    ):
         # Create a rotten deal assigned to admin
         rotten = Opportunity.objects.create(
             name="Very Stale",

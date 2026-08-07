@@ -137,7 +137,9 @@ class CaseUnmergeView(APIView):
 
             prior_status = record.get("source_prior_status") or "New"
             prior_closed_on_raw = record.get("source_prior_closed_on")
-            prior_closed_on = parse_date(prior_closed_on_raw) if prior_closed_on_raw else None
+            prior_closed_on = (
+                parse_date(prior_closed_on_raw) if prior_closed_on_raw else None
+            )
 
             target_id_for_activity = str(target.id)
             source.merged_into = None

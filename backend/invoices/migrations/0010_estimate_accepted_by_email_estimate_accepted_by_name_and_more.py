@@ -4,30 +4,37 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('invoices', '0009_estimate_recurring_custom_fields'),
+        ("invoices", "0009_estimate_recurring_custom_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='estimate',
-            name='accepted_by_email',
-            field=models.EmailField(blank=True, default='', max_length=254, verbose_name='Accepted By Email'),
+            model_name="estimate",
+            name="accepted_by_email",
+            field=models.EmailField(
+                blank=True, default="", max_length=254, verbose_name="Accepted By Email"
+            ),
         ),
         migrations.AddField(
-            model_name='estimate',
-            name='accepted_by_name',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='Accepted By Name'),
+            model_name="estimate",
+            name="accepted_by_name",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="Accepted By Name"
+            ),
         ),
         migrations.AddField(
-            model_name='estimate',
-            name='accepted_ip',
-            field=models.GenericIPAddressField(blank=True, null=True, verbose_name='Accepted From IP'),
+            model_name="estimate",
+            name="accepted_ip",
+            field=models.GenericIPAddressField(
+                blank=True, null=True, verbose_name="Accepted From IP"
+            ),
         ),
         migrations.AddField(
-            model_name='estimate',
-            name='accepted_user_agent',
-            field=models.TextField(blank=True, default='', verbose_name='Accepted User Agent'),
+            model_name="estimate",
+            name="accepted_user_agent",
+            field=models.TextField(
+                blank=True, default="", verbose_name="Accepted User Agent"
+            ),
         ),
     ]

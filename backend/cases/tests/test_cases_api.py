@@ -17,7 +17,7 @@ from rest_framework import status
 
 from accounts.models import Account
 from cases.models import Case, CasePipeline, CaseStage, Solution
-from common.models import Attachments, Comment, Org, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
 CASES_LIST_URL = "/api/cases/"

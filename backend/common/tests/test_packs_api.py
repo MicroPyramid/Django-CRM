@@ -64,9 +64,7 @@ class TestPackAPI:
         assert res.json() == {"error": True, "errors": "Unknown pack."}
 
     def test_org_in_body_is_ignored(self, admin_client, org_a, org_b):
-        res = admin_client.post(
-            "/api/packs/real-estate/apply/", {"org": str(org_b.id)}
-        )
+        res = admin_client.post("/api/packs/real-estate/apply/", {"org": str(org_b.id)})
         assert res.status_code == 200
         from leads.models import LeadPipeline
 

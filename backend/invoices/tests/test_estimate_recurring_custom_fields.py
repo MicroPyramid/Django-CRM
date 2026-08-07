@@ -8,12 +8,12 @@ import datetime
 
 import pytest
 from django.db import connection
+from django.utils import timezone
 
 from accounts.models import Account
 from common.models import CustomFieldDefinition
 from contacts.models import Contact
 from invoices.models import Estimate, RecurringInvoice
-from django.utils import timezone
 
 pg_only = pytest.mark.skipif(
     connection.vendor != "postgresql",
@@ -29,9 +29,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_def(org, target_model, **overrides):

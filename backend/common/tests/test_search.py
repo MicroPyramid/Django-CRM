@@ -33,7 +33,9 @@ def _seed_all(org, token="Zephyr"):
         first_name=token, last_name="Person", email="c@example.com", org=org
     )
     Opportunity.objects.create(name=f"{token} deal", stage="PROSPECTING", org=org)
-    Case.objects.create(name=f"{token} ticket", status="New", priority="Normal", org=org)
+    Case.objects.create(
+        name=f"{token} ticket", status="New", priority="Normal", org=org
+    )
     billing = Account.objects.create(name="Billing Co", org=org)
     Invoice.objects.create(
         invoice_title=f"{token} invoice",
@@ -54,9 +56,7 @@ def _seed_all(org, token="Zephyr"):
 
 @pytest.mark.django_db
 class TestGlobalSearch:
-    def test_short_query_returns_empty_even_with_matches(
-        self, admin_client, org_a
-    ):
+    def test_short_query_returns_empty_even_with_matches(self, admin_client, org_a):
         _seed_all(org_a, token="Zephyr")
         # One character is below the floor, so it matches nothing on purpose...
         assert admin_client.get(f"{URL}?q=Z").json()["results"] == []

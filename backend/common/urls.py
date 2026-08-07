@@ -3,12 +3,12 @@ from django.urls import path
 from common.views.auth_views import (
     GoogleIdTokenView,
     GoogleOAuthCallbackView,
+    LogoutView,
     MagicLinkRequestView,
     MagicLinkVerifyCodeView,
     MagicLinkVerifyView,
     MeView,
     OrgAwareTokenRefreshView,
-    LogoutView,
     OrgSwitchView,
 )
 from common.views.custom_field_views import (

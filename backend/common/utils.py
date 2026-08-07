@@ -1,7 +1,6 @@
 import pytz
 from django.utils.translation import gettext_lazy as _
 
-
 INDCHOICES = (
     ("ADVERTISING", "ADVERTISING"),
     ("AGRICULTURE", "AGRICULTURE"),
@@ -446,6 +445,7 @@ def get_or_create_tags(tag_data, org):
         List of Tag objects
     """
     import json
+
     from common.models import Tags
 
     tags = []

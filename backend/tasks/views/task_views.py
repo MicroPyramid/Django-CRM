@@ -25,6 +25,13 @@ from common.models import (
     Teams,
 )
 from common.permissions import HasOrgContext
+from common.serializer import (
+    AttachmentsSerializer,
+    CommentSerializer,
+    CustomFieldDefinitionSerializer,
+    ProfileSerializer,
+    TeamsSerializer,
+)
 from common.utils import create_attachment
 from common.validators import (
     choice_list_param,
@@ -32,13 +39,6 @@ from common.validators import (
     payload_id_list,
     uuid_list_param,
     uuid_param,
-)
-from common.serializer import (
-    AttachmentsSerializer,
-    CommentSerializer,
-    CustomFieldDefinitionSerializer,
-    ProfileSerializer,
-    TeamsSerializer,
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -107,9 +107,7 @@ class TaskListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(priority=params.get("priority"))
             assigned_to = uuid_list_param(params, "assigned_to")
             if assigned_to:
-                queryset = queryset.filter(
-                    assigned_to__id__in=assigned_to
-                ).distinct()
+                queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
             tags = uuid_list_param(params, "tags")
             if tags:
                 queryset = queryset.filter(tags__id__in=tags).distinct()

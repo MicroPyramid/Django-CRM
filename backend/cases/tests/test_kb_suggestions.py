@@ -148,9 +148,7 @@ class TestSolutionSuggestionsSnippet:
             status="approved",
             is_published=True,
         )
-        resp = admin_client.get(
-            f"/api/cases/{case_a.id}/solution-suggestions/?q=abc"
-        )
+        resp = admin_client.get(f"/api/cases/{case_a.id}/solution-suggestions/?q=abc")
         for row in resp.data["results"]:
             if row["title"] == "Big article":
                 assert len(row["snippet"]) <= 200
@@ -158,9 +156,7 @@ class TestSolutionSuggestionsSnippet:
 
 
 class TestSolutionSuggestionsRls:
-    def test_cross_org_solutions_invisible(
-        self, admin_client, case_a, org_b
-    ):
+    def test_cross_org_solutions_invisible(self, admin_client, case_a, org_b):
         # Seeded into another tenant: the insert-check policy compares
         # against `app.current_org`, so writing this row means being that
         # tenant for the length of the write.
@@ -178,9 +174,7 @@ class TestSolutionSuggestionsRls:
         titles = [r["title"] for r in resp.data["results"]]
         assert "Other org password reset" not in titles
 
-    def test_cross_org_case_returns_404(
-        self, admin_client, case_b
-    ):
+    def test_cross_org_case_returns_404(self, admin_client, case_b):
         # admin_client is in org_a; case_b lives in org_b.
         resp = admin_client.get(
             f"/api/cases/{case_b.id}/solution-suggestions/?q=password"

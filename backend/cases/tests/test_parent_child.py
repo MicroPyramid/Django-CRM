@@ -43,9 +43,7 @@ def _make_case(
 
 
 def _activity_for(case, action):
-    return Activity.objects.filter(
-        entity_type="Case", entity_id=case.id, action=action
-    )
+    return Activity.objects.filter(entity_type="Case", entity_id=case.id, action=action)
 
 
 @pytest.mark.django_db
@@ -81,9 +79,7 @@ class TestCleanGuards:
             d.clean()
 
     def test_duplicate_parent_rejected(self, admin_user, org_a):
-        merged = _make_case(
-            org_a, admin_user, name="Merged", status_value="Duplicate"
-        )
+        merged = _make_case(org_a, admin_user, name="Merged", status_value="Duplicate")
         case = _make_case(org_a, admin_user, name="Live")
         case.parent = merged
         with pytest.raises(ValidationError):
@@ -92,9 +88,7 @@ class TestCleanGuards:
 
 @pytest.mark.django_db
 class TestSerializer:
-    def test_parent_summary_and_child_count(
-        self, admin_user, admin_profile, org_a
-    ):
+    def test_parent_summary_and_child_count(self, admin_user, admin_profile, org_a):
         from cases.serializer import CaseSerializer
 
         root = _make_case(org_a, admin_user, name="Root", is_problem=True)
@@ -178,9 +172,7 @@ class TestLinkEndpoint:
         a = _activity_for(child, "LINKED_PARENT").first()
         assert a.metadata["parent_id"] == str(parent.id)
 
-    def test_unlink_clears_parent(
-        self, admin_client, admin_user, admin_profile, org_a
-    ):
+    def test_unlink_clears_parent(self, admin_client, admin_user, admin_profile, org_a):
         parent = _make_case(org_a, admin_user, name="P")
         child = _make_case(org_a, admin_user, name="C", parent=parent)
         resp = admin_client.post(
@@ -235,12 +227,8 @@ class TestLinkEndpoint:
         )
         assert resp.status_code == 400
 
-    def test_link_to_duplicate_rejected(
-        self, admin_client, admin_user, org_a
-    ):
-        merged = _make_case(
-            org_a, admin_user, name="Merged", status_value="Duplicate"
-        )
+    def test_link_to_duplicate_rejected(self, admin_client, admin_user, org_a):
+        merged = _make_case(org_a, admin_user, name="Merged", status_value="Duplicate")
         case = _make_case(org_a, admin_user, name="Active")
         resp = admin_client.post(
             f"/api/cases/{case.id}/link/",
@@ -306,9 +294,7 @@ class TestCloseWithChildren:
         child.refresh_from_db()
         assert child.status == "Closed"
 
-    def test_already_closed_descendants_skipped(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_already_closed_descendants_skipped(self, admin_client, admin_user, org_a):
         from datetime import date
 
         parent = _make_case(org_a, admin_user, name="P", is_problem=True)
@@ -331,9 +317,7 @@ class TestCloseWithChildren:
         assert resp.json()["cascaded_case_ids"] == []
 
     def test_duplicate_parent_rejected(self, admin_client, admin_user, org_a):
-        merged = _make_case(
-            org_a, admin_user, name="Merged", status_value="Duplicate"
-        )
+        merged = _make_case(org_a, admin_user, name="Merged", status_value="Duplicate")
         resp = admin_client.post(
             f"/api/cases/{merged.id}/close-with-children/",
             {"cascade": True},

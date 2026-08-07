@@ -4,9 +4,9 @@ from datetime import timedelta
 from botocore.exceptions import ClientError
 from celery import shared_task
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 from django.db import connection
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -106,7 +106,9 @@ def send_magic_link_email(token_id, raw_code=None):
     try:
         validate_email(email)
     except ValidationError:
-        logger.warning("Magic link skipped: invalid email format for token %s", token_id)
+        logger.warning(
+            "Magic link skipped: invalid email format for token %s", token_id
+        )
         return
 
     if magic_token.delivery == "code":
@@ -122,7 +124,9 @@ def send_magic_link_email(token_id, raw_code=None):
             {"code": raw_code},
         )
     else:
-        magic_link_url = f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+        magic_link_url = (
+            f"{settings.FRONTEND_URL}/login/verify?token={magic_token.token}"
+        )
         subject = "Your BottleCRM sign-in link"
         html_content = render_to_string(
             "magic_link_email.html",
@@ -372,9 +376,7 @@ def purge_read_notifications(days=NOTIFICATION_PURGE_DAYS):
     finally:
         clear_rls_context()
     if deleted:
-        logger.info(
-            "Purged %s read notifications older than %s days", deleted, days
-        )
+        logger.info("Purged %s read notifications older than %s days", deleted, days)
     return deleted
 
 

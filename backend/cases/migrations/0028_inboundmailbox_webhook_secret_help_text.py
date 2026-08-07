@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cases', '0027_alter_casepipeline_is_default'),
+        ("cases", "0027_alter_casepipeline_is_default"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='inboundmailbox',
-            name='webhook_secret',
-            field=models.CharField(blank=True, default='', help_text='Reserved for providers that sign deliveries with a shared secret, none of which are implemented yet. Nothing compares this value today: the SES webhook is authenticated by the SNS signature and the topic_arn pin below. Admin-writable so a provider-issued key can be stored, and write-only, so it is never returned by the API.', max_length=128),
+            model_name="inboundmailbox",
+            name="webhook_secret",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Reserved for providers that sign deliveries with a shared secret, none of which are implemented yet. Nothing compares this value today: the SES webhook is authenticated by the SNS signature and the topic_arn pin below. Admin-writable so a provider-issued key can be stored, and write-only, so it is never returned by the API.",
+                max_length=128,
+            ),
         ),
     ]

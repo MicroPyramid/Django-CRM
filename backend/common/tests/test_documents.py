@@ -8,7 +8,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 
-from common.models import Document, Profile, Teams
+from common.models import Document, Teams
 
 
 @pytest.mark.django_db
@@ -57,9 +57,7 @@ class TestDocumentListView:
         assert "status_choices" in data
         assert "search" in data
 
-    def test_create_document_with_shared_to(
-        self, admin_client, org_a, admin_profile
-    ):
+    def test_create_document_with_shared_to(self, admin_client, org_a, admin_profile):
         """Create document with shared_to profiles via multipart with JSON string."""
         import json
 
@@ -78,9 +76,7 @@ class TestDocumentListView:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["error"] is False
 
-    def test_create_document_with_teams(
-        self, admin_client, org_a
-    ):
+    def test_create_document_with_teams(self, admin_client, org_a):
         """Create document with teams via multipart with JSON string."""
         import json
 
@@ -137,7 +133,9 @@ class TestDocumentListView:
         assert len(active) == 1
         assert active[0]["title"] == "Alpha Doc"
 
-    def test_list_documents_filter_by_title_search(self, admin_client, org_a, admin_user):
+    def test_list_documents_filter_by_title_search(
+        self, admin_client, org_a, admin_user
+    ):
         """Filter documents by title triggers search flag."""
         Document.objects.create(
             title="Searchable Doc",
@@ -242,9 +240,7 @@ class TestDocumentDetailView:
         doc.refresh_from_db()
         assert doc.shared_to.count() == 1
 
-    def test_update_document_with_teams(
-        self, admin_client, org_a, admin_user
-    ):
+    def test_update_document_with_teams(self, admin_client, org_a, admin_user):
         """Update document with teams."""
         import json
 

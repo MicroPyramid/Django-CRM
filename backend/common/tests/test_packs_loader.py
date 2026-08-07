@@ -1,6 +1,6 @@
 import pytest
 
-from common.packs.loader import get_pack, get_registry
+from common.packs.loader import get_pack
 from common.packs.schema import PackValidationError, validate_manifest
 
 

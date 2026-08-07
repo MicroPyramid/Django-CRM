@@ -38,8 +38,7 @@ def build_invoice_lines_from_entries(entries) -> Tuple[str, List[dict]]:
     currencies = {e.currency for e in entries}
     if len(currencies) > 1:
         raise TimeEntryInvoicingError(
-            "Cannot invoice entries in multiple currencies: "
-            f"{sorted(currencies)}."
+            f"Cannot invoice entries in multiple currencies: {sorted(currencies)}."
         )
     currency = next(iter(currencies))
 

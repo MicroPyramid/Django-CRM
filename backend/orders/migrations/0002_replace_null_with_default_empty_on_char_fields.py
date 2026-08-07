@@ -23,7 +23,6 @@ UPDATE order_line_item SET description = COALESCE(description, '');
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("orders", "0001_initial"),
     ]

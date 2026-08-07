@@ -53,7 +53,11 @@ def send_email_to_assigned_user(recipients, opportunity_id, org_id):
 @shared_task
 def check_stale_opportunities():
     """Daily task: find rotten deals across all orgs and send email alerts."""
-    from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
+    from opportunity.workflow import (
+        CLOSED_STAGES,
+        DEFAULT_STAGE_EXPECTED_DAYS,
+        ROTTEN_MULTIPLIER,
+    )
 
     now = timezone.now()
     orgs = Org.objects.filter(is_active=True)
@@ -66,9 +70,11 @@ def check_stale_opportunities():
                 c.stage: c for c in StageAgingConfig.objects.filter(org=org)
             }
 
-            open_opps = Opportunity.objects.filter(
-                org=org, is_active=True
-            ).exclude(stage__in=CLOSED_STAGES).select_related("org")
+            open_opps = (
+                Opportunity.objects.filter(org=org, is_active=True)
+                .exclude(stage__in=CLOSED_STAGES)
+                .select_related("org")
+            )
 
             stale_opps = []
             for opp in open_opps:
@@ -218,9 +224,7 @@ def check_goal_milestones():
                                     profile, goal, milestone_label, pct, achieved
                                 )
             except Exception:
-                logger.exception(
-                    "Error processing goal milestones for org %s", org.id
-                )
+                logger.exception("Error processing goal milestones for org %s", org.id)
     finally:
         # Worker threads outlive a task; the next one must not inherit this
         # org's day. Same reason the request middleware deactivates.
@@ -238,9 +242,7 @@ def _send_goal_milestone_email(profile, goal, milestone_label, percent, achieved
         "url": frontend_url("/goals"),
     }
     subject = f"[BottleCRM] Goal '{goal.name}' reached {milestone_label}!"
-    html_content = render_to_string(
-        "opportunity/goal_milestone.html", context=context
-    )
+    html_content = render_to_string("opportunity/goal_milestone.html", context=context)
     msg = EmailMessage(
         subject,
         html_content,

@@ -21,10 +21,14 @@ from opportunity.models import Opportunity
 
 
 def _attachment(org, opportunity, creator):
-    # `BaseModel.save()` overwrites `created_by` from crum's current user, and
-    # in a test there is none, so passing `created_by=` alone silently stores
-    # NULL and the uploader assertions below would pass for the wrong reason.
-    # This is the same trap that made the lead CSV importer create nothing.
+    # `impersonate` puts a current user in crum's thread local, so this exercises
+    # the same stamping path a real upload takes rather than setting the column
+    # directly. It used to be mandatory: `BaseModel.save()` answered "no current
+    # user" by storing NULL over an explicit `created_by=`, so the uploader
+    # assertions below would have passed for the wrong reason. That is fixed
+    # (see `common/tests/test_base_model_audit_stamps.py`) and a plain
+    # `created_by=` would work now, but going through the request path is still
+    # the more faithful setup, so it stays.
     with impersonate(creator):
         return Attachments.objects.create(
             file_name="proposal.txt",
@@ -49,7 +53,9 @@ def opp_b(org_b):
 class TestOpportunityAttachmentDelete:
     URL = "/api/opportunities/attachment/{}/"
 
-    def test_admin_deletes_own_org_attachment(self, org_a, admin_client, admin_user, opp_a):
+    def test_admin_deletes_own_org_attachment(
+        self, org_a, admin_client, admin_user, opp_a
+    ):
         att = _attachment(org_a, opp_a, admin_user)
         assert admin_client.delete(self.URL.format(att.id)).status_code == 200
         assert not Attachments.objects.filter(id=att.id).exists()

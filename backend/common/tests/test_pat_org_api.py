@@ -27,7 +27,9 @@ def _detail_url(pk):
 
 @pytest.mark.django_db
 class TestOrgTokenList:
-    def test_admin_sees_every_owner_in_org(self, admin_client, admin_profile, user_profile):
+    def test_admin_sees_every_owner_in_org(
+        self, admin_client, admin_profile, user_profile
+    ):
         # Two owners, one org. The self-scoped list would show only the admin's;
         # this oversight list must show both.
         _, mine = PersonalAccessToken.generate(profile=admin_profile, name="mine")
@@ -55,7 +57,9 @@ class TestOrgTokenList:
     def test_cross_org_isolation(self, org_b_client, admin_profile, profile_b):
         # No RLS on this table: the org filter is the ONLY barrier. Org B's admin
         # must never see org A's token.
-        _, a_token = PersonalAccessToken.generate(profile=admin_profile, name="org-a-secret")
+        _, a_token = PersonalAccessToken.generate(
+            profile=admin_profile, name="org-a-secret"
+        )
         _, b_token = PersonalAccessToken.generate(profile=profile_b, name="org-b-own")
 
         body = org_b_client.get(LIST_URL).json()
@@ -103,7 +107,9 @@ class TestOrgTokenList:
             last_used_at=timezone.now() - timedelta(days=120)
         )
         _, fresh = PersonalAccessToken.generate(profile=admin_profile, name="fresh")
-        PersonalAccessToken.objects.filter(pk=fresh.pk).update(last_used_at=timezone.now())
+        PersonalAccessToken.objects.filter(pk=fresh.pk).update(
+            last_used_at=timezone.now()
+        )
 
         body = admin_client.get(LIST_URL).json()
         assert body["totals"]["unused_90d"] == 1

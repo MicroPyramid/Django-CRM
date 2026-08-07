@@ -118,15 +118,11 @@ class OrderAdmin(admin.ModelAdmin):
         ),
         (
             "Notes",
-            {
-                "fields": ("description",)
-            },
+            {"fields": ("description",)},
         ),
         (
             "Organization",
-            {
-                "fields": ("org",)
-            },
+            {"fields": ("org",)},
         ),
     )
 

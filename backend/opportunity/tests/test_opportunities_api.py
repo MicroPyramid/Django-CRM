@@ -28,7 +28,6 @@ from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 from opportunity.models import Opportunity, OpportunityLineItem
 
-
 OPPORTUNITIES_LIST_URL = "/api/opportunities/"
 
 
@@ -59,9 +58,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.fixture
@@ -107,9 +104,7 @@ class TestOpportunityListView:
             "name": "New Deal",
             "stage": "QUALIFICATION",
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
 
@@ -129,9 +124,7 @@ class TestOpportunityListView:
             "stage": "QUALIFICATION",
             "account": str(account.pk),
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
 
@@ -152,9 +145,7 @@ class TestOpportunityListView:
         assert not Opportunity.objects.filter(name="Unauthorized Deal").exists()
 
     @patch("opportunity.views.opportunity_views.send_email_to_assigned_user.delay")
-    def test_org_isolation(
-        self, mock_email, admin_client, org_b_client, opp_a, opp_b
-    ):
+    def test_org_isolation(self, mock_email, admin_client, org_b_client, opp_a, opp_b):
         """Opportunities in org_a must not appear in org_b's list."""
         response = org_b_client.get(OPPORTUNITIES_LIST_URL)
         assert response.status_code == status.HTTP_200_OK
@@ -178,9 +169,7 @@ class TestOpportunityListView:
             "description": "A large enterprise deal",
             "closed_on": "2025-12-31",
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
         opp = Opportunity.objects.get(name="Full Opportunity")
@@ -189,9 +178,7 @@ class TestOpportunityListView:
         assert opp.description == "A large enterprise deal"
 
     @patch("opportunity.views.opportunity_views.send_email_to_assigned_user.delay")
-    def test_create_opportunity_with_tags(
-        self, mock_email, admin_client, org_a
-    ):
+    def test_create_opportunity_with_tags(self, mock_email, admin_client, org_a):
         """Creating an opportunity with tags associates them."""
         _set_rls(org_a)
         tag = Tags.objects.create(name="Enterprise", org=org_a)
@@ -200,9 +187,7 @@ class TestOpportunityListView:
             "stage": "QUALIFICATION",
             "tags": [str(tag.id)],
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         opp = Opportunity.objects.get(name="Tagged Opportunity")
         assert tag in opp.tags.all()
@@ -225,9 +210,7 @@ class TestOpportunityListView:
             "stage": "QUALIFICATION",
             "contacts": [str(contact.id)],
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         opp = Opportunity.objects.get(name="Contact Opportunity")
         assert contact in opp.contacts.all()
@@ -242,9 +225,7 @@ class TestOpportunityListView:
             "stage": "QUALIFICATION",
             "assigned_to": [str(admin_profile.id)],
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         opp = Opportunity.objects.get(name="Assigned Opportunity")
         assert admin_profile in opp.assigned_to.all()
@@ -256,17 +237,13 @@ class TestOpportunityListView:
     ):
         """Creating an opportunity with teams associates them."""
         _set_rls(org_a)
-        team = Teams.objects.create(
-            name="Sales Team", created_by=admin_user, org=org_a
-        )
+        team = Teams.objects.create(name="Sales Team", created_by=admin_user, org=org_a)
         payload = {
             "name": "Teamed Opportunity",
             "stage": "QUALIFICATION",
             "teams": [str(team.id)],
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         opp = Opportunity.objects.get(name="Teamed Opportunity")
         assert team in opp.teams.all()
@@ -282,9 +259,7 @@ class TestOpportunityListView:
             "amount": "10000.00",
             "closed_on": "2025-06-15",
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_200_OK
 
     def test_create_opportunity_invalid_data(self, admin_client):
@@ -295,40 +270,30 @@ class TestOpportunityListView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("opportunity.views.opportunity_views.send_email_to_assigned_user.delay")
-    def test_create_opportunity_duplicate_name(
-        self, mock_email, admin_client, opp_a
-    ):
+    def test_create_opportunity_duplicate_name(self, mock_email, admin_client, opp_a):
         """Creating an opportunity with a duplicate name returns 400."""
         payload = {
             "name": "Org A Deal",
             "stage": "QUALIFICATION",
         }
-        response = admin_client.post(
-            OPPORTUNITIES_LIST_URL, payload, format="json"
-        )
+        response = admin_client.post(OPPORTUNITIES_LIST_URL, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_list_opportunities_search_filter(self, admin_client, opp_a):
         """Search filter works on name."""
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"search": "Org A"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"search": "Org A"})
         assert response.status_code == status.HTTP_200_OK
         names = [o["name"] for o in response.data["opportunities"]]
         assert "Org A Deal" in names
 
     def test_list_opportunities_stage_filter(self, admin_client, opp_a):
         """Stage filter works."""
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"stage": "QUALIFICATION"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"stage": "QUALIFICATION"})
         assert response.status_code == status.HTTP_200_OK
 
     def test_list_opportunities_name_filter(self, admin_client, opp_a):
         """Name filter works."""
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"name": "Org A"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"name": "Org A"})
         assert response.status_code == status.HTTP_200_OK
 
     def test_list_opportunities_created_at_filter(self, admin_client, opp_a):
@@ -339,9 +304,7 @@ class TestOpportunityListView:
         )
         assert response.status_code == status.HTTP_200_OK
 
-    def test_list_opportunities_amount_filter(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_list_opportunities_amount_filter(self, admin_client, admin_user, org_a):
         """Amount range filter works."""
         _set_rls(org_a)
         Opportunity.objects.create(
@@ -351,9 +314,7 @@ class TestOpportunityListView:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"amount__gte": "50000"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"amount__gte": "50000"})
         assert response.status_code == status.HTTP_200_OK
 
     def test_list_opportunities_context_keys(self, admin_client, org_a):
@@ -424,9 +385,7 @@ class TestOpportunityDetailView:
             "name": "Updated Opp",
             "stage": "PROPOSAL",
         }
-        response = admin_client.put(
-            _detail_url(opportunity.pk), payload, format="json"
-        )
+        response = admin_client.put(_detail_url(opportunity.pk), payload, format="json")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["error"] is False
         opportunity.refresh_from_db()
@@ -485,9 +444,7 @@ class TestOpportunityDetailView:
 
     def test_get_detail_not_found(self, admin_client):
         """Getting a non-existent opportunity returns 404."""
-        response = admin_client.get(
-            _detail_url("00000000-0000-0000-0000-000000000001")
-        )
+        response = admin_client.get(_detail_url("00000000-0000-0000-0000-000000000001"))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("opportunity.views.opportunity_views.send_email_to_assigned_user.delay")
@@ -561,9 +518,7 @@ class TestOpportunityDetailView:
     ):
         """PUT with teams updates team associations."""
         _set_rls(org_a)
-        team = Teams.objects.create(
-            name="Opp Team", created_by=admin_user, org=org_a
-        )
+        team = Teams.objects.create(name="Opp Team", created_by=admin_user, org=org_a)
         response = admin_client.put(
             _detail_url(opportunity.pk),
             {
@@ -649,9 +604,7 @@ class TestOpportunityDetailView:
         assert opportunity.stage == "PROPOSAL"
         assert opportunity.name == "Detail Opp"  # unchanged
 
-    def test_patch_opportunity_with_tags(
-        self, admin_client, opportunity, org_a
-    ):
+    def test_patch_opportunity_with_tags(self, admin_client, opportunity, org_a):
         """PATCH with tags replaces existing tags."""
         _set_rls(org_a)
         tag1 = Tags.objects.create(name="PatchOldO", org=org_a)
@@ -803,7 +756,9 @@ class TestOpportunityCommentView:
         )
         return opp, comment
 
-    def test_update_comment_put(self, admin_client, comment_fixture, admin_profile, org_a):
+    def test_update_comment_put(
+        self, admin_client, comment_fixture, admin_profile, org_a
+    ):
         """Admin can update a comment via PUT."""
         opp, comment = comment_fixture
         response = admin_client.put(
@@ -998,9 +953,7 @@ class TestOpportunityLineItems:
 
     def test_get_line_item_detail(self, admin_client, opportunity, line_item):
         """Admin can retrieve a single line item."""
-        response = admin_client.get(
-            _line_item_detail_url(opportunity.pk, line_item.pk)
-        )
+        response = admin_client.get(_line_item_detail_url(opportunity.pk, line_item.pk))
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "Widget A"
 
@@ -1146,9 +1099,7 @@ class TestOpportunityListFilters:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"lead_source": "CALL"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"lead_source": "CALL"})
         assert response.status_code == status.HTTP_200_OK
         names = [o["name"] for o in response.data["opportunities"]]
         assert "Call Opp" in names
@@ -1213,9 +1164,7 @@ class TestOpportunityListFilters:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"amount__lte": "1000"}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"amount__lte": "1000"})
         assert response.status_code == status.HTTP_200_OK
         names = [o["name"] for o in response.data["opportunities"]]
         assert "Small Deal" in names
@@ -1251,9 +1200,7 @@ class TestOpportunityListFilters:
             created_by=admin_user,
         )
 
-        response = admin_client.get(
-            OPPORTUNITIES_LIST_URL, {"tags": str(tag_vip.id)}
-        )
+        response = admin_client.get(OPPORTUNITIES_LIST_URL, {"tags": str(tag_vip.id)})
         assert response.status_code == status.HTTP_200_OK
         names = {o["name"] for o in response.data["opportunities"]}
         assert names == {"Tagged Deal"}
@@ -1263,9 +1210,7 @@ class TestOpportunityListFilters:
 class TestOpportunityDetailUsersMention:
     """Cover the users_mention branches in the GET detail view."""
 
-    def test_users_mention_no_created_by(
-        self, user_client, org_a, user_profile
-    ):
+    def test_users_mention_no_created_by(self, user_client, org_a, user_profile):
         """Non-admin assigned to opp with no created_by gets empty users_mention."""
         _set_rls(org_a)
         opp = Opportunity.objects.create(
@@ -1746,13 +1691,22 @@ class TestOpportunityCommentViewOwner:
 class TestOpportunityAttachmentOwner:
     """Cover attachment permission checks for non-admin users."""
 
-    def test_non_admin_creator_cannot_delete_attachment_due_to_type_mismatch(
+    def test_non_admin_creator_can_delete_their_own_attachment(
         self, user_client, regular_user, org_a, admin_user, user_profile
     ):
-        """Non-admin creator gets 403 because view compares Profile to User (type mismatch).
+        """The uploader may remove what they uploaded.
 
-        The view checks `request.profile == self.object.created_by` but created_by
-        is a User FK, not a Profile. So this condition is always False for non-admins.
+        This test used to assert the opposite, and named the reason in its own
+        title: the view compared `request.profile` to a `User` FK, so the
+        uploader branch could never be true. That was repaired on 2026-08-05
+        (`request.profile.user == self.object.created_by`), and the test kept
+        passing anyway, because `BaseModel.save()` discarded the explicit
+        `created_by=regular_user` below and stored NULL. Two defects cancelling
+        left the assertion looking correct. With the stamp preserved, the
+        uploader is now recognised and the answer is 200.
+
+        The dedicated file `test_attachment_delete_authz.py` covers the other
+        directions: another member gets 403, a cross-org admin gets 404.
         """
         _set_rls(org_a)
         opp = Opportunity.objects.create(
@@ -1772,7 +1726,8 @@ class TestOpportunityAttachmentOwner:
             org=org_a,
         )
         response = user_client.delete(_attachment_url(attachment.id))
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
+        assert not Attachments.objects.filter(id=attachment.id).exists()
 
 
 @pytest.mark.django_db

@@ -8,7 +8,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,8 +20,8 @@ from tasks.models import Task, TaskPipeline, TaskStage
 from tasks.serializer import (
     TaskKanbanCardSerializer,
     TaskMoveSerializer,
-    TaskPipelineSerializer,
     TaskPipelineListSerializer,
+    TaskPipelineSerializer,
     TaskStageSerializer,
 )
 

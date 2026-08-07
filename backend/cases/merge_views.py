@@ -68,8 +68,7 @@ class CaseMergeView(APIView):
         ordered_ids = sorted([pk, into_id])
         with transaction.atomic():
             locked = list(
-                Case.objects.select_for_update()
-                .filter(id__in=ordered_ids, org=org)
+                Case.objects.select_for_update().filter(id__in=ordered_ids, org=org)
             )
             by_id = {str(c.id): c for c in locked}
             source = by_id.get(str(pk))
@@ -140,20 +139,20 @@ class CaseMergeView(APIView):
                 ).values_list("id", flat=True)
             )
             moved_email_ids = list(
-                EmailMessage.objects.filter(
-                    case=source, org=org
-                ).values_list("id", flat=True)
+                EmailMessage.objects.filter(case=source, org=org).values_list(
+                    "id", flat=True
+                )
             )
 
-            comments_moved = Comment.objects.filter(
-                id__in=moved_comment_ids
-            ).update(object_id=target.id)
+            comments_moved = Comment.objects.filter(id__in=moved_comment_ids).update(
+                object_id=target.id
+            )
             attachments_moved = Attachments.objects.filter(
                 id__in=moved_attachment_ids
             ).update(object_id=target.id)
-            emails_moved = EmailMessage.objects.filter(
-                id__in=moved_email_ids
-            ).update(case=target)
+            emails_moved = EmailMessage.objects.filter(id__in=moved_email_ids).update(
+                case=target
+            )
 
             # Inherit the duplicate's thread keys onto the primary so future
             # inbound emails to the old thread land on the primary.

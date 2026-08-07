@@ -10,7 +10,6 @@ from rest_framework import status
 
 from cases.models import Case, CasePipeline, CaseStage
 
-
 PIPELINES_URL = "/api/cases/pipelines/"
 KANBAN_URL = "/api/cases/kanban/"
 
@@ -38,9 +37,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.fixture
@@ -147,9 +144,7 @@ class TestCasePipeline:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["name"] == "Renamed Pipeline"
 
-    def test_update_pipeline_non_admin_forbidden(
-        self, user_client, pipeline
-    ):
+    def test_update_pipeline_non_admin_forbidden(self, user_client, pipeline):
         """Non-admin should not be able to update a pipeline."""
         response = user_client.put(
             _pipeline_detail_url(pipeline.pk),
@@ -413,9 +408,7 @@ class TestCaseKanban:
             org=org_a,
             created_by=admin_user,
         )
-        response = admin_client.get(
-            f"{KANBAN_URL}?assigned_to={admin_profile.id}"
-        )
+        response = admin_client.get(f"{KANBAN_URL}?assigned_to={admin_profile.id}")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["total_cases"] == 1
 

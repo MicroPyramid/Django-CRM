@@ -2671,8 +2671,7 @@ class TestRevenueReport:
 
     def test_revenue_report_with_dates(self, admin_client):
         response = admin_client.get(
-            "/api/invoices/reports/revenue/"
-            "?start_date=2025-01-01&end_date=2026-12-31"
+            "/api/invoices/reports/revenue/?start_date=2025-01-01&end_date=2026-12-31"
         )
         assert response.status_code == 200
 
@@ -3260,7 +3259,6 @@ class TestPublicEstimateAcceptDecline:
 
     def test_accept_on_expiry_day_still_allowed(self, estimate):
         """is_expired is strictly past the date. The last day still counts."""
-        import datetime
 
         estimate.status = "Sent"
         estimate.expiry_date = timezone.localdate()

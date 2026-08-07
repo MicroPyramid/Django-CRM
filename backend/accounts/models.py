@@ -10,7 +10,6 @@ from common.utils import COUNTRIES, CURRENCY_CODES, INDCHOICES
 from common.validators import flexible_phone_validator
 from contacts.models import Contact
 
-
 # Cleanup notes:
 # - Removed 'created_on_arrow' property (frontend computes its own timestamps)
 # - Removed 'contact_values' property (unused)

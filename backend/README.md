@@ -237,10 +237,10 @@ RLS is configured in `common/rls/__init__.py`:
 from common.rls import RLS_CONFIG, get_enable_policy_sql
 
 # List of protected tables
-tables = RLS_CONFIG['tables']
+tables = RLS_CONFIG["tables"]
 
 # Enable RLS on a table
-cursor.execute(get_enable_policy_sql('my_table'))
+cursor.execute(get_enable_policy_sql("my_table"))
 ```
 
 #### Management Commands
@@ -293,6 +293,7 @@ Background tasks don't go through middleware, so set RLS context manually:
 
 ```python
 from common.tasks import set_rls_context
+
 
 @app.task
 def my_background_task(data_id, org_id):
@@ -365,15 +366,18 @@ backend/
 ### Code Quality
 
 ```bash
-# Format code
-uv run black .
+# Lint (E, F and I as backend/ruff.toml selects them)
+uv run ruff check .
 
-# Sort imports
-uv run isort .
+# Format the tree. `ruff format` is black's output from one tool, and ruff's
+# I rules do isort's job, so neither black nor isort is installed here.
+uv run ruff format .
 
 # Run tests
 uv run pytest
 ```
+
+CI runs `ruff check .` and `ruff format --check .` as hard steps, so both must pass.
 
 ### Managing Dependencies
 
@@ -404,6 +408,7 @@ uv lock --upgrade
    ```python
    from common.base import BaseModel
    from common.models import Org
+
 
    class MyModel(BaseModel):
        org = models.ForeignKey(Org, on_delete=models.CASCADE)

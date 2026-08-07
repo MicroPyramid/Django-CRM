@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.models import Profile
 from common.permissions import HasOrgContext, is_org_admin
 from common.validators import uuid_param
 from opportunity.models import SalesGoal
@@ -32,9 +31,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
             queryset = queryset.filter(is_active=True)
         if params.get("current") == "true":
             today = timezone.localdate()
-            queryset = queryset.filter(
-                period_start__lte=today, period_end__gte=today
-            )
+            queryset = queryset.filter(period_start__lte=today, period_end__gte=today)
         assigned_to = uuid_param(params, "assigned_to")
         if assigned_to:
             queryset = queryset.filter(assigned_to_id=assigned_to)
@@ -97,9 +94,7 @@ class SalesGoalDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_object(self, pk, request):
-        return SalesGoal.objects.filter(
-            id=pk, org=request.profile.org
-        ).first()
+        return SalesGoal.objects.filter(id=pk, org=request.profile.org).first()
 
     def get(self, request, pk, *args, **kwargs):
         goal = self.get_object(pk, request)

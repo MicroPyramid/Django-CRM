@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('contacts', '0010_add_enterprise_constraints'),
+        ("contacts", "0010_add_enterprise_constraints"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='contact',
-            name='auto_created',
-            field=models.BooleanField(default=False, help_text='True when the contact was created by an inbound channel (e.g. email-to-ticket) rather than a human; flagged for admin review.'),
+            model_name="contact",
+            name="auto_created",
+            field=models.BooleanField(
+                default=False,
+                help_text="True when the contact was created by an inbound channel (e.g. email-to-ticket) rather than a human; flagged for admin review.",
+            ),
         ),
     ]

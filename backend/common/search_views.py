@@ -79,9 +79,7 @@ class GlobalSearchView(APIView):
         results = []
 
         # Leads
-        leads = _scope_superuser(
-            Lead.objects.filter(org=org), profile, user
-        ).filter(
+        leads = _scope_superuser(Lead.objects.filter(org=org), profile, user).filter(
             Q(title__icontains=q)
             | Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
@@ -139,9 +137,7 @@ class GlobalSearchView(APIView):
             )
 
         # Contacts
-        contacts = _scope_orgadmin(
-            Contact.objects.filter(org=org), profile
-        ).filter(
+        contacts = _scope_orgadmin(Contact.objects.filter(org=org), profile).filter(
             Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
             | Q(email__icontains=q)
@@ -196,7 +192,9 @@ class GlobalSearchView(APIView):
                 {
                     "type": "invoice",
                     "id": str(invoice.id),
-                    "title": invoice.invoice_number or invoice.invoice_title or "Invoice",
+                    "title": invoice.invoice_number
+                    or invoice.invoice_title
+                    or "Invoice",
                     "subtitle": invoice.client_name
                     or (invoice.account.name if invoice.account_id else "")
                     or invoice.status

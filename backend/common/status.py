@@ -8,7 +8,6 @@ And RFC 4918 - https://tools.ietf.org/html/rfc4918
 
 from __future__ import unicode_literals
 
-
 HTTP_100_CONTINUE = 100
 HTTP_101_SWITCHING_PROTOCOLS = 101
 HTTP_200_OK = 200

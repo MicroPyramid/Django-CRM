@@ -14,7 +14,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Account
-from common.models import Profile, Tags, Teams
+from common.models import Tags, Teams
 from contacts.models import Contact
 
 
@@ -60,7 +60,16 @@ class TestImportPreview:
     def test_happy_path(self, admin_client, org_a, account_a, admin_profile):
         csv_file = _csv(
             ["first_name", "last_name", "email", "phone", "account_name", "tags"],
-            [["Alice", "Smith", "alice@example.com", "+1 555 111 2222", "Acme Corp", "vip;newsletter"]],
+            [
+                [
+                    "Alice",
+                    "Smith",
+                    "alice@example.com",
+                    "+1 555 111 2222",
+                    "Acme Corp",
+                    "vip;newsletter",
+                ]
+            ],
         )
         response = admin_client.post(
             "/api/contacts/import/preview/", {"file": csv_file}, format="multipart"
@@ -97,9 +106,7 @@ class TestImportPreview:
         body = response.json()
         assert body["header_error"] and "totally_made_up" in body["header_error"]
 
-    def test_email_duplicate_vs_db(
-        self, admin_client, existing_contact, admin_profile
-    ):
+    def test_email_duplicate_vs_db(self, admin_client, existing_contact, admin_profile):
         csv_file = _csv(
             ["first_name", "last_name", "email"],
             [["Different", "Person", "pat@acme.test"]],
@@ -210,9 +217,7 @@ class TestImportPreview:
         body = response.json()
         assert body["summary"] == {"total": 1, "valid": 1, "invalid": 0}
 
-    def test_full_name_dup_within_file_blocked(
-        self, admin_client, admin_profile
-    ):
+    def test_full_name_dup_within_file_blocked(self, admin_client, admin_profile):
         # Two name-only rows with no email/phone. Second row must be flagged.
         csv_file = _csv(
             ["first_name", "last_name"],
@@ -231,9 +236,7 @@ class TestImportPreview:
         assert err["row"] == 2 and err["field"] == "first_name"
         assert "row 1" in err["message"]
 
-    def test_linkedin_url_with_only_scheme_rejected(
-        self, admin_client, admin_profile
-    ):
+    def test_linkedin_url_with_only_scheme_rejected(self, admin_client, admin_profile):
         # "https://" passes the old regex but is not a valid URL, Django's
         # URLValidator catches it.
         csv_file = _csv(
@@ -318,9 +321,7 @@ class TestImportPreview:
         body = response.json()
         assert any(e["field"] == "assigned_emails" for e in body["errors"])
 
-    def test_permission_denied_for_regular_user(
-        self, user_client, user_profile
-    ):
+    def test_permission_denied_for_regular_user(self, user_client, user_profile):
         csv_file = _csv(
             ["first_name", "last_name"],
             [["A", "B"]],
@@ -348,10 +349,34 @@ class TestImportCommit:
         self, admin_client, org_a, account_a, team_a, admin_profile
     ):
         csv_file = _csv(
-            ["first_name", "last_name", "email", "phone", "account_name", "team_names", "tags"],
             [
-                ["Alice", "Smith", "alice@example.com", "+1 555 111 2222", "Acme Corp", "Sales", "vip"],
-                ["Bob", "Jones", "bob@example.com", "+1 555 333 4444", "Acme Corp", "Sales", "vip;newsletter"],
+                "first_name",
+                "last_name",
+                "email",
+                "phone",
+                "account_name",
+                "team_names",
+                "tags",
+            ],
+            [
+                [
+                    "Alice",
+                    "Smith",
+                    "alice@example.com",
+                    "+1 555 111 2222",
+                    "Acme Corp",
+                    "Sales",
+                    "vip",
+                ],
+                [
+                    "Bob",
+                    "Jones",
+                    "bob@example.com",
+                    "+1 555 333 4444",
+                    "Acme Corp",
+                    "Sales",
+                    "vip;newsletter",
+                ],
             ],
         )
         response = admin_client.post(
@@ -437,8 +462,6 @@ class TestImportCommit:
         from django.db import IntegrityError
 
         from contacts.services import csv_import
-
-        original_create = csv_import.Contact.objects.create
 
         def racing_create(**kwargs):
             raise IntegrityError("duplicate key value violates unique constraint")

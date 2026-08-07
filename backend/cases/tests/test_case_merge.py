@@ -7,7 +7,8 @@ matcher's follow-merge behavior.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime
+from datetime import timezone as dt_timezone
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
@@ -94,9 +95,7 @@ class TestCaseMergeHappyPath:
             received_at=timezone.now(),
         )
 
-        response = admin_client.post(
-            f"/api/cases/{duplicate.id}/merge/{primary.id}/"
-        )
+        response = admin_client.post(f"/api/cases/{duplicate.id}/merge/{primary.id}/")
         assert response.status_code == 200, response.content
         body = response.json()
         assert body["error"] is False
@@ -108,16 +107,21 @@ class TestCaseMergeHappyPath:
         assert body["source_case_id"] == str(duplicate.id)
 
         case_ct = ContentType.objects.get_for_model(Case)
-        assert Comment.objects.filter(
-            content_type=case_ct, object_id=primary.id
-        ).count() == 1
-        assert Attachments.objects.filter(
-            content_type=case_ct, object_id=primary.id
-        ).count() == 1
+        assert (
+            Comment.objects.filter(content_type=case_ct, object_id=primary.id).count()
+            == 1
+        )
+        assert (
+            Attachments.objects.filter(
+                content_type=case_ct, object_id=primary.id
+            ).count()
+            == 1
+        )
         assert EmailMessage.objects.filter(case=primary).count() == 1
-        assert Comment.objects.filter(
-            content_type=case_ct, object_id=duplicate.id
-        ).count() == 0
+        assert (
+            Comment.objects.filter(content_type=case_ct, object_id=duplicate.id).count()
+            == 0
+        )
 
         primary.refresh_from_db()
         duplicate.refresh_from_db()
@@ -137,9 +141,7 @@ class TestCaseMergeHappyPath:
 
 @pytest.mark.django_db
 class TestCaseMergeIdempotency:
-    def test_second_call_returns_already_merged(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_second_call_returns_already_merged(self, admin_client, admin_user, org_a):
         primary = _make_case(org_a, admin_user, name="Primary")
         duplicate = _make_case(org_a, admin_user, name="Duplicate")
 
@@ -183,9 +185,7 @@ class TestCaseMergeValidation:
         chain = admin_client.post(f"/api/cases/{a.id}/merge/{b.id}/")
         assert chain.status_code == 400
 
-    def test_cross_org_merge_404s(
-        self, admin_client, admin_user, user_b, org_a, org_b
-    ):
+    def test_cross_org_merge_404s(self, admin_client, admin_user, user_b, org_a, org_b):
         local = _make_case(org_a, admin_user, name="Local")
         remote = _make_case(org_b, user_b, name="Remote")
         response = admin_client.post(f"/api/cases/{local.id}/merge/{remote.id}/")
@@ -200,9 +200,7 @@ class TestCaseMergePermissions:
         response = admin_client.post(f"/api/cases/{a.id}/merge/{b.id}/")
         assert response.status_code == 200
 
-    def test_creator_of_both_can_merge(
-        self, user_client, regular_user, org_a
-    ):
+    def test_creator_of_both_can_merge(self, user_client, regular_user, org_a):
         a = _make_case(org_a, regular_user, name="A")
         b = _make_case(org_a, regular_user, name="B")
         response = user_client.post(f"/api/cases/{a.id}/merge/{b.id}/")
@@ -241,17 +239,13 @@ class TestCaseDetailRedirect:
         duplicate = _make_case(org_a, admin_user, name="Duplicate")
         admin_client.post(f"/api/cases/{duplicate.id}/merge/{primary.id}/")
 
-        response = admin_client.get(
-            f"/api/cases/{duplicate.id}/?show_merged=true"
-        )
+        response = admin_client.get(f"/api/cases/{duplicate.id}/?show_merged=true")
         assert response.status_code == 200
         body = response.json()
         assert "cases_obj" in body
         assert body.get("redirect_to") is None or "redirect_to" not in body
 
-    def test_primary_includes_merged_from_list(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_primary_includes_merged_from_list(self, admin_client, admin_user, org_a):
         primary = _make_case(org_a, admin_user, name="Primary")
         duplicate = _make_case(org_a, admin_user, name="Duplicate")
         admin_client.post(f"/api/cases/{duplicate.id}/merge/{primary.id}/")

@@ -6,10 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.utils import timezone
 
-from common.models import Attachments, Comment, Profile, Tags, Teams
+from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 from leads.models import Lead
-
 
 LEADS_LIST_URL = "/api/leads/"
 
@@ -30,9 +29,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.mark.django_db
@@ -191,9 +188,7 @@ class TestLeadListView:
         mock_email.assert_called_once()
 
     @patch("leads.views.lead_views.send_email_to_assigned_user.delay")
-    def test_create_lead_with_teams(
-        self, mock_email, admin_client, admin_user, org_a
-    ):
+    def test_create_lead_with_teams(self, mock_email, admin_client, admin_user, org_a):
         """Creating a lead with teams associates them properly."""
         _set_rls(org_a)
         team = Teams.objects.create(name="Sales Team", created_by=admin_user, org=org_a)
@@ -327,10 +322,7 @@ class TestLeadListView:
 
         response = admin_client.get(LEADS_LIST_URL, {"tags": str(tag_vip.id)})
         assert response.status_code == 200
-        emails = {
-            lead["email"]
-            for lead in response.json()["open_leads"]["open_leads"]
-        }
+        emails = {lead["email"] for lead in response.json()["open_leads"]["open_leads"]}
         assert emails == {"tagged-vip@example.com"}
 
     def test_list_leads_with_assigned_to_filter(
@@ -363,10 +355,7 @@ class TestLeadListView:
             LEADS_LIST_URL, {"assigned_to": str(admin_profile.id)}
         )
         assert response.status_code == 200
-        emails = {
-            lead["email"]
-            for lead in response.json()["open_leads"]["open_leads"]
-        }
+        emails = {lead["email"] for lead in response.json()["open_leads"]["open_leads"]}
         assert emails == {"adminassigned@example.com"}
 
     def test_list_leads_regular_user_sees_assigned(
@@ -583,9 +572,7 @@ class TestLeadDetailView:
         mock_email.assert_called_once()
 
     @patch("leads.views.lead_views.send_email_to_assigned_user.delay")
-    def test_update_lead_with_teams(
-        self, mock_email, admin_client, admin_user, org_a
-    ):
+    def test_update_lead_with_teams(self, mock_email, admin_client, admin_user, org_a):
         """PUT with teams updates team associations."""
         _set_rls(org_a)
         team = Teams.objects.create(name="Dev Team", created_by=admin_user, org=org_a)
@@ -826,9 +813,7 @@ class TestLeadCommentView:
         assert "lead_obj" in data
         assert "comments" in data
 
-    def test_add_comment_creates_comment_object(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_add_comment_creates_comment_object(self, admin_client, admin_user, org_a):
         """POSTing a comment actually creates a Comment object in the database."""
         lead = Lead.objects.create(
             first_name="Comm",
@@ -1163,7 +1148,9 @@ class TestLeadListViewFilters:
         response = admin_client.get(LEADS_LIST_URL, {"salutation": "Dr"})
         assert response.status_code == 200
 
-    def test_filter_by_assigned_to(self, admin_client, admin_user, admin_profile, org_a):
+    def test_filter_by_assigned_to(
+        self, admin_client, admin_user, admin_profile, org_a
+    ):
         """Filter by assigned_to returns only leads assigned to the given profile."""
         lead = Lead.objects.create(
             first_name="AssignFilter",
@@ -1177,10 +1164,7 @@ class TestLeadListViewFilters:
             LEADS_LIST_URL, {"assigned_to": str(admin_profile.id)}
         )
         assert response.status_code == 200
-        emails = {
-            lead["email"]
-            for lead in response.json()["open_leads"]["open_leads"]
-        }
+        emails = {lead["email"] for lead in response.json()["open_leads"]["open_leads"]}
         assert "assignfilter@example.com" in emails
 
     def test_filter_by_tags(self, admin_client, admin_user, org_a):
@@ -1197,10 +1181,7 @@ class TestLeadListViewFilters:
         lead.tags.add(tag)
         response = admin_client.get(LEADS_LIST_URL, {"tags": str(tag.id)})
         assert response.status_code == 200
-        emails = {
-            lead["email"]
-            for lead in response.json()["open_leads"]["open_leads"]
-        }
+        emails = {lead["email"] for lead in response.json()["open_leads"]["open_leads"]}
         assert "tagfilter@example.com" in emails
 
     def test_filter_by_rating(self, admin_client, admin_user, org_a):
@@ -1240,7 +1221,9 @@ class TestLeadCreateWithM2M:
     """Tests targeting uncovered create lines: contacts, attachments, teams, assigned_to, emails."""
 
     @patch("leads.views.lead_views.send_email_to_assigned_user.delay")
-    def test_create_lead_with_contacts(self, mock_email, admin_client, admin_user, org_a):
+    def test_create_lead_with_contacts(
+        self, mock_email, admin_client, admin_user, org_a
+    ):
         """Creating a lead with contacts associates them (lines 242-246)."""
         _set_rls(org_a)
         contact = Contact.objects.create(
@@ -1692,7 +1675,9 @@ class TestLeadPatchConversion:
     def test_patch_lead_with_teams(self, admin_client, admin_user, org_a):
         """PATCH with teams updates team associations (lines 825-839)."""
         _set_rls(org_a)
-        team = Teams.objects.create(name="PatchTeamLead", created_by=admin_user, org=org_a)
+        team = Teams.objects.create(
+            name="PatchTeamLead", created_by=admin_user, org=org_a
+        )
         lead = Lead.objects.create(
             first_name="PatchTeamLead",
             last_name="Lead",
@@ -1804,9 +1789,7 @@ class TestLeadCommentAttachmentOnDetail:
         )
         assert response.status_code == 403
 
-    def test_put_lead_org_mismatch(
-        self, org_b_client, admin_user, org_a, profile_b
-    ):
+    def test_put_lead_org_mismatch(self, org_b_client, admin_user, org_a, profile_b):
         """PUT from different org gets 403 (line 572)."""
         lead = Lead.objects.create(
             first_name="OrgMismatchPut",
@@ -1817,15 +1800,17 @@ class TestLeadCommentAttachmentOnDetail:
         )
         response = org_b_client.put(
             _detail_url(lead.id),
-            {"first_name": "Hacked", "last_name": "Lead", "email": "orgmismatchput@example.com"},
+            {
+                "first_name": "Hacked",
+                "last_name": "Lead",
+                "email": "orgmismatchput@example.com",
+            },
             format="json",
         )
         # org_b_client has org_b in token but lead is in org_a - should get 404 from get_object
         assert response.status_code in (403, 404)
 
-    def test_patch_lead_org_mismatch(
-        self, org_b_client, admin_user, org_a, profile_b
-    ):
+    def test_patch_lead_org_mismatch(self, org_b_client, admin_user, org_a, profile_b):
         """PATCH from different org gets 404 (line 727)."""
         lead = Lead.objects.create(
             first_name="OrgMismatchPatch",
@@ -1869,7 +1854,6 @@ class TestLeadModelProperties:
 
     def test_days_since_last_contact_with_last_contacted(self, admin_user, org_a):
         """days_since_last_contact uses last_contacted when set."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1895,7 +1879,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_true(self, admin_user, org_a):
         """is_stale returns True when >30 days without contact."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1911,7 +1894,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_false_for_converted(self, admin_user, org_a):
         """is_stale returns False for converted leads."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1927,7 +1909,6 @@ class TestLeadModelProperties:
 
     def test_is_stale_false_for_closed(self, admin_user, org_a):
         """is_stale returns False for closed leads."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1943,7 +1924,6 @@ class TestLeadModelProperties:
 
     def test_days_until_follow_up(self, admin_user, org_a):
         """days_until_follow_up returns days until next follow-up."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -1969,7 +1949,6 @@ class TestLeadModelProperties:
 
     def test_is_follow_up_overdue_true(self, admin_user, org_a):
         """is_follow_up_overdue returns True when follow-up date passed."""
-        from django.utils import timezone
         import datetime
 
         lead = Lead.objects.create(
@@ -2013,9 +1992,7 @@ class TestLeadModelProperties:
         from leads.models import LeadPipeline, LeadStage
 
         _set_rls(org_a)
-        pipeline = LeadPipeline.objects.create(
-            name="TestPipeline", org=org_a
-        )
+        pipeline = LeadPipeline.objects.create(name="TestPipeline", org=org_a)
         stage = LeadStage.objects.create(
             pipeline=pipeline, name="Qualification", order=1, org=org_a
         )
@@ -2026,12 +2003,8 @@ class TestLeadModelProperties:
         from leads.models import LeadPipeline, LeadStage
 
         _set_rls(org_a)
-        pipeline = LeadPipeline.objects.create(
-            name="AutoOrgPipeline", org=org_a
-        )
-        stage = LeadStage(
-            pipeline=pipeline, name="AutoOrg", order=1
-        )
+        pipeline = LeadPipeline.objects.create(name="AutoOrgPipeline", org=org_a)
+        stage = LeadStage(pipeline=pipeline, name="AutoOrg", order=1)
         stage.save()
         assert stage.org_id == org_a.id
 
@@ -2040,7 +2013,5 @@ class TestLeadModelProperties:
         from leads.models import LeadPipeline
 
         _set_rls(org_a)
-        pipeline = LeadPipeline.objects.create(
-            name="MyPipeline", org=org_a
-        )
+        pipeline = LeadPipeline.objects.create(name="MyPipeline", org=org_a)
         assert str(pipeline) == f"MyPipeline ({org_a.name})"

@@ -19,10 +19,10 @@ edit, and still works through the endpoint that guards it.
 import datetime
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 
 from invoices.models import Estimate
-from django.utils import timezone
 
 
 def _estimate(org, **kwargs):

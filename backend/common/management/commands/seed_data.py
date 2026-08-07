@@ -26,8 +26,15 @@ from faker import Faker
 
 from common.models import Org, Profile, Tags, Teams, User
 from common.rls import get_set_context_sql
-from common.utils import (CASE_TYPE, CURRENCY_CODES, INDCHOICES, LEAD_SOURCE,
-                          OPPORTUNITY_TYPES, PRIORITY_CHOICE, SOURCES)
+from common.utils import (
+    CASE_TYPE,
+    CURRENCY_CODES,
+    INDCHOICES,
+    LEAD_SOURCE,
+    OPPORTUNITY_TYPES,
+    PRIORITY_CHOICE,
+    SOURCES,
+)
 from invoices.seed import InvoiceSeeder
 
 

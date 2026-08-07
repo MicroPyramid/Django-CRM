@@ -54,7 +54,7 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, build_opener
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509.oid import NameOID
@@ -89,9 +89,7 @@ _OPENER = build_opener(
 # before a trailing newline, so `match` would accept "sns.amazonaws.com\n".
 # The `^`/`$` anchors are redundant under `fullmatch` but are kept so the
 # pattern stays anchored if anyone switches the call back.
-_SIGNING_HOST_RE = re.compile(
-    r"^sns(?:\.[a-z0-9-]+)?\.amazonaws\.com(?:\.cn)?$"
-)
+_SIGNING_HOST_RE = re.compile(r"^sns(?:\.[a-z0-9-]+)?\.amazonaws\.com(?:\.cn)?$")
 
 
 # Headers required for the canonical signing string for each message type.
@@ -148,7 +146,7 @@ def _fetch_signing_cert(url: str, *, timeout: float = 5.0) -> bytes:
         raise SNSVerificationError(f"SigningCertURL must end in .pem: {url!r}")
     # `_OPENER` refuses redirects, so the host checked above is the host we talk
     # to. The pinning cannot be sidestepped by a 3xx.
-    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310. Host pinned
+    with _OPENER.open(url, timeout=timeout) as response:  # noqa: S310  # host pinned
         return response.read()
 
 
@@ -196,7 +194,11 @@ def verify_sns_message(
     the network.
     """
     msg_type = payload.get("Type")
-    if msg_type not in {"Notification", "SubscriptionConfirmation", "UnsubscribeConfirmation"}:
+    if msg_type not in {
+        "Notification",
+        "SubscriptionConfirmation",
+        "UnsubscribeConfirmation",
+    }:
         raise SNSVerificationError(f"Unknown SNS Type: {msg_type!r}")
 
     signature_b64 = payload.get("Signature")
@@ -253,13 +255,15 @@ def confirm_subscription(payload: dict, *, fetch=None, timeout: float = 5.0) -> 
     if not url:
         raise SNSVerificationError("SubscriptionConfirmation missing SubscribeURL")
     parsed = urlparse(url)
-    if parsed.scheme != "https" or not _SIGNING_HOST_RE.fullmatch(parsed.hostname or ""):
+    if parsed.scheme != "https" or not _SIGNING_HOST_RE.fullmatch(
+        parsed.hostname or ""
+    ):
         raise SNSVerificationError(f"SubscribeURL not on AWS SNS host: {url!r}")
     # Resolved at call time, not bound as a default, so the module-level opener
     # stays the single place redirect policy is decided.
     fetch = fetch or _OPENER.open
     try:
-        with fetch(url, timeout=timeout) as response:  # noqa: S310. Host pinned
+        with fetch(url, timeout=timeout) as response:  # noqa: S310  # host pinned
             response.read()
     except Exception:
         logger.exception("Failed to confirm SNS subscription at %s", url)

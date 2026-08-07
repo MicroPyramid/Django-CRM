@@ -1,8 +1,9 @@
 import uuid
 
 import pytest
-from common.serializer import PersonalAccessTokenListSerializer
+
 from common.models import PersonalAccessToken, Profile, User
+from common.serializer import PersonalAccessTokenListSerializer
 
 
 @pytest.mark.django_db
@@ -76,7 +77,9 @@ class TestPATApi:
         )
         assert resp.status_code == 400, resp.content
 
-    def test_create_ignores_injected_protected_fields(self, admin_client, admin_profile, org_a):
+    def test_create_ignores_injected_protected_fields(
+        self, admin_client, admin_profile, org_a
+    ):
         # A client must not be able to set org / profile / token_hash / revoked_at.
         resp = admin_client.post(
             self.LIST_URL,
@@ -104,7 +107,9 @@ class TestPATApi:
         assert str(foreign.id) not in ids
         assert len(lst["tokens"]) == 1
 
-    def test_cannot_revoke_others_token(self, admin_client, admin_profile, other_profile):
+    def test_cannot_revoke_others_token(
+        self, admin_client, admin_profile, other_profile
+    ):
         _, foreign = PersonalAccessToken.generate(profile=other_profile, name="theirs")
         resp = admin_client.delete(self._detail_url(foreign.id))
         assert resp.status_code == 404, resp.content

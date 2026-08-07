@@ -66,9 +66,7 @@ def outsider_profile(org_a, django_user_model):
 def outsider_client(outsider_profile, org_a):
     from conftest import _make_authenticated_client
 
-    return _make_authenticated_client(
-        outsider_profile.user, org_a, outsider_profile
-    )
+    return _make_authenticated_client(outsider_profile.user, org_a, outsider_profile)
 
 
 @pytest.fixture
@@ -168,9 +166,7 @@ class TestInboxStillShowsTheFourWhoMaySee:
 
 @pytest.mark.django_db
 class TestRequestingApprovalNeedsCaseAccess:
-    def test_an_unrelated_member_is_refused(
-        self, outsider_client, org_a, hidden_case
-    ):
+    def test_an_unrelated_member_is_refused(self, outsider_client, org_a, hidden_case):
         _rule(org_a, approver_role="ADMIN")
         response = outsider_client.post(
             f"/api/cases/{hidden_case.id}/request-approval/", {}, format="json"

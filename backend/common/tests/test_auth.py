@@ -7,7 +7,6 @@ Run with: pytest common/tests/test_auth.py -v
 
 import base64
 import json
-import uuid
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
@@ -15,7 +14,7 @@ import pytest
 from django.utils import timezone
 from rest_framework import status
 
-from common.models import Org, Profile, User
+from common.models import Profile, User
 from common.serializer import OrgAwareRefreshToken
 
 
@@ -34,7 +33,9 @@ class TestMeView:
         response = unauthenticated_client.get(self.url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_me_returns_organizations(self, admin_client, admin_user, admin_profile, org_a):
+    def test_me_returns_organizations(
+        self, admin_client, admin_user, admin_profile, org_a
+    ):
         """Me endpoint should include user's organizations."""
         response = admin_client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
@@ -131,9 +132,7 @@ class TestTokenRefreshView:
             OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
         )
 
-        first = unauthenticated_client.post(
-            self.url, {"refresh": token}, format="json"
-        )
+        first = unauthenticated_client.post(self.url, {"refresh": token}, format="json")
         assert first.status_code == status.HTTP_200_OK
 
         replay = unauthenticated_client.post(
@@ -147,9 +146,7 @@ class TestTokenRefreshView:
         """The no-org refresh branch must rotate its token too."""
         token = str(OrgAwareRefreshToken.for_user_and_org(admin_user, None))
 
-        first = unauthenticated_client.post(
-            self.url, {"refresh": token}, format="json"
-        )
+        first = unauthenticated_client.post(self.url, {"refresh": token}, format="json")
         assert first.status_code == status.HTTP_200_OK
 
         replay = unauthenticated_client.post(
@@ -165,9 +162,7 @@ class TestTokenRefreshView:
             OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
         )
 
-        first = unauthenticated_client.post(
-            self.url, {"refresh": token}, format="json"
-        )
+        first = unauthenticated_client.post(self.url, {"refresh": token}, format="json")
         assert first.status_code == status.HTTP_200_OK
 
         second = unauthenticated_client.post(
@@ -187,9 +182,7 @@ class TestOrgSwitchView:
 
     def test_switch_org_success(self, admin_client, admin_user, org_b):
         # Give admin_user access to org_b
-        Profile.objects.create(
-            user=admin_user, org=org_b, role="USER", is_active=True
-        )
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
         response = admin_client.post(
             self.url,
             {"org_id": str(org_b.id)},
@@ -217,9 +210,7 @@ class TestOrgSwitchView:
 
     def test_switch_org_returns_profile(self, admin_client, admin_user, org_b):
         """Switch org should return profile details."""
-        Profile.objects.create(
-            user=admin_user, org=org_b, role="USER", is_active=True
-        )
+        Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
         response = admin_client.post(
             self.url,
             {"org_id": str(org_b.id)},
@@ -283,7 +274,13 @@ class TestOrgSwitchView:
         assert replay.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_switch_org_returned_refresh_token_is_usable(
-        self, admin_client, unauthenticated_client, admin_user, org_a, admin_profile, org_b
+        self,
+        admin_client,
+        unauthenticated_client,
+        admin_user,
+        org_a,
+        admin_profile,
+        org_b,
     ):
         """Retiring the old token must not strand the caller."""
         Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
@@ -314,9 +311,7 @@ class TestOrgSwitchView:
         switch would be worse than letting one token expire on its own.
         """
         Profile.objects.create(user=admin_user, org=org_b, role="USER", is_active=True)
-        response = admin_client.post(
-            self.url, {"org_id": str(org_b.id)}, format="json"
-        )
+        response = admin_client.post(self.url, {"org_id": str(org_b.id)}, format="json")
         assert response.status_code == status.HTTP_200_OK
 
     def test_switch_org_will_not_revoke_another_users_token(
@@ -382,12 +377,20 @@ def _make_fake_id_token(
     email, picture="https://photo.example.com/pic.jpg", email_verified=True
 ):
     """Create a fake JWT-like ID token with the given email in the payload."""
-    header = base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode()).decode().rstrip("=")
-    payload = base64.urlsafe_b64encode(
-        json.dumps(
-            {"email": email, "picture": picture, "email_verified": email_verified}
-        ).encode()
-    ).decode().rstrip("=")
+    header = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode())
+        .decode()
+        .rstrip("=")
+    )
+    payload = (
+        base64.urlsafe_b64encode(
+            json.dumps(
+                {"email": email, "picture": picture, "email_verified": email_verified}
+            ).encode()
+        )
+        .decode()
+        .rstrip("=")
+    )
     signature = base64.urlsafe_b64encode(b"fakesig").decode().rstrip("=")
     return f"{header}.{payload}.{signature}"
 
@@ -490,8 +493,16 @@ class TestGoogleOAuthCallbackView:
         mock_response = MagicMock()
         mock_response.status_code = 200
         # Build a token without email
-        payload = base64.urlsafe_b64encode(json.dumps({"sub": "123"}).encode()).decode().rstrip("=")
-        header = base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode()).decode().rstrip("=")
+        payload = (
+            base64.urlsafe_b64encode(json.dumps({"sub": "123"}).encode())
+            .decode()
+            .rstrip("=")
+        )
+        header = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "RS256"}).encode())
+            .decode()
+            .rstrip("=")
+        )
         sig = base64.urlsafe_b64encode(b"sig").decode().rstrip("=")
         mock_response.json.return_value = {"id_token": f"{header}.{payload}.{sig}"}
         mock_post.return_value = mock_response
@@ -534,7 +545,9 @@ class TestGoogleOAuthCallbackView:
         assert User.objects.filter(email="newgoogle@example.com").exists()
 
     @patch("common.views.auth_views.requests.post")
-    def test_successful_oauth_existing_user(self, mock_post, unauthenticated_client, admin_user):
+    def test_successful_oauth_existing_user(
+        self, mock_post, unauthenticated_client, admin_user
+    ):
         """Successful OAuth with existing user should return tokens without creating new user."""
         fake_token = _make_fake_id_token(admin_user.email)
         mock_response = MagicMock()
@@ -556,7 +569,9 @@ class TestGoogleOAuthCallbackView:
         assert User.objects.count() == user_count_before
 
     @patch("common.views.auth_views.requests.post")
-    def test_token_exchange_failure_empty_content(self, mock_post, unauthenticated_client):
+    def test_token_exchange_failure_empty_content(
+        self, mock_post, unauthenticated_client
+    ):
         """Non-200 with empty content body should return generic error."""
         mock_response = MagicMock()
         mock_response.status_code = 500
@@ -619,7 +634,9 @@ class TestGoogleOAuthCallbackView:
             .rstrip("=")
         )
         payload = (
-            base64.urlsafe_b64encode(json.dumps({"email": "noclaim@example.com"}).encode())
+            base64.urlsafe_b64encode(
+                json.dumps({"email": "noclaim@example.com"}).encode()
+            )
             .decode()
             .rstrip("=")
         )
@@ -637,7 +654,9 @@ class TestGoogleOAuthCallbackView:
         assert not User.objects.filter(email="noclaim@example.com").exists()
 
     @patch("common.views.auth_views.requests.post")
-    def test_rejects_deactivated_user(self, mock_post, unauthenticated_client, admin_user):
+    def test_rejects_deactivated_user(
+        self, mock_post, unauthenticated_client, admin_user
+    ):
         """A deactivated account must not be able to log back in via Google."""
         admin_user.is_active = False
         admin_user.save(update_fields=["is_active"])
@@ -668,9 +687,7 @@ class TestGoogleIdTokenView:
 
     def test_missing_id_token(self, unauthenticated_client):
         """Missing idToken should return 400."""
-        response = unauthenticated_client.post(
-            self.url, {}, format="json"
-        )
+        response = unauthenticated_client.post(self.url, {}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Missing idToken" in response.data["error"]
 
@@ -687,7 +704,9 @@ class TestGoogleIdTokenView:
 
     @patch("google.oauth2.id_token.verify_oauth2_token")
     @patch("google.auth.transport.requests.Request")
-    def test_no_email_in_verified_token(self, mock_request_cls, mock_verify, unauthenticated_client):
+    def test_no_email_in_verified_token(
+        self, mock_request_cls, mock_verify, unauthenticated_client
+    ):
         """Token without email claim should return 400."""
         mock_verify.return_value = {"sub": "12345"}
         response = unauthenticated_client.post(
@@ -698,7 +717,9 @@ class TestGoogleIdTokenView:
 
     @patch("google.oauth2.id_token.verify_oauth2_token")
     @patch("google.auth.transport.requests.Request")
-    def test_successful_new_user(self, mock_request_cls, mock_verify, unauthenticated_client):
+    def test_successful_new_user(
+        self, mock_request_cls, mock_verify, unauthenticated_client
+    ):
         """Valid token with new email should create user and return JWT."""
         mock_verify.return_value = {
             "email": "mobileuser@example.com",
@@ -721,7 +742,13 @@ class TestGoogleIdTokenView:
     @patch("google.oauth2.id_token.verify_oauth2_token")
     @patch("google.auth.transport.requests.Request")
     def test_successful_existing_user_with_orgs(
-        self, mock_request_cls, mock_verify, unauthenticated_client, admin_user, admin_profile, org_a
+        self,
+        mock_request_cls,
+        mock_verify,
+        unauthenticated_client,
+        admin_user,
+        admin_profile,
+        org_a,
     ):
         """Existing user should get their organizations in response."""
         mock_verify.return_value = {
@@ -801,7 +828,9 @@ class TestTokenRefreshUserNotFound:
 
     url = "/api/auth/refresh-token/"
 
-    def test_refresh_deleted_user(self, unauthenticated_client, admin_user, org_a, admin_profile):
+    def test_refresh_deleted_user(
+        self, unauthenticated_client, admin_user, org_a, admin_profile
+    ):
         """Refreshing token for a deleted user should return 401."""
         token = OrgAwareRefreshToken.for_user_and_org(admin_user, org_a, admin_profile)
         token_str = str(token)

@@ -11,7 +11,7 @@ from django.utils import timezone
 from accounts.models import Account
 from common import notifications
 from common.models import Notification, Org, Profile, User
-from conftest import rls_org, set_rls_context
+from conftest import set_rls_context
 
 
 class NotificationModelBase(TestCase):
@@ -74,9 +74,7 @@ class TestNotificationModel(NotificationModelBase):
             verb="case.assigned",
             read_at=timezone.now(),
         )
-        qs = Notification.objects.filter(
-            recipient=self.profile_a, read_at__isnull=True
-        )
+        qs = Notification.objects.filter(recipient=self.profile_a, read_at__isnull=True)
         ids = list(qs.values_list("id", flat=True))
         assert unread.id in ids
         assert read.id not in ids
@@ -255,10 +253,17 @@ class TestPurgeTask(NotificationModelBase):
             verb="x",
             read_at=timezone.now() - timedelta(days=120),
         )
-        with mock.patch.object(
-            tasks_module, "set_rls_context", side_effect=lambda org_id: seen.append(str(org_id))
-        ), mock.patch.object(
-            tasks_module, "clear_rls_context", side_effect=lambda: cleared.append(True)
+        with (
+            mock.patch.object(
+                tasks_module,
+                "set_rls_context",
+                side_effect=lambda org_id: seen.append(str(org_id)),
+            ),
+            mock.patch.object(
+                tasks_module,
+                "clear_rls_context",
+                side_effect=lambda: cleared.append(True),
+            ),
         ):
             tasks_module.purge_read_notifications()
 

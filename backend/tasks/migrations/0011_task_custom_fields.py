@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0010_rename_task_status_kanban_idx_task_status_e6f973_idx_and_more"),
     ]

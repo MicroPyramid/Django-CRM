@@ -54,19 +54,29 @@ class TestNormalizeDomain:
         assert DuplicateDetector.normalize_domain(None) == ""
 
     def test_https_url(self):
-        assert DuplicateDetector.normalize_domain("https://example.com") == "example.com"
+        assert (
+            DuplicateDetector.normalize_domain("https://example.com") == "example.com"
+        )
 
     def test_http_url(self):
         assert DuplicateDetector.normalize_domain("http://example.com") == "example.com"
 
     def test_www_prefix_removed(self):
-        assert DuplicateDetector.normalize_domain("https://www.example.com") == "example.com"
+        assert (
+            DuplicateDetector.normalize_domain("https://www.example.com")
+            == "example.com"
+        )
 
     def test_path_removed(self):
-        assert DuplicateDetector.normalize_domain("https://example.com/path/page") == "example.com"
+        assert (
+            DuplicateDetector.normalize_domain("https://example.com/path/page")
+            == "example.com"
+        )
 
     def test_lowercase(self):
-        assert DuplicateDetector.normalize_domain("HTTPS://EXAMPLE.COM") == "example.com"
+        assert (
+            DuplicateDetector.normalize_domain("HTTPS://EXAMPLE.COM") == "example.com"
+        )
 
     def test_bare_domain(self):
         assert DuplicateDetector.normalize_domain("example.com") == "example.com"
@@ -110,15 +120,11 @@ class TestFindDuplicateContacts:
         Contact.objects.create(
             first_name="Alice", last_name="Smith", phone="12345", org=org_a
         )
-        dupes = DuplicateDetector.find_duplicate_contacts(
-            org_a, phone="12345"
-        )
+        dupes = DuplicateDetector.find_duplicate_contacts(org_a, phone="12345")
         assert len(dupes) == 0
 
     def test_name_match(self, org_a):
-        c = Contact.objects.create(
-            first_name="Alice", last_name="Smith", org=org_a
-        )
+        c = Contact.objects.create(first_name="Alice", last_name="Smith", org=org_a)
         dupes = DuplicateDetector.find_duplicate_contacts(
             org_a, first_name="alice", last_name="smith"
         )
@@ -176,12 +182,8 @@ class TestFindDuplicateContacts:
 
     def test_partial_name_no_match(self, org_a):
         """Providing only first_name (no last_name) should not trigger name matching."""
-        Contact.objects.create(
-            first_name="Alice", last_name="Smith", org=org_a
-        )
-        dupes = DuplicateDetector.find_duplicate_contacts(
-            org_a, first_name="Alice"
-        )
+        Contact.objects.create(first_name="Alice", last_name="Smith", org=org_a)
+        dupes = DuplicateDetector.find_duplicate_contacts(org_a, first_name="Alice")
         assert len(dupes) == 0
 
 
@@ -196,9 +198,7 @@ class TestFindDuplicateLeads:
             email="bob@example.com",
             org=org_a,
         )
-        dupes = DuplicateDetector.find_duplicate_leads(
-            org_a, email="BOB@EXAMPLE.COM"
-        )
+        dupes = DuplicateDetector.find_duplicate_leads(org_a, email="BOB@EXAMPLE.COM")
         assert lead in dupes
 
     def test_phone_match(self, org_a):
@@ -208,15 +208,11 @@ class TestFindDuplicateLeads:
             phone="555-987-6543",
             org=org_a,
         )
-        dupes = DuplicateDetector.find_duplicate_leads(
-            org_a, phone="(555) 987-6543"
-        )
+        dupes = DuplicateDetector.find_duplicate_leads(org_a, phone="(555) 987-6543")
         assert lead in dupes
 
     def test_name_match(self, org_a):
-        lead = Lead.objects.create(
-            first_name="Bob", last_name="Jones", org=org_a
-        )
+        lead = Lead.objects.create(first_name="Bob", last_name="Jones", org=org_a)
         dupes = DuplicateDetector.find_duplicate_leads(
             org_a, first_name="bob", last_name="jones"
         )
@@ -229,9 +225,7 @@ class TestFindDuplicateLeads:
             company_name="Acme Corporation",
             org=org_a,
         )
-        dupes = DuplicateDetector.find_duplicate_leads(
-            org_a, company_name="Acme"
-        )
+        dupes = DuplicateDetector.find_duplicate_leads(org_a, company_name="Acme")
         assert lead in dupes
 
     def test_company_name_too_short(self, org_a):
@@ -241,9 +235,7 @@ class TestFindDuplicateLeads:
             company_name="AB Corp",
             org=org_a,
         )
-        dupes = DuplicateDetector.find_duplicate_leads(
-            org_a, company_name="AB"
-        )
+        dupes = DuplicateDetector.find_duplicate_leads(org_a, company_name="AB")
         assert len(dupes) == 0
 
     def test_exclude_id(self, org_a):
@@ -282,9 +274,7 @@ class TestFindDuplicateLeads:
             org=org_a,
             is_active=False,
         )
-        dupes = DuplicateDetector.find_duplicate_leads(
-            org_a, email="bob@example.com"
-        )
+        dupes = DuplicateDetector.find_duplicate_leads(org_a, email="bob@example.com")
         assert len(dupes) == 0
 
 
@@ -294,16 +284,12 @@ class TestFindDuplicateAccounts:
 
     def test_exact_name_match(self, org_a):
         acct = Account.objects.create(name="Acme Corp", org=org_a)
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, name="acme corp"
-        )
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, name="acme corp")
         assert acct in dupes
 
     def test_partial_name_match(self, org_a):
         acct = Account.objects.create(name="Acme Industries", org=org_a)
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, name="Acme Corp"
-        )
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, name="Acme Corp")
         # "Acme Industries" starts with "Acme" so it's a partial match
         assert acct in dupes
 
@@ -311,9 +297,7 @@ class TestFindDuplicateAccounts:
         acct = Account.objects.create(
             name="Acme Corp", email="info@acme.com", org=org_a
         )
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, email="INFO@ACME.COM"
-        )
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, email="INFO@ACME.COM")
         assert acct in dupes
 
     def test_website_match(self, org_a):
@@ -328,12 +312,8 @@ class TestFindDuplicateAccounts:
         assert acct in dupes
 
     def test_phone_match(self, org_a):
-        acct = Account.objects.create(
-            name="Acme Corp", phone="555-111-2222", org=org_a
-        )
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, phone="(555) 111-2222"
-        )
+        acct = Account.objects.create(name="Acme Corp", phone="555-111-2222", org=org_a)
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, phone="(555) 111-2222")
         assert acct in dupes
 
     def test_exclude_id(self, org_a):
@@ -357,9 +337,7 @@ class TestFindDuplicateAccounts:
 
     def test_cross_org_isolation(self, org_a, org_b):
         Account.objects.create(name="Acme Corp", org=org_b)
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, name="Acme Corp"
-        )
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, name="Acme Corp")
         assert len(dupes) == 0
 
     def test_no_args_returns_empty(self, org_a):
@@ -370,8 +348,6 @@ class TestFindDuplicateAccounts:
     def test_short_first_word_no_partial_match(self, org_a):
         """First word less than 3 chars should not trigger partial matching."""
         Account.objects.create(name="AB Industries", org=org_a)
-        dupes = DuplicateDetector.find_duplicate_accounts(
-            org_a, name="AB Corp"
-        )
+        dupes = DuplicateDetector.find_duplicate_accounts(org_a, name="AB Corp")
         # Exact match won't find "AB Industries", and first word "AB" is < 3 chars
         assert len(dupes) == 0

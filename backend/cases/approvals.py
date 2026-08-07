@@ -22,7 +22,6 @@ from common.base import BaseModel
 from common.models import Org, Profile, Teams
 from common.utils import CASE_TYPE, PRIORITY_CHOICE
 
-
 # Approver roles. Mirrors the spec's ``ADMIN``/``MANAGER`` choices even though
 # the project's ``Profile.role`` only knows ``ADMIN``/``USER`` today, keeping
 # ``MANAGER`` as a reserved value avoids a future schema change when the role
@@ -32,9 +31,7 @@ APPROVER_ROLE_CHOICES = (
     ("MANAGER", "Manager"),
 )
 
-TRIGGER_EVENT_CHOICES = (
-    ("pre_close", "Pre-Close"),
-)
+TRIGGER_EVENT_CHOICES = (("pre_close", "Pre-Close"),)
 
 APPROVAL_STATE_CHOICES = (
     ("pending", "Pending"),
@@ -139,9 +136,7 @@ def find_matching_rule(case, trigger_event: str = "pre_close"):
 class Approval(BaseModel):
     """A single approval request bound to one Case + ApprovalRule."""
 
-    org = models.ForeignKey(
-        Org, on_delete=models.CASCADE, related_name="approvals"
-    )
+    org = models.ForeignKey(Org, on_delete=models.CASCADE, related_name="approvals")
     case = models.ForeignKey(
         "cases.Case", on_delete=models.CASCADE, related_name="approvals"
     )
@@ -174,9 +169,7 @@ class Approval(BaseModel):
         indexes = [
             models.Index(fields=["org", "state"], name="approval_org_state_idx"),
             models.Index(fields=["case", "state"], name="approval_case_state_idx"),
-            models.Index(
-                fields=["approver", "state"], name="approval_approver_idx"
-            ),
+            models.Index(fields=["approver", "state"], name="approval_approver_idx"),
         ]
 
     def __str__(self):

@@ -7,17 +7,15 @@ data between organizations and prevents cross-org data access.
 Run with: pytest common/tests/test_multitenancy.py -v
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase
-from rest_framework import status
 from rest_framework.test import APIClient
 
 from accounts.models import Account
 from common.middleware.get_company import GetProfileAndOrg
-from common.models import Address, Attachments, Comment, Org, Profile, Tags, Teams, User
+from common.models import Attachments, Comment, Org, Profile, Teams, User
 from common.serializer import OrgAwareRefreshToken
 from leads.models import Lead
 
@@ -306,7 +304,6 @@ class TestBaseOrgModel(TestCase):
 
     def test_org_required_on_save(self):
         """BaseOrgModel descendants should require org on save"""
-        from common.base import BaseOrgModel
 
         # This is tested indirectly through models like Teams
         org = Org.objects.create(name="Test Org")
@@ -541,8 +538,6 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
             self.skipTest("RLS requires PostgreSQL")
 
         from django.db import connection
-
-        from common.rls import RLS_CONFIG
 
         with connection.cursor() as cursor:
             for table in ["lead", "accounts", "contacts"]:

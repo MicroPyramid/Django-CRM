@@ -1,5 +1,14 @@
 from django.urls import path
 
+from leads.views.kanban_views import (
+    LeadKanbanView,
+    LeadMoveView,
+    LeadPipelineDetailView,
+    LeadPipelineListCreateView,
+    LeadStageCreateView,
+    LeadStageDetailView,
+    LeadStageReorderView,
+)
 from leads.views.lead_interactions import (
     CreateLeadFromSite,
     LeadAttachmentView,
@@ -7,15 +16,6 @@ from leads.views.lead_interactions import (
     LeadUploadView,
 )
 from leads.views.lead_views import LeadDetailView, LeadListView
-from leads.views.kanban_views import (
-    LeadKanbanView,
-    LeadMoveView,
-    LeadPipelineListCreateView,
-    LeadPipelineDetailView,
-    LeadStageCreateView,
-    LeadStageDetailView,
-    LeadStageReorderView,
-)
 
 app_name = "api_leads"
 

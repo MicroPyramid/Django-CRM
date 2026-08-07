@@ -188,7 +188,7 @@ class _RedirectHandler(http.server.BaseHTTPRequestHandler):
 
     paths_seen: list = []
 
-    def do_GET(self):  # noqa: N802. BaseHTTPRequestHandler API
+    def do_GET(self):  # noqa: N802  # BaseHTTPRequestHandler API
         type(self).paths_seen.append(self.path)
         if self.path == "/start":
             self.send_response(302)

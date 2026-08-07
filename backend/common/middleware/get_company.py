@@ -136,7 +136,10 @@ class GetProfileAndOrg:
         denial = scopes.check_request(pat.scopes, request.method, request.path)
         if denial is not None:
             logger.warning(
-                "PAT %s refused for %s %s", pat.token_prefix, request.method, request.path
+                "PAT %s refused for %s %s",
+                pat.token_prefix,
+                request.method,
+                request.path,
             )
             return _denied(denial)
 
@@ -179,7 +182,9 @@ class GetProfileAndOrg:
                 )
                 request.profile = profile
                 request.org = profile.org
-                logger.debug("Set org context from JWT: user=%s, org=%s", user_id, org_id)
+                logger.debug(
+                    "Set org context from JWT: user=%s, org=%s", user_id, org_id
+                )
 
             except Profile.DoesNotExist as exc:
                 # User doesn't have access to this org anymore
@@ -244,7 +249,9 @@ class GetProfileAndOrg:
             ).first()
 
             if not profile:
-                logger.error("No active admin profile found for org %s", organization.id)
+                logger.error(
+                    "No active admin profile found for org %s", organization.id
+                )
                 # Let DRF authentication reject this, raising AuthenticationFailed
                 # here escapes the middleware stack as a 500 instead of a 401.
                 return None

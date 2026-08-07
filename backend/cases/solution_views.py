@@ -121,7 +121,7 @@ class SolutionListView(APIView, LimitOffsetPagination):
 
         # Counted over the whole knowledge base, not over the filtered page.
         # These four are a partition of the KB, "12 total, 3 of them drafts"
-        #, so recomputing them inside a `?status=draft` filter would leave
+        # , so recomputing them inside a `?status=draft` filter would leave
         # the other three cards reading zero and say nothing.
         counts = base.aggregate(
             count=Count("id"),

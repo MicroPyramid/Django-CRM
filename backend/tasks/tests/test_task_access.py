@@ -37,6 +37,7 @@ import uuid
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from accounts.models import Account
 from cases.models import Case
@@ -44,7 +45,6 @@ from common.models import Attachments, Profile, User
 from leads.models import Lead
 from opportunity.models import Opportunity
 from tasks.models import Task
-from django.utils import timezone
 
 
 def _task(org, creator, assignees=(), **kwargs):

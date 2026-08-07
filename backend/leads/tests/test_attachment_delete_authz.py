@@ -55,7 +55,9 @@ def lead_b(org_b):
 class TestLeadAttachmentDelete:
     URL = "/api/leads/attachment/{}/"
 
-    def test_admin_deletes_own_org_attachment(self, org_a, admin_client, admin_user, lead_a):
+    def test_admin_deletes_own_org_attachment(
+        self, org_a, admin_client, admin_user, lead_a
+    ):
         att = _attachment(org_a, lead_a, admin_user)
         assert admin_client.delete(self.URL.format(att.id)).status_code == 200
         assert not Attachments.objects.filter(id=att.id).exists()
@@ -68,9 +70,7 @@ class TestLeadAttachmentDelete:
         assert user_client.delete(self.URL.format(att.id)).status_code == 200
         assert not Attachments.objects.filter(id=att.id).exists()
 
-    def test_other_member_cannot_delete(
-        self, org_a, user_client, admin_user, lead_a
-    ):
+    def test_other_member_cannot_delete(self, org_a, user_client, admin_user, lead_a):
         """The same check must be able to return False, or it is not a check."""
         att = _attachment(org_a, lead_a, admin_user)
         assert user_client.delete(self.URL.format(att.id)).status_code == 403

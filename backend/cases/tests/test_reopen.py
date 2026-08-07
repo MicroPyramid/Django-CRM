@@ -237,7 +237,9 @@ class TestReopenAnalytics:
         # against `app.current_org`, so writing this row means being that
         # tenant for the length of the write.
         with rls_org(org):
-            return Case.objects.create(org=org, name="C", status="New", priority="Normal")
+            return Case.objects.create(
+                org=org, name="C", status="New", priority="Normal"
+            )
 
     def test_reopened_last_30d_counts_reopens(self, admin_client, org_a):
         case = self._make_case(org_a)

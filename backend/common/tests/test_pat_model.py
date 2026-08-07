@@ -1,8 +1,8 @@
 import hashlib
+from datetime import timedelta
 
 import pytest
 from django.utils import timezone
-from datetime import timedelta
 
 from common.models import PersonalAccessToken
 
@@ -32,7 +32,8 @@ class TestPersonalAccessToken:
 
     def test_is_valid_false_when_expired(self, admin_profile):
         _, pat = PersonalAccessToken.generate(
-            profile=admin_profile, name="x",
+            profile=admin_profile,
+            name="x",
             expires_at=timezone.now() - timedelta(days=1),
         )
         assert pat.is_valid() is False
@@ -49,6 +50,7 @@ def test_pat_table_has_no_rls_policy():
     not by a row-level security policy. Assert no policy exists on the table.
     """
     from django.db import connection
+
     if connection.vendor != "postgresql":
         pytest.skip("RLS requires PostgreSQL")
     with connection.cursor() as cur:

@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
+
 from common.base import BaseModel, BaseOrgModel
-from common.validators import validate_iana_timezone
 from common.utils import (
     COUNTRIES,
     CURRENCY_CODES,
@@ -28,6 +28,7 @@ from common.utils import (
     is_document_file_video,
     is_document_file_zip,
 )
+from common.validators import validate_iana_timezone
 
 from .manager import UserManager
 
@@ -999,10 +1000,13 @@ class PortalAccessToken(models.Model):
         return f"PortalAccessToken({self.resource_type}:{self.token_hash[:8]}…)"
 
 
-# Import SecurityAuditLog so Django discovers it for migrations
-from common.audit_log import (
-    SecurityAuditLog,
-)  # noqa: F401,E402  # pylint: disable=unused-import
+# Import SecurityAuditLog so Django discovers it for migrations. The name is
+# unused here on purpose, and the suppression has to sit on the line ruff
+# attributes the diagnostic to, which is the imported name rather than the
+# closing paren. Split across three lines it silently suppressed nothing, and
+# `ruff check --fix` would have deleted the import and taken the model's
+# migrations with it.
+from common.audit_log import SecurityAuditLog  # noqa: F401,E402
 
 
 class PackApplication(BaseOrgModel):

@@ -16,7 +16,7 @@ def _extract_raw(request):
     """Pull a bcrm_pat_ token from Authorization: Bearer or Token header."""
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        candidate = auth[len("Bearer "):].strip()
+        candidate = auth[len("Bearer ") :].strip()
         if candidate.startswith(PAT_PREFIX):
             return candidate
     token = request.headers.get("Token", "")

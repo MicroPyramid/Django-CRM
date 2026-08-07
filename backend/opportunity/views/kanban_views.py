@@ -24,16 +24,40 @@ from opportunity.serializer import (
     OpportunityMoveSerializer,
 )
 
-
 # Column display config. Keys must match the stage choices in
 # common.utils.STAGES. Extra/unknown stages get the fallback.
 STAGE_CONFIG = {
-    "PROSPECTING":   {"order": 1, "color": "#3B82F6", "type": "open",        "label": "Prospecting"},
-    "QUALIFICATION": {"order": 2, "color": "#8B5CF6", "type": "open",        "label": "Qualification"},
-    "PROPOSAL":      {"order": 3, "color": "#F59E0B", "type": "in_progress", "label": "Proposal"},
-    "NEGOTIATION":   {"order": 4, "color": "#EF4444", "type": "in_progress", "label": "Negotiation"},
-    "CLOSED_WON":    {"order": 5, "color": "#22C55E", "type": "completed",   "label": "Won"},
-    "CLOSED_LOST":   {"order": 6, "color": "#6B7280", "type": "completed",   "label": "Lost"},
+    "PROSPECTING": {
+        "order": 1,
+        "color": "#3B82F6",
+        "type": "open",
+        "label": "Prospecting",
+    },
+    "QUALIFICATION": {
+        "order": 2,
+        "color": "#8B5CF6",
+        "type": "open",
+        "label": "Qualification",
+    },
+    "PROPOSAL": {
+        "order": 3,
+        "color": "#F59E0B",
+        "type": "in_progress",
+        "label": "Proposal",
+    },
+    "NEGOTIATION": {
+        "order": 4,
+        "color": "#EF4444",
+        "type": "in_progress",
+        "label": "Negotiation",
+    },
+    "CLOSED_WON": {"order": 5, "color": "#22C55E", "type": "completed", "label": "Won"},
+    "CLOSED_LOST": {
+        "order": 6,
+        "color": "#6B7280",
+        "type": "completed",
+        "label": "Lost",
+    },
 }
 
 
@@ -58,8 +82,7 @@ class OpportunityKanbanView(APIView):
         org = request.profile.org
 
         queryset = (
-            Opportunity.objects
-            .filter(org=org)
+            Opportunity.objects.filter(org=org)
             .select_related("account")
             .prefetch_related("assigned_to", "tags")
         )
@@ -68,18 +91,14 @@ class OpportunityKanbanView(APIView):
         # or are assigned to. Kanban shouldn't reveal more than the table.
         if not is_org_admin(request.profile) and not request.user.is_superuser:
             queryset = queryset.filter(
-                Q(created_by=request.profile.user)
-                | Q(assigned_to=request.profile)
+                Q(created_by=request.profile.user) | Q(assigned_to=request.profile)
             ).distinct()
 
         queryset = self._apply_filters(queryset, request.query_params)
 
         # Aging configs prefetched once and passed via serializer context so
         # each card doesn't re-query StageAgingConfig.
-        aging_configs = {
-            c.stage: c
-            for c in StageAgingConfig.objects.filter(org=org)
-        }
+        aging_configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
 
         columns = []
         stage_choices = Opportunity._meta.get_field("stage").choices
@@ -183,7 +202,10 @@ class OpportunityMoveView(APIView):
         # If the user is moving INTO a closed stage, stamp closed_by, mirrors
         # the OpportunityListView.post / OpportunityDetailView.put behavior so
         # kanban-driven close events look identical to form-driven ones.
-        if new_stage in ("CLOSED_WON", "CLOSED_LOST") and opportunity.stage != new_stage:
+        if (
+            new_stage in ("CLOSED_WON", "CLOSED_LOST")
+            and opportunity.stage != new_stage
+        ):
             opportunity.closed_by = request.profile
 
         opportunity.stage = new_stage
@@ -193,10 +215,7 @@ class OpportunityMoveView(APIView):
         # need to pass update_fields here, the model handles its own bookkeeping.
         opportunity.save()
 
-        aging_configs = {
-            c.stage: c
-            for c in StageAgingConfig.objects.filter(org=org)
-        }
+        aging_configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
         return Response(
             {
                 "error": False,

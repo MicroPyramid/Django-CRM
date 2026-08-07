@@ -12,7 +12,6 @@ from common.serializer import (
 )
 from contacts.serializer import ContactSerializer
 
-
 # Note: Removed unused serializer properties that were computed but never used by frontend:
 # - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
 # - created_on_arrow (frontend computes its own humanized timestamps)

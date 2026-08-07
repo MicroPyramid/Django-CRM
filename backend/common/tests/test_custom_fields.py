@@ -210,7 +210,11 @@ class TestCustomFieldDefinitionAPI:
         types, so they opt out; the payload must then carry neither the per-row
         count nor the totals block."""
         CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Lead", key="budget", label="Budget", field_type="number"
+            org=org_a,
+            target_model="Lead",
+            key="budget",
+            label="Budget",
+            field_type="number",
         )
         response = admin_client.get(
             self.URL + "?target_model=Lead&include_counts=false"
@@ -226,7 +230,11 @@ class TestCustomFieldDefinitionAPI:
         """The opt-out must be opt-in: an unqualified GET, and an explicit
         anything-other-than-"false", keep the settings page's numbers."""
         CustomFieldDefinition.objects.create(
-            org=org_a, target_model="Lead", key="budget", label="Budget", field_type="number"
+            org=org_a,
+            target_model="Lead",
+            key="budget",
+            label="Budget",
+            field_type="number",
         )
         for query in ("?target_model=Lead", "?target_model=Lead&include_counts=true"):
             body = admin_client.get(self.URL + query).json()

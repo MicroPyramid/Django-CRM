@@ -8,13 +8,13 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
 
-logger = logging.getLogger(__name__)
-
 from accounts.models import Account
 from common.links import frontend_url
 from common.models import Org, Profile
 from common.tasks import set_rls_context
 from leads.models import Lead
+
+logger = logging.getLogger(__name__)
 
 
 def get_rendered_html(template_name, context=None):

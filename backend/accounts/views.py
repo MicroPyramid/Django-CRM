@@ -24,18 +24,10 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.lookups import get_scoped_or_404
-from common.permissions import HasOrgContext, is_org_admin
 from rest_framework.views import APIView
 
 from accounts import swagger_params
 from accounts.models import Account
-from cases.models import Case
-from cases.workflow import TERMINAL_STATUSES
-from invoices.models import UNPAID_STATUSES, Invoice
-from opportunity.workflow import CLOSED_STAGES
 from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
     AccountCreateSerializer,
@@ -46,10 +38,12 @@ from accounts.serializer import (
     EmailWriteSerializer,
     TagsSerializer,
 )
-from common.utils import create_attachment, get_or_create_tags, handle_m2m_assignment
-from common.validators import date_param, payload_id_list, uuid_list_param
 from accounts.tasks import send_email, send_email_to_assigned_user
+from cases.models import Case
 from cases.serializer import CaseSerializer
+from cases.workflow import TERMINAL_STATUSES
+from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.lookups import get_scoped_or_404
 from common.models import (
     Attachments,
     Comment,
@@ -58,6 +52,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -72,14 +67,20 @@ from common.utils import (
     INDCHOICES,
     PRIORITY_CHOICE,
     STATUS_CHOICE,
+    create_attachment,
+    get_or_create_tags,
+    handle_m2m_assignment,
 )
+from common.validators import date_param, payload_id_list, uuid_list_param
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
+from invoices.models import UNPAID_STATUSES, Invoice
 from invoices.serializer import InvoiceListSerializer
 from leads.models import Lead
 from leads.serializer import LeadSerializer
 from opportunity.models import SOURCES, STAGES, Opportunity
 from opportunity.serializer import OpportunitySerializer
+from opportunity.workflow import CLOSED_STAGES
 from tasks.serializer import TaskSerializer
 
 # Money and counts the account page shows about an account: what it has been
@@ -212,9 +213,7 @@ class AccountsListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(tags__id__in=tags).distinct()
             assigned_to = uuid_list_param(params, "assigned_to")
             if assigned_to:
-                queryset = queryset.filter(
-                    assigned_to__id__in=assigned_to
-                ).distinct()
+                queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
             created_at_gte = date_param(params, "created_at__gte")

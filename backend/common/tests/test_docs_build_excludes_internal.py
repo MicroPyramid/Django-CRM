@@ -44,8 +44,7 @@ def test_built_site_contains_no_internal_artifacts():
         leaked = sorted(
             str(p.relative_to(destination))
             for p in destination.rglob("*")
-            if p.is_file()
-            and p.relative_to(destination).parts[0] in INTERNAL_PREFIXES
+            if p.is_file() and p.relative_to(destination).parts[0] in INTERNAL_PREFIXES
         )
     assert not leaked, (
         "Internal artifacts were published to the docs site:\n"

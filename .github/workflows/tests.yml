@@ -192,16 +192,32 @@ jobs:
           DBPORT: '5432'
         run: uv run pytest --no-cov --tb=short -q -m postgres_only
 
-      # Undefined names and redefinitions only. The wider `ruff check .` has
-      # 68 pre-existing findings and `black --check` wants 187 files, so a
-      # blanket gate would be red on arrival and would land a reformat of the
-      # whole tree in an unrelated change. These two rules are the ones that
-      # catch defects rather than style: F811 is how `ActivitySerializer` came
-      # to be declared twice, with the second silently shadowing the first for
-      # both of its consumers.
-      - name: Lint for undefined and redefined names
+      # Bare `ruff check .`, so the gate is whatever `backend/ruff.toml` selects
+      # (E, F, I with E501 ignored) rather than a CLI override that can silently
+      # drift from the file every editor and pre-commit hook reads.
+      #
+      # F is the half that catches defects rather than style: F811 is how
+      # `ActivitySerializer` came to be declared twice, with the second silently
+      # shadowing the first for both of its consumers, and F401 found three
+      # imports left behind by the timezone sweep plus two `# noqa` comments
+      # that suppressed nothing.
+      #
+      # `uv run`, not `uvx`: ruff is a locked dev dependency, so CI and a
+      # developer's machine check against the same version and a ruff release
+      # cannot turn this red overnight.
+      - name: Lint
         working-directory: backend
-        run: uvx ruff check --select F811,F821 .
+        run: uv run ruff check .
+
+      # `ruff format` rather than black: it is a reimplementation of black with
+      # the same output, `ruff.toml` already carried the `[format]` section, and
+      # one tool cannot disagree with itself the way black and ruff format can
+      # at the edges. `ruff check` above covers isort's job through the I rules.
+      # The tree was formatted in full when this step was added, so the gate
+      # starts green rather than as a warning nobody acts on.
+      - name: Format check
+        working-directory: backend
+        run: uv run ruff format --check .
 
   frontend-checks:
     runs-on: ubuntu-latest

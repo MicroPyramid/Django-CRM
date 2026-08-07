@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from common.base import BaseOrgModel
 from common.utils import COUNTRIES
 
-
 # =============================================================================
 # CONSTANTS
 # =============================================================================

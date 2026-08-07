@@ -383,8 +383,7 @@ def validate_line_item_products(line_items, org):
             raise serializers.ValidationError(
                 {
                     "line_items": (
-                        "A line item references a product from another "
-                        "organization."
+                        "A line item references a product from another organization."
                     )
                 }
             )

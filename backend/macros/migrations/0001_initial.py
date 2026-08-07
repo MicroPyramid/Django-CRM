@@ -24,7 +24,6 @@ def disable_rls(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     # RLS policy creation can't run inside an atomic block.

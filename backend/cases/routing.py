@@ -20,9 +20,9 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Iterable
 
-from django.db import connection, transaction
+from django.db import transaction
 from django.db.models import Count, Q
 
 from cases.models import RoutingRule, RoutingRuleState
@@ -144,9 +144,7 @@ def _matches_all(case_data: dict, conditions: list[dict]) -> bool:
 
 
 def _active_pool(rule: RoutingRule) -> list[Profile]:
-    return list(
-        rule.target_assignees.filter(is_active=True).order_by("id")
-    )
+    return list(rule.target_assignees.filter(is_active=True).order_by("id"))
 
 
 def _least_busy(profiles: Iterable[Profile]) -> Profile | None:
@@ -169,7 +167,9 @@ def _least_busy(profiles: Iterable[Profile]) -> Profile | None:
     return profiles[0]
 
 
-def _round_robin(rule: RoutingRule, pool: list[Profile], dry_run: bool) -> Profile | None:
+def _round_robin(
+    rule: RoutingRule, pool: list[Profile], dry_run: bool
+) -> Profile | None:
     if not pool:
         return None
     if dry_run:
@@ -179,11 +179,7 @@ def _round_robin(rule: RoutingRule, pool: list[Profile], dry_run: bool) -> Profi
         return pool[idx]
 
     with transaction.atomic():
-        state = (
-            RoutingRuleState.objects.select_for_update()
-            .filter(rule=rule)
-            .first()
-        )
+        state = RoutingRuleState.objects.select_for_update().filter(rule=rule).first()
         if state is None:
             state = RoutingRuleState.objects.create(
                 rule=rule, org=rule.org, last_assigned_index=0
@@ -231,7 +227,9 @@ def _case_to_dict(case) -> dict:
     }
 
 
-def evaluate(case, *, dry_run: bool = False, case_data: dict | None = None) -> RoutingDecision:
+def evaluate(
+    case, *, dry_run: bool = False, case_data: dict | None = None
+) -> RoutingDecision:
     """Evaluate active routing rules for `case.org` against the case.
 
     Walks rules in `priority_order` ASC. The first matching rule executes its
@@ -299,7 +297,9 @@ def evaluate(case, *, dry_run: bool = False, case_data: dict | None = None) -> R
     return decision
 
 
-def _apply(case, rule: RoutingRule, chosen_profile: Profile | None, decision: RoutingDecision):
+def _apply(
+    case, rule: RoutingRule, chosen_profile: Profile | None, decision: RoutingDecision
+):
     """Persist assignment + write an Activity(ROUTED) row.
 
     No-ops if the rule matched but produced no target (empty pool / missing

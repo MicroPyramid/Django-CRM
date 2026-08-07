@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('common', '0025_magic_link_token_otp'),
+        ("common", "0025_magic_link_token_otp"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='name',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='name'),
+            model_name="user",
+            name="name",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="name"
+            ),
         ),
     ]

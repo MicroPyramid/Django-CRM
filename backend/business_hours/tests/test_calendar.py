@@ -1,12 +1,11 @@
 """Tests for the add_business_hours walker."""
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
 
 from business_hours.calendar import add_business_hours
-
 
 _UTC = ZoneInfo("UTC")
 _NY = ZoneInfo("America/New_York")

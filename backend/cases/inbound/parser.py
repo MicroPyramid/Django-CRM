@@ -146,7 +146,9 @@ def _extract_attachments(msg: StdlibEmailMessage) -> list[ParsedAttachment]:
         attachments.append(
             ParsedAttachment(
                 filename=part.get_filename() or "attachment",
-                content_type=(part.get_content_type() or "application/octet-stream").lower(),
+                content_type=(
+                    part.get_content_type() or "application/octet-stream"
+                ).lower(),
                 payload=payload,
             )
         )
@@ -157,7 +159,9 @@ def _is_bounce(msg: StdlibEmailMessage) -> bool:
     """True if the MIME tree looks like a delivery-status bounce."""
     ctype = (msg.get_content_type() or "").lower()
     if ctype == "multipart/report":
-        report_type = (msg.get_param("report-type", header="content-type") or "").lower()
+        report_type = (
+            msg.get_param("report-type", header="content-type") or ""
+        ).lower()
         if report_type == "delivery-status":
             return True
     return False

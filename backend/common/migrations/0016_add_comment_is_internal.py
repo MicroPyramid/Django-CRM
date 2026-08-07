@@ -4,20 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('common', '0015_activity_metadata_alter_activity_action'),
-        ('contenttypes', '0002_remove_content_type_name'),
+        ("common", "0015_activity_metadata_alter_activity_action"),
+        ("contenttypes", "0002_remove_content_type_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='comment',
-            name='is_internal',
+            model_name="comment",
+            name="is_internal",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['content_type', 'object_id', 'is_internal'], name='comment_content_7e7d4c_idx'),
+            model_name="comment",
+            index=models.Index(
+                fields=["content_type", "object_id", "is_internal"],
+                name="comment_content_7e7d4c_idx",
+            ),
         ),
     ]

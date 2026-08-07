@@ -14,8 +14,6 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from common.permissions import HasOrgContext, is_org_admin
 from rest_framework.views import APIView
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
@@ -27,6 +25,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -89,9 +88,7 @@ class ContactsListView(APIView, LimitOffsetPagination):
                 # string, which Django iterates character by character -- each
                 # character then failed to parse as a UUID, so filtering by an
                 # owner answered 500.
-                queryset = queryset.filter(
-                    assigned_to__id__in=assigned_to
-                ).distinct()
+                queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
             tags = uuid_list_param(params, "tags")
             if tags:
                 queryset = queryset.filter(tags__id__in=tags).distinct()
