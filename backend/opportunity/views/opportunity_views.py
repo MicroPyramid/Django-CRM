@@ -25,7 +25,7 @@ from common.serializer import (
     CustomFieldDefinitionSerializer,
     ProfileSerializer,
 )
-from common.utils import CURRENCY_CODES, SOURCES, STAGES
+from common.utils import CURRENCY_CODES, SOURCES, STAGES, create_attachment
 from common.validators import payload_id_list, uuid_list_param, uuid_param
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
@@ -357,15 +357,11 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 opportunity_obj.assigned_to.add(*profiles)
 
             if self.request.FILES.get("opportunity_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get(
-                    "opportunity_attachment"
-                ).name
-                attachment.content_object = opportunity_obj
-                attachment.attachment = self.request.FILES.get("opportunity_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("opportunity_attachment"),
+                    opportunity_obj,
+                    self.request.profile,
+                )
 
             recipients = list(
                 opportunity_obj.assigned_to.all().values_list("id", flat=True)
@@ -524,15 +520,11 @@ class OpportunityDetailView(APIView):
                 opportunity_object.assigned_to.add(*profiles)
 
             if self.request.FILES.get("opportunity_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get(
-                    "opportunity_attachment"
-                ).name
-                attachment.content_object = opportunity_object
-                attachment.attachment = self.request.FILES.get("opportunity_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("opportunity_attachment"),
+                    opportunity_object,
+                    self.request.profile,
+                )
 
             assigned_to_list = list(
                 opportunity_object.assigned_to.all().values_list("id", flat=True)
@@ -743,15 +735,11 @@ class OpportunityDetailView(APIView):
             )
 
         if self.request.FILES.get("opportunity_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get(
-                "opportunity_attachment"
-            ).name
-            attachment.content_object = self.opportunity_obj
-            attachment.attachment = self.request.FILES.get("opportunity_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("opportunity_attachment"),
+                self.opportunity_obj,
+                self.request.profile,
+            )
 
         opportunity_content_type = ContentType.objects.get_for_model(Opportunity)
         comments = Comment.objects.filter(

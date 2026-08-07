@@ -1,0 +1,144 @@
+import 'package:file_picker/file_picker.dart';
+
+import '../config/api_config.dart';
+import 'api_service.dart';
+
+/// The one place the app turns a file on the phone into an attachment.
+///
+/// Four detail screens carry a Files section and every one of them could
+/// already delete an attachment it had no way to create. The endpoints are the
+/// same detail POST that takes a comment, each with its own field name, so the
+/// only thing that varies between them is that name and the URL.
+enum AttachmentTarget {
+  task('task_attachment'),
+  lead('lead_attachment'),
+  deal('opportunity_attachment'),
+  ticket('case_attachment');
+
+  const AttachmentTarget(this.field);
+
+  /// The multipart field the matching Django view reads. Getting this wrong is
+  /// silent: `request.FILES.get()` returns None, the view answers 200, and
+  /// nothing is stored.
+  final String field;
+
+  String urlFor(String recordId) {
+    switch (this) {
+      case AttachmentTarget.task:
+        return '${ApiConfig.tasks}$recordId/';
+      case AttachmentTarget.lead:
+        return '${ApiConfig.leads}$recordId/';
+      case AttachmentTarget.deal:
+        return '${ApiConfig.opportunities}$recordId/';
+      case AttachmentTarget.ticket:
+        return '${ApiConfig.tickets}$recordId/';
+    }
+  }
+}
+
+/// Mirrors `common.utils.ATTACHMENT_MAX_BYTES`.
+///
+/// A UX hint, not a rule. The server enforces it, which is the only place that
+/// counts, and this exists so somebody who picked a 300 MB video is told
+/// immediately instead of after three minutes of uploading.
+const int attachmentMaxBytes = 25 * 1024 * 1024;
+
+/// What an upload attempt produced. `cancelled` is not a failure and should not
+/// raise a message: the user closed the picker.
+class AttachmentUploadResult {
+  const AttachmentUploadResult._({
+    required this.cancelled,
+    this.error,
+    this.data,
+  });
+
+  const AttachmentUploadResult.cancelled()
+    : this._(cancelled: true, error: null, data: null);
+
+  const AttachmentUploadResult.failed(String message)
+    : this._(cancelled: false, error: message, data: null);
+
+  const AttachmentUploadResult.uploaded(Map<String, dynamic>? body)
+    : this._(cancelled: false, error: null, data: body);
+
+  final bool cancelled;
+  final String? error;
+
+  /// The detail POST answers with the refreshed `attachments` and `comments`
+  /// arrays, so a caller can update in place instead of refetching the page.
+  final Map<String, dynamic>? data;
+
+  bool get succeeded => !cancelled && error == null;
+}
+
+/// Pick a file and attach it to [recordId].
+///
+/// [pickFile] and [api] are injectable so the size rule and the error paths can
+/// be tested without a file system or a server. Nothing else passes them.
+Future<AttachmentUploadResult> pickAndUploadAttachment({
+  required AttachmentTarget target,
+  required String recordId,
+  Future<PlatformFile?> Function()? pickFile,
+  ApiService? api,
+}) async {
+  final picked = await (pickFile ?? _pickOneFile)();
+  if (picked == null) return const AttachmentUploadResult.cancelled();
+
+  final path = picked.path;
+  if (path == null || path.isEmpty) {
+    return const AttachmentUploadResult.failed(
+      'That file could not be read. Try picking it again.',
+    );
+  }
+
+  if (picked.size > attachmentMaxBytes) {
+    // Clear it here too. This is the case where the copy matters most: the
+    // file that was too big to send is the one it hurts to keep.
+    if (pickFile == null) await _clearPickerCache();
+    final limit = attachmentMaxBytes ~/ (1024 * 1024);
+    return AttachmentUploadResult.failed(
+      '${picked.name} is ${_megabytes(picked.size)} MB. '
+      'Files must be $limit MB or smaller.',
+    );
+  }
+
+  final response = await (api ?? ApiService()).postMultipart(
+    target.urlFor(recordId),
+    fileField: target.field,
+    filePath: path,
+    fileName: picked.name,
+  );
+
+  if (pickFile == null) await _clearPickerCache();
+
+  if (!response.success) {
+    return AttachmentUploadResult.failed(
+      response.message ?? 'Could not upload that file.',
+    );
+  }
+  return AttachmentUploadResult.uploaded(response.data);
+}
+
+Future<PlatformFile?> _pickOneFile() async {
+  final result = await FilePicker.pickFiles(withReadStream: false);
+  if (result == null || result.files.isEmpty) return null;
+  return result.files.first;
+}
+
+/// Drop the picker's cached copy of what was just uploaded.
+///
+/// `pickFiles` copies the chosen file into the app's cache directory, so
+/// without this every attachment a person sends stays on their phone a second
+/// time, in a directory they never see. Only when the real picker ran: an
+/// injected one has nothing to clear, and the platform channel is not there in
+/// a test. Failure is ignored, since the OS clears that cache eventually and
+/// nothing here depends on it.
+Future<void> _clearPickerCache() async {
+  try {
+    await FilePicker.clearTemporaryFiles();
+  } catch (_) {
+    // Best effort.
+  }
+}
+
+String _megabytes(int bytes) => (bytes / (1024 * 1024)).toStringAsFixed(1);

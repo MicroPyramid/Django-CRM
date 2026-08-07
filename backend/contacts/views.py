@@ -32,7 +32,7 @@ from common.serializer import (
     CommentSerializer,
     CustomFieldDefinitionSerializer,
 )
-from common.utils import COUNTRIES
+from common.utils import COUNTRIES, create_attachment
 from common.validators import payload_id_list, uuid_list_param
 from contacts import swagger_params
 from contacts.models import Contact
@@ -261,13 +261,11 @@ class ContactsListView(APIView, LimitOffsetPagination):
         )
 
         if request.FILES.get("contact_attachment"):
-            attachment = Attachments()
-            attachment.created_by = request.profile.user
-            attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.content_object = contact_obj
-            attachment.attachment = request.FILES.get("contact_attachment")
-            attachment.org = request.profile.org
-            attachment.save()
+            create_attachment(
+                request.FILES.get("contact_attachment"),
+                contact_obj,
+                request.profile,
+            )
         return Response(
             # The id, so that whatever created the contact can go to it. Without
             # it a caller has to guess -- list the org and hope the newest row
@@ -489,13 +487,11 @@ class ContactDetailView(APIView):
             str(request.profile.org.id),
         )
         if request.FILES.get("contact_attachment"):
-            attachment = Attachments()
-            attachment.created_by = request.profile.user
-            attachment.file_name = request.FILES.get("contact_attachment").name
-            attachment.content_object = contact_obj
-            attachment.attachment = request.FILES.get("contact_attachment")
-            attachment.org = request.profile.org
-            attachment.save()
+            create_attachment(
+                request.FILES.get("contact_attachment"),
+                contact_obj,
+                request.profile,
+            )
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},
             status=status.HTTP_200_OK,
@@ -705,13 +701,11 @@ class ContactDetailView(APIView):
             )
 
         if self.request.FILES.get("contact_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get("contact_attachment").name
-            attachment.content_object = self.contact_obj
-            attachment.attachment = self.request.FILES.get("contact_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("contact_attachment"),
+                self.contact_obj,
+                self.request.profile,
+            )
 
         contact_content_type = ContentType.objects.get_for_model(Contact)
         comments = Comment.objects.filter(

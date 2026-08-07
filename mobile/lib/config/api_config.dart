@@ -290,6 +290,11 @@ class ApiConfig {
   /// Connection timeout duration
   static const Duration connectTimeout = Duration(seconds: 30);
 
+  /// Uploads get longer. A 25 MB attachment (the server's limit) does not
+  /// finish in 30 seconds on a phone connection, and the timeout that fired
+  /// would look like a server fault.
+  static const Duration uploadTimeout = Duration(minutes: 3);
+
   /// Receive timeout duration
   static const Duration receiveTimeout = Duration(seconds: 30);
 

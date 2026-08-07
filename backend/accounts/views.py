@@ -547,13 +547,11 @@ class AccountDetailView(APIView):
                     account_object.assigned_to.add(*profiles)
 
             if self.request.FILES.get("account_attachment"):
-                attachment = Attachments()
-                attachment.created_by = self.request.profile.user
-                attachment.file_name = self.request.FILES.get("account_attachment").name
-                attachment.content_object = account_object
-                attachment.attachment = self.request.FILES.get("account_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+                create_attachment(
+                    self.request.FILES.get("account_attachment"),
+                    account_object,
+                    self.request.profile,
+                )
 
             assigned_to_list = list(
                 account_object.assigned_to.all().values_list("id", flat=True)
@@ -738,13 +736,11 @@ class AccountDetailView(APIView):
             )
 
         if self.request.FILES.get("account_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get("account_attachment").name
-            attachment.content_object = self.account_obj
-            attachment.attachment = self.request.FILES.get("account_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("account_attachment"),
+                self.account_obj,
+                self.request.profile,
+            )
 
         account_content_type = ContentType.objects.get_for_model(Account)
         comments = Comment.objects.filter(

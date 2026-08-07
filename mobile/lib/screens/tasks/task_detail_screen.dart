@@ -10,6 +10,7 @@ import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../providers/tickets_provider.dart';
+import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
 
 /// Task Detail Screen
@@ -28,6 +29,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   bool _isLoading = true;
   bool _isUpdating = false;
   bool _isPostingComment = false;
+  bool _isUploadingAttachment = false;
   String? _error;
 
   final TextEditingController _commentController = TextEditingController();
@@ -413,21 +415,35 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           _buildCommentsCard(comments),
           const SizedBox(height: 16),
 
-          if (attachments.isNotEmpty) ...[
-            _buildCard(
-              title: 'Attachments',
-              icon: LucideIcons.paperclip,
-              child: Column(
-                children: [
-                  for (var i = 0; i < attachments.length; i++) ...[
-                    if (i > 0) const Divider(height: 16),
-                    _buildAttachmentRow(attachments[i]),
-                  ],
+          // Shown even when empty, now that there is something to do here.
+          // While the section only listed files, an empty one was noise; the
+          // Attach button is the reason to render it.
+          _buildCard(
+            title: 'Attachments',
+            icon: LucideIcons.paperclip,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < attachments.length; i++) ...[
+                  if (i > 0) const Divider(height: 16),
+                  _buildAttachmentRow(attachments[i]),
                 ],
-              ),
+                if (attachments.isEmpty)
+                  Text(
+                    'No files yet.',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                AttachFileButton(
+                  isUploading: _isUploadingAttachment,
+                  onPressed: _pickAndUploadAttachment,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
+          ),
+          const SizedBox(height: 16),
 
           _buildCard(
             title: 'Details',
@@ -1262,6 +1278,52 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Attach a file to this task.
+  ///
+  /// The detail POST answers with the refreshed `attachments` array, the same
+  /// way it does for a comment, so the list updates in place. Refetching would
+  /// throw the page back to its spinner and lose the scroll position.
+  Future<void> _pickAndUploadAttachment() async {
+    if (_isUploadingAttachment || _detail == null) return;
+    setState(() => _isUploadingAttachment = true);
+
+    final result = await pickAndUploadAttachment(
+      target: AttachmentTarget.task,
+      recordId: widget.taskId,
+    );
+
+    if (!mounted) return;
+    setState(() => _isUploadingAttachment = false);
+
+    if (result.cancelled) return;
+    if (!result.succeeded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error!),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger600,
+        ),
+      );
+      return;
+    }
+
+    final attachmentsData = result.data?['attachments'];
+    if (_detail != null && attachmentsData is List) {
+      setState(() {
+        _detail = _detail!.copyWith(
+          attachments: attachmentsData
+              .whereType<Map<String, dynamic>>()
+              .map(Attachment.fromJson)
+              .toList(),
+        );
+      });
+    } else {
+      // The upload landed but the shape was not what this expects. Refetching
+      // is slower than the in-place update and is never wrong.
+      await _fetchTask();
+    }
   }
 
   Future<void> _openAttachment(Attachment att) async {

@@ -510,9 +510,44 @@ def handle_m2m_assignment(
     return objects
 
 
+ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024
+
+
+def fit_attachment_file_name(raw_name, max_length):
+    """Squeeze an uploaded file's name into the label column, keeping the suffix.
+
+    ``Attachments.file_name`` is 60 characters and ``Attachments.save()`` calls
+    ``full_clean()``, so a longer name raised Django's ``ValidationError`` and
+    the views turned it into a 500. Proven live before this existed: a 91
+    character name, the shape an Android screenshot has by default
+    (``IMG_20260807_100432_Screenshot_...jpg``), answered HTTP 500.
+
+    Truncating rather than refusing, because the length of a file's name is not
+    a user error and this column is a display label. The bytes are stored under
+    the path ``FileField`` generates, which is unaffected.
+
+    Any directory part is dropped too. Django sanitizes the storage path itself,
+    but this label is echoed back to clients, and a name like
+    ``../../../etc/passwd`` has no business being rendered as one.
+    """
+    name = (raw_name or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    if not name:
+        return "attachment"
+    if len(name) <= max_length:
+        return name
+    stem, _, suffix = name.rpartition(".")
+    # A pathological "extension" must not eat the whole budget.
+    suffix = f".{suffix}" if stem and len(suffix) < max_length // 2 else ""
+    return (stem[: max_length - len(suffix)] + suffix)[:max_length]
+
+
 def create_attachment(file, content_object, profile):
     """
     Create an attachment for any CRM content object.
+
+    The one place an upload becomes a row. Every ``*_attachment`` endpoint had
+    its own copy of these six lines, fifteen of them, so the filename defect
+    above was fifteen defects and a size limit would have been fifteen edits.
 
     Args:
         file: The uploaded file object
@@ -521,12 +556,30 @@ def create_attachment(file, content_object, profile):
 
     Returns:
         Attachments instance
+
+    Raises:
+        rest_framework.serializers.ValidationError: the file is over the size
+            limit. DRF renders that as a 400 from any view, which is why it is
+            raised here rather than returned: fifteen call sites would otherwise
+            each need their own try/except, and the one that forgot would store
+            the file anyway.
     """
+    from rest_framework import serializers as drf_serializers
+
     from common.models import Attachments
+
+    size = getattr(file, "size", None)
+    if size is not None and size > ATTACHMENT_MAX_BYTES:
+        megabytes = ATTACHMENT_MAX_BYTES // (1024 * 1024)
+        raise drf_serializers.ValidationError(
+            {"attachment": f"Files must be {megabytes} MB or smaller."}
+        )
 
     attachment = Attachments()
     attachment.created_by = profile.user
-    attachment.file_name = file.name
+    attachment.file_name = fit_attachment_file_name(
+        file.name, Attachments._meta.get_field("file_name").max_length
+    )
     attachment.content_object = content_object
     attachment.attachment = file
     attachment.org = profile.org

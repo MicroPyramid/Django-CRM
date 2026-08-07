@@ -23,7 +23,6 @@ from common.models import (
     Profile,
     Tags,
     Teams,
-    User,
 )
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
@@ -33,7 +32,13 @@ from common.serializer import (
     ProfileSerializer,
     TeamsSerializer,
 )
-from common.utils import COUNTRIES, INDCHOICES, LEAD_SOURCE, LEAD_STATUS
+from common.utils import (
+    COUNTRIES,
+    INDCHOICES,
+    LEAD_SOURCE,
+    LEAD_STATUS,
+    create_attachment,
+)
 from common.validators import payload_id_list, uuid_list_param, validate_uuid_list
 from contacts.models import Contact
 from leads import swagger_params
@@ -343,13 +348,11 @@ class LeadListView(APIView, LimitOffsetPagination):
                 lead_obj.contacts.add(*obj_contact)
 
             if request.FILES.get("lead_attachment"):
-                attachment = Attachments()
-                attachment.created_by = request.profile.user
-                attachment.file_name = request.FILES.get("lead_attachment").name
-                attachment.content_object = lead_obj
-                attachment.attachment = request.FILES.get("lead_attachment")
-                attachment.org = request.profile.org
-                attachment.save()
+                create_attachment(
+                    request.FILES.get("lead_attachment"),
+                    lead_obj,
+                    request.profile,
+                )
 
             if data.get("teams", None):
                 teams_list = data.get("teams")
@@ -623,17 +626,20 @@ class LeadDetailView(APIView):
                 org=self.request.profile.org,
             )
 
-            if self.request.FILES.get("lead_attachment"):
-                attachment = Attachments()
-                attachment.created_by = User.objects.get(
-                    id=self.request.profile.user.id
-                )
-
-                attachment.file_name = self.request.FILES.get("lead_attachment").name
-                attachment.content_object = self.lead_obj
-                attachment.attachment = self.request.FILES.get("lead_attachment")
-                attachment.org = self.request.profile.org
-                attachment.save()
+        # Outside the comment branch, where it used to sit. Nested, a file sent
+        # on its own was dropped: the endpoint answered 200 with the unchanged
+        # attachment list and no error, so the upload looked like it had worked.
+        # Proven live against the dev server before this moved. The same three
+        # lines in tasks, cases and opportunity were never nested, which is why
+        # only leads behaved this way.
+        if self.request.FILES.get("lead_attachment"):
+            # This one also re-read the User from the database by the id of the
+            # User it already had in hand. Same row, one more query.
+            create_attachment(
+                self.request.FILES.get("lead_attachment"),
+                self.lead_obj,
+                self.request.profile,
+            )
 
         lead_content_type = ContentType.objects.get_for_model(Lead)
         comments = Comment.objects.filter(
@@ -726,13 +732,11 @@ class LeadDetailView(APIView):
                 lead_obj.tags.add(*tag_objs)
 
             if request.FILES.get("lead_attachment"):
-                attachment = Attachments()
-                attachment.created_by = request.profile.user
-                attachment.file_name = request.FILES.get("lead_attachment").name
-                attachment.content_object = lead_obj
-                attachment.attachment = request.FILES.get("lead_attachment")
-                attachment.org = request.profile.org
-                attachment.save()
+                create_attachment(
+                    request.FILES.get("lead_attachment"),
+                    lead_obj,
+                    request.profile,
+                )
 
             lead_obj.contacts.clear()
             if params.get("contacts"):

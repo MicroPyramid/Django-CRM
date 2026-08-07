@@ -25,6 +25,7 @@ from common.models import (
     Teams,
 )
 from common.permissions import HasOrgContext
+from common.utils import create_attachment
 from common.validators import payload_id_list, uuid_list_param, uuid_param
 from common.serializer import (
     AttachmentsSerializer,
@@ -479,13 +480,11 @@ class TaskDetailView(APIView):
             )
 
         if self.request.FILES.get("task_attachment"):
-            attachment = Attachments()
-            attachment.created_by = self.request.profile.user
-            attachment.file_name = self.request.FILES.get("task_attachment").name
-            attachment.content_object = self.task_obj
-            attachment.attachment = self.request.FILES.get("task_attachment")
-            attachment.org = self.request.profile.org
-            attachment.save()
+            create_attachment(
+                self.request.FILES.get("task_attachment"),
+                self.task_obj,
+                self.request.profile,
+            )
 
         comments = Comment.objects.filter(
             content_type=task_content_type,

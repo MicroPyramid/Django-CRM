@@ -125,7 +125,9 @@ class ApiService {
   Future<http.Response> _sendWithRetry({
     required bool requiresAuth,
     required Future<http.Response> Function(Map<String, String> headers) send,
+    Duration? timeout,
   }) async {
+    final deadline = timeout ?? ApiConfig.connectTimeout;
     // Refresh BEFORE sending, not after a rejection.
     //
     // This API does not answer 401 for an expired credential. `HasOrgContext`
@@ -141,8 +143,9 @@ class ApiService {
       await _refreshAccessToken();
     }
 
-    var response = await send(_buildHeaders(requiresAuth: requiresAuth))
-        .timeout(ApiConfig.connectTimeout);
+    var response = await send(
+      _buildHeaders(requiresAuth: requiresAuth),
+    ).timeout(deadline);
 
     // Kept as a fallback for a token revoked or rotated out from under us
     // before its `exp`, which the check above cannot see.
@@ -152,8 +155,9 @@ class ApiService {
         _refreshCallback != null) {
       final refreshed = await _refreshAccessToken();
       if (refreshed) {
-        response = await send(_buildHeaders(requiresAuth: requiresAuth))
-            .timeout(ApiConfig.connectTimeout);
+        response = await send(
+          _buildHeaders(requiresAuth: requiresAuth),
+        ).timeout(deadline);
       }
     }
     return response;
@@ -220,21 +224,8 @@ class ApiService {
         final errors = data['errors'];
         if (errors is String && errors.isNotEmpty) return errors;
         if (errors is Map) {
-          final errorMessages = <String>[];
-          for (final entry in errors.entries) {
-            final fieldName = entry.key.toString();
-            final messages = entry.value;
-            final fieldLabel = fieldName.replaceAll('_', ' ');
-            final cap = fieldLabel.isEmpty
-                ? fieldLabel
-                : '${fieldLabel[0].toUpperCase()}${fieldLabel.substring(1)}';
-            if (messages is List && messages.isNotEmpty) {
-              errorMessages.add('$cap: ${messages.first}');
-            } else if (messages is String && messages.isNotEmpty) {
-              errorMessages.add('$cap: $messages');
-            }
-          }
-          if (errorMessages.isNotEmpty) return errorMessages.join('\n');
+          final fromErrors = _fieldErrorSentences(errors);
+          if (fromErrors != null) return fromErrors;
         }
       }
 
@@ -244,9 +235,38 @@ class ApiService {
           return errors.first.toString();
         }
       }
+
+      // DRF's own shape, `{"field": ["message"]}`, with no wrapper.
+      //
+      // That is what a `serializers.ValidationError` raised outside a
+      // serializer produces, and it had no branch here: the attachment size
+      // limit answered "Files must be 25 MB or smaller." and the phone showed
+      // "Request failed with status 400". Last, so the wrapped flavours above
+      // still win where a view uses one.
+      final fromFields = _fieldErrorSentences(data);
+      if (fromFields != null) return fromFields;
     }
 
     return 'Request failed with status $statusCode';
+  }
+
+  /// Turn `{"field_name": ["message"]}` into `Field name: message`, one line
+  /// per field. Null when nothing in the map has that shape.
+  String? _fieldErrorSentences(Map errors) {
+    final sentences = <String>[];
+    for (final entry in errors.entries) {
+      final label = entry.key.toString().replaceAll('_', ' ');
+      final capitalised = label.isEmpty
+          ? label
+          : '${label[0].toUpperCase()}${label.substring(1)}';
+      final messages = entry.value;
+      if (messages is List && messages.isNotEmpty) {
+        sentences.add('$capitalised: ${messages.first}');
+      } else if (messages is String && messages.isNotEmpty) {
+        sentences.add('$capitalised: $messages');
+      }
+    }
+    return sentences.isEmpty ? null : sentences.join('\n');
   }
 
   /// Perform GET request
@@ -368,6 +388,77 @@ class ApiService {
       );
     } catch (e) {
       debugPrint('POST error: $e');
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(e),
+        statusCode: 0,
+      );
+    }
+  }
+
+  /// POST one file as `multipart/form-data`.
+  ///
+  /// Separate from [post] rather than a flag on it: that one JSON-encodes a
+  /// `Map` body, which is not a shape a file fits into.
+  ///
+  /// `_buildHeaders` supplies `Content-Type: application/json` and it is left
+  /// alone here on purpose. `MultipartRequest.finalize()` overwrites the header
+  /// with its own boundary type, and `BaseRequest.headers` compares keys
+  /// case-insensitively, so removing it first changes nothing. A test pins the
+  /// header that actually goes out, since this is a detail of package:http
+  /// rather than a guarantee.
+  ///
+  /// The request is rebuilt inside the closure because a `MultipartRequest`
+  /// streams its body exactly once and cannot be re-sent after a token refresh.
+  Future<ApiResponse<Map<String, dynamic>>> postMultipart(
+    String url, {
+    required String fileField,
+    required String filePath,
+    String? fileName,
+    Map<String, String> fields = const {},
+    bool requiresAuth = true,
+  }) async {
+    try {
+      // The URL and the field, never the path: a file path on a phone contains
+      // the account name, and on iOS the app's container UUID.
+      debugPrint('POST (multipart) $url [$fileField]');
+
+      final uri = Uri.parse(url);
+      final response = await _sendWithRetry(
+        requiresAuth: requiresAuth,
+        // A slow connection uploading megabytes needs more than the 30 seconds
+        // a JSON call gets.
+        timeout: ApiConfig.uploadTimeout,
+        send: (headers) async {
+          final request = http.MultipartRequest('POST', uri);
+          request.headers.addAll(headers);
+          request.fields.addAll(fields);
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              fileField,
+              filePath,
+              filename: fileName,
+            ),
+          );
+          return http.Response.fromStream(await _client.send(request));
+        },
+      );
+
+      final data = _parseResponse(response);
+      final success = _isSuccess(response.statusCode);
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      return ApiResponse(
+        success: success,
+        data: data is Map<String, dynamic> ? data : null,
+        message: success
+            ? null
+            : _extractErrorMessage(data, response.statusCode),
+        statusCode: response.statusCode,
+      );
+    } catch (e) {
+      debugPrint('POST (multipart) error: $e');
       return ApiResponse(
         success: false,
         message: _networkErrorMessage(e),
