@@ -29,6 +29,7 @@
     CONDITION_OP_LABEL
   } from '$lib/v2/enums.js';
   import { missingOptions, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import { nextInRotation } from './rotation.js';
   import { Plus, GripVertical, TriangleAlert, UserX } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -136,16 +137,6 @@
     const verb = ROUTING_STRATEGY_LABEL[r.strategy];
     if (r.strategy === 'by_team') return `${verb} ${r.target_team?.name ?? '—'}`;
     return `${verb} ${r.target_assignees.map((a) => a.name).join(', ') || '—'}`;
-  }
-
-  /**
-   * Who the next matching ticket goes to. Only knowable for round_robin, where
-   * RoutingRuleState holds the cursor, for the other strategies it depends on
-   * the ticket or on live workload, and guessing would be worse than silence.
-   */
-  function nextUp(r) {
-    if (r.strategy !== 'round_robin' || !r.state || !r.target_assignees.length) return null;
-    return r.target_assignees[(r.state.last_assigned_index + 1) % r.target_assignees.length];
   }
 </script>
 
@@ -406,7 +397,7 @@
 
     <div style="display:flex;flex-direction:column;gap:9px">
       {#each rules as r, i (r.id)}
-        {@const next = nextUp(r)}
+        {@const next = nextInRotation(r)}
         {@const inactiveTargets = r.target_assignees.filter((a) => !a.is_active)}
         <div class="v2-card v2-rule" style="opacity:{r.is_active && !r.unreachable ? 1 : 0.62}">
           <!-- The handle and the number say the same thing: this position is

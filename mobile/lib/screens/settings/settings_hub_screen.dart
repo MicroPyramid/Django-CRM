@@ -54,6 +54,12 @@ class SettingsHubScreen extends StatelessWidget {
             ),
             const _SectionHeader('Tickets'),
             MenuRow(
+              icon: LucideIcons.gitBranch,
+              label: 'Routing',
+              description: 'Who a new ticket is assigned to',
+              onTap: () => context.push(AppRoutes.settingsRouting),
+            ),
+            MenuRow(
               icon: LucideIcons.messageSquareQuote,
               label: 'Saved replies',
               description: 'Canned answers to insert into a ticket reply',

@@ -4,6 +4,7 @@ import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/custom_field_definition.dart';
 import '../data/models/macro.dart';
+import '../data/models/routing_rule.dart';
 import '../data/models/tag.dart';
 import '../services/api_service.dart';
 
@@ -493,3 +494,98 @@ class TagsNotifier extends AsyncNotifier<TagsState> {
 final tagSettingsProvider = AsyncNotifierProvider<TagsNotifier, TagsState>(
   TagsNotifier.new,
 );
+
+// ---------------------------------------------------------------------------
+// Routing rules, which decide who a new ticket lands on
+// ---------------------------------------------------------------------------
+
+/// The rules in the order the engine runs them, plus the org totals.
+class RoutingRulesState {
+  const RoutingRulesState({
+    this.rules = const [],
+    this.count = 0,
+    this.active = 0,
+    this.unroutedLast30d = 0,
+  });
+
+  /// Server-ordered by `priority_order`, then creation time. Not re-sorted
+  /// here: the order IS the behaviour, and a client that re-sorted would show
+  /// a different program from the one that runs.
+  final List<RoutingRule> rules;
+
+  final int count;
+  final int active;
+
+  /// Tickets in the last thirty days that no rule matched at all. The number
+  /// the page exists to make visible: a rule that matched but could not assign
+  /// is not counted here, it shows on its own row instead.
+  final int unroutedLast30d;
+
+  /// Active rules that match tickets and can assign none of them.
+  int get dead => rules.where((r) => r.assignsNobody).length;
+}
+
+class RoutingRulesNotifier extends AsyncNotifier<RoutingRulesState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<RoutingRulesState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<RoutingRulesState> _fetch() async {
+    final response = await _api.get(ApiConfig.routingRules);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load routing rules');
+    }
+    final body = response.data!;
+    final rules = listFromEnvelope(body, const [
+      'rules',
+    ]).map(RoutingRule.fromJson).toList(growable: false);
+    final totals = body['totals'];
+    return RoutingRulesState(
+      rules: rules,
+      count: _int(totals, 'count', rules.length),
+      active: _int(totals, 'active', rules.where((r) => r.isActive).length),
+      unroutedLast30d: _int(totals, 'unrouted_last_30d', 0),
+    );
+  }
+
+  Future<String?> createRule(Map<String, dynamic> payload) async {
+    final response = await _api.post(ApiConfig.routingRules, payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  Future<String?> updateRule(String id, Map<String, dynamic> payload) async {
+    final response = await _api.put(ApiConfig.routingRule(id), payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Turn a rule off. Distinct from [deleteRule] and the only reversible one of
+  /// the two, which is why the delete dialog points at it.
+  Future<String?> deactivateRule(String id) =>
+      updateRule(id, {'is_active': false});
+
+  Future<String?> activateRule(String id) =>
+      updateRule(id, routingActivatePayload());
+
+  /// Permanent. `RoutingRuleDetailView.delete` calls `obj.delete()`.
+  Future<String?> deleteRule(String id) async {
+    final response = await _api.delete(ApiConfig.routingRule(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final routingRulesProvider =
+    AsyncNotifierProvider<RoutingRulesNotifier, RoutingRulesState>(
+      RoutingRulesNotifier.new,
+    );

@@ -381,6 +381,16 @@ class ApiConfig {
   /// Get teams and users (for assignment dropdowns)
   static String get teamsAndUsers => '$apiBaseUrl/users/get-teams-and-users/';
 
+  /// Auto-routing rules, ordered by `priority_order` server-side. That order is
+  /// the behaviour: the engine takes the first match and, when the rule says
+  /// so, stops.
+  static String get routingRules => '$apiBaseUrl/cases/routing-rules/';
+
+  /// One routing rule. PUT is partial, so a body may carry one key. DELETE is a
+  /// HARD delete here, unlike custom fields and tags.
+  static String routingRule(String id) =>
+      '$apiBaseUrl/cases/routing-rules/$id/';
+
   /// Tags management. Active tags only by default; the settings screen passes
   /// `?include_archived=true` because it is the one that turns a tag back on
   /// and cannot offer that for a row it never fetched.

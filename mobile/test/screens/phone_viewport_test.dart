@@ -7,10 +7,13 @@ import 'package:bottle_crm/data/models/timesheet.dart';
 import 'package:bottle_crm/data/models/estimate.dart';
 import 'package:bottle_crm/data/models/product.dart';
 import 'package:bottle_crm/data/models/recurring_invoice.dart';
+import 'package:bottle_crm/data/models/lookup_models.dart';
+import 'package:bottle_crm/data/models/routing_rule.dart';
 import 'package:bottle_crm/data/models/tag.dart';
 import 'package:bottle_crm/providers/invoice_extras_provider.dart';
 import 'package:bottle_crm/providers/invoices_provider.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
+import 'package:bottle_crm/providers/lookup_provider.dart';
 import 'package:bottle_crm/providers/notifications_provider.dart';
 import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/providers/timesheet_provider.dart';
@@ -25,6 +28,8 @@ import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
+import 'package:bottle_crm/screens/settings/routing_rule_form_sheet.dart';
+import 'package:bottle_crm/screens/settings/routing_screen.dart';
 import 'package:bottle_crm/screens/settings/tags_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
 import 'package:flutter/material.dart';
@@ -111,6 +116,54 @@ void main() {
       isOrgAdminProvider.overrideWithValue(isAdmin),
     ],
     child: const MaterialApp(home: TagsScreen()),
+  );
+
+  /// The routing list, whose fixture carries every state a rule can be in:
+  /// a live rotation with a deactivated member, a rule that can assign nobody,
+  /// and one already turned off.
+  Widget routingApp({required bool isAdmin, bool empty = false}) =>
+      ProviderScope(
+        overrides: [
+          routingRulesProvider.overrideWith(
+            empty ? _FakeNoRoutingRules.new : _FakeRoutingRules.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: RoutingScreen()),
+      );
+
+  /// The rule form over a button, with the people and team pickers stubbed.
+  /// `people` deliberately omits the deactivated assignee, because the real
+  /// lookup does: it is the case where opening the form could silently drop
+  /// part of the rule.
+  Widget routingFormApp({RoutingRule? existing}) => ProviderScope(
+    overrides: [
+      usersProvider.overrideWithValue(const [
+        UserLookup(
+          id: 'a1',
+          email: 'ada@example.com',
+          name: 'Ada',
+          role: 'USER',
+          isActive: true,
+        ),
+      ]),
+      teamsProvider.overrideWithValue(const [
+        TeamLookup(id: 't1', name: 'Billing crew'),
+      ]),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () =>
+                  showRoutingRuleFormSheet(context, existing: existing),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 
   /// A button that opens the picker, so the sheet is rendered the way it is
@@ -968,6 +1021,166 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('routing rules at 390px', () {
+    testWidgets('render without overflowing', (tester) async {
+      await pump(tester, routingApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fit with the system font scaled up', (tester) async {
+      await pump(tester, routingApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keep the order the engine runs them in', (tester) async {
+      // The order is the program: the engine takes the first match. A list
+      // that reordered would show a different program from the one that runs.
+      await pump(tester, routingApp(isAdmin: true));
+
+      final first = tester.getTopLeft(find.text('Billing questions')).dy;
+      final second = tester.getTopLeft(find.text('Everything else')).dy;
+      expect(first, lessThan(second));
+    });
+
+    testWidgets('name the agent the engine would actually pick', (
+      tester,
+    ) async {
+      // The fixture is built so the two ways of getting this wrong give
+      // different, checkable answers: the cursor is the NEXT index, not the
+      // last, and it indexes the active pool in id order. Adding one and
+      // indexing the serializer's list names Cai, who is deactivated and can
+      // never be picked.
+      await pump(tester, routingApp(isAdmin: true));
+
+      expect(find.text('Next in the rotation: Brin'), findsOneWidget);
+      expect(find.text('Next in the rotation: Cai'), findsNothing);
+    });
+
+    testWidgets('flag a rule that matches everything', (tester) async {
+      await pump(tester, routingApp(isAdmin: true));
+      expect(find.text('Matches every new ticket'), findsOneWidget);
+    });
+
+    testWidgets('say what happens to tickets a dead rule matches', (
+      tester,
+    ) async {
+      await pump(tester, routingApp(isAdmin: true));
+      expect(
+        find.textContaining('fall through to the rules below'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('name the deactivated member the rotation skips', (
+      tester,
+    ) async {
+      await pump(tester, routingApp(isAdmin: true));
+      expect(find.text('Cai is deactivated and is skipped.'), findsOneWidget);
+    });
+
+    testWidgets('a member sees the rules but no write controls', (
+      tester,
+    ) async {
+      await pump(tester, routingApp(isAdmin: false));
+
+      expect(find.text('Billing questions'), findsOneWidget);
+      expect(find.byTooltip('New rule'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Edit'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Delete'), findsNothing);
+    });
+
+    testWidgets('the delete confirm says it is permanent and offers the '
+        'reversible option', (tester) async {
+      // This resource hard-deletes, unlike custom fields, tags and org macros,
+      // so the dialog cannot borrow their wording.
+      await pump(tester, routingApp(isAdmin: true));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Delete').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete Billing questions?'), findsOneWidget);
+      expect(find.textContaining('gone for good'), findsOneWidget);
+      expect(find.textContaining('turn it off instead'), findsOneWidget);
+    });
+
+    testWidgets('a turned-off rule offers Turn on, not Turn off', (
+      tester,
+    ) async {
+      await pump(tester, routingApp(isAdmin: true));
+      await tester.scrollUntilVisible(find.text('Old escalation'), 200);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(OutlinedButton, 'Turn on'), findsOneWidget);
+    });
+
+    testWidgets('an org with no rules is told what that means', (tester) async {
+      await pump(tester, routingApp(isAdmin: true, empty: true));
+      expect(find.text('No routing rules'), findsOneWidget);
+      expect(
+        find.textContaining('arrive unassigned'),
+        findsOneWidget,
+        reason: 'an empty list is a working state with a consequence',
+      );
+    });
+  });
+
+  group('the routing rule form at 390px', () {
+    Future<void> open(WidgetTester tester, {RoutingRule? existing}) async {
+      await pump(tester, routingFormApp(existing: existing));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders without overflowing', (tester) async {
+      await open(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, routingFormApp(), textScale: 1.5);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('warns that a rule with no conditions catches everything', (
+      tester,
+    ) async {
+      await open(tester);
+      expect(find.textContaining('matches every new ticket'), findsOneWidget);
+    });
+
+    testWidgets('says what stopping after this rule costs', (tester) async {
+      // On by default, and it is the setting that turns an empty pool from
+      // "falls through" into "swallows the ticket".
+      await open(tester);
+      expect(
+        find.textContaining('No rule below this one gets a turn'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('keeps a deactivated assignee the picker cannot offer', (
+      tester,
+    ) async {
+      // The lookup returns active profiles only, so a rule pointing at a
+      // deactivated one would lose them just by being opened. That is a delete
+      // performed as a side effect of viewing.
+      await open(
+        tester,
+        existing: RoutingRule(
+          id: 'r1',
+          name: 'Billing questions',
+          strategy: RoutingRule.strategyRoundRobin,
+          targetAssignees: const [
+            RoutingTarget(id: 'a1', name: 'Ada'),
+            RoutingTarget(id: 'c1', name: 'Cai', isActive: false),
+          ],
+        ),
+      );
+
+      expect(find.text('Cai (deactivated)'), findsOneWidget);
+    });
+  });
 }
 
 /// A tag set with every state the screen has to draw: a duplicate pair, a name
@@ -1021,6 +1234,80 @@ class _FakeTags extends TagsNotifier {
 class _FakeNoTags extends TagsNotifier {
   @override
   Future<TagsState> build() async => const TagsState();
+}
+
+/// Three rules covering every state a row has to draw. The rotation is built
+/// so the two ways of reading the cursor wrong give different answers: the
+/// active pool in id order is [Ada, Brin], cursor 1 is Brin, while adding one
+/// and indexing the serializer's list gives Cai, who is deactivated.
+class _FakeRoutingRules extends RoutingRulesNotifier {
+  @override
+  Future<RoutingRulesState> build() async => RoutingRulesState(
+    rules: [
+      RoutingRule.fromJson(const {
+        'id': 'r1',
+        'name': 'Billing questions',
+        'priority_order': 10,
+        'is_active': true,
+        'strategy': 'round_robin',
+        'stop_processing': true,
+        'conditions': [
+          {
+            'field': 'priority',
+            'op': 'in',
+            'value': ['High', 'Urgent'],
+          },
+        ],
+        'target_assignees': [
+          {
+            'id': 'a1',
+            'is_active': true,
+            'user_details': {'name': 'Ada'},
+          },
+          {
+            'id': 'b1',
+            'is_active': true,
+            'user_details': {'name': 'Brin'},
+          },
+          {
+            'id': 'c1',
+            'is_active': false,
+            'user_details': {'name': 'Cai'},
+          },
+        ],
+        'matched_last_30d': 12,
+        'state': {'last_assigned_index': 1},
+      }),
+      RoutingRule.fromJson(const {
+        'id': 'r2',
+        'name': 'Everything else',
+        'priority_order': 200,
+        'is_active': true,
+        'strategy': 'direct',
+        'stop_processing': false,
+        'conditions': [],
+        'target_assignees': [],
+        'matched_last_30d': 0,
+      }),
+      RoutingRule.fromJson(const {
+        'id': 'r3',
+        'name': 'Old escalation',
+        'priority_order': 300,
+        'is_active': false,
+        'strategy': 'by_team',
+        'target_team': {'id': 't1', 'name': 'Billing crew'},
+        'matched_last_30d': 4,
+      }),
+    ],
+    count: 3,
+    active: 2,
+    unroutedLast30d: 9,
+  );
+}
+
+class _FakeNoRoutingRules extends RoutingRulesNotifier {
+  @override
+  Future<RoutingRulesState> build() async => const RoutingRulesState();
 }
 
 /// One estimate still to convert, one already billed.
