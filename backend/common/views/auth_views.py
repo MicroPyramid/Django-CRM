@@ -475,6 +475,90 @@ class OrgAwareTokenRefreshView(APIView):
             )
 
 
+class LogoutView(APIView):
+    """
+    Sign out by blacklisting the presented refresh token.
+
+    Until this existed, signing out only cleared the client's own storage. The
+    refresh token stayed valid for its full fourteen days, so a copy lifted
+    from a shared machine, a device backup, or a proxy log kept minting access
+    tokens long after the user believed the session was over. Rotation and
+    blacklisting were already switched on; the endpoint to use them was the
+    piece that was missing.
+
+    UNAUTHENTICATED BY DESIGN, and this is the part worth reading twice. The
+    access token is often already expired when someone presses Sign Out: a
+    phone that sat in a pocket, a tab left open overnight. Requiring it would
+    fail exactly when signing out matters most, and would leave the refresh
+    token alive. The refresh token is itself the credential here, presenting
+    one proves possession, and the only thing this view will do with it is
+    destroy it. A caller who does not hold a valid token cannot revoke anyone
+    else's, because a token that is unparseable, expired, or already
+    blacklisted never reaches `blacklist()`.
+
+    WHAT IT DELIBERATELY DOES NOT DO. Access tokens are stateless and stay
+    valid until they expire, up to an hour. Killing those needs a denylist
+    consulted on every request, which is a different trade in a different
+    change. This narrows the exposure from fourteen days to at most one hour.
+
+    It also revokes one token, not every token the user holds, so signing out
+    on a phone leaves a desktop signed in. "Sign out everywhere" is a separate
+    feature and should stay one.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(
+        description=(
+            "Sign out. Blacklists the supplied refresh token so it can no "
+            "longer mint access tokens."
+        ),
+        request=inline_serializer(
+            name="LogoutRequest",
+            fields={"refresh": serializers.CharField(help_text="Refresh token")},
+        ),
+        responses={
+            200: inline_serializer(
+                name="LogoutResponse",
+                fields={"detail": serializers.CharField()},
+            )
+        },
+    )
+    def post(self, request):
+        from rest_framework_simplejwt.exceptions import TokenError
+        from rest_framework_simplejwt.tokens import RefreshToken as BaseRefreshToken
+
+        from common.audit_log import audit_log
+
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            token = BaseRefreshToken(refresh_token)
+        except TokenError:
+            # Expired, malformed, or already blacklisted. The end state the
+            # caller asked for is already true, so answering 200 keeps a client
+            # from getting stuck on a sign-out that in fact succeeded. Nothing
+            # is leaked either way: both cases mean "this token is unusable".
+            return Response({"detail": "Signed out."}, status=status.HTTP_200_OK)
+
+        token.blacklist()
+
+        # Best effort, and only for the log. A user row that has since been
+        # deleted must not turn a successful sign-out into a 500.
+        user = User.objects.filter(id=token.get("user_id")).first()
+        if user is not None:
+            org = Org.objects.filter(id=token.get("org_id")).first()
+            audit_log.logout(user, org, request)
+
+        return Response({"detail": "Signed out."}, status=status.HTTP_200_OK)
+
+
 class OrgSwitchView(APIView):
     """
     Switch to a different organization and get new JWT tokens.

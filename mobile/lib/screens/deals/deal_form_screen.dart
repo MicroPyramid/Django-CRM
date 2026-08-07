@@ -97,10 +97,12 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
     if (widget.initialDeal != null) {
       _populateFromDeal(widget.initialDeal!);
+      _baseline = _snapshot();
     } else if (widget.isEditMode) {
       _fetchDeal();
     } else {
       _applyCreateModeDefaults();
+      _baseline = _snapshot();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadCustomFieldDefsForCreate();
       });
@@ -171,6 +173,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       if (deal != null) {
         _existingDeal = deal;
         _populateFromDeal(deal);
+        _baseline = _snapshot();
       } else {
         _fetchError = 'Failed to load deal';
       }
@@ -202,86 +205,21 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     _customFieldValues = Map<String, dynamic>.from(deal.customFieldValues);
   }
 
-  bool get _hasUnsavedChanges {
-    if (_existingDeal != null) {
-      return _nameController.text != _existingDeal!.title ||
-          _amountController.text !=
-              (_existingDeal!.value > 0
-                  ? _existingDeal!.value.toStringAsFixed(2)
-                  : '') ||
-          _probabilityController.text !=
-              _existingDeal!.probability.toString() ||
-          _notesController.text != (_existingDeal!.notes ?? '') ||
-          _stage != _existingDeal!.stage ||
-          _opportunityType != _existingDeal!.opportunityType ||
-          _leadSource != _existingDeal!.leadSource ||
-          _currency != _existingDeal!.currency ||
-          _closeDate != _existingDeal!.closeDate ||
-          _selectedAccountId != _existingDeal!.accountId ||
-          !_listEquals(_selectedContactIds, _existingDeal!.contactIds) ||
-          !_listEquals(_selectedAssignedToIds, _existingDeal!.assignedToIds) ||
-          !_listEquals(_selectedTeamIds, _existingDeal!.teamIds) ||
-          !_listEquals(_selectedTagIds, _existingDeal!.tagIds) ||
-          !_mapEquals(_customFieldValues, _existingDeal!.customFieldValues);
-    }
-    // Account pre-fill from route doesn't count as a user edit. The user
-    // didn't pick it, so leaving immediately shouldn't trigger the discard
-    // prompt.
-    final accountChanged =
-        _selectedAccountId != null && _selectedAccountId != widget.accountId;
-    return _nameController.text.isNotEmpty ||
-        _amountController.text.isNotEmpty ||
-        _notesController.text.isNotEmpty ||
-        accountChanged ||
-        _selectedContactIds.isNotEmpty ||
-        _selectedAssignedToIds.isNotEmpty ||
-        _selectedTeamIds.isNotEmpty ||
-        _selectedTagIds.isNotEmpty ||
-        _customFieldValues.isNotEmpty;
-  }
+  /// The form as it looked when it finished loading, against the payload it
+  /// would submit now.
+  ///
+  /// The hand-listed comparison this replaces ignored stage, currency, close date,
+  /// probability, type and source on a new deal, so choosing any of them and
+  /// pressing back lost them with no prompt. Comparing the payload means a field cannot be
+  /// forgotten: if it is submitted, it counts.
+  String? _baseline;
 
-  bool _mapEquals(Map<String, dynamic> a, Map<String, dynamic> b) {
-    if (a.length != b.length) return false;
-    for (final key in a.keys) {
-      if (!b.containsKey(key)) return false;
-      if (!_deepEquals(a[key], b[key])) return false;
-    }
-    return true;
-  }
+  /// `toJson` is the submitted payload and excludes the fields `_buildDeal`
+  /// derives from lookups, so a provider warming up cannot read as an edit. Key order is stable because the same
+  /// builder produces every snapshot.
+  String _snapshot() => _buildDeal().toJson().toString();
 
-  // Deep structural equality used by _mapEquals for custom-field values. The
-  // shallow toString-based comparison missed edits to list/map-valued custom
-  // fields (e.g. multi-select), leaving the form thinking nothing had changed.
-  bool _deepEquals(dynamic a, dynamic b) {
-    if (identical(a, b)) return true;
-    if (a == null || b == null) return a == b;
-    if (a is List && b is List) {
-      if (a.length != b.length) return false;
-      for (int i = 0; i < a.length; i++) {
-        if (!_deepEquals(a[i], b[i])) return false;
-      }
-      return true;
-    }
-    if (a is Map && b is Map) {
-      if (a.length != b.length) return false;
-      for (final key in a.keys) {
-        if (!b.containsKey(key)) return false;
-        if (!_deepEquals(a[key], b[key])) return false;
-      }
-      return true;
-    }
-    return a == b;
-  }
-
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final sortedA = List.from(a)..sort();
-    final sortedB = List.from(b)..sort();
-    for (int i = 0; i < sortedA.length; i++) {
-      if (sortedA[i] != sortedB[i]) return false;
-    }
-    return true;
-  }
+  bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
   Deal _buildDeal() {
     final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
@@ -290,7 +228,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         _stage.defaultProbability;
 
     // Get account name from lookup
-    final accounts = ref.read(accountsProvider);
+    final accounts = ref.read(accountOptionsProvider);
     final account = accounts
         .where((a) => a.id == _selectedAccountId)
         .firstOrNull;
@@ -1501,7 +1439,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showAccountPicker() {
-    final accounts = ref.read(accountsProvider);
+    final accounts = ref.read(accountOptionsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1537,7 +1475,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   }
 
   void _showContactsPicker() {
-    final contacts = ref.read(contactsProvider);
+    final contacts = ref.read(contactOptionsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,

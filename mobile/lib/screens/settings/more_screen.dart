@@ -46,6 +46,18 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               description: 'Your to-dos across leads, deals and tickets',
               onTap: () => context.go(AppRoutes.tasks),
             ),
+            _MenuItem(
+              icon: LucideIcons.building2,
+              label: 'Accounts',
+              description: 'The companies you sell to',
+              onTap: () => context.push(AppRoutes.accounts),
+            ),
+            _MenuItem(
+              icon: LucideIcons.users,
+              label: 'Contacts',
+              description: 'The people at those companies',
+              onTap: () => context.push(AppRoutes.contacts),
+            ),
 
             // Account Section
             _buildSectionHeader('Account'),
@@ -110,7 +122,8 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             _MenuItem(
               icon: LucideIcons.fileText,
               label: 'Terms of Service',
-              onTap: () => _openOnTheWeb('/terms-of-service', 'Terms of Service'),
+              onTap: () =>
+                  _openOnTheWeb('/terms-of-service', 'Terms of Service'),
             ),
             _MenuItem(
               icon: LucideIcons.shield,

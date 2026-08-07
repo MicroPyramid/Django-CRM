@@ -42,6 +42,10 @@ class ApiConfig {
   /// Refresh JWT token
   static String get refreshToken => '$apiBaseUrl/auth/refresh-token/';
 
+  /// Sign out: blacklists the refresh token server-side. Needs no access
+  /// token, which is what lets it work when the session has already expired.
+  static String get logout => '$apiBaseUrl/auth/logout/';
+
   /// Get current user info
   static String get me => '$apiBaseUrl/auth/me/';
 

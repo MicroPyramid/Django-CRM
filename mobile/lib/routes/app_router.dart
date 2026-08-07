@@ -9,7 +9,13 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_email_screen.dart';
 import '../screens/auth/magic_link_code_screen.dart';
+import '../screens/accounts/account_detail_screen.dart';
+import '../screens/accounts/account_form_screen.dart';
+import '../screens/accounts/accounts_list_screen.dart';
 import '../screens/auth/org_create_screen.dart';
+import '../screens/contacts/contact_detail_screen.dart';
+import '../screens/contacts/contact_form_screen.dart';
+import '../screens/contacts/contacts_list_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -67,6 +73,14 @@ class AppRoutes {
   static const String taskDetail = '/tasks/:id';
   static const String taskCreate = '/tasks/create';
   static const String taskEdit = '/tasks/:id/edit';
+  static const String accounts = '/accounts';
+  static const String accountCreate = '/accounts/create';
+  static const String accountDetail = '/accounts/:id';
+  static const String accountEdit = '/accounts/:id/edit';
+  static const String contacts = '/contacts';
+  static const String contactCreate = '/contacts/create';
+  static const String contactDetail = '/contacts/:id';
+  static const String contactEdit = '/contacts/:id/edit';
   static const String more = '/more';
   static const String profile = '/more/profile';
 
@@ -192,6 +206,60 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return SolutionDetailScreen(solutionId: id);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.accounts,
+        name: 'accounts',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AccountsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.accountCreate,
+        name: 'accountCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AccountFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.accountEdit,
+        name: 'accountEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AccountFormScreen(accountId: state.pathParameters['id']!),
+      ),
+      // Registered after `create` and `:id/edit` so those literal segments are
+      // not swallowed by the `:id` parameter.
+      GoRoute(
+        path: AppRoutes.accountDetail,
+        name: 'accountDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AccountDetailScreen(accountId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.contacts,
+        name: 'contacts',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ContactsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.contactCreate,
+        name: 'contactCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ContactFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.contactEdit,
+        name: 'contactEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            ContactFormScreen(contactId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.contactDetail,
+        name: 'contactDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            ContactDetailScreen(contactId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: AppRoutes.approvalsInbox,

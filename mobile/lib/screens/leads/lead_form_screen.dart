@@ -488,10 +488,14 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       // data, so trusting it would let the user silently blank those fields.
       if (widget.initialLead != null) {
         _populateFromLead(widget.initialLead!);
+        // A baseline from the stub, so a fetch that fails still leaves the
+        // form comparable against something the user can see.
+        _baseline = _snapshot();
       }
       _fetchLead();
     } else {
       _applyCreateModeDefaults();
+      _baseline = _snapshot();
       // Custom fields aren't part of the create form's payload by default;
       // load them lazily after first frame so the schema picker can render.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -589,6 +593,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         _customFieldDefs = detail.customFieldDefinitions;
         _populateFromLead(detail.lead);
         _seedCustomFieldControllers();
+        _baseline = _snapshot();
       } else {
         _fetchError = 'Failed to load lead';
       }
@@ -656,71 +661,21 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     return v.toString();
   }
 
-  bool get _hasUnsavedChanges {
-    if (_existingLead != null) {
-      final lead = _existingLead!;
-      return (_salutation ?? '') != (lead.salutation ?? '') ||
-          _firstNameController.text != lead.firstName ||
-          _lastNameController.text != lead.lastName ||
-          _titleController.text != (lead.title ?? '') ||
-          _emailController.text != lead.email ||
-          _phoneController.text != (lead.phone ?? '') ||
-          _linkedinController.text != (lead.linkedinUrl ?? '') ||
-          _companyController.text != lead.companyName ||
-          _jobTitleController.text != (lead.jobTitle ?? '') ||
-          _websiteController.text != (lead.website ?? '') ||
-          _industryController.text != (lead.industry ?? '') ||
-          _status != lead.status ||
-          _source != (lead.source == LeadSource.none ? null : lead.source) ||
-          _rating != lead.rating ||
-          _opportunityAmountController.text !=
-              (lead.opportunityAmount != null
-                  ? _formatAmount(lead.opportunityAmount!)
-                  : '') ||
-          (_currency ?? '') != (lead.currency ?? '') ||
-          _probabilityController.text != (lead.probability?.toString() ?? '') ||
-          _closeDate != lead.closeDate ||
-          _addressLineController.text != (lead.addressLine ?? '') ||
-          _cityController.text != (lead.city ?? '') ||
-          _stateController.text != (lead.state ?? '') ||
-          _postcodeController.text != (lead.postcode ?? '') ||
-          _countryController.text != (lead.country ?? '') ||
-          _lastContacted != lead.lastContacted ||
-          _nextFollowUp != lead.nextFollowUp ||
-          _notesController.text != (lead.description ?? '') ||
-          !_setEquals(_assignedToIds, lead.assignedToIds) ||
-          !_setEquals(_tagIds, lead.tagIds) ||
-          !_mapEquals(_customFieldValues, lead.customFieldValues);
-    }
-    return _titleController.text.isNotEmpty ||
-        _firstNameController.text.isNotEmpty ||
-        _lastNameController.text.isNotEmpty ||
-        _companyController.text.isNotEmpty ||
-        _emailController.text.isNotEmpty ||
-        _phoneController.text.isNotEmpty ||
-        _notesController.text.isNotEmpty ||
-        _assignedToIds.isNotEmpty ||
-        _tagIds.isNotEmpty ||
-        _customFieldValues.isNotEmpty;
-  }
+  /// The form as it looked when it finished loading, against the payload it
+  /// would submit now.
+  ///
+  /// The hand-listed comparison this replaces checked ten of the create
+  /// form's fields, so typing only into one of the other thirteen left
+  /// without a prompt. Comparing the payload means a field cannot be
+  /// forgotten: if it is submitted, it counts.
+  String? _baseline;
 
-  bool _setEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final sa = a.toSet();
-    for (final v in b) {
-      if (!sa.contains(v)) return false;
-    }
-    return true;
-  }
+  /// `toString` rather than `jsonEncode`, which throws on the DateTime and
+  /// enum values these payloads carry. Key order is stable because the same
+  /// builder produces every snapshot.
+  String _snapshot() => _buildPayload().toString();
 
-  bool _mapEquals(Map<String, dynamic> a, Map<String, dynamic> b) {
-    if (a.length != b.length) return false;
-    for (final k in a.keys) {
-      if (!b.containsKey(k)) return false;
-      if (a[k]?.toString() != b[k]?.toString()) return false;
-    }
-    return true;
-  }
+  bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
   Map<String, dynamic> _buildPayload() {
     final payload = <String, dynamic>{

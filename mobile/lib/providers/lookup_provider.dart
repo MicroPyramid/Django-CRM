@@ -90,10 +90,9 @@ class UsersLookupNotifier extends AsyncNotifier<List<UserLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load users');
     }
-    return listFromEnvelope(response.data!, const ['profiles'])
-        .map(UserLookup.fromJson)
-        .where((u) => u.isActive)
-        .toList();
+    return listFromEnvelope(response.data!, const [
+      'profiles',
+    ]).map(UserLookup.fromJson).where((u) => u.isActive).toList();
   }
 }
 
@@ -161,11 +160,14 @@ final tagsLookupProvider =
 
 /// Convenience wrappers. Return the resolved list (or empty during
 /// load/error). Forms that don't care about loading state watch these.
-final accountsProvider = Provider<List<AccountLookup>>((ref) {
+/// Picker options, resolved. Named for what they are rather than for the
+/// resource, because `accountsProvider` now belongs to the accounts module and
+/// two providers a letter apart would be a trap.
+final accountOptionsProvider = Provider<List<AccountLookup>>((ref) {
   return ref.watch(accountsLookupProvider).value ?? const [];
 });
 
-final contactsProvider = Provider<List<ContactLookup>>((ref) {
+final contactOptionsProvider = Provider<List<ContactLookup>>((ref) {
   return ref.watch(contactsLookupProvider).value ?? const [];
 });
 
@@ -202,9 +204,9 @@ final customFieldDefinitionsProvider =
       if (!response.success || response.data == null) {
         throw Exception(response.message ?? 'Failed to load custom fields');
       }
-      final parsed = listFromEnvelope(response.data!, const ['definitions'])
-          .map(CustomFieldDefinition.fromJson)
-          .toList();
+      final parsed = listFromEnvelope(response.data!, const [
+        'definitions',
+      ]).map(CustomFieldDefinition.fromJson).toList();
       parsed.sort((a, b) {
         final byOrder = a.displayOrder.compareTo(b.displayOrder);
         return byOrder != 0 ? byOrder : a.label.compareTo(b.label);

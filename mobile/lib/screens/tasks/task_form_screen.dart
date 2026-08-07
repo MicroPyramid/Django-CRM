@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
-import '../../data/models/lookup_models.dart';
 import '../../data/models/models.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/leads_provider.dart';
@@ -66,7 +65,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   bool _isLoading = false;
   bool _isFetchingTask = false;
   String? _fetchError;
-  Task? _existingTask;
 
   @override
   void initState() {
@@ -77,6 +75,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       _fetchTask();
     } else {
       _dueDate = widget.initialDueDate;
+    }
+    if (!widget.isEditMode || widget.initialTask != null) {
+      _baseline = _snapshot();
     }
   }
 
@@ -101,8 +102,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       setState(() {
         _isFetchingTask = false;
         if (task != null) {
-          _existingTask = task;
           _populateFromTask(task);
+          _baseline = _snapshot();
         } else {
           _fetchError = 'Failed to load task';
         }
@@ -111,7 +112,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   void _populateFromTask(Task task) {
-    _existingTask = task;
     _titleController.text = task.title;
     _descriptionController.text = task.description ?? '';
     _status = task.status;
@@ -146,7 +146,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     if (id == null || kind == null) return null;
     switch (kind) {
       case _RelatedKind.account:
-        for (final a in ref.watch(accountsProvider)) {
+        for (final a in ref.watch(accountOptionsProvider)) {
           if (a.id == id) return a.name;
         }
         return null;
@@ -171,46 +171,21 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     }
   }
 
-  bool get _hasUnsavedChanges {
-    if (_existingTask != null) {
-      final t = _existingTask!;
-      return _titleController.text != t.title ||
-          _descriptionController.text != (t.description ?? '') ||
-          _status != t.status ||
-          _priority != t.priority ||
-          _dueDate != t.dueDate ||
-          !_listEq(_assigneeIds, t.assignedToIds) ||
-          _relatedId != _existingRelatedId(t) ||
-          !_mapEq(_customFields, t.customFields);
-    }
-    return _titleController.text.isNotEmpty ||
-        _descriptionController.text.isNotEmpty ||
-        _dueDate != null ||
-        _assigneeIds.isNotEmpty ||
-        _relatedId != null ||
-        _customFields.isNotEmpty;
-  }
+  /// The form as it looked when it finished loading, against the payload it
+  /// would submit now.
+  ///
+  /// The hand-listed comparison this replaces checked ten of the create
+  /// form's fields, so typing only into one of the other thirteen left
+  /// without a prompt. Comparing the payload means a field cannot be
+  /// forgotten: if it is submitted, it counts.
+  String? _baseline;
 
-  String? _existingRelatedId(Task t) =>
-      t.accountId ?? t.leadId ?? t.opportunityId ?? t.caseId;
+  /// `toString` rather than `jsonEncode`, which throws on the DateTime and
+  /// enum values these payloads carry. Key order is stable because the same
+  /// builder produces every snapshot.
+  String _snapshot() => _buildPayload().toString();
 
-  bool _listEq(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final sa = [...a]..sort();
-    final sb = [...b]..sort();
-    for (var i = 0; i < sa.length; i++) {
-      if (sa[i] != sb[i]) return false;
-    }
-    return true;
-  }
-
-  bool _mapEq(Map<String, dynamic> a, Map<String, dynamic> b) {
-    if (a.length != b.length) return false;
-    for (final k in a.keys) {
-      if (!b.containsKey(k) || a[k] != b[k]) return false;
-    }
-    return true;
-  }
+  bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
   Map<String, dynamic> _buildPayload() {
     final payload = <String, dynamic>{
@@ -844,7 +819,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   Future<void> _pickEntityForKind(_RelatedKind kind) async {
     switch (kind) {
       case _RelatedKind.account:
-        final accounts = ref.read(accountsProvider);
+        final accounts = ref.read(accountOptionsProvider);
         final pick = await _pickFromList<AccountLookup>(
           title: 'Select Account',
           items: accounts,

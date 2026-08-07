@@ -464,6 +464,25 @@ class AuthService {
   Future<void> signOut() async {
     debugPrint('AuthService: Signing out...');
 
+    // Tell the server first, while the token is still in hand. Clearing local
+    // state was the whole of sign-out until now, which left the refresh token
+    // valid for its full fourteen days: a phone handed on, sold, or restored
+    // from a backup still carried a working session.
+    //
+    // Deliberately not awaited into a failure path. If the request cannot be
+    // made, the user still expects to be signed out of this device, and
+    // stranding them on a logged-in screen because the network dropped is the
+    // worse outcome. `ApiService` already swallows transport errors into an
+    // unsuccessful response.
+    if (_refreshToken != null) {
+      final response = await _apiService.post(ApiConfig.logout, {
+        'refresh': _refreshToken,
+      }, requiresAuth: false);
+      if (!response.success) {
+        debugPrint('AuthService: Server sign-out failed, clearing anyway');
+      }
+    }
+
     _accessToken = null;
     _refreshToken = null;
     _currentUser = null;

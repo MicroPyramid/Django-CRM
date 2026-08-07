@@ -5,9 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../data/models/attachment.dart';
-import '../../data/models/comment.dart';
-import '../../data/models/custom_field_definition.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
@@ -478,7 +475,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
     if (t.accountId != null) {
       String label = 'Selected account';
-      for (final a in ref.watch(accountsProvider)) {
+      for (final a in ref.watch(accountOptionsProvider)) {
         if (a.id == t.accountId) {
           label = a.name;
           break;

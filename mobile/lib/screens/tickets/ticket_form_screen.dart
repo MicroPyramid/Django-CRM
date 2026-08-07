@@ -231,7 +231,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
         ),
       );
     }
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(accountOptionsProvider);
     final users = ref.watch(usersProvider);
     final tags = ref.watch(tagsProvider);
 

@@ -362,7 +362,7 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
   }
 
   Widget _buildFilterBar() {
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(accountOptionsProvider);
     final users = ref.watch(usersProvider);
     final tags = ref.watch(tagsProvider);
 
