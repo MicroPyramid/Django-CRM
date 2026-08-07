@@ -21,38 +21,40 @@ That selects pycodestyle errors (`E`), pyflakes (`F`), and import sorting (`I`),
 ignores line-length (`E501`), so this project has decided not to enforce a line-length limit, not
 that it forgot to.
 
-**But read this before running anything:** as of this writing, none of `black`, `isort`, or `ruff`
-is declared as a dependency anywhere in `backend/pyproject.toml`, not in `[project.dependencies]`,
-not in the `dev` or `docs` groups under `[dependency-groups]`, and not
-pulled in transitively (`backend/uv.lock` has no entry for any of the three). `uv sync` on a fresh
-clone will not install any of them, and `uv run black .` fails on a fresh clone with `error: Failed
-to spawn: 'black' / Caused by: No such file or directory`. The same is true of `isort` and `ruff`.
-CI does not run any of them either:
-`.github/workflows/tests.yml`'s `backend-tests` job runs a migration check and `pytest`, and nothing
-else. There is no lint or format step for Python anywhere in this repository's CI. In practice,
-Python style in this project is currently enforced by human review, not tooling.
+`ruff` is the only Python style tool here, and it is a real dev dependency, so `uv sync` installs
+it and these commands work on a fresh clone:
 
-Two things follow from that:
+```bash
+cd backend
+uv run ruff check .          # lint: E, F, I as ruff.toml selects them
+uv run ruff check --fix .    # and fix what is safely fixable
+uv run ruff format .         # format the tree
+uv run ruff format --check . # or just report, which is what CI runs
+```
 
-1. **Don't `uv add black isort ruff` to make the documented commands work.** Adding a dependency
-   changes `pyproject.toml` and re-locks `uv.lock` for every future `uv sync`, including CI's, so
-   it's a decision to make deliberately, in its own PR, not something to smuggle in while fixing an
-   unrelated bug. See [Development setup](development-setup.md#backend) for what `uv add` actually
-   does.
-2. **The codebase does not currently conform to what these tools would enforce**, so even running
-   them read-only produces a large, unrelated diff: `uvx ruff check .`; `uvx` runs a tool from
-   PyPI in an ephemeral environment without touching this project's lockfile, reports on the order
-   of 150+ findings across the tree today, and `uvx black --check --diff .` reports on the order of
-   170 files that would be reformatted. Neither number is a defect to fix in passing; it reflects
-   that these tools have not been run consistently against this codebase's history. If you want to
-   check your own changes without installing anything project-wide, scope `uvx` to the files you
-   touched (`uvx ruff check path/to/your_file.py`, `uvx black --check path/to/your_file.py`) rather
-   than the whole tree, running `black .` or `ruff check --fix .` across everything will reformat
-   files you didn't mean to touch and turn a focused PR into an unreviewable one.
+**There is no `black` and no `isort`.** `ruff format` is a reimplementation of black and produces
+the same output, and ruff's `I` rules do isort's job, so all three would be doing one job with two
+of them redundant, and black and `ruff format` can disagree at the edges. Older docs and habits
+name `uv run black . && uv run isort .`; neither is installed and neither should be added.
 
-Match the surrounding file's conventions by eye, 4-space indentation, double-quoted strings,
-Django/DRF import grouping (standard library, then third-party, then local `common`/app imports),
-the way `ruff.toml`'s settings describe, even without the tool enforcing it for you.
+**CI runs both, and both must pass.** `.github/workflows/tests.yml` runs `uv run ruff check .` and
+`uv run ruff format --check .` as hard steps, not warnings. `uv run` rather than `uvx` on purpose:
+ruff is pinned in `uv.lock`, so your machine and CI check against one version and a ruff release
+cannot turn the build red overnight.
+
+**The tree conforms.** It was formatted in full on 2026-08-07 (205 files) with imports sorted in
+112 more, so `ruff format .` on a clean checkout changes nothing and your diff stays your diff.
+That is the point of formatting everything at once: before it, running the formatter across the
+tree turned any focused PR into an unreviewable one, which is why the old advice here was to scope
+`uvx` to the files you touched. That advice no longer applies. Run the commands above on the whole
+tree and commit only what you meant to change.
+
+One thing worth knowing before you run `--fix` over code you did not write: a `# noqa` binds to the
+line ruff reports the diagnostic on, so a suppression that has drifted onto the next line, or that
+names the wrong rule code, silently suppresses nothing, and the autofix will then delete what it
+was protecting. `common/models.py`'s `SecurityAuditLog` import is the live example: it exists only
+so Django discovers the model for migrations, and its `# noqa: F401,E402` has to sit on the same
+line as the imported name.
 
 ## Frontend
 
@@ -64,9 +66,8 @@ pnpm run format   # prettier --write .
 pnpm run check    # svelte-kit sync && svelte-check --tsconfig ./jsconfig.json
 ```
 
-Unlike the backend, these tools are installed (`prettier`, `eslint`, `svelte-check`, and their
-plugins are all in `frontend/package.json`'s `devDependencies`) and CI runs all three, but not
-symmetrically: `.github/workflows/tests.yml`'s `frontend-checks` job runs the Prettier check with a
+These tools are installed (`prettier`, `eslint`, `svelte-check`, and their plugins are all in
+`frontend/package.json`'s `devDependencies`) and CI runs all three, but not symmetrically: `.github/workflows/tests.yml`'s `frontend-checks` job runs the Prettier check with a
 `|| echo "::warning::..."` fallback, so a formatting difference shows up as a CI **warning**, not a
 failed build. The ESLint step (`pnpm eslint .`) has no such fallback. A lint error fails the job.
 `pnpm check` (svelte-check) and `pnpm build` run unconditionally after that and also fail the job on
@@ -84,8 +85,8 @@ flutter analyze --no-fatal-infos
 
 `mobile/analysis_options.yaml` includes `package:flutter_lints/flutter.yaml` with no
 project-specific rules added or removed. Neither of this repository's two GitHub Actions workflows
-(`tests.yml`, `codeql-analysis.yml`) mentions Flutter, Dart, or `mobile/` at all, so, like the
-backend's formatters, nothing in CI enforces Dart formatting or lint cleanliness; running these
-commands yourself before opening a PR is the only check that happens. See
+(`tests.yml`, `codeql-analysis.yml`) mentions Flutter, Dart, or `mobile/` at all, so nothing in CI
+enforces Dart formatting or lint cleanliness. Unlike the backend, which now gates on ruff, running
+these commands yourself before opening a PR is the only check that happens. See
 [Build and configure](../mobile/build-and-configure.md#tests-and-analysis) for the full command set
 including `flutter test`.

@@ -24,7 +24,9 @@ HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")
 # Stops at whitespace and at the characters that delimit markdown table cells,
 # inline code, and quoted strings.
 ENDPOINT_RE = re.compile(
-    r"\b(" + "|".join(HTTP_METHODS) + r")\s+(/api/[^\s`'\"|)\]<>]*(?:<[^>]*>[^\s`'\"|)\]<>]*)*)"
+    r"\b("
+    + "|".join(HTTP_METHODS)
+    + r")\s+(/api/[^\s`'\"|)\]<>]*(?:<[^>]*>[^\s`'\"|)\]<>]*)*)"
 )
 
 # Path parameters appear as {id} in the schema and as {id} or <str:pk> in docs.
@@ -41,9 +43,7 @@ def _normalise_path(path: str) -> str:
 
 
 def _extract_endpoints(text: str) -> list[tuple[str, str]]:
-    return [
-        (method, _normalise_path(raw)) for method, raw in ENDPOINT_RE.findall(text)
-    ]
+    return [(method, _normalise_path(raw)) for method, raw in ENDPOINT_RE.findall(text)]
 
 
 def _schema_operations() -> dict[str, set[str]]:
@@ -142,7 +142,10 @@ def test_find_missing_reports_a_method_the_path_does_not_accept():
 
 def test_find_missing_is_empty_when_everything_resolves():
     operations = {"/api/leads/": {"GET", "POST"}}
-    documented = [("leads.md", "GET", "/api/leads/"), ("leads.md", "POST", "/api/leads/")]
+    documented = [
+        ("leads.md", "GET", "/api/leads/"),
+        ("leads.md", "POST", "/api/leads/"),
+    ]
     assert _find_missing(documented, operations, set()) == []
 
 

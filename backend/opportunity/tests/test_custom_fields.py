@@ -25,9 +25,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_tier_def(org, **overrides):

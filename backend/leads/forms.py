@@ -91,7 +91,5 @@ class LeadListForm(forms.Form):
             self.validated_rows = data.get("validated_rows", [])
             self.invalid_rows = data.get("invalid_rows", [])
             if len(self.validated_rows) == 0:
-                raise forms.ValidationError(
-                    "All the leads in the file are invalid."
-                )
+                raise forms.ValidationError("All the leads in the file are invalid.")
         return document

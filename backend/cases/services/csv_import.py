@@ -32,7 +32,6 @@ from common.models import Profile, Tags, Teams
 from common.utils import CASE_TYPE, PRIORITY_CHOICE, STATUS_CHOICE
 from contacts.models import Contact
 
-
 REQUIRED_HEADERS = ("name", "status", "priority")
 OPTIONAL_HEADERS = (
     "description",
@@ -217,7 +216,10 @@ def parse_and_validate(file_bytes: bytes, org) -> ImportResult:
     for idx, raw_row in enumerate(data_rows, start=1):
         if not any((cell or "").strip() for cell in raw_row):
             continue
-        record = {h: (raw_row[i].strip() if i < len(raw_row) else "") for i, h in enumerate(headers)}
+        record = {
+            h: (raw_row[i].strip() if i < len(raw_row) else "")
+            for i, h in enumerate(headers)
+        }
         parsed.append((idx, record))
 
     ref_maps = _build_ref_maps(parsed, org)
@@ -339,9 +341,7 @@ def _validate_and_build(
     if not name:
         errors.append(RowError(idx, "name", "Name is required"))
     elif len(name) > NAME_MAX_LEN:
-        errors.append(
-            RowError(idx, "name", f"Name exceeds {NAME_MAX_LEN} characters")
-        )
+        errors.append(RowError(idx, "name", f"Name exceeds {NAME_MAX_LEN} characters"))
     else:
         lowered = name.lower()
         prior = seen_names.get(lowered)
@@ -357,9 +357,7 @@ def _validate_and_build(
     status = _coerce_choice(record.get("status", ""), STATUS_CHOICE)
     if not status:
         valid_values = ", ".join(v for v, _ in STATUS_CHOICE)
-        errors.append(
-            RowError(idx, "status", f"Status must be one of: {valid_values}")
-        )
+        errors.append(RowError(idx, "status", f"Status must be one of: {valid_values}"))
 
     priority = _coerce_choice(record.get("priority", ""), PRIORITY_CHOICE)
     if not priority:
@@ -380,9 +378,7 @@ def _validate_and_build(
 
     closed_on = record.get("closed_on", "")
     if closed_on and not DATE_RE.match(closed_on):
-        errors.append(
-            RowError(idx, "closed_on", "Date must be in YYYY-MM-DD format")
-        )
+        errors.append(RowError(idx, "closed_on", "Date must be in YYYY-MM-DD format"))
 
     account_id: str | None = None
     account_name = record.get("account_name", "")
@@ -431,9 +427,7 @@ def _validate_and_build(
     for team_name in _split_multi(record.get("team_names", "")):
         resolved = refs.teams.get(team_name.lower())
         if resolved is None:
-            errors.append(
-                RowError(idx, "team_names", f"No team named '{team_name}'")
-            )
+            errors.append(RowError(idx, "team_names", f"No team named '{team_name}'"))
         else:
             team_ids.append(resolved)
 
@@ -501,7 +495,9 @@ def commit_rows(file_bytes: bytes, org, profile) -> dict[str, Any]:
         if vr.team_ids:
             case.teams.set(vr.team_ids)
         if vr.tag_names:
-            tag_objs = [_get_or_create_tag(name, org, tag_cache) for name in vr.tag_names]
+            tag_objs = [
+                _get_or_create_tag(name, org, tag_cache) for name in vr.tag_names
+            ]
             case.tags.set(tag_objs)
         created_ids.append(str(case.id))
 

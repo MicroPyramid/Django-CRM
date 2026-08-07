@@ -17,7 +17,6 @@ from rest_framework.views import APIView
 from cases.models import Case, Solution
 from common.permissions import HasOrgContext
 
-
 _SNIPPET_MAX = 200
 _DEFAULT_LIMIT = 5
 _MAX_LIMIT = 20
@@ -86,10 +85,9 @@ class SolutionSuggestionsView(APIView):
         published = Solution.objects.filter(org=org, is_published=True)
 
         if q:
-            results = (
-                published.filter(Q(title__icontains=q) | Q(description__icontains=q))
-                .order_by("-updated_at")[:limit]
-            )
+            results = published.filter(
+                Q(title__icontains=q) | Q(description__icontains=q)
+            ).order_by("-updated_at")[:limit]
         else:
             # Seed from the case so the panel is useful on first focus. If
             # there are no seed terms, or the seed-term filter produces zero

@@ -539,7 +539,6 @@ class TestRLSIntegration(MultiTenancyBaseTestCase):
 
         from django.db import connection
 
-
         with connection.cursor() as cursor:
             for table in ["lead", "accounts", "contacts"]:
                 cursor.execute(

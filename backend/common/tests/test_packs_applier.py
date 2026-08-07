@@ -13,12 +13,18 @@ def test_apply_creates_every_element_from_the_manifest(org_a, admin_profile):
 
     # Manifest↔database equivalence: counts per type must match the manifest.
     assert LeadPipeline.objects.filter(org=org_a).count() == 1
-    assert LeadStage.objects.filter(org=org_a).count() == len(pack["lead_pipeline"]["stages"])
-    assert CustomFieldDefinition.objects.filter(org=org_a).count() == len(pack["custom_fields"])
+    assert LeadStage.objects.filter(org=org_a).count() == len(
+        pack["lead_pipeline"]["stages"]
+    )
+    assert CustomFieldDefinition.objects.filter(org=org_a).count() == len(
+        pack["custom_fields"]
+    )
     # +1 for the reserved "Sample data" tag the applier creates alongside any
     # pack that carries a sample_data block (common/packs/applier.py).
     sample_tag_count = 1 if (pack.get("sample_data") or {}).get("leads") else 0
-    assert Tags.objects.filter(org=org_a).count() == len(pack["tags"]) + sample_tag_count
+    assert (
+        Tags.objects.filter(org=org_a).count() == len(pack["tags"]) + sample_tag_count
+    )
     assert report["failed"] == []
 
 

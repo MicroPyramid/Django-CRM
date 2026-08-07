@@ -12,9 +12,13 @@ from common.serializer import (
 )
 from contacts.serializer import ContactSerializer
 from invoices.serializer import ProductSerializer
-from opportunity.models import Opportunity, OpportunityLineItem, SalesGoal, StageAgingConfig
+from opportunity.models import (
+    Opportunity,
+    OpportunityLineItem,
+    SalesGoal,
+    StageAgingConfig,
+)
 from opportunity.workflow import AMOUNT_REQUIRED_STAGES, CLOSED_STAGES
-
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
 # - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
@@ -345,7 +349,11 @@ class OpportunityKanbanCardSerializer(serializers.ModelSerializer):
     # stats bar and per-column totals; aliasing `amount` lets the board light
     # those up without a frontend transform layer.
     opportunity_amount = serializers.DecimalField(
-        source="amount", max_digits=12, decimal_places=2, allow_null=True, read_only=True
+        source="amount",
+        max_digits=12,
+        decimal_places=2,
+        allow_null=True,
+        read_only=True,
     )
 
     class Meta:
@@ -387,7 +395,9 @@ class OpportunityMoveSerializer(serializers.Serializer):
     compute the fractional kanban_order; explicit `kanban_order` wins if sent.
     """
 
-    stage = serializers.ChoiceField(choices=Opportunity._meta.get_field("stage").choices)
+    stage = serializers.ChoiceField(
+        choices=Opportunity._meta.get_field("stage").choices
+    )
     kanban_order = serializers.DecimalField(
         max_digits=15, decimal_places=6, required=False
     )
@@ -539,13 +549,17 @@ class SalesGoalCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        period_start = data.get("period_start", getattr(self.instance, "period_start", None))
+        period_start = data.get(
+            "period_start", getattr(self.instance, "period_start", None)
+        )
         period_end = data.get("period_end", getattr(self.instance, "period_end", None))
         if period_start and period_end and period_end <= period_start:
             raise serializers.ValidationError(
                 {"period_end": "Period end must be after period start."}
             )
-        target_value = data.get("target_value", getattr(self.instance, "target_value", None))
+        target_value = data.get(
+            "target_value", getattr(self.instance, "target_value", None)
+        )
         if target_value is not None and target_value <= 0:
             raise serializers.ValidationError(
                 {"target_value": "Target value must be greater than 0."}

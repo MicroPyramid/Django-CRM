@@ -22,9 +22,7 @@ class TestCaseWatcherModel:
         assert admin_profile in case_a.watchers.all()
 
     def test_unique_per_case_profile(self, case_a, admin_profile):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         with pytest.raises(IntegrityError):
             CaseWatcher.objects.create(
                 case=case_a, profile=admin_profile, org=case_a.org
@@ -40,25 +38,19 @@ class TestCaseWatcherModel:
         assert "mention" in str(w)
 
     def test_case_cascade_deletes_watcher(self, case_a, admin_profile):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         case_pk = case_a.pk
         case_a.delete()
         assert not CaseWatcher.objects.filter(case_id=case_pk).exists()
 
     def test_profile_cascade_deletes_watcher(self, case_a, admin_profile):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         profile_pk = admin_profile.pk
         admin_profile.delete()
         assert not CaseWatcher.objects.filter(profile_id=profile_pk).exists()
 
     def test_watchers_m2m_query(self, case_a, admin_profile, user_profile):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         # user_profile is NOT watching
         watching_cases = Case.objects.filter(watchers=admin_profile)
         not_watching = Case.objects.filter(watchers=user_profile)
@@ -74,25 +66,18 @@ class TestWatchAPI:
         body = r.json()
         assert body["watching"] is True
         assert body["subscribed_via"] == "manual"
-        assert CaseWatcher.objects.filter(
-            case=case_a, profile=admin_profile
-        ).exists()
+        assert CaseWatcher.objects.filter(case=case_a, profile=admin_profile).exists()
 
     def test_post_idempotent(self, admin_client, case_a, admin_profile):
         admin_client.post(f"/api/cases/{case_a.id}/watch/")
         r = admin_client.post(f"/api/cases/{case_a.id}/watch/")
         assert r.status_code == 200  # already watching → 200, not 201
         assert (
-            CaseWatcher.objects.filter(
-                case=case_a, profile=admin_profile
-            ).count()
-            == 1
+            CaseWatcher.objects.filter(case=case_a, profile=admin_profile).count() == 1
         )
 
     def test_delete_removes_watch(self, admin_client, case_a, admin_profile):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         r = admin_client.delete(f"/api/cases/{case_a.id}/watch/")
         assert r.status_code == 204
         assert not CaseWatcher.objects.filter(
@@ -112,9 +97,7 @@ class TestWatchAPI:
         r = unauthenticated_client.post(f"/api/cases/{case_a.id}/watch/")
         assert r.status_code in (401, 403)
 
-    def test_non_admin_who_cannot_see_case_blocked(
-        self, user_client, case_a
-    ):
+    def test_non_admin_who_cannot_see_case_blocked(self, user_client, case_a):
         # user_profile is not admin, not creator, not assigned, not watching.
         # Should not be able to subscribe to a case they cannot see.
         r = user_client.post(f"/api/cases/{case_a.id}/watch/")
@@ -126,9 +109,7 @@ class TestWatchersListAPI:
     def test_lists_all_watchers(
         self, admin_client, case_a, admin_profile, user_profile
     ):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         CaseWatcher.objects.create(
             case=case_a,
             profile=user_profile,
@@ -159,9 +140,7 @@ class TestWatchingListAPI:
         admin_profile,
         user_profile,
     ):
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=case_a.org)
         # Another user watches a different case, must not leak.
         CaseWatcher.objects.create(
             case=case_b_same_org,
@@ -189,16 +168,12 @@ class TestVisibilityAllowance:
     ):
         # user_profile is not admin, not creator, not assigned. Normally
         # invisible. Subscribing them as a watcher should grant read access.
-        CaseWatcher.objects.create(
-            case=case_a, profile=user_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=user_profile, org=case_a.org)
         r = user_client.delete(f"/api/cases/{case_a.id}/watch/")
         # Watcher allowance lets them at least UNWATCH.
         assert r.status_code == 204
 
-    def test_watcher_sees_case_in_main_list(
-        self, user_client, case_a, user_profile
-    ):
+    def test_watcher_sees_case_in_main_list(self, user_client, case_a, user_profile):
         # Non-admin who isn't creator or assigned is invisible by default.
         # Watching the case must surface it in the main list.
         before = user_client.get("/api/cases/")
@@ -206,9 +181,7 @@ class TestVisibilityAllowance:
         before_ids = [c["id"] for c in before.json().get("cases", [])]
         assert str(case_a.id) not in before_ids
 
-        CaseWatcher.objects.create(
-            case=case_a, profile=user_profile, org=case_a.org
-        )
+        CaseWatcher.objects.create(case=case_a, profile=user_profile, org=case_a.org)
         after = user_client.get("/api/cases/")
         assert after.status_code == 200
         after_ids = [c["id"] for c in after.json().get("cases", [])]

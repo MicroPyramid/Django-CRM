@@ -83,7 +83,10 @@ class TestSendCsatSurvey:
     def test_skips_when_no_contact_email(self, org_a):
         # Case with no contacts at all.
         case = Case.objects.create(
-            org=org_a, name="No contact", status="Closed", priority="Normal",
+            org=org_a,
+            name="No contact",
+            status="Closed",
+            priority="Normal",
             closed_on=timezone.localdate(),
         )
         result = send_csat_survey(str(case.id), str(case.org_id))
@@ -260,11 +263,16 @@ class TestCsatAggregate:
             )
         # One un-responded survey, must not count.
         case = Case.objects.create(
-            org=org_a, name="Cx", status="Closed", priority="Normal",
+            org=org_a,
+            name="Cx",
+            status="Closed",
+            priority="Normal",
             closed_on=timezone.localdate(),
         )
         CsatSurvey.objects.create(
-            org=org_a, case=case, contact=contact_with_email,
+            org=org_a,
+            case=case,
+            contact=contact_with_email,
             token_hash=hash_csat_token("tx"),
             sent_at=timezone.now(),
             expires_at=timezone.now() + timedelta(days=30),
@@ -285,13 +293,15 @@ class TestCsatAggregate:
 
 
 class TestCsatFeedsAnalytics:
-    def test_csat_avg_in_agents_payload(
-        self, org_a, admin_profile, contact_with_email
-    ):
-        from datetime import datetime, timezone as dt_timezone
+    def test_csat_avg_in_agents_payload(self, org_a, admin_profile, contact_with_email):
+        from datetime import datetime
+        from datetime import timezone as dt_timezone
 
         case = Case.objects.create(
-            org=org_a, name="A", status="Closed", priority="Normal",
+            org=org_a,
+            name="A",
+            status="Closed",
+            priority="Normal",
             closed_on=timezone.localdate(),
         )
         case.assigned_to.add(admin_profile)

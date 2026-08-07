@@ -1,7 +1,8 @@
 """Mention parser + comment-driven notification dispatch tests."""
 
-import pytest
 from datetime import timedelta
+
+import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
@@ -96,9 +97,10 @@ class TestDispatchForComment:
         _comment(case_a, "hey @bob please review", by=admin_profile)
 
         # Sanity: notifications were dispatched via the signal handler.
-        assert Notification.objects.filter(
-            recipient=bob, verb="case.mentioned"
-        ).count() == 1
+        assert (
+            Notification.objects.filter(recipient=bob, verb="case.mentioned").count()
+            == 1
+        )
         # Auto-watch row.
         watch = CaseWatcher.objects.get(case=case_a, profile=bob)
         assert watch.subscribed_via == "mention"
@@ -110,9 +112,7 @@ class TestDispatchForComment:
             recipient=admin_profile, verb="case.mentioned"
         ).exists()
 
-    def test_unknown_username_silently_ignored(
-        self, case_a, admin_profile
-    ):
+    def test_unknown_username_silently_ignored(self, case_a, admin_profile):
         _comment(case_a, "@nosuchuser ping?", by=admin_profile)
         # No new mention notifications, no extra watcher rows
         assert Notification.objects.filter(verb="case.mentioned").count() == 0
@@ -121,9 +121,7 @@ class TestDispatchForComment:
         self, case_a, admin_profile, org_a
     ):
         bob = _make_profile(org_a, email="bob@org.com")
-        _comment(
-            case_a, "Sent to bob@org.com about this", by=admin_profile
-        )
+        _comment(case_a, "Sent to bob@org.com about this", by=admin_profile)
         # @ preceded by alphanumeric, must NOT be parsed as a mention.
         assert not Notification.objects.filter(
             recipient=bob, verb="case.mentioned"
@@ -136,9 +134,10 @@ class TestDispatchForComment:
         _comment(case_a, "@bob first", by=admin_profile)
         # Second mention within the rate-limit window should be skipped.
         _comment(case_a, "@bob again immediately", by=admin_profile)
-        assert Notification.objects.filter(
-            recipient=bob, verb="case.mentioned"
-        ).count() == 1
+        assert (
+            Notification.objects.filter(recipient=bob, verb="case.mentioned").count()
+            == 1
+        )
 
     def test_mention_rate_limit_does_not_block_after_window(
         self, case_a, admin_profile, org_a
@@ -150,9 +149,10 @@ class TestDispatchForComment:
             created_at=timezone.now() - timedelta(minutes=2)
         )
         _comment(case_a, "@bob again", by=admin_profile)
-        assert Notification.objects.filter(
-            recipient=bob, verb="case.mentioned"
-        ).count() == 2
+        assert (
+            Notification.objects.filter(recipient=bob, verb="case.mentioned").count()
+            == 2
+        )
 
     def test_watchers_get_case_commented_notification(
         self, case_a, admin_profile, org_a
@@ -162,17 +162,18 @@ class TestDispatchForComment:
 
         _comment(case_a, "important update", by=admin_profile)
 
-        assert Notification.objects.filter(
-            recipient=watcher, verb="case.commented"
-        ).count() == 1
+        assert (
+            Notification.objects.filter(
+                recipient=watcher, verb="case.commented"
+            ).count()
+            == 1
+        )
 
     def test_actor_does_not_get_their_own_comment_notification(
         self, case_a, admin_profile, org_a
     ):
         # Actor is also a watcher, should still NOT receive case.commented.
-        CaseWatcher.objects.create(
-            case=case_a, profile=admin_profile, org=org_a
-        )
+        CaseWatcher.objects.create(case=case_a, profile=admin_profile, org=org_a)
         _comment(case_a, "self note", by=admin_profile)
         assert not Notification.objects.filter(
             recipient=admin_profile, verb="case.commented"
@@ -185,9 +186,10 @@ class TestDispatchForComment:
         # Pre-existing watch shouldn't double up either.
         CaseWatcher.objects.create(case=case_a, profile=bob, org=org_a)
         _comment(case_a, "@bob look at this", by=admin_profile)
-        assert Notification.objects.filter(
-            recipient=bob, verb="case.mentioned"
-        ).count() == 1
+        assert (
+            Notification.objects.filter(recipient=bob, verb="case.mentioned").count()
+            == 1
+        )
         assert not Notification.objects.filter(
             recipient=bob, verb="case.commented"
         ).exists()

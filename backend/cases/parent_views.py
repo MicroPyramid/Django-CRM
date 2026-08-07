@@ -12,7 +12,6 @@ build a cycle. Cascade close honours ``Org.auto_close_children_on_parent_close``
 as the default, and accepts ``cascade`` in the body to override.
 """
 
-
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -25,7 +24,6 @@ from cases.models import Case
 from cases.parent_guards import check_parent_link
 from common.models import Activity
 from common.permissions import HasOrgContext
-
 
 TREE_MAX_DEPTH = Case.PARENT_MAX_DEPTH
 
@@ -99,15 +97,9 @@ class CaseLinkParentView(APIView):
         parent_id = request.data.get("parent_id")
         # Lock the case row so a parallel link from another agent cannot
         # race on the cycle check. We look up the parent under the same lock.
-        case = (
-            Case.objects.select_for_update()
-            .filter(id=pk, org=org)
-            .first()
-        )
+        case = Case.objects.select_for_update().filter(id=pk, org=org).first()
         if case is None:
-            return Response(
-                {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
         former_parent_id = case.parent_id
 
@@ -132,11 +124,7 @@ class CaseLinkParentView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        parent = (
-            Case.objects.select_for_update()
-            .filter(id=parent_id, org=org)
-            .first()
-        )
+        parent = Case.objects.select_for_update().filter(id=parent_id, org=org).first()
         if parent is None:
             return Response(
                 {"parent_id": "Parent case not found in this organization."},
@@ -198,15 +186,9 @@ class CaseCloseWithChildrenView(APIView):
     @transaction.atomic
     def post(self, request, pk):
         org = request.profile.org
-        case = (
-            Case.objects.select_for_update()
-            .filter(id=pk, org=org)
-            .first()
-        )
+        case = Case.objects.select_for_update().filter(id=pk, org=org).first()
         if case is None:
-            return Response(
-                {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         if case.status == "Duplicate":
             return Response(
                 {"detail": "Cannot close a merged case."},

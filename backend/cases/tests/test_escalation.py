@@ -12,8 +12,10 @@ import pytest
 from django.utils import timezone
 
 from cases.models import Case, EscalationPolicy
-from cases.tasks import ESCALATION_COUNT_CAP, scan_for_breached_cases as _scan_for_breached_cases
-from conftest import restore_rls_context
+from cases.tasks import ESCALATION_COUNT_CAP
+from cases.tasks import scan_for_breached_cases as _scan_for_breached_cases
+from common.models import Activity, Profile, Teams, User
+from conftest import restore_rls_context, rls_org
 
 
 # The task clears `app.current_org` when it finishes, correctly: it walks every
@@ -27,8 +29,6 @@ def scan_for_breached_cases(*args, **kwargs):
     finally:
         restore_rls_context()
 
-from common.models import Activity, Profile, Teams, User
-from conftest import rls_org
 
 POLICIES_URL = "/api/cases/escalation-policies/"
 

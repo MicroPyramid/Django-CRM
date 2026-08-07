@@ -11,9 +11,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.mark.django_db
@@ -29,13 +27,13 @@ class TestTaskPipeline:
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Development Pipeline"
-        assert TaskPipeline.objects.filter(name="Development Pipeline", org=org_a).exists()
+        assert TaskPipeline.objects.filter(
+            name="Development Pipeline", org=org_a
+        ).exists()
 
     def test_list_pipelines(self, admin_client, admin_user, org_a):
         _set_rls(org_a)
-        TaskPipeline.objects.create(
-            name="Pipeline 1", org=org_a, created_by=admin_user
-        )
+        TaskPipeline.objects.create(name="Pipeline 1", org=org_a, created_by=admin_user)
         response = admin_client.get("/api/tasks/pipelines/")
         assert response.status_code == 200
         data = response.json()
@@ -94,9 +92,7 @@ class TestTaskPipeline:
         assert response.status_code == 200
         assert response.json()["name"] == "New Name"
 
-    def test_update_pipeline_non_admin_forbidden(
-        self, user_client, admin_user, org_a
-    ):
+    def test_update_pipeline_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to update a pipeline."""
         _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
@@ -136,9 +132,7 @@ class TestTaskPipeline:
         assert response.status_code == 400
         assert "Cannot delete pipeline" in response.json()["error"]
 
-    def test_delete_pipeline_non_admin_forbidden(
-        self, user_client, admin_user, org_a
-    ):
+    def test_delete_pipeline_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to delete a pipeline."""
         _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
@@ -172,9 +166,7 @@ class TestTaskStage:
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "To Do"
-        assert TaskStage.objects.filter(
-            pipeline=pipeline, name="To Do"
-        ).exists()
+        assert TaskStage.objects.filter(pipeline=pipeline, name="To Do").exists()
 
     def test_update_stage(self, admin_client, admin_user, org_a):
         _set_rls(org_a)
@@ -284,9 +276,7 @@ class TestTaskStage:
         response = user_client.delete(f"/api/tasks/stages/{stage.id}/")
         assert response.status_code == 403
 
-    def test_delete_stage_with_tasks_returns_400(
-        self, admin_client, admin_user, org_a
-    ):
+    def test_delete_stage_with_tasks_returns_400(self, admin_client, admin_user, org_a):
         """Deleting a stage with tasks should fail with 400."""
         _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(
@@ -328,9 +318,7 @@ class TestTaskStage:
         assert response.status_code == 400
         assert "Invalid stage IDs" in response.json()["error"]
 
-    def test_reorder_stages_non_admin_forbidden(
-        self, user_client, admin_user, org_a
-    ):
+    def test_reorder_stages_non_admin_forbidden(self, user_client, admin_user, org_a):
         """Non-admin should not be able to reorder stages."""
         _set_rls(org_a)
         pipeline = TaskPipeline.objects.create(

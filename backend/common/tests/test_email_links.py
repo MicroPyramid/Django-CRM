@@ -191,9 +191,7 @@ class TestTheSecondLeadMailerAgreesWithTheFirst:
 
         from leads.tasks import send_lead_assigned_emails
 
-        params = list(
-            inspect.signature(send_lead_assigned_emails.run).parameters
-        )
+        params = list(inspect.signature(send_lead_assigned_emails.run).parameters)
         assert params == ["lead_id", "new_assigned_to_list", "org_id"]
 
 

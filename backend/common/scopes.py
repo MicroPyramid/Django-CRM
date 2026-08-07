@@ -113,16 +113,12 @@ def normalize_scope(raw):
         raise ValueError("A scope cannot be empty.")
     parts = candidate.split(":")
     if len(parts) != 2:
-        raise ValueError(
-            f"Scope {raw!r} is not in <resource>:<action> form."
-        )
+        raise ValueError(f"Scope {raw!r} is not in <resource>:<action> form.")
     resource, action = parts
     if resource != WILDCARD and resource not in API_RESOURCES:
         raise ValueError(f"Unknown scope resource {resource!r}.")
     if action not in SCOPE_ACTIONS:
-        raise ValueError(
-            f"Unknown scope action {action!r}. Use 'read' or 'write'."
-        )
+        raise ValueError(f"Unknown scope action {action!r}. Use 'read' or 'write'.")
     return f"{resource}:{action}"
 
 

@@ -23,8 +23,8 @@ from cases.serializer import (
     CaseStageSerializer,
 )
 from common.permissions import HasOrgContext, is_org_admin
-from common.validators import date_param, uuid_param
 from common.utils import STATUS_CHOICE
+from common.validators import date_param, uuid_param
 
 
 class CaseKanbanView(APIView):

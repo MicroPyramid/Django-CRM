@@ -66,9 +66,7 @@ class TestMagicLinkRequest:
             )
         with patch("common.tasks.send_magic_link_email") as mock_task:
             mock_task.delay = lambda *a, **kw: None
-            unauthenticated_client.post(
-                self.url, {"email": email}, format="json"
-            )
+            unauthenticated_client.post(self.url, {"email": email}, format="json")
         # Should still be exactly 5 tokens (no new one created due to rate limit)
         assert MagicLinkToken.objects.filter(email=email).count() == 5
 
@@ -81,9 +79,7 @@ class TestMagicLinkRequest:
 
     def test_request_missing_email(self, unauthenticated_client):
         """Missing email should still return 200 (no enumeration)."""
-        response = unauthenticated_client.post(
-            self.url, {}, format="json"
-        )
+        response = unauthenticated_client.post(self.url, {}, format="json")
         assert response.status_code == status.HTTP_200_OK
 
 
@@ -100,7 +96,9 @@ class TestMagicLinkVerify:
             expires_at=timezone.now() + timedelta(minutes=10),
         )
 
-    def test_verify_valid_token_existing_user(self, unauthenticated_client, admin_user, admin_profile):
+    def test_verify_valid_token_existing_user(
+        self, unauthenticated_client, admin_user, admin_profile
+    ):
         """Valid token for existing user should return JWT tokens."""
         token_obj = self._create_valid_token(email=admin_user.email)
         response = unauthenticated_client.post(
@@ -126,9 +124,7 @@ class TestMagicLinkVerify:
     def test_verify_marks_token_used(self, unauthenticated_client):
         """Token should be marked as used after verification."""
         token_obj = self._create_valid_token()
-        unauthenticated_client.post(
-            self.url, {"token": token_obj.token}, format="json"
-        )
+        unauthenticated_client.post(self.url, {"token": token_obj.token}, format="json")
         token_obj.refresh_from_db()
         assert token_obj.is_used is True
         assert token_obj.used_at is not None
@@ -164,9 +160,7 @@ class TestMagicLinkVerify:
 
     def test_verify_missing_token(self, unauthenticated_client):
         """Missing token field should be rejected."""
-        response = unauthenticated_client.post(
-            self.url, {}, format="json"
-        )
+        response = unauthenticated_client.post(self.url, {}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_verify_returns_org_for_existing_user(

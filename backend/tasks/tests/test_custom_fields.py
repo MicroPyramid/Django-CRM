@@ -25,9 +25,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_complexity_def(org, **overrides):
@@ -189,9 +187,7 @@ class TestTaskUpdateWithCustomFields:
 @pg_only
 @pytest.mark.django_db
 class TestTaskListFilter:
-    def test_cf_filter_returns_matching(
-        self, admin_client, task_a, task_a2, org_a
-    ):
+    def test_cf_filter_returns_matching(self, admin_client, task_a, task_a2, org_a):
         _make_complexity_def(org_a)
         task_a.custom_fields = {"complexity": "epic"}
         task_a.save()
@@ -207,9 +203,7 @@ class TestTaskListFilter:
 
 @pytest.mark.django_db
 class TestTaskDetailResponse:
-    def test_detail_includes_definitions_and_values(
-        self, admin_client, task_a, org_a
-    ):
+    def test_detail_includes_definitions_and_values(self, admin_client, task_a, org_a):
         _make_complexity_def(org_a)
         task_a.custom_fields = {"complexity": "trivial"}
         task_a.save()
@@ -221,9 +215,7 @@ class TestTaskDetailResponse:
         keys = [d["key"] for d in body["custom_field_definitions"]]
         assert "complexity" in keys
 
-    def test_detail_excludes_inactive_definitions(
-        self, admin_client, task_a, org_a
-    ):
+    def test_detail_excludes_inactive_definitions(self, admin_client, task_a, org_a):
         _make_complexity_def(org_a)
         _make_complexity_def(
             org_a, key="legacy", field_type="text", options=None, is_active=False

@@ -21,7 +21,9 @@ django.setup()
 
 from drf_spectacular.generators import SchemaGenerator  # noqa: E402
 
-OUTPUT = Path(__file__).resolve().parent.parent.parent / "docs" / "api" / "endpoint-index.md"
+OUTPUT = (
+    Path(__file__).resolve().parent.parent.parent / "docs" / "api" / "endpoint-index.md"
+)
 METHODS = ("get", "post", "put", "patch", "delete")
 
 HEADER = """# Endpoint index
@@ -46,9 +48,7 @@ def main() -> None:
     schema = SchemaGenerator().get_schema(request=None, public=True)
     rows = []
     for path in sorted(schema["paths"]):
-        methods = sorted(
-            m.upper() for m in schema["paths"][path] if m in METHODS
-        )
+        methods = sorted(m.upper() for m in schema["paths"][path] if m in METHODS)
         if methods:
             rows.append(f"| `{path}` | {', '.join(methods)} |")
     OUTPUT.write_text(HEADER + "\n".join(rows) + "\n")

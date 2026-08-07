@@ -12,13 +12,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-please-change-in-production")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-dev-key-please-change-in-production"
+)
 
 IS_DEV_ENV = os.environ.get("ENV_TYPE", "dev") == "dev"
 
 if not SECRET_KEY or SECRET_KEY.startswith("django-insecure"):
     if not IS_DEV_ENV:
-        raise ValueError("SECRET_KEY must be set to a secure value in non-dev environments")
+        raise ValueError(
+            "SECRET_KEY must be set to a secure value in non-dev environments"
+        )
 
 # This key also signs every JWT (see SIMPLE_JWT["SIGNING_KEY"] below). RFC 7518
 # section 3.2 requires an HMAC key at least as long as the hash it produces, so
@@ -34,7 +38,7 @@ if len(SECRET_KEY.encode()) < JWT_MIN_SIGNING_KEY_BYTES:
     message = (
         f"SECRET_KEY is {len(SECRET_KEY.encode())} bytes. It signs every JWT, "
         f"and HS256 needs at least {JWT_MIN_SIGNING_KEY_BYTES}. Generate one with "
-        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"`."
+        '`python -c "import secrets; print(secrets.token_urlsafe(48))"`.'
     )
     if not IS_DEV_ENV:
         raise ValueError(message)
@@ -245,7 +249,9 @@ if "django_ses" in EMAIL_BACKEND:
 
 # celery Tasks
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+)
 
 
 LOGGING = {

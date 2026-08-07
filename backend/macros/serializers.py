@@ -43,7 +43,7 @@ class MacroSerializer(serializers.ModelSerializer):
 
     def get_owner_name(self, obj):
         # `User` only stores `email`, no first_name/last_name on this model
-        #, so we surface the email directly. Frontend can display whatever
+        # , so we surface the email directly. Frontend can display whatever
         # form it wants from there.
         if obj.owner is None or obj.owner.user is None:
             return None

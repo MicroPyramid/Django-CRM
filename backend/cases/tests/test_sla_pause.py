@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from business_hours.models import BusinessCalendar
 
-
 _UTC = ZoneInfo("UTC")
 
 

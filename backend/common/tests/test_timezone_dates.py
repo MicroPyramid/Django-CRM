@@ -188,9 +188,7 @@ class TestOverdueUsesTheOrgDay:
     early, west of UTC it is late a few hours before it is actually due, and
     only one of those two directions can catch each mistake."""
 
-    def test_east_of_utc_yesterdays_invoice_is_overdue(
-        self, org_a, admin_user, frozen
-    ):
+    def test_east_of_utc_yesterdays_invoice_is_overdue(self, org_a, admin_user, frozen):
         _set_rls(org_a)
         with _as_org("Asia/Kolkata"):
             # The org is on 7 August; UTC is still on the 6th.

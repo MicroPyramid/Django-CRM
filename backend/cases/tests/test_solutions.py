@@ -10,7 +10,6 @@ from rest_framework import status
 
 from cases.models import Solution
 
-
 SOLUTIONS_LIST_URL = "/api/cases/solutions/"
 
 
@@ -33,9 +32,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 @pytest.fixture
@@ -136,9 +133,7 @@ class TestSolutionDetailView:
 
     def test_get_solution_not_found(self, admin_client):
         """GET with non-existent pk should return 404."""
-        response = admin_client.get(
-            _detail_url("00000000-0000-0000-0000-000000000001")
-        )
+        response = admin_client.get(_detail_url("00000000-0000-0000-0000-000000000001"))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_solution_not_found(self, admin_client):

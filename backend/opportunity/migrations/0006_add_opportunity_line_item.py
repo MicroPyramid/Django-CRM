@@ -1,8 +1,9 @@
 # Generated migration for OpportunityLineItem model
 
-from django.db import migrations, models
-import django.db.models.deletion
 import uuid
+
+import django.db.models.deletion
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):

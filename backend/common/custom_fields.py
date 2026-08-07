@@ -47,7 +47,9 @@ def validate_definition_options(field_type: str, options: Any) -> None:
 
     if not isinstance(options, list) or not options:
         raise drf_serializers.ValidationError(
-            {"options": "Dropdown fields require a non-empty list of {value, label} pairs"}
+            {
+                "options": "Dropdown fields require a non-empty list of {value, label} pairs"
+            }
         )
 
     seen: set[str] = set()

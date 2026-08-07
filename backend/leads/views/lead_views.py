@@ -385,7 +385,9 @@ class LeadListView(APIView, LimitOffsetPagination):
             # Send email to assigned users (after assignees are set)
             # Skip if status is "converted" - that branch handles its own email
             if data.get("status") != "converted":
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -401,7 +403,9 @@ class LeadListView(APIView, LimitOffsetPagination):
                 )
 
                 # Send email to assigned users for converted leads
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -802,7 +806,9 @@ class LeadDetailView(APIView):
                     lead_obj.assigned_to.all().values_list("id", flat=True)
                 )
                 # Only email users who were newly assigned
-                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                recipients = list(
+                    set(current_assigned_users) - set(previous_assigned_to_users)
+                )
                 if recipients:
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -818,7 +824,9 @@ class LeadDetailView(APIView):
                 )
 
                 # Send email to all assigned users for converted leads
-                recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+                recipients = list(
+                    lead_obj.assigned_to.all().values_list("id", flat=True)
+                )
                 if recipients:
                     send_email_to_assigned_user.delay(
                         recipients,
@@ -968,7 +976,9 @@ class LeadDetailView(APIView):
             )
 
             # Send email to assigned users for converted leads
-            recipients = list(self.lead_obj.assigned_to.all().values_list("id", flat=True))
+            recipients = list(
+                self.lead_obj.assigned_to.all().values_list("id", flat=True)
+            )
             if recipients:
                 send_email_to_assigned_user.delay(
                     recipients,
@@ -1067,7 +1077,9 @@ class LeadDetailView(APIView):
                 current_assigned_users = list(
                     lead_obj.assigned_to.all().values_list("id", flat=True)
                 )
-                recipients = list(set(current_assigned_users) - set(previous_assigned_to_users))
+                recipients = list(
+                    set(current_assigned_users) - set(previous_assigned_to_users)
+                )
                 if recipients:
                     send_email_to_assigned_user.delay(
                         recipients,

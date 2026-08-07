@@ -69,7 +69,10 @@ def test_variables_read_by_settings_handles_a_wrapped_call():
 )
 def test_no_documented_variable_is_read_nowhere():
     documented = _documented_variables(REFERENCE_PATH.read_text())
-    known = _variables_read_by_settings(SETTINGS_PATH.read_text()) | _variables_in_env_files()
+    known = (
+        _variables_read_by_settings(SETTINGS_PATH.read_text())
+        | _variables_in_env_files()
+    )
     invented = sorted(documented - known)
     assert not invented, (
         "These variables are documented but read nowhere in the codebase:\n  "

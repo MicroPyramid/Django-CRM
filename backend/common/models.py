@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
+
 from common.base import BaseModel, BaseOrgModel
-from common.validators import validate_iana_timezone
 from common.utils import (
     COUNTRIES,
     CURRENCY_CODES,
@@ -28,6 +28,7 @@ from common.utils import (
     is_document_file_video,
     is_document_file_zip,
 )
+from common.validators import validate_iana_timezone
 
 from .manager import UserManager
 

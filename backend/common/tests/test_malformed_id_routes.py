@@ -85,7 +85,9 @@ def test_no_route_answers_500_for_a_malformed_id(admin_client):
             try:
                 code = getattr(admin_client, method)(url, {}, format="json").status_code
             except Exception as exc:  # noqa: BLE001
-                failures.append(f"{method.upper()} {url} raised {type(exc).__name__}: {exc}")
+                failures.append(
+                    f"{method.upper()} {url} raised {type(exc).__name__}: {exc}"
+                )
                 continue
             if code >= 500:
                 failures.append(f"{method.upper()} {url} answered {code}")

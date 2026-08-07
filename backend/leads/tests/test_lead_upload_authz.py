@@ -67,9 +67,7 @@ class TestUploadRequiresImportRights:
             f"Lead {n},x{n}@example.com\n" for n in range(200_000)
         )
         assert len(big.encode()) > 5 * 1024 * 1024
-        response = admin_client.post(
-            URL, {"leads_file": _csv(big)}, format="multipart"
-        )
+        response = admin_client.post(URL, {"leads_file": _csv(big)}, format="multipart")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -128,9 +126,7 @@ class TestImportTaskHandlesRealFiles:
         create_lead_from_file(rows, [], admin_profile.id, "localhost", org_a.id)
         assert Lead.objects.filter(title="Shared title", org=org_a).count() == 1
 
-    def test_a_title_already_in_this_org_is_still_skipped(
-        self, org_a, admin_profile
-    ):
+    def test_a_title_already_in_this_org_is_still_skipped(self, org_a, admin_profile):
         """The check itself is preserved, only its scope changed."""
         Lead.objects.create(title="Existing", org=org_a)
         rows = [{"title": "Existing", "email": "ada@example.com"}]

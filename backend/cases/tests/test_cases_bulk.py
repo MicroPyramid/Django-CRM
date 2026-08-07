@@ -1,6 +1,7 @@
 """Tests for the bulk update / bulk delete Case endpoints."""
 
 import pytest
+
 from conftest import rls_org
 
 

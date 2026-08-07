@@ -57,7 +57,9 @@ class APIKeyAuthentication(BaseAuthentication):
             ).first()
 
             if not profile:
-                logger.error("No active admin profile found for org %s", organization.id)
+                logger.error(
+                    "No active admin profile found for org %s", organization.id
+                )
                 raise AuthenticationFailed("Invalid API Key configuration")
 
             # Set org context on request for downstream use

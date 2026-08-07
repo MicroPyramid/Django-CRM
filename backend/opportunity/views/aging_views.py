@@ -16,10 +16,7 @@ class StageAgingConfigView(APIView):
     def get(self, request):
         """Return aging config for all open stages, with defaults for unconfigured stages."""
         org = request.profile.org
-        configs = {
-            c.stage: c
-            for c in StageAgingConfig.objects.filter(org=org)
-        }
+        configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
 
         result = []
         for stage_value, stage_label in STAGES:
@@ -29,12 +26,16 @@ class StageAgingConfigView(APIView):
                 serializer = StageAgingConfigSerializer(configs[stage_value])
                 result.append(serializer.data)
             else:
-                result.append({
-                    "id": None,
-                    "stage": stage_value,
-                    "expected_days": DEFAULT_STAGE_EXPECTED_DAYS.get(stage_value, 14),
-                    "warning_days": None,
-                })
+                result.append(
+                    {
+                        "id": None,
+                        "stage": stage_value,
+                        "expected_days": DEFAULT_STAGE_EXPECTED_DAYS.get(
+                            stage_value, 14
+                        ),
+                        "warning_days": None,
+                    }
+                )
         return Response(result)
 
     def put(self, request):

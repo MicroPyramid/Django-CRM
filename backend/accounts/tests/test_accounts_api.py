@@ -943,8 +943,9 @@ class TestAccountSerializerValidation:
 
     def test_email_serializer_validate_message_body_unbalanced_open(self):
         """EmailSerializer.validate_message_body with unbalanced open bracket."""
-        from accounts.serializer import EmailSerializer
         from rest_framework import serializers as drf_serializers
+
+        from accounts.serializer import EmailSerializer
 
         serializer = EmailSerializer()
         with pytest.raises(drf_serializers.ValidationError):
@@ -952,8 +953,9 @@ class TestAccountSerializerValidation:
 
     def test_email_serializer_validate_message_body_unbalanced_close(self):
         """EmailSerializer.validate_message_body with close bracket before open."""
-        from accounts.serializer import EmailSerializer
         from rest_framework import serializers as drf_serializers
+
+        from accounts.serializer import EmailSerializer
 
         serializer = EmailSerializer()
         with pytest.raises(drf_serializers.ValidationError):

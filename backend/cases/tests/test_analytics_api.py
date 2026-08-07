@@ -7,7 +7,8 @@ and CSV streaming.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime
+from datetime import timezone as dt_timezone
 
 import pytest
 
@@ -22,12 +23,22 @@ def _utc(year, month, day, hour=0):
 def cases_in_window(org_a):
     """Two cases with first_response_at and resolved_at on 2026-05-01."""
     c1 = Case.objects.create(
-        org=org_a, name="A", status="Closed", priority="Urgent",
-        sla_first_response_hours=1, sla_resolution_hours=2, closed_on="2026-05-01",
+        org=org_a,
+        name="A",
+        status="Closed",
+        priority="Urgent",
+        sla_first_response_hours=1,
+        sla_resolution_hours=2,
+        closed_on="2026-05-01",
     )
     c2 = Case.objects.create(
-        org=org_a, name="B", status="Closed", priority="Normal",
-        sla_first_response_hours=4, sla_resolution_hours=24, closed_on="2026-05-01",
+        org=org_a,
+        name="B",
+        status="Closed",
+        priority="Normal",
+        sla_first_response_hours=4,
+        sla_resolution_hours=24,
+        closed_on="2026-05-01",
     )
     Case.objects.filter(pk=c1.pk).update(
         created_at=_utc(2026, 5, 1, 8),
@@ -79,7 +90,10 @@ class TestAnalyticsFiltering:
     def test_frt_default_window_excludes_old(self, admin_client, org_a):
         # Backdate a case far past the default 30-day window.
         c = Case.objects.create(
-            org=org_a, name="Ancient", status="New", priority="Normal",
+            org=org_a,
+            name="Ancient",
+            status="New",
+            priority="Normal",
             sla_first_response_hours=4,
         )
         Case.objects.filter(pk=c.pk).update(
@@ -141,9 +155,7 @@ class TestEndpointSmokes:
 
 
 class TestRlsIsolation:
-    def test_org_b_does_not_see_org_a_metrics(
-        self, org_b_client, cases_in_window
-    ):
+    def test_org_b_does_not_see_org_a_metrics(self, org_b_client, cases_in_window):
         resp = org_b_client.get(
             "/api/cases/analytics/frt/?from=2026-05-01&to=2026-05-02"
         )
@@ -199,7 +211,5 @@ class TestCsvExport:
         assert lines[0].split(",")[0] == "ID"
 
     def test_csv_format_validation(self, admin_client):
-        resp = admin_client.get(
-            "/api/cases/analytics/export/?metric=frt&fmt=xlsx"
-        )
+        resp = admin_client.get("/api/cases/analytics/export/?metric=frt&fmt=xlsx")
         assert resp.status_code == 400

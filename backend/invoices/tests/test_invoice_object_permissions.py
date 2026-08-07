@@ -34,9 +34,9 @@ def account_a(org_a):
 def _make_invoice(title, account, org, creator):
     """Build a 100.00 invoice owned by ``creator`` (a User).
 
-    ``created_by`` must be set with a queryset update: BaseModel.save() resets it
-    from the thread-local current user, which is None in fixtures.
-from django.utils import timezone
+        ``created_by`` must be set with a queryset update: BaseModel.save() resets it
+        from the thread-local current user, which is None in fixtures.
+    from django.utils import timezone
     """
     invoice = Invoice.objects.create(
         invoice_title=title,

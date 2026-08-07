@@ -316,9 +316,7 @@ class CreateLeadFromSite(APIView):
             # FRONTEND_URL; it used to be handed a base derived from this
             # request's Host header, which named the API rather than the web
             # app and let a caller of this endpoint influence the link.
-            send_lead_assigned_emails.delay(
-                lead.id, [user.id], str(api_setting.org.id)
-            )
+            send_lead_assigned_emails.delay(lead.id, [user.id], str(api_setting.org.id))
             # Create Contact
             try:
                 contact = Contact.objects.create(

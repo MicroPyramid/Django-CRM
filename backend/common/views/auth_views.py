@@ -9,12 +9,12 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from common import serializer
 from common.models import Org, Profile, User
 from common.serializer import OrgAwareRefreshToken
@@ -257,9 +257,8 @@ class GoogleIdTokenView(APIView):
     )
     def post(self, request):
         from django.utils import timezone
-
-        from google.oauth2 import id_token
         from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token
 
         id_token_str = request.data.get("idToken")
         if not id_token_str:
@@ -396,7 +395,6 @@ class OrgAwareTokenRefreshView(APIView):
     )
     def post(self, request):
         from django.db import transaction
-
         from rest_framework_simplejwt.exceptions import TokenError
         from rest_framework_simplejwt.tokens import RefreshToken as BaseRefreshToken
 
@@ -706,10 +704,12 @@ class MagicLinkRequestView(APIView):
     @extend_schema(
         tags=["auth"],
         request=serializer.MagicLinkRequestSerializer,
-        responses={200: inline_serializer(
-            name="MagicLinkRequestResponse",
-            fields={"message": serializers.CharField()},
-        )},
+        responses={
+            200: inline_serializer(
+                name="MagicLinkRequestResponse",
+                fields={"message": serializers.CharField()},
+            )
+        },
     )
     def post(self, request):
         from common.models import MagicLinkToken

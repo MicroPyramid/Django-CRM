@@ -26,9 +26,7 @@ def _make_comment(case, profile, *, text="hi", is_internal=False):
 
 @pytest.mark.django_db
 class TestCommentSplitResponse:
-    def test_get_splits_public_and_internal(
-        self, admin_client, case_a, admin_profile
-    ):
+    def test_get_splits_public_and_internal(self, admin_client, case_a, admin_profile):
         _make_comment(case_a, admin_profile, text="public reply", is_internal=False)
         _make_comment(case_a, admin_profile, text="agent only", is_internal=True)
 
@@ -129,8 +127,7 @@ class TestVisibilityFlipAuditLogged:
                 entity_type="Case",
                 entity_id=case_a.pk,
                 action="COMMENT",
-            )
-            .order_by("created_at")
+            ).order_by("created_at")
         )
         assert len(flip_rows) == baseline_count + 1
         latest = flip_rows[-1]

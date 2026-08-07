@@ -102,9 +102,7 @@ class TestConvertedIsIrreversible:
             Opportunity.objects.filter(org=org_a).count() == opportunities_after_first
         )
 
-    def test_moving_out_of_converted_over_patch_is_rejected(
-        self, admin_client, org_a
-    ):
+    def test_moving_out_of_converted_over_patch_is_rejected(self, admin_client, org_a):
         """PATCH's ordinary path does run the serializer, so this direction was
         already covered. Asserted because the guard above sits in front of it."""
         lead = _lead(org_a, status="converted")

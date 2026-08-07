@@ -120,7 +120,5 @@ class TestSharedToAcceptsABareId:
         assert response.status_code == status.HTTP_200_OK
 
     def test_json_array_is_still_accepted(self, admin_client):
-        response = admin_client.get(
-            f'/api/documents/?shared_to=["{WELL_FORMED}"]'
-        )
+        response = admin_client.get(f'/api/documents/?shared_to=["{WELL_FORMED}"]')
         assert response.status_code == status.HTTP_200_OK

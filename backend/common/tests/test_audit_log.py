@@ -56,9 +56,7 @@ class TestAuditLoggerMethods:
 
     def test_cross_org_attempt(self, admin_user, org_a, org_b):
         request = self.factory.get("/api/accounts/")
-        self.logger.cross_org_attempt(
-            admin_user, org_a, org_b, "Account:123", request
-        )
+        self.logger.cross_org_attempt(admin_user, org_a, org_b, "Account:123", request)
         log = SecurityAuditLog.objects.filter(event_type="CROSS_ORG_ATTEMPT").first()
         assert log is not None
         assert log.success is False
@@ -82,7 +80,9 @@ class TestAuditLoggerMethods:
 
     def test_membership_revoked(self, admin_user, org_a, regular_user):
         request = self.factory.post("/api/profiles/revoke/")
-        self.logger.membership_revoked(admin_user, org_a, revoked_by=regular_user, request=request)
+        self.logger.membership_revoked(
+            admin_user, org_a, revoked_by=regular_user, request=request
+        )
         log = SecurityAuditLog.objects.filter(event_type="MEMBERSHIP_REVOKED").first()
         assert log is not None
         assert log.user == admin_user

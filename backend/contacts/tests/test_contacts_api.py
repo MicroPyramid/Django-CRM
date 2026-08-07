@@ -26,7 +26,6 @@ from rest_framework import status
 from common.models import Attachments, Comment, Tags, Teams
 from contacts.models import Contact
 
-
 CONTACTS_LIST_URL = "/api/contacts/"
 
 

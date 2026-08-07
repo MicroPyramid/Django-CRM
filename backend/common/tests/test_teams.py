@@ -139,9 +139,7 @@ class TestTeamsDetailView:
         response = user_client.delete(self._url(team.pk))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_update_team_with_users(
-        self, admin_client, org_a, admin_profile
-    ):
+    def test_update_team_with_users(self, admin_client, org_a, admin_profile):
         """Update team with assigned users."""
         team = Teams.objects.create(name="Assign Team", org=org_a)
         response = admin_client.put(

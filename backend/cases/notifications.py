@@ -163,9 +163,7 @@ def dispatch_for_comment(comment, case, actor: Profile | None = None) -> dict:
     if actor_id is not None:
         skip_ids.add(actor_id)
     watcher_profiles = (
-        Profile.objects.filter(
-            case_watching=case, is_active=True
-        )
+        Profile.objects.filter(case_watching=case, is_active=True)
         .exclude(id__in=skip_ids)
         .distinct()
     )

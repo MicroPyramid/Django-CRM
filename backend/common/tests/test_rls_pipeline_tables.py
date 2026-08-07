@@ -84,5 +84,7 @@ def test_pipeline_policies_use_the_org_context_variable():
             )
             row = cur.fetchone()
             assert row is not None, f"{table} has no org_isolation policy"
-            assert "app.current_org" in row[0], f"{table}: unexpected predicate {row[0]}"
+            assert "app.current_org" in row[0], (
+                f"{table}: unexpected predicate {row[0]}"
+            )
             assert "org_id" in row[0], f"{table}: predicate does not filter org_id"

@@ -97,7 +97,6 @@ def backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0030_portalaccesstoken"),
         (

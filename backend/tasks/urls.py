@@ -10,8 +10,8 @@ from tasks.views.board_views import (
 from tasks.views.kanban_views import (
     TaskKanbanView,
     TaskMoveView,
-    TaskPipelineListCreateView,
     TaskPipelineDetailView,
+    TaskPipelineListCreateView,
     TaskStageCreateView,
     TaskStageDetailView,
     TaskStageReorderView,

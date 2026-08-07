@@ -8,8 +8,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from accounts.models import Account
 from cases.models import Case
 from common.models import Tags, Teams
-from contacts.models import Contact
 from conftest import rls_org
+from contacts.models import Contact
 
 
 def _csv(headers: list[str], rows: list[list[str]]) -> SimpleUploadedFile:
@@ -30,9 +30,7 @@ def _csv(headers: list[str], rows: list[list[str]]) -> SimpleUploadedFile:
 
 @pytest.fixture
 def account_a(org_a, admin_user):
-    return Account.objects.create(
-        name="Acme Corp", org=org_a, created_by=admin_user
-    )
+    return Account.objects.create(name="Acme Corp", org=org_a, created_by=admin_user)
 
 
 @pytest.fixture
@@ -101,9 +99,7 @@ class TestImportPreview:
         assert (2, "priority") in fields
         assert (3, "account_name") in fields
 
-    def test_duplicate_within_org_rejected(
-        self, admin_client, case_a, admin_profile
-    ):
+    def test_duplicate_within_org_rejected(self, admin_client, case_a, admin_profile):
         # case_a.name == "Bug in login page"
         csv_file = _csv(
             ["name", "status", "priority"],
@@ -154,18 +150,14 @@ class TestImportPreview:
 
     def test_non_admin_without_sales_access_forbidden(self, user_client):
         # default user_profile has no has_sales_access
-        csv_file = _csv(
-            ["name", "status", "priority"], [["X", "New", "High"]]
-        )
+        csv_file = _csv(["name", "status", "priority"], [["X", "New", "High"]])
         response = user_client.post(
             "/api/cases/import/preview/", {"file": csv_file}, format="multipart"
         )
         assert response.status_code == 403
 
     def test_unauthenticated_rejected(self, unauthenticated_client):
-        csv_file = _csv(
-            ["name", "status", "priority"], [["X", "New", "High"]]
-        )
+        csv_file = _csv(["name", "status", "priority"], [["X", "New", "High"]])
         response = unauthenticated_client.post(
             "/api/cases/import/preview/", {"file": csv_file}, format="multipart"
         )
@@ -219,9 +211,7 @@ class TestImportCommit:
         assert Case.objects.filter(org=org_a).count() == 0
 
     def test_non_admin_without_sales_access_forbidden(self, user_client):
-        csv_file = _csv(
-            ["name", "status", "priority"], [["X", "New", "High"]]
-        )
+        csv_file = _csv(["name", "status", "priority"], [["X", "New", "High"]])
         response = user_client.post(
             "/api/cases/import/commit/", {"file": csv_file}, format="multipart"
         )
@@ -232,20 +222,17 @@ class TestImportCommit:
     ):
         # Promote the regular user with sales access, build a fresh client.
         from rest_framework.test import APIClient
+
         from common.serializer import OrgAwareRefreshToken
 
         user_profile.has_sales_access = True
         user_profile.save(update_fields=["has_sales_access"])
 
         client = APIClient()
-        token = OrgAwareRefreshToken.for_user_and_org(
-            regular_user, org_a, user_profile
-        )
+        token = OrgAwareRefreshToken.for_user_and_org(regular_user, org_a, user_profile)
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
 
-        csv_file = _csv(
-            ["name", "status", "priority"], [["Allowed", "New", "High"]]
-        )
+        csv_file = _csv(["name", "status", "priority"], [["Allowed", "New", "High"]])
         response = client.post(
             "/api/cases/import/commit/", {"file": csv_file}, format="multipart"
         )
@@ -354,14 +341,22 @@ class TestImportEdgeCases:
         # cost one bulk SELECT regardless of row count. We don't pin an exact
         # number (auth + RLS + view-level queries vary), but capping at a small
         # constant prevents the N+1 from regressing.
-        Account.objects.create(name="Acme Corp", org=org_a, created_by=admin_profile.user)
-        Contact.objects.create(
-            first_name="A", last_name="B", email="a@x.test",
-            org=org_a, created_by=admin_profile.user,
+        Account.objects.create(
+            name="Acme Corp", org=org_a, created_by=admin_profile.user
         )
         Contact.objects.create(
-            first_name="C", last_name="D", email="c@x.test",
-            org=org_a, created_by=admin_profile.user,
+            first_name="A",
+            last_name="B",
+            email="a@x.test",
+            org=org_a,
+            created_by=admin_profile.user,
+        )
+        Contact.objects.create(
+            first_name="C",
+            last_name="D",
+            email="c@x.test",
+            org=org_a,
+            created_by=admin_profile.user,
         )
         Teams.objects.create(name="Support", description="", org=org_a)
 
@@ -370,7 +365,14 @@ class TestImportEdgeCases:
             for i in range(50)
         ]
         csv_file = _csv(
-            ["name", "status", "priority", "account_name", "contact_emails", "team_names"],
+            [
+                "name",
+                "status",
+                "priority",
+                "account_name",
+                "contact_emails",
+                "team_names",
+            ],
             rows,
         )
         # Bulk prefetch should keep this well under 50 queries even at 50 rows.

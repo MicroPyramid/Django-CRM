@@ -17,7 +17,6 @@ from common.utils import (
 from common.validators import flexible_phone_validator
 from contacts.models import Contact
 
-
 # Cleanup notes:
 # - Removed 'created_from_site' flag (over-engineered)
 # - Removed conversion tracking fields (converted_account, converted_contact,
@@ -174,7 +173,8 @@ class Lead(AssignableMixin, BaseModel):
             ),
             # Opportunity amount must be non-negative
             models.CheckConstraint(
-                condition=Q(opportunity_amount__gte=0) | Q(opportunity_amount__isnull=True),
+                condition=Q(opportunity_amount__gte=0)
+                | Q(opportunity_amount__isnull=True),
                 name="lead_amount_non_negative",
             ),
         ]

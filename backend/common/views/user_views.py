@@ -4,7 +4,6 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
-
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -108,9 +107,7 @@ class UsersListView(APIView, LimitOffsetPagination):
             )
         params = request.data
         if params:
-            user_serializer = CreateUserSerializer(
-                data=params, org=request.profile.org
-            )
+            user_serializer = CreateUserSerializer(data=params, org=request.profile.org)
             address_serializer = BillingAddressSerializer(data=params)
             # This POST is already gated to admins above, and inviting someone
             # inherently means choosing their role, so role is grantable here.
@@ -346,7 +343,9 @@ class UserDetailView(APIView):
         cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
         context["cases"] = CaseSerializer(cases, many=True).data
         context["assigned_data"] = assigned_data
-        comments = Comment.objects.filter(commented_by=profile_obj, org=request.profile.org)
+        comments = Comment.objects.filter(
+            commented_by=profile_obj, org=request.profile.org
+        )
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
         return Response(

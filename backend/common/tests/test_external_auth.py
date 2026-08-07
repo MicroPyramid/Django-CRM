@@ -31,9 +31,7 @@ class TestAPIKeyAuthentication:
 
     def test_valid_api_key_returns_user(self, org_a, admin_user, admin_profile):
         """Valid API key should return (user, None) for an active admin profile."""
-        request = self.factory.get(
-            "/api/some-endpoint/", HTTP_TOKEN=org_a.api_key
-        )
+        request = self.factory.get("/api/some-endpoint/", HTTP_TOKEN=org_a.api_key)
         user, auth = self.auth.authenticate(request)
         assert user == admin_user
         assert auth is None
@@ -53,18 +51,14 @@ class TestAPIKeyAuthentication:
         """API key for inactive org should raise AuthenticationFailed."""
         org_a.is_active = False
         org_a.save()
-        request = self.factory.get(
-            "/api/some-endpoint/", HTTP_TOKEN=org_a.api_key
-        )
+        request = self.factory.get("/api/some-endpoint/", HTTP_TOKEN=org_a.api_key)
         with pytest.raises(AuthenticationFailed, match="Invalid API Key"):
             self.auth.authenticate(request)
 
     def test_no_admin_profile_raises(self, org_a):
         """Org with no active admin profile should raise AuthenticationFailed."""
         # org_a exists but has no profiles at all
-        request = self.factory.get(
-            "/api/some-endpoint/", HTTP_TOKEN=org_a.api_key
-        )
+        request = self.factory.get("/api/some-endpoint/", HTTP_TOKEN=org_a.api_key)
         with pytest.raises(AuthenticationFailed, match="Invalid API Key configuration"):
             self.auth.authenticate(request)
 
@@ -73,9 +67,7 @@ class TestAPIKeyAuthentication:
         Profile.objects.create(
             user=regular_user, org=org_a, role="USER", is_active=True
         )
-        request = self.factory.get(
-            "/api/some-endpoint/", HTTP_TOKEN=org_a.api_key
-        )
+        request = self.factory.get("/api/some-endpoint/", HTTP_TOKEN=org_a.api_key)
         with pytest.raises(AuthenticationFailed, match="Invalid API Key configuration"):
             self.auth.authenticate(request)
 
@@ -84,8 +76,6 @@ class TestAPIKeyAuthentication:
         Profile.objects.create(
             user=admin_user, org=org_a, role="ADMIN", is_active=False
         )
-        request = self.factory.get(
-            "/api/some-endpoint/", HTTP_TOKEN=org_a.api_key
-        )
+        request = self.factory.get("/api/some-endpoint/", HTTP_TOKEN=org_a.api_key)
         with pytest.raises(AuthenticationFailed, match="Invalid API Key configuration"):
             self.auth.authenticate(request)

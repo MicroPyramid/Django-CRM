@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cases', '0016_watchers'),
+        ("cases", "0016_watchers"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='case',
-            name='sla_paused_at',
+            model_name="case",
+            name="sla_paused_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='case',
-            name='sla_paused_seconds',
+            model_name="case",
+            name="sla_paused_seconds",
             field=models.PositiveIntegerField(default=0),
         ),
     ]

@@ -25,7 +25,6 @@ from contacts.models import Contact
 from opportunity.models import Opportunity
 from orders.models import ORDER_STATUS, Order, OrderLineItem
 
-
 # ---------------------------------------------------------------------------
 # Order model tests
 # ---------------------------------------------------------------------------
@@ -79,9 +78,7 @@ class TestOrderModel:
     def test_create_order_all_fields(self, org_a):
         """Order can be created with all fields populated."""
         account = Account.objects.create(name="Full Account", org=org_a)
-        contact = Contact.objects.create(
-            first_name="Jane", last_name="Doe", org=org_a
-        )
+        contact = Contact.objects.create(first_name="Jane", last_name="Doe", org=org_a)
         opportunity = Opportunity.objects.create(
             name="Big Deal",
             account=account,
@@ -135,9 +132,7 @@ class TestOrderModel:
     def test_order_contact_set_null_on_delete(self, org_a):
         """Deleting a contact should set order.contact to NULL."""
         account = Account.objects.create(name="Test Account", org=org_a)
-        contact = Contact.objects.create(
-            first_name="John", last_name="Doe", org=org_a
-        )
+        contact = Contact.objects.create(first_name="John", last_name="Doe", org=org_a)
         order = Order.objects.create(
             name="Contact Order",
             account=account,
@@ -151,9 +146,7 @@ class TestOrderModel:
     def test_order_opportunity_set_null_on_delete(self, org_a):
         """Deleting an opportunity should set order.opportunity to NULL."""
         account = Account.objects.create(name="Test Account", org=org_a)
-        opportunity = Opportunity.objects.create(
-            name="Opp", account=account, org=org_a
-        )
+        opportunity = Opportunity.objects.create(name="Opp", account=account, org=org_a)
         order = Order.objects.create(
             name="Opp Order",
             account=account,
@@ -190,9 +183,7 @@ class TestOrderModel:
     def test_order_has_timestamps(self, org_a):
         """Order should have created_at and updated_at timestamps."""
         account = Account.objects.create(name="Timestamp Account", org=org_a)
-        order = Order.objects.create(
-            name="Timestamp Order", account=account, org=org_a
-        )
+        order = Order.objects.create(name="Timestamp Order", account=account, org=org_a)
         assert order.created_at is not None
         assert order.updated_at is not None
 
@@ -302,9 +293,7 @@ class TestOrderLineItemModel:
     def test_line_item_decimal_defaults(self, org_a):
         """Financial fields should default to expected values."""
         order = self._make_order(org_a)
-        item = OrderLineItem.objects.create(
-            order=order, name="Default Item", org=org_a
-        )
+        item = OrderLineItem.objects.create(order=order, name="Default Item", org=org_a)
         assert item.quantity == Decimal("1")
         assert item.unit_price == Decimal("0")
         assert item.discount_amount == Decimal("0")

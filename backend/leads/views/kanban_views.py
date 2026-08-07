@@ -8,21 +8,21 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.permissions import HasOrgContext, is_org_admin
-from common.validators import date_param, uuid_param
 from common.utils import LEAD_STATUS
+from common.validators import date_param, uuid_param
 from leads.models import Lead, LeadPipeline, LeadStage
 from leads.serializer import (
     LeadKanbanCardSerializer,
     LeadMoveSerializer,
-    LeadPipelineSerializer,
     LeadPipelineListSerializer,
+    LeadPipelineSerializer,
     LeadStageSerializer,
 )
 

@@ -25,9 +25,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_tier_def(org, **overrides):
@@ -189,9 +187,7 @@ class TestAccountDetailResponse:
         keys = [d["key"] for d in body["custom_field_definitions"]]
         assert "tier" in keys
 
-    def test_detail_excludes_inactive_definitions(
-        self, admin_client, account_a, org_a
-    ):
+    def test_detail_excludes_inactive_definitions(self, admin_client, account_a, org_a):
         _make_tier_def(org_a)
         _make_tier_def(
             org_a, key="legacy", field_type="text", options=None, is_active=False

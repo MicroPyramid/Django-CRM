@@ -308,7 +308,9 @@ def generate_recurring_invoices():
                 recurring.invoices_generated += 1
                 recurring.save()
 
-                logger.info("Created invoice %s from recurring %s", invoice.id, recurring.id)
+                logger.info(
+                    "Created invoice %s from recurring %s", invoice.id, recurring.id
+                )
 
                 # Auto-send if enabled
                 if recurring.auto_send:
@@ -404,7 +406,9 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
 
     # Don't send reminders for paid or cancelled invoices
     if invoice.status in ["Paid", "Cancelled"]:
-        logger.info("Skipping reminder for %s - status is %s", invoice_id, invoice.status)
+        logger.info(
+            "Skipping reminder for %s - status is %s", invoice_id, invoice.status
+        )
         return
 
     subject = f"Payment Reminder: Invoice #{invoice.invoice_number}"
@@ -473,7 +477,9 @@ def process_payment_reminders():
 
             # Check if we should send a reminder
             should_send = False
-            days_until_due = (invoice.due_date - today).days if invoice.due_date else None
+            days_until_due = (
+                (invoice.due_date - today).days if invoice.due_date else None
+            )
 
             # Determine reminder interval based on frequency setting
             reminder_interval_days = 7  # default
@@ -514,7 +520,9 @@ def process_payment_reminders():
                     str(invoice.id),
                     str(invoice.org.id),
                     domain=getattr(settings, "DOMAIN_NAME", "localhost"),
-                    protocol="https" if getattr(settings, "USE_HTTPS", False) else "http",
+                    protocol="https"
+                    if getattr(settings, "USE_HTTPS", False)
+                    else "http",
                 )
     finally:
         # Worker threads are reused between tasks; leaving the last

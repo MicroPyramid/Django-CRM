@@ -89,9 +89,7 @@ _OPENER = build_opener(
 # before a trailing newline, so `match` would accept "sns.amazonaws.com\n".
 # The `^`/`$` anchors are redundant under `fullmatch` but are kept so the
 # pattern stays anchored if anyone switches the call back.
-_SIGNING_HOST_RE = re.compile(
-    r"^sns(?:\.[a-z0-9-]+)?\.amazonaws\.com(?:\.cn)?$"
-)
+_SIGNING_HOST_RE = re.compile(r"^sns(?:\.[a-z0-9-]+)?\.amazonaws\.com(?:\.cn)?$")
 
 
 # Headers required for the canonical signing string for each message type.
@@ -196,7 +194,11 @@ def verify_sns_message(
     the network.
     """
     msg_type = payload.get("Type")
-    if msg_type not in {"Notification", "SubscriptionConfirmation", "UnsubscribeConfirmation"}:
+    if msg_type not in {
+        "Notification",
+        "SubscriptionConfirmation",
+        "UnsubscribeConfirmation",
+    }:
         raise SNSVerificationError(f"Unknown SNS Type: {msg_type!r}")
 
     signature_b64 = payload.get("Signature")
@@ -253,7 +255,9 @@ def confirm_subscription(payload: dict, *, fetch=None, timeout: float = 5.0) -> 
     if not url:
         raise SNSVerificationError("SubscriptionConfirmation missing SubscribeURL")
     parsed = urlparse(url)
-    if parsed.scheme != "https" or not _SIGNING_HOST_RE.fullmatch(parsed.hostname or ""):
+    if parsed.scheme != "https" or not _SIGNING_HOST_RE.fullmatch(
+        parsed.hostname or ""
+    ):
         raise SNSVerificationError(f"SubscribeURL not on AWS SNS host: {url!r}")
     # Resolved at call time, not bound as a default, so the module-level opener
     # stays the single place redirect policy is decided.

@@ -27,9 +27,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_priority_def(org, **overrides):
@@ -241,9 +239,7 @@ class TestInvoiceListFilter:
         cf_invoice_secondary.custom_fields = {"billing_priority": "standard"}
         cf_invoice_secondary.save()
 
-        response = admin_client.get(
-            f"{INVOICES_LIST_URL}?cf_billing_priority=rush"
-        )
+        response = admin_client.get(f"{INVOICES_LIST_URL}?cf_billing_priority=rush")
         ids = [r["id"] for r in response.json()["results"]]
         assert str(cf_invoice.id) in ids
         assert str(cf_invoice_secondary.id) not in ids

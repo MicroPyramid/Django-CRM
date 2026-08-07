@@ -86,13 +86,15 @@ class TestLeadTotals:
         assert len(body["open_leads"]["open_leads"]) == 10
         assert body["totals"]["count"] == 24
 
-    def test_unworked_counts_leads_nobody_touched_in_a_week(
-        self, admin_client, org_a
-    ):
+    def test_unworked_counts_leads_nobody_touched_in_a_week(self, admin_client, org_a):
         """Contacted 8 days ago counts; contacted yesterday does not."""
         today = timezone.localdate()
-        _lead(org_a, email="stale@example.com", last_contacted=today - timedelta(days=8))
-        _lead(org_a, email="fresh@example.com", last_contacted=today - timedelta(days=1))
+        _lead(
+            org_a, email="stale@example.com", last_contacted=today - timedelta(days=8)
+        )
+        _lead(
+            org_a, email="fresh@example.com", last_contacted=today - timedelta(days=1)
+        )
 
         totals = admin_client.get(LEADS_URL).json()["totals"]
 
@@ -173,9 +175,7 @@ class TestLeadDetailRead:
 
         assert user_client.get(_detail_url(lead.id)).status_code == 200
 
-    def test_creator_can_read_their_own_lead(
-        self, user_client, org_a, regular_user
-    ):
+    def test_creator_can_read_their_own_lead(self, user_client, org_a, regular_user):
         """The branch that was broken by the type mismatch. `created_by` is a
         User FK, so it has to be compared against `profile.user`, and the id
         added to the allow-list has to be the *Profile* id."""
@@ -298,9 +298,7 @@ class TestPutClearsRelations:
     makes PUT partial should have to notice this test.
     """
 
-    def test_put_without_tags_clears_them(
-        self, admin_client, org_a, admin_profile
-    ):
+    def test_put_without_tags_clears_them(self, admin_client, org_a, admin_profile):
         lead = _lead(org_a)
         tag = Tags.objects.create(name="Enterprise", org=org_a)
         lead.tags.add(tag)
@@ -314,9 +312,7 @@ class TestPutClearsRelations:
         assert lead.tags.count() == 0
         assert lead.assigned_to.count() == 0
 
-    def test_patch_without_tags_leaves_them(
-        self, admin_client, org_a, admin_profile
-    ):
+    def test_patch_without_tags_leaves_them(self, admin_client, org_a, admin_profile):
         """The same edit over PATCH keeps everything it did not mention."""
         lead = _lead(org_a)
         tag = Tags.objects.create(name="Enterprise", org=org_a)
@@ -368,9 +364,7 @@ class TestLeadDetailWrite:
         lead.refresh_from_db()
         assert lead.first_name == "Augusta"
 
-    def test_creator_can_edit_their_own_lead(
-        self, user_client, org_a, regular_user
-    ):
+    def test_creator_can_edit_their_own_lead(self, user_client, org_a, regular_user):
         lead = _created_by(_lead(org_a), regular_user)
 
         response = user_client.put(

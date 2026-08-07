@@ -36,9 +36,7 @@ def _next_midnight(tz: ZoneInfo, current_local: datetime) -> datetime:
 
 
 def _has_any_open_window(windows) -> bool:
-    return any(
-        o is not None and c is not None and c > o for (o, c) in windows
-    )
+    return any(o is not None and c is not None and c > o for (o, c) in windows)
 
 
 def add_business_hours(start_dt: datetime, hours: float, calendar) -> datetime:

@@ -5,7 +5,7 @@ import django.db.models.functions.text
 from django.conf import settings
 from django.db import migrations, models
 from django.db.models import Count
-from django.db.models.functions import Lower, Length
+from django.db.models.functions import Length, Lower
 
 
 def cleanup_duplicate_lead_emails(apps, schema_editor):

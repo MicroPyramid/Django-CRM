@@ -687,9 +687,7 @@ class TestSidePayloadsRespectRole:
     ):
         from contacts.models import Contact
 
-        mine = Contact.objects.create(
-            first_name="Mine", last_name="Contact", org=org_a
-        )
+        mine = Contact.objects.create(first_name="Mine", last_name="Contact", org=org_a)
         mine.assigned_to.add(user_profile)
         theirs = Contact.objects.create(
             first_name="Theirs", last_name="Contact", org=org_a

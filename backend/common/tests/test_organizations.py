@@ -49,9 +49,7 @@ class TestOrgProfileCreateView:
         assert response.status_code == status.HTTP_200_OK
         assert "id" in response.data["org"]
         assert response.data["org"]["id"] is not None
-        created = Profile.objects.get(
-            user=admin_user, org__name="Org With Id"
-        ).org
+        created = Profile.objects.get(user=admin_user, org__name="Org With Id").org
         assert str(response.data["org"]["id"]) == str(created.id)
 
     def test_create_org_ignores_client_supplied_id(self, admin_client, admin_user):
@@ -215,9 +213,7 @@ class TestOrgUpdateView:
     def test_update_org_accepts_a_name_at_the_limit(self, admin_client, org_a):
         """The validator has to be able to say yes at exactly 100 characters."""
         name = "X" * 100
-        response = admin_client.put(
-            self._url(org_a.id), {"name": name}, format="json"
-        )
+        response = admin_client.put(self._url(org_a.id), {"name": name}, format="json")
         assert response.status_code == status.HTTP_200_OK
 
         org_a.refresh_from_db()
@@ -748,7 +744,10 @@ class TestTimezoneList:
     def test_every_zone_carries_its_current_offset(self, admin_client):
         """Mobile has no way to read the device's IANA zone name without a
         platform package, so it preselects by matching the device's offset."""
-        zones = {z["name"]: z["offset_minutes"] for z in admin_client.get(self.url).data["timezones"]}
+        zones = {
+            z["name"]: z["offset_minutes"]
+            for z in admin_client.get(self.url).data["timezones"]
+        }
 
         assert zones["UTC"] == 0
         assert zones["Asia/Kolkata"] == 330

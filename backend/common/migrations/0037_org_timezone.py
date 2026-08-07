@@ -1,5 +1,6 @@
-import common.validators
 from django.db import migrations, models
+
+import common.validators
 
 # The value of `settings.TIME_ZONE` immediately before orgs carried their own,
 # captured here rather than read from settings on purpose: this change also
@@ -24,7 +25,6 @@ def back_to_the_field_default(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0036_unscope_security_audit_log"),
     ]
@@ -40,7 +40,5 @@ class Migration(migrations.Migration):
                 validators=[common.validators.validate_iana_timezone],
             ),
         ),
-        migrations.RunPython(
-            adopt_the_deployment_timezone, back_to_the_field_default
-        ),
+        migrations.RunPython(adopt_the_deployment_timezone, back_to_the_field_default),
     ]

@@ -15,25 +15,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('common', '0028_restamp_rls_policies'),
+        ("common", "0028_restamp_rls_policies"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='sessiontoken',
-            name='session_tok_user_id_ce3d01_idx',
+            model_name="sessiontoken",
+            name="session_tok_user_id_ce3d01_idx",
         ),
         migrations.RemoveIndex(
-            model_name='sessiontoken',
-            name='session_tok_token_j_a0ab6c_idx',
+            model_name="sessiontoken",
+            name="session_tok_token_j_a0ab6c_idx",
         ),
         migrations.RemoveIndex(
-            model_name='sessiontoken',
-            name='session_tok_expires_08e0bc_idx',
+            model_name="sessiontoken",
+            name="session_tok_expires_08e0bc_idx",
         ),
         migrations.DeleteModel(
-            name='SessionToken',
+            name="SessionToken",
         ),
     ]

@@ -75,20 +75,44 @@ class BaseModel(AuditModel):
         abstract = True
 
     def save(self, *args, **kwargs):
+        """Stamp the audit columns from the request user, when there is one.
+
+        `crum.get_current_user` reads a thread local that only the request
+        middleware fills, so it is None in a Celery worker, a management
+        command, the shell and a data migration. The previous version answered
+        that case by assigning None to both columns, which did two things it did
+        not mean to:
+
+        * it discarded a `created_by=` the caller had passed explicitly, and the
+          callers with no request are exactly the ones that have to say who to
+          credit. `create_invoice_history` passes `created_by=invoice.created_by`
+          and `updated_by=updated_by` from a task, so the invoice audit trail,
+          whose entire job is recording who changed an invoice, recorded nobody;
+        * on an UPDATE it assigned None to `created_by` as well, so any save
+          from a worker permanently erased an existing row's creator. The
+          in-request branch below is careful not to touch `created_by` on
+          update; the no-request branch overwrote it every time.
+
+        With a request user present the behaviour is deliberately unchanged: the
+        request user wins over anything in the payload. Fifteen serializers still
+        leave `created_by` or `updated_by` writable, and this assignment is what
+        makes a forged value harmless. Loosening it here would turn that latent
+        mass-assignment into a live one, so the two cases stay separate: inside a
+        request the server decides, outside one the caller does, and outside a
+        request there is no client to decide against.
+        """
         user = get_current_user()
         if user is None or user.is_anonymous:
-            self.created_by = None
-            self.updated_by = None
+            # No request, so nothing to derive from. Leave whatever the caller
+            # set, which is None for anyone who set nothing.
             super().save(*args, **kwargs)
-        else:
-            # Check if the model is being created or updated
-            if self._state.adding:
-                # If created only set created_by value: set updated_by to None
-                self.created_by = user
-                self.updated_by = None
-            # If updated only set updated_by value don't touch created_by
-            self.updated_by = user
-            super().save(*args, **kwargs)
+            return
+        if self._state.adding:
+            self.created_by = user
+        # On update `created_by` is left alone: it records who made the row, not
+        # who last touched it.
+        self.updated_by = user
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return str(self.id)

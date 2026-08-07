@@ -26,9 +26,7 @@ def _set_rls(org):
     if connection.vendor != "postgresql":
         return
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT set_config('app.current_org', %s, false)", [str(org.id)]
-        )
+        cursor.execute("SELECT set_config('app.current_org', %s, false)", [str(org.id)])
 
 
 def _make_severity_def(org, **overrides):
@@ -165,9 +163,7 @@ class TestLeadUpdateWithCustomFields:
         )
         assert response.status_code == 400
 
-    def test_patch_converted_persists_custom_fields(
-        self, admin_client, lead_a, org_a
-    ):
+    def test_patch_converted_persists_custom_fields(self, admin_client, lead_a, org_a):
         """Regression for the silent-drop bug: PATCH with both status=converted
         and custom_fields used to discard the fields because the conversion
         branch returned before the validate/save block."""
@@ -202,9 +198,7 @@ class TestLeadUpdateWithCustomFields:
 @pg_only
 @pytest.mark.django_db
 class TestLeadListFilter:
-    def test_cf_filter_returns_matching(
-        self, admin_client, lead_a, lead_a2, org_a
-    ):
+    def test_cf_filter_returns_matching(self, admin_client, lead_a, lead_a2, org_a):
         _make_severity_def(org_a)
         lead_a.custom_fields = {"severity": "S1"}
         lead_a.save()
@@ -220,9 +214,7 @@ class TestLeadListFilter:
 
 @pytest.mark.django_db
 class TestLeadDetailResponse:
-    def test_detail_includes_definitions_and_values(
-        self, admin_client, lead_a, org_a
-    ):
+    def test_detail_includes_definitions_and_values(self, admin_client, lead_a, org_a):
         _make_severity_def(org_a)
         lead_a.custom_fields = {"severity": "S2"}
         lead_a.save()
@@ -234,9 +226,7 @@ class TestLeadDetailResponse:
         keys = [d["key"] for d in body["custom_field_definitions"]]
         assert "severity" in keys
 
-    def test_detail_excludes_inactive_definitions(
-        self, admin_client, lead_a, org_a
-    ):
+    def test_detail_excludes_inactive_definitions(self, admin_client, lead_a, org_a):
         _make_severity_def(org_a)
         _make_severity_def(
             org_a, key="legacy", field_type="text", options=None, is_active=False

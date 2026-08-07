@@ -5,11 +5,10 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from django.utils import timezone
 
 from common.models import Teams
 from opportunity.models import Opportunity, SalesGoal
-from django.utils import timezone
-
 
 # ---- Fixtures ---- #
 
@@ -346,9 +345,7 @@ class TestSalesGoalAPI:
         data.update(overrides)
         return data
 
-    def test_create_goal_rejects_foreign_org_assigned_to(
-        self, admin_client, profile_b
-    ):
+    def test_create_goal_rejects_foreign_org_assigned_to(self, admin_client, profile_b):
         """An org_a admin cannot assign a goal to an org_b Profile.
 
         ``common_profile`` is not RLS-protected, so without the serializer's
@@ -513,9 +510,7 @@ class TestLeaderboardAPI:
 
 
 class TestDashboardGoalSummary:
-    def test_dashboard_includes_goal_summary(
-        self, admin_client, goal_revenue
-    ):
+    def test_dashboard_includes_goal_summary(self, admin_client, goal_revenue):
         response = admin_client.get("/api/dashboard/")
         assert response.status_code == 200
         assert "goal_summary" in response.data

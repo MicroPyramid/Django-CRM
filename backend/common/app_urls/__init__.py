@@ -33,7 +33,5 @@ urlpatterns = [
     # Public CSAT (Tier 2 csat): anonymous, token-scoped. Lives outside
     # any app namespace because the customer reaches it from an emailed
     # link with no auth context.
-    path(
-        "public/csat/<str:token>/", PublicCsatView.as_view(), name="public_csat"
-    ),
+    path("public/csat/<str:token>/", PublicCsatView.as_view(), name="public_csat"),
 ]

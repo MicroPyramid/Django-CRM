@@ -8,6 +8,7 @@ from typing import Optional
 from django.db import connection
 
 from cases.models import Case, EmailMessage
+
 from .parser import ParsedEmail
 
 # Subject-line fallback: `[Case #<short-id>]` where short-id is the first

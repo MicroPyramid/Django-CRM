@@ -31,7 +31,8 @@ class TestScopeEnforcement:
 
     def test_unscoped_token_still_writes(self, admin_profile):
         resp = _pat_client(admin_profile).post(
-            "/api/leads/", {"title": "Scope check", "first_name": "Un", "last_name": "Scoped"}
+            "/api/leads/",
+            {"title": "Scope check", "first_name": "Un", "last_name": "Scoped"},
         )
         assert resp.status_code not in (401, 403)
 
@@ -91,7 +92,12 @@ class TestCredentialDenyList:
         assert PersonalAccessToken.objects.count() == before
 
     def test_session_can_mint_a_token(self, admin_client):
-        assert admin_client.post("/api/profile/tokens/", {"name": "from-browser"}).status_code == 201
+        assert (
+            admin_client.post(
+                "/api/profile/tokens/", {"name": "from-browser"}
+            ).status_code
+            == 201
+        )
 
     def test_full_access_token_still_cannot_mint(self, admin_profile):
         """`[]` means unrestricted for ordinary endpoints, and still not for this one."""
@@ -157,7 +163,9 @@ class TestScopeValidationAtCreation:
         assert not ser.is_valid()
 
     def test_malformed_scope_rejected(self):
-        ser = PersonalAccessTokenCreateSerializer(data={"name": "cli", "scopes": ["leads"]})
+        ser = PersonalAccessTokenCreateSerializer(
+            data={"name": "cli", "scopes": ["leads"]}
+        )
         assert not ser.is_valid()
 
     def test_empty_list_still_accepted(self):

@@ -21,7 +21,6 @@ from common.utils import (
 )
 from contacts.models import Contact
 
-
 # Amount source choices for Opportunity
 AMOUNT_SOURCE_CHOICES = (
     ("MANUAL", "Manual"),
@@ -215,7 +214,11 @@ class Opportunity(AssignableMixin, BaseModel):
             aging_configs: Optional dict {stage: StageAgingConfig} to avoid DB queries.
                            Pass this when processing lists to prevent N+1.
         """
-        from .workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
+        from .workflow import (
+            CLOSED_STAGES,
+            DEFAULT_STAGE_EXPECTED_DAYS,
+            ROTTEN_MULTIPLIER,
+        )
 
         if self.stage in CLOSED_STAGES:
             return "green"
@@ -353,7 +356,9 @@ class OpportunityLineItem(BaseModel):
         ]
 
     def __str__(self):
-        display_name = self.name if self.name else (self.product.name if self.product else "Item")
+        display_name = (
+            self.name if self.name else (self.product.name if self.product else "Item")
+        )
         return f"{display_name} x {self.quantity}"
 
     def save(self, *args, **kwargs):
@@ -411,12 +416,8 @@ class StageAgingConfig(BaseModel):
         related_name="stage_aging_configs",
     )
     stage = models.CharField(_("Stage"), max_length=64, choices=STAGES)
-    expected_days = models.PositiveIntegerField(
-        _("Expected Days"), default=14
-    )
-    warning_days = models.PositiveIntegerField(
-        _("Warning Days"), null=True, blank=True
-    )
+    expected_days = models.PositiveIntegerField(_("Expected Days"), default=14)
+    warning_days = models.PositiveIntegerField(_("Warning Days"), null=True, blank=True)
 
     class Meta:
         verbose_name = "Stage Aging Config"
@@ -432,9 +433,7 @@ class SalesGoal(BaseModel):
     """Sales goal / quota for tracking revenue or deals closed targets."""
 
     name = models.CharField(_("Goal Name"), max_length=255)
-    goal_type = models.CharField(
-        _("Goal Type"), max_length=20, choices=GOAL_TYPES
-    )
+    goal_type = models.CharField(_("Goal Type"), max_length=20, choices=GOAL_TYPES)
     target_value = models.DecimalField(
         _("Target Value"), max_digits=12, decimal_places=2
     )
@@ -498,15 +497,13 @@ class SalesGoal(BaseModel):
         if self.assigned_to:
             opps = opps.filter(assigned_to=self.assigned_to)
         elif self.team:
-            team_members = Profile.objects.filter(
-                user_teams=self.team, is_active=True
-            )
+            team_members = Profile.objects.filter(user_teams=self.team, is_active=True)
             opps = opps.filter(assigned_to__in=team_members)
 
         if self.goal_type == "REVENUE":
-            result = opps.aggregate(
-                total=Coalesce(Sum("amount"), Decimal("0"))
-            )["total"]
+            result = opps.aggregate(total=Coalesce(Sum("amount"), Decimal("0")))[
+                "total"
+            ]
         else:
             result = Decimal(str(opps.count()))
 

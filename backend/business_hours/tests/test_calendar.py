@@ -7,7 +7,6 @@ import pytest
 
 from business_hours.calendar import add_business_hours
 
-
 _UTC = ZoneInfo("UTC")
 _NY = ZoneInfo("America/New_York")
 

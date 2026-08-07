@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from .parser import ParsedEmail
 
-
 # Set as a constant so the test suite can introspect the policy.
 DROP_PRECEDENCE_VALUES = {"bulk", "list", "junk"}
 

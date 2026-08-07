@@ -20,12 +20,12 @@ the first half of that pair and breaks the feature.
 import datetime
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 
 from accounts.models import Account
 from contacts.models import Contact
 from invoices.models import Invoice, InvoiceLineItem, Product
-from django.utils import timezone
 
 INVOICES_URL = "/api/invoices/"
 ESTIMATES_URL = "/api/invoices/estimates/"
@@ -135,8 +135,7 @@ class TestNestedCreateRefusesAForeignProduct:
             format="json",
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST, (
-            "a recurring invoice accepted a line item pointing at another "
-            "org's product"
+            "a recurring invoice accepted a line item pointing at another org's product"
         )
         assert "line_items" in response.json()["errors"]
 

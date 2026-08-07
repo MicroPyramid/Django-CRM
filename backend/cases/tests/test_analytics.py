@@ -5,7 +5,8 @@ depend on the request layer. Window math, percentiles, and breach counting
 are the things that historically slip; everything else is a thin DB query.
 """
 
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 
 import pytest
 from django.utils import timezone
@@ -168,10 +169,18 @@ class TestComputeMttr:
 
     def test_by_priority_split(self, org_a, cases_qs):
         c1 = Case.objects.create(
-            org=org_a, name="U1", status="Closed", priority="Urgent", closed_on="2026-05-01"
+            org=org_a,
+            name="U1",
+            status="Closed",
+            priority="Urgent",
+            closed_on="2026-05-01",
         )
         c2 = Case.objects.create(
-            org=org_a, name="L1", status="Closed", priority="Low", closed_on="2026-05-02"
+            org=org_a,
+            name="L1",
+            status="Closed",
+            priority="Low",
+            closed_on="2026-05-02",
         )
         Case.objects.filter(pk=c1.pk).update(
             created_at=_utc(2026, 5, 1, 0), resolved_at=_utc(2026, 5, 1, 4)
@@ -188,7 +197,11 @@ class TestComputeMttr:
     def test_only_resolved_in_window_counted(self, org_a, cases_qs):
         # Closed before window: ignored.
         c = Case.objects.create(
-            org=org_a, name="Old", status="Closed", priority="Low", closed_on="2026-04-01"
+            org=org_a,
+            name="Old",
+            status="Closed",
+            priority="Low",
+            closed_on="2026-04-01",
         )
         Case.objects.filter(pk=c.pk).update(
             created_at=_utc(2026, 4, 1, 0), resolved_at=_utc(2026, 4, 1, 4)
@@ -230,11 +243,17 @@ class TestComputeBacklog:
 class TestComputeAgents:
     def test_groups_per_assignee(self, org_a, cases_qs, user_profile, admin_profile):
         c1 = Case.objects.create(
-            org=org_a, name="A", status="New", priority="Normal",
+            org=org_a,
+            name="A",
+            status="New",
+            priority="Normal",
             sla_first_response_hours=4,
         )
         c2 = Case.objects.create(
-            org=org_a, name="B", status="New", priority="Normal",
+            org=org_a,
+            name="B",
+            status="New",
+            priority="Normal",
             sla_first_response_hours=4,
         )
         c1.assigned_to.add(user_profile)
@@ -256,9 +275,14 @@ class TestComputeAgents:
         # csat_avg always None until CsatSurvey ships.
         assert all(row["csat_avg"] is None for row in out)
 
-    def test_multi_assignee_counts_each(self, org_a, cases_qs, user_profile, admin_profile):
+    def test_multi_assignee_counts_each(
+        self, org_a, cases_qs, user_profile, admin_profile
+    ):
         c = Case.objects.create(
-            org=org_a, name="Shared", status="New", priority="Normal",
+            org=org_a,
+            name="Shared",
+            status="New",
+            priority="Normal",
         )
         c.assigned_to.add(user_profile, admin_profile)
         Case.objects.filter(pk=c.pk).update(created_at=_utc(2026, 5, 1, 8))
@@ -280,12 +304,20 @@ class TestComputeSla:
     def test_breach_rates_split_by_priority(self, org_a, cases_qs):
         # One Urgent that breached FRT, one Normal that responded fine.
         c1 = Case.objects.create(
-            org=org_a, name="U", status="New", priority="Urgent",
-            sla_first_response_hours=1, sla_resolution_hours=4,
+            org=org_a,
+            name="U",
+            status="New",
+            priority="Urgent",
+            sla_first_response_hours=1,
+            sla_resolution_hours=4,
         )
         c2 = Case.objects.create(
-            org=org_a, name="N", status="New", priority="Normal",
-            sla_first_response_hours=4, sla_resolution_hours=24,
+            org=org_a,
+            name="N",
+            status="New",
+            priority="Normal",
+            sla_first_response_hours=4,
+            sla_resolution_hours=24,
         )
         Case.objects.filter(pk=c1.pk).update(
             created_at=_utc(2026, 5, 1, 0),

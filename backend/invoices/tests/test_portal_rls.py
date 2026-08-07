@@ -9,15 +9,14 @@ work if it resolves the org from the unscoped lookup first.
 See docs/PORTAL_RLS.md and [[client-portal-403]].
 """
 
-
 import pytest
 from django.db import connection
+from django.utils import timezone
 
 from common.models import Org
 from common.portal_tokens import resolve_portal_org
 from common.tasks import set_rls_context
 from invoices.models import Estimate
-from django.utils import timezone
 
 pytestmark = [pytest.mark.postgres_only, pytest.mark.django_db]
 

@@ -18,7 +18,6 @@ import logging
 
 from crum import get_current_user
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 from django.db.models.signals import (
     m2m_changed,
     post_delete,
@@ -26,6 +25,7 @@ from django.db.models.signals import (
     pre_save,
 )
 from django.dispatch import receiver
+from django.utils import timezone
 
 from cases.models import Case, ReopenPolicy, Solution, TimeEntry
 from common.models import Activity, Comment

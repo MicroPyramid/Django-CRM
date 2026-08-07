@@ -334,9 +334,7 @@ class TestTheHeaderCountMatchesThePage:
         assert summary["count"] == 12
         assert summary["shown"] == TODAY_QUEUE_LIMIT
 
-    def test_the_page_can_tell_it_is_not_showing_everything(
-        self, admin_client, org_a
-    ):
+    def test_the_page_can_tell_it_is_not_showing_everything(self, admin_client, org_a):
         """The closing line is the page's to draw, and this pair is what it
         draws from. With more than fits, shown < count; with fewer, they agree
         and the page may say "that's everything" truthfully."""

@@ -24,7 +24,6 @@ def backfill_mailbox(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("cases", "0023_case_merge_record"),
     ]

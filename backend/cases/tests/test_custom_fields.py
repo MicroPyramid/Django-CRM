@@ -59,7 +59,9 @@ class TestCaseCreateWithCustomFields:
         assert case.custom_fields == {"severity": "S1"}
 
     @patch("cases.views.send_email_to_assigned_user")
-    def test_create_rejects_invalid_dropdown_value(self, mock_email, admin_client, org_a):
+    def test_create_rejects_invalid_dropdown_value(
+        self, mock_email, admin_client, org_a
+    ):
         _make_severity_def(org_a)
         response = admin_client.post(
             CASES_LIST_URL,
@@ -164,9 +166,7 @@ class TestCaseListFilter:
 
 @pytest.mark.django_db
 class TestCaseDetailResponse:
-    def test_detail_includes_definitions_and_values(
-        self, admin_client, case_a, org_a
-    ):
+    def test_detail_includes_definitions_and_values(self, admin_client, case_a, org_a):
         _make_severity_def(org_a)
         case_a.custom_fields = {"severity": "S2"}
         case_a.save()
@@ -178,11 +178,11 @@ class TestCaseDetailResponse:
         keys = [d["key"] for d in body["custom_field_definitions"]]
         assert "severity" in keys
 
-    def test_detail_excludes_inactive_definitions(
-        self, admin_client, case_a, org_a
-    ):
+    def test_detail_excludes_inactive_definitions(self, admin_client, case_a, org_a):
         _make_severity_def(org_a)
-        _make_severity_def(org_a, key="legacy", field_type="text", options=None, is_active=False)
+        _make_severity_def(
+            org_a, key="legacy", field_type="text", options=None, is_active=False
+        )
         response = admin_client.get(f"{CASES_LIST_URL}{case_a.id}/")
         keys = [d["key"] for d in response.json()["custom_field_definitions"]]
         assert "severity" in keys

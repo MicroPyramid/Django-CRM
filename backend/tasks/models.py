@@ -8,7 +8,6 @@ from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
 from contacts.models import Contact
 
-
 # Cleanup notes:
 # - Removed 'created_on_arrow' property from Task model (frontend computes its own timestamps)
 

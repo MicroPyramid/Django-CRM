@@ -17,7 +17,14 @@ from rest_framework.views import APIView
 from accounts.models import Account
 from accounts.serializer import AccountSerializer, TagsSerializer
 from common.custom_fields import validate_payload as validate_custom_fields_payload
-from common.models import Attachments, Comment, CustomFieldDefinition, Profile, Tags, Teams
+from common.models import (
+    Attachments,
+    Comment,
+    CustomFieldDefinition,
+    Profile,
+    Tags,
+    Teams,
+)
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     AttachmentsSerializer,
@@ -44,7 +51,11 @@ from opportunity.serializer import (
     OpportunitySerializer,
 )
 from opportunity.tasks import send_email_to_assigned_user
-from opportunity.workflow import CLOSED_STAGES, DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
+from opportunity.workflow import (
+    CLOSED_STAGES,
+    DEFAULT_STAGE_EXPECTED_DAYS,
+    ROTTEN_MULTIPLIER,
+)
 
 
 def stalled_filter(org):
@@ -157,9 +168,7 @@ class OpportunityListView(APIView, LimitOffsetPagination):
                 queryset = queryset.filter(tags__id__in=tags).distinct()
             assigned_to = uuid_list_param(params, "assigned_to")
             if assigned_to:
-                queryset = queryset.filter(
-                    assigned_to__id__in=assigned_to
-                ).distinct()
+                queryset = queryset.filter(assigned_to__id__in=assigned_to).distinct()
             if params.get("search"):
                 queryset = queryset.filter(name__icontains=params.get("search"))
             created_at_gte = date_param(params, "created_at__gte")
@@ -208,16 +217,12 @@ class OpportunityListView(APIView, LimitOffsetPagination):
         context["totals"] = self.get_totals(queryset)
         # Prefetch aging configs for serializer context (avoids N+1)
         org = self.request.profile.org
-        aging_configs = {
-            c.stage: c
-            for c in StageAgingConfig.objects.filter(org=org)
-        }
+        aging_configs = {c.stage: c for c in StageAgingConfig.objects.filter(org=org)}
         results_opportunities = self.paginate_queryset(
             queryset.distinct(), self.request, view=self
         )
         opportunities = OpportunitySerializer(
-            results_opportunities, many=True,
-            context={"aging_configs": aging_configs}
+            results_opportunities, many=True, context={"aging_configs": aging_configs}
         ).data
         if results_opportunities:
             offset = queryset.filter(id__gte=results_opportunities[-1].id).count()

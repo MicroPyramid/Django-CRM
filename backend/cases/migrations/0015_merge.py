@@ -5,31 +5,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cases', '0014_routing'),
-        ('common', '0017_customfielddefinition'),
+        ("cases", "0014_routing"),
+        ("common", "0017_customfielddefinition"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='case',
-            name='alt_thread_ids',
+            model_name="case",
+            name="alt_thread_ids",
             field=models.JSONField(blank=True, default=list),
         ),
         migrations.AddField(
-            model_name='case',
-            name='merged_at',
+            model_name="case",
+            name="merged_at",
             field=models.DateTimeField(blank=True, db_index=True, null=True),
         ),
         migrations.AddField(
-            model_name='case',
-            name='merged_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='merged_cases', to='common.profile'),
+            model_name="case",
+            name="merged_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="merged_cases",
+                to="common.profile",
+            ),
         ),
         migrations.AddField(
-            model_name='case',
-            name='merged_into',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='merged_from_cases', to='cases.case'),
+            model_name="case",
+            name="merged_into",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="merged_from_cases",
+                to="cases.case",
+            ),
         ),
     ]
