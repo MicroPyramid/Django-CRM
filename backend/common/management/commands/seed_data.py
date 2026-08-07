@@ -1056,7 +1056,7 @@ class Command(BaseCommand):
 
         from opportunity.models import SalesGoal
 
-        today = date.today()
+        today = timezone.localdate()
         year, month = today.year, today.month
         month_names = [
             "January",

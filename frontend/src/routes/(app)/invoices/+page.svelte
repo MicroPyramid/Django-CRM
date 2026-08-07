@@ -47,7 +47,7 @@
       the loaded page, so a 50-row list showed pills adding up to 10.
     -->
     <span class="v2-num">{count(totals.count)}</span> invoices ·
-    <span class="v2-num">{money(totals.outstanding)}</span> outstanding
+    <span class="v2-num">{money(totals.outstanding, data.org.currency)}</span> outstanding
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn v2-btn-primary" href="/invoices/new"><Plus />New invoice</a>
@@ -63,13 +63,26 @@
   <div class="v2-stats">
     <StatCard
       label="Overdue"
-      value={money(totals.overdue)}
+      value={money(totals.overdue, data.org.currency)}
       tone="rust"
       detail="Chase these first"
     />
-    <StatCard label="Due this month" value={money(totals.due_this_month)} tone="clay" />
-    <StatCard label="Paid this quarter" value={money(totals.paid_this_quarter)} tone="moss" />
-    <StatCard label="Draft" value={money(totals.draft)} tone="slate" detail="Not sent yet" />
+    <StatCard
+      label="Due this month"
+      value={money(totals.due_this_month, data.org.currency)}
+      tone="clay"
+    />
+    <StatCard
+      label="Paid this quarter"
+      value={money(totals.paid_this_quarter, data.org.currency)}
+      tone="moss"
+    />
+    <StatCard
+      label="Draft"
+      value={money(totals.draft, data.org.currency)}
+      tone="slate"
+      detail="Not sent yet"
+    />
   </div>
 </div>
 
@@ -134,7 +147,9 @@
               <td>
                 <Pill tone={INVOICE_STATUS_TONE[inv.status]}>{invoiceStatusLabel(inv.status)}</Pill>
               </td>
-              <td class="v2-r v2-num" style="font-weight:600">{money(inv.total_amount)}</td>
+              <td class="v2-r v2-num" style="font-weight:600"
+                >{money(inv.total_amount, inv.currency)}</td
+              >
               <td>{shortDate(inv.due_date)}</td>
               <td
                 class="v2-r v2-num"

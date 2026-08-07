@@ -85,7 +85,7 @@ class TestAgingStatus:
 
     def test_closed_stages_always_green(self, opportunity):
         opportunity.stage = "CLOSED_WON"
-        opportunity.closed_on = timezone.now().date()
+        opportunity.closed_on = timezone.localdate()
         opportunity.amount = 1000
         opportunity.stage_changed_at = timezone.now() - timedelta(days=100)
         opportunity.save()
@@ -93,7 +93,7 @@ class TestAgingStatus:
 
     def test_closed_lost_always_green(self, opportunity):
         opportunity.stage = "CLOSED_LOST"
-        opportunity.closed_on = timezone.now().date()
+        opportunity.closed_on = timezone.localdate()
         opportunity.stage_changed_at = timezone.now() - timedelta(days=100)
         opportunity.save()
         assert opportunity.aging_status == "green"
@@ -198,7 +198,7 @@ class TestRottenFilterAPI:
             stage="CLOSED_WON",
             org=org_a,
             created_by=admin_user,
-            closed_on=timezone.now().date(),
+            closed_on=timezone.localdate(),
             amount=1000,
             stage_changed_at=timezone.now() - timedelta(days=100),
         )

@@ -61,8 +61,27 @@ def _fmt_date(d):
     return f"{d:%b} {d.day}"
 
 
+def _owned_or_assigned(queryset, profile):
+    """Narrow a queryset to what a non-admin may see, without joining.
+
+    Filtering straight onto the ``assigned_to`` M2M multiplies rows: a record
+    the member created that also carries three assignees comes back three
+    times, because the OR forces a LEFT JOIN and every joined row satisfies the
+    ``created_by`` half. That inflates ``.count()`` and, worse, ``Sum()``, so a
+    member's pipeline total could read three times its real value.
+
+    Resolving the ids in a subquery keeps the outer query at one row per
+    record, which is what the counts and the aggregates below assume.
+    """
+    return queryset.filter(
+        pk__in=queryset.filter(
+            Q(assigned_to=profile) | Q(created_by=profile.user)
+        ).values("pk")
+    )
+
+
 class ApiHomeView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, HasOrgContext)
 
     @extend_schema(
         tags=["home"],
@@ -86,34 +105,26 @@ class ApiHomeView(APIView):
     def get(self, request, format=None):
         org = request.profile.org
         profile = request.profile
-        today = date.today()
+        today = timezone.localdate()
 
         accounts = Account.objects.filter(is_active=True, org=org)
         contacts = Contact.objects.filter(org=org)
-        leads = Lead.objects.filter(org=org).exclude(
-            Q(status="converted") | Q(status="closed")
-        )
+        # Kept separate from `leads` because the conversion rate below needs
+        # converted leads, which `leads` deliberately excludes.
+        all_leads = Lead.objects.filter(org=org)
+        leads = all_leads.exclude(Q(status="converted") | Q(status="closed"))
         opportunities = Opportunity.objects.filter(org=org)
         tasks = Task.objects.filter(org=org)
 
         is_admin = is_org_admin(profile) or request.user.is_superuser
 
         if not is_admin:
-            accounts = accounts.filter(
-                Q(assigned_to=profile) | Q(created_by=profile.user)
-            )
-            contacts = contacts.filter(
-                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
-            )
-            leads = leads.filter(
-                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
-            ).exclude(status="closed")
-            opportunities = opportunities.filter(
-                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
-            )
-            tasks = tasks.filter(
-                Q(assigned_to__id__in=[profile.id]) | Q(created_by=profile.user)
-            )
+            accounts = _owned_or_assigned(accounts, profile)
+            contacts = _owned_or_assigned(contacts, profile)
+            all_leads = _owned_or_assigned(all_leads, profile)
+            leads = _owned_or_assigned(leads, profile).exclude(status="closed")
+            opportunities = _owned_or_assigned(opportunities, profile)
+            tasks = _owned_or_assigned(tasks, profile)
 
         # Build base context (existing)
         context = {}
@@ -206,9 +217,12 @@ class ApiHomeView(APIView):
             total=Coalesce(Sum("amount"), 0, output_field=DecimalField())
         )["total"]
 
-        # Conversion rate: leads converted / total leads
-        total_leads_all = Lead.objects.filter(org=org).count()
-        converted_leads = Lead.objects.filter(org=org, status="converted").count()
+        # Conversion rate over the caller's own leads. It used to query
+        # `Lead.objects.filter(org=org)` directly, which skipped the narrowing
+        # above and printed an org-wide percentage beside a member's own lead
+        # count, on the same row of the same card.
+        total_leads_all = all_leads.count()
+        converted_leads = all_leads.filter(status="converted").count()
         conversion_rate = (
             (converted_leads / total_leads_all * 100) if total_leads_all > 0 else 0
         )
@@ -220,6 +234,12 @@ class ApiHomeView(APIView):
 
         context["revenue_metrics"] = {
             "pipeline_value": float(pipeline_value or 0),
+            # How many deals that pipeline value is made of. Counted from
+            # `open_opps` rather than the currency-filtered set, because a deal
+            # in another currency is still an open deal. `opportunities_count`
+            # above counts every stage, closed ones included, so it is not the
+            # number to put under an "Open Deals" label.
+            "open_opportunities_count": open_opps.count(),
             "weighted_pipeline": float(weighted_pipeline or 0),
             "won_this_month": float(won_this_month or 0),
             "conversion_rate": round(conversion_rate, 1),
@@ -317,7 +337,7 @@ class ApiTodayView(APIView):
     so this never dereferences a ``None`` profile.
     """
 
-    permission_classes = (IsAuthenticated, HasOrgContext)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         tags=["home"],
@@ -345,7 +365,9 @@ class ApiTodayView(APIView):
         org = request.profile.org
         profile = request.profile
         now = timezone.now()
-        today = now.date()
+        # The org's calendar day, not UTC's. `now.date()` put the whole "Today"
+        # queue a day behind for every hour that TIME_ZONE is ahead of UTC.
+        today = timezone.localdate()
         yesterday = today - timedelta(days=1)
         week_end = today + timedelta(days=7)
         is_admin = is_org_admin(profile) or request.user.is_superuser

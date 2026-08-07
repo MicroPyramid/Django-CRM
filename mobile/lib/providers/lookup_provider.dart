@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
+import '../data/api_envelope.dart';
 import '../data/models/lookup_models.dart';
 import '../data/models/custom_field_definition.dart';
 import '../services/api_service.dart';
@@ -29,17 +30,16 @@ class AccountsLookupNotifier extends AsyncNotifier<List<AccountLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load accounts');
     }
-    final data = response.data!;
-    List<dynamic> list = [];
-    if (data['accounts'] != null) {
-      list = data['accounts'] as List<dynamic>? ?? [];
-    } else if (data['results'] != null) {
-      list = data['results'] as List<dynamic>? ?? [];
-    }
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(AccountLookup.fromJson)
-        .toList();
+    // `/api/accounts/` nests its rows under `active_accounts.open_accounts`
+    // and publishes neither `accounts` nor `results`, which is why this picker
+    // was permanently empty: both old guesses missed, and a miss reads as "no
+    // accounts" rather than as an error. Inactive accounts sit under
+    // `closed_accounts.close_accounts` and are deliberately not offered.
+    return listFromEnvelope(response.data!, const [
+      'active_accounts.open_accounts',
+      'accounts',
+      'results',
+    ]).map(AccountLookup.fromJson).toList();
   }
 }
 
@@ -63,17 +63,10 @@ class ContactsLookupNotifier extends AsyncNotifier<List<ContactLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load contacts');
     }
-    final data = response.data!;
-    List<dynamic> list = [];
-    if (data['contacts'] != null) {
-      list = data['contacts'] as List<dynamic>? ?? [];
-    } else if (data['results'] != null) {
-      list = data['results'] as List<dynamic>? ?? [];
-    }
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(ContactLookup.fromJson)
-        .toList();
+    return listFromEnvelope(response.data!, const [
+      'results',
+      'contacts',
+    ]).map(ContactLookup.fromJson).toList();
   }
 }
 
@@ -97,9 +90,7 @@ class UsersLookupNotifier extends AsyncNotifier<List<UserLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load users');
     }
-    final profiles = response.data!['profiles'] as List<dynamic>? ?? [];
-    return profiles
-        .whereType<Map<String, dynamic>>()
+    return listFromEnvelope(response.data!, const ['profiles'])
         .map(UserLookup.fromJson)
         .where((u) => u.isActive)
         .toList();
@@ -129,9 +120,7 @@ class TeamsLookupNotifier extends AsyncNotifier<List<TeamLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load teams');
     }
-    final teams = response.data!['teams'] as List<dynamic>? ?? [];
-    return teams
-        .whereType<Map<String, dynamic>>()
+    return listFromEnvelope(response.data!, const ['teams'])
         .map(TeamLookup.fromJson)
         .where((t) => t.id.isNotEmpty && t.name.isNotEmpty)
         .toList();
@@ -158,17 +147,10 @@ class TagsLookupNotifier extends AsyncNotifier<List<TagLookup>> {
     if (!response.success || response.data == null) {
       throw Exception(response.message ?? 'Failed to load tags');
     }
-    final data = response.data!;
-    List<dynamic> list = [];
-    if (data['tags'] != null) {
-      list = data['tags'] as List<dynamic>? ?? [];
-    } else if (data['results'] != null) {
-      list = data['results'] as List<dynamic>? ?? [];
-    }
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(TagLookup.fromJson)
-        .toList();
+    return listFromEnvelope(response.data!, const [
+      'tags',
+      'results',
+    ]).map(TagLookup.fromJson).toList();
   }
 }
 
@@ -220,9 +202,7 @@ final customFieldDefinitionsProvider =
       if (!response.success || response.data == null) {
         throw Exception(response.message ?? 'Failed to load custom fields');
       }
-      final defs = response.data!['definitions'] as List<dynamic>? ?? [];
-      final parsed = defs
-          .whereType<Map<String, dynamic>>()
+      final parsed = listFromEnvelope(response.data!, const ['definitions'])
           .map(CustomFieldDefinition.fromJson)
           .toList();
       parsed.sort((a, b) {

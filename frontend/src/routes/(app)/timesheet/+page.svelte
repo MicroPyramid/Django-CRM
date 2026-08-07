@@ -136,7 +136,7 @@
     />
     <StatCard
       label="Billable value"
-      value={money(billableValue)}
+      value={money(billableValue, data.org.currency)}
       tone="slate"
       detail="At the rate saved on each entry"
     />

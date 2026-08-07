@@ -110,6 +110,28 @@ export async function createColumn({ cookies }, boardId, { name, color, order })
 }
 
 /**
+ * Create a board.
+ *
+ * `BoardListCreateView.post` derives `org`, `owner` and `created_by` from the
+ * JWT, enrols the caller as the owner member, and, unless told otherwise,
+ * seeds the three default columns. So the whole write surface is a name and an
+ * optional description, and a fresh board is usable the moment it exists.
+ *
+ * Until this existed no client could create one. The page said to use the
+ * mobile app, which has no board feature at all, so an org that had never been
+ * given a board through the API could not get one.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {{ name: string, description?: string }} board
+ */
+export async function createBoard({ cookies }, { name, description }) {
+  /** @type {Record<string, any>} */
+  const body = { name };
+  if (description) body.description = description;
+  return apiRequest('/boards/', { method: 'POST', body }, { cookies });
+}
+
+/**
  * Add a card to a column. Any board member may; the backend derives the card's
  * `column`, `org` and `created_by` from the URL and the JWT. The write surface
  * is deliberately narrow (title, description, priority) matching

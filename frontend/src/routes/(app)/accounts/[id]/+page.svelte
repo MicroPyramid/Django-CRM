@@ -44,7 +44,7 @@
       : stalled.length
         ? `${stalled[0].name} has not moved in ${stalled[0].days_in_current_stage} days.`
         : pastDue.length
-          ? `${pastDue[0].invoice_number} is past due, ${money(pastDue[0].amount_due)}.`
+          ? `${pastDue[0].invoice_number} is past due, ${money(pastDue[0].amount_due, pastDue[0].currency)}.`
           : null
   );
 </script>
@@ -79,7 +79,7 @@
     <div class="v2-stats" style="margin-bottom:16px">
       <StatCard
         label="Revenue won"
-        value={account.won_amount ? money(account.won_amount) : '—'}
+        value={account.won_amount ? money(account.won_amount, data.org.currency) : '—'}
         tone={account.won_amount ? 'moss' : 'slate'}
         detail={account.won_count
           ? `${account.won_count} deal${account.won_count === 1 ? '' : 's'} won`
@@ -87,14 +87,14 @@
       />
       <StatCard
         label="Open pipeline"
-        value={account.open_pipeline ? money(account.open_pipeline) : '—'}
+        value={account.open_pipeline ? money(account.open_pipeline, data.org.currency) : '—'}
         detail={account.open_deal_count
           ? `${account.open_deal_count} open deal${account.open_deal_count === 1 ? '' : 's'}`
           : 'No open deals'}
       />
       <StatCard
         label="Past due"
-        value={account.overdue_amount ? money(account.overdue_amount) : '—'}
+        value={account.overdue_amount ? money(account.overdue_amount, data.org.currency) : '—'}
         tone={account.overdue_amount ? 'rust' : 'slate'}
         detail={pastDue.length
           ? pastDue.map((/** @type {any} */ i) => i.invoice_number).join(', ')
@@ -166,7 +166,9 @@
             {#if d.aging_status === 'red' && !d.stage.startsWith('CLOSED_')}
               <Pill tone="rust">{d.days_in_current_stage}d</Pill>
             {/if}
-            <span class="v2-num" style="font-weight:600;font-size:13px">{money(d.amount)}</span>
+            <span class="v2-num" style="font-weight:600;font-size:13px"
+              >{money(d.amount, d.currency)}</span
+            >
           </a>
         {:else}
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
@@ -261,7 +263,7 @@
               {inv.past_due ? 'Past due' : invoiceStatusLabel(inv.status)}
             </Pill>
             <span class="v2-num" style="margin-left:auto;font-weight:600;font-size:13px">
-              {money(inv.past_due ? inv.amount_due : inv.total_amount)}
+              {money(inv.past_due ? inv.amount_due : inv.total_amount, inv.currency)}
             </span>
           </a>
         {:else}

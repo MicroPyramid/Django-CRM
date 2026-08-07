@@ -13,6 +13,7 @@ from accounts.models import Account
 from common.models import CustomFieldDefinition
 from contacts.models import Contact
 from invoices.models import Estimate, RecurringInvoice
+from django.utils import timezone
 
 pg_only = pytest.mark.skipif(
     connection.vendor != "postgresql",
@@ -82,8 +83,8 @@ def cf_estimate(org_a, cf_account, cf_contact):
         client_name="Client",
         client_email="client@example.com",
         currency="USD",
-        issue_date=datetime.date.today(),
-        expiry_date=datetime.date.today() + datetime.timedelta(days=30),
+        issue_date=timezone.localdate(),
+        expiry_date=timezone.localdate() + datetime.timedelta(days=30),
         org=org_a,
     )
 
@@ -98,8 +99,8 @@ def cf_estimate_secondary(org_a, cf_account, cf_contact):
         client_name="Client",
         client_email="client@example.com",
         currency="USD",
-        issue_date=datetime.date.today(),
-        expiry_date=datetime.date.today() + datetime.timedelta(days=30),
+        issue_date=timezone.localdate(),
+        expiry_date=timezone.localdate() + datetime.timedelta(days=30),
         org=org_a,
     )
 
@@ -117,8 +118,8 @@ class TestEstimateCreateWithCustomFields:
                 "account_id": str(cf_account.id),
                 "contact_id": str(cf_contact.id),
                 "currency": "USD",
-                "issue_date": str(datetime.date.today()),
-                "expiry_date": str(datetime.date.today() + datetime.timedelta(days=30)),
+                "issue_date": str(timezone.localdate()),
+                "expiry_date": str(timezone.localdate() + datetime.timedelta(days=30)),
                 "custom_fields": {"billing_priority": "rush"},
             },
             format="json",
@@ -138,8 +139,8 @@ class TestEstimateCreateWithCustomFields:
                 "account_id": str(cf_account.id),
                 "contact_id": str(cf_contact.id),
                 "currency": "USD",
-                "issue_date": str(datetime.date.today()),
-                "expiry_date": str(datetime.date.today() + datetime.timedelta(days=30)),
+                "issue_date": str(timezone.localdate()),
+                "expiry_date": str(timezone.localdate() + datetime.timedelta(days=30)),
                 "custom_fields": {"billing_priority": "platinum"},
             },
             format="json",
@@ -248,8 +249,8 @@ def cf_recurring(org_a, cf_account, cf_contact):
         client_name="Client",
         client_email="client@example.com",
         frequency="MONTHLY",
-        start_date=datetime.date.today(),
-        next_generation_date=datetime.date.today(),
+        start_date=timezone.localdate(),
+        next_generation_date=timezone.localdate(),
         payment_terms="NET_30",
         currency="USD",
         is_active=True,
@@ -267,8 +268,8 @@ def cf_recurring_secondary(org_a, cf_account, cf_contact):
         client_name="Client",
         client_email="client@example.com",
         frequency="MONTHLY",
-        start_date=datetime.date.today(),
-        next_generation_date=datetime.date.today(),
+        start_date=timezone.localdate(),
+        next_generation_date=timezone.localdate(),
         payment_terms="NET_30",
         currency="USD",
         is_active=True,
@@ -289,8 +290,8 @@ class TestRecurringCreateWithCustomFields:
                 "account_id": str(cf_account.id),
                 "contact_id": str(cf_contact.id),
                 "frequency": "MONTHLY",
-                "start_date": str(datetime.date.today()),
-                "next_generation_date": str(datetime.date.today()),
+                "start_date": str(timezone.localdate()),
+                "next_generation_date": str(timezone.localdate()),
                 "payment_terms": "NET_30",
                 "currency": "USD",
                 "is_active": True,
@@ -313,8 +314,8 @@ class TestRecurringCreateWithCustomFields:
                 "account_id": str(cf_account.id),
                 "contact_id": str(cf_contact.id),
                 "frequency": "MONTHLY",
-                "start_date": str(datetime.date.today()),
-                "next_generation_date": str(datetime.date.today()),
+                "start_date": str(timezone.localdate()),
+                "next_generation_date": str(timezone.localdate()),
                 "payment_terms": "NET_30",
                 "currency": "USD",
                 "is_active": True,

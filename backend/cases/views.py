@@ -1275,7 +1275,7 @@ def _reopen_analytics(org):
         closed_on = closed_on_by_id.get(object_id)
         if closed_on is None:
             continue  # reopened / reassigned open / comment predates the close
-        days = (commented_on.date() - closed_on).days
+        days = (timezone.localdate(commented_on) - closed_on).days
         if days >= 0:
             deltas.append(days)
 

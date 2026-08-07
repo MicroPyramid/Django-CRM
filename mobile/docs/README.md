@@ -1,12 +1,21 @@
-# SalesPro CRM - Flutter Implementation Documentation
+# BottleCRM Mobile - Original Implementation Spec
 
-This documentation provides comprehensive specifications for implementing the SalesPro CRM mobile application in Flutter. The specifications are derived from a fully functional SvelteKit prototype.
+> **This tree is the brief the app was built from, not a description of the app
+> as it stands.** It was written against a SvelteKit prototype under the working
+> name "SalesPro CRM", and the app has moved on: it signs in with Google and
+> magic links rather than a password, so `03-forgot-password.md` and
+> `04-onboarding.md` describe screens that were never built. Read it for intent
+> and history.
+>
+> **For design tokens, [`../DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) is
+> authoritative.** It is the file the workspace `CLAUDE.md` points at, and the
+> one to change when a colour or spacing value changes.
 
 ---
 
 ## Quick Start
 
-1. **Read the Design System** - Start with [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) for colors, typography, spacing, and overall architecture
+1. **Read the Design System** - [`../DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) carries the current colors, typography, and spacing. [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) in this folder adds the original data models, navigation structure, and screen inventory
 2. **Review Components** - Check [components/ui-components.md](./components/ui-components.md) for reusable widget specifications
 3. **Implement Screens** - Follow the route documentation in sequential order
 
@@ -18,7 +27,8 @@ This documentation provides comprehensive specifications for implementing the Sa
 
 | Document | Description |
 |----------|-------------|
-| [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) | **Start here** - Complete design system with colors, typography, spacing, data models, and implementation checklist |
+| [../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md) | **Authoritative** - the colors, typography, spacing and component rules the app is actually built to |
+| [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) | The original design system, kept for its data models, navigation structure, and screen inventory. Where its tokens disagree with the file above, the file above wins |
 | [components/ui-components.md](./components/ui-components.md) | Detailed specifications for all reusable UI components |
 
 ### Authentication Screens

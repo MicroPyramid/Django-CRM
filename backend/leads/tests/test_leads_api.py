@@ -4,6 +4,7 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
+from django.utils import timezone
 
 from common.models import Attachments, Comment, Profile, Tags, Teams
 from contacts.models import Contact
@@ -1875,7 +1876,7 @@ class TestLeadModelProperties:
             first_name="LastContact",
             last_name="Test",
             email="lastcontact@example.com",
-            last_contacted=timezone.now().date() - datetime.timedelta(days=10),
+            last_contacted=timezone.localdate() - datetime.timedelta(days=10),
             created_by=admin_user,
             org=org_a,
         )
@@ -1902,7 +1903,7 @@ class TestLeadModelProperties:
             last_name="Lead",
             email="stale@example.com",
             status="assigned",
-            last_contacted=timezone.now().date() - datetime.timedelta(days=31),
+            last_contacted=timezone.localdate() - datetime.timedelta(days=31),
             created_by=admin_user,
             org=org_a,
         )
@@ -1918,7 +1919,7 @@ class TestLeadModelProperties:
             last_name="Lead",
             email="convertedstale@example.com",
             status="converted",
-            last_contacted=timezone.now().date() - datetime.timedelta(days=60),
+            last_contacted=timezone.localdate() - datetime.timedelta(days=60),
             created_by=admin_user,
             org=org_a,
         )
@@ -1934,7 +1935,7 @@ class TestLeadModelProperties:
             last_name="Lead",
             email="closedstale@example.com",
             status="closed",
-            last_contacted=timezone.now().date() - datetime.timedelta(days=60),
+            last_contacted=timezone.localdate() - datetime.timedelta(days=60),
             created_by=admin_user,
             org=org_a,
         )
@@ -1949,7 +1950,7 @@ class TestLeadModelProperties:
             first_name="FollowUp",
             last_name="Lead",
             email="followup@example.com",
-            next_follow_up=timezone.now().date() + datetime.timedelta(days=5),
+            next_follow_up=timezone.localdate() + datetime.timedelta(days=5),
             created_by=admin_user,
             org=org_a,
         )
@@ -1975,7 +1976,7 @@ class TestLeadModelProperties:
             first_name="Overdue",
             last_name="Lead",
             email="overdue@example.com",
-            next_follow_up=timezone.now().date() - datetime.timedelta(days=1),
+            next_follow_up=timezone.localdate() - datetime.timedelta(days=1),
             created_by=admin_user,
             org=org_a,
         )

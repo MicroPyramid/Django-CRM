@@ -219,7 +219,7 @@ class InvoiceSeeder:
         }
         range_choice = self._weighted_choice(days_ago_weights)
         days_ago = random.randint(range_choice[0], range_choice[1])
-        return timezone.now().date() - datetime.timedelta(days=days_ago)
+        return timezone.localdate() - datetime.timedelta(days=days_ago)
 
     def _add_invoice_assignments(self, instance, profiles, teams):
         """Add M2M assignments to invoice-related entities (no tags)."""
@@ -522,7 +522,7 @@ class InvoiceSeeder:
             if invoice.status == "Paid":
                 # Full payment
                 payment_date = (
-                    invoice.paid_at.date()
+                    timezone.localdate(invoice.paid_at)
                     if invoice.paid_at
                     else (
                         invoice.issue_date
@@ -573,7 +573,7 @@ class InvoiceSeeder:
                 payment = Payment.objects.create(
                     invoice=invoice,
                     amount=payment_amount.quantize(Decimal("0.01")),
-                    payment_date=min(payment_date, timezone.now().date()),
+                    payment_date=min(payment_date, timezone.localdate()),
                     payment_method=self._weighted_choice(self.PAYMENT_METHOD_WEIGHTS),
                     reference_number=f"PAY-{self.fake.bothify('??###??').upper()}",
                     notes="",
@@ -773,7 +773,7 @@ class InvoiceSeeder:
                 custom_days=random.randint(7, 90) if frequency == "CUSTOM" else None,
                 start_date=start_date,
                 end_date=end_date,
-                next_generation_date=max(start_date, timezone.now().date()),
+                next_generation_date=max(start_date, timezone.localdate()),
                 payment_terms=self._weighted_choice(self.PAYMENT_TERMS_WEIGHTS),
                 auto_send=random.random() > 0.5,
                 currency=org.default_currency,
@@ -782,7 +782,7 @@ class InvoiceSeeder:
                 tax_rate=tax_rate,
                 notes="Auto-generated recurring invoice",
                 invoices_generated=random.randint(0, 12)
-                if start_date < timezone.now().date()
+                if start_date < timezone.localdate()
                 else 0,
                 org=org,
             )

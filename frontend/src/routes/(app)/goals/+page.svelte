@@ -68,13 +68,13 @@
   };
 
   /** Revenue goals are money; DEALS_CLOSED goals are a count of deals. */
-  const value = (g, n) => (g.goal_type === 'REVENUE' ? money(n) : count(n));
+  const value = (g, n) => (g.goal_type === 'REVENUE' ? money(n, data.org.currency) : count(n));
 </script>
 
 <PageHeader title="Goals">
   {#snippet sub()}
-    <span class="v2-num">{money(totals.achieved)}</span> of
-    <span class="v2-num">{money(totals.target)}</span> across
+    <span class="v2-num">{money(totals.achieved, data.org.currency)}</span> of
+    <span class="v2-num">{money(totals.target, data.org.currency)}</span> across
     <span class="v2-num">{count(totals.active)}</span> active goals
   {/snippet}
   {#snippet actions()}
@@ -88,13 +88,13 @@
   <div class="v2-stats">
     <StatCard
       label="Committed"
-      value={money(totals.target)}
+      value={money(totals.target, data.org.currency)}
       tone="ink"
       detail="Active goals only"
     />
     <StatCard
       label="Booked"
-      value={money(totals.achieved)}
+      value={money(totals.achieved, data.org.currency)}
       tone="moss"
       detail="Closed-won in period"
     />
@@ -224,7 +224,7 @@
                 <div style="flex:1;min-width:0">
                   <div style="font-size:12.5px;font-weight:550">{row.user}</div>
                   <div class="v2-sub v2-num" style="font-size:11px">
-                    {money(row.achieved)} of {money(row.target)}
+                    {money(row.achieved, data.org.currency)} of {money(row.target, data.org.currency)}
                   </div>
                 </div>
                 <!-- Uncapped on purpose: 104% is the interesting number, and

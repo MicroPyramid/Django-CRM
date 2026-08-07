@@ -22,7 +22,7 @@ from common.views.notification_views import (
     NotificationReadAllView,
     NotificationReadView,
 )
-from common.views.org_settings_views import OrgSettingsView
+from common.views.org_settings_views import OrgSettingsView, TimezoneListView
 from common.views.organization_views import (
     OrgApiKeyView,
     OrgProfileCreateView,
@@ -85,6 +85,9 @@ urlpatterns = [
     # Organization and profile management
     path("org/", OrgProfileCreateView.as_view()),
     path("org/settings/", OrgSettingsView.as_view(), name="org_settings"),
+    # Static reference data, org-free by design: the first caller is a user
+    # creating their first org and has no org claim yet.
+    path("org/timezones/", TimezoneListView.as_view(), name="timezone_list"),
     # These literal org/… paths must precede org/<uid:pk>/ so they are not
     # captured as a pk (org/tokens/ would otherwise resolve to OrgUpdateView
     # with pk="tokens"). org/tokens/ is ADMIN-only token oversight, separate

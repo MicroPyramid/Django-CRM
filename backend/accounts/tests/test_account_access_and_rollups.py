@@ -36,6 +36,7 @@ from accounts.models import Account
 from cases.models import Case
 from common.models import Attachments, Profile
 from invoices.models import Invoice
+from leads.models import Lead
 from opportunity.models import Opportunity
 
 
@@ -607,3 +608,107 @@ class TestRollupsAreAbsentNotZero:
     def test_profile_count_unchanged(self, org_a, admin_profile):
         """Guard rail for the fixtures above, not a behaviour of the API."""
         assert Profile.objects.filter(org=org_a).count() >= 1
+
+
+@pytest.mark.django_db
+class TestSidePayloadsRespectRole:
+    """The lead and contact catalogues served beside the account list.
+
+    Found during the 2026-08-05 mobile parity review, by comparing what one
+    member could read through two endpoints in the same second. `/api/accounts/`
+    narrowed its account list correctly and then served the org's entire lead
+    catalogue next to it, serialized in full: email, phone, opportunity_amount,
+    address. A member entitled to 6 leads received all 20, including leads whose
+    own detail route answers them 403.
+
+    `/api/cases/` and `/api/opportunities/` already narrowed their equivalent
+    payloads. These two were missed, so the tests below pin both directions:
+    an admin still gets the whole catalogue, a member gets only their own.
+    """
+
+    def _lead(self, org, first_name, **kwargs):
+        return Lead.objects.create(
+            first_name=first_name,
+            last_name="Prospect",
+            email=f"{first_name.lower()}@example.com",
+            phone="555-0100",
+            org=org,
+            status="assigned",
+            **kwargs,
+        )
+
+    def test_admin_sees_every_lead_in_the_catalogue(
+        self, admin_client, org_a, admin_user
+    ):
+        mine = self._lead(org_a, "Mine")
+        theirs = self._lead(org_a, "Theirs")
+
+        payload = admin_client.get("/api/accounts/").json()
+
+        ids = {row["id"] for row in payload["leads"]}
+        assert {str(mine.id), str(theirs.id)} <= ids
+
+    def test_member_sees_only_leads_they_own(
+        self, user_client, user_profile, org_a, admin_user
+    ):
+        assigned = self._lead(org_a, "Assigned")
+        assigned.assigned_to.add(user_profile)
+        created = self._lead(org_a, "Created")
+        Lead.objects.filter(pk=created.pk).update(created_by=user_profile.user)
+        stranger = self._lead(org_a, "Stranger")
+        Lead.objects.filter(pk=stranger.pk).update(created_by=admin_user)
+
+        payload = user_client.get("/api/accounts/").json()
+
+        ids = {row["id"] for row in payload["leads"]}
+        assert str(assigned.id) in ids
+        assert str(created.id) in ids
+        assert str(stranger.id) not in ids
+
+    def test_catalogue_cannot_outrun_the_detail_route(
+        self, user_client, org_a, admin_user
+    ):
+        """The two doors must agree.
+
+        This is the actual defect: the same lead id, refused by its own
+        endpoint and handed over by this one. Asserting the 403 here rather
+        than only the absence keeps the test honest if the detail rule moves.
+        """
+        stranger = self._lead(org_a, "Stranger")
+        Lead.objects.filter(pk=stranger.pk).update(created_by=admin_user)
+
+        assert user_client.get(f"/api/leads/{stranger.id}/").status_code == 403
+
+        payload = user_client.get("/api/accounts/").json()
+        assert str(stranger.id) not in {row["id"] for row in payload["leads"]}
+
+    def test_member_sees_only_contacts_they_own(
+        self, user_client, user_profile, org_a, admin_user
+    ):
+        from contacts.models import Contact
+
+        mine = Contact.objects.create(
+            first_name="Mine", last_name="Contact", org=org_a
+        )
+        mine.assigned_to.add(user_profile)
+        theirs = Contact.objects.create(
+            first_name="Theirs", last_name="Contact", org=org_a
+        )
+        Contact.objects.filter(pk=theirs.pk).update(created_by=admin_user)
+
+        payload = user_client.get("/api/accounts/").json()
+
+        ids = {str(row["id"]) for row in payload["contacts"]}
+        assert str(mine.id) in ids
+        assert str(theirs.id) not in ids
+
+    def test_admin_sees_every_contact(self, admin_client, org_a):
+        from contacts.models import Contact
+
+        one = Contact.objects.create(first_name="One", last_name="C", org=org_a)
+        two = Contact.objects.create(first_name="Two", last_name="C", org=org_a)
+
+        payload = admin_client.get("/api/accounts/").json()
+
+        ids = {str(row["id"]) for row in payload["contacts"]}
+        assert {str(one.id), str(two.id)} <= ids

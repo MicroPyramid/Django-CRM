@@ -139,7 +139,7 @@
         tone: 'ember',
         label: 'Needs an owner',
         text: lead.opportunity_amount
-          ? `Worth ${money(lead.opportunity_amount)} and nobody owns it. Assign an owner before it goes cold.`
+          ? `Worth ${money(lead.opportunity_amount, lead.currency)} and nobody owns it. Assign an owner before it goes cold.`
           : 'Nobody owns this lead. Assign an owner so it does not sit unworked.',
         action: 'Assign owner'
       };
@@ -244,7 +244,7 @@
                   Creates an <b style="color:var(--v2-ink)">account</b>, a
                   <b style="color:var(--v2-ink)">contact</b> and one
                   <b style="color:var(--v2-ink)">deal</b>{lead.opportunity_amount
-                    ? ` worth ${money(lead.opportunity_amount)}`
+                    ? ` worth ${money(lead.opportunity_amount, lead.currency)}`
                     : ''}. The lead stays linked, and there is no endpoint that undoes it.
                 </p>
               </div>
@@ -458,7 +458,7 @@
       <dt>Industry</dt>
       <dd>{industryLabel(lead.industry) || '—'}</dd>
       <dt>Est. value</dt>
-      <dd class="v2-num">{lead.opportunity_amount ? money(lead.opportunity_amount) : '—'}</dd>
+      <dd class="v2-num">{lead.opportunity_amount ? money(lead.opportunity_amount, lead.currency) : '—'}</dd>
     </dl>
 
     <div class="v2-label v2-rail-head">Timeline</div>

@@ -2,6 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/auth_response.dart';
 import '../services/auth_service.dart';
+import 'analytics_provider.dart';
+import 'approvals_provider.dart';
+import 'dashboard_provider.dart';
+import 'deals_provider.dart';
+import 'leads_provider.dart';
+import 'lookup_provider.dart';
+import 'profile_provider.dart';
+import 'solutions_provider.dart';
+import 'tasks_provider.dart';
+import 'tickets_provider.dart';
 
 /// Authentication state for the app
 class AuthState {
@@ -198,6 +208,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
       if (success) {
         state = state.copyWith(isLoading: false, selectedOrganization: org);
+        _dropSessionCaches();
 
         debugPrint('AuthNotifier: Organization switched to ${org.name}');
         return true;
@@ -221,6 +232,34 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Create an organization, then move the session into it.
+  ///
+  /// Returns null on success, or a message to show. The org list and selected
+  /// org both move, so the caller can navigate straight to the dashboard.
+  Future<String?> createOrganization(String name, {String? timezone}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final failure = await _authService.createOrganization(
+      name,
+      timezone: timezone,
+    );
+
+    if (failure != null) {
+      state = state.copyWith(isLoading: false, error: failure);
+      return failure;
+    }
+
+    state = state.copyWith(
+      isLoading: false,
+      organizations: _authService.organizations,
+      selectedOrganization: _authService.selectedOrganization,
+    );
+    // A fresh org has none of the previous one's records; the same caches the
+    // org switch drops have to go here too.
+    _dropSessionCaches();
+    return null;
+  }
+
   /// Sign out
   Future<void> signOut() async {
     debugPrint('AuthNotifier: Signing out...');
@@ -230,8 +269,35 @@ class AuthNotifier extends Notifier<AuthState> {
     await _authService.signOut();
 
     state = const AuthState.initial();
+    _dropSessionCaches();
 
     debugPrint('AuthNotifier: Signed out');
+  }
+
+  /// Throw away every cache that belongs to the session that just ended.
+  ///
+  /// Nothing else did this, so signing out and back in as someone else left
+  /// the previous session's rows on screen under the new user's name until
+  /// they pulled to refresh. The same applies to an org switch: the rows are
+  /// another tenant's and must not survive it.
+  ///
+  /// Providers are listed explicitly rather than swept, because forgetting one
+  /// shows stale data and invalidating an unrelated one only costs a refetch.
+  void _dropSessionCaches() {
+    ref.invalidate(dashboardProvider);
+    ref.invalidate(leadsProvider);
+    ref.invalidate(dealsProvider);
+    ref.invalidate(tasksProvider);
+    ref.invalidate(ticketsProvider);
+    ref.invalidate(solutionsProvider);
+    ref.invalidate(approvalsProvider);
+    ref.invalidate(analyticsProvider);
+    ref.invalidate(profileProvider);
+    ref.invalidate(accountsLookupProvider);
+    ref.invalidate(contactsLookupProvider);
+    ref.invalidate(usersLookupProvider);
+    ref.invalidate(teamsLookupProvider);
+    ref.invalidate(tagsLookupProvider);
   }
 
   /// Clear any error message
@@ -256,6 +322,15 @@ final currentUserProvider = Provider<AuthUser?>((ref) {
 /// Provider for selected organization
 final selectedOrgProvider = Provider<Organization?>((ref) {
   return ref.watch(authProvider).selectedOrganization;
+});
+
+/// Role of the signed-in profile in the selected org, as an admin/not-admin
+/// answer. The claim is server-issued and arrives with the org, so this reads
+/// the same fact the backend's `is_org_admin` reads. UI affordances only; see
+/// `core/permissions.dart`.
+final isOrgAdminProvider = Provider<bool>((ref) {
+  final org = ref.watch(selectedOrgProvider);
+  return (org?.role ?? '').toUpperCase() == 'ADMIN';
 });
 
 /// Provider for checking if org selection is needed

@@ -291,7 +291,7 @@
       {:else}
         <p class="v2-hint" id="h-amount">
           {Number(form.opportunity_amount) > 0
-            ? money(Number(form.opportunity_amount))
+            ? money(Number(form.opportunity_amount), data.org.currency)
             : 'What the deal would be worth if it lands.'}
         </p>
       {/if}

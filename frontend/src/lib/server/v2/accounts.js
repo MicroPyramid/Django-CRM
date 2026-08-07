@@ -256,6 +256,10 @@ export async function getAccount({ cookies }, id) {
       name: deal.name ?? '',
       stage: deal.stage,
       amount: num(deal.amount) ?? 0,
+      // Each deal is priced in its own currency; the account's rollups above
+      // are sums and take the org's. Dropping this printed every deal on the
+      // page as dollars.
+      currency: deal.currency || 'USD',
       closed_on: deal.closed_on ?? null,
       // Real fields, from the stage-aging chain the deal module already owns.
       days_in_current_stage: deal.days_in_stage ?? 0,
@@ -283,6 +287,7 @@ export async function getAccount({ cookies }, id) {
       status: invoice.status,
       total_amount: num(invoice.total_amount) ?? 0,
       amount_due: num(invoice.amount_due) ?? 0,
+      currency: invoice.currency || 'USD',
       due_date: invoice.due_date ?? null,
       past_due: isPastDue(invoice)
     })),

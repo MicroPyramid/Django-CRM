@@ -52,6 +52,11 @@ class PipelineStage {
 /// Revenue metrics from dashboard API
 class RevenueMetrics {
   final double pipelineValue;
+
+  /// Deals making up [pipelineValue], open stages only. The dashboard's
+  /// top-level `opportunities_count` counts every stage including closed, so
+  /// it is not the number to show under an "Open Deals" label.
+  final int openOpportunitiesCount;
   final double weightedPipeline;
   final double wonThisMonth;
   final double conversionRate;
@@ -60,6 +65,7 @@ class RevenueMetrics {
 
   const RevenueMetrics({
     this.pipelineValue = 0,
+    this.openOpportunitiesCount = 0,
     this.weightedPipeline = 0,
     this.wonThisMonth = 0,
     this.conversionRate = 0,
@@ -70,6 +76,7 @@ class RevenueMetrics {
   factory RevenueMetrics.fromJson(Map<String, dynamic> json) {
     return RevenueMetrics(
       pipelineValue: (json['pipeline_value'] as num?)?.toDouble() ?? 0,
+      openOpportunitiesCount: (json['open_opportunities_count'] as num?)?.toInt() ?? 0,
       weightedPipeline: (json['weighted_pipeline'] as num?)?.toDouble() ?? 0,
       wonThisMonth: (json['won_this_month'] as num?)?.toDouble() ?? 0,
       conversionRate: (json['conversion_rate'] as num?)?.toDouble() ?? 0,

@@ -14,6 +14,7 @@ from django.utils.text import slugify
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 from common.base import BaseModel, BaseOrgModel
+from common.validators import validate_iana_timezone
 from common.utils import (
     COUNTRIES,
     CURRENCY_CODES,
@@ -127,6 +128,21 @@ class Org(BaseModel):
     )
     default_country = models.CharField(
         max_length=2, choices=COUNTRIES, blank=True, null=True
+    )
+    # The org's calendar day. Every "today", "overdue" and "this month" in the
+    # app is resolved against this, because a day boundary is a fact about the
+    # people using the org, not about the server. `RequireOrgContext` activates
+    # it per request so `timezone.localdate()` answers in it; Celery has no
+    # middleware and must call `common.tasks.set_org_timezone` itself.
+    #
+    # UTC by default so a client that never sends one, an older mobile build in
+    # particular, still creates a usable org. Stored as an IANA name rather than
+    # an offset, since only a name knows when the clocks move.
+    timezone = models.CharField(
+        max_length=64,
+        default="UTC",
+        validators=[validate_iana_timezone],
+        help_text="IANA timezone (e.g. America/New_York). Sets the org's day.",
     )
 
     # CSAT (Tier 2 csat). Org-level kill switch, when False, the

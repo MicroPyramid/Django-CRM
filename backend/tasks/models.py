@@ -414,7 +414,7 @@ class Task(AssignableMixin, BaseModel):
         if self.status == "Completed":
             return False
         if self.due_date:
-            return timezone.now().date() > self.due_date
+            return timezone.localdate() > self.due_date
         return False
 
     @property
@@ -422,4 +422,4 @@ class Task(AssignableMixin, BaseModel):
         """Return days until due (negative if overdue). None if no due date."""
         if not self.due_date:
             return None
-        return (self.due_date - timezone.now().date()).days
+        return (self.due_date - timezone.localdate()).days

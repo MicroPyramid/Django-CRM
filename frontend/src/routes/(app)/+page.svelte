@@ -28,7 +28,7 @@
       : summary.quiet_deals === 0
         ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
         : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
-          `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value)} ` +
+          `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value, data.org.currency)} ` +
           `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet. Those are first.`
   );
 </script>

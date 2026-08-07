@@ -3,6 +3,10 @@ import { EDITABLE_FIELDS, createDeal, getDealFormOptions } from '$lib/server/v2/
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
+  // The currency hint under the amount comes from the shell (`data.org.currency`
+  // via `(app)/+layout.server.js`). It is the currency this deal will be created
+  // in: the form has no currency field, so the serializer stamps the org default
+  // (`OpportunityCreateSerializer.create`).
   return await getDealFormOptions(event);
 }
 

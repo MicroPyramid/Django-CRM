@@ -185,7 +185,7 @@ class CaseMergeView(APIView):
             source.merged_at = now
             source.merged_by = request.profile
             source.status = "Duplicate"
-            source.closed_on = now.date()
+            source.closed_on = timezone.localdate()
             source.save(
                 update_fields=[
                     "merge_record",

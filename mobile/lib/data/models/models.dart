@@ -8,7 +8,6 @@ export 'deal.dart';
 export 'task.dart';
 export 'ticket.dart';
 export 'activity.dart';
-export 'notification.dart';
 export 'comment.dart';
 export 'lookup_models.dart';
 export 'custom_field_definition.dart';

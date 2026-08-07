@@ -72,6 +72,10 @@
   let addColumnBusy = $state(false);
   let addColumnError = $state('');
 
+  // Only ever seen on the empty state, where there is no board to add to yet.
+  let createBoardBusy = $state(false);
+  let createBoardError = $state('');
+
   function openCardForm(/** @type {string} */ columnId) {
     addingCardTo = columnId;
     addCardError = '';
@@ -181,14 +185,54 @@
 <SectionTabs set="tasks" />
 
 {#if !data.board}
+  <!-- This used to say "Create one from the mobile app to see it here." The
+       mobile app has no boards, and no client called POST /boards/, so an org
+       that had never been given one through the API was stuck here. -->
   <div class="v2-pad" style="padding-top:32px">
     <div class="v2-empty">
       <Plus size={22} style="opacity:0.4" />
       <p class="v2-empty-title">No boards yet</p>
       <p class="v2-sub" style="max-width:34ch;text-align:center">
-        A board organises work into columns you drag cards between. Create one from the mobile app
-        to see it here.
+        A board organises work into columns you drag cards between. It starts with To Do, In
+        Progress and Done, and you can rename them later.
       </p>
+      <form
+        class="v2-lane-add-form"
+        style="max-width:20rem;margin-top:14px"
+        method="POST"
+        action="?/create"
+        use:enhance={() => {
+          createBoardBusy = true;
+          return async ({ result }) => {
+            createBoardBusy = false;
+            if (result.type === 'success') {
+              createBoardError = '';
+              await invalidateAll();
+            } else if (result.type === 'failure') {
+              createBoardError =
+                /** @type {any} */ (result.data)?.error || 'Could not create the board.';
+            } else if (result.type === 'error') {
+              createBoardError = 'Could not create the board.';
+            }
+          };
+        }}
+      >
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          class="v2-input"
+          name="name"
+          placeholder="Board name"
+          maxlength="255"
+          required
+          autofocus
+        />
+        <button class="v2-btn v2-btn-primary" type="submit" disabled={createBoardBusy}>
+          {createBoardBusy ? 'Creating…' : 'Create board'}
+        </button>
+      </form>
+      {#if createBoardError}
+        <p class="v2-error" role="status">{createBoardError}</p>
+      {/if}
     </div>
   </div>
 {:else}

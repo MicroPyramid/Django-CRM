@@ -15,6 +15,11 @@ class ApiConfig {
   /// Production API URL
   static const String _productionUrl = 'https://api.bottlecrm.io';
 
+  /// Public marketing site. Hosts the documents the app has to link to
+  /// (`/terms-of-service`, `/privacy-policy`) rather than ship its own copies,
+  /// which would drift the moment either is edited.
+  static const String marketingSite = 'https://bottlecrm.io';
+
   /// Get the current base URL based on build mode
   static String get baseUrl => kDebugMode ? _developmentUrl : _productionUrl;
 
@@ -49,6 +54,16 @@ class ApiConfig {
 
   /// Switch organization context
   static String get switchOrg => '$apiBaseUrl/auth/switch-org/';
+
+  /// Create an organization and become its admin (OrgProfileCreateView).
+  /// Needs a signed-in user but no org context, which is the point: the caller
+  /// is someone who has none yet.
+  static String get orgCreate => '$apiBaseUrl/org/';
+
+  /// IANA zone names with their current UTC offsets, for the org form's
+  /// timezone picker. Served rather than read from the device so both clients
+  /// use one vocabulary (see `common/org_time.py`).
+  static String get timezones => '$apiBaseUrl/org/timezones/';
 
   // ==========================================================================
   // DASHBOARD

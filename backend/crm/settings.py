@@ -171,7 +171,15 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
 
-TIME_ZONE = "Asia/Kolkata"
+# The fallback day, not the app's day. Each org carries its own `timezone` and
+# `GetProfileAndOrg` activates it per request, so this is what gets used only
+# where there is no org yet: the auth endpoints, and management commands.
+#
+# It was "Asia/Kolkata", which made one deployment's home timezone the day
+# boundary for every tenant on it. Orgs that existed before `Org.timezone` keep
+# that day, assigned to them by `common/migrations/0037_org_timezone.py`, so no
+# live tenant's boundaries move.
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 

@@ -1749,6 +1749,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                     ),
                   ),
                   TextButton(
+                    // Themed buttons carry an infinite minimum width, which a Row
+                    // does not bound. Without this the row fails to lay out and the
+                    // screen paints nothing. See AppLayout.buttonMinSizeInRow.
+                    style: TextButton.styleFrom(
+                      minimumSize: AppLayout.buttonMinSizeInRow,
+                    ),
                     onPressed: () => _unmergeSource(src),
                     child: const Text('Unmerge'),
                   ),

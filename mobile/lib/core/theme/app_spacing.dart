@@ -119,6 +119,16 @@ class AppLayout {
   static const double buttonHeightLarge = 44.0;
   static const double buttonHeightMedium = 40.0;
   static const double buttonHeightSmall = 32.0;
+
+  /// Minimum size for a themed button placed directly in a `Row`.
+  ///
+  /// The button themes use `minimumSize: Size.fromHeight(h)`, which is
+  /// `Size(double.infinity, h)`. A bounded parent clamps that infinity to its
+  /// own width, which is how buttons in a `Column` come out full width. A
+  /// `Row` lays its non-flex children out with an unbounded main axis, so the
+  /// infinity survives, layout throws, and the entire subtree paints nothing.
+  /// Pass this as `minimumSize` on any themed button that sits in a row.
+  static const Size buttonMinSizeInRow = Size(0, buttonHeightMedium);
   static const double fabSize = 52.0;
   static const double fabMiniSize = 44.0;
   static const double tabBarHeight = 44.0;

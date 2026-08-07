@@ -14,6 +14,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 import axios from 'axios';
 import { describeError } from '$lib/server/log-safe.js';
 import { listPacks, applyPack } from '$lib/server/packs.js';
+import { listTimezones } from '$lib/server/v2/organization.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {
@@ -21,13 +22,23 @@ export async function load({ cookies }) {
   // brand-new user creating their very first org must never have this call
   // break the page. Fall back to an empty list, which renders as just the
   // "Skip for now" option.
-  try {
-    const packs = await listPacks(cookies);
-    return { packs };
-  } catch (/** @type {any} */ err) {
-    console.error('Could not load vertical packs:', err?.message, err?.status);
-    return { packs: [] };
-  }
+  const [packs, timezones] = await Promise.all([
+    listPacks(cookies).catch((/** @type {any} */ err) => {
+      console.error('Could not load vertical packs:', err?.message, err?.status);
+      return [];
+    }),
+    // The zone list comes from the API rather than the browser's own
+    // `Intl.supportedValuesOf`, because the two vocabularies disagree: a
+    // browser answers "Asia/Calcutta" where the server also knows
+    // "Asia/Kolkata", and a select that cannot find the stored value submits
+    // its first option instead. Falling back to just UTC keeps the form
+    // usable; the org can be corrected in settings.
+    listTimezones(cookies).catch((/** @type {any} */ err) => {
+      console.error('Could not load timezones:', err?.message, err?.status);
+      return [{ name: 'UTC', label: 'UTC' }];
+    })
+  ]);
+  return { packs, timezones };
 }
 
 /** @type {import('./$types').Actions} */
@@ -47,6 +58,9 @@ export const actions = {
     // Get the submitted form data
     const formData = await request.formData();
     const orgName = formData.get('org_name')?.toString();
+    // Optional end to end: the field is a select with a value, but the API
+    // treats a missing timezone as UTC so a submission without one still works.
+    const timezone = formData.get('timezone')?.toString().trim();
 
     if (!orgName || orgName.trim().length === 0) {
       return {
@@ -72,9 +86,7 @@ export const actions = {
       // Django's OrgProfileCreateView creates both org and profile
       const response = await axios.post(
         `${apiUrl}/api/org/`,
-        {
-          name: orgName.trim()
-        },
+        timezone ? { name: orgName.trim(), timezone } : { name: orgName.trim() },
         {
           headers: {
             Authorization: `Bearer ${jwtAccess}`,

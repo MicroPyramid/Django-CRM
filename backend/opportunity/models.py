@@ -529,7 +529,7 @@ class SalesGoal(BaseModel):
         if percent >= 100:
             return "completed"
 
-        today = date.today()
+        today = timezone.localdate()
         if today < self.period_start:
             expected_pace = 0
         elif today >= self.period_end:

@@ -145,7 +145,7 @@ def annotate_rollups(queryset):
     unclosed = {"stage__in": OPEN_STAGES}
     past_due = {
         "status__in": UNPAID_STATUSES,
-        "due_date__lt": timezone.now().date(),
+        "due_date__lt": timezone.localdate(),
         "amount_due__gt": 0,
     }
 
@@ -275,9 +275,23 @@ class AccountsListView(APIView, LimitOffsetPagination):
             offset = 0
         accounts_inactive = AccountSerializer(results_accounts_inactive, many=True).data
 
-        contacts = Contact.objects.filter(org=self.request.profile.org).values(
-            "id", "first_name"
+        # The contact and lead catalogues below exist for the account *form*
+        # (linking a contact, converting a lead). They are org-scoped, and for
+        # a non-admin they must ALSO be narrowed the same way the account list
+        # above is, because a side payload is a door like any other: this
+        # endpoint used to hand a member the org's whole lead catalogue, in
+        # full, including leads whose own detail route answers 403 for them.
+        # `/api/cases/` and `/api/opportunities/` already narrow their
+        # equivalents; these two were missed.
+        member_scope = Q(created_by=self.request.profile.user) | Q(
+            assigned_to=self.request.profile
         )
+        narrow_to_member = not is_org_admin(self.request.profile)
+
+        contact_qs = Contact.objects.filter(org=self.request.profile.org)
+        if narrow_to_member:
+            contact_qs = contact_qs.filter(member_scope).distinct()
+        contacts = contact_qs.values("id", "first_name")
         context["contacts"] = contacts
         context["closed_accounts"] = {
             "offset": offset,
@@ -301,7 +315,8 @@ class AccountsListView(APIView, LimitOffsetPagination):
         leads = Lead.objects.filter(org=self.request.profile.org).exclude(
             Q(status="converted") | Q(status="closed")
         )
-        context["users"] = users
+        if narrow_to_member:
+            leads = leads.filter(member_scope).distinct()
         context["leads"] = LeadSerializer(leads, many=True).data
         context["status"] = ["active", "inactive"]  # Maps to is_active field
         return context

@@ -1,6 +1,5 @@
-from datetime import date
-
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -32,7 +31,7 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         if params.get("active") == "true":
             queryset = queryset.filter(is_active=True)
         if params.get("current") == "true":
-            today = date.today()
+            today = timezone.localdate()
             queryset = queryset.filter(
                 period_start__lte=today, period_end__gte=today
             )
@@ -171,7 +170,7 @@ class SalesGoalLeaderboardView(APIView):
 
     def get(self, request, *args, **kwargs):
         org = request.profile.org
-        today = date.today()
+        today = timezone.localdate()
 
         period_type = request.query_params.get("period_type", "MONTHLY")
 

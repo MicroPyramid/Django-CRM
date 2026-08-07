@@ -18,8 +18,38 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from common import serializer
 from common.models import Org, Profile, User
 from common.serializer import OrgAwareRefreshToken
+from common.utils import CURRENCY_SYMBOLS
 
 logger = logging.getLogger(__name__)
+
+
+def _org_payload(org, role=None):
+    """The org record every auth response hands a client.
+
+    Currency belongs here because a client picks it up at sign-in and holds it
+    for the whole session: the mobile deal and lead forms default a new
+    record's currency from it, and the dashboard prices its totals with it.
+    All three read fields that no endpoint was sending, so an org keeping its
+    books in euros still created dollar deals and drew a dollar dashboard.
+
+    ``default_currency`` and ``timezone`` are normalised rather than passed
+    through, so a blank column answers with the same "USD" and "UTC" the rest of
+    the codebase assumes.
+    """
+    currency = org.default_currency or "USD"
+    payload = {
+        "id": str(org.id),
+        "name": org.name,
+        "default_currency": currency,
+        "currency_symbol": CURRENCY_SYMBOLS.get(currency, "$"),
+        "default_country": org.default_country,
+        # The org's day, so a client can label a date the same way the server
+        # computed it instead of guessing from the device.
+        "timezone": org.timezone or "UTC",
+    }
+    if role is not None:
+        payload["role"] = role
+    return payload
 
 
 def _google_email_is_verified(claims):
@@ -290,16 +320,13 @@ class GoogleIdTokenView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        # Get user's organizations
-        profiles = Profile.objects.filter(user=user).select_related("org")
-        organizations = [
-            {
-                "id": str(p.org.id),
-                "name": p.org.name,
-                "role": p.role,
-            }
-            for p in profiles
-        ]
+        # Get user's organizations. Active profiles only: `OrgSwitchView`
+        # requires `is_active=True`, so listing a deactivated membership here
+        # offered an org that answers 403 the moment it is chosen.
+        profiles = Profile.objects.filter(user=user, is_active=True).select_related(
+            "org"
+        )
+        organizations = [_org_payload(p.org, role=p.role) for p in profiles]
 
         # Generate JWT token
         token = OrgAwareRefreshToken.for_user_and_org(user, None)
@@ -572,7 +599,7 @@ class OrgSwitchView(APIView):
             {
                 "access_token": str(token.access_token),
                 "refresh_token": str(token),
-                "current_org": {"id": str(profile.org.id), "name": profile.org.name},
+                "current_org": _org_payload(profile.org),
                 "profile": {
                     "id": str(profile.id),
                     "role": profile.role,
@@ -760,10 +787,7 @@ class MagicLinkVerifyView(APIView):
         }
 
         if default_org:
-            response_data["current_org"] = {
-                "id": str(default_org.id),
-                "name": default_org.name,
-            }
+            response_data["current_org"] = _org_payload(default_org)
 
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -871,17 +895,28 @@ class MagicLinkVerifyCodeView(APIView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        profiles = Profile.objects.filter(user=user, is_active=True)
+        profiles = list(
+            Profile.objects.filter(user=user, is_active=True)
+            .select_related("org")
+            .order_by("org__name")
+        )
+        # Same shape the Google flow returns, so a client can offer the same
+        # picker whichever way the user signed in.
+        organizations = [_org_payload(p.org, role=p.role) for p in profiles]
+
+        # Bind the session to an org only when there is no choice to make.
+        # Picking `profiles.first()` out of several was an arbitrary answer to
+        # a question only the user can answer: it dropped a three-org admin
+        # into whichever org the database happened to return first, named
+        # nowhere on screen, with the picker suppressed because an org had
+        # already been chosen for them.
         default_org = None
         profile = None
-        if profiles.exists():
-            profile = profiles.first()
+        if len(profiles) == 1:
+            profile = profiles[0]
             default_org = profile.org
 
-        if default_org:
-            token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
-        else:
-            token = OrgAwareRefreshToken.for_user_and_org(user, None)
+        token = OrgAwareRefreshToken.for_user_and_org(user, default_org, profile)
 
         audit_log.login_success(user, default_org, request)
 
@@ -890,10 +925,8 @@ class MagicLinkVerifyCodeView(APIView):
             "access_token": str(token.access_token),
             "refresh_token": str(token),
             "user": user_serializer.data,
+            "organizations": organizations,
         }
         if default_org:
-            response_data["current_org"] = {
-                "id": str(default_org.id),
-                "name": default_org.name,
-            }
+            response_data["current_org"] = _org_payload(default_org)
         return Response(response_data, status=status.HTTP_200_OK)

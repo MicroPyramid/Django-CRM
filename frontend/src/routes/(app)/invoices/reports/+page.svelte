@@ -79,16 +79,16 @@
 {:else}
   <div class="v2-pad" style="padding-top:16px;flex:none">
     <div class="v2-stats">
-      <StatCard label="Invoiced" value={money(d.total_invoiced)} tone="ink" />
+      <StatCard label="Invoiced" value={money(d.total_invoiced, data.org.currency)} tone="ink" />
       <StatCard
         label="Collected"
-        value={money(d.total_paid)}
+        value={money(d.total_paid, data.org.currency)}
         tone="moss"
         detail="{collected}% of invoiced"
       />
       <StatCard
         label="Overdue"
-        value={money(d.overdue_amount)}
+        value={money(d.overdue_amount, data.org.currency)}
         tone={d.overdue_amount > 0 ? 'rust' : 'slate'}
         detail="{count(aging.overdue_count)} invoices past their due date"
       />
@@ -113,9 +113,10 @@
               {#each data.revenue as r (r.period)}
                 <div
                   class="v2-col"
-                  title="{monthLabel(r.period)}: {money(r.invoiced)} invoiced, {money(
-                    r.paid
-                  )} collected"
+                  title="{monthLabel(r.period)}: {money(
+                    r.invoiced,
+                    data.org.currency
+                  )} invoiced, {money(r.paid, data.org.currency)} collected"
                 >
                   <i class="in" style="height:{(r.invoiced / peak) * 100}%"></i>
                   <i class="out" style="height:{(r.paid / peak) * 100}%"></i>
@@ -154,7 +155,7 @@
                       {b.count === 1 ? 'invoice' : 'invoices'}
                     </span>
                     <span class="v2-num" style="margin-left:auto;font-size:13px;font-weight:600">
-                      {money(b.amount)}
+                      {money(b.amount, data.org.currency)}
                     </span>
                   </div>
                   <div class="v2-bar">
@@ -175,7 +176,9 @@
           -->
             <div class="v2-aging-note">
               <span class="v2-sub">Not yet due</span>
-              <span class="v2-num" style="font-size:13px">{money(aging.not_yet_due.amount)}</span>
+              <span class="v2-num" style="font-size:13px"
+                >{money(aging.not_yet_due.amount, data.org.currency)}</span
+              >
               <span class="v2-sub" style="font-size:11px">
                 across {count(aging.not_yet_due.count)} invoices, not late, not shown above
               </span>
@@ -214,7 +217,9 @@
                   >
                     {a.oldest_days}d
                   </td>
-                  <td class="v2-num" style="text-align:right;font-weight:600">{money(a.amount)}</td>
+                  <td class="v2-num" style="text-align:right;font-weight:600"
+                    >{money(a.amount, data.org.currency)}</td
+                  >
                 </tr>
               {/each}
             </tbody>

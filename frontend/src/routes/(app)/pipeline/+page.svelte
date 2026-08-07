@@ -74,8 +74,8 @@
          that was only ever true under the old hardcoded ?open=true would lie
          here as soon as somebody switched presets. -->
     <span class="v2-num">{count(totals.count)}</span> deals ·
-    <span class="v2-num">{money(totals.amount_sum)}</span> ·
-    <span class="v2-num">{money(totals.weighted_sum)}</span> weighted ·
+    <span class="v2-num">{money(totals.amount_sum, data.org.currency)}</span> ·
+    <span class="v2-num">{money(totals.weighted_sum, data.org.currency)}</span> weighted ·
     <span class="v2-num" style="color:var(--v2-rust)">{totals.stalled_count}</span> stalled
   {/snippet}
   {#snippet actions()}
@@ -119,7 +119,7 @@
       <section class="v2-lane">
         <div class="v2-lane-head">
           <span class="v2-label">{STAGE_LABEL[lane.stage]}</span>
-          <span class="v2-num">{count(lane.count)} · {money(lane.sum)}</span>
+          <span class="v2-num">{count(lane.count)} · {money(lane.sum, data.org.currency)}</span>
         </div>
         <div class="v2-lane-body">
           {#if lane.truncated}
@@ -143,7 +143,7 @@
               </div>
               <div class="v2-deal-card-foot">
                 <Avatar name={d.assigned_to} size={21} />
-                <span class="v2-num" style="font-weight:600">{money(d.amount)}</span>
+                <span class="v2-num" style="font-weight:600">{money(d.amount, d.currency)}</span>
                 <span class="v2-sub" style="margin-left:auto;font-size:11.5px"
                   >{shortDate(d.closed_on)}</span
                 >
@@ -197,7 +197,7 @@
               <td data-m="tag">
                 <Pill tone={AGING_TONE[d.aging_status]} dot>{AGING_LABEL[d.aging_status]}</Pill>
               </td>
-              <td class="v2-r v2-num" style="font-weight:600">{money(d.amount)}</td>
+              <td class="v2-r v2-num" style="font-weight:600">{money(d.amount, d.currency)}</td>
               <td>{shortDate(d.closed_on)}</td>
               <!-- Hidden on a phone: the Health pill beside the title is computed
                    from this same number, so showing both spends a line to say

@@ -55,6 +55,10 @@
   ];
 
   const org = untrack(() => data.org ?? {});
+  // Always includes the org's current value, because the API builds the list
+  // from the same database the value was validated against. A stored zone with
+  // no matching option would make the select submit its first entry instead.
+  const timezones = untrack(() => data.timezones ?? [{ name: 'UTC', label: 'UTC' }]);
 
   let form = $state(
     untrack(() => ({
@@ -71,6 +75,7 @@
       tax_id: org.tax_id ?? '',
       default_currency: org.default_currency || 'USD',
       default_country: org.default_country ?? '',
+      timezone: org.timezone || 'UTC',
       // Booleans travel as strings so the select always submits an explicit value.
       csat_enabled: String(org.csat_enabled ?? true),
       auto_close_children_on_parent_close: String(org.auto_close_children_on_parent_close ?? false)
@@ -322,6 +327,19 @@
           </select>
           <p class="v2-hint">Pre-filled on new addresses.</p>
         </div>
+      </div>
+
+      <div class="v2-field">
+        <label for="f-timezone">Time zone</label>
+        <select id="f-timezone" name="timezone" class="v2-input" bind:value={form.timezone}>
+          {#each timezones as zone (zone.name)}
+            <option value={zone.name}>{zone.label}</option>
+          {/each}
+        </select>
+        <p class="v2-hint">
+          When a day starts for this organisation. Changing it moves what counts as due
+          today and overdue, for everyone here.
+        </p>
       </div>
 
       <div class="v2-label" style="margin:24px 0 12px">Behaviour</div>

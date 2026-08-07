@@ -43,7 +43,7 @@
 <PageHeader title="Estimates">
   {#snippet sub()}
     <span class="v2-num">{count(totals.count)}</span> estimates ·
-    <span class="v2-num">{money(totals.awaiting_reply)}</span> awaiting a reply
+    <span class="v2-num">{money(totals.awaiting_reply, data.org.currency)}</span> awaiting a reply
   {/snippet}
   {#snippet actions()}
     <!-- An estimate is raised from a deal, not typed from scratch here. The
@@ -71,11 +71,15 @@
   <div class="v2-stats">
     <StatCard
       label="Accepted, not billed"
-      value={money(totals.accepted_unconverted)}
+      value={money(totals.accepted_unconverted, data.org.currency)}
       tone="clay"
       detail="Agreed and waiting on an invoice"
     />
-    <StatCard label="Awaiting a reply" value={money(totals.awaiting_reply)} tone="ink" />
+    <StatCard
+      label="Awaiting a reply"
+      value={money(totals.awaiting_reply, data.org.currency)}
+      tone="ink"
+    />
     <StatCard
       label="Expiring within 7 days"
       value={count(totals.expiring_within_7d)}
@@ -152,7 +156,9 @@
                   <span class="v2-muted">—</span>
                 {/if}
               </td>
-              <td class="v2-r v2-num" style="font-weight:600">{money(e.total_amount)}</td>
+              <td class="v2-r v2-num" style="font-weight:600"
+                >{money(e.total_amount, e.currency)}</td
+              >
               <td class="v2-r" style={v?.urgent ? 'color:var(--v2-rust);font-weight:600' : ''}>
                 {#if v}
                   {v.text}

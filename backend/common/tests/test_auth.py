@@ -231,9 +231,7 @@ class TestOrgSwitchView:
 
     def test_switch_org_returns_tokens(self, admin_client, admin_user, org_b):
         """Switch org should return new access and refresh tokens."""
-        Profile.objects.create(
-            user=admin_user, org=org_b, role="ADMIN", is_active=True
-        )
+        Profile.objects.create(user=admin_user, org=org_b, role="ADMIN", is_active=True)
         response = admin_client.post(
             self.url,
             {"org_id": str(org_b.id)},
@@ -871,3 +869,115 @@ class TestFlushExpiredRefreshTokens:
         from common.tasks import flush_expired_refresh_tokens
 
         assert flush_expired_refresh_tokens() == 0
+
+
+@pytest.mark.django_db
+class TestGoogleOrgListExcludesDeactivated:
+    """A membership that `OrgSwitchView` will refuse must not be offered.
+
+    The switch endpoint requires `is_active=True`, so a deactivated profile's
+    org was an entry in the picker that answered 403 the moment it was chosen.
+    """
+
+    url = "/api/auth/google/"
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_deactivated_membership_is_not_listed(
+        self,
+        mock_request_cls,
+        mock_verify,
+        unauthenticated_client,
+        admin_user,
+        admin_profile,
+        org_a,
+        org_b,
+    ):
+        Profile.objects.create(
+            user=admin_user, org=org_b, role="ADMIN", is_active=False
+        )
+        mock_verify.return_value = {
+            "email": admin_user.email,
+            "email_verified": True,
+            "picture": "",
+        }
+
+        response = unauthenticated_client.post(
+            self.url, {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        returned = {o["id"] for o in response.data["organizations"]}
+        assert returned == {str(org_a.id)}
+
+
+@pytest.mark.django_db
+class TestOrgPayloadCarriesCurrency:
+    """Sign-in and org switch must say what currency an org keeps its books in.
+
+    Both clients parse `default_currency` and `currency_symbol` off the org
+    records these endpoints return, and no endpoint was sending either. The
+    mobile deal and lead forms therefore defaulted every new record to USD,
+    and the mobile dashboard printed a dollar sign over an org's totals
+    whatever currency they were actually in.
+    """
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    @patch("google.auth.transport.requests.Request")
+    def test_google_sign_in_lists_the_currency(
+        self,
+        mock_request_cls,
+        mock_verify,
+        unauthenticated_client,
+        admin_user,
+        admin_profile,
+        org_a,
+    ):
+        org_a.default_currency = "EUR"
+        org_a.save(update_fields=["default_currency"])
+        mock_verify.return_value = {
+            "email": admin_user.email,
+            "email_verified": True,
+            "picture": "",
+        }
+
+        response = unauthenticated_client.post(
+            "/api/auth/google/", {"idToken": "valid-token"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        listed = response.data["organizations"][0]
+        assert listed["default_currency"] == "EUR"
+        assert listed["currency_symbol"] == "€"
+
+    def test_org_switch_returns_the_target_org_currency(
+        self, admin_client, admin_user, org_b
+    ):
+        org_b.default_currency = "INR"
+        org_b.save(update_fields=["default_currency"])
+        Profile.objects.create(user=admin_user, org=org_b, role="ADMIN")
+
+        response = admin_client.post(
+            "/api/auth/switch-org/", {"org_id": str(org_b.id)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["current_org"]["default_currency"] == "INR"
+        assert response.data["current_org"]["currency_symbol"] == "₹"
+
+    def test_an_org_with_no_currency_set_falls_back_to_dollars(
+        self, admin_client, admin_user, org_b
+    ):
+        """`default_currency` is nullable in practice, so the symbol lookup
+        has to answer for an empty value rather than raise or return None."""
+        org_b.default_currency = ""
+        org_b.save(update_fields=["default_currency"])
+        Profile.objects.create(user=admin_user, org=org_b, role="ADMIN")
+
+        response = admin_client.post(
+            "/api/auth/switch-org/", {"org_id": str(org_b.id)}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["current_org"]["default_currency"] == "USD"
+        assert response.data["current_org"]["currency_symbol"] == "$"

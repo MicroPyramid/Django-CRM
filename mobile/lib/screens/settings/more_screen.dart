@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_router.dart';
@@ -52,6 +54,17 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               label: 'Profile Settings',
               onTap: () => context.push(AppRoutes.profile),
             ),
+            // Only worth showing to someone who has somewhere to switch to.
+            // The picker and `switchOrganization` both already existed and
+            // worked; nothing in the app reached them once an org was chosen,
+            // so the only way to change org was to sign out.
+            if ((ref.watch(authProvider).organizations?.length ?? 0) > 1)
+              _MenuItem(
+                icon: LucideIcons.building2,
+                label: 'Switch Organization',
+                description: ref.watch(selectedOrgProvider)?.name,
+                onTap: () => context.push(AppRoutes.orgSelection),
+              ),
 
             // Team Section
             _buildSectionHeader('Team'),
@@ -97,12 +110,12 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             _MenuItem(
               icon: LucideIcons.fileText,
               label: 'Terms of Service',
-              onTap: () => _showComingSoon('Terms of Service'),
+              onTap: () => _openOnTheWeb('/terms-of-service', 'Terms of Service'),
             ),
             _MenuItem(
               icon: LucideIcons.shield,
               label: 'Privacy Policy',
-              onTap: () => _showComingSoon('Privacy Policy'),
+              onTap: () => _openOnTheWeb('/privacy-policy', 'Privacy Policy'),
             ),
 
             // Sign Out Button
@@ -247,6 +260,22 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         ),
       ),
     );
+  }
+
+  /// Open a page on the marketing site, which is where these documents live.
+  /// They were "coming soon" dialogs while the real pages were already
+  /// published.
+  Future<void> _openOnTheWeb(String path, String label) async {
+    final uri = Uri.parse('${ApiConfig.marketingSite}$path');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open $label'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showComingSoon(String feature) {

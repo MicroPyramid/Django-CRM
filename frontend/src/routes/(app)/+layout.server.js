@@ -121,7 +121,21 @@ export async function load(event) {
     counts: /** @type {Record<string, number>} */ ({}),
     org: {
       name: event.locals.org?.name || 'BottleCRM',
-      terminology: /** @type {Record<string, string> | undefined} */ (undefined)
+      terminology: /** @type {Record<string, string> | undefined} */ (undefined),
+      // The currency for figures that are sums rather than one record: pipeline
+      // totals, invoice ageing, goal progress. A per-record currency cannot
+      // label a sum, and `money()` falls back to a hardcoded USD when it is not
+      // told, which printed a dollar sign over a euro figure on every page that
+      // forgot. It lives here rather than in each page loader because 17 of
+      // them needed it and copying the same line 17 times is how the first one
+      // fell out of step.
+      //
+      // This does not make a mixed-currency sum correct: the API adds `amount`
+      // across rows regardless of currency, so an org running more than one
+      // gets an addition that should not have happened, and no symbol repairs
+      // it. Read from the JWT's org settings, which is also where a new deal's
+      // currency comes from.
+      currency: /** @type {any} */ (event.locals).org_settings?.default_currency || 'USD'
     },
     // Server-derived from the JWT (never the client). Display-only: it lets the
     // shell hide destinations a member can only reach to be turned away. The

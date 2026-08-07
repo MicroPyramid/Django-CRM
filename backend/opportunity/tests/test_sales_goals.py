@@ -1,6 +1,6 @@
 """Tests for Sales Goals / Quotas feature."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -8,6 +8,7 @@ import pytest
 
 from common.models import Teams
 from opportunity.models import Opportunity, SalesGoal
+from django.utils import timezone
 
 
 # ---- Fixtures ---- #
@@ -21,7 +22,7 @@ def team_a(org_a):
 @pytest.fixture
 def goal_revenue(org_a, admin_profile):
     """A revenue goal for the current month."""
-    today = date.today()
+    today = timezone.localdate()
     return SalesGoal.objects.create(
         name="Monthly Revenue",
         goal_type="REVENUE",
@@ -38,7 +39,7 @@ def goal_revenue(org_a, admin_profile):
 @pytest.fixture
 def goal_deals(org_a, user_profile):
     """A deals closed goal for the current month."""
-    today = date.today()
+    today = timezone.localdate()
     return SalesGoal.objects.create(
         name="Monthly Deals",
         goal_type="DEALS_CLOSED",
@@ -55,7 +56,7 @@ def goal_deals(org_a, user_profile):
 @pytest.fixture
 def team_goal(org_a, team_a):
     """A team revenue goal."""
-    today = date.today()
+    today = timezone.localdate()
     return SalesGoal.objects.create(
         name="Team Revenue",
         goal_type="REVENUE",
@@ -72,7 +73,7 @@ def team_goal(org_a, team_a):
 def _create_won_opportunity(org, user, amount, closed_on=None):
     """Helper to create a CLOSED_WON opportunity."""
     if closed_on is None:
-        closed_on = date.today()
+        closed_on = timezone.localdate()
     opp = Opportunity.objects.create(
         name=f"Won Deal {amount}",
         stage="CLOSED_WON",
@@ -167,7 +168,7 @@ class TestSalesGoalModel:
         assert goal_revenue.progress_percent == 100
 
     def test_progress_percent_zero_target(self, org_a):
-        today = date.today()
+        today = timezone.localdate()
         goal = SalesGoal.objects.create(
             name="Zero target",
             goal_type="REVENUE",
@@ -187,7 +188,7 @@ class TestSalesGoalModel:
 
     def test_status_on_track(self, org_a, admin_profile, admin_user):
         # Create a goal for a period that just started
-        today = date.today()
+        today = timezone.localdate()
         goal = SalesGoal.objects.create(
             name="Future Goal",
             goal_type="REVENUE",
@@ -208,7 +209,7 @@ class TestSalesGoalModel:
 
     def test_status_behind(self, org_a, admin_profile):
         # Goal period almost over, no progress
-        today = date.today()
+        today = timezone.localdate()
         goal = SalesGoal.objects.create(
             name="Behind Goal",
             goal_type="REVENUE",
@@ -244,7 +245,7 @@ class TestSalesGoalAPI:
         assert str(goal_deals.id) in goal_ids
 
     def test_create_goal_admin(self, admin_client, org_a):
-        today = date.today()
+        today = timezone.localdate()
         data = {
             "name": "New Goal",
             "goal_type": "REVENUE",
@@ -262,7 +263,7 @@ class TestSalesGoalAPI:
         assert SalesGoal.objects.filter(name="New Goal", org=org_a).exists()
 
     def test_create_goal_non_admin_forbidden(self, user_client):
-        today = date.today()
+        today = timezone.localdate()
         data = {
             "name": "Sneaky Goal",
             "goal_type": "REVENUE",
@@ -275,7 +276,7 @@ class TestSalesGoalAPI:
         assert response.status_code == 403
 
     def test_create_goal_validation_period(self, admin_client):
-        today = date.today()
+        today = timezone.localdate()
         data = {
             "name": "Bad Period",
             "goal_type": "REVENUE",
@@ -288,7 +289,7 @@ class TestSalesGoalAPI:
         assert response.status_code == 400
 
     def test_create_goal_validation_target(self, admin_client):
-        today = date.today()
+        today = timezone.localdate()
         data = {
             "name": "Zero Target",
             "goal_type": "REVENUE",
@@ -330,7 +331,7 @@ class TestSalesGoalAPI:
         assert response.data["goals_count"] == 0
 
     def _valid_goal_payload(self, **overrides):
-        today = date.today()
+        today = timezone.localdate()
         data = {
             "name": "Cross-org probe",
             "goal_type": "REVENUE",
@@ -405,7 +406,7 @@ class TestSalesGoalAPI:
         assert "status" in response.data
 
     def test_filter_active(self, admin_client, org_a):
-        today = date.today()
+        today = timezone.localdate()
         SalesGoal.objects.create(
             name="Active Goal",
             goal_type="REVENUE",
@@ -433,7 +434,7 @@ class TestSalesGoalAPI:
         assert "Inactive Goal" not in names
 
     def test_filter_current(self, admin_client, org_a):
-        today = date.today()
+        today = timezone.localdate()
         SalesGoal.objects.create(
             name="Current Goal",
             goal_type="REVENUE",
@@ -465,7 +466,7 @@ class TestLeaderboardAPI:
     def test_leaderboard_ranked(
         self, admin_client, org_a, admin_user, admin_profile, regular_user, user_profile
     ):
-        today = date.today()
+        today = timezone.localdate()
         period_start = today.replace(day=1)
         period_end = (today.replace(day=28) + timedelta(days=4)).replace(
             day=1
@@ -534,7 +535,7 @@ class TestGoalMilestoneTask:
     ):
         from opportunity.tasks import check_goal_milestones
 
-        today = date.today()
+        today = timezone.localdate()
         goal = SalesGoal.objects.create(
             name="Milestone Test",
             goal_type="REVENUE",
@@ -562,7 +563,7 @@ class TestGoalMilestoneTask:
     ):
         from opportunity.tasks import check_goal_milestones
 
-        today = date.today()
+        today = timezone.localdate()
         goal = SalesGoal.objects.create(
             name="No Dupe Test",
             goal_type="REVENUE",

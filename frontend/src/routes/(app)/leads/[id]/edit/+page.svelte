@@ -456,7 +456,7 @@
         {:else}
           <p class="v2-hint">
             {Number(form.opportunity_amount) > 0
-              ? money(Number(form.opportunity_amount))
+              ? money(Number(form.opportunity_amount), lead.currency)
               : 'What the deal would be worth if it lands.'}
           </p>
         {/if}

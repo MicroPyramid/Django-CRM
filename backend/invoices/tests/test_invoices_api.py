@@ -85,8 +85,8 @@ def estimate_org_b(account_org_b, contact_org_b, org_b):
         client_name="Org B Client",
         client_email="orgbclient@example.com",
         currency="USD",
-        issue_date=datetime.date.today(),
-        expiry_date=datetime.date.today() + datetime.timedelta(days=30),
+        issue_date=timezone.localdate(),
+        expiry_date=timezone.localdate() + datetime.timedelta(days=30),
         org=org_b,
     )
 
@@ -139,8 +139,8 @@ def estimate(account_for_invoice, contact_for_invoice, org_a):
         client_name="Test Client",
         client_email="client@example.com",
         currency="USD",
-        issue_date=datetime.date.today(),
-        expiry_date=datetime.date.today() + datetime.timedelta(days=30),
+        issue_date=timezone.localdate(),
+        expiry_date=timezone.localdate() + datetime.timedelta(days=30),
         org=org_a,
     )
 
@@ -154,8 +154,8 @@ def recurring_invoice(account_for_invoice, contact_for_invoice, org_a):
         client_name="Recurring Client",
         client_email="recurring@example.com",
         frequency="MONTHLY",
-        start_date=datetime.date.today(),
-        next_generation_date=datetime.date.today(),
+        start_date=timezone.localdate(),
+        next_generation_date=timezone.localdate(),
         payment_terms="NET_30",
         currency="USD",
         is_active=True,
@@ -204,7 +204,7 @@ def payment(invoice, org_a):
     return Payment.objects.create(
         invoice=invoice,
         amount=Decimal("100.00"),
-        payment_date=datetime.date.today(),
+        payment_date=timezone.localdate(),
         payment_method="CASH",
         org=org_a,
     )
@@ -508,7 +508,7 @@ class TestInvoiceListFilters:
         assert data["count"] >= 1
 
     def test_filter_by_date_range(self, admin_client, invoice):
-        today = datetime.date.today().isoformat()
+        today = timezone.localdate().isoformat()
         response = admin_client.get(
             f"/api/invoices/?issue_date_gte={today}&issue_date_lte={today}"
         )
@@ -2727,7 +2727,7 @@ class TestAgingReport:
         self, admin_client, account_for_invoice, org_a
     ):
         """Create invoices with various due dates and check aging buckets."""
-        today = datetime.date.today()
+        today = timezone.localdate()
         self._make_unpaid_invoice(
             "Current Invoice",
             "Sent",
@@ -2827,7 +2827,7 @@ class TestReportPayloadShape:
 
     def test_average_days_to_pay_is_computed(self, admin_client, invoice):
         # A paid invoice issued 10 days before it was paid -> ~10 day average.
-        invoice.issue_date = datetime.date.today() - datetime.timedelta(days=10)
+        invoice.issue_date = timezone.localdate() - datetime.timedelta(days=10)
         invoice.status = "Paid"
         invoice.paid_at = timezone.now()
         invoice.amount_paid = invoice.total_amount
@@ -2836,7 +2836,7 @@ class TestReportPayloadShape:
         assert data["average_days_to_pay"] == 10
 
     def test_revenue_rows_carry_invoiced_and_paid(self, admin_client, invoice):
-        invoice.issue_date = datetime.date.today()
+        invoice.issue_date = timezone.localdate()
         invoice.status = "Paid"
         invoice.paid_at = timezone.now()
         invoice.amount_paid = invoice.total_amount
@@ -2867,7 +2867,7 @@ class TestReportPayloadShape:
             org=org_a,
         )
         inv.recalculate_totals()
-        inv.due_date = datetime.date.today() - datetime.timedelta(days=45)
+        inv.due_date = timezone.localdate() - datetime.timedelta(days=45)
         inv.save(update_fields=["due_date", "subtotal", "total_amount", "amount_due"])
         data = admin_client.get("/api/invoices/reports/aging/").json()
         assert "by_account" in data
@@ -3249,7 +3249,7 @@ class TestPublicEstimateAcceptDecline:
         import datetime
 
         estimate.status = "Sent"
-        estimate.expiry_date = datetime.date.today() - datetime.timedelta(days=1)
+        estimate.expiry_date = timezone.localdate() - datetime.timedelta(days=1)
         estimate.save()
         response = self._post_accept(estimate.public_token)
         assert response.status_code == 400
@@ -3263,7 +3263,7 @@ class TestPublicEstimateAcceptDecline:
         import datetime
 
         estimate.status = "Sent"
-        estimate.expiry_date = datetime.date.today()
+        estimate.expiry_date = timezone.localdate()
         estimate.save()
         response = self._post_accept(estimate.public_token)
         assert response.status_code == 200
@@ -3377,17 +3377,17 @@ class TestInvoiceModel:
         assert invoice.public_url == f"/portal/invoice/{invoice.public_token}"
 
     def test_is_overdue_true(self, invoice):
-        invoice.due_date = datetime.date.today() - datetime.timedelta(days=1)
+        invoice.due_date = timezone.localdate() - datetime.timedelta(days=1)
         invoice.status = "Sent"
         assert invoice.is_overdue is True
 
     def test_is_overdue_false_paid(self, invoice):
-        invoice.due_date = datetime.date.today() - datetime.timedelta(days=1)
+        invoice.due_date = timezone.localdate() - datetime.timedelta(days=1)
         invoice.status = "Paid"
         assert invoice.is_overdue is False
 
     def test_is_overdue_false_future_date(self, invoice):
-        invoice.due_date = datetime.date.today() + datetime.timedelta(days=10)
+        invoice.due_date = timezone.localdate() + datetime.timedelta(days=10)
         invoice.status = "Sent"
         assert invoice.is_overdue is False
 
@@ -3587,7 +3587,7 @@ class TestPaymentModel:
         Payment.objects.create(
             invoice=invoice,
             amount=Decimal("400.00"),
-            payment_date=datetime.date.today(),
+            payment_date=timezone.localdate(),
             payment_method="CASH",
             org=org_a,
         )
@@ -3600,7 +3600,7 @@ class TestPaymentModel:
         Payment.objects.create(
             invoice=invoice,
             amount=Decimal("500.00"),
-            payment_date=datetime.date.today(),
+            payment_date=timezone.localdate(),
             payment_method="BANK_TRANSFER",
             org=org_a,
         )
@@ -3613,7 +3613,7 @@ class TestPaymentModel:
         p = Payment.objects.create(
             invoice=invoice,
             amount=Decimal("500.00"),
-            payment_date=datetime.date.today(),
+            payment_date=timezone.localdate(),
             payment_method="CASH",
             org=org_a,
         )
@@ -3627,7 +3627,7 @@ class TestPaymentModel:
         p = Payment.objects.create(
             invoice=invoice,
             amount=Decimal("50.00"),
-            payment_date=datetime.date.today(),
+            payment_date=timezone.localdate(),
             payment_method="CASH",
             org=invoice.org,
         )
@@ -3651,17 +3651,17 @@ class TestEstimateModel:
         assert estimate.public_url == f"/portal/estimate/{estimate.public_token}"
 
     def test_is_expired_true(self, estimate):
-        estimate.expiry_date = datetime.date.today() - datetime.timedelta(days=1)
+        estimate.expiry_date = timezone.localdate() - datetime.timedelta(days=1)
         estimate.status = "Sent"
         assert estimate.is_expired is True
 
     def test_is_expired_false_accepted(self, estimate):
-        estimate.expiry_date = datetime.date.today() - datetime.timedelta(days=1)
+        estimate.expiry_date = timezone.localdate() - datetime.timedelta(days=1)
         estimate.status = "Accepted"
         assert estimate.is_expired is False
 
     def test_is_expired_false_future(self, estimate):
-        estimate.expiry_date = datetime.date.today() + datetime.timedelta(days=10)
+        estimate.expiry_date = timezone.localdate() + datetime.timedelta(days=10)
         estimate.status = "Sent"
         assert estimate.is_expired is False
 

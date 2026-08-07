@@ -214,11 +214,19 @@ class AuthService {
           name: userData['name'] as String?,
           profilePic: userData['profile_pic'] as String?,
         );
-        final orgsList = userData['organizations'] as List<dynamic>?;
-        _organizations = orgsList
-            ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
-            .toList();
       }
+
+      // `organizations` is a sibling of `user`, not a member of it. Reading it
+      // from inside `user` found nothing, so a code sign-in ended with no org
+      // list at all: the picker needs a non-empty list to appear, so it never
+      // did, while the JWT quietly carried whichever org the server had picked.
+      // The nested read is kept as a fallback in case an older build of the
+      // API is on the other end.
+      final orgsList =
+          (data['organizations'] ?? userData?['organizations']) as List<dynamic>?;
+      _organizations = orgsList
+          ?.map((org) => Organization.fromJson(org as Map<String, dynamic>))
+          .toList();
 
       // Backend returns `current_org` only when the user already belongs to an
       // org and its claim is baked into the JWT. Pre-select it so the user
@@ -386,6 +394,51 @@ class AuthService {
     } catch (e) {
       debugPrint('AuthService: Switch org error: $e');
       return false;
+    }
+  }
+
+  /// Create an organization and switch into it.
+  ///
+  /// `POST /api/org/` needs a signed-in user but no org context, which is the
+  /// whole point: the caller has none yet. The response carries the new org,
+  /// but not a token scoped to it, so the switch below is what actually gives
+  /// the session an org claim.
+  ///
+  /// [timezone] is optional end to end. The API treats a missing one as UTC, so
+  /// a build that predates the picker still creates a usable org.
+  ///
+  /// Returns null on success, or a message to show the user.
+  Future<String?> createOrganization(String name, {String? timezone}) async {
+    try {
+      final response = await _apiService.post(ApiConfig.orgCreate, {
+        'name': name,
+        if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
+      }, requiresAuth: true);
+
+      if (!response.success || response.data == null) {
+        return response.message ?? 'Could not create the organization.';
+      }
+
+      final orgJson = response.data!['org'] as Map<String, dynamic>?;
+      if (orgJson == null || orgJson['id'] == null) {
+        return 'The organization was created but the server did not say which.';
+      }
+
+      final org = Organization.fromJson(orgJson);
+      _organizations = [...?_organizations, org];
+      await _saveToStorage();
+
+      // Without this the session still carries the previous org claim (or
+      // none), so the app would land on a dashboard for the wrong org.
+      final switched = await selectOrganization(org);
+      if (!switched) {
+        return 'The organization was created, but signing into it failed. '
+            'Pick it from the list to continue.';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('AuthService: Create org error: $e');
+      return 'Could not create the organization.';
     }
   }
 

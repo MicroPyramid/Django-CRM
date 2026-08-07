@@ -50,8 +50,7 @@ class TestDashboardView:
         Account.objects.create(name="Acc2", org=org_a)
         Contact.objects.create(first_name="Con", last_name="Tact", org=org_a)
         Lead.objects.create(
-            first_name="Lead", last_name="One",
-            email="lead1@test.com", org=org_a
+            first_name="Lead", last_name="One", email="lead1@test.com", org=org_a
         )
         response = admin_client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
@@ -178,3 +177,141 @@ class TestActivityListView:
         response = admin_client.get(self.url + "?entity_type=Account")
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 1
+
+
+@pytest.mark.django_db
+class TestDashboardScopedMetrics:
+    """The KPI row has to agree with itself, and with the caller's role.
+
+    Every case here was reproduced on a real member session before it was
+    written: the dashboard read "4 Open Deals" beside a pipeline holding two,
+    and a 5% conversion rate that belonged to the whole org.
+    """
+
+    url = "/api/dashboard/"
+
+    def _deal(self, org, name, stage, amount, creator, assignees=()):
+        deal = Opportunity.objects.create(
+            name=name, org=org, stage=stage, amount=amount, probability=50
+        )
+        # `BaseModel.save()` sets created_by from the thread-local current
+        # user and ignores the kwarg, so authorship has to be written with an
+        # UPDATE that skips save() entirely.
+        Opportunity.objects.filter(pk=deal.pk).update(created_by=creator)
+        if assignees:
+            deal.assigned_to.set(assignees)
+        return deal
+
+    def _lead(self, org, last_name, email, status_value, creator, assignees=()):
+        lead = Lead.objects.create(
+            first_name="L",
+            last_name=last_name,
+            email=email,
+            org=org,
+            status=status_value,
+        )
+        Lead.objects.filter(pk=lead.pk).update(created_by=creator)
+        if assignees:
+            lead.assigned_to.set(assignees)
+        return lead
+
+    def test_open_deals_count_excludes_closed_stages(
+        self, admin_client, org_a, admin_user
+    ):
+        self._deal(org_a, "Open one", "PROPOSAL", 100, admin_user)
+        self._deal(org_a, "Open two", "NEGOTIATION", 200, admin_user)
+        self._deal(org_a, "Banked", "CLOSED_WON", 900, admin_user)
+        self._deal(org_a, "Lost", "CLOSED_LOST", 400, admin_user)
+
+        response = admin_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        metrics = response.data["revenue_metrics"]
+
+        assert metrics["open_opportunities_count"] == 2
+        # The card beside it sums the same two deals, so the pair must agree.
+        assert metrics["pipeline_value"] == 300.0
+        # The all-stage count is still published, and still counts all stages.
+        assert response.data["opportunities_count"] == 4
+
+    def test_conversion_rate_is_scoped_to_the_caller(
+        self, user_client, org_a, admin_user, regular_user, user_profile
+    ):
+        # The member owns two leads, one of them converted: 50%.
+        self._lead(org_a, "Converted", "m1@test.com", "converted", regular_user)
+        self._lead(org_a, "Open", "m2@test.com", "assigned", regular_user)
+        # The org holds eight more that are none of the member's business.
+        for i in range(8):
+            self._lead(org_a, str(i), f"t{i}@test.com", "assigned", admin_user)
+
+        response = user_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["revenue_metrics"]["conversion_rate"] == 50.0
+
+    def test_admin_conversion_rate_still_covers_the_org(
+        self, admin_client, org_a, admin_user, regular_user
+    ):
+        self._lead(org_a, "Converted", "a1@test.com", "converted", admin_user)
+        for i in range(3):
+            self._lead(org_a, str(i), f"b{i}@test.com", "assigned", regular_user)
+
+        response = admin_client.get(self.url)
+        assert response.data["revenue_metrics"]["conversion_rate"] == 25.0
+
+    def test_member_totals_are_not_multiplied_by_assignees(
+        self, user_client, org_a, regular_user, user_profile, admin_profile
+    ):
+        """One deal, created by the member and assigned to two people, is one.
+
+        Narrowing straight onto the assigned_to M2M turns this into two joined
+        rows, both matching on created_by, which doubles the count and doubles
+        the pipeline sum.
+        """
+        self._deal(
+            org_a,
+            "Shared",
+            "PROPOSAL",
+            1000,
+            regular_user,
+            assignees=[user_profile, admin_profile],
+        )
+
+        response = user_client.get(self.url)
+        metrics = response.data["revenue_metrics"]
+
+        assert metrics["open_opportunities_count"] == 1
+        assert metrics["pipeline_value"] == 1000.0
+        assert response.data["opportunities_count"] == 1
+
+    def test_member_lead_count_is_not_multiplied_by_assignees(
+        self, user_client, org_a, regular_user, user_profile, admin_profile
+    ):
+        self._lead(
+            org_a,
+            "Lead",
+            "shared@test.com",
+            "assigned",
+            regular_user,
+            assignees=[user_profile, admin_profile],
+        )
+
+        response = user_client.get(self.url)
+        assert response.data["leads_count"] == 1
+
+    def test_member_sees_only_their_own_deals(
+        self, user_client, org_a, admin_user, regular_user, user_profile
+    ):
+        self._deal(org_a, "Mine", "PROPOSAL", 100, regular_user)
+        self._deal(org_a, "Theirs", "PROPOSAL", 5000, admin_user)
+
+        response = user_client.get(self.url)
+        metrics = response.data["revenue_metrics"]
+
+        assert metrics["open_opportunities_count"] == 1
+        assert metrics["pipeline_value"] == 100.0
+
+    def test_dashboard_declares_org_context(self):
+        """The permission class is the contract; middleware is the safety net."""
+        from common.permissions import HasOrgContext
+        from common.views.dashboard_views import ApiHomeView
+
+        assert HasOrgContext in ApiHomeView.permission_classes

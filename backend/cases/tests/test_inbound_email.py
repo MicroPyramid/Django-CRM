@@ -388,7 +388,7 @@ class TestInboundActivityAndReopen:
         from django.utils import timezone as _tz
 
         case.status = "Closed"
-        case.closed_on = _tz.now().date() - _td(days=days_ago)
+        case.closed_on = _tz.localdate() - _td(days=days_ago)
         case.save()
         return case
 

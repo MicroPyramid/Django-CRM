@@ -49,7 +49,8 @@ export const EDITABLE_FIELDS = [
   'website',
   'tax_id',
   'default_currency',
-  'default_country'
+  'default_country',
+  'timezone'
 ];
 
 /**
@@ -126,4 +127,44 @@ export function updateOrgSettings({ cookies }, body) {
 export async function getOrgTerminology({ cookies }) {
   const org = await apiRequest('/org/settings/', {}, { cookies });
   return { terminology: org?.terminology, vertical: org?.vertical };
+}
+
+/**
+ * The IANA zone names a form may offer.
+ *
+ * From the API rather than the browser's `Intl.supportedValuesOf('timeZone')`,
+ * because the two disagree on aliases: a browser reports `Asia/Calcutta` where
+ * the server's database also carries `Asia/Kolkata`. A `<select>` built from one
+ * vocabulary cannot display a value stored in the other, and a select whose
+ * value matches no option submits its first entry instead, silently moving the
+ * org somewhere it never chose.
+ *
+ * `/api/org/timezones/` needs authentication but no org context, because its
+ * first caller is a user creating their very first organization.
+ *
+ * Each entry arrives as `{ name, offset_minutes }`; the offset becomes the
+ * "(UTC+05:30)" half of the label, which is what makes a 490-entry list
+ * readable.
+ *
+ * @param {import('@sveltejs/kit').Cookies} cookies
+ * @returns {Promise<{ name: string, label: string }[]>}
+ */
+export async function listTimezones(cookies) {
+  const response = await apiRequest('/org/timezones/', {}, { cookies });
+  const zones = response?.timezones ?? [{ name: 'UTC', offset_minutes: 0 }];
+  return zones.map((/** @type {any} */ zone) => ({
+    name: zone.name,
+    label: `${String(zone.name).replace(/_/g, ' ')} (${formatOffset(zone.offset_minutes)})`
+  }));
+}
+
+/** Minutes east of UTC as "UTC+05:30" / "UTC-04:00" / "UTC". */
+function formatOffset(minutes) {
+  const total = Number(minutes) || 0;
+  if (total === 0) return 'UTC';
+  const sign = total < 0 ? '-' : '+';
+  const abs = Math.abs(total);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `UTC${sign}${hh}:${mm}`;
 }

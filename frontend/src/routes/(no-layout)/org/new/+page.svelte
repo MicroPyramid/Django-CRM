@@ -9,8 +9,24 @@
   let { data, form } = $props();
 
   let packs = $derived(data?.packs ?? []);
+  let timezones = $derived(data?.timezones ?? [{ name: 'UTC', label: 'UTC' }]);
 
   let isSubmitting = $state(false);
+
+  // Prefilled from the browser, then corrected against the server's list. The
+  // two vocabularies differ on aliases, so a detected name that the list does
+  // not carry has to fall back rather than be selected: a select whose value
+  // matches no option submits its first entry, which would put a new org in
+  // Africa/Abidjan without anyone choosing it.
+  //
+  // Starts at UTC so the server-rendered form is correct without JavaScript;
+  // the effect below narrows it to the user's own zone once the browser runs.
+  let timezone = $state('UTC');
+
+  $effect(() => {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (detected && timezones.some((z) => z.name === detected)) timezone = detected;
+  });
 
   // Handle form submission success - redirect after showing success message
   $effect(() => {
@@ -63,6 +79,25 @@
             disabled={isSubmitting || !!form?.data}
           />
           <p class="v2-hint">This becomes your workspace name in BottleCRM.</p>
+        </div>
+
+        <div class="v2-field">
+          <label for="timezone">Time zone</label>
+          <select
+            id="timezone"
+            name="timezone"
+            class="v2-input"
+            bind:value={timezone}
+            disabled={isSubmitting || !!form?.data}
+          >
+            {#each timezones as zone (zone.name)}
+              <option value={zone.name}>{zone.label}</option>
+            {/each}
+          </select>
+          <p class="v2-hint">
+            Sets when a day starts here, so "due today" and "overdue" mean what your team
+            expects. You can change it later in Settings.
+          </p>
         </div>
 
         {#if packs.length > 0}

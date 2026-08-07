@@ -156,6 +156,7 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
             "default_currency",
             "default_country",
             "currency_symbol",
+            "timezone",
             # Case-handling behaviour (org-wide switches). Editable only here.
             "csat_enabled",
             "auto_close_children_on_parent_close",
@@ -446,8 +447,16 @@ class OrgProfileCreateSerializer(serializers.ModelSerializer):
         # Callers (org/new/+page.server.js) need this id to switch the
         # session into the org they just created and to apply a vertical
         # pack to it -- see the C1 fix in the vertical-packs final review.
-        fields = ["id", "name"]
-        extra_kwargs = {"name": {"required": True}}
+        # `timezone` is optional on purpose. Mobile builds ship from an app
+        # store and update whenever the user gets round to it, so requiring a
+        # field an installed build does not send would break org creation for
+        # them with no server-side fix available. Omitted means UTC, which the
+        # admin can change in settings afterwards.
+        fields = ["id", "name", "timezone"]
+        extra_kwargs = {
+            "name": {"required": True},
+            "timezone": {"required": False},
+        }
 
     def validate_name(self, name):
         if bool(re.search(r"[~\!@#\$%\^&\*\(\)\+{}\":;'/\[\]]", name)):
