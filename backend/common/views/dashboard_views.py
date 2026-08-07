@@ -10,19 +10,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Account
-from accounts.serializer import AccountSerializer
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
 from common.permissions import HasOrgContext, is_org_admin
 from common.utils import STAGES
 from contacts.models import Contact
-from contacts.serializer import ContactSerializer
 from invoices.models import UNPAID_STATUSES, Invoice
 from leads.models import Lead
-from leads.serializer import LeadSerializer
 from opportunity.models import Opportunity, StageAgingConfig
-from opportunity.serializer import OpportunitySerializer
 from opportunity.workflow import DEFAULT_STAGE_EXPECTED_DAYS, ROTTEN_MULTIPLIER
 from tasks.models import Task
 from tasks.serializer import TaskSerializer
@@ -94,10 +90,13 @@ class ApiHomeView(APIView):
                     "contacts_count": serializers.IntegerField(),
                     "leads_count": serializers.IntegerField(),
                     "opportunities_count": serializers.IntegerField(),
-                    "accounts": AccountSerializer(many=True),
-                    "contacts": ContactSerializer(many=True),
-                    "leads": LeadSerializer(many=True),
-                    "opportunities": OpportunitySerializer(many=True),
+                    "urgent_counts": serializers.DictField(),
+                    "pipeline_by_stage": serializers.DictField(),
+                    "revenue_metrics": serializers.DictField(),
+                    "hot_leads": serializers.ListField(),
+                    "tasks": TaskSerializer(many=True),
+                    "activities": serializer.DashboardActivitySerializer(many=True),
+                    "goal_summary": serializers.ListField(),
                 },
             )
         },
@@ -126,16 +125,17 @@ class ApiHomeView(APIView):
             opportunities = _owned_or_assigned(opportunities, profile)
             tasks = _owned_or_assigned(tasks, profile)
 
-        # Build base context (existing)
+        # Counts only. This used to serialize every account, contact, lead and
+        # opportunity in the org in full beside them: 372 KB of a 384 KB
+        # response, measured against the seeded org, none of which any caller
+        # read. The screens below want counts, the pipeline, the urgent numbers,
+        # ten hot leads and ten tasks. Whoever needs a list calls its own
+        # endpoint, which pages; these four never did.
         context = {}
         context["accounts_count"] = accounts.count()
         context["contacts_count"] = contacts.count()
         context["leads_count"] = leads.count()
         context["opportunities_count"] = opportunities.count()
-        context["accounts"] = AccountSerializer(accounts, many=True).data
-        context["contacts"] = ContactSerializer(contacts, many=True).data
-        context["leads"] = LeadSerializer(leads, many=True).data
-        context["opportunities"] = OpportunitySerializer(opportunities, many=True).data
 
         # NEW: Urgent counts for Focus Bar
         overdue_tasks = tasks.filter(

@@ -4,11 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
-import '../../providers/deals_provider.dart';
-import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/tasks_provider.dart';
-import '../../providers/tickets_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/forms/unsaved_changes.dart';
 import '../../widgets/forms/custom_fields_form.dart';
@@ -134,41 +131,38 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     }
   }
 
-  // Resolve the label for the currently-linked entity from cached lookup
-  // providers. The TaskSerializer returns FKs as plain UUIDs (not nested
-  // objects), so we have no embedded name on the edit fetch. We look it up
-  // in the same provider used by the picker. Returns null if the cache
-  // doesn't have it yet (provider not loaded); the UI falls back to a
-  // generic "Selected" hint until the provider warms up.
+  /// The options for one kind, as a still-loading-aware value.
+  ///
+  /// These are the lookup providers, not the leads/deals/tickets list
+  /// providers this screen used to read. Those hold one page of whatever the
+  /// corresponding list screen last fetched, under whatever filter it last
+  /// applied, so linking a task to a deal was only possible if the deals list
+  /// happened to be showing it.
+  Provider<AsyncValue<List<EntityLookup>>> _optionsOf(_RelatedKind kind) {
+    switch (kind) {
+      case _RelatedKind.account:
+        return accountEntityOptionsProvider;
+      case _RelatedKind.lead:
+        return leadEntityOptionsProvider;
+      case _RelatedKind.opportunity:
+        return opportunityEntityOptionsProvider;
+      case _RelatedKind.ticket:
+        return ticketEntityOptionsProvider;
+    }
+  }
+
+  // Resolve the label for the currently-linked entity. The TaskSerializer
+  // returns these FKs as plain UUIDs rather than nested objects, so the edit
+  // fetch carries no name. Returns null while the lookup is still in flight;
+  // the UI shows a generic "Selected" until then.
   String? _resolveRelatedLabel() {
     final id = _relatedId;
     final kind = _relatedKind;
     if (id == null || kind == null) return null;
-    switch (kind) {
-      case _RelatedKind.account:
-        for (final a in ref.watch(accountOptionsProvider)) {
-          if (a.id == id) return a.name;
-        }
-        return null;
-      case _RelatedKind.lead:
-        for (final l in ref.watch(leadsListProvider)) {
-          if (l.id == id) {
-            final n = '${l.firstName} ${l.lastName}'.trim();
-            return n.isEmpty ? l.email : n;
-          }
-        }
-        return null;
-      case _RelatedKind.opportunity:
-        for (final d in ref.watch(dealsListProvider)) {
-          if (d.id == id) return d.title;
-        }
-        return null;
-      case _RelatedKind.ticket:
-        for (final t in ref.watch(ticketsListProvider)) {
-          if (t.id == id) return t.name;
-        }
-        return null;
+    for (final option in ref.watch(_optionsOf(kind)).value ?? const []) {
+      if (option.id == id) return option.label;
     }
+    return null;
   }
 
   /// The form as it looked when it finished loading, against the payload it
@@ -817,80 +811,21 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   Future<void> _pickEntityForKind(_RelatedKind kind) async {
-    switch (kind) {
-      case _RelatedKind.account:
-        final accounts = ref.read(accountOptionsProvider);
-        final pick = await _pickFromList<AccountLookup>(
-          title: 'Select Account',
-          items: accounts,
-          labelOf: (a) => a.name,
-          icon: LucideIcons.building2,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.lead:
-        final leads = ref.read(leadsListProvider);
-        final pick = await _pickFromList<Lead>(
-          title: 'Select Lead',
-          items: leads,
-          labelOf: (l) {
-            final n = '${l.firstName} ${l.lastName}'.trim();
-            return n.isEmpty ? l.email : n;
-          },
-          icon: LucideIcons.user,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.opportunity:
-        final deals = ref.read(dealsListProvider);
-        final pick = await _pickFromList<Deal>(
-          title: 'Select Opportunity',
-          items: deals,
-          labelOf: (d) => d.title,
-          icon: LucideIcons.trendingUp,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-      case _RelatedKind.ticket:
-        final tickets = ref.read(ticketsListProvider);
-        final pick = await _pickFromList<Ticket>(
-          title: 'Select Ticket',
-          items: tickets,
-          labelOf: (t) => t.name,
-          icon: LucideIcons.lifeBuoy,
-        );
-        if (pick != null) {
-          setState(() {
-            _relatedKind = kind;
-            _relatedId = pick.id;
-          });
-        }
-        break;
-    }
+    final pick = await _pickFromList(kind);
+    if (pick == null) return;
+    setState(() {
+      _relatedKind = kind;
+      _relatedId = pick.id;
+    });
   }
 
-  Future<T?> _pickFromList<T>({
-    required String title,
-    required List<T> items,
-    required String Function(T) labelOf,
-    required IconData icon,
-  }) {
-    return showModalBottomSheet<T>(
+  /// The sheet watches the lookup rather than being handed a list, so it can
+  /// say "loading" and "that failed" instead of showing the empty state for
+  /// all three. The empty state used to read "Open this section on the web or
+  /// create one first", which on a cold app was simply untrue.
+  Future<EntityLookup?> _pickFromList(_RelatedKind kind) {
+    final provider = _optionsOf(kind);
+    return showModalBottomSheet<EntityLookup>(
       context: context,
       backgroundColor: AppColors.surface,
       isScrollControlled: true,
@@ -915,50 +850,63 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(title, style: AppTypography.h3),
+              child: Text('Select ${kind.label}', style: AppTypography.h3),
             ),
             Expanded(
-              child: items.isEmpty
-                  ? const Center(
-                      child: EmptyState(
-                        icon: LucideIcons.inbox,
-                        title: 'Nothing to pick',
-                        description:
-                            'Open this section on the web or create one first.',
+              child: Consumer(
+                builder: (_, ref, _) => ref
+                    .watch(provider)
+                    .when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, _) => Center(
+                        child: EmptyState(
+                          icon: LucideIcons.alertCircle,
+                          title: 'Could not load ${kind.label.toLowerCase()}s',
+                          description:
+                              'Close this and try again once you are back online.',
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      controller: controller,
-                      itemCount: items.length,
-                      itemBuilder: (_, i) {
-                        final item = items[i];
-                        return InkWell(
-                          onTap: () => Navigator.pop(ctx, item),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  icon,
-                                  size: 18,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    labelOf(item),
-                                    style: AppTypography.body,
+                      data: (items) => items.isEmpty
+                          ? Center(
+                              child: EmptyState(
+                                icon: LucideIcons.inbox,
+                                title: 'No ${kind.label.toLowerCase()}s yet',
+                                description:
+                                    'Create one first, then link this task to it.',
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: controller,
+                              itemCount: items.length,
+                              itemBuilder: (_, i) => InkWell(
+                                onTap: () => Navigator.pop(ctx, items[i]),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        kind.icon,
+                                        size: 18,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          items[i].label,
+                                          style: AppTypography.body,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
                     ),
+              ),
             ),
           ],
         ),

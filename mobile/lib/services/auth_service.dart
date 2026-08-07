@@ -69,11 +69,12 @@ class AuthService {
     // Initialize Google Sign-In (required in v7.1.1).
     // serverClientId is the Web OAuth client (client_type: 3 in google-services.json)
     //. This is the audience the Django backend's GOOGLE_CLIENT_ID verifies against,
-    // and it's what makes Android return a usable ID token.
+    // and it's what makes Android return a usable ID token. It lives in
+    // ApiConfig so a self-hoster can point a build at their own Google project
+    // with --dart-define instead of editing this file.
     try {
       await _googleSignIn.initialize(
-        serverClientId:
-            '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
+        serverClientId: ApiConfig.googleServerClientId,
       );
       debugPrint('AuthService: Google Sign-In initialized successfully');
     } catch (e) {

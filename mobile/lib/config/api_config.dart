@@ -20,8 +20,65 @@ class ApiConfig {
   /// which would drift the moment either is edited.
   static const String marketingSite = 'https://bottlecrm.io';
 
-  /// Get the current base URL based on build mode
-  static String get baseUrl => kDebugMode ? _developmentUrl : _productionUrl;
+  /// Build-time override, so somebody self-hosting points a build at their own
+  /// server without editing this file:
+  ///
+  ///     flutter build apk --release --dart-define=API_BASE_URL=https://crm.example.com
+  ///
+  /// Compile-time on purpose. A runtime setting would mean anything able to
+  /// write the app's storage could redirect every request, and every JWT with
+  /// it, to a server of its own choosing.
+  static const String _baseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
+  /// Google's Web OAuth client, the audience the backend's `GOOGLE_CLIENT_ID`
+  /// verifies against. Overridable the same way, because a self-hoster signs in
+  /// against their own Google project:
+  ///
+  ///     --dart-define=GOOGLE_SERVER_CLIENT_ID=<id>.apps.googleusercontent.com
+  ///
+  /// Not a secret. A client id is public by design; the backend is what decides
+  /// whether an ID token is acceptable.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
+  );
+
+  /// The API host this build talks to.
+  static final String baseUrl = resolveBaseUrl(
+    override: _baseUrlOverride,
+    isDebug: kDebugMode,
+  );
+
+  /// The override rules, separated from the build constants so both branches
+  /// can be tested. `flutter test` runs one build, so a `--dart-define` the
+  /// suite does not pass is a branch no test could otherwise reach.
+  @visibleForTesting
+  static String resolveBaseUrl({
+    required String override,
+    required bool isDebug,
+  }) {
+    if (override.isEmpty) {
+      return isDebug ? _developmentUrl : _productionUrl;
+    }
+    // A trailing slash would produce `https://host//api`, and the resulting 404
+    // on every request says nothing about the cause.
+    final trimmed = override.endsWith('/')
+        ? override.substring(0, override.length - 1)
+        : override;
+    // A release build talking plain HTTP puts every JWT on the wire in the
+    // clear. Refusing loudly beats falling back to the default, which would
+    // leave a self-hoster looking at somebody else's server and no explanation.
+    // `http://` stays allowed in debug: that is how anyone runs against a local
+    // Django.
+    if (!isDebug && !trimmed.startsWith('https://')) {
+      throw StateError(
+        'API_BASE_URL must start with https:// in a release build. '
+        'Got "$trimmed", which would send every token unencrypted.',
+      );
+    }
+    return trimmed;
+  }
 
   /// API base path
   static String get apiBaseUrl => '$baseUrl/api';

@@ -315,3 +315,71 @@ class TestDashboardScopedMetrics:
         from common.views.dashboard_views import ApiHomeView
 
         assert HasOrgContext in ApiHomeView.permission_classes
+
+
+@pytest.mark.django_db
+class TestDashboardSendsOnlyWhatItRenders:
+    """The dashboard used to serialize four whole tables nobody read.
+
+    Measured against the seeded org: 384 KB of response, of which
+    ``opportunities`` (162 KB), ``accounts`` (86 KB), ``leads`` (84 KB) and
+    ``contacts`` (41 KB) were 97%. The only caller is the mobile dashboard, and
+    its model reads counts, ``urgent_counts``, ``pipeline_by_stage``,
+    ``revenue_metrics``, ``hot_leads``, ``tasks``, ``activities`` and
+    ``goal_summary``. It never touched the four lists.
+
+    They were also unpaged, so the payload grew with the org forever.
+    """
+
+    url = "/api/dashboard/"
+
+    # Note the trap here: ``hot_leads`` is a list on the response AND a count
+    # inside ``urgent_counts``. Only the top-level list survives.
+    DROPPED = ("accounts", "contacts", "leads", "opportunities")
+
+    KEPT = (
+        "accounts_count",
+        "contacts_count",
+        "leads_count",
+        "opportunities_count",
+        "urgent_counts",
+        "pipeline_by_stage",
+        "revenue_metrics",
+        "hot_leads",
+        "tasks",
+        "activities",
+        "goal_summary",
+    )
+
+    def test_the_four_unread_lists_are_gone(self, admin_client, org_a):
+        Account.objects.create(name="Acc1", org=org_a)
+        Contact.objects.create(first_name="Con", last_name="Tact", org=org_a)
+        Lead.objects.create(
+            first_name="Lead", last_name="One", email="lead1@test.com", org=org_a
+        )
+        Opportunity.objects.create(name="Deal", org=org_a, stage="PROSPECTING")
+
+        response = admin_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        for key in self.DROPPED:
+            assert key not in response.data, f"{key} is back in the response"
+
+    def test_everything_a_client_reads_is_still_there(self, admin_client, org_a):
+        """The other direction. Trimming is only safe while this passes."""
+        response = admin_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        for key in self.KEPT:
+            assert key in response.data, f"{key} disappeared"
+
+    def test_the_counts_still_count_the_rows_that_were_dropped(
+        self, admin_client, org_a
+    ):
+        """The querysets stayed; only the serialization went."""
+        Account.objects.create(name="Acc1", org=org_a)
+        Account.objects.create(name="Acc2", org=org_a)
+
+        response = admin_client.get(self.url)
+
+        assert response.data["accounts_count"] == 2
