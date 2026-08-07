@@ -44,6 +44,7 @@ from common.models import Attachments, Profile, User
 from leads.models import Lead
 from opportunity.models import Opportunity
 from tasks.models import Task
+from django.utils import timezone
 
 
 def _task(org, creator, assignees=(), **kwargs):
@@ -545,9 +546,9 @@ class TestTheListPayload:
 
     def test_overdue_ignores_finished_work(self, admin_client, admin_user, org_a):
         """A task completed late is not something anybody can act on."""
-        from datetime import date, timedelta
+        from datetime import timedelta
 
-        yesterday = date.today() - timedelta(days=1)
+        yesterday = timezone.localdate() - timedelta(days=1)
         _task(org_a, admin_user, title="Late and open", due_date=yesterday)
         _task(
             org_a,

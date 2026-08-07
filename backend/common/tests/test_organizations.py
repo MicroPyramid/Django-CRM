@@ -8,7 +8,7 @@ Run with: pytest common/tests/test_organizations.py -v
 import pytest
 from rest_framework import status
 
-from common.models import Profile, Teams
+from common.models import Org, Profile, Teams
 
 
 @pytest.mark.django_db
@@ -615,6 +615,149 @@ class TestOrgSettingsView:
         """No token, no settings. (Asserts rejection without pinning the exact
         401-vs-403 code, which is inconsistent across this app's endpoints.)"""
         response = unauthenticated_client.get(self.url)
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+
+@pytest.mark.django_db
+class TestOrgTimezone:
+    """An org carries the timezone its days are counted in.
+
+    Optional at creation on purpose: a mobile build installed before this field
+    existed still has to be able to create an org, and there is no way to patch
+    a shipped app from the server. Omitted means UTC.
+    """
+
+    create_url = "/api/org/"
+    settings_url = "/api/org/settings/"
+
+    def test_creating_an_org_with_a_timezone_keeps_it(self, admin_client):
+        response = admin_client.post(
+            self.create_url,
+            {"name": "Berlin Org", "timezone": "Europe/Berlin"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Org.objects.get(name="Berlin Org").timezone == "Europe/Berlin"
+
+    def test_creating_an_org_without_one_gets_utc(self, admin_client):
+        """The compatibility case: an older client sends only a name."""
+        response = admin_client.post(
+            self.create_url, {"name": "Quiet Org"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert Org.objects.get(name="Quiet Org").timezone == "UTC"
+
+    def test_a_timezone_that_is_not_a_zone_is_refused(self, admin_client):
+        """A clean 400 rather than a 500 from the database or a silent accept
+        that would make every date for that org fall back forever."""
+        response = admin_client.post(
+            self.create_url,
+            {"name": "Nowhere Org", "timezone": "Mars/Olympus_Mons"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not Org.objects.filter(name="Nowhere Org").exists()
+
+    def test_an_offset_is_not_a_timezone(self, admin_client):
+        """`+05:30` names an instant's offset, not a rule that knows when the
+        clocks move, so it must not be storable."""
+        response = admin_client.post(
+            self.create_url,
+            {"name": "Offset Org", "timezone": "+05:30"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_an_admin_can_change_it_afterwards(self, admin_client, org_a):
+        response = admin_client.patch(
+            self.settings_url, {"timezone": "America/New_York"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        org_a.refresh_from_db()
+        assert org_a.timezone == "America/New_York"
+
+    def test_a_member_cannot(self, user_client, org_a):
+        """The other half of the pair. Without it, a check that refuses
+        everyone would pass the admin test's inverse by accident."""
+        before = org_a.timezone
+
+        response = user_client.patch(
+            self.settings_url, {"timezone": "America/New_York"}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        org_a.refresh_from_db()
+        assert org_a.timezone == before
+
+    def test_sign_in_tells_the_client_which_zone_the_org_uses(
+        self, admin_client, org_a
+    ):
+        """Mobile shows the org's timezone in settings, so it has to arrive
+        with the org rather than being guessed from the device."""
+        org_a.timezone = "Asia/Tokyo"
+        org_a.save(update_fields=["timezone"])
+
+        response = admin_client.get("/api/org/settings/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["timezone"] == "Asia/Tokyo"
+
+
+@pytest.mark.django_db
+class TestTimezoneList:
+    """One vocabulary for both clients, reachable before you have an org."""
+
+    url = "/api/org/timezones/"
+
+    def _names(self, client):
+        return [z["name"] for z in client.get(self.url).data["timezones"]]
+
+    def test_it_lists_zones(self, admin_client):
+        response = admin_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        names = [z["name"] for z in response.data["timezones"]]
+        assert "UTC" in names, "the field default has to be selectable"
+        assert "America/New_York" in names
+        assert names == sorted(names), "callers render it without re-sorting"
+
+    def test_it_carries_both_spellings_a_client_might_hold(self, admin_client):
+        """A browser reports `Asia/Calcutta`; this app's own migration wrote
+        `Asia/Kolkata`. A list missing either one gives a select with no
+        matching option, which submits its first entry instead."""
+        names = self._names(admin_client)
+
+        assert "Asia/Kolkata" in names
+        assert "Asia/Calcutta" in names
+
+    def test_it_drops_the_aliases_that_only_add_noise(self, admin_client):
+        names = self._names(admin_client)
+
+        assert "US/Eastern" not in names
+        assert "Etc/GMT+5" not in names
+        assert "EST" not in names
+
+    def test_every_zone_carries_its_current_offset(self, admin_client):
+        """Mobile has no way to read the device's IANA zone name without a
+        platform package, so it preselects by matching the device's offset."""
+        zones = {z["name"]: z["offset_minutes"] for z in admin_client.get(self.url).data["timezones"]}
+
+        assert zones["UTC"] == 0
+        assert zones["Asia/Kolkata"] == 330
+        # New York is either -240 (daylight) or -300 (standard), never fixed.
+        assert zones["America/New_York"] in (-240, -300)
+
+    def test_it_needs_a_signed_in_user(self, unauthenticated_client):
+        response = unauthenticated_client.get(self.url)
+
         assert response.status_code in (
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_403_FORBIDDEN,

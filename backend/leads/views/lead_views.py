@@ -75,7 +75,7 @@ class LeadListView(APIView, LimitOffsetPagination):
         Opportunity-only), so this is the strongest signal the model actually
         carries.
         """
-        cutoff = timezone.now().date() - timedelta(days=self.UNWORKED_AFTER_DAYS)
+        cutoff = timezone.localdate() - timedelta(days=self.UNWORKED_AFTER_DAYS)
         totals_queryset = queryset_open.distinct()
         return {
             "count": totals_queryset.count(),

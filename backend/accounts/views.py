@@ -145,7 +145,7 @@ def annotate_rollups(queryset):
     unclosed = {"stage__in": OPEN_STAGES}
     past_due = {
         "status__in": UNPAID_STATUSES,
-        "due_date__lt": timezone.now().date(),
+        "due_date__lt": timezone.localdate(),
         "amount_due__gt": 0,
     }
 

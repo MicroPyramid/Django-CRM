@@ -39,7 +39,7 @@ def _ids(rows):
 
 
 def _today():
-    return datetime.date.today()
+    return timezone.localdate()
 
 
 def _days(n):

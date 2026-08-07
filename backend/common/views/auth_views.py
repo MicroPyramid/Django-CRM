@@ -32,8 +32,9 @@ def _org_payload(org, role=None):
     All three read fields that no endpoint was sending, so an org keeping its
     books in euros still created dollar deals and drew a dollar dashboard.
 
-    ``default_currency`` is normalised rather than passed through, so a blank
-    column answers with the same "USD" the rest of the codebase assumes.
+    ``default_currency`` and ``timezone`` are normalised rather than passed
+    through, so a blank column answers with the same "USD" and "UTC" the rest of
+    the codebase assumes.
     """
     currency = org.default_currency or "USD"
     payload = {
@@ -42,6 +43,9 @@ def _org_payload(org, role=None):
         "default_currency": currency,
         "currency_symbol": CURRENCY_SYMBOLS.get(currency, "$"),
         "default_country": org.default_country,
+        # The org's day, so a client can label a date the same way the server
+        # computed it instead of guessing from the device.
+        "timezone": org.timezone or "UTC",
     }
     if role is not None:
         payload["role"] = role

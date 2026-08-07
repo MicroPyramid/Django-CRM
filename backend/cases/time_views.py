@@ -294,7 +294,7 @@ class TimesheetView(APIView):
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
         if start is None or end is None:
-            today = date.today()
+            today = timezone.localdate()
             # Default to this Mon..Sun (ISO week).
             start = today - timedelta(days=today.weekday())
             end = start + timedelta(days=6)
@@ -330,7 +330,7 @@ class TimesheetView(APIView):
         now = timezone.now()
         running_count = 0
         for entry in qs:
-            day_key = entry.started_at.date().isoformat()
+            day_key = timezone.localdate(entry.started_at).isoformat()
             bucket = days.get(day_key)
             if bucket is None:
                 # Entry's local date may fall outside the window when timezone

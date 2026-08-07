@@ -75,43 +75,50 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
   }
 
   Widget _buildOrgCard(Organization org) {
+    // `Material` rather than a plain `Container`: a ListTile paints its ink
+    // splash on the nearest Material ancestor, so a coloured box between the
+    // two swallows the tap ripple. Flutter asserts on exactly this in debug
+    // builds, which is how it was found.
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor,
-          child: Text(
-            org.initials,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          contentPadding: const EdgeInsets.all(16),
+          leading: CircleAvatar(
+            backgroundColor: Theme.of(context).primaryColor,
+            child: Text(
+              org.initials,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
+          title: Text(
+            org.name,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          subtitle: org.role != null
+              ? Text(
+                  org.role!,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                )
+              : null,
+          trailing: _isSelecting
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.arrow_forward_ios, size: 16),
+          onTap: _isSelecting ? null : () => _selectOrganization(org),
         ),
-        title: Text(
-          org.name,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        subtitle: org.role != null
-            ? Text(
-                org.role!,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              )
-            : null,
-        trailing: _isSelecting
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: _isSelecting ? null : () => _selectOrganization(org),
       ),
     );
   }
@@ -135,9 +142,19 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'You don\'t have access to any organizations yet. Contact your administrator or create a new organization.',
+              'You are not a member of any organization yet. Ask an administrator '
+              'to invite you, or start one of your own.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 20),
+            // This used to be the sentence above and nothing else: it named the
+            // action and left the user on a screen whose only working control
+            // was Sign Out.
+            FilledButton.icon(
+              onPressed: () => context.push(AppRoutes.orgCreate),
+              icon: const Icon(Icons.add),
+              label: const Text('Create an organization'),
             ),
           ],
         ),
@@ -241,6 +258,20 @@ class _OrgSelectionScreenState extends ConsumerState<OrgSelectionScreen> {
                           },
                         ),
                 ),
+
+                // Belonging to one organization does not mean you cannot start
+                // another; the web has always allowed it from the same screen.
+                if (organizations.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    child: TextButton.icon(
+                      onPressed: _isSelecting
+                          ? null
+                          : () => context.push(AppRoutes.orgCreate),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Create an organization'),
+                    ),
+                  ),
               ],
             ),
     );

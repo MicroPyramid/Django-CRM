@@ -22,6 +22,7 @@ import pytest
 from rest_framework import status
 
 from invoices.models import Estimate
+from django.utils import timezone
 
 
 def _estimate(org, **kwargs):
@@ -29,8 +30,8 @@ def _estimate(org, **kwargs):
         "title": "Quote for services",
         "status": "Sent",
         "currency": "USD",
-        "issue_date": datetime.date.today(),
-        "expiry_date": datetime.date.today() + datetime.timedelta(days=30),
+        "issue_date": timezone.localdate(),
+        "expiry_date": timezone.localdate() + datetime.timedelta(days=30),
         "public_link_enabled": True,
         "org": org,
     }
@@ -74,7 +75,7 @@ class TestStatusIsNotWritableThroughTheGenericEdit:
         expired = _estimate(
             org_a,
             title="Stale quote",
-            expiry_date=datetime.date.today() - datetime.timedelta(days=1),
+            expiry_date=timezone.localdate() - datetime.timedelta(days=1),
         )
         admin_client.put(
             f"/api/invoices/estimates/{expired.id}/",
@@ -136,7 +137,7 @@ class TestTheGuardedPathStillAccepts:
         expired = _estimate(
             org_a,
             title="Stale quote",
-            expiry_date=datetime.date.today() - datetime.timedelta(days=1),
+            expiry_date=timezone.localdate() - datetime.timedelta(days=1),
         )
         response = APIClient().post(
             f"/api/public/estimate/{expired.public_token}/accept/",

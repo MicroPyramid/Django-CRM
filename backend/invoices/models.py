@@ -3,6 +3,7 @@ import secrets
 from decimal import Decimal
 
 from django.db import models
+from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
@@ -491,7 +492,7 @@ class Invoice(AssignableMixin, BaseModel):
     @property
     def is_overdue(self):
         if self.due_date and self.status not in ["Paid", "Cancelled"]:
-            return datetime.date.today() > self.due_date
+            return timezone.localdate() > self.due_date
         return False
 
     @property
@@ -915,7 +916,7 @@ class Estimate(AssignableMixin, BaseModel):
     @property
     def is_expired(self):
         if self.expiry_date and self.status not in ["Accepted", "Declined"]:
-            return datetime.date.today() > self.expiry_date
+            return timezone.localdate() > self.expiry_date
         return False
 
     @property

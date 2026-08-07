@@ -90,7 +90,7 @@ class TestLeadTotals:
         self, admin_client, org_a
     ):
         """Contacted 8 days ago counts; contacted yesterday does not."""
-        today = timezone.now().date()
+        today = timezone.localdate()
         _lead(org_a, email="stale@example.com", last_contacted=today - timedelta(days=8))
         _lead(org_a, email="fresh@example.com", last_contacted=today - timedelta(days=1))
 

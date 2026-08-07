@@ -10,12 +10,12 @@ non-admin, non-superuser profile in the *same* org as the target invoice, who
 is not the creator and not in ``assigned_to``.
 """
 
-import datetime
 from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from accounts.models import Account
 from common.models import Attachments
@@ -36,6 +36,7 @@ def _make_invoice(title, account, org, creator):
 
     ``created_by`` must be set with a queryset update: BaseModel.save() resets it
     from the thread-local current user, which is None in fixtures.
+from django.utils import timezone
     """
     invoice = Invoice.objects.create(
         invoice_title=title,
@@ -431,7 +432,7 @@ class TestSendLifecycle:
         Payment.objects.create(
             invoice=own_invoice,
             amount=Decimal("100.00"),
-            payment_date=datetime.date.today(),
+            payment_date=timezone.localdate(),
             payment_method="CASH",
             org=own_invoice.org,
         )

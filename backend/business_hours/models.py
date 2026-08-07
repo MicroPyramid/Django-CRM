@@ -1,15 +1,13 @@
-from zoneinfo import available_timezones
-
-from django.core.exceptions import ValidationError
 from django.db import models
 
 from common.base import BaseModel
 from common.models import Org
+from common.validators import validate_iana_timezone
 
-
-def _validate_iana_tz(value: str) -> None:
-    if value not in available_timezones():
-        raise ValidationError(f"{value!r} is not a valid IANA timezone.")
+# Kept under the original name because `migrations/0001_initial.py` serialised
+# this import path. The rule itself now lives in `common.validators`, next to
+# `Org.timezone`, which is the field it validates most often.
+_validate_iana_tz = validate_iana_timezone
 
 
 class BusinessCalendar(BaseModel):

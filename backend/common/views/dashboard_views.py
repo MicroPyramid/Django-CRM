@@ -105,7 +105,7 @@ class ApiHomeView(APIView):
     def get(self, request, format=None):
         org = request.profile.org
         profile = request.profile
-        today = date.today()
+        today = timezone.localdate()
 
         accounts = Account.objects.filter(is_active=True, org=org)
         contacts = Contact.objects.filter(org=org)
@@ -365,7 +365,9 @@ class ApiTodayView(APIView):
         org = request.profile.org
         profile = request.profile
         now = timezone.now()
-        today = now.date()
+        # The org's calendar day, not UTC's. `now.date()` put the whole "Today"
+        # queue a day behind for every hour that TIME_ZONE is ahead of UTC.
+        today = timezone.localdate()
         yesterday = today - timedelta(days=1)
         week_end = today + timedelta(days=7)
         is_admin = is_org_admin(profile) or request.user.is_superuser

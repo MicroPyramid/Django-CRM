@@ -21,7 +21,7 @@ from conftest import rls_org
 def _close_case(case, *, days_ago=1):
     """Close a case and backdate closed_on to simulate elapsed time."""
     case.status = "Closed"
-    case.closed_on = timezone.now().date() - timedelta(days=days_ago)
+    case.closed_on = timezone.localdate() - timedelta(days=days_ago)
     # Used on both tenants' cases by the org-scoping test, and the isolation
     # policy governs UPDATE as well as INSERT.
     with rls_org(case.org):
@@ -115,7 +115,7 @@ class TestReopenSignal:
     def test_non_closed_status_does_not_reopen(self, case_a):
         # Rejected and Duplicate should NOT reopen even on an external reply.
         case_a.status = "Rejected"
-        case_a.closed_on = timezone.now().date() - timedelta(days=2)
+        case_a.closed_on = timezone.localdate() - timedelta(days=2)
         case_a.save()
 
         _post_external_comment(case_a)
@@ -146,7 +146,7 @@ class TestReopenSignal:
 
         # Try a fresh case within the new window.
         case_a.status = "Closed"
-        case_a.closed_on = timezone.now().date() - timedelta(days=2)
+        case_a.closed_on = timezone.localdate() - timedelta(days=2)
         case_a.save()
         _post_external_comment(case_a)
         case_a.refresh_from_db()

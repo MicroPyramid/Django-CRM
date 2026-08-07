@@ -25,12 +25,13 @@ from rest_framework import status
 from accounts.models import Account
 from contacts.models import Contact
 from invoices.models import Invoice, InvoiceLineItem, Product
+from django.utils import timezone
 
 INVOICES_URL = "/api/invoices/"
 ESTIMATES_URL = "/api/invoices/estimates/"
 RECURRING_URL = "/api/invoices/recurring/"
 
-TODAY = datetime.date.today()
+TODAY = timezone.localdate()
 
 
 @pytest.fixture

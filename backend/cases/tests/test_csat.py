@@ -41,7 +41,7 @@ def closed_case(org_a, contact_with_email):
         name="Login bug",
         status="Closed",
         priority="Normal",
-        closed_on=timezone.now().date(),
+        closed_on=timezone.localdate(),
         resolved_at=timezone.now(),
     )
     case.contacts.add(contact_with_email)
@@ -85,7 +85,7 @@ class TestSendCsatSurvey:
         # Case with no contacts at all.
         case = Case.objects.create(
             org=org_a, name="No contact", status="Closed", priority="Normal",
-            closed_on=timezone.now().date(),
+            closed_on=timezone.localdate(),
         )
         result = send_csat_survey(str(case.id), str(case.org_id))
         assert result is None
@@ -247,7 +247,7 @@ class TestCsatAggregate:
                 name=f"C{i}",
                 status="Closed",
                 priority="Normal",
-                closed_on=timezone.now().date(),
+                closed_on=timezone.localdate(),
             )
             CsatSurvey.objects.create(
                 org=org_a,
@@ -262,7 +262,7 @@ class TestCsatAggregate:
         # One un-responded survey, must not count.
         case = Case.objects.create(
             org=org_a, name="Cx", status="Closed", priority="Normal",
-            closed_on=timezone.now().date(),
+            closed_on=timezone.localdate(),
         )
         CsatSurvey.objects.create(
             org=org_a, case=case, contact=contact_with_email,
@@ -293,7 +293,7 @@ class TestCsatFeedsAnalytics:
 
         case = Case.objects.create(
             org=org_a, name="A", status="Closed", priority="Normal",
-            closed_on=timezone.now().date(),
+            closed_on=timezone.localdate(),
         )
         case.assigned_to.add(admin_profile)
         Case.objects.filter(pk=case.pk).update(

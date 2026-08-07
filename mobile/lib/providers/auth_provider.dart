@@ -232,6 +232,34 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Create an organization, then move the session into it.
+  ///
+  /// Returns null on success, or a message to show. The org list and selected
+  /// org both move, so the caller can navigate straight to the dashboard.
+  Future<String?> createOrganization(String name, {String? timezone}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final failure = await _authService.createOrganization(
+      name,
+      timezone: timezone,
+    );
+
+    if (failure != null) {
+      state = state.copyWith(isLoading: false, error: failure);
+      return failure;
+    }
+
+    state = state.copyWith(
+      isLoading: false,
+      organizations: _authService.organizations,
+      selectedOrganization: _authService.selectedOrganization,
+    );
+    // A fresh org has none of the previous one's records; the same caches the
+    // org switch drops have to go here too.
+    _dropSessionCaches();
+    return null;
+  }
+
   /// Sign out
   Future<void> signOut() async {
     debugPrint('AuthNotifier: Signing out...');

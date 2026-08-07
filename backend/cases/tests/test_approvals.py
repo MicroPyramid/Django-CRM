@@ -7,7 +7,6 @@ request flow, the inbox endpoint, and the four state transitions
 
 from __future__ import annotations
 
-from datetime import date
 
 import pytest
 from crum import impersonate
@@ -17,6 +16,7 @@ from cases.approvals import Approval, ApprovalRule, find_matching_rule
 from cases.models import Case
 from common.models import Activity
 from conftest import rls_org
+from django.utils import timezone
 
 
 def _make_case(
@@ -112,7 +112,7 @@ class TestCloseGate:
         case = _make_case(org_a, admin_user, priority="Urgent")
         _make_rule(org_a, match_priority="Urgent")
         case.status = "Closed"
-        case.closed_on = date.today()
+        case.closed_on = timezone.localdate()
         with pytest.raises(ValidationError) as exc:
             case.clean()
         assert "approval" in str(exc.value).lower()
@@ -130,13 +130,13 @@ class TestCloseGate:
             state="approved",
         )
         case.status = "Closed"
-        case.closed_on = date.today()
+        case.closed_on = timezone.localdate()
         case.clean()  # should not raise
 
     def test_close_unaffected_when_no_rule(self, admin_user, org_a):
         case = _make_case(org_a, admin_user, priority="Urgent")
         case.status = "Closed"
-        case.closed_on = date.today()
+        case.closed_on = timezone.localdate()
         case.clean()  # should not raise
 
     def test_pending_approval_does_not_satisfy_gate(
@@ -152,7 +152,7 @@ class TestCloseGate:
             state="pending",
         )
         case.status = "Closed"
-        case.closed_on = date.today()
+        case.closed_on = timezone.localdate()
         with pytest.raises(ValidationError):
             case.clean()
 

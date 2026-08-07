@@ -9,6 +9,7 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_email_screen.dart';
 import '../screens/auth/magic_link_code_screen.dart';
+import '../screens/auth/org_create_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -47,6 +48,7 @@ class AppRoutes {
   static const String magicLinkEmail = '/magic-link/email';
   static const String magicLinkCode = '/magic-link/code';
   static const String orgSelection = '/org-selection';
+  static const String orgCreate = '/org-selection/new';
 
   // Main routes
   static const String dashboard = '/dashboard';
@@ -92,7 +94,9 @@ const _publicRoutes = [
 ];
 
 /// Routes that require authentication but not org selection
-const _authOnlyRoutes = [AppRoutes.orgSelection];
+// Reachable with a session but no org: the picker, and the screen that
+// creates the org the picker has none of.
+const _authOnlyRoutes = [AppRoutes.orgSelection, AppRoutes.orgCreate];
 
 /// Router Provider
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -206,6 +210,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.orgCreate,
+        name: 'orgCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrgCreateScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgSelection,

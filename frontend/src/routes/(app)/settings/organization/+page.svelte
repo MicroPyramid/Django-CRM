@@ -176,6 +176,16 @@
             </div>
             <span style="font-size:13px">{org.default_country || '—'}</span>
           </div>
+          <div class="v2-setting">
+            <div class="v2-setting-body">
+              <b>Time zone</b>
+              <span class="v2-sub" style="font-size:11.5px">
+                When a day starts here, so "due today" and "overdue" mean what your team
+                expects.
+              </span>
+            </div>
+            <span style="font-size:13px">{(org.timezone || 'UTC').replace(/_/g, ' ')}</span>
+          </div>
         </div>
 
         <div class="v2-label" style="margin-bottom:10px">Behaviour</div>

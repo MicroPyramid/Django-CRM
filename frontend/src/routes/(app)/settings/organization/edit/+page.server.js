@@ -3,7 +3,8 @@ import {
   getOrgSettings,
   updateOrgSettings,
   EDITABLE_FIELDS,
-  BOOLEAN_FIELDS
+  BOOLEAN_FIELDS,
+  listTimezones
 } from '$lib/server/v2/organization.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
 
@@ -20,7 +21,10 @@ import { readableError } from '$lib/server/v2/form-errors.js';
 export async function load({ cookies }) {
   const { org, can_edit } = await getOrgSettings({ cookies });
   if (!can_edit) return { forbidden: true };
-  return { forbidden: false, org };
+  // Fetched rather than built from `Intl`, so the option list uses the same
+  // zone vocabulary the org's stored value came from. See `listTimezones`.
+  const timezones = await listTimezones(cookies).catch(() => [{ name: 'UTC', label: 'UTC' }]);
+  return { forbidden: false, org, timezones };
 }
 
 /** @type {import('./$types').Actions} */

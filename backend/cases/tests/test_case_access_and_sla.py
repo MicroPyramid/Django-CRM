@@ -361,7 +361,7 @@ class TestClosingACase:
         before it existed.
         """
         case_a.status = "Closed"
-        case_a.closed_on = timezone.now().date()
+        case_a.closed_on = timezone.localdate()
         case_a.save()
         ApprovalRule.objects.create(
             org=org_a, name="Close needs sign-off", trigger_event="pre_close"

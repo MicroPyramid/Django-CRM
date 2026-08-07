@@ -12,10 +12,10 @@ build a cycle. Cascade close honours ``Org.auto_close_children_on_parent_close``
 as the default, and accepts ``cascade`` in the body to override.
 """
 
-from datetime import date
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -219,7 +219,7 @@ class CaseCloseWithChildrenView(APIView):
         else:
             cascade = bool(cascade_override)
 
-        today = date.today()
+        today = timezone.localdate()
         # Close the parent first.
         if case.status != "Closed":
             case.status = "Closed"

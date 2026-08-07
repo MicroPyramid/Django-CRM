@@ -431,7 +431,7 @@ def _evaluate_reopen(case, comment):
     if not policy["is_enabled"]:
         return None
 
-    today = timezone.now().date()
+    today = timezone.localdate()
     days_since_close = (today - case.closed_on).days
     if days_since_close > policy["reopen_window_days"]:
         return "out_of_window"
@@ -491,7 +491,7 @@ def maybe_reopen_for_inbound_email(case, email_message):
     if not policy["is_enabled"]:
         return None
 
-    today = timezone.now().date()
+    today = timezone.localdate()
     days_since_close = (today - case.closed_on).days
     if days_since_close > policy["reopen_window_days"]:
         return "out_of_window"

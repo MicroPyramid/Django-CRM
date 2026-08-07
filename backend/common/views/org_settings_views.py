@@ -1,8 +1,10 @@
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.org_time import selectable_timezones
 from common.permissions import is_org_admin
 from common.serializer import OrgSettingsSerializer
 
@@ -49,3 +51,48 @@ class OrgSettingsView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TimezoneListView(APIView):
+    """The zone names a client may offer when creating or editing an org.
+
+    Served rather than built client-side because the two clients would not
+    otherwise agree: a browser's ``Intl.supportedValuesOf('timeZone')`` answers
+    "Asia/Calcutta" where this database also knows "Asia/Kolkata", and a select
+    that cannot find the stored value submits its first option instead. See
+    ``common.org_time.selectable_timezones``.
+
+    Each entry carries the zone's current UTC offset so a client can preselect a
+    sensible default. Mobile cannot read the device's IANA name without a
+    platform package, but it can always read the device's offset.
+
+    Authenticated but deliberately org-free: the first caller is a user creating
+    their very first organization, who has no org claim yet. The list is the same
+    for every tenant and contains no tenant data, so there is nothing here to
+    scope.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        tags=["organization"],
+        operation_id="timezone_list",
+        responses={
+            200: inline_serializer(
+                name="TimezoneListResponse",
+                fields={
+                    "timezones": serializers.ListField(
+                        child=inline_serializer(
+                            name="TimezoneOption",
+                            fields={
+                                "name": serializers.CharField(),
+                                "offset_minutes": serializers.IntegerField(),
+                            },
+                        )
+                    )
+                },
+            )
+        },
+    )
+    def get(self, request):
+        return Response({"timezones": selectable_timezones()})

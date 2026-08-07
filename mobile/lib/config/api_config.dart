@@ -55,6 +55,16 @@ class ApiConfig {
   /// Switch organization context
   static String get switchOrg => '$apiBaseUrl/auth/switch-org/';
 
+  /// Create an organization and become its admin (OrgProfileCreateView).
+  /// Needs a signed-in user but no org context, which is the point: the caller
+  /// is someone who has none yet.
+  static String get orgCreate => '$apiBaseUrl/org/';
+
+  /// IANA zone names with their current UTC offsets, for the org form's
+  /// timezone picker. Served rather than read from the device so both clients
+  /// use one vocabulary (see `common/org_time.py`).
+  static String get timezones => '$apiBaseUrl/org/timezones/';
+
   // ==========================================================================
   // DASHBOARD
   // ==========================================================================

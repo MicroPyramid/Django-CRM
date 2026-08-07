@@ -202,7 +202,7 @@ class InvoiceListView(APIView, LimitOffsetPagination):
         of assignees. ``pk__in`` drops the join so the sums are honest.
         """
         scoped = Invoice.objects.filter(pk__in=queryset.values("pk"))
-        today = timezone.now().date()
+        today = timezone.localdate()
         unpaid = Q(status__in=UNPAID_STATUSES)
         quarter_start = datetime.date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
 
@@ -456,7 +456,7 @@ class InvoiceMarkPaidView(APIView):
         payload = {
             "amount": request.data.get("amount", invoice.amount_due),
             "payment_method": request.data.get("payment_method", "OTHER"),
-            "payment_date": request.data.get("payment_date", timezone.now().date()),
+            "payment_date": request.data.get("payment_date", timezone.localdate()),
             "reference_number": request.data.get("reference_number", ""),
             "notes": request.data.get("notes", ""),
         }
@@ -518,7 +518,7 @@ class InvoiceDuplicateView(APIView):
                 tax_rate=original.tax_rate,
                 shipping_amount=original.shipping_amount,
                 currency=original.currency,
-                issue_date=timezone.now().date(),
+                issue_date=timezone.localdate(),
                 payment_terms=original.payment_terms,
                 reminder_enabled=original.reminder_enabled,
                 reminder_days_before=original.reminder_days_before,
@@ -1228,7 +1228,7 @@ class EstimateConvertView(APIView):
                 discount_value=estimate.discount_value,
                 tax_rate=estimate.tax_rate,
                 currency=estimate.currency,
-                issue_date=timezone.now().date(),
+                issue_date=timezone.localdate(),
                 notes=estimate.notes,
                 terms=estimate.terms,
                 org=request.profile.org,
@@ -1934,7 +1934,7 @@ class InvoiceDashboardView(APIView):
             return denied
 
         org = request.profile.org
-        today = timezone.now().date()
+        today = timezone.localdate()
         thirty_days_ago = today - timedelta(days=30)
 
         # Total invoices
@@ -1978,7 +1978,8 @@ class InvoiceDashboardView(APIView):
             paid_at__isnull=False, issue_date__isnull=False
         ).only("paid_at", "issue_date")
         pay_gaps = [
-            (inv.paid_at.date() - inv.issue_date).days for inv in paid_with_dates
+            (timezone.localdate(inv.paid_at) - inv.issue_date).days
+            for inv in paid_with_dates
         ]
         average_days_to_pay = round(sum(pay_gaps) / len(pay_gaps)) if pay_gaps else 0
 
@@ -2038,12 +2039,12 @@ class RevenueReportView(APIView):
         group_by = request.GET.get("group_by", "month")  # day, week, month, year
 
         if not start_date:
-            start_date = (timezone.now() - timedelta(days=365)).date()
+            start_date = (timezone.localdate() - timedelta(days=365))
         else:
             start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
 
         if not end_date:
-            end_date = timezone.now().date()
+            end_date = timezone.localdate()
         else:
             end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
 
@@ -2147,7 +2148,7 @@ class AgingReportView(APIView):
             return denied
 
         org = request.profile.org
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         # Get unpaid invoices. select_related the account so the by-account
         # roll-up below does not fire a query per invoice.
@@ -2392,8 +2393,8 @@ class InvoiceFromOpportunityView(APIView):
                 opportunity=opportunity,
                 currency=opportunity.currency or org.default_currency or "USD",
                 status="DRAFT",
-                issue_date=timezone.now().date(),
-                due_date=timezone.now().date() + timedelta(days=30),
+                issue_date=timezone.localdate(),
+                due_date=timezone.localdate() + timedelta(days=30),
                 created_by=request.profile.user,
                 org=org,
             )
@@ -2510,7 +2511,7 @@ class InvoiceFromTimeEntriesView(APIView):
             # Invoice.save() generates invoice_number, public_token, due_date,
             # and recalculates totals. We just hand it the high-level fields.
             invoice = Invoice.objects.create(
-                invoice_title=f"Time entries, {timezone.now().date():%Y-%m-%d}",
+                invoice_title=f"Time entries, {timezone.localdate():%Y-%m-%d}",
                 account=account,
                 contact=primary_contact,
                 currency=currency,

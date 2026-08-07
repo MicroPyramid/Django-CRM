@@ -9,7 +9,6 @@ work if it resolves the org from the unscoped lookup first.
 See docs/PORTAL_RLS.md and [[client-portal-403]].
 """
 
-import datetime
 
 import pytest
 from django.db import connection
@@ -18,6 +17,7 @@ from common.models import Org
 from common.portal_tokens import resolve_portal_org
 from common.tasks import set_rls_context
 from invoices.models import Estimate
+from django.utils import timezone
 
 pytestmark = [pytest.mark.postgres_only, pytest.mark.django_db]
 
@@ -54,7 +54,7 @@ def test_resolution_reads_estimate_that_empty_context_hides():
             org=org,
             title="RLS estimate",
             currency="USD",
-            issue_date=datetime.date.today(),
+            issue_date=timezone.localdate(),
         )
         token = estimate.public_token
     finally:

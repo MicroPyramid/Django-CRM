@@ -199,9 +199,9 @@ class Lead(AssignableMixin, BaseModel):
     def days_since_last_contact(self) -> int:
         """Return the number of days since last contact or creation."""
         if self.last_contacted:
-            return (timezone.now().date() - self.last_contacted).days
+            return (timezone.localdate() - self.last_contacted).days
         if self.created_at:
-            return (timezone.now().date() - self.created_at.date()).days
+            return (timezone.localdate() - timezone.localdate(self.created_at)).days
         return 0
 
     @property
@@ -216,14 +216,14 @@ class Lead(AssignableMixin, BaseModel):
         """Return the number of days until next follow-up (negative if overdue)."""
         if not self.next_follow_up:
             return None
-        return (self.next_follow_up - timezone.now().date()).days
+        return (self.next_follow_up - timezone.localdate()).days
 
     @property
     def is_follow_up_overdue(self) -> bool:
         """Check if follow-up date has passed."""
         if not self.next_follow_up:
             return False
-        return timezone.now().date() > self.next_follow_up
+        return timezone.localdate() > self.next_follow_up
 
 
 class LeadPipeline(BaseModel):

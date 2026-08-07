@@ -3,9 +3,11 @@ import logging
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
+from django.utils import timezone
 
 from common import scopes
 from common.models import Org, Profile
+from common.org_time import activate_org_timezone
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,21 @@ class GetProfileAndOrg:
         denial = self.process_request(request)
         if denial is not None:
             return denial
-        return self.get_response(request)
+
+        # The org's day, for the rest of this request. Everything downstream
+        # asks the framework what "today" is (`timezone.localdate()`), so
+        # activating here is what makes one org's midnight different from
+        # another's without any view knowing about it.
+        #
+        # The deactivate is in a `finally` for the same reason the RLS reset is
+        # (see `rls_context.SetOrgContext.__call__`): the active timezone is a
+        # thread-local, worker threads are reused, and a request that raised
+        # after activating would hand the next tenant its own day boundary.
+        activate_org_timezone(getattr(request, "org", None))
+        try:
+            return self.get_response(request)
+        finally:
+            timezone.deactivate()
 
     def process_request(self, request):
         # Skip JWT validation for authentication endpoints that don't need org context

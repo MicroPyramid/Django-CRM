@@ -5,7 +5,9 @@ Common validators for CRM models.
 import json
 import re
 import uuid as uuid_module
+from zoneinfo import available_timezones
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -138,3 +140,19 @@ def normalize_phone(phone: str) -> str:
     digits_only = re.sub(r"[^\d]", "", phone)
     # Return last 10 digits for normalized comparison
     return digits_only[-10:] if len(digits_only) >= 10 else digits_only
+
+
+def validate_iana_timezone(value: str) -> None:
+    """Reject anything that is not a name in the system's IANA tz database.
+
+    Timezone is stored as an IANA name (``America/New_York``) rather than a UTC
+    offset, because an offset cannot survive daylight saving: ``+05:00`` is a
+    fact about one instant, while ``America/New_York`` is a rule that knows when
+    the clocks move.
+
+    ``business_hours.models`` re-exports this under its original private name so
+    that ``business_hours/migrations/0001_initial.py``, which serialised the path
+    ``business_hours.models._validate_iana_tz``, still resolves.
+    """
+    if value not in available_timezones():
+        raise DjangoValidationError(f"{value!r} is not a valid IANA timezone.")
