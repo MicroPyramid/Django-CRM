@@ -1,4 +1,6 @@
 import 'package:bottle_crm/data/models/app_notification.dart';
+import 'package:bottle_crm/data/models/custom_field_definition.dart';
+import 'package:bottle_crm/data/models/macro.dart';
 import 'package:bottle_crm/data/models/invoice.dart';
 import 'package:bottle_crm/data/models/time_entry.dart';
 import 'package:bottle_crm/data/models/timesheet.dart';
@@ -7,7 +9,9 @@ import 'package:bottle_crm/data/models/product.dart';
 import 'package:bottle_crm/data/models/recurring_invoice.dart';
 import 'package:bottle_crm/providers/invoice_extras_provider.dart';
 import 'package:bottle_crm/providers/invoices_provider.dart';
+import 'package:bottle_crm/providers/auth_provider.dart';
 import 'package:bottle_crm/providers/notifications_provider.dart';
+import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/providers/timesheet_provider.dart';
 import 'package:bottle_crm/screens/invoices/estimates_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/invoices_list_screen.dart';
@@ -16,6 +20,10 @@ import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
+import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
+import 'package:bottle_crm/screens/settings/macros_screen.dart';
+import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
+import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,6 +73,74 @@ void main() {
   Widget timesheetApp() => ProviderScope(
     overrides: [timesheetProvider.overrideWith(_FakeTimesheet.new)],
     child: routed(const TimesheetScreen()),
+  );
+
+  Widget settingsHubApp() =>
+      const ProviderScope(child: MaterialApp(home: SettingsHubScreen()));
+
+  /// [isAdmin] is overridden rather than left to fall out of a signed-in
+  /// profile, because both answers matter here: the read is open to a member
+  /// and every write is admin-only.
+  Widget customFieldsApp({required bool isAdmin}) => ProviderScope(
+    overrides: [
+      customFieldsProvider.overrideWith(_FakeCustomFields.new),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: const MaterialApp(home: CustomFieldsScreen()),
+  );
+
+  /// [myEmail] decides ownership of the personal rows, which is what the edit
+  /// control turns on. `myEmailProvider` normally reads the signed-in user, so
+  /// it is overridden here to drive both answers.
+  Widget macrosApp({required bool isAdmin, String? myEmail}) => ProviderScope(
+    overrides: [
+      macrosProvider.overrideWith(_FakeMacros.new),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+      myEmailProvider.overrideWithValue(myEmail),
+    ],
+    child: const MaterialApp(home: MacrosScreen()),
+  );
+
+  /// A button that opens the picker, so the sheet is rendered the way it is
+  /// really reached: over a screen, with the keyboard inset in play.
+  Widget macroPickerApp({List<Macro>? macros}) => ProviderScope(
+    overrides: [
+      activeMacrosProvider.overrideWith(
+        (ref) async =>
+            macros ??
+            [
+              Macro.fromJson(const {
+                'id': 'm1',
+                'title': 'Password reset, standard wording agreed with legal',
+                'body':
+                    'Hi there, follow the link below to reset your password '
+                    'and let us know if it does not arrive within ten minutes.',
+                'scope': 'org',
+                'is_active': true,
+              }),
+              Macro.fromJson(const {
+                'id': 'm2',
+                'title': 'My follow-up',
+                'body': 'Just checking in on this one.',
+                'scope': 'personal',
+                'owner_name': 'me@example.com',
+                'is_active': true,
+              }),
+            ],
+      ),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () => showMacroPickerSheet(context, 't42'),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 
   Widget notificationsApp() => ProviderScope(
@@ -473,6 +549,298 @@ void main() {
       expect(find.textContaining('monthly, before tax'), findsOneWidget);
     });
   });
+
+  group('the settings cluster at 390px', () {
+    testWidgets('the hub renders without overflowing', (tester) async {
+      await pump(tester, settingsHubApp());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the hub opens to a member, not just an admin', (tester) async {
+      // isOrgAdminProvider is false in this test's state. The reads under the
+      // hub are open to any member server-side, and the web sidebar keeps the
+      // entry for everyone for that reason, so a lock screen here would be
+      // this app disagreeing with the API about who may look.
+      await pump(tester, settingsHubApp());
+      expect(find.text('Custom fields'), findsOneWidget);
+    });
+
+    testWidgets('custom fields render without overflowing', (tester) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('custom fields fit with the system font scaled up', (
+      tester,
+    ) async {
+      // The row that earns this: a Wrap of up to four badges plus an option
+      // count, over a long label, with two buttons under it.
+      await pump(tester, customFieldsApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member sees the fields but no write controls', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: false));
+
+      expect(find.text('Severity'), findsOneWidget, reason: 'the read is open');
+      expect(find.widgetWithText(OutlinedButton, 'Edit'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Turn off'), findsNothing);
+      expect(find.byTooltip('New custom field'), findsNothing);
+    });
+
+    testWidgets('a turned-off field offers Turn on, not Turn off', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+
+      expect(find.widgetWithText(OutlinedButton, 'Turn on'), findsOneWidget);
+      expect(find.text('Turned off'), findsOneWidget);
+    });
+
+    testWidgets('a required field with gaps says so on the row', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+
+      // Marking a field required binds new saves only, so the count is the
+      // thing that makes "Required" honest.
+      expect(find.textContaining('23 records have no value'), findsOneWidget);
+      // One gap, so the singular branch of the banner. The fake sets
+      // requiredWithGaps to 1 deliberately: the plural string is the one that
+      // reads naturally when written, and the singular is where "1 required
+      // fields have" slips through.
+      expect(
+        find.textContaining('One required field has records'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the new-field sheet renders without overflowing', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+      await tester.tap(find.byTooltip('New custom field'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('New custom field'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the sheet fills the key in from the label', (tester) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+      await tester.tap(find.byTooltip('New custom field'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Label'),
+        'Deal source',
+      );
+      await tester.pumpAndSettle();
+
+      final key = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Key'),
+      );
+      expect(key.controller?.text, 'deal_source');
+    });
+
+    testWidgets('the sheet asks for options only on a dropdown', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+      await tester.tap(find.byTooltip('New custom field'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add option'), findsNothing);
+
+      await tester.tap(find.text('Text').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dropdown').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add option'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('editing a field shows the frozen three as text', (
+      tester,
+    ) async {
+      await pump(tester, customFieldsApp(isAdmin: true));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Edit').first);
+      await tester.pumpAndSettle();
+
+      // The server refuses a change to any of the three with a 400. Offering
+      // the input and letting the save fail teaches the rule the hard way.
+      expect(find.widgetWithText(TextField, 'Key'), findsNothing);
+      expect(find.textContaining('Fixed after creation'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('saved replies at 390px', () {
+    testWidgets('render without overflowing', (tester) async {
+      await pump(tester, macrosApp(isAdmin: true, myEmail: 'me@example.com'));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fit with the system font scaled up', (tester) async {
+      await pump(
+        tester,
+        macrosApp(isAdmin: true, myEmail: 'me@example.com'),
+        textScale: 1.5,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member may still write their own', (tester) async {
+      // The only settings page with a write open to everyone. Hiding the add
+      // button from a member would remove a feature the API grants them.
+      await pump(tester, macrosApp(isAdmin: false, myEmail: 'me@example.com'));
+      expect(find.byTooltip('New saved reply'), findsOneWidget);
+    });
+
+    testWidgets('a member gets no controls on a shared reply', (tester) async {
+      await pump(tester, macrosApp(isAdmin: false, myEmail: 'me@example.com'));
+
+      // Two rows are mine (one personal, one turned-off personal), one is the
+      // org macro a member may read and not touch.
+      expect(find.widgetWithText(OutlinedButton, 'Turn off'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Delete'), findsOneWidget);
+    });
+
+    testWidgets('an admin gets Turn off on the shared reply', (tester) async {
+      await pump(tester, macrosApp(isAdmin: true, myEmail: 'me@example.com'));
+
+      expect(find.widgetWithText(OutlinedButton, 'Turn off'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Delete'), findsOneWidget);
+    });
+
+    testWidgets('an admin gets nothing on somebody else personal reply', (
+      tester,
+    ) async {
+      // The one place admin is not an override: the server answers 404 there.
+      await pump(
+        tester,
+        macrosApp(isAdmin: true, myEmail: 'other@example.com'),
+      );
+
+      expect(find.widgetWithText(OutlinedButton, 'Delete'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Edit'), findsOneWidget);
+    });
+
+    testWidgets('a broken placeholder is named, not counted', (tester) async {
+      await pump(tester, macrosApp(isAdmin: true, myEmail: 'me@example.com'));
+
+      // The author has to know which token to fix. A typo is only obvious
+      // beside the right spelling. Two widgets carry the token, the body
+      // preview and the warning; this asserts the warning.
+      expect(
+        find.text('%custmer_name% is not recognized and goes out as written'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the form offers the scope choice only to an admin', (
+      tester,
+    ) async {
+      await pump(tester, macrosApp(isAdmin: false, myEmail: 'me@example.com'));
+      await tester.tap(find.byTooltip('New saved reply'));
+      await tester.pumpAndSettle();
+
+      // Not a greyed control: showing a disabled "Everyone" would advertise
+      // an action the server answers 403 to.
+      expect(find.text('Who can use it'), findsNothing);
+      expect(find.textContaining('Saved for you alone'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the form inserts a placeholder at the cursor', (tester) async {
+      await pump(tester, macrosApp(isAdmin: true, myEmail: 'me@example.com'));
+      await tester.tap(find.byTooltip('New saved reply'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.widgetWithText(TextField, 'Reply'), 'Hi ');
+      await tester.tap(find.text('%customer_name%'));
+      await tester.pumpAndSettle();
+
+      final body = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Reply'),
+      );
+      expect(body.controller?.text, 'Hi %customer_name%');
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the saved-reply picker at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, macroPickerApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Saved replies'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, macroPickerApp(), textScale: 1.5);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('says where to write one when there are none', (tester) async {
+      // An empty picker with no explanation reads as broken. The settings
+      // page is two taps away and a member can use it.
+      await pump(tester, macroPickerApp(macros: const []));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Organization settings'), findsOneWidget);
+    });
+
+    testWidgets('filters as you type', (tester) async {
+      await pump(tester, macroPickerApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // "follow-up", not "follow": the search reads the body as well as the
+      // title, and the shared reply's body says "follow the link below". That
+      // is deliberate, since the words you remember are usually in the reply
+      // rather than in its name, and it is why the narrower term is used here.
+      await tester.enterText(find.byType(TextField).first, 'follow-up');
+      await tester.pumpAndSettle();
+
+      expect(find.text('My follow-up'), findsOneWidget);
+      expect(find.textContaining('Password reset'), findsNothing);
+    });
+
+    testWidgets('searches the body, not just the title', (tester) async {
+      await pump(tester, macroPickerApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'ten minutes');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Password reset'), findsOneWidget);
+      expect(find.text('My follow-up'), findsNothing);
+    });
+
+    testWidgets('marks which replies are shared and which are yours', (
+      tester,
+    ) async {
+      await pump(tester, macroPickerApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Sending a personal draft believing it is the agreed org wording is the
+      // mistake this label prevents.
+      expect(find.text('Everyone'), findsOneWidget);
+      expect(find.text('Just you'), findsOneWidget);
+    });
+  });
 }
 
 /// One estimate still to convert, one already billed.
@@ -728,5 +1096,102 @@ class _FakeNotifications extends NotificationsNotifier {
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
       ),
     ],
+  );
+}
+
+/// Three fields across two record types: one required with a real gap, one
+/// dropdown, and one already turned off. Between them they light every branch
+/// the row and the summary have.
+class _FakeCustomFields extends CustomFieldsNotifier {
+  @override
+  Future<CustomFieldsState> build() async => CustomFieldsState(
+    fields: [
+      CustomFieldDefinition.fromJson(const {
+        'id': 'f1',
+        'target_model': 'Case',
+        'key': 'severity',
+        'label': 'Severity',
+        'field_type': 'text',
+        'is_required': true,
+        'is_filterable': true,
+        'display_order': 0,
+        'is_active': true,
+        'records_missing_value': 23,
+      }),
+      CustomFieldDefinition.fromJson(const {
+        'id': 'f2',
+        'target_model': 'Case',
+        'key': 'root_cause',
+        'label': 'Root cause, as agreed with the customer at close',
+        'field_type': 'dropdown',
+        'display_order': 1,
+        'is_active': true,
+        'options': [
+          {'value': 'process', 'label': 'Process'},
+          {'value': 'people', 'label': 'People'},
+        ],
+      }),
+      CustomFieldDefinition.fromJson(const {
+        'id': 'f3',
+        'target_model': 'Lead',
+        'key': 'campaign',
+        'label': 'Campaign',
+        'field_type': 'text',
+        'is_active': false,
+      }),
+    ],
+    count: 3,
+    active: 2,
+    modelsExtended: 2,
+    requiredWithGaps: 1,
+  );
+}
+
+/// One shared reply, one of mine, and one of mine already turned off. Between
+/// them they drive both answers of every control on the screen.
+class _FakeMacros extends MacrosNotifier {
+  @override
+  Future<MacrosState> build() async => MacrosState(
+    macros: [
+      Macro.fromJson(const {
+        'id': 'm1',
+        'title': 'Password reset, standard wording agreed with legal',
+        'body': 'Hi %custmer_name%, follow the link to reset your password.',
+        'scope': 'org',
+        'owner_name': null,
+        'is_active': true,
+        'usage_count': 41,
+        'unknown_placeholders': ['%custmer_name%'],
+      }),
+      Macro.fromJson(const {
+        'id': 'm2',
+        'title': 'My follow-up',
+        'body': 'Just checking in on this one.',
+        'scope': 'personal',
+        'owner_name': 'me@example.com',
+        'is_active': true,
+        'usage_count': 0,
+      }),
+      Macro.fromJson(const {
+        'id': 'm3',
+        'title': 'Old holiday notice',
+        'body': 'We are closed until January.',
+        'scope': 'personal',
+        'owner_name': 'me@example.com',
+        'is_active': false,
+        'usage_count': 7,
+      }),
+    ],
+    placeholders: const [
+      MacroPlaceholder(
+        token: '%customer_name%',
+        resolves: "The case's first contact",
+      ),
+      MacroPlaceholder(token: '%case_id%', resolves: 'The case number'),
+    ],
+    orgCount: 1,
+    personalCount: 2,
+    inactiveCount: 1,
+    brokenCount: 1,
   );
 }

@@ -35,8 +35,11 @@ import '../screens/tasks/board_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
+import '../screens/settings/custom_fields_screen.dart';
+import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
+import '../screens/settings/settings_hub_screen.dart';
 import '../screens/settings/team_screen.dart';
 import '../screens/solutions/solutions_list_screen.dart';
 import '../screens/solutions/solution_detail_screen.dart';
@@ -98,6 +101,13 @@ class AppRoutes {
   static const String more = '/more';
   static const String profile = '/more/profile';
   static const String team = '/more/team';
+
+  /// The org settings cluster. Two segments deep under `/more`, matching
+  /// `profile` and `team`, so nothing here can be mistaken for a record id the
+  /// way `/invoices/estimates` once could.
+  static const String settings = '/more/settings';
+  static const String settingsCustomFields = '/more/settings/custom-fields';
+  static const String settingsMacros = '/more/settings/macros';
 
   /// Your own week of logged time. Not under `/more`: it is a workspace
   /// destination reached from the dashboard as often as from the menu, and a
@@ -403,6 +413,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'team',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const TeamScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SettingsHubScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsCustomFields,
+        name: 'settingsCustomFields',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CustomFieldsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsMacros,
+        name: 'settingsMacros',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MacrosScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,

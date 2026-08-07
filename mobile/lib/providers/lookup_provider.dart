@@ -313,6 +313,14 @@ final ticketEntityOptionsProvider = Provider<AsyncValue<List<EntityLookup>>>(
 ///
 /// Each form watches the family for its entity; results are cached per-target
 /// for the lifetime of the provider scope so reopening the same form is cheap.
+///
+/// `include_counts=false` matters. Without it the endpoint also computes
+/// `records_missing_value` for every definition the org has, which is one
+/// COUNT over the org's records per target model plus a
+/// `custom_fields ? key` scan per field. A form that only wants labels and
+/// types does not need those numbers, and paying for them on every lead, deal
+/// and task form open puts full scans on the record path. The settings screen
+/// is the one caller that wants them and asks separately.
 final customFieldDefinitionsProvider =
     FutureProvider.family<List<CustomFieldDefinition>, String>((
       ref,
@@ -323,6 +331,7 @@ final customFieldDefinitionsProvider =
             queryParameters: {
               'target_model': targetModel,
               'active_only': 'true',
+              'include_counts': 'false',
             },
           )
           .toString();

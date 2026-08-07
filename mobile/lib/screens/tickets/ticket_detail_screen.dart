@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
 import '../../data/models/comment.dart';
+import 'macro_picker_sheet.dart';
 import '../../data/models/email_message.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
@@ -583,6 +584,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               color: AppColors.textSecondary,
               onPressed: _isAddingComment ? null : _pickMention,
             ),
+            IconButton(
+              tooltip: 'Saved reply',
+              icon: const Icon(LucideIcons.messageSquareQuote, size: 20),
+              color: AppColors.textSecondary,
+              onPressed: _isAddingComment ? null : _pickMacro,
+            ),
             Expanded(
               child: TextField(
                 controller: _commentController,
@@ -956,6 +963,27 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     _commentController.value = TextEditingValue(
       text: next,
       selection: TextSelection.collapsed(offset: insertAt + token.length),
+    );
+  }
+
+  /// Insert a saved reply, expanded against this ticket.
+  ///
+  /// Inserted at the cursor rather than replacing the box, so a macro can be
+  /// dropped into a reply already part-written. Nothing is sent: the agent
+  /// still reads it and presses send, which is the point of expanding it into
+  /// the composer instead of posting it.
+  Future<void> _pickMacro() async {
+    final rendered = await showMacroPickerSheet(context, widget.ticketId);
+    if (rendered == null || rendered.isEmpty || !mounted) return;
+
+    final text = _commentController.text;
+    final sel = _commentController.selection;
+    final insertAt = sel.isValid ? sel.start : text.length;
+    final insertEnd = sel.isValid ? sel.end : text.length;
+    final next = text.replaceRange(insertAt, insertEnd, rendered);
+    _commentController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: insertAt + rendered.length),
     );
   }
 

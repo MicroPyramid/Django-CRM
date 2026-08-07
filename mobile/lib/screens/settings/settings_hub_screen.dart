@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../core/theme/theme.dart';
+import '../../routes/app_router.dart';
+import '../../widgets/common/common.dart';
+
+/// The launcher for the org settings cluster, mirroring `/settings` on the web.
+///
+/// **Not admin-gated, on purpose.** The reads underneath it are open to any
+/// member: `CustomFieldDefinitionListCreateView.get` carries only
+/// `IsAuthenticated, HasOrgContext`, and the admin check sits on POST, PUT and
+/// DELETE. The web's sidebar says the same in as many words ("the hub is
+/// readable by any member"). Gating the read here would hide from a member the
+/// definitions that shape the forms they fill in every day, and would be this
+/// app disagreeing with the API about who may look.
+///
+/// Each page hides its own write controls from a non-admin, which is UX rather
+/// than a guard: the server answers 403 either way.
+///
+/// Pages arrive here as they are built for the phone. The web has thirteen;
+/// listing the unbuilt ones as greyed rows would only advertise a gap the
+/// parity tracker already records.
+class SettingsHubScreen extends StatelessWidget {
+  const SettingsHubScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surfaceDim,
+      appBar: AppBar(
+        title: const Text('Organization settings'),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SectionHeader('Records'),
+            MenuRow(
+              icon: LucideIcons.listPlus,
+              label: 'Custom fields',
+              description: 'Extra fields on leads, deals, tickets and the rest',
+              onTap: () => context.push(AppRoutes.settingsCustomFields),
+            ),
+            const _SectionHeader('Tickets'),
+            MenuRow(
+              icon: LucideIcons.messageSquareQuote,
+              label: 'Saved replies',
+              description: 'Canned answers to insert into a ticket reply',
+              onTap: () => context.push(AppRoutes.settingsMacros),
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'The rest of the settings are on the web app for now.',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Text(
+        title.toUpperCase(),
+        style: AppTypography.overline.copyWith(
+          color: AppColors.textSecondary,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}

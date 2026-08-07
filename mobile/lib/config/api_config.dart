@@ -385,8 +385,32 @@ class ApiConfig {
   static String get tags => '$apiBaseUrl/tags/';
 
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
-  /// Query with `?target_model=Case&active_only=true`.
+  /// Query with `?target_model=Case&active_only=true`. Pass
+  /// `include_counts=false` unless you need `records_missing_value`: computing
+  /// it costs a full scan of the org's records per definition.
   static String get customFieldDefinitions => '$apiBaseUrl/custom-fields/';
+
+  /// Saved replies. GET lists the ones visible to the caller: every org macro
+  /// plus their own personal ones, never anybody else's. `?active=true` for
+  /// the reply-box picker, unfiltered for the settings screen, which has to
+  /// see the turned-off rows to offer turning one back on.
+  static String get macros => '$apiBaseUrl/macros/';
+
+  /// One saved reply. PATCH edits it (PUT runs the serializer non-partial and
+  /// 400s without both title and body). DELETE turns an org macro off and
+  /// deletes a personal one for good, decided server-side from the row.
+  static String macro(String id) => '$apiBaseUrl/macros/$id/';
+
+  /// Substitute the `%token%` placeholders against a ticket and return the
+  /// text: POST `{"case_id": "<ticket id>"}`. Server-side on purpose, so the
+  /// supported token set lives in one place and no client can drift from it.
+  static String macroRender(String id) => '$apiBaseUrl/macros/$id/render/';
+
+  /// One definition: PUT edits it, DELETE turns it off. DELETE is a soft
+  /// delete (`CustomFieldDefinitionDetailView.delete` flips `is_active` and
+  /// leaves stored values readable), so nothing here says "delete" to a user.
+  /// Both verbs are admin-only server-side.
+  static String customField(String id) => '$apiBaseUrl/custom-fields/$id/';
 
   /// People in the org: GET lists active and inactive, POST invites.
   /// Admin-only server-side, 403 for everyone else on both verbs.
