@@ -2,17 +2,17 @@
  * In-app notifications: the wiring behind /v2/notifications.
  *
  * Server-only. The feed is `GET /notifications/`, which already scopes to
- * `recipient=request.profile` (a user only ever sees their own). The two writes
+ * `recipient=request.profile` (a user only ever sees their own). The writes
  * are `POST /notifications/<id>/read/` and `POST /notifications/read-all/`, both
  * recipient-scoped the same way, so nothing here can touch another person's
  * feed, and the page's job is only to call them.
  *
  * The one transform that matters is the LINK. `Notification.link` is a stored
  * *client* path a reader navigates to, and it comes in two shapes: old rows from
- * before the producer fix carry `/cases/<id>` (which no client serves), new rows
- * carry `/tickets/<id>`. Both point at the same ticket, and on a v2 page both
- * must land inside v2. `resolvedLink` rebuilds a fresh `/tickets/<id>` from a
- * recognised prefix and returns '' for anything else, so a stored value can
+ * before the producer fix carry `/cases/<id>` (which no client serves), new CRM
+ * rows carry `/tickets/<id>`, and product-support rows carry `/help/<id>`.
+ * `resolvedLink` rebuilds a fresh internal path from a recognised prefix and
+ * returns '' for anything else, so a stored value can
  * never be rendered as an arbitrary href (an `http(s)://…` or `javascript:` link
  * that slipped into the column can't become a live link or an open redirect),
  * and a correctly-produced `/tickets/` link is not left pointing at the v1 route.
@@ -21,12 +21,19 @@ import { apiRequest } from '$lib/api-helpers.js';
 
 /** Verbs the backend actually dispatches. Everything else has no copy and is
  *  flagged on the page as "no producer" rather than shown as a raw identifier. */
-export const PRODUCED_VERBS = ['case.mentioned', 'case.commented'];
+export const PRODUCED_VERBS = [
+  'case.mentioned',
+  'case.commented',
+  'support.replied',
+  'support.status_changed'
+];
 
 /**
- * A stored notification link → a safe internal ticket path, or '' if it is not
- * a ticket link we recognise. Both `/cases/<id>` (pre-fix rows) and
- * `/tickets/<id>` (current rows) normalise to `/tickets/<id>`.
+ * A stored notification link → a safe internal destination, or '' if it is not
+ * a link we recognise. Both `/cases/<id>` (pre-fix rows) and `/tickets/<id>`
+ * (current rows) normalise to `/tickets/<id>`. Product support normalises to
+ * `/help/<id>`, and accepts the `/support/<id>` spelling its producer wrote
+ * before the page was renamed, for the same reason `/cases/` is still accepted.
  *
  * @param {unknown} link
  * @returns {string}
@@ -34,7 +41,9 @@ export const PRODUCED_VERBS = ['case.mentioned', 'case.commented'];
 export function resolvedLink(link) {
   if (typeof link !== 'string') return '';
   const m = link.match(/^\/(?:cases|tickets)\/([^/?#]+)\/?$/);
-  return m ? `/tickets/${encodeURIComponent(m[1])}` : '';
+  if (m) return `/tickets/${encodeURIComponent(m[1])}`;
+  const help = link.match(/^\/(?:support|help)\/([^/?#]+)\/?$/);
+  return help ? `/help/${encodeURIComponent(help[1])}` : '';
 }
 
 /** One API notification → the row shape the page renders. */

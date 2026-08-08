@@ -308,6 +308,40 @@ class ApiService {
     }
   }
 
+  /// Perform an authenticated GET without trying to parse the response as JSON.
+  /// Used for private attachments, whose URL must never carry a JWT.
+  Future<ApiResponse<Uint8List>> getBytes(
+    String url, {
+    bool requiresAuth = true,
+  }) async {
+    try {
+      final uri = Uri.parse(url);
+      debugPrint('GET (bytes) $uri');
+      final response = await _sendWithRetry(
+        requiresAuth: requiresAuth,
+        send: (headers) => _client.get(uri, headers: headers),
+        timeout: ApiConfig.uploadTimeout,
+      );
+      final success = _isSuccess(response.statusCode);
+      final errorData = success ? null : _parseResponse(response);
+      return ApiResponse(
+        success: success,
+        data: success ? response.bodyBytes : null,
+        message: success
+            ? null
+            : _extractErrorMessage(errorData, response.statusCode),
+        statusCode: response.statusCode,
+      );
+    } catch (error) {
+      debugPrint('GET (bytes) error: $error');
+      return ApiResponse(
+        success: false,
+        message: _networkErrorMessage(error),
+        statusCode: 0,
+      );
+    }
+  }
+
   /// Perform GET request returning a list
   Future<ApiResponse<List<dynamic>>> getList(
     String url, {

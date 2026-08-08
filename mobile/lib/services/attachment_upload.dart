@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 import '../config/api_config.dart';
 import 'api_service.dart';
@@ -42,6 +43,89 @@ enum AttachmentTarget {
 /// counts, and this exists so somebody who picked a 300 MB video is told
 /// immediately instead of after three minutes of uploading.
 const int attachmentMaxBytes = 25 * 1024 * 1024;
+
+class AttachmentSelectionResult {
+  const AttachmentSelectionResult._({
+    this.file,
+    this.error,
+    this.cancelled = false,
+  });
+
+  const AttachmentSelectionResult.selected(PlatformFile file)
+    : this._(file: file);
+
+  const AttachmentSelectionResult.failed(String error) : this._(error: error);
+
+  const AttachmentSelectionResult.cancelled() : this._(cancelled: true);
+
+  final PlatformFile? file;
+  final String? error;
+  final bool cancelled;
+}
+
+/// Pick and validate one attachment for a form that uploads it later.
+Future<AttachmentSelectionResult> selectAttachment({
+  Future<PlatformFile?> Function()? pickFile,
+}) async {
+  final picked = await (pickFile ?? _pickOneFile)();
+  if (picked == null) return const AttachmentSelectionResult.cancelled();
+  if ((picked.path ?? '').isEmpty) {
+    return const AttachmentSelectionResult.failed(
+      'That file could not be read. Try picking it again.',
+    );
+  }
+  if (picked.size > attachmentMaxBytes) {
+    final limit = attachmentMaxBytes ~/ (1024 * 1024);
+    return AttachmentSelectionResult.failed(
+      '${picked.name} is ${_megabytes(picked.size)} MB. '
+      'Files must be $limit MB or smaller.',
+    );
+  }
+  return AttachmentSelectionResult.selected(picked);
+}
+
+class AttachmentDownloadResult {
+  const AttachmentDownloadResult({required this.success, this.error});
+
+  final bool success;
+  final String? error;
+}
+
+/// Download a private attachment with the API authorization header, then ask
+/// the operating system where to save it. No token is placed in the URL.
+Future<AttachmentDownloadResult> downloadAttachment({
+  required String url,
+  required String fileName,
+  ApiService? api,
+  Future<String?> Function(Uint8List bytes, String fileName)? saveFile,
+}) async {
+  final response = await (api ?? ApiService()).getBytes(url);
+  if (!response.success || response.data == null) {
+    return AttachmentDownloadResult(
+      success: false,
+      error: response.message ?? 'Could not download that file.',
+    );
+  }
+  try {
+    await (saveFile ?? _saveFile)(response.data!, fileName);
+    return const AttachmentDownloadResult(success: true);
+  } catch (_) {
+    return const AttachmentDownloadResult(
+      success: false,
+      error: 'Could not save that file.',
+    );
+  }
+}
+
+Future<String?> _saveFile(Uint8List bytes, String fileName) =>
+    FilePicker.saveFile(
+      dialogTitle: 'Save attachment',
+      fileName: fileName,
+      bytes: bytes,
+    );
+
+/// Remove the temporary copy made by the native picker after a form uploads it.
+Future<void> clearAttachmentPickerCache() => _clearPickerCache();
 
 /// What an upload attempt produced. `cancelled` is not a failure and should not
 /// raise a message: the user closed the picker.

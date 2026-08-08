@@ -66,6 +66,9 @@ import '../screens/invoices/invoice_templates_screen.dart';
 import '../screens/invoices/invoice_reports_screen.dart';
 import '../screens/invoices/new_invoice_screen.dart';
 import '../screens/invoices/new_recurring_screen.dart';
+import '../screens/support/support_create_screen.dart';
+import '../screens/support/support_detail_screen.dart';
+import '../screens/support/support_list_screen.dart';
 
 // Shell
 import '../widgets/common/app_shell.dart';
@@ -138,6 +141,13 @@ class AppRoutes {
 
   /// The notification feed. Matches the web app's `/notifications`.
   static const String notifications = '/notifications';
+
+  /// Help: product support from the BottleCRM team. The URL says help, the
+  /// API behind it is `/api/support/`, and the screens keep the support name.
+  /// Separate from CRM customer tickets, which live at `/tickets`.
+  static const String help = '/help';
+  static const String helpNew = '/help/new';
+  static const String helpDetail = '/help/:id';
 
   /// Invoices. Matches the web app's `/invoices` and `/invoices/[id]`.
   static const String invoices = '/invoices';
@@ -364,6 +374,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'notifications',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        name: 'help',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SupportListScreen(),
+      ),
+      // Literal `new` must be declared before `:id`.
+      GoRoute(
+        path: AppRoutes.helpNew,
+        name: 'helpNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SupportCreateScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.helpDetail,
+        name: 'helpDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            SupportDetailScreen(ticketId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: AppRoutes.invoices,

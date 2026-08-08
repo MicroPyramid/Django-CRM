@@ -124,6 +124,12 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             // Support Section
             _buildSectionHeader('Support'),
             MenuRow(
+              icon: LucideIcons.lifeBuoy,
+              label: 'Contact BottleCRM Support',
+              description: 'Open a ticket and follow replies',
+              onTap: () => context.push(AppRoutes.help),
+            ),
+            MenuRow(
               icon: LucideIcons.helpCircle,
               label: 'Help Center',
               onTap: () => _openOnTheWeb('/docs', 'Help Center'),

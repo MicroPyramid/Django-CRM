@@ -189,7 +189,7 @@
       <CircleUser />
       Your profile
     </a>
-    <a class="v2-link" href={resolve('/support')}>
+    <a class="v2-link" href={resolve('/help')}>
       <CircleHelp />
       Help
     </a>

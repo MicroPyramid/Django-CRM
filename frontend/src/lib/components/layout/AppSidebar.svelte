@@ -333,7 +333,7 @@
 
   const supportItems = [
     {
-      href: '/support',
+      href: '/help',
       label: 'Help desk',
       icon: HelpCircle,
       type: 'link',

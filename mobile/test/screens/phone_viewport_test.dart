@@ -22,6 +22,7 @@ import 'package:bottle_crm/providers/invoices_provider.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
 import 'package:bottle_crm/providers/lookup_provider.dart';
 import 'package:bottle_crm/providers/notifications_provider.dart';
+import 'package:bottle_crm/providers/support_provider.dart';
 import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/providers/timesheet_provider.dart';
 import 'package:bottle_crm/screens/invoices/estimates_list_screen.dart';
@@ -31,6 +32,7 @@ import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
+import 'package:bottle_crm/screens/support/support_list_screen.dart';
 import 'package:bottle_crm/screens/settings/api_token_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/api_tokens_screen.dart';
 import 'package:bottle_crm/screens/settings/approval_rule_form_sheet.dart';
@@ -559,6 +561,50 @@ void main() {
         expect(size.width, greaterThanOrEqualTo(44), reason: tip);
         expect(size.height, greaterThanOrEqualTo(44), reason: tip);
       }
+    });
+  });
+
+  group('help at 390px', () {
+    /// Help has two tiers and the phone has to hold both. The self-serve tier
+    /// is what a community deployment serves, and it is the one a stuck user
+    /// on a narrow screen is most likely to see, so it is checked here rather
+    /// than assumed from the ticket list passing.
+    Widget helpApp({required bool available}) => ProviderScope(
+      overrides: [
+        supportTicketsProvider.overrideWith(
+          available ? _FakeEmptyQueue.new : _FakeNoQueue.new,
+        ),
+      ],
+      child: routed(const SupportListScreen()),
+    );
+
+    testWidgets('with no support queue it offers the routes that do work', (
+      tester,
+    ) async {
+      await pump(tester, helpApp(available: false));
+
+      expect(find.text('Knowledge base'), findsOneWidget);
+      expect(find.text('Email support@bottlecrm.io'), findsOneWidget);
+      // No queue means no way to open a ticket, so the button must be gone.
+      expect(find.text('New ticket'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('with a queue it offers a ticket instead of an inbox address', (
+      tester,
+    ) async {
+      await pump(tester, helpApp(available: true));
+
+      expect(find.text('New ticket'), findsOneWidget);
+      expect(find.text('Email support@bottlecrm.io'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the self-serve tier fits with the system font scaled up', (
+      tester,
+    ) async {
+      await pump(tester, helpApp(available: false), textScale: 1.3);
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -3253,4 +3299,15 @@ class _FakeOrg extends OrgSettingsNotifier {
 class _FakeOrgCascadeOn extends OrgSettingsNotifier {
   @override
   Future<OrgSettings> build() async => _org(cascade: true);
+}
+
+class _FakeNoQueue extends SupportTicketsNotifier {
+  @override
+  Future<SupportTicketListData> build() async =>
+      throw const SupportUnavailable();
+}
+
+class _FakeEmptyQueue extends SupportTicketsNotifier {
+  @override
+  Future<SupportTicketListData> build() async => const SupportTicketListData();
 }

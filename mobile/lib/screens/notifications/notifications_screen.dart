@@ -133,9 +133,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Notifications arrive when somebody mentions you on a ticket, or '
-            'comments on one you are watching. Watching happens automatically '
-            'the first time you are mentioned.',
+            'Notifications arrive for CRM ticket activity and updates from '
+            'BottleCRM Support.',
             textAlign: TextAlign.center,
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
@@ -151,12 +150,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Widget _row(AppNotification n) {
-    final ticketId = n.ticketId;
+    final destination = n.destinationPath;
     return InkWell(
       // Tapping opens the ticket and marks it read. With no resolvable ticket
       // the row still marks read, because otherwise the only way to clear an
       // orphaned row would be Mark all read.
-      onTap: () => _open(n, ticketId),
+      onTap: () => _open(n, destination),
       child: Container(
         constraints: const BoxConstraints(minHeight: 56),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -184,7 +183,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
               ),
             ),
-            UserAvatar(name: n.actorName ?? 'System', size: AvatarSize.sm),
+            UserAvatar(name: n.displayActorName, size: AvatarSize.sm),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -194,7 +193,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: n.actorName ?? 'The system',
+                          text: n.displayActorName,
                           style: AppTypography.body.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -209,7 +208,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               'a ticket that no longer has a name',
                           style: AppTypography.body.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: ticketId != null
+                            color: destination != null
                                 ? AppColors.primary600
                                 : AppColors.textSecondary,
                           ),
@@ -285,11 +284,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 
-  Future<void> _open(AppNotification n, String? ticketId) async {
+  Future<void> _open(AppNotification n, String? destination) async {
     // Navigate first. Marking read is optimistic in the provider, so the dot
     // has already cleared, and waiting on the round-trip before opening the
     // ticket would put a stall between the tap and the screen.
-    if (ticketId != null) context.push('/tickets/$ticketId');
+    if (destination != null) context.push(destination);
     final response = await ref
         .read(notificationsProvider.notifier)
         .markRead(n.id);

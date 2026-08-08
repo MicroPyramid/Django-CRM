@@ -207,6 +207,17 @@ class ApiConfig {
   /// Tickets (support tickets) management
   static String get tickets => '$apiBaseUrl/cases/';
 
+  /// BottleCRM product support tickets opened by the signed-in user.
+  static String get supportTickets => '$apiBaseUrl/support/';
+
+  static String supportTicket(String id) => '$apiBaseUrl/support/$id/';
+
+  static String supportTicketReplies(String id) =>
+      '$apiBaseUrl/support/$id/replies/';
+
+  static String supportMessageAttachment(String messageId) =>
+      '$apiBaseUrl/support/messages/$messageId/attachment/';
+
   /// Ticket detail (retrieve / update / delete / add comment)
   static String ticketDetail(String id) => '$apiBaseUrl/cases/$id/';
 
