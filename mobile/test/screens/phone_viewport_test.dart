@@ -2235,15 +2235,28 @@ void main() {
 
   group('the close-with-children prompt at 390px', () {
     /// A button that opens the prompt, so it renders the way it is reached.
-    Widget closePromptApp({required bool startsTicked}) => MaterialApp(
+    ///
+    /// `openNames` is the tickets that would ACTUALLY close, which is what the
+    /// prompt now takes. It used to take `child_count`, a different number:
+    /// direct children whether open or closed.
+    Widget closePromptApp({
+      required bool startsTicked,
+      List<String> openNames = const [
+        'Printer jammed on floor two',
+        'Toner order still pending',
+        'Reception printer offline as well',
+      ],
+      bool truncated = false,
+    }) => MaterialApp(
       home: Scaffold(
         body: Builder(
           builder: (context) => ElevatedButton(
             onPressed: () => showCloseWithChildrenDialog(
               context,
               ticketName: 'Printer offline in the Hyderabad office',
-              childCount: 3,
+              openNames: openNames,
               startsTicked: startsTicked,
+              truncated: truncated,
             ),
             child: const Text('open'),
           ),
@@ -2287,7 +2300,63 @@ void main() {
     ) async {
       await openPrompt(tester, ticked: true);
       expect(tester.takeException(), isNull);
-      expect(find.text('Also close linked tickets'), findsOneWidget);
+      expect(find.text('Close these as well'), findsOneWidget);
+    });
+
+    testWidgets('names the tickets that would close, before closing them', (
+      tester,
+    ) async {
+      // They can belong to somebody else, and nobody is asked twice.
+      await openPrompt(tester, ticked: true);
+
+      expect(find.text('Printer jammed on floor two'), findsOneWidget);
+      expect(find.text('Toner order still pending'), findsOneWidget);
+      expect(
+        find.textContaining('3 linked tickets are still open'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('offers no cascade when nothing below is open', (tester) async {
+      // `child_count` could be 3 here and all three already closed. The old
+      // prompt quoted that number and offered to close them.
+      await pump(
+        tester,
+        closePromptApp(startsTicked: true, openNames: const []),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('changes nothing else'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNothing);
+      // And the button does not offer to close "all of them" when there is
+      // nothing else to close. With no checkbox on screen the seeded value is
+      // invisible, so the label is the only thing that shows it went wrong.
+      expect(find.text('Close all of them'), findsNothing);
+      expect(find.text('Close ticket'), findsWidgets);
+    });
+
+    testWidgets('admits the list is a floor when the tree was cut short', (
+      tester,
+    ) async {
+      await pump(tester, closePromptApp(startsTicked: true, truncated: true));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('may be more'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('carries a reason field, which the request used to omit', (
+      tester,
+    ) async {
+      await openPrompt(tester, ticked: true);
+
+      expect(find.text('Why (optional)'), findsOneWidget);
+      expect(
+        find.textContaining('Recorded against every ticket'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('fits with the system font scaled up', (tester) async {

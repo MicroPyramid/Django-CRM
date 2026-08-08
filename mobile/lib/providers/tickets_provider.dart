@@ -424,14 +424,26 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     }
   }
 
-  /// Close this ticket; optionally cascade-close descendants.
+  /// Close this ticket; optionally cascade-close its open descendants.
+  ///
+  /// `cascade` is always sent. The endpoint falls back to the org's
+  /// `auto_close_children_on_parent_close` only when the key is ABSENT, so
+  /// omitting it would hand the decision to a setting the person confirming
+  /// never saw. The prompt seeds its checkbox from that setting instead.
+  ///
+  /// `resolutionComment` lands in the `PARENT_CLOSED_CASCADE` activity row on
+  /// every cascaded child, so it is the only explanation anyone opening one of
+  /// those tickets will find. This used to send nothing at all, which left that
+  /// field empty on every ticket the phone ever cascade-closed.
   Future<ApiResponse<Map<String, dynamic>>> closeWithChildren(
     String id, {
     bool cascade = true,
+    String resolutionComment = '',
   }) async {
     try {
       return await _apiService.post(ApiConfig.ticketCloseWithChildren(id), {
         'cascade': cascade,
+        'resolution_comment': resolutionComment.trim(),
       });
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
@@ -598,6 +610,55 @@ class TicketTreeNode {
           .toList(),
       focusId: focusId,
     );
+  }
+
+  /// The node for [id] anywhere in this tree, or null.
+  TicketTreeNode? find(String id) {
+    if (id.isEmpty) return null;
+    if (this.id == id) return this;
+    for (final child in children) {
+      final hit = child.find(id);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  /// The tickets a cascading close of [id] would actually close.
+  ///
+  /// **This tree's root is not the ticket being closed.** `CaseTreeView` walks
+  /// UP to the highest ancestor in the org, so the subtree that closes has to
+  /// be found inside the response first. Walking from the root instead would
+  /// list the ticket's parent, siblings and cousins as about to close, none of
+  /// which `_open_descendants` touches.
+  ///
+  /// Mirrors `_open_descendants` in `cases/parent_views.py`, including the two
+  /// easy mistakes: a node counts only when it is open AND active, and
+  /// recursion goes through closed nodes anyway, so an open grandchild under a
+  /// closed child still cascades.
+  ///
+  /// `frontend/src/routes/(app)/tickets/[id]/close.js` carries the same rules.
+  List<TicketTreeNode> openDescendantsOf(String id) {
+    final focus = find(id);
+    if (focus == null) return const [];
+    final out = <TicketTreeNode>[];
+    void walk(TicketTreeNode node) {
+      for (final child in node.children) {
+        if (child.status != 'Closed' && child.isActive) out.add(child);
+        walk(child);
+      }
+    }
+
+    walk(focus);
+    return out;
+  }
+
+  /// True when the API stopped at its depth cap inside [id]'s subtree, so the
+  /// list above is a floor. The close itself has no such cap.
+  bool subtreeTruncatedFor(String id) {
+    final focus = find(id);
+    if (focus == null) return false;
+    bool walk(TicketTreeNode node) => node.truncated || node.children.any(walk);
+    return walk(focus);
   }
 }
 

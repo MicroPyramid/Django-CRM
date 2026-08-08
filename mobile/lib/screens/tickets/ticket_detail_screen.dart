@@ -1827,18 +1827,30 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         );
     if (!mounted) return;
 
+    // The tickets that would actually close, from the tree this screen already
+    // loaded. `childCount` was what this used to pass, and it counts direct
+    // children whether open or closed, so the prompt could offer to close
+    // three tickets that were closed last week and stay silent about an open
+    // grandchild that was about to close.
+    final openBelow = _tree?.openDescendantsOf(c.id) ?? const [];
+
     final choice = await showCloseWithChildrenDialog(
       context,
       ticketName: c.name,
-      childCount: c.childCount,
+      openNames: [for (final node in openBelow) node.name],
       startsTicked: orgSettings.autoCloseChildren,
+      truncated: _tree?.subtreeTruncatedFor(c.id) ?? false,
     );
     if (choice == null || !mounted) return;
     final cascade = choice.cascade;
 
     final res = await ref
         .read(ticketsProvider.notifier)
-        .closeWithChildren(c.id, cascade: cascade);
+        .closeWithChildren(
+          c.id,
+          cascade: cascade,
+          resolutionComment: choice.comment,
+        );
     if (!mounted) return;
     if (res.success) {
       await _fetchDetail();

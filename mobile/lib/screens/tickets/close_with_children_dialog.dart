@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/theme.dart';
+import '../../data/models/ticket.dart';
 
 /// Confirm closing a parent ticket, with an explicit choice about its children.
 ///
@@ -12,49 +13,99 @@ import '../../core/theme/theme.dart';
 /// which made the setting inert and the settings screen's "starts unticked"
 /// simply false.
 ///
+/// **[openNames] is the tickets that would actually close**, not the ticket's
+/// child count. Those are different numbers: `child_count` counts direct
+/// children whether open or closed, while the close walks the whole subtree and
+/// touches only the open, active ones. This prompt used to quote the first and
+/// so could offer to close three tickets that closed last week, or fail to
+/// mention an open grandchild that was about to close.
+///
 /// Its own function rather than a closure inside the ticket screen so that the
-/// seeding can be tested: a checkbox that silently reverts to always-ticked is
-/// exactly the regression this exists to catch.
+/// seeding and the counting can be tested: a checkbox that silently reverts to
+/// always-ticked is exactly the regression this exists to catch.
 ///
 /// Returns null if dismissed, otherwise the choice that was confirmed.
-Future<({bool cascade})?> showCloseWithChildrenDialog(
+Future<({bool cascade, String comment})?> showCloseWithChildrenDialog(
   BuildContext context, {
   required String ticketName,
-  required int childCount,
+  required List<String> openNames,
   required bool startsTicked,
+  bool truncated = false,
 }) async {
-  var cascade = startsTicked;
+  final hasOpen = openNames.isNotEmpty;
+  // Nothing open below means nothing for a cascade to do, so the box starts
+  // clear whatever the org set and the request closes this ticket alone.
+  var cascade = hasOpen && startsTicked;
+  final comment = TextEditingController();
+
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setLocal) => AlertDialog(
         title: const Text('Close ticket'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Close "$ticketName"? This ticket has $childCount '
-              'linked ticket${childCount == 1 ? '' : 's'}.',
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Checkbox(
-                  value: cascade,
-                  onChanged: (v) => setLocal(() => cascade = v ?? startsTicked),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Close "$ticketName"?'),
+              const SizedBox(height: 10),
+              Text(
+                cascadeSummary(count: openNames.length, truncated: truncated),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
                 ),
-                const Expanded(child: Text('Also close linked tickets')),
-              ],
-            ),
-            Text(
-              'Only the linked tickets that are still open are closed, '
-              'including any beneath them.',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
               ),
-            ),
-          ],
+              if (hasOpen) ...[
+                const SizedBox(height: 12),
+                // Named, because they can belong to somebody else and nobody
+                // is asked twice.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 140),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final name in openNames)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              name,
+                              style: AppTypography.caption,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: cascade,
+                      onChanged: (v) => setLocal(() => cascade = v ?? cascade),
+                    ),
+                    const Expanded(child: Text('Close these as well')),
+                  ],
+                ),
+                TextField(
+                  controller: comment,
+                  maxLines: 2,
+                  maxLength: 1000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Why (optional)',
+                    helperText:
+                        'Recorded against every ticket closed with this one',
+                    helperMaxLines: 2,
+                    border: OutlineInputBorder(),
+                    counterText: '',
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -63,12 +114,15 @@ Future<({bool cascade})?> showCloseWithChildrenDialog(
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Close ticket'),
+            child: Text(cascade ? 'Close all of them' : 'Close ticket'),
           ),
         ],
       ),
     ),
   );
+
+  final text = comment.text;
+  comment.dispose();
   if (confirmed != true) return null;
-  return (cascade: cascade);
+  return (cascade: cascade, comment: text);
 }

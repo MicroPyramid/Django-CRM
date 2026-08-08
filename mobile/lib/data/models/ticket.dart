@@ -402,6 +402,32 @@ class TicketParentSummary {
   }
 }
 
+/// What to say BEFORE closing a parent ticket: the line above the checkbox.
+///
+/// [count] is the open descendants the close would really touch, never the
+/// ticket's `child_count`. See [cascadeCloseMessage] for why those differ.
+///
+/// [truncated] means the tree endpoint stopped at its depth cap, so the list
+/// shown alongside is a floor. The close itself has no cap, so more can close
+/// than the prompt is able to name, and saying so beats implying a complete
+/// list.
+///
+/// `frontend/src/routes/(app)/tickets/[id]/close.js` carries the same rules.
+String cascadeSummary({required int count, bool truncated = false}) {
+  if (count == 0) {
+    return 'Nothing linked to this ticket is still open, so closing it '
+        'changes nothing else.';
+  }
+  final noun = count == 1 ? 'ticket' : 'tickets';
+  final verb = count == 1 ? 'is' : 'are';
+  final tail = truncated
+      ? ' There may be more further down than are listed here, and those '
+            'close too.'
+      : '';
+  return '$count linked $noun $verb still open and will be closed with it.'
+      '$tail';
+}
+
 /// What to say after closing a parent ticket.
 ///
 /// **Counted from the response, not from `child_count`.** The server closes the
