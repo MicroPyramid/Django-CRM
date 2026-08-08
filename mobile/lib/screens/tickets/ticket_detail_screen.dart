@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
 import '../../data/models/comment.dart';
+import 'close_with_children_dialog.dart';
+import 'macro_picker_sheet.dart';
 import '../../data/models/email_message.dart';
+import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/tickets_provider.dart';
+import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../data/models/lookup_models.dart';
 import '../../widgets/common/common.dart';
@@ -36,6 +40,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   final TextEditingController _commentController = TextEditingController();
 
   TicketDetailResult? _detail;
+
+  /// Other open tickets on the same account. Context beside the ticket, so a
+  /// failure here leaves it empty rather than failing the screen.
+  List<Ticket> _alsoOpen = const [];
   TicketWatchers? _watchers;
   TicketTreeNode? _tree;
   bool _isLoading = true;
@@ -69,15 +77,29 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       notifier.getWatchers(widget.ticketId),
       notifier.fetchTree(widget.ticketId),
     ]);
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _detail = results[0] as TicketDetailResult?;
-        _watchers = results[1] as TicketWatchers?;
-        _tree = results[2] as TicketTreeNode?;
-        if (_detail == null) _error = 'Failed to load ticket';
-      });
+    if (!mounted) return;
+    final detail = results[0] as TicketDetailResult?;
+    setState(() {
+      _isLoading = false;
+      _detail = detail;
+      _watchers = results[1] as TicketWatchers?;
+      _tree = results[2] as TicketTreeNode?;
+      if (detail == null) _error = 'Failed to load ticket';
+    });
+
+    // Second request, after the ticket, because it needs the account id the
+    // detail response carries. The web rail asks the same question the same
+    // way; the phone showed nothing at all.
+    final accountId = detail?.ticketObj.accountId;
+    if (accountId == null || accountId.isEmpty) {
+      if (mounted) setState(() => _alsoOpen = const []);
+      return;
     }
+    final siblings = await notifier.getAlsoOpenOnAccount(
+      accountId: accountId,
+      excludeTicketId: widget.ticketId,
+    );
+    if (mounted) setState(() => _alsoOpen = siblings);
   }
 
   @override
@@ -382,6 +404,31 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               ],
             ),
           ),
+          if (c.contactNames.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _card(
+              title: c.contactNames.length == 1
+                  ? 'Reported by'
+                  : '${c.contactNames.length} people on this ticket',
+              child: Column(
+                children: [
+                  for (final name in c.contactNames)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          UserAvatar(name: name, size: AvatarSize.sm),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(name, style: AppTypography.label),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
           if (c.description != null && c.description!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _card(
@@ -392,6 +439,26 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
+              ),
+            ),
+          ],
+          // The account's other open tickets. Empty when the ticket has no
+          // account, or when it is the only one open, so the card appears only
+          // when it has something to say.
+          if (_alsoOpen.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _card(
+              title: 'Also open on ${c.accountName ?? 'this account'}',
+              child: Column(
+                children: [
+                  for (final sibling in _alsoOpen)
+                    _AlsoOpenRow(
+                      ticket: sibling,
+                      // Same literal every other jump to a ticket uses in
+                      // this file; there is no builder on AppRoutes for it.
+                      onTap: () => context.push('/tickets/${sibling.id}'),
+                    ),
+                ],
               ),
             ),
           ],
@@ -582,6 +649,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               icon: const Icon(LucideIcons.atSign, size: 20),
               color: AppColors.textSecondary,
               onPressed: _isAddingComment ? null : _pickMention,
+            ),
+            IconButton(
+              tooltip: 'Saved reply',
+              icon: const Icon(LucideIcons.messageSquareQuote, size: 20),
+              color: AppColors.textSecondary,
+              onPressed: _isAddingComment ? null : _pickMacro,
             ),
             Expanded(
               child: TextField(
@@ -790,19 +863,19 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     );
   }
 
+  /// Download an attachment through the API, with the token attached. See the
+  /// note on `Attachment.filePath` for why the stored path is not a URL.
   Future<void> _openAttachment(Attachment attachment) async {
-    final path = attachment.filePath;
-    if (path == null || path.trim().isEmpty) {
-      _snack('No download URL available');
+    if (!attachment.hasFile) {
+      _snack('That attachment has no file.');
       return;
     }
-    final uri = Uri.tryParse(path);
-    if (uri == null) {
-      _snack('No download URL available');
-      return;
-    }
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) _snack('Could not open that file');
+    final result = await downloadAttachment(
+      url: ApiConfig.attachmentDownload(attachment.id),
+      fileName: attachment.fileName,
+    );
+    if (!mounted || result.success) return;
+    _snack(result.error ?? 'Could not download that file.');
   }
 
   /// Attach a file to this ticket.
@@ -956,6 +1029,27 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     _commentController.value = TextEditingValue(
       text: next,
       selection: TextSelection.collapsed(offset: insertAt + token.length),
+    );
+  }
+
+  /// Insert a saved reply, expanded against this ticket.
+  ///
+  /// Inserted at the cursor rather than replacing the box, so a macro can be
+  /// dropped into a reply already part-written. Nothing is sent: the agent
+  /// still reads it and presses send, which is the point of expanding it into
+  /// the composer instead of posting it.
+  Future<void> _pickMacro() async {
+    final rendered = await showMacroPickerSheet(context, widget.ticketId);
+    if (rendered == null || rendered.isEmpty || !mounted) return;
+
+    final text = _commentController.text;
+    final sel = _commentController.selection;
+    final insertAt = sel.isValid ? sel.start : text.length;
+    final insertEnd = sel.isValid ? sel.end : text.length;
+    final next = text.replaceRange(insertAt, insertEnd, rendered);
+    _commentController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: insertAt + rendered.length),
     );
   }
 
@@ -1780,50 +1874,46 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   }
 
   Future<void> _closeWithChildren(Ticket c) async {
-    bool cascade = true;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Close ticket'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Close "${c.name}"? This ticket has ${c.childCount} '
-                'linked ticket${c.childCount == 1 ? '' : 's'}.',
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Checkbox(
-                    value: cascade,
-                    onChanged: (v) => setLocal(() => cascade = v ?? true),
-                  ),
-                  const Expanded(child: Text('Also close linked tickets')),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Close ticket'),
-            ),
-          ],
-        ),
-      ),
+    // **The org setting decides how this prompt starts.** That is the whole of
+    // what `Org.auto_close_children_on_parent_close` does for a person:
+    // `CaseCloseWithChildrenView` reads it only when the caller omits
+    // `cascade`, and this app always sends it, so hardcoding `true` here made
+    // the setting inert. The settings screen says "starts ticked"/"starts
+    // unticked"; this is the line that has to make that true.
+    final orgSettings = await ref
+        .read(orgSettingsProvider.future)
+        .catchError(
+          // A settings read that fails must not block closing a ticket. Falling
+          // back to the model default (false) is the safer of the two: it offers
+          // not to close children rather than offering to.
+          (_) => const OrgSettings(),
+        );
+    if (!mounted) return;
+
+    // The tickets that would actually close, from the tree this screen already
+    // loaded. `childCount` was what this used to pass, and it counts direct
+    // children whether open or closed, so the prompt could offer to close
+    // three tickets that were closed last week and stay silent about an open
+    // grandchild that was about to close.
+    final openBelow = _tree?.openDescendantsOf(c.id) ?? const [];
+
+    final choice = await showCloseWithChildrenDialog(
+      context,
+      ticketName: c.name,
+      openNames: [for (final node in openBelow) node.name],
+      startsTicked: orgSettings.autoCloseChildren,
+      truncated: _tree?.subtreeTruncatedFor(c.id) ?? false,
     );
-    if (confirmed != true) return;
+    if (choice == null || !mounted) return;
+    final cascade = choice.cascade;
 
     final res = await ref
         .read(ticketsProvider.notifier)
-        .closeWithChildren(c.id, cascade: cascade);
+        .closeWithChildren(
+          c.id,
+          cascade: cascade,
+          resolutionComment: choice.comment,
+        );
     if (!mounted) return;
     if (res.success) {
       await _fetchDetail();
@@ -1831,9 +1921,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              cascade
-                  ? 'Closed ticket and ${c.childCount} linked'
-                  : 'Ticket closed',
+              cascadeCloseMessage(
+                cascade: cascade,
+                cascaded: cascadedCount(res.data),
+              ),
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -2577,5 +2668,65 @@ class _ActivityTile extends StatelessWidget {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+}
+
+/// One other open ticket on the same account.
+///
+/// A full-width tap target at 48px, because the card sits low on a phone
+/// screen and a thumb reaching it is aiming without looking.
+class _AlsoOpenRow extends StatelessWidget {
+  const _AlsoOpenRow({required this.ticket, required this.onTap});
+
+  final Ticket ticket;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: ticket.status.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ticket.name,
+                    style: AppTypography.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${ticket.status.label} · ${ticket.priority.label}',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

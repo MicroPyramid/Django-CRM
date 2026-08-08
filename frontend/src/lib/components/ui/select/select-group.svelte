@@ -4,4 +4,4 @@
   let { ref = $bindable(null), ...restProps } = $props();
 </script>
 
-<SelectPrimitive.Group data-slot="select-group" {...restProps} />
+<SelectPrimitive.Group bind:ref data-slot="select-group" {...restProps} />

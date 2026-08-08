@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -110,7 +111,7 @@
               toast.success(`Merged from #${sourceShort}`);
             }
             open = false;
-            if (targetId) goto(`/tickets/${targetId}`);
+            if (targetId) goto(resolve(`/tickets/${targetId}`));
             else await update();
           } else if (result.type === 'failure') {
             const data = /** @type {any} */ (result.data);

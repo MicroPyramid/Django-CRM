@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { untrack, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { enhance } from '$app/forms';
@@ -77,7 +78,7 @@
 </script>
 
 <PageHeader title="Upload a document" center>
-  {#snippet crumb()}<a href="/documents">Documents</a> ›{/snippet}
+  {#snippet crumb()}<a href={resolve('/documents')}>Documents</a> ›{/snippet}
   {#snippet sub()}
     Add a file, then choose who can open it. Nobody sees it until you share it.
   {/snippet}
@@ -205,7 +206,7 @@
 
     <div style="display:flex;gap:8px;align-items:center;margin-top:22px">
       <button class="v2-btn v2-btn-primary" type="submit"><Upload size={15} /> Upload</button>
-      <a class="v2-btn" href="/documents">Cancel</a>
+      <a class="v2-btn" href={resolve('/documents')}>Cancel</a>
       <span class="v2-sub" style="margin-left:auto;font-size:12px">
         <span class="v2-num">{REQUIRED.filter((f) => !errors[f]).length}</span>
         of <span class="v2-num">{REQUIRED.length}</span> required fields done

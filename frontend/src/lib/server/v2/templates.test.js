@@ -208,11 +208,11 @@ describe('updateInvoiceTemplate', () => {
   });
 
   it('does send the markup, unlike create', async () => {
-    await updateInvoiceTemplate(
-      { cookies },
-      't1',
-      { name: 'Clean', template_html: '<h1>x</h1>', template_css: 'h1{}' }
-    );
+    await updateInvoiceTemplate({ cookies }, 't1', {
+      name: 'Clean',
+      template_html: '<h1>x</h1>',
+      template_css: 'h1{}'
+    });
     const [, options] = apiRequest.mock.calls[0];
     expect(options.body.template_html).toBe('<h1>x</h1>');
     expect(options.body.template_css).toBe('h1{}');

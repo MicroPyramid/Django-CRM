@@ -340,6 +340,16 @@ final isOrgAdminProvider = Provider<bool>((ref) {
   return (org?.role ?? '').toUpperCase() == 'ADMIN';
 });
 
+/// The signed-in user's email, or null.
+///
+/// The one identifier this app and the API agree on for a person. Several
+/// serializers surface an owner or author as an email rather than an id
+/// (`User` carries no display name), so an ownership comparison in the UI has
+/// to be made on this. UI affordances only; see `core/permissions.dart`.
+final myEmailProvider = Provider<String?>((ref) {
+  return ref.watch(authProvider).user?.email;
+});
+
 /// Provider for checking if org selection is needed
 final needsOrgSelectionProvider = Provider<bool>((ref) {
   return ref.watch(authProvider).needsOrgSelection;

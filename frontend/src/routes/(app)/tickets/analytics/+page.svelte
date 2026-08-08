@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Service health. Four questions, in the order a support lead asks them:
    * is the queue growing, are we answering in time, who is carrying it, and
@@ -91,7 +92,7 @@
       <p>
         Opened and closed volume, first-response attainment and the queue breakdown are
         whole-organisation figures, so they are limited to admins. Your own tickets are on the <a
-          href="/tickets">Tickets</a
+          href={resolve('/tickets')}>Tickets</a
         > tab.
       </p>
     </div>
@@ -214,10 +215,9 @@
 
           {#if data.byType.find((t) => t.case_type === 'Question')}
             <p class="v2-sub" style="font-size:11.5px;margin:16px 0 0">
-              <a href="/solutions" style="color:inherit">
+              <a href={resolve('/solutions')} style="color:inherit">
                 {data.byType.find((t) => t.case_type === 'Question').count} questions in this window
-              </a>.
-              The ones that repeat belong in the knowledge base.
+              </a>. The ones that repeat belong in the knowledge base.
             </p>
           {/if}
         </div>
@@ -279,11 +279,14 @@
           {#if totals.business_hours_applied}
             Elapsed time is counted inside {totals.calendar_name}, so evenings, weekends and
             holidays do not count against a target.
-            <a href="/settings/business-hours" style="color:inherit">Change the calendar</a>.
+            <a href={resolve('/settings/business-hours')} style="color:inherit"
+              >Change the calendar</a
+            >.
           {:else}
-            Elapsed time is counted around the clock, no business-hours calendar is set, so
-            evenings and weekends count against a target.
-            <a href="/settings/business-hours" style="color:inherit">Set up a calendar</a>.
+            Elapsed time is counted around the clock, no business-hours calendar is set, so evenings
+            and weekends count against a target.
+            <a href={resolve('/settings/business-hours')} style="color:inherit">Set up a calendar</a
+            >.
           {/if}
         </p>
       </div>

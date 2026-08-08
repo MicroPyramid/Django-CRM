@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
@@ -79,7 +80,7 @@
   {#if isEmpty}
     <p class="text-sm text-[var(--text-secondary)]">
       No custom fields configured for {target.toLowerCase()}.
-      <a class="underline" href="/settings/custom-fields?target={target}">Manage</a>
+      <a class="underline" href={resolve(`/settings/custom-fields?target=${target}`)}>Manage</a>
     </p>
   {:else}
     <form

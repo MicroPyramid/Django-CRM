@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
   import {
     Search,
@@ -142,7 +143,7 @@
     if (!row) return;
     onclose();
     query = '';
-    goto(row.href);
+    goto(resolve(row.href));
   }
 </script>
 

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The calendar every response target is measured against.
    *
@@ -22,22 +23,19 @@
   import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
   import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { shortDate, relativeDays } from '$lib/v2/format.js';
-  import { Plus, Clock } from '@lucide/svelte';
+  import { weeklyHours, isAlwaysOn } from './week.js';
+  import { Plus, Clock, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let calendar = $derived(data.calendar);
 
-  /** Hours a day is open, for the weekly total. */
-  function hours(d) {
-    if (!d.open || !d.close) return 0;
-    const [oh, om] = d.open.split(':').map(Number);
-    const [ch, cm] = d.close.split(':').map(Number);
-    return (ch * 60 + cm - (oh * 60 + om)) / 60;
-  }
+  let weekly = $derived(weeklyHours(calendar.days));
 
-  let weekly = $derived(calendar.days.reduce((a, d) => a + hours(d), 0));
+  /** See `week.js`: this is the state where the engine drops the calendar and
+   *  runs the clock, so the page has to contradict its own rows. */
+  let alwaysOn = $derived(isAlwaysOn(calendar.days));
   const todayName = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(new Date());
 
   // `null` when the panel is closed. One panel for the week, so only one
@@ -73,7 +71,11 @@
   {#snippet crumb()}<SettingsCrumb />{/snippet}
   {#snippet sub()}
     {calendar.name} · {calendar.timezone} ·
-    <span class="v2-num">{weekly}</span> hours a week
+    {#if alwaysOn}
+      no day open, so targets run around the clock
+    {:else}
+      <span class="v2-num">{weekly}</span> hours a week
+    {/if}
   {/snippet}
   {#snippet actions()}
     {#if data.can_edit && !editingHours}
@@ -165,6 +167,22 @@
           </SettingsFormPanel>
         {/if}
 
+        {#if alwaysOn}
+          <div class="v2-bh-banner">
+            <TriangleAlert size={17} style="color:var(--v2-clay);flex:none;margin-top:1px" />
+            <div>
+              <div style="font-weight:600;font-size:13px">
+                Every day is closed, and the clock still runs
+              </div>
+              <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
+                A four-hour target expires four hours after the ticket arrives, weekend or not. The
+                engine drops a calendar that never opens rather than treating it as permanently
+                shut, so open at least one day to make this calendar count.
+              </p>
+            </div>
+          </div>
+        {/if}
+
         <div class="v2-card" style="overflow:hidden">
           {#each calendar.days as d (d.day)}
             <div class="v2-setting" style={d.day === todayName ? 'background:var(--v2-hover)' : ''}>
@@ -238,6 +256,16 @@
         {#if form?.removeHoliday?.error}
           <p class="v2-error" style="margin-bottom:12px">{form.removeHoliday.error}</p>
         {/if}
+        {#if form?.holidayAlreadyNamed}
+          <!-- The POST is idempotent on date and answers 200 with the row that
+               was already stored, so the name just typed was discarded. Silence
+               here reads as a successful rename. -->
+          <p class="v2-sub" style="margin-bottom:12px;font-size:12px">
+            That date was already a holiday, called
+            <b style="font-weight:600">{form.holidayAlreadyNamed}</b>. The name you typed was not
+            saved: remove it and add it again to rename it.
+          </p>
+        {/if}
 
         <div class="v2-card" style="overflow:hidden">
           {#each calendar.holidays as h (h.id)}
@@ -271,21 +299,29 @@
           <div>
             <div style="font-weight:600;font-size:13px">What this changes</div>
             <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
-              Response and resolution targets count only the time inside these hours. A ticket
-              opened at 17:20 on Friday
-              {#if calendar.days[0].open}
-                starts its clock at <span class="v2-num">{calendar.days[0].open}</span> on Monday,
+              {#if alwaysOn}
+                <!-- The claim above this branch is false when nothing is open:
+                     `_has_any_open_window` is what decides whether the calendar
+                     is consulted at all, and with no open day it is not. -->
+                With no day open, targets do not count anything out: they run on the wall clock, through
+                evenings, weekends and the holidays below.
               {:else}
-                <!-- Monday can be marked closed from this page now, so the
-                     fixed "Monday morning" framing can no longer assume an
-                     open time exists to quote. -->
-                starts its clock whenever the week next opens,
+                Response and resolution targets count only the time inside these hours. A ticket
+                opened at 17:20 on Friday
+                {#if calendar.days[0].open}
+                  starts its clock at <span class="v2-num">{calendar.days[0].open}</span> on Monday,
+                {:else}
+                  <!-- Monday can be marked closed from this page now, so the
+                       fixed "Monday morning" framing can no longer assume an
+                       open time exists to quote. -->
+                  starts its clock whenever the week next opens,
+                {/if}
+                so the weekend does not spend a four-hour target.
               {/if}
-              so the weekend does not spend a four-hour target.
             </p>
             <p class="v2-sub" style="font-size:12px;margin:8px 0 0">
-              <a href="/tickets/analytics" style="color:inherit">Service analytics</a> is measured on
-              this calendar.
+              <a href={resolve('/tickets/analytics')} style="color:inherit">Service analytics</a> is measured
+              on this calendar.
             </p>
           </div>
         </div>
@@ -293,3 +329,16 @@
     </div>
   </div>
 </div>
+
+<style>
+  .v2-bh-banner {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--v2-line);
+    border-radius: var(--v2-radius);
+    background: var(--v2-card);
+  }
+</style>

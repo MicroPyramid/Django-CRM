@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import { money } from '$lib/v2/format.js';
@@ -59,7 +60,7 @@
         <div class="v2-queue-item">
           <span class="v2-queue-spine" style="background:{TONE_VAR[item.tone]}"></span>
           <div class="v2-queue-body">
-            <a href={item.href} style="color:inherit;text-decoration:none">
+            <a href={resolve(item.href)} style="color:inherit;text-decoration:none">
               <div style="font-weight:640;letter-spacing:-0.012em">{item.title}</div>
             </a>
             <div class="v2-sub" style="margin-top:2px">{item.detail}</div>
@@ -68,7 +69,9 @@
                the title into three words per row. -->
           <div class="v2-queue-actions">
             <Pill tone={item.tone}>{item.due}</Pill>
-            <a class="v2-btn" class:v2-btn-primary={i === 0} href={item.href}>{item.action}</a>
+            <a class="v2-btn" class:v2-btn-primary={i === 0} href={resolve(item.href)}
+              >{item.action}</a
+            >
           </div>
         </div>
       </div>
@@ -81,7 +84,7 @@
         <span class="v2-num">{hidden}</span>
         {hidden === 1 ? 'more is' : 'more are'} waiting:
         {#each summary.sources as source, i (source.href)}<a
-            href={source.href}
+            href={resolve(source.href)}
             style="color:inherit">{source.count} {source.label}</a
           >{i < summary.sources.length - 1 ? ', ' : '.'}{/each}
       </p>

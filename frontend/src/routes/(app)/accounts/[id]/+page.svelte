@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The account is a workspace, not a form.
    *
@@ -51,7 +52,7 @@
 
 <PageHeader title={account.name} record>
   {#snippet crumb()}
-    <a href="/accounts">Accounts</a>
+    <a href={resolve('/accounts')}>Accounts</a>
     <ChevronRight size={12} />
     <span>{account.industry || 'No industry'}</span>
   {/snippet}
@@ -70,7 +71,7 @@
       .join(' · ')}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/accounts/{account.id}/edit">Edit</a>
+    <a class="v2-btn" href={resolve(`/accounts/${account.id}/edit`)}>Edit</a>
   {/snippet}
 </PageHeader>
 
@@ -143,11 +144,11 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Deals</span>
-          <a href="/pipeline">View all</a>
+          <a href={resolve('/pipeline')}>View all</a>
         </div>
         {#each deals as d (d.id)}
           <a
-            href="/pipeline/{d.id}"
+            href={resolve(`/pipeline/${d.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <div style="flex:1;min-width:0">
@@ -181,7 +182,7 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">People</span>
-          <a href="/contacts">View all</a>
+          <a href={resolve('/contacts')}>View all</a>
         </div>
         {#each contacts as c (c.id)}
           <div
@@ -192,7 +193,7 @@
                  `/contacts/<uuid>` answered 404, which is the reason
                  contacts was the module to wire next. -->
             <a
-              href="/contacts/{c.id}"
+              href={resolve(`/contacts/${c.id}`)}
               style="flex:1;min-width:0;color:inherit;text-decoration:none"
             >
               <div style="font-weight:550;font-size:13px">{c.first_name} {c.last_name}</div>
@@ -215,8 +216,9 @@
           </div>
         {:else}
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            Nobody here yet. <a href="/contacts/new?account={account.id}">Add the person</a> you actually
-            talk to.
+            Nobody here yet. <a href={resolve(`/contacts/new?account=${account.id}`)}
+              >Add the person</a
+            > you actually talk to.
           </p>
         {/each}
       </section>
@@ -225,13 +227,13 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Tickets</span>
-          <a href="/tickets">View all</a>
+          <a href={resolve('/tickets')}>View all</a>
         </div>
         {#each tickets as t (t.id)}
           <!-- A link again: tickets is wired, so a real id sent to
                `/tickets/<uuid>` opens the ticket. -->
           <a
-            href="/tickets/{t.id}"
+            href={resolve(`/tickets/${t.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
@@ -240,7 +242,8 @@
           </a>
         {:else}
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            No tickets. <a href="/tickets/new?account={account.id}">Raise one</a> if something is wrong.
+            No tickets. <a href={resolve(`/tickets/new?account=${account.id}`)}>Raise one</a> if something
+            is wrong.
           </p>
         {/each}
       </section>
@@ -249,13 +252,13 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Invoices</span>
-          <a href="/invoices">View all</a>
+          <a href={resolve('/invoices')}>View all</a>
         </div>
         {#each invoices as inv (inv.id)}
           <!-- A link now: invoices is wired, so a real id sent to
                `/invoices/<uuid>` opens the invoice. -->
           <a
-            href="/invoices/{inv.id}"
+            href={resolve(`/invoices/${inv.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <span class="v2-num" style="font-size:12.5px">{inv.invoice_number}</span>

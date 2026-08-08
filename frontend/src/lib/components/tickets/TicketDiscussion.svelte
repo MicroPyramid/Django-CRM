@@ -16,7 +16,6 @@
    *   replies?: Array<any>,
    *   internalNotes?: Array<any>,
    *   inboundEmails?: Array<any>,
-   *   currentUserEmail?: string,
    *   mentionCandidates?: Array<{ username: string, id?: string, email?: string }>
    * }}
    */
@@ -25,7 +24,6 @@
     replies = [],
     internalNotes = [],
     inboundEmails = [],
-    currentUserEmail = '',
     mentionCandidates = []
   } = $props();
 

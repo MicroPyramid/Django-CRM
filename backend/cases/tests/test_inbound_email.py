@@ -617,6 +617,57 @@ class TestMailboxAPI:
         row = admin_client.get(MAILBOXES_URL).json()["mailboxes"][0]
         assert row["has_webhook_secret"] is False
 
+    def test_has_topic_arn_reports_whether_the_mailbox_is_pinned(
+        self, admin_client, org_a
+    ):
+        """The fact both clients need to tell a working address from a silent one.
+
+        An active SES mailbox with no pin rejects every notification, so
+        `is_active` alone cannot say whether mail becomes tickets.
+        """
+        _make_mailbox(org_a, address="pinned@acme.com", topic_arn=SNS_TOPIC)
+        _make_mailbox(org_a, address="unpinned@acme.com", topic_arn="")
+
+        rows = {
+            row["address"]: row
+            for row in admin_client.get(MAILBOXES_URL).json()["mailboxes"]
+        }
+        assert rows["pinned@acme.com"]["has_topic_arn"] is True
+        assert rows["unpinned@acme.com"]["has_topic_arn"] is False
+
+    def test_a_member_sees_the_pin_state_but_never_the_arn(self, user_client, org_a):
+        """Deliberately not admin-only, unlike `topic_arn` and
+        `has_webhook_secret`. A member can see the row, so a member has to be
+        able to read it: without this the list would show a never-connected
+        address as one that is creating tickets."""
+        mailbox = _make_mailbox(org_a, topic_arn="")
+
+        row = user_client.get(MAILBOXES_URL).json()["mailboxes"][0]
+        assert row["has_topic_arn"] is False
+        assert "topic_arn" not in row
+
+        detail = user_client.get(f"{MAILBOXES_URL}{mailbox.id}/").json()
+        assert detail["has_topic_arn"] is False
+        assert "topic_arn" not in detail
+
+    def test_the_pin_state_is_not_settable_from_a_request_body(
+        self, admin_client, org_a
+    ):
+        """It is derived from `topic_arn`, which the webhook owns. A body
+        claiming the mailbox is connected must not make it read as connected."""
+        mailbox = _make_mailbox(org_a, topic_arn="")
+
+        response = admin_client.put(
+            f"{MAILBOXES_URL}{mailbox.id}/",
+            {"has_topic_arn": True},
+            format="json",
+        )
+
+        assert response.status_code == 200, response.content
+        assert response.json()["has_topic_arn"] is False
+        mailbox.refresh_from_db()
+        assert mailbox.topic_arn == ""
+
     def test_admin_can_write_a_provider_issued_secret_without_reading_it_back(
         self, admin_client, org_a
     ):

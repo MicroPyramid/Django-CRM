@@ -23,7 +23,9 @@ export function describeError(err) {
   if (err === null || err === undefined) return 'unknown error';
 
   const message =
-    typeof err === 'object' && err !== null && typeof (/** @type {any} */ (err).message) === 'string'
+    typeof err === 'object' &&
+    err !== null &&
+    typeof (/** @type {any} */ (err).message) === 'string'
       ? /** @type {any} */ (err).message
       : String(err);
 

@@ -11,7 +11,6 @@
     Trash2,
     UserPlus
   } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
   import { formatRelativeDate } from '$lib/utils/formatting.js';
   import { notifications } from '$lib/stores/notifications.svelte.js';
 
@@ -31,7 +30,9 @@
     'case.sla_breached': AlertTriangle,
     'case.escalated': AlertTriangle,
     'case.reopened': RotateCcw,
-    'case.email_received': Mail
+    'case.email_received': Mail,
+    'support.replied': MessageSquare,
+    'support.status_changed': Bell
   };
 
   /** @param {any} n */
@@ -48,20 +49,33 @@
     if (n.verb === 'case.escalated') return 'escalated';
     if (n.verb === 'case.reopened') return 'reopened';
     if (n.verb === 'case.email_received') return 'received an email';
+    if (n.verb === 'support.replied') return 'replied to';
+    if (n.verb === 'support.status_changed') return 'updated';
     return n.verb.replace(/^[^.]+\./, '').replace(/_/g, ' ');
   }
 
   /** @param {any} n */
   function actorLabel(n) {
+    if (n.verb?.startsWith('support.')) return 'BottleCRM Support';
     return n.actor?.user_details?.email || 'System';
+  }
+
+  /** @param {unknown} link */
+  function safeLink(link) {
+    if (typeof link !== 'string') return '';
+    const ticket = link.match(/^\/(?:cases|tickets)\/([^/?#]+)\/?$/);
+    if (ticket) return `/tickets/${encodeURIComponent(ticket[1])}`;
+    const help = link.match(/^\/(?:support|help)\/([^/?#]+)\/?$/);
+    return help ? `/help/${encodeURIComponent(help[1])}` : '';
   }
 
   /** @param {any} n */
   async function open(n) {
     await notifications.markRead(n.id);
-    if (n.link) {
+    const link = safeLink(n.link);
+    if (link) {
       onClose?.();
-      window.location.href = n.link;
+      window.location.href = link;
     }
   }
 </script>

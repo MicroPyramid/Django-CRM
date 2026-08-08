@@ -372,8 +372,8 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-red-800">
-                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'}, fix the CSV before
-                importing
+                {preview.errors.length} error{preview.errors.length === 1 ? '' : 's'}, fix the CSV
+                before importing
               </p>
               <button
                 type="button"

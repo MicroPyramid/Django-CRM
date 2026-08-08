@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import '../../app.css';
   import '$lib/v2/styles/v2.css';
   import { page } from '$app/state';
@@ -93,7 +95,10 @@
 
     <nav class="v2-tabbar" aria-label="Sections">
       {#each TABS as tab (tab.href)}
-        <a href={tab.href} aria-current={isActive(tab.href, tab.exact) ? 'page' : undefined}>
+        <a
+          href={resolve(asInternalPath(tab.href))}
+          aria-current={isActive(tab.href, tab.exact) ? 'page' : undefined}
+        >
           <tab.icon />
           {tab.label}
         </a>
@@ -103,7 +108,7 @@
 
   <!-- Both live inside .v2-root so they inherit the scoped tokens; both are
        position:fixed, so the shell's overflow:hidden does not clip them. -->
-  <a class="v2-fab" href="/pipeline/new" aria-label="New deal"><Plus size={21} /></a>
+  <a class="v2-fab" href={resolve('/pipeline/new')} aria-label="New deal"><Plus size={21} /></a>
 
   <!-- Mobile navigation drawer. Only openable from the mobile top bar, so it
        never surfaces on desktop; a backdrop click, Escape, or navigating all

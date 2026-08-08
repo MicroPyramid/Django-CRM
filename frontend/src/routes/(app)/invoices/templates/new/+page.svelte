@@ -1,24 +1,25 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A new invoice template: name, the two brand colours, an optional logo, and
    * the boilerplate text (notes, terms, footer) new invoices start with.
    *
    * SCOPE, ON PURPOSE. No `template_html` / `template_css` input anywhere on
    * this page, and no `{@html}` anywhere in this app. Both fields are org-
-   * authored markup that WeasyPrint renders into a PDF server-side; every read
-   * serializer (list AND detail) strips them, so a value written from a form
-   * here could never be read back or edited afterwards, a write-once field
-   * that is invisible from the moment it is saved. See `templates.js` for the
-   * full reasoning.
+   * authored markup that WeasyPrint renders into a PDF server-side. A new
+   * template starts from the built-in layout, and replacing that whole
+   * document is a deliberate follow-up on an existing template rather than
+   * part of naming a new one, so the edit page owns those two fields. See
+   * `templates.js` for the full reasoning, including the older reason this
+   * page gave, which the editor route made obsolete.
    *
    * VALIDATION HERE IS A UX HINT, NOT A RULE. `POST /api/invoices/templates/`
    * is admin-gated (`_forbid_non_admin_template`) and enforces that
    * regardless of what this page shows; curl and the mobile client reach the
    * API without passing through here. The two colour inputs use
    * `type="color"` so the browser can only ever submit a valid six-digit hex
-   * value: the server has no format validator on either field (only
-   * `max_length=7`), so a text input would make the client check the only
-   * thing standing between "purple" and a broken PDF.
+   * value, and `_validate_hex_color` in the serializer refuses anything else,
+   * which is the check that counts.
    */
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -32,7 +33,7 @@
 
 <PageHeader title="New template" record center width="62ch">
   {#snippet crumb()}
-    <a href="/invoices/templates">Templates</a>
+    <a href={resolve('/invoices/templates')}>Templates</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -52,7 +53,9 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href="/invoices/templates" style="margin-top:16px">Back to templates</a>
+      <a class="v2-btn" href={resolve('/invoices/templates')} style="margin-top:16px"
+        >Back to templates</a
+      >
     </div>
   {:else}
     <form
@@ -102,8 +105,7 @@
         </label>
       </div>
       <p class="v2-sub" style="font-size:11.5px;margin:-6px 0 16px">
-        Picked, not typed, so the value sent is always a valid six digit hex. The API stores
-        whatever it is given here with no format check.
+        Picked, not typed, so the value sent is always a valid six digit hex.
       </p>
 
       <label class="v2-field">
@@ -117,8 +119,7 @@
           class="v2-input"
           name="default_notes"
           rows="3"
-          placeholder="Thanks for your business."
-          >{values.default_notes ?? ''}</textarea
+          placeholder="Thanks for your business.">{values.default_notes ?? ''}</textarea
         >
       </label>
 
@@ -128,16 +129,13 @@
           class="v2-input"
           name="default_terms"
           rows="3"
-          placeholder="Payment due within 30 days."
-          >{values.default_terms ?? ''}</textarea
+          placeholder="Payment due within 30 days.">{values.default_terms ?? ''}</textarea
         >
       </label>
 
       <label class="v2-field">
         <span class="v2-label">Footer text <span class="opt">(optional)</span></span>
-        <textarea class="v2-input" name="footer_text" rows="2"
-          >{values.footer_text ?? ''}</textarea
-        >
+        <textarea class="v2-input" name="footer_text" rows="2">{values.footer_text ?? ''}</textarea>
       </label>
 
       <label class="flag">
@@ -153,7 +151,7 @@
 
       <div style="display:flex;gap:9px;margin-top:6px">
         <button class="v2-btn v2-btn-primary" type="submit">Create template</button>
-        <a class="v2-btn" href="/invoices/templates">Cancel</a>
+        <a class="v2-btn" href={resolve('/invoices/templates')}>Cancel</a>
       </div>
     </form>
   {/if}

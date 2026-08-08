@@ -1,3 +1,4 @@
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 /**
  * In-app notifications store.
  *
@@ -27,7 +28,12 @@ const POLL_INTERVAL_MS = 45_000;
 // Verbs that should fire an in-page toast in addition to bumping the badge.
 // Keep this conservative: too noisy and users mute the channel.
 // NOTE: `case.*` keys are backend wire-format strings. Do not rename.
-const TOAST_VERBS = new Set(['case.mentioned', 'case.assigned', 'case.sla_breached']);
+const TOAST_VERBS = new Set([
+  'case.mentioned',
+  'case.assigned',
+  'case.sla_breached',
+  'support.replied'
+]);
 
 class NotificationsStore {
   notifications = $state([]);
@@ -159,7 +165,7 @@ class NotificationsStore {
     if (this.#polling || document.visibilityState === 'hidden') return;
     this.#polling = true;
     try {
-      const qs = new URLSearchParams({ limit: String(PANEL_LIMIT) });
+      const qs = new SvelteURLSearchParams({ limit: String(PANEL_LIMIT) });
       if (this.#since) qs.set('since', this.#since);
       const res = await window.fetch(`/api/notifications/?${qs}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

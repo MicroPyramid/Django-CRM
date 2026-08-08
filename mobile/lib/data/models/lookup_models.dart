@@ -113,6 +113,13 @@ class ContactLookup {
 class UserLookup {
   final String id;
   final String email;
+
+  /// `user_details.name`, which the API has always sent and this model used to
+  /// drop. Without it a picker labels somebody "aswin.1231" while the record
+  /// they are assigned to labels the same person "Ashwin", from the same
+  /// payload. Blank for a user who never set one.
+  final String name;
+
   final String? profilePic;
   final String role;
   final bool isActive;
@@ -120,18 +127,20 @@ class UserLookup {
   const UserLookup({
     required this.id,
     required this.email,
+    this.name = '',
     this.profilePic,
     required this.role,
     required this.isActive,
   });
 
-  /// Get display name from email (part before @)
-  String get displayName => email.split('@').first;
+  /// The name if there is one, otherwise the local part of the email.
+  String get displayName =>
+      name.trim().isNotEmpty ? name.trim() : email.split('@').first;
 
   /// Get initials for avatar
   String get initials {
     final name = displayName;
-    final parts = name.split(RegExp(r'[._-]'));
+    final parts = name.split(RegExp(r'[\s._-]+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -147,6 +156,7 @@ class UserLookup {
     return UserLookup(
       id: json['id']?.toString() ?? '',
       email: userDetails?['email'] as String? ?? json['email'] as String? ?? '',
+      name: userDetails?['name'] as String? ?? json['name'] as String? ?? '',
       profilePic:
           userDetails?['profile_pic'] as String? ??
           json['profile_pic'] as String?,

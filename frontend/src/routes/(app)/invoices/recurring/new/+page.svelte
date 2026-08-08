@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * New recurring schedule.
    *
@@ -209,7 +210,7 @@
     Nothing generates until the first run date arrives. Saving creates the schedule
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/invoices/recurring">Cancel</a>
+    <a class="v2-btn" href={resolve('/invoices/recurring')}>Cancel</a>
     <button type="submit" form="recurring-form" class="v2-btn v2-btn-primary" disabled={!ready}>
       Save schedule
     </button>
@@ -408,7 +409,9 @@
               <input type="number" min="0" step="0.01" bind:value={taxRate} />
             </label>
           </div>
-          <p class="hint">Tax applies to the subtotal after the discount, on every invoice raised.</p>
+          <p class="hint">
+            Tax applies to the subtotal after the discount, on every invoice raised.
+          </p>
         </div>
 
         <div class="v2-card" style="padding:16px 18px;margin-top:14px">
@@ -442,8 +445,8 @@
               />
             {:else}
               <p class="empty">
-                Lines are optional here. Add one to preview what each generated invoice will total, or
-                save the schedule without pricing it yet.
+                Lines are optional here. Add one to preview what each generated invoice will total,
+                or save the schedule without pricing it yet.
               </p>
             {/if}
           </div>
@@ -456,9 +459,9 @@
             <dd>Recalculated by the server on every save and every generated invoice</dd>
             <dt>Visibility</dt>
             <dd>
-              Any signed-in teammate may create one. After that only the creator, an assignee, or
-              an admin can see or change it, and this form has no way to add an assignee, so only
-              you and an admin will see this schedule
+              Any signed-in teammate may create one. After that only the creator, an assignee, or an
+              admin can see or change it, and this form has no way to add an assignee, so only you
+              and an admin will see this schedule
             </dd>
           </dl>
         </div>

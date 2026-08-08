@@ -54,7 +54,14 @@ export async function getMailboxes({ cookies }) {
       default_case_type: m.default_case_type,
       default_assignee: shapeAssignee(m.default_assignee),
       cases_last_30d: m.cases_last_30d ?? 0,
-      last_received_at: m.last_received_at ?? null
+      last_received_at: m.last_received_at ?? null,
+      // Whether the mailbox has its SNS TopicArn pin, not the ARN itself. An
+      // active SES address with no pin rejects every notification, so without
+      // this the page can only read `is_active` and draws a never-connected
+      // address as one creating tickets. See `./delivery.js`. Defaults to
+      // false, which reads as "not connected yet": failing closed is the safe
+      // direction for a status this page draws a green pill from.
+      has_topic_arn: m.has_topic_arn === true
     })),
     totals: totals ?? { count: 0, active: 0, cases_last_30d: 0 },
     // A display hint: POST/PUT/DELETE on `/cases/mailboxes/` each start with
@@ -65,12 +72,22 @@ export async function getMailboxes({ cookies }) {
   };
 }
 
-/** No `webhook_secret`, no `topic_arn`. `InboundMailboxListCreateView.post`
- *  generates a `secrets.token_urlsafe(32)` secret when the body carries none,
- *  which is a better secret than a pasted one, and `put` is `partial=True`,
- *  so omitting the key leaves the live credential untouched. A form field for
- *  either would mean the credential travels to a browser and back on every
- *  edit, and an empty one would blank it. */
+/** No `webhook_secret`, no `topic_arn`.
+ *
+ *  `webhook_secret` is reserved for providers that sign deliveries with a
+ *  shared secret, none of which are implemented: nothing in the backend
+ *  compares the column, and SES delivery is authenticated by the SNS signature
+ *  plus the `topic_arn` pin. An earlier version of this comment said the view
+ *  mints one when the body carries none, which it did until the field became
+ *  write-only, and the page repeated the claim to admins as though a
+ *  credential were protecting their mail. It is admin-writable so a
+ *  provider-issued key can be stored ahead of an integration, and a form field
+ *  for it would mean a credential travels to a browser and back on every edit
+ *  while an empty one blanks the column, so this page has neither.
+ *
+ *  `topic_arn` is set by the webhook from the first verified
+ *  SubscriptionConfirmation, so nothing here should be writing it either. Its
+ *  presence reaches the page as the `has_topic_arn` boolean above. */
 const CREATE_FIELDS = [
   'address',
   'provider',

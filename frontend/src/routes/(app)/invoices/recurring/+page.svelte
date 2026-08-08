@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Billing schedules. Each row answers one question: when does this next
    * generate an invoice, and does anyone have to do anything when it does.
@@ -54,7 +55,9 @@
     <span class="v2-num">{money(totals.monthly_run_rate, data.org.currency)}</span> a month
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/invoices/recurring/new"><Plus />New schedule</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/invoices/recurring/new')}
+      ><Plus />New schedule</a
+    >
   {/snippet}
 </PageHeader>
 
@@ -101,7 +104,7 @@
     >
       {#snippet icon()}<RefreshCw size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/invoices/recurring/new">New schedule</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/invoices/recurring/new')}>New schedule</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -129,7 +132,9 @@
                 </span>
               </td>
               <td>
-                <a href="/accounts/{s.account.id}" style="color:inherit">{s.account.name}</a>
+                <a href={resolve(`/accounts/${s.account.id}`)} style="color:inherit"
+                  >{s.account.name}</a
+                >
                 <span class="v2-table-secondary" style="display:block">{s.contact}</span>
               </td>
               <td>{frequency(s)}</td>

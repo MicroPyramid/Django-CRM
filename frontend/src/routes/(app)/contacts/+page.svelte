@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -27,11 +28,11 @@
   {/snippet}
   {#snippet actions()}
     {#if data.includeInactive}
-      <a class="v2-btn" href="/contacts">Hide inactive</a>
+      <a class="v2-btn" href={resolve('/contacts')}>Hide inactive</a>
     {:else}
-      <a class="v2-btn" href="/contacts?inactive=1">Show inactive</a>
+      <a class="v2-btn" href={resolve('/contacts?inactive=1')}>Show inactive</a>
     {/if}
-    <a class="v2-btn v2-btn-primary" href="/contacts/new"><Plus />New contact</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/contacts/new')}><Plus />New contact</a>
   {/snippet}
 </PageHeader>
 
@@ -52,8 +53,8 @@
     >
       {#snippet icon()}<Users size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/contacts/new">New contact</a>
-        <a class="v2-btn" href="/leads">Go to leads</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/contacts/new')}>New contact</a>
+        <a class="v2-btn" href={resolve('/leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -75,7 +76,7 @@
               <td>
                 <a
                   class="v2-row-link"
-                  href="/contacts/{c.id}"
+                  href={resolve(`/contacts/${c.id}`)}
                   style="display:flex;align-items:center;gap:9px"
                 >
                   <Avatar name={c.name} size={26} />
@@ -95,7 +96,9 @@
                   appears only where there is no link to show, and says so.
                 -->
                 {#if c.account}
-                  <a href="/accounts/{c.account.id}" style="color:inherit">{c.account.name}</a>
+                  <a href={resolve(`/accounts/${c.account.id}`)} style="color:inherit"
+                    >{c.account.name}</a
+                  >
                   {#if c.other_accounts.length}
                     <span class="v2-sub" style="font-size:11px">+{c.other_accounts.length}</span>
                   {/if}

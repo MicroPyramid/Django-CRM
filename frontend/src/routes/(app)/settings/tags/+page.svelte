@@ -1,4 +1,5 @@
 <script>
+  import { SvelteMap } from 'svelte/reactivity';
   /**
    * The labels shared across accounts, leads, deals and tickets.
    *
@@ -72,7 +73,7 @@
 
   let duplicateGroups = $derived.by(() => {
     /** @type {Map<string, any[]>} */
-    const groups = new Map();
+    const groups = new SvelteMap();
     // Active tags only. The list itself is fetched with
     // `?include_archived=true` so an admin can see what has been turned off,
     // but an archived tag is not offered on new records and so cannot be

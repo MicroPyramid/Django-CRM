@@ -35,8 +35,22 @@ import '../screens/tasks/board_screen.dart';
 import '../screens/tasks/tasks_list_screen.dart';
 import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
+import '../screens/settings/custom_fields_screen.dart';
+import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
+import '../screens/settings/api_tokens_screen.dart';
+import '../screens/settings/my_api_tokens_screen.dart';
+import '../screens/settings/approval_rules_screen.dart';
+import '../screens/settings/business_hours_screen.dart';
+import '../screens/settings/escalation_screen.dart';
+import '../screens/settings/inbound_email_screen.dart';
+import '../screens/settings/organization_edit_screen.dart';
+import '../screens/settings/organization_screen.dart';
+import '../screens/settings/reopen_screen.dart';
+import '../screens/settings/routing_screen.dart';
+import '../screens/settings/settings_hub_screen.dart';
+import '../screens/settings/tags_screen.dart';
 import '../screens/settings/team_screen.dart';
 import '../screens/solutions/solutions_list_screen.dart';
 import '../screens/solutions/solution_detail_screen.dart';
@@ -44,15 +58,23 @@ import '../screens/tickets/approvals_inbox_screen.dart';
 import '../screens/tickets/ticket_analytics_screen.dart';
 import '../screens/timesheet/timesheet_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
+import '../screens/documents/documents_list_screen.dart';
+import '../screens/documents/document_form_screen.dart';
+import '../screens/goals/goals_screen.dart';
+import '../screens/goals/goal_form_screen.dart';
 import '../screens/invoices/invoices_list_screen.dart';
 import '../screens/invoices/invoice_detail_screen.dart';
 import '../screens/invoices/estimates_list_screen.dart';
 import '../screens/invoices/recurring_list_screen.dart';
 import '../screens/invoices/products_list_screen.dart';
+import '../screens/invoices/invoice_template_form_screen.dart';
 import '../screens/invoices/invoice_templates_screen.dart';
 import '../screens/invoices/invoice_reports_screen.dart';
 import '../screens/invoices/new_invoice_screen.dart';
 import '../screens/invoices/new_recurring_screen.dart';
+import '../screens/support/support_create_screen.dart';
+import '../screens/support/support_detail_screen.dart';
+import '../screens/support/support_list_screen.dart';
 
 // Shell
 import '../widgets/common/app_shell.dart';
@@ -99,6 +121,30 @@ class AppRoutes {
   static const String profile = '/more/profile';
   static const String team = '/more/team';
 
+  /// The org settings cluster. Two segments deep under `/more`, matching
+  /// `profile` and `team`, so nothing here can be mistaken for a record id the
+  /// way `/invoices/estimates` once could.
+  static const String settings = '/more/settings';
+  static const String settingsCustomFields = '/more/settings/custom-fields';
+  static const String settingsMacros = '/more/settings/macros';
+  static const String settingsTags = '/more/settings/tags';
+  static const String settingsRouting = '/more/settings/routing';
+  static const String settingsEscalation = '/more/settings/escalation';
+  static const String settingsBusinessHours = '/more/settings/business-hours';
+  static const String settingsReopen = '/more/settings/reopen';
+  static const String settingsInboundEmail = '/more/settings/inbound-email';
+  static const String settingsTicketApprovals =
+      '/more/settings/ticket-approvals';
+  static const String settingsApiTokens = '/more/settings/api-tokens';
+
+  /// Your OWN tokens, under profile rather than under settings. Settings
+  /// holds the admin's org-wide oversight list, which 403s a member; this
+  /// is the self-scoped half every member may use.
+  static const String profileTokens = '/more/profile/tokens';
+  static const String settingsOrganization = '/more/settings/organization';
+  static const String settingsOrganizationEdit =
+      '/more/settings/organization/edit';
+
   /// Your own week of logged time. Not under `/more`: it is a workspace
   /// destination reached from the dashboard as often as from the menu, and a
   /// path that says where it lives is the one that survives being linked to.
@@ -106,6 +152,30 @@ class AppRoutes {
 
   /// The notification feed. Matches the web app's `/notifications`.
   static const String notifications = '/notifications';
+
+  /// Shared files. Matches the web app's `/documents`. There is no detail
+  /// route on either client: the list says everything a document row holds,
+  /// and the edit form is where the writes live.
+  static const String documents = '/documents';
+  static const String documentNew = '/documents/new';
+  static const String documentEdit = '/documents/:id/edit';
+
+  static String documentEditFor(String id) => '/documents/$id/edit';
+
+  /// Sales goals. Matches the web app's `/goals`. Same shape as documents,
+  /// and for the same reason.
+  static const String goals = '/goals';
+  static const String goalNew = '/goals/new';
+  static const String goalEdit = '/goals/:id/edit';
+
+  static String goalEditFor(String id) => '/goals/$id/edit';
+
+  /// Help: product support from the BottleCRM team. The URL says help, the
+  /// API behind it is `/api/support/`, and the screens keep the support name.
+  /// Separate from CRM customer tickets, which live at `/tickets`.
+  static const String help = '/help';
+  static const String helpNew = '/help/new';
+  static const String helpDetail = '/help/:id';
 
   /// Invoices. Matches the web app's `/invoices` and `/invoices/[id]`.
   static const String invoices = '/invoices';
@@ -120,7 +190,12 @@ class AppRoutes {
   static const String recurring = '/invoices/recurring';
   static const String products = '/invoices/products';
   static const String invoiceTemplates = '/invoices/templates';
+  static const String invoiceTemplateNew = '/invoices/templates/new';
+  static const String invoiceTemplateEdit = '/invoices/templates/:id/edit';
   static const String invoiceReports = '/invoices/reports';
+
+  static String invoiceTemplateEditFor(String id) =>
+      '/invoices/templates/$id/edit';
 
   // Knowledge base
   static const String solutions = '/solutions';
@@ -334,6 +409,66 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
+        path: AppRoutes.documents,
+        name: 'documents',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DocumentsListScreen(),
+      ),
+      // Literal `new` before the `:id` pattern, or `/documents/new` is read as
+      // a document whose id is the word "new".
+      GoRoute(
+        path: AppRoutes.documentNew,
+        name: 'documentNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DocumentFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.documentEdit,
+        name: 'documentEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            DocumentFormScreen(documentId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: AppRoutes.goals,
+        name: 'goals',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const GoalsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.goalNew,
+        name: 'goalNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const GoalFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.goalEdit,
+        name: 'goalEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            GoalFormScreen(goalId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        name: 'help',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SupportListScreen(),
+      ),
+      // Literal `new` must be declared before `:id`.
+      GoRoute(
+        path: AppRoutes.helpNew,
+        name: 'helpNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SupportCreateScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.helpDetail,
+        name: 'helpDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            SupportDetailScreen(ticketId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
         path: AppRoutes.invoices,
         name: 'invoices',
         parentNavigatorKey: _rootNavigatorKey,
@@ -380,6 +515,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const InvoiceTemplatesScreen(),
       ),
       GoRoute(
+        path: AppRoutes.invoiceTemplateNew,
+        name: 'invoiceTemplateNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InvoiceTemplateFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceTemplateEdit,
+        name: 'invoiceTemplateEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            InvoiceTemplateFormScreen(templateId: state.pathParameters['id']),
+      ),
+      GoRoute(
         path: AppRoutes.invoiceReports,
         name: 'invoiceReports',
         parentNavigatorKey: _rootNavigatorKey,
@@ -403,6 +551,92 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'team',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const TeamScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SettingsHubScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsCustomFields,
+        name: 'settingsCustomFields',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CustomFieldsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsMacros,
+        name: 'settingsMacros',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MacrosScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsTags,
+        name: 'settingsTags',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TagsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsRouting,
+        name: 'settingsRouting',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RoutingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsEscalation,
+        name: 'settingsEscalation',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const EscalationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsBusinessHours,
+        name: 'settingsBusinessHours',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const BusinessHoursScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsReopen,
+        name: 'settingsReopen',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ReopenScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsInboundEmail,
+        name: 'settingsInboundEmail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InboundEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsTicketApprovals,
+        name: 'settingsTicketApprovals',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApprovalRulesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsApiTokens,
+        name: 'settingsApiTokens',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApiTokensScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileTokens,
+        name: 'profileTokens',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MyApiTokensScreen(),
+      ),
+      // The edit route is declared before the read one so `/organization/edit`
+      // is never captured as a sub-path of `/organization`.
+      GoRoute(
+        path: AppRoutes.settingsOrganizationEdit,
+        name: 'settingsOrganizationEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrganizationEditScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsOrganization,
+        name: 'settingsOrganization',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OrganizationScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgCreate,

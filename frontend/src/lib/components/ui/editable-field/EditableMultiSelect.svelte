@@ -137,7 +137,7 @@
       >
         <div class="flex flex-1 flex-wrap items-center gap-1.5">
           {#if selectedOptions.length === 0}
-            <span class="text-muted-foreground italic">{emptyText}</span>
+            <span class="text-muted-foreground italic">{emptyText || placeholder}</span>
           {:else}
             {#each displayOptions as opt (opt.id)}
               <Badge variant="secondary" class="gap-1 pr-1">

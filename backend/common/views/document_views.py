@@ -1,5 +1,7 @@
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
@@ -52,6 +54,21 @@ def _visible_to(profile):
         | Q(shared_to=profile)
         | Q(teams__in=profile.user_teams.all())
     )
+
+
+def may_read_document(profile, user, document):
+    """Admins, plus anyone `_visible_to` covers: creator, share, team.
+
+    Evaluated as a queryset filter rather than in Python so that it is
+    literally the same predicate the list uses. Doing it by hand was how the
+    two drifted apart in the first place.
+
+    Module level because the download view needs it too, and a file is only
+    ever as private as the narrowest thing that can hand it over.
+    """
+    if is_org_admin(profile) or user.is_superuser:
+        return True
+    return Document.objects.filter(pk=document.pk).filter(_visible_to(profile)).exists()
 
 
 class DocumentListView(APIView, LimitOffsetPagination):
@@ -227,19 +244,8 @@ class DocumentDetailView(APIView):
         return get_object_or_404(Document, id=pk, org=self.request.profile.org)
 
     def _may_read(self, document):
-        """Admins, plus anyone `_visible_to` covers: creator, share, team.
-
-        Evaluated as a queryset filter rather than in Python so that it is
-        literally the same predicate the list uses. Doing it by hand was how
-        the two drifted apart in the first place.
-        """
-        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
-            return True
-        return (
-            Document.objects.filter(pk=document.pk)
-            .filter(_visible_to(self.request.profile))
-            .exists()
-        )
+        """See `may_read_document`, which the download view shares."""
+        return may_read_document(self.request.profile, self.request.user, document)
 
     def _may_delete(self, document):
         """Deleting is destructive and not covered by a share.
@@ -435,4 +441,51 @@ class DocumentDetailView(APIView):
         return Response(
             {"error": True, "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class DocumentDownloadView(APIView):
+    """Stream a document's file to somebody allowed to read the record.
+
+    Until this existed there was no authenticated way to reach the bytes at
+    all, so both clients listed a filename, a size and nothing to click. The
+    only other route to the file is its `/media/` path, and that path is
+    guarded by `RLSContextMiddleware` alone, which asks for *an* org context
+    rather than *the* org: it turns any signed-in user of any tenant into a
+    reader of every uploaded file in the system. Handing a client a media URL
+    is therefore not a smaller version of this view, it is the hole.
+
+    The gate is `may_read_document`, the same predicate the detail view and
+    the list use, so a document you cannot open is a document you cannot
+    download. Deliberately *not* `_may_write`: reading is broad here on
+    purpose (creator, share, team, admin) and a share exists to be read.
+    """
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(
+        tags=["documents"],
+        operation_id="documents_download",
+        parameters=swagger_params.organization_params,
+        responses={(200, "application/octet-stream"): OpenApiTypes.BINARY},
+    )
+    def get(self, request, pk, format=None):
+        document = get_object_or_404(Document, id=pk, org=request.profile.org)
+        if not may_read_document(request.profile, request.user, document):
+            return Response(
+                {
+                    "error": True,
+                    "errors": "You do not have Permission to perform this action",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not document.document_file:
+            raise Http404("That document has no file.")
+        document.document_file.open("rb")
+        return FileResponse(
+            document.document_file,
+            as_attachment=True,
+            # `title` is the human name and the only one either client shows.
+            # The stored name is a timestamped upload path nobody chose.
+            filename=document.title or "document",
         )

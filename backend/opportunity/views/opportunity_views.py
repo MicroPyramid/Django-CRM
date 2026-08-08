@@ -8,7 +8,6 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -42,7 +41,7 @@ from common.validators import (
 )
 from contacts.models import Contact
 from contacts.serializer import ContactSerializer
-from opportunity import swagger_params
+from opportunity import access, swagger_params
 from opportunity.models import Opportunity, StageAgingConfig
 from opportunity.serializer import (
     OpportunityCreateSerializer,
@@ -411,30 +410,13 @@ class OpportunityDetailView(APIView):
         return self.model.objects.filter(id=pk, org=self.request.profile.org).first()
 
     def assert_deal_access(self, opportunity):
-        """Admins, the creator, and anyone assigned. Everyone else gets a 403.
+        """Delegates to `opportunity.access`, which holds the one definition.
 
-        Four copies of this check used to live inline in `get`, `put`, `patch`
-        and `post`, and all four compared `request.profile`, a Profile, to
-        `opportunity.created_by`, which is a FK to `User`. Those types are
-        never equal, so the creator half was dead: a non-admin who created a
-        deal and did not also assign it to themselves was refused their own
-        record. `delete()` got the same comparison right
-        (`request.profile.user != created_by`), which is how you could tell it
-        was a mistake rather than a policy. The same person could delete the
-        deal they were not allowed to read.
-
-        Raising beats returning a Response: a returned Response from a helper
-        gets wrapped in `Response(...)` by the caller and renders as a 500.
+        The attachment download view asks the same question, and four inline
+        copies of this check is exactly how the creator branch came to be dead
+        in all four of them.
         """
-        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
-            return
-        if self.request.profile.user_id == opportunity.created_by_id:
-            return
-        if self.request.profile.id in {
-            profile.id for profile in opportunity.assigned_to.all()
-        }:
-            return
-        raise PermissionDenied("You do not have Permission to perform this action")
+        access.assert_deal_access(self.request.profile, self.request.user, opportunity)
 
     @extend_schema(
         operation_id="opportunities_update",

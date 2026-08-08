@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { ChevronRight, Trophy, XCircle } from '@lucide/svelte';
   import { formatCurrency } from '$lib/utils/formatting.js';
@@ -79,10 +81,10 @@
 
 <div class="overflow-x-auto">
   <div class="flex min-w-max items-center gap-2">
-    {#each stages as stage, index}
+    {#each stages as stage, index (stage.id)}
       {@const data = pipelineData[stage.id] || { count: 0, value: 0, label: stage.id }}
       <a
-        href="/opportunities?stage={stage.id}"
+        href={resolve(asInternalPath(`/opportunities?stage=${stage.id}`))}
         class="group relative min-w-[130px] flex-1 overflow-hidden rounded-[var(--radius-lg)] border px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg {stage.borderColor} {stage.bgColor} {stage.glowColor}"
       >
         <!-- Gradient overlay on hover -->

@@ -127,6 +127,54 @@ class ApiConfig {
   /// use one vocabulary (see `common/org_time.py`).
   static String get timezones => '$apiBaseUrl/org/timezones/';
 
+  /// The org's own settings. GET is open to any member (the company profile is
+  /// not a secret), PATCH is admin-only. Always acts on the caller's own org:
+  /// there is no id in the path, so there is nothing to scope.
+  ///
+  /// The org API key is not on this payload in any form. It authenticates as
+  /// the org's first admin and is rotated through `OrgApiKeyView` alone.
+  static String get orgSettings => '$apiBaseUrl/org/settings/';
+
+  /// Vertical packs available to apply. Needs authentication but no org
+  /// context, because its first caller is someone creating their first org.
+  static String get packs => '$apiBaseUrl/packs/';
+
+  /// Apply one pack. Admin-only, additive-only, and safe to repeat: a pack
+  /// already applied reports everything skipped rather than refusing.
+  static String packApply(String packId) => '$apiBaseUrl/packs/$packId/apply/';
+
+  /// Delete the demo records a pack created for this org, and nothing else.
+  /// Admin-only. A sample record the org has since attached real work to is
+  /// deliberately kept and reported in `retained_by_type`.
+  static String get packSampleData => '$apiBaseUrl/packs/sample-data/';
+
+  // ==========================================================================
+  // API TOKENS
+  // ==========================================================================
+
+  /// **The admin's org-wide oversight list.** Every token in the org, so a
+  /// deactivated owner's row and a forgotten one can be found. ADMIN-only: a
+  /// member gets 403, which is why the screen gates on role.
+  ///
+  /// Only `token_prefix` is ever returned. The server keeps a SHA-256 hash and
+  /// no raw value exists to fetch.
+  static String get orgTokens => '$apiBaseUrl/org/tokens/';
+
+  /// Revoke any token in the org. Admin-only, org-scoped, idempotent. Separate
+  /// from the self-scoped path below so the "a user manages only their own"
+  /// guard there is never widened.
+  static String orgToken(String id) => '$apiBaseUrl/org/tokens/$id/';
+
+  /// Create a token **for yourself**. The server sets the owner from the
+  /// caller's own profile, so there is no way to mint one for someone else.
+  /// The raw value comes back once, in this response, and never again.
+  static String get profileTokens => '$apiBaseUrl/profile/tokens/';
+
+  /// Revoke one of **your own**. Self-scoped server-side, so a colleague's id
+  /// 404s rather than being revoked. Distinct from `orgToken(id)`, which is
+  /// the admin's org-wide revoke and refuses a member outright.
+  static String profileToken(String id) => '$apiBaseUrl/profile/tokens/$id/';
+
   // ==========================================================================
   // DASHBOARD
   // ==========================================================================
@@ -158,11 +206,59 @@ class ApiConfig {
   static String opportunityComment(String commentId) =>
       '$apiBaseUrl/opportunities/comment/$commentId/';
 
+  /// Sales goals. Reading is open to any member and narrowed server-side to
+  /// their own goals and their teams'; creating, editing and deleting are
+  /// admin-only and answer 403 to everyone else.
+  static String get goals => '$apiBaseUrl/opportunities/goals/';
+
+  static String goal(String id) => '$apiBaseUrl/opportunities/goals/$id/';
+
+  /// Current individual goals for one period, ranked on attainment. Takes
+  /// `?period_type=`, defaulting to MONTHLY server-side.
+  ///
+  /// Narrowed by the same rule as the list. It used to scope nothing, so a
+  /// member whose own list came back empty could still read every colleague's
+  /// target, attainment and email address off this endpoint.
+  static String get goalsLeaderboard =>
+      '$apiBaseUrl/opportunities/goals/leaderboard/';
+
+  /// Shared files. The list answers two separately paginated envelopes,
+  /// `documents_active` and `documents_inactive`. Uploading is open to any
+  /// member; editing and deleting are the uploader or an admin.
+  static String get documents => '$apiBaseUrl/documents/';
+
+  static String document(String id) => '$apiBaseUrl/documents/$id/';
+
+  /// The bytes of a document, gated by the same read predicate as the record.
+  ///
+  /// Fetch this with the Authorization header, never `launchUrl`. The external
+  /// browser carries no token, and the file's own `/media/` path is not an
+  /// alternative: it is served with no per-file authorization at all, which is
+  /// why this endpoint exists.
+  static String documentDownload(String id) =>
+      '$apiBaseUrl/documents/$id/download/';
+
+  /// The bytes of a file attached to a lead, deal, ticket or task. Same rule
+  /// as `documentDownload`: authenticated fetch, never a storage URL.
+  static String attachmentDownload(String id) =>
+      '$apiBaseUrl/attachments/$id/download/';
+
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
 
   /// Tickets (support tickets) management
   static String get tickets => '$apiBaseUrl/cases/';
+
+  /// BottleCRM product support tickets opened by the signed-in user.
+  static String get supportTickets => '$apiBaseUrl/support/';
+
+  static String supportTicket(String id) => '$apiBaseUrl/support/$id/';
+
+  static String supportTicketReplies(String id) =>
+      '$apiBaseUrl/support/$id/replies/';
+
+  static String supportMessageAttachment(String messageId) =>
+      '$apiBaseUrl/support/messages/$messageId/attachment/';
 
   /// Ticket detail (retrieve / update / delete / add comment)
   static String ticketDetail(String id) => '$apiBaseUrl/cases/$id/';
@@ -325,9 +421,14 @@ class ApiConfig {
   static String get products => '$apiBaseUrl/invoices/products/';
   static String product(String id) => '$apiBaseUrl/invoices/products/$id/';
 
-  /// PDF templates. This list never carries the raw HTML or CSS: only the
-  /// admin-only editor endpoint does, and this app does not call it.
+  /// PDF templates. Neither of these carries the raw HTML or CSS: only the
+  /// admin-only editor endpoint does, and this app does not call it. That is
+  /// what lets the phone edit a template at all. The fields it writes are the
+  /// ordinary ones, the detail PUT is partial, so a save from here leaves the
+  /// markup exactly as the web editor left it.
   static String get invoiceTemplates => '$apiBaseUrl/invoices/templates/';
+  static String invoiceTemplate(String id) =>
+      '$apiBaseUrl/invoices/templates/$id/';
 
   /// Reports. Both are admin-only and answer 403 to everyone else.
   static String get invoiceReportDashboard =>
@@ -381,12 +482,113 @@ class ApiConfig {
   /// Get teams and users (for assignment dropdowns)
   static String get teamsAndUsers => '$apiBaseUrl/users/get-teams-and-users/';
 
-  /// Tags management
+  /// Auto-routing rules, ordered by `priority_order` server-side. That order is
+  /// the behaviour: the engine takes the first match and, when the rule says
+  /// so, stops.
+  static String get routingRules => '$apiBaseUrl/cases/routing-rules/';
+
+  /// One routing rule. PUT is partial, so a body may carry one key. DELETE is a
+  /// HARD delete here, unlike custom fields and tags.
+  static String routingRule(String id) =>
+      '$apiBaseUrl/cases/routing-rules/$id/';
+
+  /// Tags management. Active tags only by default; the settings screen passes
+  /// `?include_archived=true` because it is the one that turns a tag back on
+  /// and cannot offer that for a row it never fetched.
   static String get tags => '$apiBaseUrl/tags/';
 
+  /// One tag. DELETE turns it off (a soft archive: the row and every record's
+  /// link to it stay), and nothing hard-deletes a tag anywhere.
+  static String tag(String id) => '$apiBaseUrl/tags/$id/';
+
+  /// Turn an archived tag back on.
+  static String tagRestore(String id) => '$apiBaseUrl/tags/$id/restore/';
+
+  /// Move every record off this tag onto the one named by `into`, then archive
+  /// this one. Both ids are re-resolved inside the caller's org server-side.
+  static String tagMerge(String id) => '$apiBaseUrl/tags/$id/merge/';
+
+  /// Escalation policies, at most one per priority. Each row arrives with
+  /// `breaches_last_30d`, a server-side count the list has no other way to get.
+  static String get escalationPolicies =>
+      '$apiBaseUrl/cases/escalation-policies/';
+
+  /// One escalation policy. PUT is partial, so a one-key body is legal, and it
+  /// strips `priority` before the serializer sees it. DELETE is a HARD delete
+  /// here, unlike custom fields and tags.
+  static String escalationPolicy(String id) =>
+      '$apiBaseUrl/cases/escalation-policies/$id/';
+
+  /// Inbound email addresses. GET is open to any member, and strips the two
+  /// admin-only integration fields (`topic_arn`, `has_webhook_secret`) for
+  /// everyone else. POST, PUT and DELETE are admin-only.
+  static String get mailboxes => '$apiBaseUrl/cases/mailboxes/';
+
+  /// One mailbox. PUT is partial, so a body may carry one key. DELETE is a HARD
+  /// delete and takes the topic pin with it.
+  static String mailbox(String id) => '$apiBaseUrl/cases/mailboxes/$id/';
+
+  /// Approval rules, the gates on a ticket close. GET is open to any member;
+  /// every write is admin-only.
+  static String get approvalRules => '$apiBaseUrl/cases/approval-rules/';
+
+  /// One approval rule. PUT is partial. DELETE is two outcomes behind one verb:
+  /// a rule with approval history is turned off rather than destroyed, and both
+  /// answer 2xx, so the response body is what says which happened.
+  static String approvalRule(String id) =>
+      '$apiBaseUrl/cases/approval-rules/$id/';
+
+  /// The org's default business calendar, created on first read. Reading is
+  /// open to any member; every write below is admin-only.
+  static String get businessCalendar => '$apiBaseUrl/business-hours/calendar/';
+
+  /// The calendar's own detail url, which is what PUT goes to. The collection
+  /// path above does not accept one.
+  static String businessCalendarDetail(String id) =>
+      '$apiBaseUrl/business-hours/calendar/$id/';
+
+  /// Holidays on a calendar. POST is idempotent on date: a date already stored
+  /// answers 200 with the EXISTING row, name included, and creates nothing.
+  static String businessHolidays(String calendarId) =>
+      '$apiBaseUrl/business-hours/calendar/$calendarId/holidays/';
+
+  /// One holiday. DELETE is a hard delete and the day counts as working time
+  /// again at once.
+  static String businessHoliday(String calendarId, String holidayId) =>
+      '$apiBaseUrl/business-hours/calendar/$calendarId/holidays/$holidayId/';
+
+  /// The org's reopen policy, a singleton created on first read. **GET is
+  /// admin-only here**, unlike the business calendar, so the screen that reads
+  /// it has to gate on role rather than show a member a 403.
+  static String get reopenPolicy => '$apiBaseUrl/cases/reopen-policy/';
+
   /// Custom field definitions (per-org schema for entities like Case/Lead/...).
-  /// Query with `?target_model=Case&active_only=true`.
+  /// Query with `?target_model=Case&active_only=true`. Pass
+  /// `include_counts=false` unless you need `records_missing_value`: computing
+  /// it costs a full scan of the org's records per definition.
   static String get customFieldDefinitions => '$apiBaseUrl/custom-fields/';
+
+  /// Saved replies. GET lists the ones visible to the caller: every org macro
+  /// plus their own personal ones, never anybody else's. `?active=true` for
+  /// the reply-box picker, unfiltered for the settings screen, which has to
+  /// see the turned-off rows to offer turning one back on.
+  static String get macros => '$apiBaseUrl/macros/';
+
+  /// One saved reply. PATCH edits it (PUT runs the serializer non-partial and
+  /// 400s without both title and body). DELETE turns an org macro off and
+  /// deletes a personal one for good, decided server-side from the row.
+  static String macro(String id) => '$apiBaseUrl/macros/$id/';
+
+  /// Substitute the `%token%` placeholders against a ticket and return the
+  /// text: POST `{"case_id": "<ticket id>"}`. Server-side on purpose, so the
+  /// supported token set lives in one place and no client can drift from it.
+  static String macroRender(String id) => '$apiBaseUrl/macros/$id/render/';
+
+  /// One definition: PUT edits it, DELETE turns it off. DELETE is a soft
+  /// delete (`CustomFieldDefinitionDetailView.delete` flips `is_active` and
+  /// leaves stored values readable), so nothing here says "delete" to a user.
+  /// Both verbs are admin-only server-side.
+  static String customField(String id) => '$apiBaseUrl/custom-fields/$id/';
 
   /// People in the org: GET lists active and inactive, POST invites.
   /// Admin-only server-side, 403 for everyone else on both verbs.

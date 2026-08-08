@@ -1,4 +1,5 @@
 <script>
+  import { SvelteMap } from 'svelte/reactivity';
   /**
    * Fields this organisation added to records that shipped without them.
    *
@@ -58,7 +59,7 @@
   /** One group per extended model, fields kept in display_order. */
   let groups = $derived.by(() => {
     /** @type {Map<string, any[]>} */
-    const byModel = new Map();
+    const byModel = new SvelteMap();
     for (const f of data.fields) {
       byModel.set(f.target_model, [...(byModel.get(f.target_model) ?? []), f]);
     }

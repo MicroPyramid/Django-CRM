@@ -1,4 +1,6 @@
 <script>
+  import { SvelteDate } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
   import { Badge } from '$lib/components/ui/badge/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import { Circle, CheckCircle2, ChevronRight, ListTodo } from '@lucide/svelte';
@@ -25,10 +27,10 @@
   /** @type {'all' | 'overdue' | 'today' | 'week'} */
   let filter = $state('all');
 
-  const today = new Date();
+  const today = new SvelteDate();
   today.setHours(0, 0, 0, 0);
 
-  const weekEnd = new Date(today);
+  const weekEnd = new SvelteDate(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   /**
@@ -37,7 +39,7 @@
    */
   function isToday(dateStr) {
     if (!dateStr) return false;
-    const date = new Date(dateStr);
+    const date = new SvelteDate(dateStr);
     date.setHours(0, 0, 0, 0);
     return date.getTime() === today.getTime();
   }
@@ -48,7 +50,7 @@
    */
   function isOverdue(dateStr) {
     if (!dateStr) return false;
-    const date = new Date(dateStr);
+    const date = new SvelteDate(dateStr);
     date.setHours(0, 0, 0, 0);
     return date.getTime() < today.getTime();
   }
@@ -59,7 +61,7 @@
    */
   function isThisWeek(dateStr) {
     if (!dateStr) return false;
-    const date = new Date(dateStr);
+    const date = new SvelteDate(dateStr);
     date.setHours(0, 0, 0, 0);
     return date.getTime() >= today.getTime() && date.getTime() <= weekEnd.getTime();
   }
@@ -158,7 +160,7 @@
 
   <!-- Filter tabs -->
   <div class="flex gap-1 border-b border-[var(--border-default)]/50 px-4 py-2">
-    {#each filterButtons as btn}
+    {#each filterButtons as btn (btn.id)}
       <Button
         variant={filter === btn.id ? 'secondary' : 'ghost'}
         size="sm"
@@ -197,7 +199,7 @@
         {#each filteredTasks() as task (task.id)}
           {@const config = getPriorityConfig(task.priority)}
           <a
-            href="/tasks?view={task.id}"
+            href={resolve(`/tasks?view=${task.id}`)}
             class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
           >
             <!-- Status icon -->

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Documents: a model with a full API and, until now, no screen anywhere.
    * `Document` has existed since the first migration and neither v1 nor the
@@ -71,7 +72,7 @@
     <span class="v2-num">{count(totals.inactive)}</span> archived
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/documents/new"><Upload />Upload</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}><Upload />Upload</a>
   {/snippet}
 </PageHeader>
 
@@ -105,7 +106,7 @@
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/documents/new">Upload a document</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}>Upload a document</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -129,10 +130,18 @@
                 <span class="doc">
                   <Icon size={14} style="color:var(--v2-slate);flex:none" />
                   <span>
-                    <span class="v2-table-primary">{d.title}</span>
-                    <!-- The stored path, not a link. Constructing a media URL
-                         in the client is how a private file becomes a public
-                         one; the server decides who gets bytes. -->
+                    <!-- Still not a media URL: `download_href` is a route on
+                         this origin that streams the file from an endpoint
+                         gated by the same read predicate as the record. A
+                         `/media/` link would be readable by every tenant and
+                         would 403 for the person entitled to it. -->
+                    {#if d.download_href}
+                      <a class="v2-table-primary title" href={d.download_href} download>
+                        {d.title}
+                      </a>
+                    {:else}
+                      <span class="v2-table-primary">{d.title}</span>
+                    {/if}
                     <span class="v2-table-secondary path">{d.document_file}</span>
                   </span>
                 </span>
@@ -168,7 +177,11 @@
                    it. Reading is broader, but that is what the row already is. -->
               <td class="v2-r">
                 {#if d.can_write}
-                  <a class="edit" href="/documents/{d.id}/edit" title="Manage this document">
+                  <a
+                    class="edit"
+                    href={resolve(`/documents/${d.id}/edit`)}
+                    title="Manage this document"
+                  >
                     <Pencil size={13} />
                   </a>
                 {/if}
@@ -195,6 +208,18 @@
   .path {
     font-family: var(--v2-mono);
     font-size: 11px;
+  }
+
+  /* A block so the whole title line is the tap target on a phone, where the
+     row is a card and there is no second column to aim at. */
+  a.title {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a.title:hover {
+    text-decoration: underline;
   }
 
   .reach {

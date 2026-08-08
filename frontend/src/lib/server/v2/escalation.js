@@ -25,10 +25,19 @@ import { apiRequest } from '$lib/api-helpers.js';
 import { ESCALATION_PRIORITIES } from '$lib/v2/enums.js';
 import { viewerRole } from './organization.js';
 
-/** Profile → the `{ id, name }` the card renders, or null when unset. */
+/**
+ * Profile → the `{ id, name }` the card renders, or null when unset.
+ *
+ * `name` falls back to the local part of the email, because `User.name` may be
+ * blank and dropping the email left the card rendering "Notify " with nothing
+ * after it. The mobile client's `UserLookup.displayName` resolves the same
+ * payload the same way.
+ */
 function shapeTarget(target) {
   if (!target) return null;
-  return { id: target.id, name: target.user_details?.name ?? null };
+  const name = target.user_details?.name?.trim();
+  const email = target.user_details?.email ?? '';
+  return { id: target.id, name: name || email.split('@')[0] || 'Unnamed' };
 }
 
 /** Team → `{ id, name }`, or null. */

@@ -20,13 +20,7 @@
    *   explain?: string,
    *   hidden?: Record<string, string>
    * }} */
-  let {
-    action,
-    label = 'Delete',
-    confirmLabel = 'Confirm',
-    explain = '',
-    hidden = {}
-  } = $props();
+  let { action, label = 'Delete', confirmLabel = 'Confirm', explain = '', hidden = {} } = $props();
 
   let armed = $state(false);
   let busy = $state(false);

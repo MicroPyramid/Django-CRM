@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The kanban board.
    *
@@ -511,8 +512,8 @@
      there, so it is said once, in the open. -->
 <p class="v2-sub v2-pad" style="font-size:11.5px;padding-bottom:14px;flex:none;margin:0">
   Cards on a board are separate records from the
-  <a href="/tasks" style="color:inherit">task list</a>. A card here does not appear there, and completing
-  one does not complete the other.
+  <a href={resolve('/tasks')} style="color:inherit">task list</a>. A card here does not appear
+  there, and completing one does not complete the other.
 </p>
 
 <style>

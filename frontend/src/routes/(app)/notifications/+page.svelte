@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Notifications, as a page rather than a 360px dropdown.
    *
@@ -35,7 +36,7 @@
   import EmptyState from '$lib/v2/components/EmptyState.svelte';
   import Avatar from '$lib/v2/components/Avatar.svelte';
   import { relativeTime } from '$lib/v2/format.js';
-  import { BellOff, AtSign, MessageSquare, Bell, Check } from '@lucide/svelte';
+  import { BellOff, AtSign, MessageSquare, Bell, Check, LifeBuoy } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -49,7 +50,12 @@
   let unread = $derived(rows.filter((n) => n.read_at === null));
   let visible = $derived(filter === 'unread' ? unread : rows);
 
-  const ICON = { 'case.mentioned': AtSign, 'case.commented': MessageSquare };
+  const ICON = {
+    'case.mentioned': AtSign,
+    'case.commented': MessageSquare,
+    'support.replied': LifeBuoy,
+    'support.status_changed': LifeBuoy
+  };
 
   /**
    * "mentioned you" / "commented" for the verbs that exist; a readable
@@ -59,7 +65,13 @@
   function verbPhrase(n) {
     if (n.verb === 'case.mentioned') return 'mentioned you on';
     if (n.verb === 'case.commented') return 'commented on';
+    if (n.verb === 'support.replied') return 'replied to';
+    if (n.verb === 'support.status_changed') return 'updated';
     return `${n.verb.replace(/^[^.]+\./, '').replace(/_/g, ' ')}, `;
+  }
+
+  function isSupportNotification(n) {
+    return n.verb?.startsWith('support.');
   }
 
   /* Persist to a page action. `keepalive` so the write survives the navigation
@@ -128,8 +140,8 @@
       <EmptyState
         title={filter === 'unread' ? 'Nothing unread' : 'No notifications'}
         body={filter === 'unread'
-          ? 'Everything here has been read. Notifications arrive when somebody @mentions you on a ticket, or comments on one you are watching.'
-          : 'Notifications arrive when somebody @mentions you on a ticket, or comments on one you are watching. Watching happens automatically the first time you are mentioned.'}
+          ? 'Everything here has been read. Notifications arrive for CRM ticket activity and updates from BottleCRM Support.'
+          : 'Notifications arrive for CRM ticket activity and updates from BottleCRM Support.'}
       >
         {#snippet icon()}<BellOff size={21} />{/snippet}
         {#snippet actions()}
@@ -138,7 +150,8 @@
               Show read too
             </button>
           {/if}
-          <a class="v2-btn" href="/tickets">Go to tickets</a>
+          <a class="v2-btn" href={resolve('/tickets')}>Go to tickets</a>
+          <a class="v2-btn" href={resolve('/help')}>Get help</a>
         {/snippet}
       </EmptyState>
     {:else}
@@ -154,7 +167,9 @@
 
             <div class="body">
               <p class="line">
-                {#if n.actor}
+                {#if isSupportNotification(n)}
+                  <b class="system">BottleCRM Support</b>
+                {:else if n.actor}
                   <Avatar name={n.actor.name} size={17} />
                   <b>{n.actor.name}</b>
                 {:else}
@@ -163,7 +178,9 @@
                 {verbPhrase(n)}
                 {#if n.entity_name}
                   {#if n.resolved_link}
-                    <a href={n.resolved_link} onclick={() => markRead(n)}>{n.entity_name}</a>
+                    <a href={resolve(n.resolved_link)} onclick={() => markRead(n)}
+                      >{n.entity_name}</a
+                    >
                   {:else}
                     <span class="entity">{n.entity_name}</span>
                   {/if}

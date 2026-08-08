@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Tasks are the one list where the row itself is the work, so every row
    * carries the control that finishes it. v1 needed a click into a detail
@@ -45,7 +46,7 @@
     <span class="v2-num" style="color:var(--v2-rust)">{count(totals.overdue)}</span> overdue
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href="/tasks/new"><Plus />New task</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/tasks/new')}><Plus />New task</a>
   {/snippet}
 </PageHeader>
 
@@ -98,9 +99,9 @@
     >
       {#snippet icon()}<CircleCheck size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/tasks/new">New task</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/tasks/new')}>New task</a>
         {#if !data.showAll}
-          <a class="v2-btn" href="/tasks?all=1">Show completed</a>
+          <a class="v2-btn" href={resolve('/tasks?all=1')}>Show completed</a>
         {/if}
       {/snippet}
     </EmptyState>
@@ -155,7 +156,7 @@
               </td>
               <td data-m="title" style="white-space:normal;max-width:420px">
                 <a
-                  href="/tasks/{t.id}"
+                  href={resolve(`/tasks/${t.id}`)}
                   class="v2-table-primary"
                   style={t.is_done ? 'text-decoration:line-through' : ''}>{t.title}</a
                 >
@@ -165,7 +166,7 @@
               </td>
               <td>
                 {#if t.related}
-                  <a href={t.related.href} style="color:inherit">{t.related.name}</a>
+                  <a href={resolve(t.related.href)} style="color:inherit">{t.related.name}</a>
                   <span class="v2-table-secondary v2-task-kind">{t.related.kind}</span>
                 {:else}
                   <span class="v2-muted">—</span>
@@ -209,9 +210,9 @@
       <span class="v2-num">{count(data.showAll ? totals.count : totals.open)}</span>
       {data.showAll ? 'tasks' : 'open'}
       {#if !data.showAll}
-        · <a href="/tasks?all=1" style="color:inherit">include completed</a>
+        · <a href={resolve('/tasks?all=1')} style="color:inherit">include completed</a>
       {:else}
-        · <a href="/tasks" style="color:inherit">open only</a>
+        · <a href={resolve('/tasks')} style="color:inherit">open only</a>
       {/if}
     </p>
   {/if}

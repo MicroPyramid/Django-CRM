@@ -5,6 +5,9 @@ yarn.lock
 bun.lock
 bun.lockb
 
+# Local session artifacts
+.remember/
+
 # Generated API schema. drf-spectacular writes YAML, and the file name says
 # .json, so prettier picks the JSON parser and dies on line 1 instead of
 # reporting a formatting diff. That aborts `pnpm run lint` before eslint runs.

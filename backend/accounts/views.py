@@ -20,13 +20,12 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts import swagger_params
+from accounts import access, swagger_params
 from accounts.models import Account
 from accounts.serializer import (
     AccountCommentEditSwaggerSerializer,
@@ -435,28 +434,12 @@ class AccountDetailView(APIView):
             raise Http404("No such account.")
 
     def assert_account_access(self, account):
-        """Admins, the person who created it, and anyone assigned. Else 403.
+        """Delegates to `accounts.access`, which holds the one definition.
 
-        One check, because there were four and they disagreed. `get`, `put`,
-        `patch` and comment `post` each compared `request.profile`, a Profile,
-        against `account.created_by`, which is a FK to `User`. Those are never
-        equal, so the creator branch could not fire and creators were locked out
-        of their own accounts.
-
-        `delete()` and the list filter got the same comparison *right*. That is
-        the tell that this was a mistake and not a policy: the same non-admin
-        could watch an account sit in their list, be refused permission to open
-        it, and still delete it outright.
+        The attachment download view asks the same question, and four inline
+        copies is how the creator branch came to be dead in all four verbs.
         """
-        if is_org_admin(self.request.profile):
-            return
-        if self.request.profile.user_id == account.created_by_id:
-            return
-        if self.request.profile.id in {
-            profile.id for profile in account.assigned_to.all()
-        }:
-            return
-        raise PermissionDenied("You do not have Permission to perform this action")
+        access.assert_account_access(self.request.profile, account)
 
     @extend_schema(
         tags=["Accounts"],

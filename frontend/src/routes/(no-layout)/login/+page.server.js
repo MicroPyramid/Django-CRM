@@ -120,7 +120,7 @@ async function handleOAuthCallback(code, returnedState, cookies) {
       }
     );
 
-    const { access_token, refresh_token, user } = response.data;
+    const { access_token, refresh_token } = response.data;
 
     // Store JWT tokens in secure httpOnly cookies
     cookies.set('jwt_access', access_token, getCookieOptions(60 * 60 * 24)); // 1 day
@@ -209,7 +209,7 @@ export const actions = {
         { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
       );
       return { success: true };
-    } catch (error) {
+    } catch {
       // Always show success to user (backend also returns 200 always)
       return { success: true };
     }

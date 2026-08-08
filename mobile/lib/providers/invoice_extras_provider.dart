@@ -251,26 +251,109 @@ final productsProvider = AsyncNotifierProvider<ProductsNotifier, List<Product>>(
 );
 
 // ---------------------------------------------------------------------------
-// PDF templates, read-only
+// PDF templates
 // ---------------------------------------------------------------------------
 
-/// The catalogue only. There is no create, update or delete here on purpose:
-/// a template's body is raw HTML and CSS that renders into a PDF server-side,
-/// editing it is admin-only, and a two-pane markup editor is not a phone
-/// screen. Mobile shows which templates exist and which is the default.
-final invoiceTemplatesProvider = FutureProvider<List<InvoiceTemplate>>((
-  ref,
-) async {
-  final response = await ApiService().get(
-    '${ApiConfig.invoiceTemplates}?limit=50',
-  );
-  if (!response.success || response.data == null) {
-    throw Exception(response.message ?? 'Failed to load templates');
+/// The template catalogue and the three writes the phone owns.
+///
+/// **The markup is not among them.** `template_html` / `template_css` stay on
+/// the admin-only editor route, which this app never calls, so neither field is
+/// read here and neither is ever sent. The detail PUT is `partial=True`, so a
+/// field a payload omits is left alone: an edit from the phone changes the
+/// ordinary fields and leaves the markup as the web editor stored it. That is
+/// the whole reason a form on a phone is safe here, and it is the one property
+/// a change to this file must not break.
+///
+/// Every write is admin-only server-side (`_forbid_non_admin_template`). The
+/// screen hides the controls from everyone else, which is a UX hint; a member
+/// who reaches them anyway gets the 403's own message.
+class InvoiceTemplatesNotifier extends AsyncNotifier<List<InvoiceTemplate>> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<List<InvoiceTemplate>> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
   }
-  return _rows(
-    response.data!,
-  ).map(InvoiceTemplate.fromJson).toList(growable: false);
-});
+
+  Future<List<InvoiceTemplate>> _fetch() async {
+    final response = await _api.get('${ApiConfig.invoiceTemplates}?limit=50');
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load templates');
+    }
+    return _rows(
+      response.data!,
+    ).map(InvoiceTemplate.fromJson).toList(growable: false);
+  }
+
+  /// Returns null on success, the server's message otherwise.
+  ///
+  /// [logoPath] uploads the logo in the same request. It has to be multipart
+  /// because `logo` is an ImageField, and the ordinary fields ride along as
+  /// form fields rather than being sent in a second call: a JSON create
+  /// followed by a multipart update would leave a template with no logo behind
+  /// whenever the second call failed.
+  Future<String?> createTemplate(
+    InvoiceTemplateDraft draft, {
+    String? logoPath,
+  }) async {
+    final response = logoPath == null
+        ? await _api.post(ApiConfig.invoiceTemplates, draft.toPayload())
+        : await _api.postMultipart(
+            ApiConfig.invoiceTemplates,
+            fileField: 'logo',
+            filePath: logoPath,
+            fields: draft.toMultipartFields(),
+          );
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Save an edit. The draft carries a null `isDefault` on this path, so the
+  /// payload omits the key and the org's default is left where it is.
+  Future<String?> updateTemplate(
+    String id,
+    InvoiceTemplateDraft draft, {
+    String? logoPath,
+  }) async {
+    final url = ApiConfig.invoiceTemplate(id);
+    final response = logoPath == null
+        ? await _api.put(url, draft.toPayload())
+        : await _api.postMultipart(
+            url,
+            fileField: 'logo',
+            filePath: logoPath,
+            fields: draft.toMultipartFields(),
+            method: 'PUT',
+          );
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Make one template the org default.
+  ///
+  /// A swap rather than a toggle: the model clears `is_default` on every other
+  /// template in the org inside a transaction, so there is no call that turns
+  /// the flag off. Untoggling would leave the org without a default, which is
+  /// why neither client offers it.
+  Future<String?> setDefault(String id) async {
+    final response = await _api.put(ApiConfig.invoiceTemplate(id), const {
+      'is_default': true,
+    });
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final invoiceTemplatesProvider =
+    AsyncNotifierProvider<InvoiceTemplatesNotifier, List<InvoiceTemplate>>(
+      InvoiceTemplatesNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // Reports

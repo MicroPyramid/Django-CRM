@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Estimates, sorted so the one thing worth doing is at the top.
    *
@@ -49,7 +50,7 @@
     <!-- An estimate is raised from a deal, not typed from scratch here. The
          empty state has always said so. Send the button where estimates are
          born rather than to a form this page does not own. -->
-    <a class="v2-btn v2-btn-primary" href="/pipeline"><Plus />New estimate</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/pipeline')}><Plus />New estimate</a>
   {/snippet}
 </PageHeader>
 
@@ -104,7 +105,7 @@
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/pipeline">Start from a deal</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/pipeline')}>Start from a deal</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -131,7 +132,9 @@
                 </span>
               </td>
               <td>
-                <a href="/accounts/{e.account.id}" style="color:inherit">{e.account.name}</a>
+                <a href={resolve(`/accounts/${e.account.id}`)} style="color:inherit"
+                  >{e.account.name}</a
+                >
                 {#if e.opportunity}
                   <span class="v2-table-secondary" style="display:block">{e.opportunity.name}</span>
                 {/if}
@@ -139,7 +142,11 @@
               <td><Pill tone={ESTIMATE_STATUS_TONE[e.status]}>{e.status}</Pill></td>
               <td>
                 {#if e.converted_invoice}
-                  <a href="/invoices/{e.converted_invoice.id}" class="v2-num" style="color:inherit">
+                  <a
+                    href={resolve(`/invoices/${e.converted_invoice.id}`)}
+                    class="v2-num"
+                    style="color:inherit"
+                  >
                     {e.converted_invoice.invoice_number}
                   </a>
                 {:else if needsBilling(e)}

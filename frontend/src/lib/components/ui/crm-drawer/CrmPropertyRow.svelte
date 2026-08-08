@@ -6,7 +6,7 @@
   import { EditableMultiSelect } from '$lib/components/ui/editable-field/index.js';
   import { cn } from '$lib/utils.js';
   import { formatCurrency } from '$lib/utils/formatting.js';
-  import { parseDate, getLocalTimeZone } from '@internationalized/date';
+  import { parseDate } from '@internationalized/date';
 
   /**
    * @type {{

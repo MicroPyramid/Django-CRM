@@ -1,5 +1,5 @@
 <script>
-  import { Filter, X, ChevronDown, ChevronUp, Sparkles } from '@lucide/svelte';
+  import { Filter, X, ChevronDown, Sparkles } from '@lucide/svelte';
   import { cn } from '$lib/utils.js';
   import { Button } from '$lib/components/ui/button/index.js';
 

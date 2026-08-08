@@ -1,6 +1,8 @@
 import 'package:bottle_crm/data/models/auth_response.dart';
 import 'package:bottle_crm/data/models/profile.dart';
+import 'package:bottle_crm/data/models/access_token.dart';
 import 'package:bottle_crm/providers/profile_provider.dart';
+import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/screens/settings/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,17 +15,28 @@ import 'package:go_router/go_router.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> openProfile(WidgetTester tester) async {
+  Future<void> openProfile(WidgetTester tester, {bool bare = false}) async {
     final router = GoRouter(
       initialLocation: '/more',
       routes: [
         GoRoute(path: '/more', builder: (_, _) => const Text('the more sheet')),
         GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+        GoRoute(
+          path: '/more/profile/tokens',
+          builder: (_, _) => const Text('your tokens'),
+        ),
       ],
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [profileProvider.overrideWith(() => _FakeProfile())],
+        overrides: [
+          profileProvider.overrideWith(
+            () => bare ? _FakeBareProfile() : _FakeProfile(),
+          ),
+          // The token count on this screen watches the self-scoped list. Left
+          // real it would reach the network from a widget test.
+          myAccessTokensProvider.overrideWith(_FakeMyTokens.new),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -74,13 +87,72 @@ void main() {
     expect(find.text('Discard changes?'), findsNothing);
     expect(find.text('the more sheet'), findsOneWidget);
   });
+
+  group('the fields the web profile page has had all along', () {
+    testWidgets('names the teams you are on', (tester) async {
+      await openProfile(tester);
+      expect(find.text('Support, Onboarding'), findsOneWidget);
+    });
+
+    testWidgets('says when you last signed in', (tester) async {
+      await openProfile(tester);
+      expect(find.text('Last signed in'), findsOneWidget);
+      expect(find.text('Not recorded'), findsNothing);
+    });
+
+    testWidgets('draws both absences rather than leaving them blank', (
+      tester,
+    ) async {
+      await openProfile(tester, bare: true);
+      expect(find.text('None'), findsOneWidget);
+      expect(find.text('Not recorded'), findsOneWidget);
+    });
+
+    testWidgets('the token row leads to your own tokens, not the admin list', (
+      tester,
+    ) async {
+      // The web row used to point at /settings/api-tokens, which 403s a
+      // member. This one goes to the self-scoped screen.
+      await openProfile(tester);
+      final row = find.text('API tokens');
+      // `ensureVisible`, not `scrollUntilVisible`: the row is already built,
+      // just below the fold, and scrollUntilVisible drives the wrong
+      // scrollable on a screen with more than one.
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('your tokens'), findsOneWidget);
+    });
+  });
 }
 
 class _FakeProfile extends ProfileNotifier {
   @override
+  Future<Profile> build() async => Profile(
+    id: 'p1',
+    user: const AuthUser(
+      id: 'u1',
+      email: 'user@example.com',
+      name: 'Ada Lovelace',
+    ),
+    phone: '+1 555 0100',
+    teams: const ['Support', 'Onboarding'],
+    lastLogin: DateTime.utc(2026, 8, 6, 9, 30),
+  );
+}
+
+/// Somebody on no teams who has never signed in, so both absences are drawn
+/// rather than left blank.
+class _FakeBareProfile extends ProfileNotifier {
+  @override
   Future<Profile> build() async => const Profile(
     id: 'p1',
     user: AuthUser(id: 'u1', email: 'user@example.com', name: 'Ada Lovelace'),
-    phone: '+1 555 0100',
   );
+}
+
+class _FakeMyTokens extends MyAccessTokensNotifier {
+  @override
+  Future<List<AccessToken>> build() async => const [];
 }

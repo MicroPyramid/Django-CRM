@@ -92,6 +92,15 @@ void main() {
   });
 
   group('a file the user picked', () {
+    test('can be selected for a support form without uploading yet', () async {
+      final picked = file();
+      final result = await selectAttachment(pickFile: () async => picked);
+
+      expect(result.file, same(picked));
+      expect(result.error, isNull);
+      expect(client.sent, isNull);
+    });
+
     test('is sent as multipart under the target field', () async {
       final result = await pickAndUploadAttachment(
         target: AttachmentTarget.task,

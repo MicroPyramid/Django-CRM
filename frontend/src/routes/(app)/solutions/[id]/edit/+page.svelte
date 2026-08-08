@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing an article is editing its words. The two decisions about it,
    * approving it, and giving it to customers, are buttons on the article
@@ -38,14 +39,16 @@
 
 <PageHeader title="Edit article" record center width="760px">
   {#snippet crumb()}
-    <a href="/solutions/{data.article.id}"><ChevronLeft size={13} />{data.article.title}</a>
+    <a href={resolve(`/solutions/${data.article.id}`)}
+      ><ChevronLeft size={13} />{data.article.title}</a
+    >
   {/snippet}
   {#snippet sub()}
     {data.article.author || 'Unknown author'} · used on
     <span class="v2-num">{data.article.use_count}</span> tickets
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/solutions/{data.article.id}">Cancel</a>
+    <a class="v2-btn" href={resolve(`/solutions/${data.article.id}`)}>Cancel</a>
     <button
       class="v2-btn v2-btn-primary"
       type="submit"

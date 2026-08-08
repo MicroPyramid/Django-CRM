@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import '../../../app.css';
   import '$lib/v2/styles/v2.css';
   import imgLogo from '$lib/assets/images/logo.png';
@@ -18,7 +19,7 @@
 
 <div class="v2-root v2-auth">
   <div class="v2-auth-box">
-    <a href="/" class="v2-auth-brand">
+    <a href={resolve('/')} class="v2-auth-brand">
       <img src={imgLogo} alt="" />
       <b>BottleCRM</b>
     </a>
@@ -69,7 +70,7 @@
           </form>
         {/each}
 
-        <a href="/org/new" class="v2-auth-add">
+        <a href={resolve('/org/new')} class="v2-auth-add">
           <Plus />
           Create new organisation
         </a>
@@ -78,7 +79,7 @@
           <div class="v2-state-icon"><Building2 size={22} /></div>
           <h3>No organisations yet</h3>
           <p>Create your first workspace to start using BottleCRM.</p>
-          <a href="/org/new" class="v2-btn v2-btn-primary">
+          <a href={resolve('/org/new')} class="v2-btn v2-btn-primary">
             <Plus size={15} />
             Create organisation
           </a>
@@ -87,7 +88,7 @@
     </div>
 
     <div class="v2-auth-foot">
-      <a href="/logout" style="display:inline-flex;align-items:center;gap:5px">
+      <a href={resolve('/logout')} style="display:inline-flex;align-items:center;gap:5px">
         <LogOut size={13} /> Sign out
       </a>
     </div>

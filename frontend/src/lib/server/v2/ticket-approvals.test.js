@@ -3,9 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createApprovalRule, updateApprovalRule, deleteApprovalRule } = await import(
-  './ticket-approvals.js'
-);
+const { createApprovalRule, updateApprovalRule, deleteApprovalRule } =
+  await import('./ticket-approvals.js');
 
 const cookies = /** @type {any} */ ({ get: () => 'token' });
 const event = /** @type {any} */ ({ cookies });
@@ -96,9 +95,7 @@ describe('createApprovalRule', () => {
   });
 
   it('refuses a rule with no name before making a request', async () => {
-    await expect(createApprovalRule(event, { ...base, name: '' })).rejects.toThrow(
-      /needs a name/i
-    );
+    await expect(createApprovalRule(event, { ...base, name: '' })).rejects.toThrow(/needs a name/i);
     expect(apiRequest).not.toHaveBeenCalled();
   });
 });

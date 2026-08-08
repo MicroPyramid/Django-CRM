@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * An article, and where it is in the workflow.
    *
@@ -75,7 +76,7 @@
 
 <PageHeader title={article.title} record>
   {#snippet crumb()}
-    <a href="/solutions">Knowledge base</a>
+    <a href={resolve('/solutions')}>Knowledge base</a>
     <ChevronRight size={12} />
     <span>{SOLUTION_STATUS_LABEL[article.status]}</span>
   {/snippet}
@@ -89,7 +90,7 @@
     ].join(' · ')}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/solutions/{article.id}/edit">Edit</a>
+    <a class="v2-btn" href={resolve(`/solutions/${article.id}/edit`)}>Edit</a>
     {#if article.is_published && canRelease}
       <form method="POST" action="?/setPublished" use:enhance>
         <input type="hidden" name="published" value="false" />
@@ -145,7 +146,7 @@
           <div class="v2-card" style="overflow:hidden;max-width:70ch">
             {#each tickets as t (t.id)}
               <a
-                href="/tickets/{t.id}"
+                href={resolve(`/tickets/${t.id}`)}
                 style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
               >
                 <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>

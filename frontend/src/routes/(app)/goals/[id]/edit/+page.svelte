@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { untrack, tick } from 'svelte';
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -78,7 +79,7 @@
 
 {#if !data.can_edit}
   <PageHeader title="Edit goal">
-    {#snippet crumb()}<a href="/goals">Goals</a> ›{/snippet}
+    {#snippet crumb()}<a href={resolve('/goals')}>Goals</a> ›{/snippet}
   </PageHeader>
   <div class="v2-pad" style="padding-top:40px">
     <NextAction
@@ -88,7 +89,7 @@
   </div>
 {:else}
   <PageHeader title="Edit goal" center>
-    {#snippet crumb()}<a href="/goals">Goals</a> ›{/snippet}
+    {#snippet crumb()}<a href={resolve('/goals')}>Goals</a> ›{/snippet}
     {#snippet sub()}{data.goal.name}{/snippet}
   </PageHeader>
 
@@ -227,7 +228,7 @@
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:22px">
         <button class="v2-btn v2-btn-primary" type="submit">Save goal</button>
-        <a class="v2-btn" href="/goals">Cancel</a>
+        <a class="v2-btn" href={resolve('/goals')}>Cancel</a>
         <span class="v2-sub" style="margin-left:auto;font-size:12px">
           <span class="v2-num">{REQUIRED.filter((f) => !errors[f]).length}</span>
           of <span class="v2-num">{REQUIRED.length}</span> required fields done

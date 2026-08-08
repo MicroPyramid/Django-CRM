@@ -44,27 +44,11 @@
  * nothing in the codebase ever wrote. See `cases/signals.py`.
  */
 import { error, redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
+import { attachmentHref } from '$lib/server/v2/files.js';
 
 /** Statuses where somebody still owes the customer something. Mirrors `cases.views.OPEN_STATUSES`. */
 export const OPEN_STATUSES = ['New', 'Assigned', 'Pending'];
-
-/**
- * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
- * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too.
- * The file is served off `/media`, not `/api`. Same helper as leads/contacts/tasks.
- *
- * @param {string|null|undefined} path
- * @returns {string|null}
- */
-function fileUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (env.PUBLIC_DJANGO_API_URL ?? '').replace(/\/+$/, '');
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-}
 
 /**
  * @param {any} profile
@@ -266,7 +250,7 @@ export async function getTicket({ cookies }, id) {
       name: file.file_name ?? '',
       // Resolved to an absolute URL so the rail can offer it as a download; the
       // rail used to render the name as dead text even though the path was here.
-      url: fileUrl(file.file_path),
+      url: attachmentHref(file.id),
       at: file.created_at
     })),
     // `ActivitySerializer` names the time `timestamp`, not `created_at`, and
@@ -444,6 +428,50 @@ function toBody(values) {
  */
 export async function updateTicket({ cookies }, id, values) {
   return await apiRequest(`/cases/${id}/`, { method: 'PATCH', body: toBody(values) }, { cookies });
+}
+
+/**
+ * The parent/child tree this ticket sits in.
+ *
+ * Returns `{ root, focus_id }`. **`root` is the top of the whole tree, not this
+ * ticket**: `CaseTreeView` walks up to the highest ancestor in the org so a
+ * child URL still shows the full incident. The subtree that a close would
+ * actually touch has to be found inside it, which
+ * `routes/(app)/tickets/[id]/close.js` does.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ */
+export async function getTicketTree({ cookies }, id) {
+  return await apiRequest(`/cases/${id}/tree/`, {}, { cookies });
+}
+
+/**
+ * Close the ticket, and optionally every open descendant of it.
+ *
+ * `cascade` is always sent explicitly. The endpoint falls back to the org's
+ * `auto_close_children_on_parent_close` only when the key is ABSENT, so a
+ * caller that omits it hands the decision to a setting the person confirming
+ * never saw. The confirm step seeds its checkbox from that setting instead,
+ * which is what the setting is for, and then says what it is doing.
+ *
+ * `resolution_comment` lands in the `PARENT_CLOSED_CASCADE` activity row on
+ * each cascaded child, so it is the only explanation anyone opening one of
+ * those tickets will find.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ * @param {{ cascade: boolean, resolution_comment?: string }} args
+ */
+export async function closeTicketWithChildren({ cookies }, id, { cascade, resolution_comment }) {
+  return await apiRequest(
+    `/cases/${id}/close-with-children/`,
+    {
+      method: 'POST',
+      body: { cascade: Boolean(cascade), resolution_comment: resolution_comment ?? '' }
+    },
+    { cookies }
+  );
 }
 
 /**

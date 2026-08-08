@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal
 
 from rest_framework import serializers
@@ -218,6 +219,32 @@ class InvoiceTemplateListSerializer(serializers.ModelSerializer):
         return (user.name or "").strip() or user.email
 
 
+HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _validate_hex_color(value):
+    """Refuse anything that is not ``#RRGGBB``.
+
+    Both colour fields are substituted straight into the PDF stylesheet
+    (``pdf.py`` does ``css_content.replace("#3B82F6", template.primary_color)``),
+    so a value the browser will not parse does not fail loudly, it silently
+    prints every invoice in the org with a broken accent colour. The model is
+    ``max_length=7`` and nothing else, which accepted ``"purple"`` happily.
+
+    All three clients already constrain this: both web forms use
+    ``input type="color"`` and the phone picks from swatches, so each one can
+    only ever submit six hex digits. That made this the last field where the
+    only thing standing between a typo and a broken PDF was a client, which is
+    the shape ``API Validation & Authorization`` exists to rule out.
+    """
+    value = (value or "").strip()
+    if not HEX_COLOR.match(value):
+        raise serializers.ValidationError(
+            "Use a six digit hex colour, for example #3B82F6."
+        )
+    return value
+
+
 class InvoiceTemplateCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating Invoice Templates"""
 
@@ -235,6 +262,12 @@ class InvoiceTemplateCreateSerializer(serializers.ModelSerializer):
             "footer_text",
             "is_default",
         )
+
+    def validate_primary_color(self, value):
+        return _validate_hex_color(value)
+
+    def validate_secondary_color(self, value):
+        return _validate_hex_color(value)
 
     def create(self, validated_data):
         request = self.context.get("request")

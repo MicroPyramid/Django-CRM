@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { listOrgTokens, createToken, revokeToken } from '$lib/server/v2/tokens.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
+import { expiryFromChoice, scopesFromChoice } from '$lib/v2/token-rules.js';
 
 /**
  * API tokens (admin oversight).
@@ -13,40 +14,6 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  */
 export async function load({ cookies }) {
   return await listOrgTokens({ cookies });
-}
-
-/**
- * Turn a coarse expiry choice into an ISO datetime the API will accept, or null
- * for "never". Kept coarse on purpose. A date picker is more precision than a
- * token expiry needs, and "never" is named rather than left as an empty field
- * so the riskiest choice is a deliberate one.
- *
- * @param {string | undefined} choice
- * @returns {string | null}
- */
-function expiryFromChoice(choice) {
-  const days = { 30: 30, 90: 90, 365: 365 }[choice ?? ''];
-  if (!days) return null;
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
-}
-
-/**
- * Turn the access choice into the scope list the API enforces.
- *
- * `common/scopes.py` reads `<resource>:<action>` and treats an empty list as
- * unrestricted, which is what every token issued before enforcement carries.
- * The backend understands per-resource scopes too; this form deliberately
- * offers only the two choices that are worth a radio button, because a picker
- * listing thirty resources is a worse question than "may it change anything?".
- * A caller who wants `leads:read` can create the token through the API.
- *
- * @param {string | undefined} choice
- * @returns {string[]}
- */
-function scopesFromChoice(choice) {
-  return choice === 'read' ? ['*:read'] : [];
 }
 
 /** @type {import('./$types').Actions} */

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
@@ -6,6 +7,7 @@
   import Avatar from '$lib/v2/components/Avatar.svelte';
   import { relativeDays, shortAge, longDate, relativeTime } from '$lib/v2/format.js';
   import { PRIORITY_TONE, CASE_STATUS_TONE } from '$lib/v2/enums.js';
+  import { cascadeSummary } from './close.js';
   import { ChevronRight, Lock, Paperclip, Pencil, Ticket, X } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -13,6 +15,26 @@
 
   let { ticket, conversation, articles, alsoOpen, contacts, attachments, activity, canReply } =
     $derived(data);
+
+  /*
+   * Closing a parent takes a confirm step, because it can close other people's
+   * tickets. `data.close` is present only when the ticket has children, so an
+   * ordinary ticket keeps the one-click Close it always had.
+   *
+   * The checkbox starts where the org set it
+   * (`auto_close_children_on_parent_close`), which is the only place that
+   * setting reaches a web user, and the person closing can always move it. It
+   * is disabled when nothing linked is open, since there is nothing for a
+   * cascade to do.
+   */
+  let closePanel = $state(false);
+  let cascade = $state(false);
+  let hasOpenChildren = $derived((data.close?.descendants ?? []).length > 0);
+
+  function openClosePanel() {
+    cascade = hasOpenChildren && data.close?.cascade_default === true;
+    closePanel = true;
+  }
 
   /*
    * The composer owns its own text rather than reading it back from `data`, so
@@ -114,21 +136,29 @@
     {/if}
   {/snippet}
   {#snippet crumb()}
-    <a href="/tickets">Tickets</a>
+    <a href={resolve('/tickets')}>Tickets</a>
     {#if ticket.account}
       <ChevronRight size={12} />
-      <a href="/accounts/{ticket.account.id}">{ticket.account.name}</a>
+      <a href={resolve(`/accounts/${ticket.account.id}`)}>{ticket.account.name}</a>
     {/if}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href="/tickets/{ticket.id}/edit"><Pencil size={12} />Edit</a>
+    <a class="v2-btn" href={resolve(`/tickets/${ticket.id}/edit`)}><Pencil size={12} />Edit</a>
     {#if ticket.is_open}
       <form method="POST" action="?/setStatus" use:enhance style="display:contents">
         {#if ticket.status !== 'Pending'}
           <button class="v2-btn" name="status" value="Pending">Set to pending</button>
         {/if}
-        <button class="v2-btn v2-btn-primary" name="status" value="Closed">Close</button>
+        {#if !data.close}
+          <button class="v2-btn v2-btn-primary" name="status" value="Closed">Close</button>
+        {/if}
       </form>
+      <!-- A parent ticket closes through a confirm step, since the same click
+           can close tickets belonging to other people. Outside the form above
+           so this button never submits it. -->
+      {#if data.close && !closePanel}
+        <button class="v2-btn v2-btn-primary" type="button" onclick={openClosePanel}>Close</button>
+      {/if}
     {:else}
       <form method="POST" action="?/setStatus" use:enhance style="display:contents">
         <button class="v2-btn" name="status" value="New">Reopen</button>
@@ -168,6 +198,86 @@
           >
             {form.error}
           </p>
+        {/if}
+
+        {#if form?.closed}
+          <p class="v2-card" style="padding:10px 13px;margin-bottom:16px;font-size:13px">
+            {form.closed}
+          </p>
+        {/if}
+
+        <!--
+          The confirm step for closing a parent. It names the tickets that go
+          with it before anything happens, because they may belong to someone
+          else and nobody is asked twice.
+
+          The list is the subtree the API would actually close: open, active
+          descendants of THIS ticket. Not the whole tree it sits in, which is
+          what `/tree/` returns and what the earlier unwired version of this
+          feature showed.
+        -->
+        {#if closePanel && data.close}
+          <div class="v2-card v2-close-panel">
+            <form
+              method="POST"
+              action="?/closeWithChildren"
+              use:enhance={() =>
+                async ({ update }) => {
+                  await update();
+                  closePanel = false;
+                }}
+            >
+              <div style="font-weight:600;font-size:13.5px">Close {ticket.name}</div>
+              <p class="v2-sub" style="font-size:12.5px;margin:6px 0 0;line-height:1.5">
+                {cascadeSummary({
+                  count: data.close.descendants.length,
+                  truncated: data.close.truncated
+                })}
+              </p>
+
+              {#if hasOpenChildren}
+                <ul class="v2-close-list">
+                  {#each data.close.descendants as child (child.id)}
+                    <li>
+                      <span class="v2-close-name">{child.name}</span>
+                      <Pill tone={CASE_STATUS_TONE[child.status]}>{child.status}</Pill>
+                    </li>
+                  {/each}
+                </ul>
+
+                <label class="v2-close-check">
+                  <input type="checkbox" name="cascade" bind:checked={cascade} />
+                  <span>
+                    <span style="font-weight:600">Close these as well</span>
+                    <span class="v2-sub" style="display:block;font-size:11.5px;margin-top:2px">
+                      Each one gets a note saying it was closed with this ticket. Leave it unticked
+                      to close only this one.
+                    </span>
+                  </span>
+                </label>
+
+                <div class="v2-field" style="margin-top:12px">
+                  <label for="close-comment">Why (optional)</label>
+                  <textarea
+                    id="close-comment"
+                    class="v2-input"
+                    name="resolution_comment"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="Recorded against every ticket closed with this one"></textarea>
+                </div>
+              {/if}
+
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <button class="v2-btn v2-btn-primary" type="submit">
+                  {cascade ? 'Close all of them' : 'Close this ticket'}
+                </button>
+                <button class="v2-btn" type="button" onclick={() => (closePanel = false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         {/if}
 
         {#if alert}
@@ -362,7 +472,7 @@
       <div class="v2-label v2-rail-head">Account</div>
       <a
         class="v2-rail-row"
-        href="/accounts/{ticket.account.id}"
+        href={resolve(`/accounts/${ticket.account.id}`)}
         style="color:inherit;text-decoration:none"
       >
         <Avatar name={ticket.account.name} size={29} />
@@ -384,7 +494,11 @@
     {#if contacts.length}
       <div class="v2-label v2-rail-head">People</div>
       {#each contacts as c (c.id)}
-        <a class="v2-rail-row" href="/contacts/{c.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/contacts/${c.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <Avatar name={c.name} size={26} />
           <div style="font-size:12.5px;font-weight:550">{c.name}</div>
         </a>
@@ -396,7 +510,11 @@
            called these "suggested"; suggestions are a different endpoint. -->
       <div class="v2-label v2-rail-head">Linked articles</div>
       {#each articles as a (a.id)}
-        <a class="v2-rail-row" href="/solutions/{a.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/solutions/${a.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <div>
             <div style="font-size:12.5px;font-weight:550;line-height:1.35">{a.title}</div>
             <div class="v2-sub" style="font-size:11px">
@@ -419,7 +537,7 @@
             class="v2-rail-row att"
             href={f.url}
             target="_blank"
-            rel="noreferrer noopener"
+            rel="external noreferrer noopener"
             style="color:inherit;text-decoration:none"
           >
             <Paperclip size={13} />
@@ -437,7 +555,11 @@
     {#if alsoOpen.length}
       <div class="v2-label v2-rail-head">Also open here</div>
       {#each alsoOpen as t (t.id)}
-        <a class="v2-rail-row" href="/tickets/{t.id}" style="color:inherit;text-decoration:none">
+        <a
+          class="v2-rail-row"
+          href={resolve(`/tickets/${t.id}`)}
+          style="color:inherit;text-decoration:none"
+        >
           <div>
             <div style="font-size:12.5px;font-weight:550;line-height:1.35">{t.name}</div>
             <div class="v2-sub" style="font-size:11px">
@@ -465,6 +587,50 @@
 </div>
 
 <style>
+  /* The confirm step for closing a parent. Everything in it stacks, so it
+     holds at 390px without a media query of its own. */
+  .v2-close-panel {
+    padding: 15px 16px;
+    margin-bottom: 18px;
+  }
+  .v2-close-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .v2-close-list li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+  }
+  /* The name truncates and the status pill never does: which tickets these are
+     matters less than the fact that they are open. */
+  .v2-close-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2-close-check {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    margin-top: 13px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .v2-close-check input {
+    margin-top: 2px;
+    flex: none;
+  }
+
   /* Identity mark for a ticket that has no account to show a face for. */
   .ticket-glyph {
     display: grid;

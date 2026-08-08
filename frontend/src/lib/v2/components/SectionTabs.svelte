@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { page } from '$app/state';
   import { TAB_SETS } from '$lib/v2/tabs.js';
 
@@ -30,7 +32,10 @@
 
 <nav class="v2-tabs" aria-label="Section">
   {#each tabs as tab (tab.href)}
-    <a href={tab.href} aria-current={isActive(tab.href, tab.exact) ? 'page' : undefined}>
+    <a
+      href={resolve(asInternalPath(tab.href))}
+      aria-current={isActive(tab.href, tab.exact) ? 'page' : undefined}
+    >
       {tab.label}
       {#if tab.count && counts[tab.count]}
         <span class="v2-tab-count v2-num">{counts[tab.count]}</span>

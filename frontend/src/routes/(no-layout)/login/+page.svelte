@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import '../../../app.css';
   import '$lib/v2/styles/v2.css';
   import { enhance } from '$app/forms';
@@ -45,7 +46,7 @@
 
 <div class="v2-root v2-auth">
   <div class="v2-auth-box">
-    <a href="/" class="v2-auth-brand">
+    <a href={resolve('/')} class="v2-auth-brand">
       <img src={imgLogo} alt="" />
       <b>BottleCRM</b>
     </a>
@@ -60,6 +61,7 @@
            Ember; the whole button is the one Ember action on this screen. -->
       <a
         href={data['google_url']}
+        rel="external"
         onclick={handleGoogleLogin}
         class="v2-btn v2-btn-primary v2-btn-block"
         style:pointer-events={isLoading ? 'none' : null}

@@ -231,8 +231,8 @@
         </div>
         <p class="v2-sub" style="font-size:11.5px;margin-top:11px;line-height:1.5">
           These seven are the whole set. Anything else between percent signs is left exactly as
-          written and goes out that way. The server does not guess, on purpose, so a typo is
-          visible in the composer rather than a blank in the customer's inbox.
+          written and goes out that way. The server does not guess, on purpose, so a typo is visible
+          in the composer rather than a blank in the customer's inbox.
         </p>
       </div>
     </div>

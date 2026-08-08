@@ -56,15 +56,7 @@ describe('every descriptor agrees with its module allow-list', () => {
       // Params a page's own `load` interprets rather than forwarding to the
       // API. `archived` is documents' opt-in to seeing archived rows, the
       // same shape as contacts' `inactive`.
-      const VIEW_PARAMS = [
-        'all',
-        'inactive',
-        'archived',
-        'visibility',
-        'view',
-        'open',
-        'rotten'
-      ];
+      const VIEW_PARAMS = ['all', 'inactive', 'archived', 'visibility', 'view', 'open', 'rotten'];
       for (const preset of FILTERS[pageKey].presets) {
         for (const key of Object.keys(preset.params)) {
           if (VIEW_PARAMS.includes(key)) continue;

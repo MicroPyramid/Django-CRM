@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * A person, and everything that person is involved in.
    *
@@ -169,10 +170,10 @@
     <Avatar name={contact.name} size={42} />
   {/snippet}
   {#snippet crumb()}
-    <a href="/contacts">Contacts</a>
+    <a href={resolve('/contacts')}>Contacts</a>
     <ChevronRight size={12} />
     {#if contact.account}
-      <a href="/accounts/{contact.account.id}">{contact.account.name}</a>
+      <a href={resolve(`/accounts/${contact.account.id}`)}>{contact.account.name}</a>
     {:else if contact.organization}
       <span>{contact.organization}</span>
     {:else}
@@ -198,7 +199,9 @@
     {:else if contact.phone}
       <a class="v2-btn" href="tel:{contact.phone}"><Phone />Call</a>
     {/if}
-    <a class="v2-btn v2-btn-primary" href="/contacts/{contact.id}/edit"><Pencil />Edit</a>
+    <a class="v2-btn v2-btn-primary" href={resolve(`/contacts/${contact.id}/edit`)}
+      ><Pencil />Edit</a
+    >
   {/snippet}
 </PageHeader>
 
@@ -221,13 +224,15 @@
         <div class="v2-label" style="margin-bottom:10px">
           Deals they are named on
           {#if openDeals.length}
-            <span class="v2-num" style="margin-left:6px">{money(openPipeline, data.org.currency)}</span> open
+            <span class="v2-num" style="margin-left:6px"
+              >{money(openPipeline, data.org.currency)}</span
+            > open
           {/if}
         </div>
         <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
           {#each deals as d (d.id)}
             <a
-              href="/pipeline/{d.id}"
+              href={resolve(`/pipeline/${d.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <div style="flex:1;min-width:0">
@@ -243,7 +248,9 @@
                     : ''}
                 </div>
               </div>
-              <span class="v2-num" style="font-weight:600;font-size:13px">{money(d.amount, d.currency)}</span>
+              <span class="v2-num" style="font-weight:600;font-size:13px"
+                >{money(d.amount, d.currency)}</span
+              >
             </a>
           {:else}
             <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
@@ -271,7 +278,7 @@
                  wired and had nowhere to go, which is what made tasks the
                  module to do next. -->
             <a
-              href="/tasks/{t.id}"
+              href={resolve(`/tasks/${t.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <span style="flex:1;font-size:13px;min-width:0">{t.title}</span>
@@ -309,7 +316,7 @@
             <!-- A link again: tickets is wired, so a real id sent to
                  `/tickets/<uuid>` opens the ticket. -->
             <a
-              href="/tickets/{t.id}"
+              href={resolve(`/tickets/${t.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
@@ -418,7 +425,12 @@
                 </span>
                 <div class="tl-body">
                   {#if e.type === 'file' && e.href}
-                    <a class="tl-file" href={e.href} target="_blank" rel="noreferrer noopener">
+                    <a
+                      class="tl-file"
+                      href={resolve(e.href)}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
                       {e.body}
                     </a>
                   {:else}
@@ -448,14 +460,19 @@
       <dt>Account</dt>
       <dd>
         {#if contact.account}
-          <a href="/accounts/{contact.account.id}" style="color:inherit">{contact.account.name}</a>
-        {:else}, {/if}
+          <a href={resolve(`/accounts/${contact.account.id}`)} style="color:inherit"
+            >{contact.account.name}</a
+          >
+        {:else},
+        {/if}
       </dd>
       {#if contact.other_accounts.length}
         <dt>Also at</dt>
         <dd>
           {#each contact.other_accounts as other, i (other.id)}
-            {i > 0 ? ', ' : ''}<a href="/accounts/{other.id}" style="color:inherit">{other.name}</a>
+            {i > 0 ? ', ' : ''}<a href={resolve(`/accounts/${other.id}`)} style="color:inherit"
+              >{other.name}</a
+            >
           {/each}
         </dd>
       {/if}
@@ -469,17 +486,21 @@
       <dt>Email</dt>
       <dd style="font-size:12px;word-break:break-all">
         {#if contact.email}<a href="mailto:{contact.email}" style="color:inherit">{contact.email}</a
-          >{:else}, {/if}
+          >{:else},
+        {/if}
       </dd>
       <dt>Phone</dt>
       <dd class="v2-num" style="font-size:12px">
         {#if contact.phone}<a href="tel:{contact.phone}" style="color:inherit">{contact.phone}</a
-          >{:else}, {/if}
+          >{:else},
+        {/if}
       </dd>
       {#if contact.linkedin_url}
         <dt>LinkedIn</dt>
         <dd style="font-size:12px;word-break:break-all">
-          <a href={contact.linkedin_url} rel="noreferrer noopener" target="_blank">Profile</a>
+          <a href={contact.linkedin_url} rel="external noreferrer noopener" target="_blank"
+            >Profile</a
+          >
         </dd>
       {/if}
       <dt>Owner</dt>
@@ -510,7 +531,7 @@
       {#each colleagues as c (c.id)}
         <a
           class="v2-rail-row"
-          href="/contacts/{c.id}"
+          href={resolve(`/contacts/${c.id}`)}
           style="color:inherit;text-decoration:none;align-items:center"
         >
           <Avatar name={c.name} size={27} />

@@ -10,7 +10,6 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers, status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -33,7 +32,7 @@ from common.serializer import (
 )
 from common.utils import COUNTRIES, create_attachment
 from common.validators import date_param, payload_id_list, uuid_list_param
-from contacts import swagger_params
+from contacts import access, swagger_params
 from contacts.models import Contact
 from contacts.serializer import (
     ContactCommentEditSwaggerSerializer,
@@ -295,41 +294,18 @@ class ContactDetailView(APIView):
             raise Http404("No such contact.")
 
     def assert_contact_access(self, contact):
-        """Who may work on this person's record.
+        """Delegates to `contacts.access`, which holds the one definition.
 
-        One predicate for every verb, because the divergence was the bug. The
-        list filter and `delete` compared `created_by` (a User) against
-        `request.profile.user`, correctly. `get`, `put`, `patch` and the
-        comment endpoint compared it against `request.profile` -- a Profile is
-        never equal to a User, so those four branches could only ever be False.
-        The result a non-admin actually saw: their own contacts listed on the
-        index, 403 on opening any of them, and a successful delete on the same
-        record they had just been refused a look at.
-
-        Assignment to the account the person belongs to counts as access. That
-        rule was already here on `get` alone; whoever owns the company owns the
-        conversation with the people at it, and there is no reading under which
-        that is true for viewing but false for editing.
+        The attachment download view asks the same question. Four verbs once
+        carried four copies of this check and all four had the same dead
+        branch, which is the reason it lives in exactly one place now.
         """
-        profile = self.request.profile
-        if is_org_admin(profile):
-            return
-        if profile.user_id == contact.created_by_id:
-            return
-        if profile.id in {assignee.id for assignee in contact.assigned_to.all()}:
-            return
-        my_accounts = set(profile.account_assigned_users.values_list("id", flat=True))
-        if my_accounts & self.account_ids(contact):
-            return
-        raise PermissionDenied("You do not have Permission to perform this action")
+        access.assert_contact_access(self.request.profile, contact)
 
     @staticmethod
     def account_ids(contact):
         """Every account this contact is joined to, by either route."""
-        accounts = set(contact.account_contacts.values_list("id", flat=True))
-        if contact.account_id:
-            accounts.add(contact.account_id)
-        return accounts
+        return access.contact_account_ids(contact)
 
     def related_deals(self, contact):
         return [

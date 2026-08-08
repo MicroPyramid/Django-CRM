@@ -1,6 +1,7 @@
 <script>
+  import { SvelteSet } from 'svelte/reactivity';
+  import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
   import { Loader2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
@@ -75,14 +76,14 @@
   }
 
   function toggle(/** @type {string} */ id) {
-    const next = new Set(selectedIds);
+    const next = new SvelteSet(selectedIds);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     selectedIds = next;
   }
 
   function selectAllInCurrency(/** @type {string} */ currency) {
-    const next = new Set(selectedIds);
+    const next = new SvelteSet(selectedIds);
     for (const e of entries) {
       if (e.currency === currency) next.add(e.id);
     }
@@ -113,7 +114,7 @@
       const body = await res.json();
       toast.success(`Draft invoice ${body.invoice_number} created.`);
       open = false;
-      await goto(`/invoices/${body.invoice_id}`);
+      await goto(resolve(`/invoices/${body.invoice_id}`));
     } finally {
       submitting = false;
     }

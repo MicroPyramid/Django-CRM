@@ -108,6 +108,19 @@ void main() {
       expect(_withLink('/tickets/case-9').ticketId, 'case-9');
     });
 
+    test('product support resolves without becoming a CRM ticket', () {
+      final notification = _withLink('/help/support-9');
+      expect(notification.ticketId, isNull);
+      expect(notification.destinationPath, '/help/support-9');
+    });
+
+    test('a legacy /support/ link resolves to the renamed help page', () {
+      // Written before the page was renamed from support to help.
+      final notification = _withLink('/support/support-9');
+      expect(notification.ticketId, isNull);
+      expect(notification.destinationPath, '/help/support-9');
+    });
+
     test('a legacy /cases/ link resolves to the same ticket', () {
       // Written before the producer was fixed. No client serves `/cases`, so
       // leaving these unresolved would mean every old row opens nothing.
@@ -212,8 +225,23 @@ void main() {
       },
     );
 
-    test('only the two verbs that exist are declared', () {
-      expect(producedVerbs, ['case.mentioned', 'case.commented']);
+    test('only verbs with active producers are declared', () {
+      expect(producedVerbs, [
+        'case.mentioned',
+        'case.commented',
+        'support.replied',
+        'support.status_changed',
+      ]);
+    });
+
+    test('support updates are attributed to BottleCRM Support', () {
+      final notification = AppNotification(
+        id: 'support-1',
+        verb: 'support.replied',
+        createdAt: DateTime.utc(2026, 8, 8),
+      );
+
+      expect(notification.displayActorName, 'BottleCRM Support');
     });
   });
 

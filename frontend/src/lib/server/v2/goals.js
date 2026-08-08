@@ -121,16 +121,36 @@ function toGoal(g) {
   };
 }
 
-/** A leaderboard row, with `user` collapsed from a nested object to a name. */
+/**
+ * A leaderboard row, with `user` collapsed from a nested object to a name.
+ *
+ * `user.name` used to be the person's email address, and the row carried that
+ * same address again under `email`, so this list printed raw addresses. The
+ * endpoint now sends `User.name` (falling back to the email itself when a user
+ * has none) and no longer sends `email` at all, so there is nothing left to
+ * fall back to here.
+ */
 function toLeaderRow(r) {
   return {
     rank: r.rank,
     goal_id: r.goal_id,
-    user: r.user?.name || r.user?.email || 'Unknown',
+    user: r.user?.name || 'Unknown',
     target: Number(r.target ?? 0),
     achieved: Number(r.achieved ?? 0),
     percent: r.percent ?? 0
   };
+}
+
+/**
+ * A Date as `YYYY-MM-DD`, so it compares against the API's date-only fields.
+ * `toISOString()` would convert to UTC first and hand back yesterday for
+ * anywhere east of Greenwich for part of every day.
+ *
+ * @param {Date} d
+ */
+function localDate(d) {
+  const pad = (/** @type {number} */ n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /** Active first, then most-urgent status, then furthest along, the mock order. */
@@ -152,9 +172,14 @@ function byUrgency(a, b) {
  * @param {ReturnType<typeof toGoal>[]} goals
  */
 function computeTotals(goals) {
-  const now = Date.now();
+  // Compared as calendar dates, not instants. `period_end` is a date-only
+  // field, so `new Date(period_end)` is midnight UTC, and measuring that
+  // against `Date.now()` dropped a goal out of `behind` part-way through its
+  // own final day. A goal ending today is still one somebody can act on, which
+  // is the whole point of counting it.
+  const today = localDate(new Date());
   const active = goals.filter((g) => g.is_active);
-  const behindPace = (g) => g.status === 'behind' && new Date(g.period_end).getTime() >= now;
+  const behindPace = (g) => g.status === 'behind' && g.period_end >= today;
   return {
     count: goals.length,
     active: active.length,

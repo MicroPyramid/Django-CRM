@@ -389,6 +389,157 @@ void main() {
         isNot(contains('script')),
       );
     });
+
+    test('the editable text fields come off the list row', () async {
+      // The form pre-fills from the catalogue rather than a detail call, which
+      // only works while the list serializer carries these three.
+      client.body = '''
+      {"count": 1, "results": [
+        {"id": "t1", "name": "House style", "default_notes": "Thanks.",
+         "default_terms": "Net 30", "footer_text": "Ask for Dana"}
+      ]}''';
+
+      final t = (await readTemplates()).single;
+
+      expect(t.defaultNotes, 'Thanks.');
+      expect(t.defaultTerms, 'Net 30');
+      expect(t.footerText, 'Ask for Dana');
+    });
+
+    group('the draft a form submits', () {
+      const draft = InvoiceTemplateDraft(
+        name: '  House style  ',
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1E40AF',
+        defaultNotes: 'Thanks.',
+      );
+
+      test('never names either markup field', () {
+        // The whole reason a template form on a phone is safe: the PUT is
+        // partial, so a key the payload omits is a key the serializer never
+        // sees, and the web editor's markup survives a save from here.
+        final payload = draft.toPayload();
+
+        expect(payload.containsKey('template_html'), isFalse);
+        expect(payload.containsKey('template_css'), isFalse);
+      });
+
+      test('trims the name and keeps the rest verbatim', () {
+        final payload = draft.toPayload();
+
+        expect(payload['name'], 'House style');
+        expect(payload['primary_color'], '#3B82F6');
+        expect(payload['default_notes'], 'Thanks.');
+      });
+
+      test('omits is_default when the form does not own it', () {
+        // An edit sends null, and an absent key is what leaves the org's
+        // current default where it is. Sending `false` would demote it.
+        expect(draft.toPayload().containsKey('is_default'), isFalse);
+      });
+
+      test('sends is_default when the create form does own it', () {
+        const creating = InvoiceTemplateDraft(
+          name: 'New',
+          primaryColor: '#3B82F6',
+          secondaryColor: '#1E40AF',
+          isDefault: false,
+        );
+
+        expect(creating.toPayload()['is_default'], isFalse);
+      });
+
+      test('spells booleans out for a multipart body', () {
+        const creating = InvoiceTemplateDraft(
+          name: 'New',
+          primaryColor: '#3B82F6',
+          secondaryColor: '#1E40AF',
+          isDefault: true,
+        );
+
+        expect(creating.toMultipartFields()['is_default'], 'true');
+      });
+    });
+
+    group('the hex colour rule', () {
+      // Mirrors `_validate_hex_color` in the serializer, which is the check
+      // that counts. Both directions, since a rule that only ever says yes is
+      // the shape that has bitten this codebase before.
+      test('accepts six hex digits in either case', () {
+        expect(InvoiceTemplateDraft.isHexColor('#3B82F6'), isTrue);
+        expect(InvoiceTemplateDraft.isHexColor('#a1b2c3'), isTrue);
+        expect(InvoiceTemplateDraft.isHexColor('  #000000  '), isTrue);
+      });
+
+      test('refuses a colour name, a short form and a missing hash', () {
+        expect(InvoiceTemplateDraft.isHexColor('purple'), isFalse);
+        expect(InvoiceTemplateDraft.isHexColor('#abc'), isFalse);
+        expect(InvoiceTemplateDraft.isHexColor('3B82F6'), isFalse);
+        expect(InvoiceTemplateDraft.isHexColor(''), isFalse);
+      });
+
+      test('refuses something that would break the PDF stylesheet', () {
+        // `pdf.py` substitutes this straight into the CSS, so the seven
+        // characters the column allows are seven characters of stylesheet.
+        expect(InvoiceTemplateDraft.isHexColor('}a{b:c'), isFalse);
+      });
+    });
+
+    group('the writes', () {
+      const feed =
+          '{"count": 1, "results": [{"id": "t1", "name": "House style"}]}';
+      const draft = InvoiceTemplateDraft(
+        name: 'House style',
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1E40AF',
+      );
+
+      Future<InvoiceTemplatesNotifier> notifier() async {
+        client.body = feed;
+        await readTemplates();
+        return container.read(invoiceTemplatesProvider.notifier);
+      }
+
+      test('an edit PUTs to the template it names', () async {
+        final n = await notifier();
+        client.sent.clear();
+
+        expect(await n.updateTemplate('t1', draft), isNull);
+
+        final write = client.sent.first;
+        expect(write.method, 'PUT');
+        expect(write.url.path, endsWith('/invoices/templates/t1/'));
+      });
+
+      test('setting the default sends only that flag', () async {
+        // A swap, not a field write: the model clears `is_default` on every
+        // other row. Sending anything else here would carry stale values from
+        // whenever the list was last loaded.
+        final n = await notifier();
+        client.sent.clear();
+
+        expect(await n.setDefault('t1'), isNull);
+
+        final write = client.sent.first as http.Request;
+        expect(jsonDecode(write.body), {'is_default': true});
+      });
+
+      test(
+        'a refused write returns the server message and does not throw',
+        () async {
+          final n = await notifier();
+          client.status = 403;
+          client.body =
+              '{"error": true, "message": "Only an administrator can change '
+              'invoice templates."}';
+
+          expect(
+            await n.createTemplate(draft),
+            contains('Only an administrator'),
+          );
+        },
+      );
+    });
   });
 
   group('reports', () {

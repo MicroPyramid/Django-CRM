@@ -1,20 +1,22 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * What happens when a ticket blows its target.
    *
    * One EscalationPolicy per priority, enforced by a unique constraint. The
    * useful question is not "is there a policy", there always is at most one
-   * per priority, but "does it do anything", and the model allows three
-   * separate ways for the answer to be no:
+   * per priority, but "does it do anything", and the model allows two separate
+   * ways for the answer to be no:
    *
-   *   · the action is `reassign` but the target FK is null (SET_NULL empties
-   *     it when a profile is removed, silently)
-   *   · the action is `notify` with no individual and no team to notify
-   *   · is_active is false
+   *   · is_active is false, so the scan skips the policy whole
+   *   · the half's target FK is null, whatever its action and whatever the
+   *     notify team (SET_NULL empties it when a profile is removed, silently)
    *
-   * All three look identical in v1's form, a row of selects with something
-   * chosen. Here the breach count sits next to the outcome, so "11 breaches,
-   * nobody told" is one line rather than two screens.
+   * Both look identical in v1's form, a row of selects with something chosen.
+   * Here the breach count sits next to the outcome, so "11 breaches, nobody
+   * told" is one line rather than two screens. The rule itself lives in
+   * `outcome.js`, with its tests: see the note there for the three combinations
+   * this page used to report as live while the engine did nothing with them.
    *
    * Only four priorities exist and each may have at most one policy
    * (`(org, priority)` unique constraint, enforced again by
@@ -36,6 +38,15 @@
   import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { count } from '$lib/v2/format.js';
   import { ESCALATION_ACTION_LABEL, ESCALATION_PRIORITIES, PRIORITY_TONE } from '$lib/v2/enums.js';
+  import {
+    actionNotifies,
+    escalationOutcome,
+    teamIgnoredNote,
+    deadPolicyCount,
+    breachesGoingNowhere,
+    unconfiguredPriorities,
+    joinWithAnd
+  } from './outcome.js';
   import { missingOption, inactiveOptionLabel } from '$lib/v2/pickers.js';
   import { TriangleAlert, BellOff, Plus } from '@lucide/svelte';
 
@@ -49,61 +60,28 @@
    */
   let policies = $derived(
     [...data.policies].sort(
-      (a, b) => ESCALATION_PRIORITIES.indexOf(a.priority) - ESCALATION_PRIORITIES.indexOf(b.priority)
+      (a, b) =>
+        ESCALATION_PRIORITIES.indexOf(a.priority) - ESCALATION_PRIORITIES.indexOf(b.priority)
     )
   );
 
   /** The priorities with no policy yet: what "New policy" is allowed to offer. */
-  let availablePriorities = $derived(
-    ESCALATION_PRIORITIES.filter((p) => !data.policies.some((x) => x.priority === p))
-  );
+  let availablePriorities = $derived(unconfiguredPriorities(data.policies));
   let allConfigured = $derived(availablePriorities.length === 0);
 
-  /**
-   * What one half of a policy actually does, and whether that is nothing.
-   * @returns {{ text: string, dead: boolean }}
-   */
-  function outcome(policy, kind) {
-    const action = policy[`${kind}_action`];
-    const target = policy[`${kind}_target`];
-    const team = policy.notify_team;
-
-    if (!policy.is_active) return { text: 'Nothing. The policy is off', dead: true };
-
-    if (action === 'reassign' && !target)
-      return { text: 'Reassign to nobody, no target is set', dead: true };
-
-    if (action === 'notify' && !target && !team)
-      return { text: 'Notify nobody, no person and no team', dead: true };
-
-    const who = [target?.name, team ? `the ${team.name} team` : null].filter(Boolean).join(' and ');
-    return { text: `${ESCALATION_ACTION_LABEL[action]} ${who}`, dead: false };
-  }
-
-  let deadCount = $derived(
-    policies.filter((p) => outcome(p, 'first_response').dead && outcome(p, 'resolution').dead)
-      .length
-  );
-  let breachesGoingNowhere = $derived(
-    policies.reduce(
-      (a, p) =>
-        a +
-        (outcome(p, 'first_response').dead ? p.breaches_last_30d.first_response : 0) +
-        (outcome(p, 'resolution').dead ? p.breaches_last_30d.resolution : 0),
-      0
-    )
-  );
+  let deadCount = $derived(deadPolicyCount(policies));
+  let unheard = $derived(breachesGoingNowhere(policies));
 
   // `null` when the panel is closed, `'new'` when adding, or the policy
   // object when editing that row. One panel, two modes, so two rows can
   // never be open for edit at once.
   let editing = $state(/** @type {any} */ (null));
 
-  // Mirrors of the four action/target fields, so the "reassigns to nobody"
-  // hint can react to what is currently picked in the form, before the
-  // policy is saved, rather than only ever telling the admin from the card
-  // afterward. `notify_team_id` needs no such mirror: there is no live
-  // warning tied to it.
+  // Mirrors of the four action/target fields, so the "does nothing" hint can
+  // react to what is currently picked in the form, before the policy is saved,
+  // rather than only ever telling the admin from the card afterward.
+  // `notify_team_id` needs no such mirror: no hint is tied to it on its own,
+  // because a team is never a recipient on its own.
   let firstResponseAction = $state('notify');
   let resolutionAction = $state('notify');
   let firstResponseTarget = $state('');
@@ -135,9 +113,9 @@
    * nothing, `readValues` reads that absence as `''`, and `buildBody` turns
    * `''` into `null`. So without an option of its own, opening this form to
    * change one unrelated field would stop Urgent breaches escalating to
-   * anybody. It would also hide the "reassigns to nobody" warning at the
-   * moment it became true, because the binding keeps the stale id when the
-   * browser deselects.
+   * anybody. It would also hide the "does nothing" warning at the moment it
+   * became true, because the binding keeps the stale id when the browser
+   * deselects.
    */
   let missingFirstTarget = $derived(
     editing && editing !== 'new' ? missingOption(data.people, editing.first_response_target) : null
@@ -205,9 +183,6 @@
                 <option {value}>{label}</option>
               {/each}
             </select>
-            {#if firstResponseAction === 'reassign' && !firstResponseTarget}
-              <p class="v2-hint">Reassigns to nobody until a target is picked below.</p>
-            {/if}
           </div>
 
           <div class="v2-field">
@@ -228,11 +203,26 @@
                 <option value={p.id}>{p.name}</option>
               {/each}
             </select>
-            {#if missingFirstTarget}
+            <!-- Keyed on what is currently picked, not on what is stored, so
+                 changing the select away from a deactivated target clears the
+                 warning with it. -->
+            {#if missingFirstTarget && firstResponseTarget === missingFirstTarget.id}
               <p class="v2-hint">
                 This target's account is no longer active. It stays set until you change it, and a
-                breach reassigned there waits for someone who cannot sign in.
+                breach sent there waits for someone who cannot sign in.
               </p>
+            {:else if !firstResponseTarget}
+              <!-- Not tied to the action. Picking Notify and leaving this empty
+                   is the same dead half as picking Reassign and leaving it
+                   empty: `_scan_org` never reaches `_dispatch_breach` without a
+                   target. The action select is the control an admin is most
+                   likely to believe fixed it. -->
+              <p class="v2-hint">
+                Nothing happens on this half until a target is picked. A team on its own is not
+                notified.
+              </p>
+            {:else if !actionNotifies(firstResponseAction)}
+              <p class="v2-hint">Reassigns the ticket. No email is sent, to them or to the team.</p>
             {/if}
           </div>
 
@@ -248,9 +238,6 @@
                 <option {value}>{label}</option>
               {/each}
             </select>
-            {#if resolutionAction === 'reassign' && !resolutionTarget}
-              <p class="v2-hint">Reassigns to nobody until a target is picked below.</p>
-            {/if}
           </div>
 
           <div class="v2-field">
@@ -271,11 +258,26 @@
                 <option value={p.id}>{p.name}</option>
               {/each}
             </select>
-            {#if missingResolutionTarget}
+            <!-- Keyed on what is currently picked, not on what is stored, so
+                 changing the select away from a deactivated target clears the
+                 warning with it. -->
+            {#if missingResolutionTarget && resolutionTarget === missingResolutionTarget.id}
               <p class="v2-hint">
                 This target's account is no longer active. It stays set until you change it, and a
-                breach reassigned there waits for someone who cannot sign in.
+                breach sent there waits for someone who cannot sign in.
               </p>
+            {:else if !resolutionTarget}
+              <!-- Not tied to the action. Picking Notify and leaving this empty
+                   is the same dead half as picking Reassign and leaving it
+                   empty: `_scan_org` never reaches `_dispatch_breach` without a
+                   target. The action select is the control an admin is most
+                   likely to believe fixed it. -->
+              <p class="v2-hint">
+                Nothing happens on this half until a target is picked. A team on its own is not
+                notified.
+              </p>
+            {:else if !actionNotifies(resolutionAction)}
+              <p class="v2-hint">Reassigns the ticket. No email is sent, to them or to the team.</p>
             {/if}
           </div>
 
@@ -284,7 +286,10 @@
             <select id="e-team" class="v2-input" name="notify_team_id">
               <option value="" selected={editing === 'new' || !editing.notify_team}>No team</option>
               {#each data.teams as t (t.id)}
-                <option value={t.id} selected={editing !== 'new' && editing.notify_team?.id === t.id}>
+                <option
+                  value={t.id}
+                  selected={editing !== 'new' && editing.notify_team?.id === t.id}
+                >
                   {t.name}
                 </option>
               {/each}
@@ -329,7 +334,7 @@
         {#snippet icon()}<BellOff size={21} />{/snippet}
       </EmptyState>
     {:else}
-      {#if breachesGoingNowhere > 0}
+      {#if unheard > 0}
         <!-- The headline fact, above the table, because it is the reason to be
            on this page. Derived from the same rows shown below, not a
            separate figure that could disagree with them. -->
@@ -337,8 +342,7 @@
           <BellOff size={17} style="color:var(--v2-clay);flex:none;margin-top:1px" />
           <div>
             <div style="font-weight:600;font-size:13px">
-              <span class="v2-num">{count(breachesGoingNowhere)}</span> breaches in the last 30 days told
-              nobody
+              <span class="v2-num">{count(unheard)}</span> breaches in the last 30 days told nobody
             </div>
             <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
               {deadCount === 0
@@ -352,8 +356,8 @@
 
       <div style="display:flex;flex-direction:column;gap:10px">
         {#each policies as p (p.id)}
-          {@const first = outcome(p, 'first_response')}
-          {@const res = outcome(p, 'resolution')}
+          {@const first = escalationOutcome(p, 'first_response')}
+          {@const res = escalationOutcome(p, 'resolution')}
           <div class="v2-card" style="padding:15px 16px;opacity:{p.is_active ? 1 : 0.62}">
             <div
               style="display:flex;gap:9px;align-items:center;margin-bottom:12px;justify-content:space-between"
@@ -394,7 +398,7 @@
             </div>
 
             <div class="v2-escalation-halves">
-              {#each [{ label: 'Missed first response', o: first, n: p.breaches_last_30d.first_response }, { label: 'Missed resolution', o: res, n: p.breaches_last_30d.resolution }] as half (half.label)}
+              {#each [{ label: 'Missed first response', note: teamIgnoredNote(p, 'first_response'), o: first, n: p.breaches_last_30d.first_response }, { label: 'Missed resolution', note: teamIgnoredNote(p, 'resolution'), o: res, n: p.breaches_last_30d.resolution }] as half (half.label)}
                 <div class="v2-escalation-half">
                   <div class="v2-label" style="font-size:10px;margin-bottom:5px">{half.label}</div>
                   <div style="display:flex;gap:7px;align-items:flex-start">
@@ -408,6 +412,16 @@
                       {half.o.text}
                     </span>
                   </div>
+                  {#if half.note}
+                    <!-- A `reassign` half never emails anybody: `_dispatch_breach`
+                         builds a recipient list only for the two notify actions.
+                         A team set on this policy does nothing on this half, and
+                         the outcome sentence alone cannot say so without naming
+                         a team the half does not use. -->
+                    <div class="v2-sub" style="font-size:11.5px;margin-top:4px">
+                      {half.note}
+                    </div>
+                  {/if}
                   <div class="v2-sub" style="font-size:11.5px;margin-top:6px">
                     <span class="v2-num">{count(half.n)}</span>
                     in the last 30 days{half.o.dead && half.n > 0 ? ', none of them acted on' : ''}
@@ -419,11 +433,24 @@
         {/each}
       </div>
 
+      {#if availablePriorities.length > 0}
+        <!-- Otherwise invisible. `breaches_last_30d` is attached to policies,
+             so a priority with no policy contributes no row and no number
+             anywhere, and its breaches escalate to nobody with nothing on the
+             page saying so. -->
+        <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
+          {joinWithAnd(availablePriorities)}
+          {availablePriorities.length === 1 ? 'has' : 'have'} no policy, so breaches at
+          {availablePriorities.length === 1 ? 'that priority' : 'those priorities'} escalate to nobody
+          and are not counted above.
+        </p>
+      {/if}
+
       <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
         Targets are measured on
-        <a href="/settings/business-hours" style="color:inherit">business hours</a>, so a breach
-        counts working time only. What counts as breached for each priority is set with the target
-        itself, not here.
+        <a href={resolve('/settings/business-hours')} style="color:inherit">business hours</a>, so a
+        breach counts working time only. What counts as breached for each priority is set with the
+        target itself, not here.
       </p>
     {/if}
   </div>

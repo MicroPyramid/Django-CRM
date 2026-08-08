@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
   import FilterBar from '$lib/v2/components/FilterBar.svelte';
@@ -45,7 +46,7 @@
          and cases both have import/preview/ and import/commit/; leads does not.
          Tracked in the phase 2 plan. -->
     <button class="v2-btn"><Upload />Import</button>
-    <a class="v2-btn v2-btn-primary" href="/leads/new"><Plus />New {singular}</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('/leads/new')}><Plus />New {singular}</a>
   {/snippet}
 </PageHeader>
 
@@ -66,7 +67,7 @@
     >
       {#snippet icon()}<Target size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href="/leads/new">New {singular}</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('/leads/new')}>New {singular}</a>
         <button class="v2-btn">Import</button>
       {/snippet}
     </EmptyState>
@@ -88,7 +89,7 @@
           {#each leads as l (l.id)}
             <tr>
               <td>
-                <a class="v2-row-link" href="/leads/{l.id}">
+                <a class="v2-row-link" href={resolve(`/leads/${l.id}`)}>
                   <div class="v2-table-primary">{l.first_name} {l.last_name}</div>
                   <div class="v2-table-secondary">{l.job_title}</div>
                 </a>

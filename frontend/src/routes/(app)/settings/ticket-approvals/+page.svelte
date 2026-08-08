@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * What gates a ticket close, and who can clear it.
    *
@@ -6,10 +7,17 @@
    * answers "what will be gated next time, and by whom", the same rows, a
    * different question, which is why it is a settings page and not a tab.
    *
-   * One configuration state the model permits and the form does not warn
-   * about, shown here: approver_role MANAGER with no named approvers.
-   * Profile.role is only ADMIN or USER, so the rule matches nobody and the
-   * cases it gates can never be closed by anyone.
+   * Three states the model permits and the form does not warn about, all
+   * flagged on the row here. See `./matching.js`, which owns the rules:
+   *
+   * - approver_role MANAGER with no named approvers. Profile.role is only
+   *   ADMIN or USER, so the rule matches nobody and what it gates can never be
+   *   closed by anyone.
+   * - Two active rules with identical conditions. Only one rule gates a given
+   *   ticket, and among equals the newest takes every case, so the older is
+   *   dead however live it looks.
+   * - Named approvers read as a narrowing and are a widening: anyone holding
+   *   the role clears the rule too.
    *
    * Separation of duties, an admin clearing their own requested close, is
    * NOT a gap to warn about: `ApprovalApproveView` rejects an approval whose
@@ -27,6 +35,13 @@
   import { count } from '$lib/v2/format.js';
   import { ROLE_LABEL } from '$lib/v2/enums.js';
   import { missingOptions, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import {
+    approverSentence,
+    clearableByNobody,
+    ruleMatchSentence,
+    shadowedRuleIds,
+    shadowedBy
+  } from './matching.js';
   import { Plus, TriangleAlert, ChevronRight } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -71,19 +86,7 @@
     editing && editing !== 'new' ? missingOptions(data.people, editing.approvers) : []
   );
 
-  /** MANAGER matches no Profile.role, so an empty approvers list means nobody. */
-  const clearableByNobody = (r) =>
-    r.is_active && r.approver_role === 'MANAGER' && !r.approvers.length;
-
-  /** What the rule matches, as the sentence a person would say. */
-  function matches(r) {
-    const parts = [
-      r.match_priority ? `${r.match_priority} priority` : null,
-      r.match_case_type ? r.match_case_type.toLowerCase() : null,
-      r.match_team ? `${r.match_team.name} team` : null
-    ].filter(Boolean);
-    return parts.length ? parts.join(' · ') : 'Every ticket';
-  }
+  let shadowed = $derived(shadowedRuleIds(rules));
 </script>
 
 <PageHeader title="Approval rules">
@@ -212,7 +215,10 @@
             <select id="a-team" class="v2-input" name="match_team_id">
               <option value="" selected={editing === 'new' || !editing.match_team}>Any team</option>
               {#each data.teams as t (t.id)}
-                <option value={t.id} selected={editing !== 'new' && editing.match_team?.id === t.id}>
+                <option
+                  value={t.id}
+                  selected={editing !== 'new' && editing.match_team?.id === t.id}
+                >
                   {t.name}
                 </option>
               {/each}
@@ -259,9 +265,17 @@
       </div>
     {/if}
 
-    <div class="v2-label" style="margin-bottom:10px">Rules</div>
+    <div class="v2-label" style="margin-bottom:4px">Rules</div>
+    <!-- The list reads as cumulative and is not. Worth one line above it,
+         since every row below describes a gate and only one of them is ever
+         the gate for a given ticket. -->
+    <p class="v2-sub" style="font-size:11.5px;margin:0 0 10px">
+      A ticket is gated by one rule, the most specific that matches it. The others are fallbacks for
+      the tickets it misses.
+    </p>
     <div style="display:flex;flex-direction:column;gap:9px">
       {#each rules as r (r.id)}
+        {@const beatenBy = shadowed.has(r.id) ? shadowedBy(r, rules) : null}
         <div class="v2-card" style="padding:14px 16px;opacity:{r.is_active ? 1 : 0.62}">
           <div style="display:flex;gap:11px;align-items:flex-start">
             <div style="flex:1;min-width:0">
@@ -269,18 +283,14 @@
                 <b style="font-size:13.5px">{r.name}</b>
                 {#if !r.is_active}<Pill tone="slate">Off</Pill>{/if}
                 {#if clearableByNobody(r)}<Pill tone="rust">Nobody can clear</Pill>{/if}
+                {#if beatenBy}<Pill tone="rust">Never runs</Pill>{/if}
               </div>
 
               <div class="v2-sub" style="font-size:12.5px;margin-top:5px;white-space:normal">
                 <b style="font-weight:600;color:var(--v2-ink)">Gates</b>
-                {matches(r)}
+                {ruleMatchSentence(r)}
                 <b style="font-weight:600;color:var(--v2-ink)">→</b>
-                cleared by
-                {#if r.approvers.length}
-                  {r.approvers.map((a) => a.email).join(' or ')}
-                {:else}
-                  any {r.approver_role.toLowerCase()}
-                {/if}
+                cleared by {approverSentence(r)}
               </div>
 
               {#if clearableByNobody(r)}
@@ -293,12 +303,24 @@
                   </span>
                 </div>
               {/if}
+
+              {#if beatenBy}
+                <div class="v2-rule-flag">
+                  <TriangleAlert size={14} style="color:var(--v2-rust);flex:none" />
+                  <span>
+                    <b style="font-weight:600;color:var(--v2-ink)">{beatenBy.name}</b> gates exactly the
+                    same tickets and was written later. One rule gates a close, the most specific match,
+                    and the newest wins between equals, so this one never runs. Turn it off, delete it,
+                    or narrow what it matches.
+                  </span>
+                </div>
+              {/if}
             </div>
 
             <div style="flex:none;text-align:right">
               {#if r.pending_count}
                 <a
-                  href="/tickets/approvals"
+                  href={resolve('/tickets/approvals')}
                   class="v2-sub"
                   style="font-size:12px;display:inline-flex;align-items:center;gap:2px"
                 >

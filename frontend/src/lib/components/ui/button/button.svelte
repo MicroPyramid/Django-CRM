@@ -60,6 +60,8 @@
 </script>
 
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   /**
    * @type {{
    *   class?: string,
@@ -91,7 +93,7 @@
     bind:this={ref}
     data-slot="button"
     class={cn(buttonVariants({ variant, size }), className)}
-    href={disabled ? undefined : href}
+    href={disabled ? undefined : resolve(asInternalPath(href))}
     aria-disabled={disabled}
     role={disabled ? 'link' : undefined}
     tabindex={disabled ? -1 : undefined}

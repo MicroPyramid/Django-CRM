@@ -169,7 +169,7 @@
 
     <!-- Options -->
     <div class="max-h-[240px] overflow-y-auto">
-      {#each options as option, i}
+      {#each options as option, i (option.value)}
         {@const isSelected = multiple
           ? selectedValues.includes(option.value)
           : value === option.value}

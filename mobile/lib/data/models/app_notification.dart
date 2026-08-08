@@ -17,8 +17,8 @@ class AppNotification {
 
   final String id;
 
-  /// Dotted identifier, e.g. `case.mentioned`. Only the two in [producedVerbs]
-  /// are dispatched by any backend code today.
+  /// Dotted identifier, e.g. `case.mentioned`. Only values in [producedVerbs]
+  /// are dispatched by backend code today.
   final String verb;
 
   /// Null for a notification the system raised rather than a person.
@@ -34,26 +34,41 @@ class AppNotification {
   final DateTime createdAt;
 
   bool get isUnread => readAt == null;
+  String get displayActorName => verb.startsWith('support.')
+      ? 'BottleCRM Support'
+      : actorName ?? 'The system';
 
   /// Whether anything in the backend actually produces this verb. A row with
   /// an unknown verb still renders, as a readable sentence, so a new producer
   /// shipping before its copy does not show a raw dotted identifier.
   bool get isKnownVerb => producedVerbs.contains(verb);
 
-  /// The ticket this notification points at, or null.
+  /// The CRM ticket this notification points at, or null.
   ///
   /// The stored `link` is a value from the database, so it is parsed rather
-  /// than followed. Only `/cases/<id>` and `/tickets/<id>` resolve, and both
-  /// resolve to the same ticket id; anything else, including an absolute
-  /// `https://` or a `javascript:` URL that ever found its way into the
-  /// column, yields null and the row is not tappable. Rows written before the
-  /// producer was fixed carry the `/cases/` form, which no client has ever
-  /// served, which is why both spellings are accepted here.
+  /// than followed. Only `/cases/<id>` and `/tickets/<id>` resolve here, and
+  /// both identify the same CRM ticket. Product-support destinations are
+  /// rebuilt separately in [destinationPath]. Anything else, including an
+  /// absolute URL or a `javascript:` URL, yields no tappable destination.
   String? get ticketId {
     final value = link;
     if (value == null) return null;
     final match = RegExp(r'^/(?:cases|tickets)/([^/?#]+)/?$').firstMatch(value);
     return match?.group(1);
+  }
+
+  /// A safe in-app destination for the notification, or null.
+  ///
+  /// Product support resolves to `/help/<id>`. The `/support/<id>` spelling is
+  /// accepted too, because that is what the producer wrote before the page was
+  /// renamed, for the same reason `/cases/` is still accepted above.
+  String? get destinationPath {
+    final ticket = ticketId;
+    if (ticket != null) return '/tickets/$ticket';
+    final value = link;
+    if (value == null) return null;
+    final help = RegExp(r'^/(?:support|help)/([^/?#]+)/?$').firstMatch(value);
+    return help == null ? null : '/help/${help.group(1)}';
   }
 
   /// "mentioned you on" / "commented on" for the verbs that exist, and a
@@ -62,6 +77,8 @@ class AppNotification {
   String get verbPhrase {
     if (verb == 'case.mentioned') return 'mentioned you on';
     if (verb == 'case.commented') return 'commented on';
+    if (verb == 'support.replied') return 'replied to';
+    if (verb == 'support.status_changed') return 'updated';
     return verb.replaceFirst(RegExp(r'^[^.]+\.'), '').replaceAll('_', ' ');
   }
 
@@ -100,7 +117,12 @@ class AppNotification {
   );
 }
 
-/// Verbs the backend dispatches. `cases/notifications.py` is the only producer
-/// and it writes these two. Anything else is rendered plainly rather than
-/// given copy for a feature that does not exist.
-const List<String> producedVerbs = ['case.mentioned', 'case.commented'];
+/// Verbs the backend dispatches. CRM tickets and platform support are the
+/// current producers. Anything else is rendered plainly rather than given
+/// copy for a feature that does not exist.
+const List<String> producedVerbs = [
+  'case.mentioned',
+  'case.commented',
+  'support.replied',
+  'support.status_changed',
+];

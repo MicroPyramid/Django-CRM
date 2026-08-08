@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The organisation itself (read view).
    *
@@ -111,7 +112,7 @@
   {/snippet}
   {#snippet actions()}
     {#if data.can_edit}
-      <a class="v2-btn v2-btn-primary" href="/settings/organization/edit">
+      <a class="v2-btn v2-btn-primary" href={resolve('/settings/organization/edit')}>
         <Pencil size={13} />Edit details
       </a>
     {/if}
@@ -151,7 +152,7 @@
               These fields are printed on every invoice and estimate. Changing one changes documents
               from that moment on; PDFs already sent keep what they were sent with. How they are
               laid out is set in
-              <a href="/invoices/templates" style="color:inherit">invoice templates</a>.
+              <a href={resolve('/invoices/templates')} style="color:inherit">invoice templates</a>.
             </p>
           </div>
         </div>
@@ -180,8 +181,7 @@
             <div class="v2-setting-body">
               <b>Time zone</b>
               <span class="v2-sub" style="font-size:11.5px">
-                When a day starts here, so "due today" and "overdue" mean what your team
-                expects.
+                When a day starts here, so "due today" and "overdue" mean what your team expects.
               </span>
             </div>
             <span style="font-size:13px">{(org.timezone || 'UTC').replace(/_/g, ' ')}</span>
@@ -207,11 +207,16 @@
           <div class="v2-setting">
             <div class="v2-setting-body">
               <b>Close child tickets with the parent</b>
-              <!-- Only the DEFAULT state of the prompt; the endpoint still
-                   requires explicit confirmation either way. -->
+              <!-- Only the DEFAULT state of the prompt; the person closing the
+                   ticket still confirms. This used to claim the prompt without
+                   saying where it is, and there is no such prompt on the web:
+                   `close-with-children` has no caller in `frontend/src`, so
+                   closing a parent here leaves its children open. The phone is
+                   the client that asks, and the one this setting reaches. -->
               <span class="v2-sub" style="font-size:11.5px">
-                Sets how the prompt starts when you close a parent. It never closes a child on its
-                own. You still confirm.
+                Sets how the close prompt starts on the mobile app, which offers to close a parent's
+                open children with it. On the web there is no such prompt yet: closing a parent
+                leaves its children open.
               </span>
             </div>
             <Pill tone={org.auto_close_children_on_parent_close ? 'clay' : 'slate'}>
@@ -228,8 +233,8 @@
               <p class="v2-sub" style="font-size:12.5px;margin:5px 0 0;line-height:1.5">
                 It authenticates as the whole organisation, so it is never rendered on a page you
                 can reach by browsing. For per-person programmatic access, use
-                <a href="/settings/api-tokens" style="color:inherit">API tokens</a>, which can be
-                revoked one at a time.
+                <a href={resolve('/settings/api-tokens')} style="color:inherit">API tokens</a>,
+                which can be revoked one at a time.
               </p>
             </div>
           </div>
@@ -241,10 +246,10 @@
       <div class="v2-label" style="margin-bottom:10px">Vertical pack</div>
       <div class="v2-card" style="padding:16px 18px">
         <p class="v2-sub" style="font-size:12.5px;margin:0 0 14px;line-height:1.5">
-          A pack adds starter pipelines, tags, custom fields, products and a set of sample
-          records (accounts, contacts, deals, tickets, tasks and leads) for one kind of
-          business. Applying one only fills in what this org is missing. Anything already set up
-          is left exactly as it is, and applying the same pack twice is safe.
+          A pack adds starter pipelines, tags, custom fields, products and a set of sample records
+          (accounts, contacts, deals, tickets, tasks and leads) for one kind of business. Applying
+          one only fills in what this org is missing. Anything already set up is left exactly as it
+          is, and applying the same pack twice is safe.
         </p>
 
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -347,9 +352,9 @@
                 style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"
               >
                 <span class="v2-sub" style="font-size:12px">
-                  Permanently delete every sample record a pack created for this org? This cannot
-                  be undone. Your real records are never touched, and any sample record you have
-                  since attached real work to is kept.
+                  Permanently delete every sample record a pack created for this org? This cannot be
+                  undone. Your real records are never touched, and any sample record you have since
+                  attached real work to is kept.
                 </span>
                 <button class="v2-btn danger-btn" type="submit" disabled={busy}>
                   <Trash2 size={14} /> Clear sample data

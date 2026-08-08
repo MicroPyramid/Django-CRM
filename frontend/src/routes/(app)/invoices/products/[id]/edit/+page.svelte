@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing a catalogue product, or retiring it.
    *
@@ -23,7 +24,7 @@
 
 <PageHeader title="Edit product" record center width="62ch">
   {#snippet crumb()}
-    <a href="/invoices/products">Products</a>
+    <a href={resolve('/invoices/products')}>Products</a>
     <ChevronRight size={12} />
     <span>{data.product?.name ?? 'Edit'}</span>
   {/snippet}
@@ -41,7 +42,9 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href="/invoices/products" style="margin-top:16px">Back to products</a>
+      <a class="v2-btn" href={resolve('/invoices/products')} style="margin-top:16px"
+        >Back to products</a
+      >
     </div>
   {:else}
     <form
@@ -121,7 +124,7 @@
 
       <div style="display:flex;gap:9px;margin-top:6px;align-items:center">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href="/invoices/products">Cancel</a>
+        <a class="v2-btn" href={resolve('/invoices/products')}>Cancel</a>
       </div>
     </form>
 

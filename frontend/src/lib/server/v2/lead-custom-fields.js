@@ -77,9 +77,7 @@ export function displayValue(definition, value) {
     case 'number':
       return typeof value === 'number' ? value.toLocaleString() : String(value);
     case 'dropdown': {
-      const match = (definition.options ?? []).find(
-        (/** @type {any} */ o) => o.value === value
-      );
+      const match = (definition.options ?? []).find((/** @type {any} */ o) => o.value === value);
       return match?.label ?? String(value);
     }
     default:

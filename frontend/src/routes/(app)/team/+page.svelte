@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Who can get in, and how much they can do.
    *
@@ -197,8 +198,8 @@
                     <Avatar name={m.name} size={27} />
                     <span style="min-width:0">
                       <span class="v2-table-primary">
-                        {m.name}{#if m.is_you}<span class="v2-sub" style="font-weight:400">,
-                            you</span
+                        {m.name}{#if m.is_you}<span class="v2-sub" style="font-weight:400"
+                            >, you</span
                           >{/if}
                       </span>
                       <span class="v2-table-secondary" style="display:block">{m.email}</span>
@@ -221,7 +222,7 @@
                 <td data-m="hide">
                   {#if m.active_token_count}
                     <a
-                      href="/settings/api-tokens"
+                      href={resolve('/settings/api-tokens')}
                       style="display:inline-flex;gap:5px;align-items:center;color:{m.is_active
                         ? 'inherit'
                         : 'var(--v2-clay)'};font-weight:{m.is_active ? 400 : 600}"

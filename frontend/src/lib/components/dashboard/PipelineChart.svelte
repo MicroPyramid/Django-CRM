@@ -69,7 +69,7 @@
 
   <!-- Bar chart -->
   <div class="space-y-4">
-    {#each stages as stage}
+    {#each stages as stage (stage.id)}
       {@const data = pipelineData[stage.id] || { count: 0, value: 0, label: stage.id }}
       {@const percentage = maxValue > 0 ? (data.value / maxValue) * 100 : 0}
       <div class="group space-y-2">

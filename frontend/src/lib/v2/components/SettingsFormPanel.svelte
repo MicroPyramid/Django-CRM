@@ -30,15 +30,7 @@
    *   ondone?: () => void,
    *   fields: import('svelte').Snippet
    * }} */
-  let {
-    title,
-    action,
-    error = null,
-    submitLabel = 'Save',
-    oncancel,
-    ondone,
-    fields
-  } = $props();
+  let { title, action, error = null, submitLabel = 'Save', oncancel, ondone, fields } = $props();
 
   // Disables submit while a request is in flight so a double-click cannot
   // fire two writes.

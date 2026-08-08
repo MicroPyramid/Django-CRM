@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * Editing the organisation.
    *
@@ -136,9 +137,9 @@
 {:else}
   <PageHeader title="Edit organization" center>
     {#snippet crumb()}
-      <a href="/settings">Settings</a>
+      <a href={resolve('/settings')}>Settings</a>
       <ChevronRight size={12} />
-      <a href="/settings/organization">Organization</a>
+      <a href={resolve('/settings/organization')}>Organization</a>
     {/snippet}
   </PageHeader>
 
@@ -166,7 +167,11 @@
         >
           <TriangleAlert size={17} style="color:var(--v2-rust);flex:none" />
           <div class="v2-next-body">
-            <div style="font-weight:600">Two fields to check</div>
+            <!-- Counted, not assumed. Only two fields are checked here, but one
+                 of them failing on its own is the common case. -->
+            <div style="font-weight:600">
+              {Object.keys(errors).length === 1 ? 'One field to check' : 'Two fields to check'}
+            </div>
             <div class="v2-sub" style="margin-top:2px">Nothing has been saved yet.</div>
           </div>
         </div>
@@ -337,8 +342,8 @@
           {/each}
         </select>
         <p class="v2-hint">
-          When a day starts for this organisation. Changing it moves what counts as due
-          today and overdue, for everyone here.
+          When a day starts for this organisation. Changing it moves what counts as due today and
+          overdue, for everyone here.
         </p>
       </div>
 
@@ -368,14 +373,15 @@
           <option value="false">Offer it off. The close prompt starts unticked</option>
         </select>
         <p class="v2-hint">
-          Only sets how the prompt starts. Closing a parent never closes a child on its own, the
-          person still confirms.
+          Only sets how the prompt starts, and only on the mobile app, which is where closing a
+          parent offers to close its open children. The person still confirms. Closing a parent on
+          the web leaves its children open, with no prompt.
         </p>
       </div>
 
       <div class="actions">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href="/settings/organization">Cancel</a>
+        <a class="v2-btn" href={resolve('/settings/organization')}>Cancel</a>
       </div>
     </form>
   </div>

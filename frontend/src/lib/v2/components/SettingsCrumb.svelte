@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   /**
    * The way back up from a settings page.
    *
@@ -13,7 +14,7 @@
   import { ChevronLeft } from '@lucide/svelte';
 </script>
 
-<a href="/settings"><ChevronLeft size={13} />Settings</a>
+<a href={resolve('/settings')}><ChevronLeft size={13} />Settings</a>
 
 <style>
   a {

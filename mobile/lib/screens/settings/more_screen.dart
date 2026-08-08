@@ -38,46 +38,62 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
             // Workspace Section. Destinations that aren't on the bottom nav.
             _buildSectionHeader('Workspace'),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.checkSquare,
               label: 'Tasks',
               description: 'Your to-dos across leads, deals and tickets',
               onTap: () => context.go(AppRoutes.tasks),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.building2,
               label: 'Accounts',
               description: 'The companies you sell to',
               onTap: () => context.push(AppRoutes.accounts),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.users,
               label: 'Contacts',
               description: 'The people at those companies',
               onTap: () => context.push(AppRoutes.contacts),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.clock,
               label: 'Timesheet',
               description: 'The hours you logged this week',
               onTap: () => context.push(AppRoutes.timesheet),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.bell,
               label: 'Notifications',
               description: 'Mentions and comments on your tickets',
               onTap: () => context.push(AppRoutes.notifications),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.receipt,
               label: 'Invoices',
               description: 'What is owed, and what has been paid',
               onTap: () => context.push(AppRoutes.invoices),
             ),
+            MenuRow(
+              icon: LucideIcons.folder,
+              label: 'Documents',
+              description: 'Files shared with you and your teams',
+              onTap: () => context.push(AppRoutes.documents),
+            ),
+            // Not admin-gated. The list is open to any member and the API
+            // narrows it to the goals set for them and their teams; only
+            // creating and editing are admin-only, and those live behind this
+            // screen rather than on it.
+            MenuRow(
+              icon: LucideIcons.target,
+              label: 'Goals',
+              description: 'Targets for you and your teams, and how far along',
+              onTap: () => context.push(AppRoutes.goals),
+            ),
 
             // Account Section
             _buildSectionHeader('Account'),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.user,
               label: 'Profile Settings',
               onTap: () => context.push(AppRoutes.profile),
@@ -87,7 +103,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             // worked; nothing in the app reached them once an org was chosen,
             // so the only way to change org was to sign out.
             if ((ref.watch(authProvider).organizations?.length ?? 0) > 1)
-              _MenuItem(
+              MenuRow(
                 icon: LucideIcons.building2,
                 label: 'Switch Organization',
                 description: ref.watch(selectedOrgProvider)?.name,
@@ -96,11 +112,22 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
             // Team Section
             _buildSectionHeader('Team'),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.users,
               label: 'Team',
               description: 'Who is in this org, and what they can do',
               onTap: () => context.push(AppRoutes.team),
+            ),
+            // Not admin-gated, matching the web sidebar and the API: the
+            // settings reads are open to any member and only the writes are
+            // admin-only. Team above is the opposite and is genuinely
+            // admin-only, which is why the two sit in separate rows rather
+            // than one "Administration" block.
+            MenuRow(
+              icon: LucideIcons.slidersHorizontal,
+              label: 'Organization settings',
+              description: 'Custom fields and other org-wide rules',
+              onTap: () => context.push(AppRoutes.settings),
             ),
 
             // Preferences used to be a section here, holding a Dark Mode
@@ -112,18 +139,24 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
             // Support Section
             _buildSectionHeader('Support'),
-            _MenuItem(
+            MenuRow(
+              icon: LucideIcons.lifeBuoy,
+              label: 'Contact BottleCRM Support',
+              description: 'Open a ticket and follow replies',
+              onTap: () => context.push(AppRoutes.help),
+            ),
+            MenuRow(
               icon: LucideIcons.helpCircle,
               label: 'Help Center',
               onTap: () => _openOnTheWeb('/docs', 'Help Center'),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.fileText,
               label: 'Terms of Service',
               onTap: () =>
                   _openOnTheWeb('/terms-of-service', 'Terms of Service'),
             ),
-            _MenuItem(
+            MenuRow(
               icon: LucideIcons.shield,
               label: 'Privacy Policy',
               onTap: () => _openOnTheWeb('/privacy-policy', 'Privacy Policy'),
@@ -323,74 +356,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Menu Item Widget
-class _MenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? description;
-  final VoidCallback onTap;
-
-  const _MenuItem({
-    required this.icon,
-    required this.label,
-    this.description,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border(bottom: BorderSide(color: AppColors.gray100)),
-        ),
-        child: Row(
-          children: [
-            // Icon
-            Icon(icon, size: 22, color: AppColors.textSecondary),
-
-            const SizedBox(width: 14),
-
-            // Label + Description
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (description != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      description!,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Chevron
-            Icon(
-              LucideIcons.chevronRight,
-              size: 20,
-              color: AppColors.textTertiary,
-            ),
-          ],
-        ),
       ),
     );
   }

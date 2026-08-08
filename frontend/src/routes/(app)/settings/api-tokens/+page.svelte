@@ -12,7 +12,10 @@
    * WHO SEES THIS
    * This lists every token across the org, so it is admin-only: `/api/org/tokens/`
    * returns 403 to a member and the page renders "Admins only" rather than a
-   * broken table. Managing your own tokens is a separate, self-scoped surface.
+   * broken table. A consequence rather than a design: because this is the only
+   * token page either client has, a member currently has no way to issue
+   * themselves one. `/api/profile/tokens/` is open to them; nothing calls it on
+   * their behalf. Recorded in `mobile/docs/PARITY.md`.
    *
    * "OWNER DEACTIVATED" IS A DORMANT ROW, NOT A LIVE ONE
    * The mock this page replaced claimed such a token "keeps working with the
@@ -44,10 +47,11 @@
   import StatCard from '$lib/v2/components/StatCard.svelte';
   import Pill from '$lib/v2/components/Pill.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
-  import { count, relativeDays, shortDate, daysSince } from '$lib/v2/format.js';
+  import { count, relativeDays, shortDate } from '$lib/v2/format.js';
   import { ROLE_LABEL } from '$lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert, Copy, Check } from '@lucide/svelte';
+  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '$lib/v2/token-rules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -87,27 +91,6 @@
       // Clipboard blocked (no https / no permission). The value is on screen to
       // select by hand, nothing else to do, and no error worth alarming over.
     }
-  }
-
-  /**
-   * Revoked and expired are different reasons for the same outcome, so they
-   * read differently but tone the same. Neither is a live credential.
-   *
-   * @param {any} t
-   * @returns {{ label: string, tone: 'ink'|'slate'|'clay'|'rust'|'moss' }}
-   */
-  function statusOf(t) {
-    if (t.revoked_at) return { label: 'Revoked', tone: 'slate' };
-    if (!t.is_live) return { label: 'Expired', tone: 'slate' };
-    return { label: 'Live', tone: 'moss' };
-  }
-
-  /** Never used, or not for a long time. Either way it is a key under a mat. */
-  function staleness(t) {
-    if (!t.is_live) return null;
-    if (!t.last_used_at) return 'never used';
-    const n = daysSince(t.last_used_at) ?? 0;
-    return n > 90 ? `unused for ${n} days` : null;
   }
 </script>
 
@@ -233,10 +216,9 @@
               Expires
             </label>
             <select id="token-expiry" name="expiry" class="v2-input" style="width:150px">
-              <option value="90" selected>In 90 days</option>
-              <option value="30">In 30 days</option>
-              <option value="365">In 1 year</option>
-              <option value="never">Never</option>
+              {#each EXPIRY_CHOICES as choice (choice.value)}
+                <option value={choice.value}>{choice.label}</option>
+              {/each}
             </select>
           </div>
           <button class="v2-btn v2-btn-primary" disabled={busy}>Create token</button>
@@ -287,7 +269,7 @@
           </thead>
           <tbody>
             {#each data.tokens as t (t.id)}
-              {@const s = statusOf(t)}
+              {@const s = tokenStatus(t)}
               {@const stale = staleness(t)}
               {@const owner = t.owner ?? {}}
               <tr style={t.is_live ? '' : 'opacity:.55'}>
@@ -308,15 +290,7 @@
                   </span>
                 </td>
                 <td data-m="hide">
-                  <span class="v2-sub" style="font-size:12px">
-                    {#if (t.scopes ?? []).length === 0}
-                      Everything {(owner.name ?? '').split(' ')[0]} can
-                    {:else if (t.scopes ?? []).every((/** @type {string} */ s) => s.endsWith(':read'))}
-                      Read only
-                    {:else}
-                      {(t.scopes ?? []).join(', ')}
-                    {/if}
-                  </span>
+                  <span class="v2-sub" style="font-size:12px">{scopeSummary(t)}</span>
                 </td>
                 <td data-m="hide">
                   {#if t.last_used_at}
@@ -364,10 +338,10 @@
         <div>
           <div style="font-weight:600;font-size:13px">A token is the whole account</div>
           <p class="v2-sub" style="font-size:12px;margin:4px 0 0">
-            A token authenticates as its owner and inherits their role and organisation. There is
-            no narrower permission to give it. Issue one per integration so a single revocation
-            stops a single thing, set an expiry, and revoke anything you cannot name a use for. The
-            value is shown once when the token is created and cannot be recovered afterwards.
+            A token authenticates as its owner and inherits their role and organisation. There is no
+            narrower permission to give it. Issue one per integration so a single revocation stops a
+            single thing, set an expiry, and revoke anything you cannot name a use for. The value is
+            shown once when the token is created and cannot be recovered afterwards.
           </p>
         </div>
       </div>

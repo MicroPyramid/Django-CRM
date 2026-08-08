@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
+import '../data/api_envelope.dart';
 import '../data/models/attachment.dart';
 import '../data/models/ticket.dart';
 import '../data/models/comment.dart';
@@ -36,6 +37,25 @@ class TicketsListData {
     );
   }
 }
+
+/// The query the "also open" rail asks: open tickets on one account.
+///
+/// `limit=6` and not 5, because this ticket is usually among them and is
+/// dropped afterwards. Repeated `status=` params, the spelling the list view
+/// reads (`choice_list_param`), and the same three statuses the web rail uses.
+String alsoOpenQueryUrl(String accountId) {
+  final statuses = openTicketStatuses
+      .map((s) => 'status=${Uri.encodeQueryComponent(s.value)}')
+      .join('&');
+  return '${ApiConfig.tickets}?limit=6&slim=true'
+      '&account=${Uri.encodeQueryComponent(accountId)}&$statuses';
+}
+
+/// Drop the ticket being read, keep five. Same as the web rail.
+List<Ticket> pickAlsoOpen(
+  Iterable<Ticket> rows, {
+  required String excludeTicketId,
+}) => rows.where((t) => t.id != excludeTicketId).take(5).toList();
 
 class TicketsNotifier extends AsyncNotifier<TicketsListData> {
   final ApiService _apiService = ApiService();
@@ -270,12 +290,24 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     }
   }
 
+  /// `PATCH /api/cases/<id>/`, not PUT.
+  ///
+  /// PUT is a full replace: `CaseDetailView.put` clears `contacts`, `teams`,
+  /// `assigned_to` and `tags` unconditionally and re-adds only what the body
+  /// carries. This form sent no `contacts` and no `teams`, so every edit made
+  /// from the phone silently unlinked every contact and every team on the
+  /// ticket, whatever the edit was actually about. PATCH touches an M2M only
+  /// when the key is present, which is what a partial form means.
+  ///
+  /// The web app has always used PATCH. Assignment notification is on both
+  /// verbs now (`cases.views.notify_newly_assigned`), so switching loses
+  /// nothing.
   Future<ApiResponse<Map<String, dynamic>>> updateTicket(
     String id,
     Map<String, dynamic> ticketData,
   ) async {
     try {
-      final response = await _apiService.put(
+      final response = await _apiService.patch(
         ApiConfig.ticketDetail(id),
         ticketData,
       );
@@ -304,6 +336,32 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
 
   /// Fetch watcher list for a ticket.
   /// Returns ({watcherCount, isCurrentUserWatching, watchers}) or null on error.
+  /// The other open tickets on the same account, most recent first.
+  ///
+  /// A second request because the detail endpoint has no idea what else is
+  /// happening on that account. The web rail asks the same question the same
+  /// way, so both clients rank the same rows: open statuses only, this ticket
+  /// dropped, five kept.
+  ///
+  /// Degrades to an empty list rather than failing the screen. It is context
+  /// beside the ticket, not the ticket.
+  Future<List<Ticket>> getAlsoOpenOnAccount({
+    required String accountId,
+    required String excludeTicketId,
+  }) async {
+    if (accountId.isEmpty) return const [];
+    try {
+      final response = await _apiService.get(alsoOpenQueryUrl(accountId));
+      if (!response.success || response.data == null) return const [];
+      return pickAlsoOpen(
+        listFromEnvelope(response.data!, ['cases']).map(Ticket.fromJson),
+        excludeTicketId: excludeTicketId,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<TicketWatchers?> getWatchers(String id) async {
     try {
       final response = await _apiService.get(ApiConfig.ticketWatchers(id));
@@ -424,14 +482,26 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
     }
   }
 
-  /// Close this ticket; optionally cascade-close descendants.
+  /// Close this ticket; optionally cascade-close its open descendants.
+  ///
+  /// `cascade` is always sent. The endpoint falls back to the org's
+  /// `auto_close_children_on_parent_close` only when the key is ABSENT, so
+  /// omitting it would hand the decision to a setting the person confirming
+  /// never saw. The prompt seeds its checkbox from that setting instead.
+  ///
+  /// `resolutionComment` lands in the `PARENT_CLOSED_CASCADE` activity row on
+  /// every cascaded child, so it is the only explanation anyone opening one of
+  /// those tickets will find. This used to send nothing at all, which left that
+  /// field empty on every ticket the phone ever cascade-closed.
   Future<ApiResponse<Map<String, dynamic>>> closeWithChildren(
     String id, {
     bool cascade = true,
+    String resolutionComment = '',
   }) async {
     try {
       return await _apiService.post(ApiConfig.ticketCloseWithChildren(id), {
         'cascade': cascade,
+        'resolution_comment': resolutionComment.trim(),
       });
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 0);
@@ -598,6 +668,55 @@ class TicketTreeNode {
           .toList(),
       focusId: focusId,
     );
+  }
+
+  /// The node for [id] anywhere in this tree, or null.
+  TicketTreeNode? find(String id) {
+    if (id.isEmpty) return null;
+    if (this.id == id) return this;
+    for (final child in children) {
+      final hit = child.find(id);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  /// The tickets a cascading close of [id] would actually close.
+  ///
+  /// **This tree's root is not the ticket being closed.** `CaseTreeView` walks
+  /// UP to the highest ancestor in the org, so the subtree that closes has to
+  /// be found inside the response first. Walking from the root instead would
+  /// list the ticket's parent, siblings and cousins as about to close, none of
+  /// which `_open_descendants` touches.
+  ///
+  /// Mirrors `_open_descendants` in `cases/parent_views.py`, including the two
+  /// easy mistakes: a node counts only when it is open AND active, and
+  /// recursion goes through closed nodes anyway, so an open grandchild under a
+  /// closed child still cascades.
+  ///
+  /// `frontend/src/routes/(app)/tickets/[id]/close.js` carries the same rules.
+  List<TicketTreeNode> openDescendantsOf(String id) {
+    final focus = find(id);
+    if (focus == null) return const [];
+    final out = <TicketTreeNode>[];
+    void walk(TicketTreeNode node) {
+      for (final child in node.children) {
+        if (child.status != 'Closed' && child.isActive) out.add(child);
+        walk(child);
+      }
+    }
+
+    walk(focus);
+    return out;
+  }
+
+  /// True when the API stopped at its depth cap inside [id]'s subtree, so the
+  /// list above is a floor. The close itself has no such cap.
+  bool subtreeTruncatedFor(String id) {
+    final focus = find(id);
+    if (focus == null) return false;
+    bool walk(TicketTreeNode node) => node.truncated || node.children.any(walk);
+    return walk(focus);
   }
 }
 

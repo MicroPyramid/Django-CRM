@@ -37,7 +37,12 @@ export async function getApprovalRules({ cookies }) {
       match_priority: r.match_priority,
       match_case_type: r.match_case_type,
       match_team: r.match_team ?? null,
-      pending_count: r.pending_count ?? 0
+      pending_count: r.pending_count ?? 0,
+      // Not displayed. It is the tie-break `find_matching_rule` uses between
+      // rules with identical conditions, so it is what lets the page tell an
+      // older duplicate (which can never run) from a fallback. See
+      // `../../routes/(app)/settings/ticket-approvals/matching.js`.
+      created_at: r.created_at ?? null
     })),
     totals: totals ?? { count: 0, active: 0, pending: 0 },
     // A display hint: POST/PUT/DELETE on `/cases/approval-rules/` each start

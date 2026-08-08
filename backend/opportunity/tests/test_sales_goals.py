@@ -508,6 +508,111 @@ class TestLeaderboardAPI:
         assert leaderboard[0]["rank"] == 1
         assert leaderboard[1]["rank"] == 2
 
+    def _current_month(self):
+        today = timezone.localdate()
+        start = today.replace(day=1)
+        end = (today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(
+            days=1
+        )
+        return start, end
+
+    def _goal_for(self, org, profile, name, target, team=None):
+        start, end = self._current_month()
+        return SalesGoal.objects.create(
+            name=name,
+            goal_type="REVENUE",
+            target_value=Decimal(target),
+            period_type="MONTHLY",
+            period_start=start,
+            period_end=end,
+            assigned_to=profile,
+            team=team,
+            org=org,
+        )
+
+    def test_leaderboard_hides_another_persons_goal_from_a_member(
+        self, user_client, org_a, admin_user, admin_profile
+    ):
+        """The board is narrowed by the same rule as the list.
+
+        This is the whole finding: `SalesGoalListView` returned this member an
+        empty list while this endpoint handed them the admin's target, their
+        attainment and their email address. A ranking is not a way around the
+        rule that a member does not read a colleague's quota.
+        """
+        self._goal_for(org_a, admin_profile, "Admin Goal", "100000")
+        opp = _create_won_opportunity(org_a, admin_user, 50000)
+        opp.assigned_to.add(admin_profile)
+
+        listed = user_client.get(TestSalesGoalAPI.GOALS_URL)
+        assert [g["name"] for g in listed.data["goals"]] == []
+
+        response = user_client.get(self.LEADERBOARD_URL)
+        assert response.status_code == 200
+        assert response.data["leaderboard"] == []
+
+    def test_leaderboard_shows_a_member_their_own_goal(
+        self, user_client, org_a, regular_user, user_profile, admin_profile
+    ):
+        """The other direction, so the narrowing is not just "always empty"."""
+        self._goal_for(org_a, user_profile, "My Goal", "50000")
+        self._goal_for(org_a, admin_profile, "Admin Goal", "100000")
+        opp = _create_won_opportunity(org_a, regular_user, 40000)
+        opp.assigned_to.add(user_profile)
+
+        response = user_client.get(self.LEADERBOARD_URL)
+        assert response.status_code == 200
+        rows = response.data["leaderboard"]
+        assert [r["goal_name"] for r in rows] == ["My Goal"]
+        # Rank is assigned after narrowing, so it describes a standing within
+        # what this person may see, not a position in a table they cannot read.
+        assert rows[0]["rank"] == 1
+        assert rows[0]["percent"] == 80
+
+    def test_leaderboard_includes_a_goal_shared_with_the_members_team(
+        self, user_client, org_a, admin_profile, user_profile, team_a
+    ):
+        """`_visible_to` has two arms, and the team arm needs its own case.
+
+        An individual goal that also carries a team the member belongs to is
+        visible on the list, so it is visible here. Without this the narrowing
+        would look correct while honouring only half the rule.
+        """
+        user_profile.user_teams.add(team_a)
+        self._goal_for(org_a, admin_profile, "Team Goal", "100000", team=team_a)
+
+        response = user_client.get(self.LEADERBOARD_URL)
+        assert response.status_code == 200
+        assert [r["goal_name"] for r in response.data["leaderboard"]] == ["Team Goal"]
+
+    def test_leaderboard_names_the_person_without_their_email(
+        self, admin_client, org_a, admin_profile, admin_user
+    ):
+        """The row used to carry the email twice, as `name` and as `email`."""
+        admin_user.name = "Ada Lovelace"
+        admin_user.save(update_fields=["name"])
+        self._goal_for(org_a, admin_profile, "Named Goal", "1000")
+
+        response = admin_client.get(self.LEADERBOARD_URL)
+        row = response.data["leaderboard"][0]
+        assert row["user"]["name"] == "Ada Lovelace"
+        assert "email" not in row["user"]
+
+    def test_leaderboard_falls_back_to_the_email_when_there_is_no_name(
+        self, admin_client, org_a, admin_profile, admin_user
+    ):
+        """`User.save` fills `name` on first save, so an empty one is unusual.
+
+        It is still reachable (a later save can blank it), and a nameless row is
+        worse than one showing an address.
+        """
+        admin_user.name = ""
+        admin_user.save(update_fields=["name"])
+        self._goal_for(org_a, admin_profile, "Nameless Goal", "1000")
+
+        response = admin_client.get(self.LEADERBOARD_URL)
+        assert response.data["leaderboard"][0]["user"]["name"] == admin_user.email
+
 
 class TestDashboardGoalSummary:
     def test_dashboard_includes_goal_summary(self, admin_client, goal_revenue):

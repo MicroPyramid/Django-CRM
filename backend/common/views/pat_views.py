@@ -112,6 +112,13 @@ class OrgAccessTokenListView(APIView):
     dormant liability, not a live credential. It would authenticate again only
     if the account were reactivated. The count is surfaced so an admin can
     revoke it as part of offboarding, not because it is "still working".
+
+    A NOTE ON "UNUSED 90+ DAYS": a token that has never been used is measured
+    from ``created_at``, not counted outright. ``last_used_at`` is null both for
+    a token issued three years ago and for one issued a minute ago, and the
+    count used to treat the two the same, so creating a token through the page
+    put the very token you just made into "unused for 90+ days" on the next
+    reload. A figure that names a duration has to have measured one.
     """
 
     permission_classes = (IsAuthenticated, HasOrgContext, IsOrgAdmin)
@@ -147,7 +154,9 @@ class OrgAccessTokenListView(APIView):
                 totals["live"] += 1
                 if not owner.is_active:
                     totals["orphaned"] += 1
-                if pat.last_used_at is None or (now - pat.last_used_at).days > 90:
+                # Never used falls back to when it was issued, so the age is
+                # always a measured one. See the class docstring.
+                if (now - (pat.last_used_at or pat.created_at)).days > 90:
                     totals["unused_90d"] += 1
 
         return Response(

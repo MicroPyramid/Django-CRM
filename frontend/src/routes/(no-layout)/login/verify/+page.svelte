@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import '../../../../app.css';
   import '$lib/v2/styles/v2.css';
   import imgLogo from '$lib/assets/images/logo.png';
@@ -13,7 +14,7 @@
 
 <div class="v2-root v2-auth">
   <div class="v2-auth-box">
-    <a href="/" class="v2-auth-brand">
+    <a href={resolve('/')} class="v2-auth-brand">
       <img src={imgLogo} alt="" />
       <b>BottleCRM</b>
     </a>
@@ -24,7 +25,7 @@
           <h1>Link expired or invalid</h1>
           <p>{data.error}</p>
         </div>
-        <a href="/login" class="v2-btn v2-btn-block">Back to sign in</a>
+        <a href={resolve('/login')} class="v2-btn v2-btn-block">Back to sign in</a>
       {:else}
         <div
           class="v2-spin"

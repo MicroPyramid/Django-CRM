@@ -23,8 +23,8 @@
  * would be inventing a way for a caller to ask for another tenant's rows.
  */
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
+import { attachmentHref } from '$lib/server/v2/files.js';
 import {
   leadFieldDefinitions,
   pairForDisplay,
@@ -33,23 +33,6 @@ import {
 
 /** See the note on FILTER_FIELDS in tickets.js. */
 export const FILTER_FIELDS = ['assigned_to', 'status', 'source', 'tags'];
-
-/**
- * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
- * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too.
- * The file is served off `/media`, not `/api`, so this uses the base host, not
- * `apiRequest`.
- *
- * @param {string|null|undefined} path
- * @returns {string|null}
- */
-function fileUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (env.PUBLIC_DJANGO_API_URL ?? '').replace(/\/+$/, '');
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-}
 
 /**
  * Django serialises `assigned_to` as a list of Profiles. The v2 list and rail
@@ -223,7 +206,7 @@ function buildActivity(response) {
       at: a.created_at,
       by: null,
       body: a.file_name || 'Attachment',
-      href: fileUrl(a.file_path)
+      href: attachmentHref(a.id)
     });
   }
 

@@ -1,4 +1,6 @@
 <script>
+  import { resolve } from '$app/paths';
+  import { asInternalPath } from '$lib/utils/paths.js';
   import { ChevronRight } from '@lucide/svelte';
 
   /**
@@ -52,7 +54,7 @@
         {/if}
         {#if crumb.href && i < breadcrumb.length - 1}
           <a
-            href={crumb.href}
+            href={resolve(asInternalPath(crumb.href))}
             class="rounded-sm transition-colors hover:text-[color:var(--text-muted)] focus-visible:ring-1 focus-visible:ring-[color:var(--ring)] focus-visible:outline-none"
             >{crumb.label}</a
           >

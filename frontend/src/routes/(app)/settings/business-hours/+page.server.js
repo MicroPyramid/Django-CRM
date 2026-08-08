@@ -87,18 +87,25 @@ export const actions = {
     const form = await event.request.formData();
     const date = form.get('date')?.toString() ?? '';
     const name = form.get('name')?.toString().trim() ?? '';
+    /** @type {any} */
+    let existing = null;
     try {
       const { calendar } = await getBusinessHours(event);
-      await addHolidayWrite(event, calendar.id, { date, name });
+      // A date already on the calendar comes back as the row that was already
+      // there, name included, rather than the one just typed. Not an error, but
+      // not the same event as adding a holiday either: the typed name was
+      // discarded, and reporting both as "added" is how a rename silently fails.
+      existing = await addHolidayWrite(event, calendar.id, { date, name });
     } catch (/** @type {any} */ err) {
       if (err?.status === 403) {
         return fail(403, { addHoliday: { error: FORBIDDEN } });
       }
       return fail(400, { addHoliday: { error: readableError(err, 'Could not add the holiday.') } });
     }
-    // Adding a date already on the calendar is idempotent (200, the existing
-    // row, no duplicate): not an error, so this path is the same "success"
-    // whether the row was created or already existed.
+    const storedName = existing?.name ?? '';
+    if (storedName && storedName !== name) {
+      return { holidayAdded: true, holidayAlreadyNamed: storedName };
+    }
     return { holidayAdded: true };
   },
 
