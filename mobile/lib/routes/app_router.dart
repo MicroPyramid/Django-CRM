@@ -40,8 +40,10 @@ import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/api_tokens_screen.dart';
+import '../screens/settings/approval_rules_screen.dart';
 import '../screens/settings/business_hours_screen.dart';
 import '../screens/settings/escalation_screen.dart';
+import '../screens/settings/inbound_email_screen.dart';
 import '../screens/settings/organization_edit_screen.dart';
 import '../screens/settings/organization_screen.dart';
 import '../screens/settings/reopen_screen.dart';
@@ -121,6 +123,9 @@ class AppRoutes {
   static const String settingsEscalation = '/more/settings/escalation';
   static const String settingsBusinessHours = '/more/settings/business-hours';
   static const String settingsReopen = '/more/settings/reopen';
+  static const String settingsInboundEmail = '/more/settings/inbound-email';
+  static const String settingsTicketApprovals =
+      '/more/settings/ticket-approvals';
   static const String settingsApiTokens = '/more/settings/api-tokens';
   static const String settingsOrganization = '/more/settings/organization';
   static const String settingsOrganizationEdit =
@@ -478,6 +483,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsReopen',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ReopenScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsInboundEmail,
+        name: 'settingsInboundEmail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InboundEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsTicketApprovals,
+        name: 'settingsTicketApprovals',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ApprovalRulesScreen(),
       ),
       GoRoute(
         path: AppRoutes.settingsApiTokens,

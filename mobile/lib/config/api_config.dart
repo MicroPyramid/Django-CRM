@@ -461,6 +461,25 @@ class ApiConfig {
   static String escalationPolicy(String id) =>
       '$apiBaseUrl/cases/escalation-policies/$id/';
 
+  /// Inbound email addresses. GET is open to any member, and strips the two
+  /// admin-only integration fields (`topic_arn`, `has_webhook_secret`) for
+  /// everyone else. POST, PUT and DELETE are admin-only.
+  static String get mailboxes => '$apiBaseUrl/cases/mailboxes/';
+
+  /// One mailbox. PUT is partial, so a body may carry one key. DELETE is a HARD
+  /// delete and takes the topic pin with it.
+  static String mailbox(String id) => '$apiBaseUrl/cases/mailboxes/$id/';
+
+  /// Approval rules, the gates on a ticket close. GET is open to any member;
+  /// every write is admin-only.
+  static String get approvalRules => '$apiBaseUrl/cases/approval-rules/';
+
+  /// One approval rule. PUT is partial. DELETE is two outcomes behind one verb:
+  /// a rule with approval history is turned off rather than destroyed, and both
+  /// answer 2xx, so the response body is what says which happened.
+  static String approvalRule(String id) =>
+      '$apiBaseUrl/cases/approval-rules/$id/';
+
   /// The org's default business calendar, created on first read. Reading is
   /// open to any member; every write below is admin-only.
   static String get businessCalendar => '$apiBaseUrl/business-hours/calendar/';

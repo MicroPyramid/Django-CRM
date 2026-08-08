@@ -1,9 +1,11 @@
 import 'package:bottle_crm/data/models/access_token.dart';
+import 'package:bottle_crm/data/models/approval_rule.dart';
 import 'package:bottle_crm/data/models/app_notification.dart';
 import 'package:bottle_crm/data/models/business_calendar.dart';
 import 'package:bottle_crm/data/models/custom_field_definition.dart';
 import 'package:bottle_crm/data/models/escalation_policy.dart';
 import 'package:bottle_crm/data/models/macro.dart';
+import 'package:bottle_crm/data/models/mailbox.dart';
 import 'package:bottle_crm/data/models/org_settings.dart';
 import 'package:bottle_crm/data/models/reopen_policy.dart';
 import 'package:bottle_crm/data/models/invoice.dart';
@@ -31,12 +33,16 @@ import 'package:bottle_crm/screens/invoices/recurring_list_screen.dart';
 import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
 import 'package:bottle_crm/screens/settings/api_token_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/api_tokens_screen.dart';
+import 'package:bottle_crm/screens/settings/approval_rule_form_sheet.dart';
+import 'package:bottle_crm/screens/settings/approval_rules_screen.dart';
 import 'package:bottle_crm/screens/settings/business_hours_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/business_hours_screen.dart';
 import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/escalation_policy_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/escalation_screen.dart';
+import 'package:bottle_crm/screens/settings/inbound_email_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
+import 'package:bottle_crm/screens/settings/mailbox_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/organization_edit_screen.dart';
 import 'package:bottle_crm/screens/settings/organization_screen.dart';
 import 'package:bottle_crm/screens/tickets/close_with_children_dialog.dart';
@@ -303,6 +309,60 @@ void main() {
         builder: (context) => ElevatedButton(
           onPressed: () => showApiTokenFormSheet(context),
           child: const Text('open'),
+        ),
+      ),
+    ),
+  );
+
+  /// The inbound-email screen. The read is open to any member, so `isAdmin`
+  /// only decides which controls show.
+  Widget mailboxesApp({required bool isAdmin, bool allLive = false}) =>
+      ProviderScope(
+        overrides: [
+          mailboxesProvider.overrideWith(
+            allLive ? _FakeLiveMailboxes.new : _FakeMailboxes.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: InboundEmailScreen()),
+      );
+
+  /// A button that opens the mailbox form, so it renders the way it is really
+  /// reached: over a screen, with the keyboard inset in play.
+  Widget mailboxFormApp() => ProviderScope(
+    child: MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showMailboxFormSheet(context),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// The approval-rules screen. `shadowed` adds a second rule with identical
+  /// conditions, written later, which is what makes the first one dead.
+  Widget approvalRulesApp({required bool isAdmin, bool shadowed = false}) =>
+      ProviderScope(
+        overrides: [
+          approvalRulesProvider.overrideWith(
+            shadowed ? _FakeShadowedRules.new : _FakeApprovalRules.new,
+          ),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: ApprovalRulesScreen()),
+      );
+
+  Widget approvalRuleFormApp() => ProviderScope(
+    child: MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showApprovalRuleFormSheet(context),
+            child: const Text('open'),
+          ),
         ),
       ),
     ),
@@ -1884,6 +1944,233 @@ void main() {
     });
   });
 
+  group('inbound email at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, mailboxesApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, mailboxesApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member reads it, and is offered no write', (tester) async {
+      // GET /cases/mailboxes/ carries only IsAuthenticated + HasOrgContext.
+      // Hiding the list would be this app disagreeing with the API about who
+      // may look.
+      await pump(tester, mailboxesApp(isAdmin: false));
+
+      expect(find.text('support@acme.com'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+    });
+
+    testWidgets('says which gate each silent address fails', (tester) async {
+      // The finding: two of these three are switched on and open nothing, and
+      // both clients used to draw them as working.
+      await pump(tester, mailboxesApp(isAdmin: true));
+
+      expect(find.text('Provider not wired up'), findsOneWidget);
+      expect(find.textContaining('Mailgun deliveries'), findsOneWidget);
+
+      // The third row sits below the fold at 390px.
+      await tester.scrollUntilVisible(find.text('Not connected yet'), 200);
+      expect(find.text('Not connected yet'), findsOneWidget);
+      expect(find.textContaining('not receiving yet'), findsOneWidget);
+    });
+
+    testWidgets('counts what creates tickets, not what is switched on', (
+      tester,
+    ) async {
+      await pump(tester, mailboxesApp(isAdmin: true));
+
+      expect(find.text('creating tickets'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget); // one of three actually delivers
+      expect(find.textContaining('switched on and create'), findsOneWidget);
+    });
+
+    testWidgets('says nothing about silence when every address delivers', (
+      tester,
+    ) async {
+      await pump(tester, mailboxesApp(isAdmin: true, allLive: true));
+
+      expect(find.textContaining('switched on and create'), findsNothing);
+      expect(find.text('Creating tickets'), findsWidgets);
+    });
+
+    testWidgets('never claims a shared secret proves a delivery', (
+      tester,
+    ) async {
+      // The card this replaced said a per-address secret did it, and that the
+      // server minted one. Nothing in the backend compares that column.
+      await pump(tester, mailboxesApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.text('How a delivery is proved genuine'),
+        200,
+      );
+
+      expect(find.textContaining('signs each notification'), findsOneWidget);
+      expect(find.textContaining('shared secret'), findsNothing);
+    });
+
+    testWidgets('the form fits over the keyboard inset', (tester) async {
+      await pump(tester, mailboxFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('New address'), findsOneWidget);
+      // No field for either credential, not even a disabled one.
+      expect(find.textContaining('secret'), findsNothing);
+    });
+
+    testWidgets('the provider picker marks the three that do nothing', (
+      tester,
+    ) async {
+      await pump(tester, mailboxFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mailgun (not wired up yet)'), findsWidgets);
+      expect(find.text('AWS SES'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('approval rules at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, approvalRulesApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, approvalRulesApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member reads it, and is offered no write', (tester) async {
+      await pump(tester, approvalRulesApp(isAdmin: false));
+
+      expect(find.text('Close review'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+    });
+
+    testWidgets('names the role as well as the named approvers', (
+      tester,
+    ) async {
+      // The finding: named approvers are additive. A row listing only the
+      // names reads as tighter than the rule is.
+      await pump(tester, approvalRulesApp(isAdmin: true));
+
+      expect(
+        find.text('Cleared by any admin, or ada@acme.com'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('flags a rule that gates closes nobody can clear', (
+      tester,
+    ) async {
+      await pump(tester, approvalRulesApp(isAdmin: true));
+
+      expect(find.text('Nobody can clear'), findsOneWidget);
+      expect(find.textContaining('There is no manager role'), findsOneWidget);
+    });
+
+    testWidgets('says nothing about shadowing when no two rules match alike', (
+      tester,
+    ) async {
+      await pump(tester, approvalRulesApp(isAdmin: true));
+
+      expect(find.text('Never runs'), findsNothing);
+      expect(find.textContaining('never runs'), findsNothing);
+    });
+
+    testWidgets('flags the older of two rules with identical conditions', (
+      tester,
+    ) async {
+      await pump(tester, approvalRulesApp(isAdmin: true, shadowed: true));
+
+      expect(find.text('Never runs'), findsOneWidget);
+      expect(find.textContaining('was written later'), findsOneWidget);
+      // That row carries three flags at once, which is the widest one gets.
+      expect(find.text('Nobody can clear'), findsOneWidget);
+      expect(find.text('3 waiting'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the widest row still fits with the font scaled up', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        approvalRulesApp(isAdmin: true, shadowed: true),
+        textScale: 1.5,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('says a ticket is gated by one rule, not by all of them', (
+      tester,
+    ) async {
+      await pump(tester, approvalRulesApp(isAdmin: true));
+      await tester.scrollUntilVisible(
+        find.textContaining('gated by one rule'),
+        200,
+      );
+
+      expect(find.textContaining('gated by one rule'), findsOneWidget);
+    });
+
+    testWidgets('the form fits over the keyboard inset', (tester) async {
+      await pump(tester, approvalRuleFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('New approval rule'), findsOneWidget);
+    });
+
+    testWidgets('the form answers who can clear it before it is saved', (
+      tester,
+    ) async {
+      await pump(tester, approvalRuleFormApp());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cleared by any admin'), findsOneWidget);
+
+      // Switching to the role that matches nobody, with nobody named, is the
+      // configuration that strands every ticket it gates.
+      //
+      // The sheet's scrollable has to be named: every TextField in it carries
+      // one of its own, so an unqualified `scrollUntilVisible` finds several
+      // and throws.
+      await tester.scrollUntilVisible(
+        find.text('Admin'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(SingleChildScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(find.text('Admin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Manager (matches nobody yet)').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cleared by nobody'), findsOneWidget);
+      expect(find.textContaining('cannot be closed by anyone'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('organization at 390px', () {
     testWidgets('renders without overflowing', (tester) async {
       await pump(tester, organizationApp(isAdmin: true));
@@ -2749,6 +3036,119 @@ class _FakeTokens extends AccessTokensNotifier {
 class _FakeOrphanedTokens extends AccessTokensNotifier {
   @override
   Future<AccessTokensState> build() async => _tokenState(orphaned: true);
+}
+
+/// Three addresses: one delivering, one on an unimplemented provider, one SES
+/// address that has never had its subscription confirmed. The last two are the
+/// states both clients used to draw as "Creating tickets".
+Map<String, dynamic> _mailboxJson({
+  required String id,
+  required String address,
+  String provider = 'ses',
+  bool isActive = true,
+  bool hasTopicArn = true,
+}) => {
+  'id': id,
+  'address': address,
+  'provider': provider,
+  'is_active': isActive,
+  'has_topic_arn': hasTopicArn,
+  'default_priority': 'Normal',
+  'default_case_type': null,
+  'default_assignee': null,
+  'cases_last_30d': 3,
+  'last_received_at': '2026-08-01T09:00:00Z',
+};
+
+MailboxesState _mailboxState({bool allLive = false}) {
+  final rows = [
+    Mailbox.fromJson(_mailboxJson(id: 'm1', address: 'support@acme.com')),
+    Mailbox.fromJson(
+      _mailboxJson(
+        id: 'm2',
+        address: 'billing@acme.com',
+        provider: allLive ? 'ses' : 'mailgun',
+      ),
+    ),
+    Mailbox.fromJson(
+      _mailboxJson(
+        id: 'm3',
+        address: 'help@acme.com',
+        hasTopicArn: allLive ? true : false,
+      ),
+    ),
+  ];
+  return MailboxesState(
+    mailboxes: sortedMailboxes(rows),
+    count: rows.length,
+    casesLast30d: 9,
+  );
+}
+
+class _FakeMailboxes extends MailboxesNotifier {
+  @override
+  Future<MailboxesState> build() async => _mailboxState();
+}
+
+class _FakeLiveMailboxes extends MailboxesNotifier {
+  @override
+  Future<MailboxesState> build() async => _mailboxState(allLive: true);
+}
+
+/// Two rules: an admin one with a named approver (so the row has to say the
+/// role AND the name), and a manager one with nobody named (so nothing it
+/// gates can be closed at all).
+List<ApprovalRule> _approvalRules({bool shadowed = false}) => [
+  ApprovalRule.fromJson({
+    'id': 'r1',
+    'name': 'Close review',
+    'is_active': true,
+    'approver_role': 'ADMIN',
+    'approvers': [
+      {'id': 'p1', 'email': 'ada@acme.com', 'is_active': true},
+    ],
+    'match_priority': shadowed ? null : 'Urgent',
+    'match_case_type': null,
+    'match_team': null,
+    'pending_count': 2,
+    'created_at': '2026-01-01T00:00:00Z',
+  }),
+  // In the shadowed variant this is the older twin, so it carries all three
+  // flags at once (nobody can clear, never runs, and approvals waiting). That
+  // is the widest a row gets, and it is the case that decides whether the
+  // badges have to wrap at 390px.
+  ApprovalRule.fromJson({
+    'id': 'r2',
+    'name': 'Manager sign-off',
+    'is_active': true,
+    'approver_role': 'MANAGER',
+    'approvers': const [],
+    'match_priority': null,
+    'match_case_type': shadowed ? null : 'Incident',
+    'match_team': null,
+    'pending_count': shadowed ? 3 : 0,
+    'created_at': shadowed ? '2025-06-01T00:00:00Z' : '2026-02-01T00:00:00Z',
+  }),
+];
+
+class _FakeApprovalRules extends ApprovalRulesNotifier {
+  @override
+  Future<ApprovalRulesState> build() async => ApprovalRulesState(
+    rules: _approvalRules(),
+    count: 2,
+    active: 2,
+    pending: 2,
+  );
+}
+
+class _FakeShadowedRules extends ApprovalRulesNotifier {
+  @override
+  Future<ApprovalRulesState> build() async => ApprovalRulesState(
+    rules: _approvalRules(shadowed: true),
+    count: 2,
+    active: 2,
+    pending: 2,
+  );
 }
 
 /// A configured org, with the cascade switch off, which is the model default.

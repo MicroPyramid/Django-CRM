@@ -19,9 +19,9 @@ import '../../widgets/common/common.dart';
 /// Each page hides its own write controls from a non-admin, which is UX rather
 /// than a guard: the server answers 403 either way.
 ///
-/// Pages arrive here as they are built for the phone. The web has thirteen;
-/// listing the unbuilt ones as greyed rows would only advertise a gap the
-/// parity tracker already records.
+/// Every settings page the web has is here. Two of the reads underneath are
+/// admin-only server-side and say so on arrival rather than here: the reopen
+/// policy and the org-wide token list.
 class SettingsHubScreen extends StatelessWidget {
   const SettingsHubScreen({super.key});
 
@@ -83,6 +83,18 @@ class SettingsHubScreen extends StatelessWidget {
               description: 'Canned answers to insert into a ticket reply',
               onTap: () => context.push(AppRoutes.settingsMacros),
             ),
+            MenuRow(
+              icon: LucideIcons.mail,
+              label: 'Inbound email',
+              description: 'The addresses that turn mail into tickets',
+              onTap: () => context.push(AppRoutes.settingsInboundEmail),
+            ),
+            MenuRow(
+              icon: LucideIcons.circleCheckBig,
+              label: 'Approval rules',
+              description: 'What gates a ticket close, and who can clear it',
+              onTap: () => context.push(AppRoutes.settingsTicketApprovals),
+            ),
             const _SectionHeader('Organization'),
             MenuRow(
               icon: LucideIcons.building2,
@@ -95,16 +107,6 @@ class SettingsHubScreen extends StatelessWidget {
               label: 'API tokens',
               description: 'Programmatic access, and what to revoke',
               onTap: () => context.push(AppRoutes.settingsApiTokens),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'The rest of the settings are on the web app for now.',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
             ),
             const SizedBox(height: 48),
           ],

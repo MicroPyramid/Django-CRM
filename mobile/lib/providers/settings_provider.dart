@@ -3,23 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/access_token.dart';
+import '../data/models/approval_rule.dart';
 import '../data/models/business_calendar.dart';
 import '../data/models/custom_field_definition.dart';
 import '../data/models/escalation_policy.dart';
 import '../data/models/macro.dart';
+import '../data/models/mailbox.dart';
 import '../data/models/org_settings.dart';
 import '../data/models/reopen_policy.dart';
 import '../data/models/routing_rule.dart';
 import '../data/models/tag.dart';
 import '../services/api_service.dart';
 
-/// The org settings cluster.
-///
-/// Custom fields, saved replies, tags, routing, escalation, business hours,
-/// reopen rules, API tokens and the organization itself are the pages of the
-/// cluster that have reached the phone. The rest (inbound email, ticket
-/// approvals) share the same shape, so they will land beside these rather than
-/// in files of their own.
+/// The org settings cluster: every page of it, on the phone.
 ///
 /// Every write here is admin-only server-side. The screens hide the controls
 /// from everyone else, which is UX: `CustomFieldDefinitionListCreateView.post`
@@ -1076,6 +1072,206 @@ final orgPacksProvider = FutureProvider<List<VerticalPack>>((ref) async {
     'packs',
   ]).map(VerticalPack.fromJson).toList();
 });
+
+// ---------------------------------------------------------------------------
+// Inbound email, the addresses that turn mail into tickets
+// ---------------------------------------------------------------------------
+
+/// The org's inbound addresses, plus what they add up to.
+///
+/// The read is open to any member. Every write is admin-only server-side, so
+/// the screen hides the controls and the API refuses regardless.
+class MailboxesState {
+  const MailboxesState({
+    this.mailboxes = const [],
+    this.count = 0,
+    this.casesLast30d = 0,
+  });
+
+  /// Live addresses first, then alphabetically.
+  final List<Mailbox> mailboxes;
+
+  /// From the server's `totals`. `active` is deliberately not held: it counts
+  /// `is_active` and the screen asks how many actually open tickets, which is a
+  /// different number. See [delivering].
+  final int count;
+
+  /// Tickets opened from any of these addresses in 30 days, deduplicated
+  /// server-side so an address cross-posted to two mailboxes counts once.
+  final int casesLast30d;
+
+  int get delivering => deliveringMailboxCount(mailboxes);
+
+  List<Mailbox> get silent => silentMailboxes(mailboxes);
+}
+
+class MailboxesNotifier extends AsyncNotifier<MailboxesState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<MailboxesState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<MailboxesState> _fetch() async {
+    final response = await _api.get(ApiConfig.mailboxes);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load inbound email');
+    }
+    final body = response.data!;
+    final rows = listFromEnvelope(body, const [
+      'mailboxes',
+    ]).map(Mailbox.fromJson).toList();
+    final totals = body['totals'];
+    return MailboxesState(
+      mailboxes: sortedMailboxes(rows),
+      count: _int(totals, 'count', rows.length),
+      casesLast30d: _int(totals, 'cases_last_30d', 0),
+    );
+  }
+
+  Future<String?> createMailbox(Map<String, dynamic> payload) async {
+    final response = await _api.post(ApiConfig.mailboxes, payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  Future<String?> updateMailbox(String id, Map<String, dynamic> payload) async {
+    final response = await _api.put(ApiConfig.mailbox(id), payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  /// Stop an address opening tickets, reversibly. The alternative
+  /// [deleteMailbox] points at, and the reason that control explains itself.
+  Future<String?> deactivateMailbox(String id) =>
+      updateMailbox(id, mailboxActivePayload(false));
+
+  Future<String?> activateMailbox(String id) =>
+      updateMailbox(id, mailboxActivePayload(true));
+
+  /// Permanent. `InboundMailboxDetailView.delete` calls `obj.delete()`, which
+  /// takes the topic pin with it.
+  Future<String?> deleteMailbox(String id) async {
+    final response = await _api.delete(ApiConfig.mailbox(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final mailboxesProvider =
+    AsyncNotifierProvider<MailboxesNotifier, MailboxesState>(
+      MailboxesNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
+// Approval rules, the gates on a ticket close
+// ---------------------------------------------------------------------------
+
+/// The rules, plus the org's waiting approvals.
+class ApprovalRulesState {
+  const ApprovalRulesState({
+    this.rules = const [],
+    this.count = 0,
+    this.active = 0,
+    this.pending = 0,
+  });
+
+  /// Server-ordered by `-created_at`, which is also the tie-break between rules
+  /// with identical conditions, so the order is left alone.
+  final List<ApprovalRule> rules;
+
+  final int count;
+  final int active;
+
+  /// Approvals waiting on any of these rules right now.
+  final int pending;
+
+  /// Active rules another active rule always beats to the case.
+  Set<String> get shadowed => shadowedRuleIds(rules);
+
+  /// Active rules gating closes that nobody in the org can clear.
+  int get stranding => rules.where((r) => r.clearableByNobody).length;
+}
+
+class ApprovalRulesNotifier extends AsyncNotifier<ApprovalRulesState> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<ApprovalRulesState> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<ApprovalRulesState> _fetch() async {
+    final response = await _api.get(ApiConfig.approvalRules);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load approval rules');
+    }
+    final body = response.data!;
+    final rules = listFromEnvelope(body, const [
+      'rules',
+    ]).map(ApprovalRule.fromJson).toList(growable: false);
+    final totals = body['totals'];
+    return ApprovalRulesState(
+      rules: rules,
+      count: _int(totals, 'count', rules.length),
+      active: _int(totals, 'active', rules.where((r) => r.isActive).length),
+      pending: _int(totals, 'pending', 0),
+    );
+  }
+
+  Future<String?> createRule(Map<String, dynamic> payload) async {
+    final response = await _api.post(ApiConfig.approvalRules, payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  Future<String?> updateRule(String id, Map<String, dynamic> payload) async {
+    final response = await _api.put(ApiConfig.approvalRule(id), payload);
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+
+  Future<String?> deactivateRule(String id) =>
+      updateRule(id, approvalRuleActivePayload(false));
+
+  Future<String?> activateRule(String id) =>
+      updateRule(id, approvalRuleActivePayload(true));
+
+  /// Delete a rule, or turn it off, depending on what the backend decides.
+  ///
+  /// `ApprovalRuleDetailView.delete` destroys a rule that has never gated a
+  /// close and soft-disables one that has, because `Approval.rule` is
+  /// `on_delete=PROTECT`. Both answer 2xx, so "did it throw" cannot tell them
+  /// apart: the hard delete answers 204 with no body, and the soft one answers
+  /// 200 carrying `is_active: false`. Reported rather than assumed, so an admin
+  /// is never told "deleted" about a row still in the list.
+  Future<({String? error, bool turnedOff})> deleteRule(String id) async {
+    final response = await _api.delete(ApiConfig.approvalRule(id));
+    if (!response.success) {
+      return (error: _message(response), turnedOff: false);
+    }
+    final turnedOff = approvalRuleWasTurnedOff(response.data);
+    await refresh();
+    return (error: null, turnedOff: turnedOff);
+  }
+}
+
+final approvalRulesProvider =
+    AsyncNotifierProvider<ApprovalRulesNotifier, ApprovalRulesState>(
+      ApprovalRulesNotifier.new,
+    );
 
 /// The IANA zones the org form's timezone picker may offer.
 ///

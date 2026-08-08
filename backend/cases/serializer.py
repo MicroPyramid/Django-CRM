@@ -572,6 +572,15 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         write_only=True, required=False, allow_blank=True, max_length=128
     )
     has_webhook_secret = serializers.SerializerMethodField()
+    # Whether the mailbox has acquired its SNS TopicArn pin.
+    #
+    # Not a credential and not admin-only: it is delivery status. An active SES
+    # mailbox with no pin rejects every notification (`InboundMailboxWebhookView
+    # .post` answers `_topic_rejected()` until a signature-verified
+    # SubscriptionConfirmation sets one), so without this a client can only
+    # report `is_active` and would draw a never-connected address as working.
+    # The ARN itself stays admin-only below, since it embeds the AWS account id.
+    has_topic_arn = serializers.SerializerMethodField()
 
     class Meta:
         model = InboundMailbox
@@ -581,6 +590,7 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             "provider",
             "webhook_secret",
             "has_webhook_secret",
+            "has_topic_arn",
             "topic_arn",
             "default_priority",
             "default_case_type",
@@ -624,11 +634,19 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
     def get_has_webhook_secret(self, instance) -> bool:
         return bool(instance.webhook_secret)
 
+    def get_has_topic_arn(self, instance) -> bool:
+        return bool(instance.topic_arn)
+
     def to_representation(self, instance):
         """`topic_arn` is the webhook's TopicArn pin and embeds the AWS account
         id, so it is shown only to admins, who manage the integration, and only
         when the view passes the request in context. `has_webhook_secret` rides
         with it because both describe the same admin-only integration config.
+
+        `has_topic_arn` deliberately does NOT ride with them. It says whether
+        mail to this address can become a ticket at all, which is the same kind
+        of fact as `is_active`, and every viewer of the row needs it to read the
+        row correctly.
 
         `webhook_secret` itself is declared `write_only` above and so is never
         in `data` to begin with. This method used to pop it for non-admins,
