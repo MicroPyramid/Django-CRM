@@ -76,6 +76,17 @@ enum TicketType {
 }
 
 /// Ticket model for BottleCRM
+/// Statuses where somebody still owes the customer something.
+///
+/// Mirrors `cases.views.OPEN_STATUSES` and the web's `OPEN_STATUSES` in
+/// `lib/server/v2/tickets.js`. Three lists, one definition, so a rail that
+/// says "also open" means the same thing everywhere.
+const List<TicketStatus> openTicketStatuses = [
+  TicketStatus.newStatus,
+  TicketStatus.assigned,
+  TicketStatus.pending,
+];
+
 class Ticket {
   final String id;
   final String name;
@@ -98,6 +109,19 @@ class Ticket {
   final bool isResolutionSlaBreachedFromApi;
   final List<Comment> comments;
   final List<String> tagIds;
+
+  /// The people on this ticket, from the `contacts` M2M.
+  ///
+  /// Read AND sent. `CaseDetailView.put` clears `contacts` unconditionally and
+  /// re-adds whatever the body carries, so a client that edits with PUT and
+  /// omits this field unlinks every contact on the ticket. This app now edits
+  /// with PATCH, which only touches the key when it is present, and sends the
+  /// list either way.
+  final List<String> contactIds;
+
+  /// Display names for the same rows, so the detail screen can name them
+  /// without a second request.
+  final List<String> contactNames;
   final Map<String, dynamic> customFields;
   final DateTime? firstResponseSlaDeadline;
   final DateTime? resolutionSlaDeadline;
@@ -121,6 +145,8 @@ class Ticket {
     this.assignedToIds = const [],
     this.tags = const [],
     this.tagIds = const [],
+    this.contactIds = const [],
+    this.contactNames = const [],
     this.customFields = const {},
     this.firstResponseSlaDeadline,
     this.resolutionSlaDeadline,
@@ -216,6 +242,26 @@ class Ticket {
       }
     }
 
+    final List<String> parsedContactIds = [];
+    final List<String> parsedContactNames = [];
+    if (json['contacts'] is List) {
+      for (final c in (json['contacts'] as List)) {
+        if (c is Map<String, dynamic>) {
+          final cid = c['id']?.toString();
+          if (cid != null && cid.isNotEmpty) parsedContactIds.add(cid);
+          final name = [c['first_name'], c['last_name']]
+              .whereType<String>()
+              .where((part) => part.trim().isNotEmpty)
+              .join(' ');
+          parsedContactNames.add(
+            name.trim().isNotEmpty
+                ? name.trim()
+                : (c['email'] as String? ?? 'Contact'),
+          );
+        }
+      }
+    }
+
     final Map<String, dynamic> parsedCustomFields = {};
     final cfRaw = json['custom_fields'];
     if (cfRaw is Map) {
@@ -237,6 +283,8 @@ class Ticket {
       assignedToIds: parsedAssignedToIds,
       tags: parsedTags,
       tagIds: parsedTagIds,
+      contactIds: parsedContactIds,
+      contactNames: parsedContactNames,
       customFields: parsedCustomFields,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
@@ -290,6 +338,7 @@ class Ticket {
       'account': accountId,
       'assigned_to': assignedToIds,
       'tags': tagIds,
+      'contacts': contactIds,
       'custom_fields': customFields,
       if (closedOn != null)
         'closed_on':
@@ -312,6 +361,8 @@ class Ticket {
     List<String>? assignedToIds,
     List<String>? tags,
     List<String>? tagIds,
+    List<String>? contactIds,
+    List<String>? contactNames,
     Map<String, dynamic>? customFields,
     DateTime? firstResponseSlaDeadline,
     DateTime? resolutionSlaDeadline,
@@ -344,6 +395,8 @@ class Ticket {
       assignedToIds: assignedToIds ?? this.assignedToIds,
       tags: tags ?? this.tags,
       tagIds: tagIds ?? this.tagIds,
+      contactIds: contactIds ?? this.contactIds,
+      contactNames: contactNames ?? this.contactNames,
       customFields: customFields ?? this.customFields,
       firstResponseSlaDeadline:
           firstResponseSlaDeadline ?? this.firstResponseSlaDeadline,

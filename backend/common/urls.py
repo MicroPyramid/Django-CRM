@@ -1,5 +1,6 @@
 from django.urls import path
 
+from common.views.attachment_views import AttachmentDownloadView
 from common.views.auth_views import (
     GoogleIdTokenView,
     GoogleOAuthCallbackView,
@@ -16,7 +17,11 @@ from common.views.custom_field_views import (
     CustomFieldDefinitionListCreateView,
 )
 from common.views.dashboard_views import ActivityListView, ApiHomeView, ApiTodayView
-from common.views.document_views import DocumentDetailView, DocumentListView
+from common.views.document_views import (
+    DocumentDetailView,
+    DocumentDownloadView,
+    DocumentListView,
+)
 from common.views.notification_views import (
     NotificationDetailView,
     NotificationListView,
@@ -129,6 +134,10 @@ urlpatterns = [
     # Documents
     path("documents/", DocumentListView.as_view()),
     path("documents/<uid:pk>/", DocumentDetailView.as_view()),
+    path("documents/<uid:pk>/download/", DocumentDownloadView.as_view()),
+    # Attachments. One generic download for every attachable record type; see
+    # the view for why a /media/ URL is not an alternative to it.
+    path("attachments/<uid:pk>/download/", AttachmentDownloadView.as_view()),
     # API Settings
     path("api-settings/", DomainList.as_view()),
     path("api-settings/<uid:pk>/", DomainDetailView.as_view()),

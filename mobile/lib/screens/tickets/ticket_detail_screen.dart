@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
@@ -15,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/tickets_provider.dart';
+import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../data/models/lookup_models.dart';
 import '../../widgets/common/common.dart';
@@ -40,6 +40,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   final TextEditingController _commentController = TextEditingController();
 
   TicketDetailResult? _detail;
+
+  /// Other open tickets on the same account. Context beside the ticket, so a
+  /// failure here leaves it empty rather than failing the screen.
+  List<Ticket> _alsoOpen = const [];
   TicketWatchers? _watchers;
   TicketTreeNode? _tree;
   bool _isLoading = true;
@@ -73,15 +77,29 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
       notifier.getWatchers(widget.ticketId),
       notifier.fetchTree(widget.ticketId),
     ]);
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _detail = results[0] as TicketDetailResult?;
-        _watchers = results[1] as TicketWatchers?;
-        _tree = results[2] as TicketTreeNode?;
-        if (_detail == null) _error = 'Failed to load ticket';
-      });
+    if (!mounted) return;
+    final detail = results[0] as TicketDetailResult?;
+    setState(() {
+      _isLoading = false;
+      _detail = detail;
+      _watchers = results[1] as TicketWatchers?;
+      _tree = results[2] as TicketTreeNode?;
+      if (detail == null) _error = 'Failed to load ticket';
+    });
+
+    // Second request, after the ticket, because it needs the account id the
+    // detail response carries. The web rail asks the same question the same
+    // way; the phone showed nothing at all.
+    final accountId = detail?.ticketObj.accountId;
+    if (accountId == null || accountId.isEmpty) {
+      if (mounted) setState(() => _alsoOpen = const []);
+      return;
     }
+    final siblings = await notifier.getAlsoOpenOnAccount(
+      accountId: accountId,
+      excludeTicketId: widget.ticketId,
+    );
+    if (mounted) setState(() => _alsoOpen = siblings);
   }
 
   @override
@@ -386,6 +404,31 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               ],
             ),
           ),
+          if (c.contactNames.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _card(
+              title: c.contactNames.length == 1
+                  ? 'Reported by'
+                  : '${c.contactNames.length} people on this ticket',
+              child: Column(
+                children: [
+                  for (final name in c.contactNames)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          UserAvatar(name: name, size: AvatarSize.sm),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(name, style: AppTypography.label),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
           if (c.description != null && c.description!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _card(
@@ -396,6 +439,26 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
+              ),
+            ),
+          ],
+          // The account's other open tickets. Empty when the ticket has no
+          // account, or when it is the only one open, so the card appears only
+          // when it has something to say.
+          if (_alsoOpen.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _card(
+              title: 'Also open on ${c.accountName ?? 'this account'}',
+              child: Column(
+                children: [
+                  for (final sibling in _alsoOpen)
+                    _AlsoOpenRow(
+                      ticket: sibling,
+                      // Same literal every other jump to a ticket uses in
+                      // this file; there is no builder on AppRoutes for it.
+                      onTap: () => context.push('/tickets/${sibling.id}'),
+                    ),
+                ],
               ),
             ),
           ],
@@ -800,19 +863,19 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
     );
   }
 
+  /// Download an attachment through the API, with the token attached. See the
+  /// note on `Attachment.filePath` for why the stored path is not a URL.
   Future<void> _openAttachment(Attachment attachment) async {
-    final path = attachment.filePath;
-    if (path == null || path.trim().isEmpty) {
-      _snack('No download URL available');
+    if (!attachment.hasFile) {
+      _snack('That attachment has no file.');
       return;
     }
-    final uri = Uri.tryParse(path);
-    if (uri == null) {
-      _snack('No download URL available');
-      return;
-    }
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) _snack('Could not open that file');
+    final result = await downloadAttachment(
+      url: ApiConfig.attachmentDownload(attachment.id),
+      fileName: attachment.fileName,
+    );
+    if (!mounted || result.success) return;
+    _snack(result.error ?? 'Could not download that file.');
   }
 
   /// Attach a file to this ticket.
@@ -2605,5 +2668,65 @@ class _ActivityTile extends StatelessWidget {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
+  }
+}
+
+/// One other open ticket on the same account.
+///
+/// A full-width tap target at 48px, because the card sits low on a phone
+/// screen and a thumb reaching it is aiming without looking.
+class _AlsoOpenRow extends StatelessWidget {
+  const _AlsoOpenRow({required this.ticket, required this.onTap});
+
+  final Ticket ticket;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: ticket.status.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ticket.name,
+                    style: AppTypography.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${ticket.status.label} · ${ticket.priority.label}',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

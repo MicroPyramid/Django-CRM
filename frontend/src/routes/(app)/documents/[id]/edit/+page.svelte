@@ -16,9 +16,10 @@
    * (owner or admin); the PUT enforces the same, so this is the UX side of the
    * `_may_write` fix.
    *
-   * The file itself is not replaced here. Swapping the bytes behind a title is
-   * a new upload, kept apart so a rename cannot quietly change what the document
-   * *is*. VALIDATION IS A UX HINT: the serializer requires a title and rejects a
+   * Replacing the file is optional and lives on this form rather than in a
+   * second upload, because deleting and re-uploading was the only way to
+   * correct a wrong file and it dropped every share the document had.
+   * VALIDATION IS A UX HINT: the serializer requires a title and rejects a
    * duplicate within the org regardless of what this page allows.
    */
   // Seed once from the loaded document, or from a rejected submit's echoed
@@ -42,6 +43,15 @@
   // update on `.add()`/`.delete()` without reassigning the whole set.
   let sharedTo = new SvelteSet(init.shared_to);
   let sharedTeams = new SvelteSet(init.teams);
+
+  // Shown back to the reader so a replacement is a deliberate act, not a
+  // silent one. Empty means the stored file is kept.
+  let newFileName = $state('');
+
+  function onFile(/** @type {Event} */ ev) {
+    const input = /** @type {HTMLInputElement} */ (ev.currentTarget);
+    newFileName = input.files?.[0]?.name ?? '';
+  }
 
   let touched = $state(/** @type {Record<string, boolean>} */ ({}));
   let submitted = $state(false);
@@ -94,7 +104,14 @@
   </PageHeader>
 
   <div class="v2-scroll v2-pad" style="padding-top:18px">
-    <form class="v2-form" method="POST" action="?/save" use:enhance={check} novalidate>
+    <form
+      class="v2-form"
+      method="POST"
+      action="?/save"
+      enctype="multipart/form-data"
+      use:enhance={check}
+      novalidate
+    >
       {#if result?.error}
         <div
           class="v2-next"
@@ -123,10 +140,26 @@
         {#if show('title')}<p class="v2-error" id="e-title">{errors.title}</p>{/if}
       </div>
 
+      <!-- Replacing the file keeps the record, and so keeps its shares. Doing
+           this by deleting and re-uploading was the only way before, and it
+           silently dropped everyone the document was shared with. -->
       <div class="v2-field">
-        <span class="pseudo-label">File</span>
+        <label for="f-file">File</label>
         <p class="v2-input v2-file-static">{data.document.document_file}</p>
-        <p class="v2-hint">The file is not replaced here, upload a new document to change it.</p>
+        <input
+          id="f-file"
+          name="document_file"
+          class="v2-input v2-file"
+          type="file"
+          onchange={onFile}
+          aria-describedby="h-file"
+          style="margin-top:8px"
+        />
+        <p class="v2-hint" id="h-file">
+          {newFileName
+            ? `Replacing with: ${newFileName}`
+            : 'Leave this empty to keep the current file. Choosing one replaces it, and the title and shares stay as they are.'}
+        </p>
       </div>
 
       <div class="v2-field">
@@ -277,11 +310,5 @@
     font-size: 12px;
     color: var(--v2-slate);
     margin: 0;
-  }
-  .pseudo-label {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 600;
-    margin-bottom: 5px;
   }
 </style>

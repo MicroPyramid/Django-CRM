@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/permissions.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/deals_provider.dart';
+import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/misc/stage_stepper.dart';
@@ -1178,19 +1178,22 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     }
   }
 
+  /// Download an attachment through the API, with the token attached.
+  ///
+  /// It used to hand the file's `/media/` path to the external browser, which
+  /// carries no token and so could not fetch it, on a path that has no
+  /// per-file authorization anyway.
   Future<void> _openFile(Attachment a) async {
-    final path = a.filePath;
-    if (path == null || path.trim().isEmpty) {
-      _snack('No download URL available');
+    if (!a.hasFile) {
+      _snack('That attachment has no file.');
       return;
     }
-    final uri = Uri.tryParse(path);
-    if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _snack('Could not open file');
-    }
+    final result = await downloadAttachment(
+      url: ApiConfig.attachmentDownload(a.id),
+      fileName: a.fileName,
+    );
+    if (!mounted || result.success) return;
+    _snack(result.error ?? 'Could not download that file.');
   }
 
   // ===========================================================================

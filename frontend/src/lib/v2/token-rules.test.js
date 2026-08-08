@@ -7,7 +7,7 @@ import {
   expiryFromChoice,
   scopesFromChoice,
   EXPIRY_CHOICES
-} from './oversight.js';
+} from './token-rules.js';
 
 const NOW = new Date('2026-08-08T12:00:00Z');
 

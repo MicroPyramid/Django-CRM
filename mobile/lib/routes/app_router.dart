@@ -40,6 +40,7 @@ import '../screens/settings/macros_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/api_tokens_screen.dart';
+import '../screens/settings/my_api_tokens_screen.dart';
 import '../screens/settings/approval_rules_screen.dart';
 import '../screens/settings/business_hours_screen.dart';
 import '../screens/settings/escalation_screen.dart';
@@ -134,6 +135,11 @@ class AppRoutes {
   static const String settingsTicketApprovals =
       '/more/settings/ticket-approvals';
   static const String settingsApiTokens = '/more/settings/api-tokens';
+
+  /// Your OWN tokens, under profile rather than under settings. Settings
+  /// holds the admin's org-wide oversight list, which 403s a member; this
+  /// is the self-scoped half every member may use.
+  static const String profileTokens = '/more/profile/tokens';
   static const String settingsOrganization = '/more/settings/organization';
   static const String settingsOrganizationEdit =
       '/more/settings/organization/edit';
@@ -592,6 +598,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsApiTokens',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ApiTokensScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileTokens,
+        name: 'profileTokens',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MyApiTokensScreen(),
       ),
       // The edit route is declared before the read one so `/organization/edit`
       // is never captured as a sub-path of `/organization`.

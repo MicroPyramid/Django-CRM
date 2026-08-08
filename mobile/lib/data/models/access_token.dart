@@ -97,8 +97,20 @@ class AccessToken {
     lastUsedAt: _date(json['last_used_at']),
     createdAt: _date(json['created_at']),
     revokedAt: _date(json['revoked_at']),
-    isLive: json['is_live'] as bool? ?? true,
+    // `is_live` is a derived flag the ORG oversight endpoint computes; the
+    // self-scoped list does not send it. Defaulting to true drew every revoked
+    // and expired token on that list as Live, so absent means "work it out"
+    // from the two stored facts rather than "assume the best".
+    isLive:
+        json['is_live'] as bool? ??
+        _derivedIsLive(_date(json['revoked_at']), _date(json['expires_at'])),
   );
+
+  static bool _derivedIsLive(DateTime? revokedAt, DateTime? expiresAt) {
+    if (revokedAt != null) return false;
+    if (expiresAt == null) return true;
+    return expiresAt.isAfter(DateTime.now());
+  }
 
   /// Revoked and expired are different reasons for the same outcome, so they
   /// read differently and tone the same. Neither is a live credential.
@@ -136,8 +148,15 @@ class AccessToken {
   }
 
   /// What this token may do, in the words the screen uses.
-  String get scopeSummary {
+  ///
+  /// `ownerLabel` exists because the self-scoped list carries no `owner` block
+  /// (the endpoint is already narrowed to you), and "Everything its owner can"
+  /// reads oddly on a screen about your own tokens.
+  String scopeSummaryFor({String? ownerLabel}) {
     if (scopes.isEmpty) {
+      if (ownerLabel != null && ownerLabel.isNotEmpty) {
+        return 'Everything $ownerLabel can';
+      }
       final first = owner.firstName;
       return first.isEmpty
           ? 'Everything its owner can'
@@ -146,6 +165,8 @@ class AccessToken {
     if (scopes.every((s) => s.endsWith(':read'))) return 'Read only';
     return scopes.join(', ');
   }
+
+  String get scopeSummary => scopeSummaryFor();
 
   /// True when this row is a live token on a deactivated account: the loose end
   /// the screen offers to clear in one go.
@@ -287,3 +308,35 @@ const String tokenRevokeExplanation =
 const String tokenRevealWarning =
     'This is the only time the full token is shown. Store it somewhere safe. '
     'The server keeps only a hash, so it cannot be retrieved again.';
+
+/// "Last used 12 Aug 2026 · expires 4 Nov 2026", or the honest absences.
+///
+/// Shared by the admin oversight screen and the self-service one, because a
+/// row means the same thing on both and a second copy is a second wording.
+String tokenActivityLine(AccessToken token) {
+  final used = token.lastUsedAt == null
+      ? 'Never used'
+      : 'Last used ${tokenHumanDate(token.lastUsedAt!)}';
+  final expiry = token.expiresAt == null
+      ? 'never expires'
+      : 'expires ${tokenHumanDate(token.expiresAt!)}';
+  return '$used · $expiry';
+}
+
+String tokenHumanDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
+}

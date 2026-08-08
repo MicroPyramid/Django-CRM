@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -47,7 +46,7 @@ from common.validators import (
     validate_uuid_list,
 )
 from contacts.models import Contact
-from leads import swagger_params
+from leads import access, swagger_params
 from leads.models import Lead
 from leads.serializer import (
     LeadCreateSerializer,
@@ -440,30 +439,15 @@ class LeadDetailView(APIView):
         return get_object_or_404(Lead, id=pk, org=self.request.profile.org)
 
     def assert_lead_access(self):
-        """Admins see every lead in the org; everyone else sees their own.
+        """Delegates to `leads.access`, which holds the one definition.
 
-        This is the same rule `LeadListView` applies when it narrows the
-        queryset to `Q(assigned_to__in=[profile]) | Q(created_by=profile.user)`.
-        Without it here, a lead the list deliberately withholds is still
-        readable and writable by id.
-
-        Written once because the two hand-rolled copies this replaces had
-        drifted apart. One built a list of Profile ids and then appended
-        `request.profile.user`, a User, so the creator's own id was never in
-        the list and the check denied the person it existed to admit.
-
-        It raises rather than returning a Response: `get_context_data` returns
-        the dict that `get()` passes to `Response(...)`, so a Response returned
-        from in there was wrapped in a second one and rendered as a 500 instead
-        of the intended 403.
+        The attachment download view has to ask the same question, and a
+        second copy of the answer is how the two copies this replaced drifted
+        apart in the first place.
         """
-        if is_org_admin(self.request.profile) or self.request.user.is_superuser:
-            return
-        allowed = {profile.id for profile in self.lead_obj.assigned_to.all()}
-        if self.request.profile.user_id == self.lead_obj.created_by_id:
-            allowed.add(self.request.profile.id)
-        if self.request.profile.id not in allowed:
-            raise PermissionDenied("You do not have Permission to perform this action")
+        access.assert_lead_access(
+            self.request.profile, self.request.user, self.lead_obj
+        )
 
     def get_context_data(self, **kwargs):
         context = {}

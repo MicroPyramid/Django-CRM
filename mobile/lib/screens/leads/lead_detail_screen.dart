@@ -10,6 +10,7 @@ import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
 
@@ -905,20 +906,25 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     }
   }
 
+  /// Download an attachment through the API, with the token attached. See the
+  /// note on `Attachment.filePath` for why the stored path is not a URL.
   Future<void> _openFile(Attachment a) async {
-    final path = a.filePath;
-    if (path == null || path.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No download URL available'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (!a.hasFile) {
+      _snackBar('That attachment has no file.');
       return;
     }
-    final uri = Uri.tryParse(path);
-    if (uri == null) return;
-    await _launch(uri, failureLabel: 'Could not open file');
+    final result = await downloadAttachment(
+      url: ApiConfig.attachmentDownload(a.id),
+      fileName: a.fileName,
+    );
+    if (!mounted || result.success) return;
+    _snackBar(result.error ?? 'Could not download that file.');
+  }
+
+  void _snackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   String _formatAddress(Lead lead) {

@@ -451,11 +451,14 @@ class ApiService {
     String? fileName,
     Map<String, String> fields = const {},
     bool requiresAuth = true,
+    // PUT for an edit that replaces the file. Both verbs send the identical
+    // body; only the record they land on differs.
+    String method = 'POST',
   }) async {
     try {
       // The URL and the field, never the path: a file path on a phone contains
       // the account name, and on iOS the app's container UUID.
-      debugPrint('POST (multipart) $url [$fileField]');
+      debugPrint('$method (multipart) $url [$fileField]');
 
       final uri = Uri.parse(url);
       final response = await _sendWithRetry(
@@ -464,7 +467,7 @@ class ApiService {
         // a JSON call gets.
         timeout: ApiConfig.uploadTimeout,
         send: (headers) async {
-          final request = http.MultipartRequest('POST', uri);
+          final request = http.MultipartRequest(method, uri);
           request.headers.addAll(headers);
           request.fields.addAll(fields);
           request.files.add(

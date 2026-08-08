@@ -1,3 +1,4 @@
+import 'package:bottle_crm/config/api_config.dart';
 import 'package:bottle_crm/data/models/crm_document.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -319,6 +320,29 @@ void main() {
       for (final status in documentStatuses) {
         expect(documentStatusLabel(status), isNotEmpty);
       }
+    });
+  });
+
+  group('reaching the bytes', () {
+    test('hasFile is false when the row carries no file', () {
+      expect(doc(file: 'documents/contract.pdf').hasFile, isTrue);
+      expect(doc(file: '').hasFile, isFalse);
+      expect(doc(file: '   ').hasFile, isFalse);
+    });
+
+    test('the download URL is the API, never the storage path', () {
+      // The whole point: `/media/` has no per-file authorization, so a URL
+      // built from `documentFile` would be readable by other tenants and
+      // unusable by the person entitled to it.
+      final url = ApiConfig.documentDownload('abc');
+      expect(url, endsWith('/documents/abc/download/'));
+      expect(url, isNot(contains('/media/')));
+    });
+
+    test('an attachment downloads by id, not by its stored path', () {
+      final url = ApiConfig.attachmentDownload('abc');
+      expect(url, endsWith('/attachments/abc/download/'));
+      expect(url, isNot(contains('/media/')));
     });
   });
 }

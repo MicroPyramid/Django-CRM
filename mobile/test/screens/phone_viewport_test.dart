@@ -35,6 +35,7 @@ import 'package:bottle_crm/screens/notifications/notifications_screen.dart';
 import 'package:bottle_crm/screens/support/support_list_screen.dart';
 import 'package:bottle_crm/screens/settings/api_token_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/api_tokens_screen.dart';
+import 'package:bottle_crm/screens/settings/my_api_tokens_screen.dart';
 import 'package:bottle_crm/screens/settings/approval_rule_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/approval_rules_screen.dart';
 import 'package:bottle_crm/screens/settings/business_hours_form_sheet.dart';
@@ -64,6 +65,7 @@ import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
 /// The newest screens, rendered at a real phone.
@@ -308,6 +310,17 @@ void main() {
         ],
         child: const MaterialApp(home: ApiTokensScreen()),
       );
+
+  /// Your own tokens. No role override: the screen has no gate, because the
+  /// endpoint is open to every member and already answers only their rows.
+  Widget myTokensApp({bool empty = false}) => ProviderScope(
+    overrides: [
+      myAccessTokensProvider.overrideWith(
+        empty ? _FakeNoMyTokens.new : _FakeMyTokens.new,
+      ),
+    ],
+    child: const MaterialApp(home: MyApiTokensScreen()),
+  );
 
   /// A button that opens the create sheet, so it renders the way it is really
   /// reached: over a screen, with the keyboard inset in play.
@@ -1996,6 +2009,54 @@ void main() {
     });
   });
 
+  group('your own API tokens at 390px', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, myTokensApp());
+      expect(find.text('My export script'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, myTokensApp(), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('offers creation to a member, with no role gate', (
+      tester,
+    ) async {
+      // `/api/profile/tokens/` is open to every member. Gating this screen on
+      // role would invent a rule, and the absence of a self-service surface is
+      // exactly what left a member unable to issue themselves a token.
+      await pump(tester, myTokensApp());
+      expect(find.text('New token'), findsOneWidget);
+    });
+
+    testWidgets('a revoked row reads as revoked, not as live', (tester) async {
+      // The self endpoint sends no `is_live`. The model used to default it to
+      // true, which drew this row as Live and offered a Revoke button on a
+      // token that was already revoked.
+      await pump(tester, myTokensApp());
+      expect(find.text('Revoked'), findsOneWidget);
+      expect(find.text('Live'), findsOneWidget);
+      // One Revoke button, on the one live row.
+      expect(find.widgetWithText(OutlinedButton, 'Revoke'), findsOneWidget);
+    });
+
+    testWidgets('says what a token can do without naming an owner', (
+      tester,
+    ) async {
+      await pump(tester, myTokensApp());
+      expect(find.text('Everything you can'), findsOneWidget);
+      expect(find.textContaining('Everything its owner can'), findsNothing);
+    });
+
+    testWidgets('an empty list explains what a token is for', (tester) async {
+      await pump(tester, myTokensApp(empty: true));
+      expect(find.text('No tokens yet'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('inbound email at 390px', () {
     testWidgets('renders without overflowing', (tester) async {
       await pump(tester, mailboxesApp(isAdmin: true));
@@ -2563,10 +2624,15 @@ void main() {
     required bool isAdmin,
     String? myEmail,
     bool empty = false,
+    bool fileless = false,
   }) => ProviderScope(
     overrides: [
       documentsProvider.overrideWith(
-        empty ? _FakeNoDocuments.new : _FakeDocuments.new,
+        empty
+            ? _FakeNoDocuments.new
+            : fileless
+            ? _FakeDocumentsOneFileless.new
+            : _FakeDocuments.new,
       ),
       isOrgAdminProvider.overrideWithValue(isAdmin),
       myEmailProvider.overrideWithValue(myEmail),
@@ -2623,6 +2689,32 @@ void main() {
         documentsApp(isAdmin: true, myEmail: 'someone@example.com'),
       );
       expect(_editableRows(tester), 3);
+    });
+
+    testWidgets('offers the download to a member, not just to a writer', (
+      tester,
+    ) async {
+      // Reading is broad and editing is narrow, so a row somebody may open but
+      // not change still responds. Grace can edit one of these three and open
+      // all three.
+      await pump(
+        tester,
+        documentsApp(isAdmin: false, myEmail: 'grace@example.com'),
+      );
+      expect(_editableRows(tester), 1);
+      expect(_downloadableRows(tester), 3);
+    });
+
+    testWidgets('a row with no file behind it does not respond', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        documentsApp(isAdmin: true, myEmail: 'ada@example.com', fileless: true),
+      );
+      // Two rows carry a file; the third does not, and tapping it would only
+      // reach a 404.
+      expect(_downloadableRows(tester), 2);
     });
 
     testWidgets(
@@ -3344,6 +3436,48 @@ class _FakeTokens extends AccessTokensNotifier {
   Future<AccessTokensState> build() async => _tokenState();
 }
 
+/// Rows shaped the way `/api/profile/tokens/` really answers them: no `owner`
+/// block, and no `is_live`, which the org oversight endpoint computes and this
+/// one does not send.
+List<AccessToken> _myTokenRows() {
+  final now = DateTime.now();
+  String ago(int days) => now.subtract(Duration(days: days)).toIso8601String();
+  return sortedTokens([
+    AccessToken.fromJson({
+      'id': 'm1',
+      'name': 'My export script',
+      'token_prefix': 'bcrm_pat_abc',
+      'scopes': const <String>[],
+      'expires_at': null,
+      'last_used_at': ago(2),
+      'created_at': ago(30),
+      'revoked_at': null,
+    }),
+    // Revoked, and with no `is_live` on the payload. The model used to default
+    // that flag to true, so this row drew as Live and offered a Revoke button.
+    AccessToken.fromJson({
+      'id': 'm2',
+      'name': 'Old laptop',
+      'token_prefix': 'bcrm_pat_def',
+      'scopes': const ['*:read'],
+      'expires_at': null,
+      'last_used_at': null,
+      'created_at': ago(200),
+      'revoked_at': ago(5),
+    }),
+  ]);
+}
+
+class _FakeMyTokens extends MyAccessTokensNotifier {
+  @override
+  Future<List<AccessToken>> build() async => _myTokenRows();
+}
+
+class _FakeNoMyTokens extends MyAccessTokensNotifier {
+  @override
+  Future<List<AccessToken>> build() async => const [];
+}
+
 class _FakeOrphanedTokens extends AccessTokensNotifier {
   @override
   Future<AccessTokensState> build() async => _tokenState(orphaned: true);
@@ -3675,14 +3809,51 @@ class _FakeNoDocuments extends DocumentsNotifier {
   Future<DocumentsData> build() async => const DocumentsData();
 }
 
-/// Rows the viewer may edit, counted from the list rather than from every
-/// InkWell on the screen: the AppBar's icon buttons are InkWells too.
-int _editableRows(WidgetTester tester) => tester
-    .widgetList<InkWell>(
-      find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(InkWell),
-      ),
-    )
-    .where((w) => w.onTap != null)
-    .length;
+/// The same three rows, with the last one carrying no file.
+///
+/// A Document row can exist with an empty `document_file`; the list still
+/// returns it, and the download endpoint 404s on it, so the row must not offer
+/// one.
+class _FakeDocumentsOneFileless extends _FakeDocuments {
+  @override
+  Future<DocumentsData> build() async {
+    final base = await super.build();
+    final documents = [
+      ...base.documents.take(2),
+      CrmDocument.fromJson(const {
+        'id': 'd4',
+        'title': 'A record with no file',
+        'document_file': '',
+        'status': 'active',
+        'shared_to': [],
+        'teams': [],
+        'created_by': {
+          'id': 'u1',
+          'name': 'Ada Lovelace',
+          'email': 'ada@example.com',
+        },
+      }),
+    ];
+    return DocumentsData(
+      documents: documents,
+      totals: documentTotals(documents),
+    );
+  }
+}
+
+/// Rows the viewer may edit.
+///
+/// Counted from the pencil buttons, not from tappable InkWells: since the row
+/// itself became the download, every row with a file has an `onTap` whether or
+/// not the viewer may edit it, so counting InkWells now measures "has a file".
+int _editableRows(WidgetTester tester) =>
+    tester.widgetList(find.byTooltip('Manage this document')).length;
+
+/// Rows offering a download, which is every row with a file behind it,
+/// regardless of role. Reading is the broad privilege.
+///
+/// Counted from the download glyph rather than from tappable InkWells: an
+/// IconButton builds one of its own, so the edit pencil would be counted as a
+/// fourth downloadable row.
+int _downloadableRows(WidgetTester tester) =>
+    tester.widgetList(find.byIcon(LucideIcons.download)).length;

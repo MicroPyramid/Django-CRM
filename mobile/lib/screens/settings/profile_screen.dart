@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/profile.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/forms/unsaved_changes.dart';
 
@@ -292,6 +295,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             label: 'Joined',
             value: DateFormat.yMMMMd().format(profile.dateOfJoining!),
           ),
+        // The web profile page shows these two; this screen did not, so the
+        // same person read differently depending on which client they opened.
+        _InfoRow(
+          icon: LucideIcons.users,
+          label: 'Teams',
+          value: profile.teams.isEmpty ? 'None' : profile.teams.join(', '),
+        ),
+        _InfoRow(
+          icon: LucideIcons.logIn,
+          label: 'Last signed in',
+          value: profile.lastLogin == null
+              ? 'Not recorded'
+              : DateFormat.yMMMMd().add_jm().format(
+                  profile.lastLogin!.toLocal(),
+                ),
+        ),
         _sectionHeader('Access'),
         _InfoRow(
           icon: LucideIcons.target,
@@ -303,8 +322,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           label: 'Marketing',
           value: profile.hasMarketingAccess ? 'Enabled' : 'Disabled',
         ),
+        _sectionHeader('Your account'),
+        // Your OWN tokens, not the settings screen: that one is the admin's
+        // org-wide oversight list and answers a member 403.
+        _LinkRow(
+          icon: LucideIcons.keyRound,
+          label: 'API tokens',
+          detail: 'Each one signs in as you, with your role',
+          trailing: _tokenCount(),
+          onTap: () => context.push(AppRoutes.profileTokens),
+        ),
+        _sectionHeader('Where your work shows up'),
+        _LinkRow(
+          icon: LucideIcons.target,
+          label: 'Goals',
+          detail: 'Your quota and how it is pacing',
+          onTap: () => context.push(AppRoutes.goals),
+        ),
+        _LinkRow(
+          icon: LucideIcons.clock,
+          label: 'Timesheet',
+          detail: 'Hours you have logged this week',
+          onTap: () => context.push(AppRoutes.timesheet),
+        ),
+        _LinkRow(
+          icon: LucideIcons.circleCheck,
+          label: 'Tasks',
+          detail: 'What is assigned to you',
+          onTap: () => context.push(AppRoutes.tasks),
+        ),
       ],
     );
+  }
+
+  /// How many of your tokens are live, or null while it is still loading.
+  ///
+  /// Read from the same self-scoped provider the tokens screen uses, so
+  /// opening one warms the other rather than asking twice.
+  String? _tokenCount() {
+    final tokens = ref.watch(myAccessTokensProvider).value;
+    if (tokens == null) return null;
+    return '${tokens.where((t) => t.isLive).length}';
   }
 
   Widget _buildEditForm(Profile profile) {
@@ -399,6 +457,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         style: AppTypography.overline.copyWith(
           color: AppColors.textSecondary,
           letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// A row that goes somewhere. Same shape as `_InfoRow` so the list reads as
+/// one thing, with a 56px minimum height because it is a tap target and the
+/// info rows around it are not.
+class _LinkRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String detail;
+  final String? trailing;
+  final VoidCallback onTap;
+
+  const _LinkRow({
+    required this.icon,
+    required this.label,
+    required this.detail,
+    required this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.gray100)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      detail,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                Text(
+                  trailing!,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Icon(
+                LucideIcons.chevronRight,
+                size: 18,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );

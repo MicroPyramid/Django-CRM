@@ -51,7 +51,7 @@
   import { ROLE_LABEL } from '$lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert, Copy, Check } from '@lucide/svelte';
-  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from './oversight.js';
+  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '$lib/v2/token-rules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();

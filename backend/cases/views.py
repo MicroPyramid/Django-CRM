@@ -412,6 +412,25 @@ class CaseListView(APIView, LimitOffsetPagination):
         )
 
 
+def notify_newly_assigned(request, case, previous_assignee_ids):
+    """Email whoever the edit just put on this ticket, and nobody else.
+
+    Shared by PUT and PATCH. It used to live only in PUT, so the web app,
+    which edits with PATCH, assigned people who were never told. The phone
+    edits with PUT and did notify them, which is how the two clients came to
+    disagree about whether assignment says anything to the person assigned.
+    """
+    current = set(case.assigned_to.all().values_list("id", flat=True))
+    recipients = list(current - set(previous_assignee_ids))
+    if not recipients:
+        return
+    send_email_to_assigned_user.delay(
+        recipients,
+        case.id,
+        str(request.profile.org.id),
+    )
+
+
 class CaseDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
     model = Case
@@ -527,15 +546,7 @@ class CaseDetailView(APIView):
                     self.request.profile,
                 )
 
-            assigned_to_list = list(
-                cases_object.assigned_to.all().values_list("id", flat=True)
-            )
-            recipients = list(set(assigned_to_list) - set(previous_assigned_to_users))
-            send_email_to_assigned_user.delay(
-                recipients,
-                cases_object.id,
-                str(request.profile.org.id),
-            )
+            notify_newly_assigned(request, cases_object, previous_assigned_to_users)
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},
                 status=status.HTTP_200_OK,
@@ -808,6 +819,9 @@ class CaseDetailView(APIView):
         )
 
         if serializer.is_valid():
+            previous_assigned_to_users = list(
+                cases_object.assigned_to.all().values_list("id", flat=True)
+            )
             save_kwargs = {
                 "closed_on": (
                     params.get("closed_on")
@@ -882,6 +896,7 @@ class CaseDetailView(APIView):
                     )
                     cases_object.tags.add(*tag_objs)
 
+            notify_newly_assigned(request, cases_object, previous_assigned_to_users)
             return Response(
                 {"error": False, "message": "Case Updated Successfully"},
                 status=status.HTTP_200_OK,

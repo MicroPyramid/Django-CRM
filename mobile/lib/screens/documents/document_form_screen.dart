@@ -126,6 +126,10 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
             status: _status,
             sharedTo: _sharedTo.toList(),
             teams: _teams.toList(),
+            // Null means keep the stored file. Picking one replaces it and
+            // keeps the record, and so keeps its shares.
+            filePath: _file?.path,
+            fileName: _file?.name,
           )
         : await notifier.uploadDocument(
             title: _title.text.trim(),
@@ -137,9 +141,10 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
           );
 
     // The picker copied the chosen file into the app's cache. Without this
-    // every document somebody uploads stays on their phone a second time, in a
-    // directory they never see.
-    if (!widget.isEditing) await clearAttachmentPickerCache();
+    // every document somebody sends stays on their phone a second time, in a
+    // directory they never see. An edit that replaced the file made a copy
+    // too, so this can no longer be skipped on the edit path.
+    if (_file != null) await clearAttachmentPickerCache();
 
     if (!mounted) return;
     if (!response.success) {
@@ -290,25 +295,34 @@ class _DocumentFormScreenState extends ConsumerState<DocumentFormScreen> {
               const SizedBox(height: 16),
             ],
 
-            if (!widget.isEditing) ...[
-              OutlinedButton.icon(
-                onPressed: _saving ? null : _pickFile,
-                icon: const Icon(LucideIcons.paperclip, size: 18),
-                label: Text(_file == null ? 'Choose a file' : _file!.name),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  alignment: Alignment.centerLeft,
-                ),
+            // Optional on an edit, required on an upload. Replacing the file
+            // here keeps the record and its shares; the alternative was
+            // deleting and re-uploading, which lost every share it had.
+            OutlinedButton.icon(
+              onPressed: _saving ? null : _pickFile,
+              icon: const Icon(LucideIcons.paperclip, size: 18),
+              label: Text(
+                _file != null
+                    ? _file!.name
+                    : widget.isEditing
+                    ? 'Replace the file'
+                    : 'Choose a file',
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Files must be 25 MB or smaller.',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                alignment: Alignment.centerLeft,
               ),
-              const SizedBox(height: 16),
-            ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.isEditing && _file == null
+                  ? 'Leave this alone to keep the current file. Files must be 25 MB or smaller.'
+                  : 'Files must be 25 MB or smaller.',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
 
             TextField(
               controller: _title,

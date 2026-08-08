@@ -13,11 +13,11 @@
  * admin-gated endpoint (`GET /api/org/tokens/`). The pre-existing
  * `/api/profile/tokens/` stays self-scoped and untouched.
  *
- * A consequence worth naming rather than implying: because this whole page is
- * admin-gated, **a member has no way to issue themselves a token in either
- * client**. `/api/profile/tokens/` is open to them and would work; nothing
- * calls it on their behalf. A self-service surface is a page neither app has
- * yet, not one that exists elsewhere. Recorded in `mobile/docs/PARITY.md`.
+ * The self-scoped half lives here too (`listMyTokens` / `revokeMyToken`) and
+ * feeds /profile/tokens. The two are kept apart on purpose: the oversight
+ * endpoints are admin-gated and org-wide, the self ones are open to any member
+ * and filtered to `profile=request.profile` server-side, and widening either
+ * into the other is how a self guard stops being one.
  *
  * WHAT THE MOCK ASSERTED THAT THE BACKEND DOES NOT
  * The fixture's headline was "a token whose owner was deactivated keeps working
@@ -108,4 +108,50 @@ export function createToken({ cookies }, body) {
  */
 export function revokeToken({ cookies }, id) {
   return apiRequest(`/org/tokens/${id}/`, { method: 'DELETE' }, { cookies });
+}
+
+/**
+ * Your own tokens. `GET /api/profile/tokens/` filters on
+ * `org=request.profile.org` AND `profile=request.profile`, so this cannot
+ * return anybody else's row whatever this page does.
+ *
+ * Open to every member, which is the point: the endpoint has always been
+ * self-service and until now the only page in either client that touched
+ * tokens was the admin oversight list, which 403s a member on the read. So the
+ * endpoint was reachable by curl and by nothing else.
+ *
+ * `is_live` is not on this payload the way it is on the oversight one, so it
+ * is derived here from the same two facts the model uses: not revoked, and not
+ * past its expiry. The rules module reads `is_live`, and a row without it
+ * would draw every live token as expired.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ */
+export async function listMyTokens({ cookies }) {
+  const resp = await apiRequest('/profile/tokens/', {}, { cookies });
+  const now = Date.now();
+  const tokens = (resp?.tokens ?? [])
+    .map((/** @type {any} */ t) => ({
+      ...t,
+      is_live: !t.revoked_at && !(t.expires_at && new Date(t.expires_at).getTime() <= now)
+    }))
+    .sort(byUrgency);
+  return {
+    tokens,
+    live: tokens.filter((/** @type {any} */ t) => t.is_live).length
+  };
+}
+
+/**
+ * Revoke one of your own: `DELETE /api/profile/tokens/<id>/`. Self-scoped
+ * server-side, so a colleague's id 404s here rather than being revoked. That
+ * is why this is a separate function from `revokeToken` above, which is the
+ * admin's org-wide one; calling the admin path from a member's page would 403
+ * them out of retiring their own credential.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ */
+export function revokeMyToken({ cookies }, id) {
+  return apiRequest(`/profile/tokens/${id}/`, { method: 'DELETE' }, { cookies });
 }

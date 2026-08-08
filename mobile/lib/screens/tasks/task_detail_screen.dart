@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/deals_provider.dart';
@@ -10,6 +9,7 @@ import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../providers/tickets_provider.dart';
+import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
 
@@ -809,7 +809,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   Widget _buildAttachmentRow(Attachment att) {
     return InkWell(
-      onTap: att.filePath == null ? null : () => _openAttachment(att),
+      onTap: att.hasFile ? () => _openAttachment(att) : null,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1317,20 +1317,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
   }
 
+  /// Download an attachment through the API, with the token attached. See the
+  /// note on `Attachment.filePath` for why the stored path is not a URL.
   Future<void> _openAttachment(Attachment att) async {
-    final path = att.filePath;
-    if (path == null || path.isEmpty) return;
-    final uri = Uri.tryParse(path);
-    if (uri == null) return;
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open attachment'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!att.hasFile) return;
+    final result = await downloadAttachment(
+      url: ApiConfig.attachmentDownload(att.id),
+      fileName: att.fileName,
+    );
+    if (!mounted || result.success) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.error ?? 'Could not download that file.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   String _formatTimeAgo(DateTime dt) {

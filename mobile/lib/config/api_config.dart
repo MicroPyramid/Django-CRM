@@ -170,6 +170,11 @@ class ApiConfig {
   /// The raw value comes back once, in this response, and never again.
   static String get profileTokens => '$apiBaseUrl/profile/tokens/';
 
+  /// Revoke one of **your own**. Self-scoped server-side, so a colleague's id
+  /// 404s rather than being revoked. Distinct from `orgToken(id)`, which is
+  /// the admin's org-wide revoke and refuses a member outright.
+  static String profileToken(String id) => '$apiBaseUrl/profile/tokens/$id/';
+
   // ==========================================================================
   // DASHBOARD
   // ==========================================================================
@@ -223,6 +228,20 @@ class ApiConfig {
   static String get documents => '$apiBaseUrl/documents/';
 
   static String document(String id) => '$apiBaseUrl/documents/$id/';
+
+  /// The bytes of a document, gated by the same read predicate as the record.
+  ///
+  /// Fetch this with the Authorization header, never `launchUrl`. The external
+  /// browser carries no token, and the file's own `/media/` path is not an
+  /// alternative: it is served with no per-file authorization at all, which is
+  /// why this endpoint exists.
+  static String documentDownload(String id) =>
+      '$apiBaseUrl/documents/$id/download/';
+
+  /// The bytes of a file attached to a lead, deal, ticket or task. Same rule
+  /// as `documentDownload`: authenticated fetch, never a storage URL.
+  static String attachmentDownload(String id) =>
+      '$apiBaseUrl/attachments/$id/download/';
 
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';

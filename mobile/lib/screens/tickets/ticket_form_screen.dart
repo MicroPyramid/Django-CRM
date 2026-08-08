@@ -35,6 +35,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
   String? _accountId;
   List<String> _assigneeIds = [];
   List<String> _tagIds = [];
+  List<String> _contactIds = [];
   Map<String, dynamic> _customFields = {};
   DateTime? _closedOn;
 
@@ -91,6 +92,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
         _accountId = c.accountId;
         _assigneeIds = List<String>.from(c.assignedToIds);
         _tagIds = List<String>.from(c.tagIds);
+        _contactIds = List<String>.from(c.contactIds);
         _customFields = Map<String, dynamic>.from(c.customFields);
         _closedOn = c.closedOn;
       } else {
@@ -110,6 +112,10 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
       'case_type': _ticketType.value,
       'assigned_to': _assigneeIds,
       'tags': _tagIds,
+      // Always sent, on create and on edit. The web form has had this since it
+      // was written; the phone did not, and because it edited with PUT the
+      // absence of the key was read as "unlink them all".
+      'contacts': _contactIds,
       'custom_fields': _customFields,
     };
     final desc = _descriptionController.text.trim();
@@ -234,6 +240,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
     final accounts = ref.watch(accountOptionsProvider);
     final users = ref.watch(usersProvider);
     final tags = ref.watch(tagsProvider);
+    final contacts = ref.watch(contactOptionsProvider);
 
     return Form(
       key: _formKey,
@@ -315,6 +322,19 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
                   .map((t) => t.name)
                   .toList(),
               onTap: () => _pickTags(tags),
+            ),
+            const SizedBox(height: 16),
+            // Who reported this, or who else is on it. The web form has had
+            // this field all along.
+            _multiSelectField(
+              label: 'Contacts',
+              icon: LucideIcons.userRound,
+              placeholder: 'Nobody linked',
+              selectedLabels: contacts
+                  .where((c) => _contactIds.contains(c.id))
+                  .map((c) => c.fullName)
+                  .toList(),
+              onTap: () => _pickContacts(contacts),
             ),
             const SizedBox(height: 32),
             _section('Description'),
@@ -627,6 +647,23 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
       lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _closedOn = picked);
+  }
+
+  Future<void> _pickContacts(List<ContactLookup> contacts) async {
+    final initial = contacts.where((c) => _contactIds.contains(c.id)).toList();
+    final result = await MultiSelectSheet.show<ContactLookup>(
+      context: context,
+      title: 'Contacts',
+      items: contacts,
+      initialSelection: initial,
+      labelOf: (c) => c.fullName,
+      searchText: (c) => '${c.email ?? ''} ${c.fullName}',
+      leadingOf: (c) => UserAvatar(name: c.fullName, size: AvatarSize.xs),
+      emptyMessage: 'No contacts found',
+    );
+    if (result != null) {
+      setState(() => _contactIds = result.map((c) => c.id).toList());
+    }
   }
 
   Future<void> _pickAssignees(List<UserLookup> users) async {

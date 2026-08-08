@@ -136,8 +136,13 @@ class DocumentsNotifier extends AsyncNotifier<DocumentsData> {
     }
   }
 
-  /// `PUT /api/documents/<id>/` as JSON. No new file: replacing the bytes is a
-  /// separate act from renaming or re-sharing, and this app does not offer it.
+  /// `PUT /api/documents/<id>/`. Multipart when a replacement file was
+  /// picked, JSON otherwise, so a rename does not resend the bytes.
+  ///
+  /// Replacing the file keeps the record and therefore keeps its shares. The
+  /// endpoint always accepted a new `document_file` on PUT; no client sent
+  /// one, so correcting a wrong upload meant deleting and re-uploading, which
+  /// silently dropped everyone it was shared with.
   ///
   /// The view clears `shared_to` and `teams` and re-adds from the body, so an
   /// omitted list is an emptied list. Both are always sent for that reason.
@@ -148,14 +153,34 @@ class DocumentsNotifier extends AsyncNotifier<DocumentsData> {
     required String status,
     required List<String> sharedTo,
     required List<String> teams,
-  }) => _write(
-    () => _apiService.put(ApiConfig.document(id), {
-      'title': title,
-      'status': status,
-      'shared_to': sharedTo,
-      'teams': teams,
-    }),
-  );
+    String? filePath,
+    String? fileName,
+  }) => _write(() {
+    if (filePath == null) {
+      return _apiService.put(ApiConfig.document(id), {
+        'title': title,
+        'status': status,
+        'shared_to': sharedTo,
+        'teams': teams,
+      });
+    }
+    // Multipart carries every field as a string, so the two lists go as JSON
+    // exactly the way the upload sends them. `payload_id_list` reads both
+    // spellings and re-resolves each id inside the caller's own org.
+    return _apiService.postMultipart(
+      ApiConfig.document(id),
+      method: 'PUT',
+      fileField: 'document_file',
+      filePath: filePath,
+      fileName: fileName,
+      fields: {
+        'title': title,
+        'status': status,
+        'shared_to': jsonEncode(sharedTo),
+        'teams': jsonEncode(teams),
+      },
+    );
+  });
 
   /// `DELETE /api/documents/<id>/`. A hard delete, gated by `_may_delete`
   /// (the uploader or an admin). Archiving is the reversible option and lives

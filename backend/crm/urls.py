@@ -55,12 +55,25 @@ urlpatterns = [
 
 
 if settings.DEBUG:
-    from django.conf.urls.static import static
     from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
     urlpatterns += staticfiles_urlpatterns()
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-    # urlpatterns = urlpatterns + static(
-    #     settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    # )
+    # MEDIA_ROOT is deliberately NOT served here.
+    #
+    # It used to be, and the only thing in front of it was RLSContextMiddleware,
+    # which asks for *an* org context rather than *the* org. That answered 200
+    # with the file to any signed-in user of any tenant, while the record's own
+    # endpoint answered the same caller 404. Every uploaded file in the system
+    # sat behind it: documents, and lead, deal, ticket and task attachments.
+    #
+    # Nothing needs it any more. Files are reached through
+    # `/api/documents/<id>/download/` and `/api/attachments/<id>/download/`,
+    # each gated by the record's own read predicate, and no client builds a
+    # storage path. The one remaining server-side reader of MEDIA_ROOT is the
+    # invoice PDF renderer, which opens the org logo off the filesystem rather
+    # than over HTTP (see `invoices/pdf.py`).
+    #
+    # This only closes dev. In production MEDIA_URL points straight at the S3
+    # bucket and Django is not in the request path at all, so the exposure
+    # there is whatever the bucket policy says.

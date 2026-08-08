@@ -45,10 +45,13 @@
  *   be derived from the filename alone.
  * - `document_file` is a stored path and is only ever displayed. Constructing a
  *   media URL in the client is how a private file becomes a public one; the
- *   server decides who gets the bytes.
+ *   server decides who gets the bytes. `download_href` is that decision made
+ *   properly: a route on this origin that streams from an authenticated
+ *   endpoint gated by the same `_may_read` the detail view uses.
  */
 import { apiRequest } from '$lib/api-helpers.js';
 import { env } from '$env/dynamic/public';
+import { documentHref } from './files.js';
 import { getOrgPeopleAndTeams } from './org-people.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
@@ -126,6 +129,9 @@ function toDoc(d, viewer) {
     id: d.id,
     title: d.title ?? '',
     document_file: d.document_file ?? '',
+    // Null when there is no file, so the row keeps rendering the name as text
+    // instead of offering a download that 404s.
+    download_href: d.document_file ? documentHref(d.id) : null,
     file_kind: fileKind(d.document_file),
     size_bytes: typeof d.size_bytes === 'number' ? d.size_bytes : null,
     status: d.status,
@@ -253,7 +259,24 @@ export async function getDocumentForEdit({ cookies }, id) {
  * @param {import('@sveltejs/kit').Cookies} cookies
  * @param {{ title: string, status: string, file: File, shared_to: string[], teams: string[] }} values
  */
-export async function uploadDocument(cookies, values) {
+export function uploadDocument(cookies, values) {
+  return sendMultipart(cookies, '/documents/', 'POST', values);
+}
+
+/**
+ * One multipart send, used by create and by the edit that replaces a file.
+ *
+ * `shared_to` and `teams` go as JSON-string arrays of ids because the view
+ * `payload_id_list`es them, and `Content-Type` is left unset so fetch writes
+ * the multipart boundary itself. Errors are re-thrown carrying the upstream
+ * status and body, which is what the actions render.
+ *
+ * @param {import('@sveltejs/kit').Cookies} cookies
+ * @param {string} path
+ * @param {'POST'|'PUT'} method
+ * @param {{ title: string, status: string, file: File, shared_to: string[], teams: string[] }} values
+ */
+async function sendMultipart(cookies, path, method, values) {
   const body = new FormData();
   body.append('title', values.title);
   body.append('status', values.status);
@@ -266,8 +289,8 @@ export async function uploadDocument(cookies, values) {
   const token = cookies.get('jwt_access');
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE_URL}/documents/`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
     headers,
     body
   });
@@ -285,16 +308,27 @@ export async function uploadDocument(cookies, values) {
 }
 
 /**
- * `PUT /api/documents/<id>/` as JSON, no new file, so `apiRequest` is enough.
- * The view treats `shared_to`/`teams` as clear-then-re-add and scopes both to
- * the caller's org, so a share can never point at another tenant. Gated by
- * `_may_write` (creator or admin) server-side.
+ * `PUT /api/documents/<id>/`. The view treats `shared_to`/`teams` as
+ * clear-then-re-add and scopes both to the caller's org, so a share can never
+ * point at another tenant. Gated by `_may_write` (creator or admin).
+ *
+ * Multipart when the form carried a replacement file, JSON otherwise, because
+ * a rename should not have to resend the bytes. The endpoint always accepted
+ * a new `document_file` on PUT; no client had ever sent one, so a document
+ * uploaded with the wrong file had to be deleted and re-uploaded, which lost
+ * its shares.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
  * @param {string} id
- * @param {{ title: string, status: string, shared_to: string[], teams: string[] }} values
+ * @param {{ title: string, status: string, shared_to: string[], teams: string[], file?: File | null }} values
  */
 export function updateDocument({ cookies }, id, values) {
+  if (values.file) {
+    return sendMultipart(cookies, `/documents/${id}/`, 'PUT', {
+      ...values,
+      file: values.file
+    });
+  }
   return apiRequest(
     `/documents/${id}/`,
     {

@@ -44,27 +44,11 @@
  * nothing in the codebase ever wrote. See `cases/signals.py`.
  */
 import { error, redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
+import { attachmentHref } from '$lib/server/v2/files.js';
 
 /** Statuses where somebody still owes the customer something. Mirrors `cases.views.OPEN_STATUSES`. */
 export const OPEN_STATUSES = ['New', 'Assigned', 'Pending'];
-
-/**
- * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
- * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too.
- * The file is served off `/media`, not `/api`. Same helper as leads/contacts/tasks.
- *
- * @param {string|null|undefined} path
- * @returns {string|null}
- */
-function fileUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (env.PUBLIC_DJANGO_API_URL ?? '').replace(/\/+$/, '');
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-}
 
 /**
  * @param {any} profile
@@ -266,7 +250,7 @@ export async function getTicket({ cookies }, id) {
       name: file.file_name ?? '',
       // Resolved to an absolute URL so the rail can offer it as a download; the
       // rail used to render the name as dead text even though the path was here.
-      url: fileUrl(file.file_path),
+      url: attachmentHref(file.id),
       at: file.created_at
     })),
     // `ActivitySerializer` names the time `timestamp`, not `created_at`, and

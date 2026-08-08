@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/crm_document.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/documents_provider.dart';
 import '../../routes/app_router.dart';
+import '../../services/attachment_upload.dart';
 import '../../widgets/common/badge.dart';
 
 /// Files shared across the org.
@@ -18,11 +20,16 @@ import '../../widgets/common/badge.dart';
 /// screen so a destructive path is a deliberate act rather than a mis-tap in a
 /// list.
 ///
-/// Nothing here opens or downloads a file. `document_file` is a stored path,
-/// and turning it into a media URL on the client is how a private file becomes
-/// a public one: the server decides who gets the bytes, and there is no
-/// authenticated download endpoint for documents to call. The row says what the
-/// file is and who can reach it, which is what this list is for.
+/// Tapping a row downloads the file through
+/// `GET /api/documents/<id>/download/`, which is gated by the same read
+/// predicate as the record, so a row that lists is a row that opens. The
+/// stored `document_file` path is still never turned into a URL: it resolves
+/// under `/media/`, which has no per-file authorization, so a link built from
+/// it would be readable by other tenants and unusable by its owner.
+///
+/// Reading is the broad act and editing the narrow one, so the row itself is
+/// the download and the pencil beside it is the edit, shown only to the
+/// uploader and admins. That is the same split the web list uses.
 class DocumentsListScreen extends ConsumerWidget {
   const DocumentsListScreen({super.key});
 
@@ -177,7 +184,7 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _DocumentRow extends StatelessWidget {
+class _DocumentRow extends StatefulWidget {
   const _DocumentRow({
     required this.doc,
     required this.canWrite,
@@ -189,12 +196,42 @@ class _DocumentRow extends StatelessWidget {
   final VoidCallback onEdit;
 
   @override
+  State<_DocumentRow> createState() => _DocumentRowState();
+}
+
+class _DocumentRowState extends State<_DocumentRow> {
+  bool _downloading = false;
+
+  CrmDocument get doc => widget.doc;
+  bool get canWrite => widget.canWrite;
+
+  /// Fetch the bytes with the token attached, then let the OS choose where to
+  /// put them. The progress state is not decoration: a large file is a long
+  /// silence otherwise, and a second tap would start a second download.
+  Future<void> _download() async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    final result = await downloadAttachment(
+      url: ApiConfig.documentDownload(doc.id),
+      fileName: doc.fileName,
+    );
+    if (!mounted) return;
+    setState(() => _downloading = false);
+    if (result.success) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.error ?? 'Could not download that file.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return InkWell(
-      // The row is tappable only for somebody who can act on it. A row that
-      // opens a form which then says "you cannot edit this" is worse than a row
-      // that does not respond.
-      onTap: canWrite ? onEdit : null,
+      // Reading is the broad privilege, so the row is the download. A row with
+      // no file behind it does not respond rather than failing on tap.
+      onTap: doc.hasFile ? _download : null,
       child: Container(
         color: AppColors.surface,
         margin: const EdgeInsets.only(bottom: 1),
@@ -266,11 +303,33 @@ class _DocumentRow extends StatelessWidget {
                 ],
               ),
             ),
+            if (_downloading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (doc.hasFile)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Icon(
+                  LucideIcons.download,
+                  size: 18,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            // Editing is the uploader's and an admin's. A 44px target, its own
+            // tap area, so a thumb aiming at Edit does not start a download.
             if (canWrite)
-              Icon(
-                LucideIcons.chevronRight,
-                size: 18,
+              IconButton(
+                onPressed: widget.onEdit,
+                icon: const Icon(LucideIcons.pencil, size: 18),
                 color: AppColors.textTertiary,
+                tooltip: 'Manage this document',
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
           ],
         ),

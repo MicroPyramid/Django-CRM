@@ -39,8 +39,8 @@
  * that: "what it must never become is a tick that looks saved and is not."
  */
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 import { apiRequest } from '$lib/api-helpers.js';
+import { attachmentHref } from '$lib/server/v2/files.js';
 
 /** `Task.STATUS_CHOICES`. Note `Task` priority is Low/Medium/High. A Case's is not. */
 export const TASK_STATUSES = ['New', 'In Progress', 'Completed'];
@@ -54,23 +54,6 @@ export const FILTER_FIELDS = [
   'due_date__gte',
   'due_date__lte'
 ];
-
-/**
- * Attachments serialise with a storage-relative `file_path` (`/media/…`) on
- * local dev and an absolute URL behind object storage in prod. Resolve it
- * against the Django origin so the link works from the SvelteKit origin too.
- * The file is served off `/media`, not `/api`. Same helper as `leads.js` /
- * `contacts.js`.
- *
- * @param {string|null|undefined} path
- * @returns {string|null}
- */
-function fileUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const base = (env.PUBLIC_DJANGO_API_URL ?? '').replace(/\/+$/, '');
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-}
 
 /** The four parent columns, and where each one's record lives in v2. */
 const PARENTS = [
@@ -291,7 +274,7 @@ function buildTaskActivity(response) {
       at: a.created_at,
       by: null,
       body: a.file_name || 'Attachment',
-      href: fileUrl(a.file_path)
+      href: attachmentHref(a.id)
     });
   }
 

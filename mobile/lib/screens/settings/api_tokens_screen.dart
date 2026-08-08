@@ -425,7 +425,7 @@ class _TokenRow extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              _activityLine(token),
+              tokenActivityLine(token),
               style: AppTypography.caption.copyWith(
                 color: AppColors.textTertiary,
               ),
@@ -455,35 +455,6 @@ class _TokenRow extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// "Last used 12 days ago · expires 4 Nov 2026", or the honest absences.
-String _activityLine(AccessToken token) {
-  final used = token.lastUsedAt == null
-      ? 'Never used'
-      : 'Last used ${_humanDate(token.lastUsedAt!)}';
-  final expiry = token.expiresAt == null
-      ? 'never expires'
-      : 'expires ${_humanDate(token.expiresAt!)}';
-  return '$used · $expiry';
-}
-
-String _humanDate(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
 class _StatusChip extends StatelessWidget {

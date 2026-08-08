@@ -1009,10 +1009,29 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
-    """Detailed profile serializer for authenticated user"""
+    """The caller's OWN profile, in whichever org their token names.
+
+    `teams` and `last_login` are here because the mobile profile screen reads
+    this endpoint while the web one reads `ProfileView`, which had both, so the
+    two screens described the same person differently. Widening this serializer
+    rather than pointing mobile at the other endpoint keeps each client on the
+    endpoint it already uses.
+
+    Safe to widen because this is only ever the requester's own row:
+    `ProfileDetailView` serializes `request.profile` and takes no id. Neither
+    field is on the shared `ProfileSerializer`, which is nested into lists of
+    OTHER people's profiles, and adding them there would publish when every
+    colleague last signed in.
+    """
 
     user = UserSerializer(read_only=True)
     org = OrganizationSerializer(read_only=True)
+    teams = serializers.SerializerMethodField()
+    last_login = serializers.DateTimeField(source="user.last_login", read_only=True)
+
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_teams(self, obj):
+        return list(obj.user_teams.values_list("name", flat=True))
 
     class Meta:
         model = Profile
@@ -1027,6 +1046,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "phone",
             "date_of_joining",
             "is_active",
+            "teams",
+            "last_login",
         ]
 
 

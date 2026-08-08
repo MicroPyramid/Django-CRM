@@ -962,6 +962,97 @@ final accessTokensProvider =
     );
 
 // ---------------------------------------------------------------------------
+// API tokens, your own
+// ---------------------------------------------------------------------------
+
+/// The tokens you have issued yourself.
+///
+/// Separate from [AccessTokensNotifier] rather than a flag on it, because the
+/// endpoints are separate on purpose: `/api/profile/tokens/` filters on
+/// `profile=request.profile` server-side and is open to every member, while
+/// `/api/org/tokens/` is admin-only and org-wide. One notifier reaching for
+/// whichever it could is how a self guard stops being one.
+///
+/// This is the half neither client had. The endpoint has always been
+/// self-service, and the only token screen either app carried was the admin
+/// oversight list, so a member could not issue themselves a token at all.
+class MyAccessTokensNotifier extends AsyncNotifier<List<AccessToken>> {
+  final ApiService _api = ApiService();
+
+  @override
+  Future<List<AccessToken>> build() => _fetch();
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(_fetch);
+  }
+
+  Future<List<AccessToken>> _fetch() async {
+    final response = await _api.get(ApiConfig.profileTokens);
+    if (!response.success || response.data == null) {
+      throw Exception(response.message ?? 'Failed to load your tokens');
+    }
+    return sortedTokens(
+      listFromEnvelope(response.data!, [
+        'tokens',
+      ]).map(AccessToken.fromJson).toList(),
+    );
+  }
+
+  /// Create one for yourself and return the raw value, once. Same endpoint the
+  /// admin screen posts to: creating has always been self-scoped.
+  Future<({String? error, String? value, String? name})> createToken({
+    required String name,
+    required String expiryChoice,
+    required String accessChoice,
+  }) async {
+    final response = await _api.post(
+      ApiConfig.profileTokens,
+      tokenCreatePayload(
+        name: name,
+        expiryChoice: expiryChoice,
+        accessChoice: accessChoice,
+        now: DateTime.now(),
+      ),
+    );
+    if (!response.success) {
+      return (error: _message(response), value: null, name: null);
+    }
+    final raw = response.data?['token']?.toString();
+    await refresh();
+    if (raw == null || raw.isEmpty) {
+      return (
+        error:
+            'The token was created but its value did not come back. '
+            'Revoke it and create another.',
+        value: null,
+        name: null,
+      );
+    }
+    return (
+      error: null,
+      value: raw,
+      name: response.data?['name']?.toString() ?? name.trim(),
+    );
+  }
+
+  /// Revoke one of your own. The self-scoped path, so somebody else's id 404s
+  /// here instead of being revoked; the admin path would 403 a member out of
+  /// retiring their own credential.
+  Future<String?> revokeToken(String id) async {
+    final response = await _api.delete(ApiConfig.profileToken(id));
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
+  }
+}
+
+final myAccessTokensProvider =
+    AsyncNotifierProvider<MyAccessTokensNotifier, List<AccessToken>>(
+      MyAccessTokensNotifier.new,
+    );
+
+// ---------------------------------------------------------------------------
 // Organization settings, and the vertical packs that seed one
 // ---------------------------------------------------------------------------
 

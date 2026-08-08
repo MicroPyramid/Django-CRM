@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { listOrgTokens, createToken, revokeToken } from '$lib/server/v2/tokens.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
-import { expiryFromChoice, scopesFromChoice } from './oversight.js';
+import { expiryFromChoice, scopesFromChoice } from '$lib/v2/token-rules.js';
 
 /**
  * API tokens (admin oversight).

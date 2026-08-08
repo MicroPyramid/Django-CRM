@@ -17,6 +17,14 @@ class Profile {
   final DateTime? dateOfJoining;
   final bool isActive;
 
+  /// The teams you are on, by name. Only ever your own: the endpoint
+  /// serializes `request.profile` and takes no id.
+  final List<String> teams;
+
+  /// When you last signed in. Null on a profile that never has, and on any
+  /// payload from a build older than this field.
+  final DateTime? lastLogin;
+
   const Profile({
     required this.id,
     required this.user,
@@ -28,6 +36,8 @@ class Profile {
     this.phone,
     this.dateOfJoining,
     this.isActive = true,
+    this.teams = const [],
+    this.lastLogin,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -46,6 +56,12 @@ class Profile {
           ? DateTime.tryParse(json['date_of_joining'] as String)
           : null,
       isActive: json['is_active'] as bool? ?? true,
+      teams:
+          (json['teams'] as List?)?.map((t) => t.toString()).toList() ??
+          const [],
+      lastLogin: json['last_login'] != null
+          ? DateTime.tryParse(json['last_login'] as String)
+          : null,
     );
   }
 
@@ -61,6 +77,8 @@ class Profile {
       phone: phone ?? this.phone,
       dateOfJoining: dateOfJoining,
       isActive: isActive,
+      teams: teams,
+      lastLogin: lastLogin,
     );
   }
 }

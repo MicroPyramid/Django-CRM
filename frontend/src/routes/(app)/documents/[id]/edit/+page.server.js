@@ -42,12 +42,18 @@ export const actions = {
     const teams = form.getAll('teams').map((v) => v.toString());
     const values = { title, status, shared_to, teams };
 
+    // Replacing the file is optional, so an empty input is "leave it alone",
+    // not "clear it". A browser sends a zero-byte File for an untouched file
+    // input, which is why size is checked and not just the type.
+    const picked = form.get('document_file');
+    const file = picked instanceof File && picked.size > 0 ? picked : null;
+
     if (!title) {
       return fail(400, { values, error: 'Give the document a title.' });
     }
 
     try {
-      await updateDocument(event, event.params.id, values);
+      await updateDocument(event, event.params.id, { ...values, file });
     } catch (/** @type {any} */ err) {
       if (err?.status === 403) {
         return fail(403, { values, error: 'Only the owner or an admin can change this document.' });

@@ -170,7 +170,9 @@ class CrmDocument {
 
   /// A stored path, displayed and never turned into a URL here. Building a
   /// media URL client-side is how a private file becomes a public one; the
-  /// server decides who gets the bytes.
+  /// server decides who gets the bytes. Download through
+  /// `ApiConfig.documentDownload(id)`, which is gated by the same read
+  /// predicate as the record.
   final String documentFile;
 
   final String status;
@@ -184,6 +186,10 @@ class CrmDocument {
   final String? uploaderEmail;
 
   bool get isArchived => status == 'inactive';
+
+  /// Whether there is anything to download. A row with no file still lists,
+  /// so the action has to be offered conditionally.
+  bool get hasFile => documentFile.trim().isNotEmpty;
   DocumentKind get kind => documentKind(documentFile);
   String get fileName => documentFileName(documentFile);
 

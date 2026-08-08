@@ -10,6 +10,11 @@
  * `outcome.js` and `week.js`.
  *
  * `mobile/lib/data/models/access_token.dart` carries the same rules.
+ *
+ * In `$lib` rather than beside one route because two pages now ask these
+ * questions: the admin oversight list under /settings/api-tokens, and the
+ * self-service list under /profile/tokens. Every function here is pure, so it
+ * is safe on either side of the network.
  */
 
 import { daysSince } from '$lib/v2/format.js';
@@ -69,12 +74,18 @@ export function tokenStatus(token) {
  * why), which is what every token issued before enforcement carries, so those
  * rows say what they really are rather than being drawn as limited.
  *
+ * `ownerLabel` exists because the self-service list has no `owner` block on
+ * its rows (the endpoint is already scoped to you), and "Everything its owner
+ * can" is a strange thing to read on a page about your own tokens.
+ *
  * @param {any} token
+ * @param {{ ownerLabel?: string }} [options]
  * @returns {string}
  */
-export function scopeSummary(token) {
+export function scopeSummary(token, options = {}) {
   const scopes = token?.scopes ?? [];
   if (scopes.length === 0) {
+    if (options.ownerLabel) return `Everything ${options.ownerLabel} can`;
     const first = (token?.owner?.name ?? '').split(' ')[0];
     return first ? `Everything ${first} can` : 'Everything its owner can';
   }
