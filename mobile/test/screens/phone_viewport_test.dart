@@ -54,6 +54,12 @@ import 'package:bottle_crm/screens/settings/reopen_screen.dart';
 import 'package:bottle_crm/screens/settings/routing_rule_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/routing_screen.dart';
 import 'package:bottle_crm/screens/settings/tags_screen.dart';
+import 'package:bottle_crm/data/models/crm_document.dart';
+import 'package:bottle_crm/data/models/sales_goal.dart';
+import 'package:bottle_crm/providers/documents_provider.dart';
+import 'package:bottle_crm/providers/goals_provider.dart';
+import 'package:bottle_crm/screens/documents/documents_list_screen.dart';
+import 'package:bottle_crm/screens/goals/goals_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2455,6 +2461,196 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  /// Goals: a four-stat header, a progress row per goal, and the board.
+  ///
+  /// [isAdmin] drives both answers because the read is open to a member while
+  /// every write is admin-only, and [board] drives the empty leaderboard, which
+  /// became an ordinary outcome once the endpoint started narrowing its rows.
+  Widget goalsApp({
+    required bool isAdmin,
+    bool board = true,
+    bool empty = false,
+  }) => ProviderScope(
+    overrides: [
+      goalsProvider.overrideWith(
+        empty
+            ? _FakeNoGoals.new
+            : (board ? _FakeGoals.new : _FakeGoalsNoBoard.new),
+      ),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: routed(const GoalsScreen()),
+  );
+
+  group('goals', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(tester, goalsApp(isAdmin: true));
+      expect(find.text('Q3 revenue'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(tester, goalsApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member gets no compose control', (tester) async {
+      // Creating a goal answers 403 for a member. The server is what refuses;
+      // this only stops offering a page that cannot save.
+      await pump(tester, goalsApp(isAdmin: false));
+      expect(find.byTooltip('New goal'), findsNothing);
+      await pump(tester, goalsApp(isAdmin: true));
+      expect(find.byTooltip('New goal'), findsOneWidget);
+    });
+
+    testWidgets('prices a revenue goal and counts a deals goal', (
+      tester,
+    ) async {
+      // The two goal types are not the same quantity, and printing a deal
+      // count with a currency symbol in front of it is the obvious way to get
+      // this wrong.
+      await pump(tester, goalsApp(isAdmin: true));
+      expect(find.textContaining('3 deals'), findsWidgets);
+      expect(find.textContaining(r'$'), findsWidgets);
+    });
+
+    testWidgets(
+      'says why the board is empty rather than showing a bare heading',
+      (tester) async {
+        await pump(tester, goalsApp(isAdmin: false, board: false));
+        expect(find.textContaining('Nothing to rank yet'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'tells a member the list is narrowed to them, not that the org has none',
+      (tester) async {
+        // The API narrows a non-admin to their own goals and their teams', so
+        // "there are no goals" would be a claim this screen cannot make.
+        await pump(tester, goalsApp(isAdmin: false, empty: true));
+        expect(find.textContaining('assigned to you'), findsOneWidget);
+      },
+    );
+
+    testWidgets('every goal row clears the 44px tap target for an admin', (
+      tester,
+    ) async {
+      await pump(tester, goalsApp(isAdmin: true));
+      // Scoped to the list. Every InkWell on the screen would also catch the
+      // AppBar's icon buttons, which Material sizes at 40 on every screen in
+      // this app and which are not this module's to change.
+      final rows = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(InkWell),
+      );
+      expect(rows, findsWidgets);
+      for (final row in tester.widgetList<InkWell>(rows)) {
+        if (row.onTap == null) continue;
+        expect(
+          tester.getSize(find.byWidget(row)).height,
+          greaterThanOrEqualTo(44),
+        );
+      }
+    });
+  });
+
+  /// Documents. [myEmail] decides who uploaded what, which is the whole of the
+  /// edit affordance: `_may_write` is the uploader or an admin, and a share
+  /// grants neither.
+  Widget documentsApp({
+    required bool isAdmin,
+    String? myEmail,
+    bool empty = false,
+  }) => ProviderScope(
+    overrides: [
+      documentsProvider.overrideWith(
+        empty ? _FakeNoDocuments.new : _FakeDocuments.new,
+      ),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+      myEmailProvider.overrideWithValue(myEmail),
+    ],
+    child: routed(const DocumentsListScreen()),
+  );
+
+  group('documents', () {
+    testWidgets('renders without overflowing', (tester) async {
+      await pump(
+        tester,
+        documentsApp(isAdmin: false, myEmail: 'ada@example.com'),
+      );
+      expect(find.text('Signed contract'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fits with the system font scaled up', (tester) async {
+      await pump(
+        tester,
+        documentsApp(isAdmin: false, myEmail: 'ada@example.com'),
+        textScale: 1.5,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('offers upload to a member, because the API does', (
+      tester,
+    ) async {
+      // `DocumentListView.post` checks authentication and org context and
+      // nothing more. Gating this on role would invent a rule.
+      await pump(
+        tester,
+        documentsApp(isAdmin: false, myEmail: 'grace@example.com'),
+      );
+      expect(find.byTooltip('Upload'), findsOneWidget);
+    });
+
+    testWidgets('offers edit on your own upload and not on a share', (
+      tester,
+    ) async {
+      // Ada uploaded the contract and the notes; the policy is Grace's. A
+      // share is a copy to work with, not the original to rewrite.
+      await pump(
+        tester,
+        documentsApp(isAdmin: false, myEmail: 'ada@example.com'),
+      );
+      expect(_editableRows(tester), 2);
+    });
+
+    testWidgets('an admin may edit every row', (tester) async {
+      await pump(
+        tester,
+        documentsApp(isAdmin: true, myEmail: 'someone@example.com'),
+      );
+      expect(_editableRows(tester), 3);
+    });
+
+    testWidgets(
+      'names who a document reaches, and says when it reaches nobody',
+      (tester) async {
+        await pump(
+          tester,
+          documentsApp(isAdmin: true, myEmail: 'ada@example.com'),
+        );
+        // A team is named with its size rather than flattened to its members.
+        expect(find.textContaining('Support (3)'), findsOneWidget);
+        expect(
+          find.text('Shared with nobody. Only you and an admin can open it.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('says the counts exclude archived rows while they are hidden', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        documentsApp(isAdmin: true, myEmail: 'ada@example.com'),
+      );
+      expect(find.textContaining('not shown or counted'), findsOneWidget);
+    });
+  });
 }
 
 /// A working week with one holiday, which is what most orgs look like.
@@ -3311,3 +3507,182 @@ class _FakeEmptyQueue extends SupportTicketsNotifier {
   @override
   Future<SupportTicketListData> build() async => const SupportTicketListData();
 }
+
+/// Goals covering every state a row draws: a revenue goal behind pace, a
+/// deals-closed goal (a different quantity, so it must not be priced), and a
+/// retired one that the totals leave out.
+class _FakeGoals extends GoalsNotifier {
+  @override
+  Future<GoalsData> build() async => _goalsFixture(withBoard: true);
+}
+
+/// The same list with an empty board. Not an error state: the endpoint now
+/// narrows its rows the way the list does, so somebody with no current monthly
+/// goal of their own sees nothing to rank.
+class _FakeGoalsNoBoard extends GoalsNotifier {
+  @override
+  Future<GoalsData> build() async => _goalsFixture(withBoard: false);
+}
+
+class _FakeNoGoals extends GoalsNotifier {
+  @override
+  Future<GoalsData> build() async => const GoalsData();
+}
+
+GoalsData _goalsFixture({required bool withBoard}) {
+  final goals = sortGoalsByUrgency([
+    SalesGoal.fromJson(const {
+      'id': 'g1',
+      'name': 'Q3 revenue',
+      'goal_type': 'REVENUE',
+      'target_value': '250000.00',
+      'period_type': 'QUARTERLY',
+      'period_start': '2026-07-01',
+      'period_end': '2026-09-30',
+      'assigned_to': 'p1',
+      'assigned_to_detail': {
+        'id': 'p1',
+        'user_details': {'name': 'Ada Lovelace', 'email': 'ada@example.com'},
+      },
+      'is_active': true,
+      'progress_value': 90000,
+      'progress_percent': 36,
+      'status': 'behind',
+    }),
+    SalesGoal.fromJson(const {
+      'id': 'g2',
+      'name': 'New logos this month',
+      'goal_type': 'DEALS_CLOSED',
+      'target_value': '8',
+      'period_type': 'MONTHLY',
+      'period_start': '2026-08-01',
+      'period_end': '2026-08-31',
+      'team': 't1',
+      'team_detail': {'id': 't1', 'name': 'Support'},
+      'is_active': true,
+      'progress_value': 3,
+      'progress_percent': 37,
+      'status': 'on_track',
+    }),
+    SalesGoal.fromJson(const {
+      'id': 'g3',
+      'name': 'Last year, closed out',
+      'goal_type': 'REVENUE',
+      'target_value': '900000.00',
+      'period_type': 'YEARLY',
+      'period_start': '2025-01-01',
+      'period_end': '2025-12-31',
+      'is_active': false,
+      'progress_value': 900000,
+      'progress_percent': 100,
+      'status': 'completed',
+    }),
+  ]);
+
+  return GoalsData(
+    goals: goals,
+    leaderboard: withBoard
+        ? [
+            GoalLeaderRow.fromJson(const {
+              'rank': 1,
+              'goal_id': 'g1',
+              'goal_name': 'Q3 revenue',
+              // A name, not an email. The endpoint used to send the address
+              // here and again under an `email` key.
+              'user': {'id': 'p1', 'name': 'Ada Lovelace'},
+              'target': 250000.0,
+              'achieved': 260000.0,
+              'percent': 104,
+            }),
+          ]
+        : const [],
+    totals: goalTotals(goals, today: '2026-08-08'),
+  );
+}
+
+/// Three documents: one Ada uploaded and shared with a team, one Ada uploaded
+/// and shared with nobody, and one Grace uploaded. The third is what proves a
+/// share does not carry a right to rewrite.
+class _FakeDocuments extends DocumentsNotifier {
+  @override
+  Future<DocumentsData> build() async {
+    final documents = [
+      CrmDocument.fromJson(const {
+        'id': 'd1',
+        'title': 'Signed contract',
+        'document_file': 'documents/2026/signed-contract.pdf',
+        'status': 'active',
+        'shared_to': [],
+        'teams': [
+          {'id': 't1', 'name': 'Support', 'member_count': 3},
+        ],
+        'size_bytes': 284000,
+        'created_at': '2026-08-05T10:00:00Z',
+        'created_by': {
+          'id': 'u1',
+          'name': 'Ada Lovelace',
+          'email': 'ada@example.com',
+        },
+      }),
+      CrmDocument.fromJson(const {
+        'id': 'd2',
+        'title': 'Discovery notes, first call with a very long customer name',
+        'document_file': 'documents/2026/notes.md',
+        'status': 'active',
+        'shared_to': [],
+        'teams': [],
+        'size_bytes': null,
+        'created_at': '2026-08-04T10:00:00Z',
+        'created_by': {
+          'id': 'u1',
+          'name': 'Ada Lovelace',
+          'email': 'ada@example.com',
+        },
+      }),
+      CrmDocument.fromJson(const {
+        'id': 'd3',
+        'title': 'Refund policy',
+        'document_file': 'documents/2026/refunds.docx',
+        'status': 'active',
+        'shared_to': [
+          {
+            'id': 'p1',
+            'user_details': {
+              'name': 'Ada Lovelace',
+              'email': 'ada@example.com',
+            },
+          },
+        ],
+        'teams': [],
+        'size_bytes': 12000,
+        'created_at': '2026-08-03T10:00:00Z',
+        'created_by': {
+          'id': 'u2',
+          'name': 'Grace Hopper',
+          'email': 'grace@example.com',
+        },
+      }),
+    ];
+    return DocumentsData(
+      documents: documents,
+      totals: documentTotals(documents),
+    );
+  }
+}
+
+class _FakeNoDocuments extends DocumentsNotifier {
+  @override
+  Future<DocumentsData> build() async => const DocumentsData();
+}
+
+/// Rows the viewer may edit, counted from the list rather than from every
+/// InkWell on the screen: the AppBar's icon buttons are InkWells too.
+int _editableRows(WidgetTester tester) => tester
+    .widgetList<InkWell>(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(InkWell),
+      ),
+    )
+    .where((w) => w.onTap != null)
+    .length;

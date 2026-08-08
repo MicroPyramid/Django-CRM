@@ -74,6 +74,22 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               description: 'What is owed, and what has been paid',
               onTap: () => context.push(AppRoutes.invoices),
             ),
+            MenuRow(
+              icon: LucideIcons.folder,
+              label: 'Documents',
+              description: 'Files shared with you and your teams',
+              onTap: () => context.push(AppRoutes.documents),
+            ),
+            // Not admin-gated. The list is open to any member and the API
+            // narrows it to the goals set for them and their teams; only
+            // creating and editing are admin-only, and those live behind this
+            // screen rather than on it.
+            MenuRow(
+              icon: LucideIcons.target,
+              label: 'Goals',
+              description: 'Targets for you and your teams, and how far along',
+              onTap: () => context.push(AppRoutes.goals),
+            ),
 
             // Account Section
             _buildSectionHeader('Account'),

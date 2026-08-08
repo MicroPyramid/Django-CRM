@@ -57,6 +57,10 @@ import '../screens/tickets/approvals_inbox_screen.dart';
 import '../screens/tickets/ticket_analytics_screen.dart';
 import '../screens/timesheet/timesheet_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
+import '../screens/documents/documents_list_screen.dart';
+import '../screens/documents/document_form_screen.dart';
+import '../screens/goals/goals_screen.dart';
+import '../screens/goals/goal_form_screen.dart';
 import '../screens/invoices/invoices_list_screen.dart';
 import '../screens/invoices/invoice_detail_screen.dart';
 import '../screens/invoices/estimates_list_screen.dart';
@@ -141,6 +145,23 @@ class AppRoutes {
 
   /// The notification feed. Matches the web app's `/notifications`.
   static const String notifications = '/notifications';
+
+  /// Shared files. Matches the web app's `/documents`. There is no detail
+  /// route on either client: the list says everything a document row holds,
+  /// and the edit form is where the writes live.
+  static const String documents = '/documents';
+  static const String documentNew = '/documents/new';
+  static const String documentEdit = '/documents/:id/edit';
+
+  static String documentEditFor(String id) => '/documents/$id/edit';
+
+  /// Sales goals. Matches the web app's `/goals`. Same shape as documents,
+  /// and for the same reason.
+  static const String goals = '/goals';
+  static const String goalNew = '/goals/new';
+  static const String goalEdit = '/goals/:id/edit';
+
+  static String goalEditFor(String id) => '/goals/$id/edit';
 
   /// Help: product support from the BottleCRM team. The URL says help, the
   /// API behind it is `/api/support/`, and the screens keep the support name.
@@ -374,6 +395,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'notifications',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.documents,
+        name: 'documents',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DocumentsListScreen(),
+      ),
+      // Literal `new` before the `:id` pattern, or `/documents/new` is read as
+      // a document whose id is the word "new".
+      GoRoute(
+        path: AppRoutes.documentNew,
+        name: 'documentNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DocumentFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.documentEdit,
+        name: 'documentEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            DocumentFormScreen(documentId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: AppRoutes.goals,
+        name: 'goals',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const GoalsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.goalNew,
+        name: 'goalNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const GoalFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.goalEdit,
+        name: 'goalEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            GoalFormScreen(goalId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: AppRoutes.help,

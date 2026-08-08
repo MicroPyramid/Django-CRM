@@ -112,9 +112,15 @@
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
     {#if data.goals.length === 0}
+      <!-- Two messages, because the list is narrowed server-side to the goals
+           a non-admin may see: their own and their teams'. "No goals set" is a
+           claim about the org, and a member reading it may well be looking at
+           an org full of goals that are simply not theirs. -->
       <EmptyState
-        title="No goals set"
-        body="A goal is a target and a period. Once one exists, closed-won deals count towards it automatically. Nobody has to update a number."
+        title={data.can_edit ? 'No goals set' : 'Nothing assigned to you'}
+        body={data.can_edit
+          ? 'A goal is a target and a period. Once one exists, closed-won deals count towards it automatically. Nobody has to update a number.'
+          : 'Nothing is assigned to you or your teams. An administrator sets these, and closed-won deals count towards them automatically once one exists.'}
       >
         {#snippet icon()}<Target size={21} />{/snippet}
         {#snippet actions()}
@@ -243,13 +249,24 @@
                   {row.percent}%
                 </span>
               </div>
+            {:else}
+              <!-- Newly reachable: the board is now scoped the way the list
+                   is, so somebody with no current monthly goal of their own
+                   sees nothing here rather than the whole org. An empty card
+                   under a heading reads as a failure, so it says why. -->
+              <p class="v2-sub" style="padding:14px;margin:0;font-size:12px">
+                Nothing to rank yet. The board covers monthly goals running today, and shows the
+                ones you can see: your own, and your teams'.
+              </p>
             {/each}
           </div>
 
-          <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
-            Ranked on attainment against each person's own target, not on raw revenue. Otherwise the
-            biggest patch wins every quarter regardless of who worked hardest.
-          </p>
+          {#if data.leaderboard.length}
+            <p class="v2-sub" style="font-size:11.5px;margin-top:11px">
+              Ranked on attainment against each person's own target, not on raw revenue. Otherwise
+              the biggest patch wins every quarter regardless of who worked hardest.
+            </p>
+          {/if}
         </div>
       </div>
     {/if}

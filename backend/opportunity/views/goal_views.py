@@ -12,6 +12,28 @@ from opportunity.models import SalesGoal
 from opportunity.serializer import SalesGoalCreateSerializer, SalesGoalSerializer
 
 
+def _visible_to(profile):
+    """Q() describing which goals a non-admin profile may see.
+
+    One definition, used by the list query and by the leaderboard, because they
+    disagreed before: the list narrowed a non-admin to their own goals and their
+    teams' while the leaderboard declared only `IsAuthenticated` and
+    `HasOrgContext` and scoped nothing. A member whose own list came back empty
+    could still read every colleague's target, attainment and email off
+    `/goals/leaderboard/`. `SalesGoalDetailView.get` refuses the same person the
+    same goal with a 403, so all three now agree.
+
+    Scope: this only ever narrows within one org. Every caller has already
+    filtered on `org=request.profile.org`, and RLS is underneath that. It is not
+    a substitute for either.
+    """
+    return Q(assigned_to=profile) | Q(team__in=profile.user_teams.all())
+
+
+def _sees_every_goal(request):
+    return is_org_admin(request.profile) or request.user.is_superuser
+
+
 class SalesGoalListView(APIView, LimitOffsetPagination):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
@@ -19,12 +41,8 @@ class SalesGoalListView(APIView, LimitOffsetPagination):
         org = request.profile.org
         queryset = SalesGoal.objects.filter(org=org)
 
-        is_admin = is_org_admin(request.profile) or request.user.is_superuser
-        if not is_admin:
-            queryset = queryset.filter(
-                Q(assigned_to=request.profile)
-                | Q(team__in=request.profile.user_teams.all())
-            )
+        if not _sees_every_goal(request):
+            queryset = queryset.filter(_visible_to(request.profile))
 
         params = request.query_params
         if params.get("active") == "true":
@@ -103,15 +121,18 @@ class SalesGoalDetailView(APIView):
                 {"error": True, "errors": "Goal not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        is_admin = is_org_admin(request.profile) or request.user.is_superuser
-        if not is_admin:
-            if goal.assigned_to != request.profile and (
-                not goal.team or goal.team not in request.profile.user_teams.all()
-            ):
-                return Response(
-                    {"error": True, "errors": "You do not have permission."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # Evaluated as a queryset filter rather than by hand in Python so that
+        # it is literally the same predicate the list and the leaderboard use.
+        # Writing it out separately is how the three drifted apart.
+        if not _sees_every_goal(request) and not (
+            SalesGoal.objects.filter(pk=goal.pk)
+            .filter(_visible_to(request.profile))
+            .exists()
+        ):
+            return Response(
+                {"error": True, "errors": "You do not have permission."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = SalesGoalSerializer(goal)
         return Response(serializer.data)
 
@@ -161,6 +182,19 @@ class SalesGoalDetailView(APIView):
 
 
 class SalesGoalLeaderboardView(APIView):
+    """Current individual goals for one period, ranked by attainment.
+
+    Narrowed by `_visible_to` for a non-admin, the same predicate the list uses.
+    A ranking is not a way around the rule that a member does not read a
+    colleague's quota: before this, a member's own list came back empty while
+    this endpoint handed them every row in the org.
+
+    Ranks are assigned after narrowing, so a member sees their standing within
+    what they may see rather than a position in a table they cannot read. A
+    leaderboard of one is the honest answer for someone with a single goal and
+    no team.
+    """
+
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get(self, request, *args, **kwargs):
@@ -178,6 +212,9 @@ class SalesGoalLeaderboardView(APIView):
             assigned_to__isnull=False,
         ).select_related("assigned_to", "assigned_to__user")
 
+        if not _sees_every_goal(request):
+            goals = goals.filter(_visible_to(request.profile)).distinct()
+
         leaderboard = []
         for goal in goals:
             # compute_progress() results are cached on the instance
@@ -192,10 +229,18 @@ class SalesGoalLeaderboardView(APIView):
                 {
                     "goal_id": str(goal.id),
                     "goal_name": goal.name,
+                    # `User.name` is non-empty by construction (`User.save`
+                    # falls back to the email local-part on first save), and
+                    # this used to put the full email in the `name` slot and
+                    # again in an `email` one, so both clients printed raw
+                    # addresses in a ranked list. The address is not needed to
+                    # name somebody, and a board that is now narrowed by
+                    # `_visible_to` should not be the widest thing on the
+                    # payload, so it is gone rather than merely unused.
                     "user": {
                         "id": str(goal.assigned_to.id),
-                        "name": goal.assigned_to.user.email,
-                        "email": goal.assigned_to.user.email,
+                        "name": goal.assigned_to.user.name
+                        or goal.assigned_to.user.email,
                     },
                     "target": float(goal.target_value),
                     "achieved": float(progress),

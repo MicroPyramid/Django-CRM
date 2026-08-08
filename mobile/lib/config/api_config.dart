@@ -201,6 +201,29 @@ class ApiConfig {
   static String opportunityComment(String commentId) =>
       '$apiBaseUrl/opportunities/comment/$commentId/';
 
+  /// Sales goals. Reading is open to any member and narrowed server-side to
+  /// their own goals and their teams'; creating, editing and deleting are
+  /// admin-only and answer 403 to everyone else.
+  static String get goals => '$apiBaseUrl/opportunities/goals/';
+
+  static String goal(String id) => '$apiBaseUrl/opportunities/goals/$id/';
+
+  /// Current individual goals for one period, ranked on attainment. Takes
+  /// `?period_type=`, defaulting to MONTHLY server-side.
+  ///
+  /// Narrowed by the same rule as the list. It used to scope nothing, so a
+  /// member whose own list came back empty could still read every colleague's
+  /// target, attainment and email address off this endpoint.
+  static String get goalsLeaderboard =>
+      '$apiBaseUrl/opportunities/goals/leaderboard/';
+
+  /// Shared files. The list answers two separately paginated envelopes,
+  /// `documents_active` and `documents_inactive`. Uploading is open to any
+  /// member; editing and deleting are the uploader or an admin.
+  static String get documents => '$apiBaseUrl/documents/';
+
+  static String document(String id) => '$apiBaseUrl/documents/$id/';
+
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
 
