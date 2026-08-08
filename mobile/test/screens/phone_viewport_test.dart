@@ -27,6 +27,9 @@ import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/providers/timesheet_provider.dart';
 import 'package:bottle_crm/screens/invoices/estimates_list_screen.dart';
 import 'package:bottle_crm/screens/invoices/invoices_list_screen.dart';
+import 'package:bottle_crm/data/models/invoice_template.dart';
+import 'package:bottle_crm/screens/invoices/invoice_template_form_screen.dart';
+import 'package:bottle_crm/screens/invoices/invoice_templates_screen.dart';
 import 'package:bottle_crm/screens/invoices/new_invoice_screen.dart';
 import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:bottle_crm/screens/invoices/products_list_screen.dart';
@@ -523,6 +526,24 @@ void main() {
     child: routed(const ProductsListScreen()),
   );
 
+  /// Both answers matter: reading the catalogue is open to any member, and
+  /// every write on a template is admin-only.
+  Widget templatesApp({required bool isAdmin}) => ProviderScope(
+    overrides: [
+      invoiceTemplatesProvider.overrideWith(_FakeTemplates.new),
+      isOrgAdminProvider.overrideWithValue(isAdmin),
+    ],
+    child: routed(const InvoiceTemplatesScreen()),
+  );
+
+  /// The form over the same catalogue. [templateId] null creates; an id edits,
+  /// and the fixture is what it pre-fills from, since the form reads the list
+  /// row rather than making a detail call.
+  Widget templateFormApp({String? templateId}) => ProviderScope(
+    overrides: [invoiceTemplatesProvider.overrideWith(_FakeTemplates.new)],
+    child: routed(InvoiceTemplateFormScreen(templateId: templateId)),
+  );
+
   Future<void> pump(
     WidgetTester tester,
     Widget app, {
@@ -530,6 +551,36 @@ void main() {
   }) async {
     usePhone(tester, textScale: textScale);
     await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+  }
+
+  /// Scroll a long form until [target] is built, or give up.
+  ///
+  /// A `ListView` builds only what is near the viewport, so on a 390x844 phone
+  /// a card below the fold is not merely off-screen, it is absent from the
+  /// tree. That makes a bare `findsNothing` on it worthless: it passes for a
+  /// field that exists and one that does not. Giving up quietly is right, since
+  /// the tests that assert absence want to reach the bottom and find nothing.
+  ///
+  /// Dragging rather than `scrollUntilVisible`: every `TextField` on the form
+  /// carries a `Scrollable` of its own, so the implicit scrollable lookup is
+  /// ambiguous here. `find.byType(ListView)` is not.
+  /// [step] is negative to go down the form and positive to come back up.
+  Future<void> scrollForm(
+    WidgetTester tester,
+    Finder target, {
+    double step = -320,
+  }) async {
+    for (var i = 0; i < 10 && target.evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(ListView), Offset(0, step));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  Future<void> submitForm(WidgetTester tester, String label) async {
+    final button = find.widgetWithText(FilledButton, label);
+    await scrollForm(tester, button);
+    await tester.tap(button);
     await tester.pumpAndSettle();
   }
 
@@ -815,6 +866,159 @@ void main() {
 
       expect(find.text('Retired'), findsOneWidget);
       expect(find.textContaining('on 12 invoices'), findsOneWidget);
+    });
+  });
+
+  group('invoice templates at 390px', () {
+    testWidgets('the catalogue renders without overflowing', (tester) async {
+      await pump(tester, templatesApp(isAdmin: true));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the catalogue fits with the system font scaled up', (
+      tester,
+    ) async {
+      await pump(tester, templatesApp(isAdmin: true), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a member sees the catalogue and no write control', (
+      tester,
+    ) async {
+      // Every template write answers 403 to a member, so drawing one would be
+      // drawing a guaranteed failure. The read stays open: knowing which
+      // template an invoice prints in is useful to whoever raised it.
+      await pump(tester, templatesApp(isAdmin: false));
+
+      expect(find.text('House style'), findsOneWidget);
+      expect(find.byTooltip('New template'), findsNothing);
+      expect(find.byTooltip('Edit template'), findsNothing);
+      expect(
+        find.widgetWithText(OutlinedButton, 'Use for new invoices'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('an admin gets a way in on every row', (tester) async {
+      await pump(tester, templatesApp(isAdmin: true));
+
+      expect(find.byTooltip('New template'), findsOneWidget);
+      expect(find.byTooltip('Edit template'), findsNWidgets(2));
+    });
+
+    testWidgets('the template already holding the default is not offered it', (
+      tester,
+    ) async {
+      // Setting the default is a swap the model performs in one transaction,
+      // so there is no call that turns the flag off. Offering it on the row
+      // that holds it would be offering to leave the org without a default.
+      await pump(tester, templatesApp(isAdmin: true));
+
+      expect(
+        find.widgetWithText(OutlinedButton, 'Use for new invoices'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the form renders without overflowing', (tester) async {
+      await pump(tester, templateFormApp());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the form fits with the system font scaled up', (tester) async {
+      await pump(tester, templateFormApp(), textScale: 1.5);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('editing pre-fills from the catalogue row', (tester) async {
+      await pump(tester, templateFormApp(templateId: 't1'));
+
+      expect(find.text('House style'), findsOneWidget);
+      expect(find.text('#3B82F6'), findsOneWidget);
+
+      await scrollForm(tester, find.text('Thanks, as ever.'));
+      expect(find.text('Thanks, as ever.'), findsOneWidget);
+      expect(find.text('Settle within 14 days.'), findsOneWidget);
+    });
+
+    testWidgets('the form says where the layout is edited instead', (
+      tester,
+    ) async {
+      // `template_html` and `template_css` stay on the admin-only editor
+      // route: the phone neither reads nor writes them, which is why a save
+      // from here cannot blank the layout the web editor stored. Saying
+      // nothing about that would read as "this form is the whole template".
+      await pump(tester, templateFormApp(templateId: 't1'));
+      await scrollForm(tester, find.textContaining('edited on the web'));
+
+      expect(find.textContaining('edited on the web'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Custom HTML'), findsNothing);
+      expect(find.widgetWithText(TextField, 'Custom CSS'), findsNothing);
+    });
+
+    testWidgets('the default switch is on create only', (tester) async {
+      // Carrying an off switch through an unrelated edit would demote the
+      // org's current default and leave it with none, so the edit form does
+      // not own the field at all. The web splits its two forms the same way.
+      await pump(tester, templateFormApp());
+      await scrollForm(tester, find.text('Use this for new invoices'));
+      expect(find.text('Use this for new invoices'), findsOneWidget);
+
+      await pump(tester, templateFormApp(templateId: 't1'));
+      await scrollForm(tester, find.text('Use this for new invoices'));
+      expect(find.text('Use this for new invoices'), findsNothing);
+    });
+
+    testWidgets('a name is refused where the thumb already is', (tester) async {
+      // The submit button is below the fold on a phone, so lighting only the
+      // name field's own error, several hundred pixels up, reads as a tap that
+      // did nothing. Both halves have to be there: the line by the button, and
+      // the field it points at.
+      await pump(tester, templateFormApp());
+      await submitForm(tester, 'Create template');
+      expect(find.text('Check the highlighted fields above.'), findsOneWidget);
+
+      await scrollForm(
+        tester,
+        find.text('Give the template a name'),
+        step: 320,
+      );
+      expect(find.text('Give the template a name'), findsOneWidget);
+    });
+
+    testWidgets('a colour that is not hex is refused the same way', (
+      tester,
+    ) async {
+      // The serializer refuses it too, which is the check that counts. This is
+      // the round trip saved, and the reason the swatches are there.
+      await pump(tester, templateFormApp());
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Template name'),
+        'Brand',
+      );
+      await tester.enterText(find.widgetWithText(TextField, 'Primary'), 'red');
+      await submitForm(tester, 'Create template');
+      expect(find.text('Check the highlighted fields above.'), findsOneWidget);
+
+      await scrollForm(
+        tester,
+        find.textContaining('six digit hex colour'),
+        step: 320,
+      );
+      expect(find.textContaining('six digit hex colour'), findsOneWidget);
+    });
+
+    testWidgets('tapping a swatch fills the field with its hex', (
+      tester,
+    ) async {
+      // Typing `#3B82F6` on a soft keyboard to change a brand colour is what
+      // the swatches exist to avoid, so the tap has to land in the field the
+      // payload reads.
+      await pump(tester, templateFormApp());
+      await tester.tap(find.bySemanticsLabel('#16A34A').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('#16A34A'), findsOneWidget);
     });
   });
 
@@ -3108,6 +3312,37 @@ class _FakeProducts extends ProductsNotifier {
       'currency': 'USD',
       'is_active': false,
       'used_on': 12,
+    }),
+  ];
+}
+
+/// The org default plus one alternative, so the row that holds the flag and
+/// the row that could take it are both on screen.
+class _FakeTemplates extends InvoiceTemplatesNotifier {
+  @override
+  Future<List<InvoiceTemplate>> build() async => [
+    InvoiceTemplate.fromJson({
+      'id': 't1',
+      'name': 'House style',
+      'is_default': true,
+      'primary_color': '#3B82F6',
+      'secondary_color': '#1E40AF',
+      'has_logo': true,
+      'has_custom_html': true,
+      // Deliberately not the field hints, which say "Thanks for your
+      // business." and "Payment due within 30 days.": a fixture that matches
+      // its own placeholder cannot tell a pre-filled field from an empty one.
+      'default_notes': 'Thanks, as ever.',
+      'default_terms': 'Settle within 14 days.',
+      'footer_text': 'Questions? Ask for Dana.',
+      'used_on_invoices': 4,
+    }),
+    InvoiceTemplate.fromJson({
+      'id': 't2',
+      'name': 'Minimal, for the quarterly retainer statements',
+      'is_default': false,
+      'primary_color': '#4B5563',
+      'used_on_invoices': 0,
     }),
   ];
 }

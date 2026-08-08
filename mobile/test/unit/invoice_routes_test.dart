@@ -74,6 +74,56 @@ void main() {
     });
   });
 
+  group('the template form routes', () {
+    test('sit under the catalogue, two segments past /invoices', () {
+      // Same reasoning as `recurring/new`: `:id` matches one segment, so
+      // neither of these can be mistaken for an invoice id. That is why they
+      // are absent from `siblings` rather than an oversight.
+      for (final path in [
+        AppRoutes.invoiceTemplateNew,
+        AppRoutes.invoiceTemplateEdit,
+      ]) {
+        expect(
+          path,
+          startsWith('${AppRoutes.invoiceTemplates}/'),
+          reason: path,
+        );
+      }
+    });
+
+    test('the create and edit paths cannot match each other', () {
+      // `/invoices/templates/new` is two segments and
+      // `/invoices/templates/:id/edit` is three, so declaration order between
+      // the two does not matter. If the edit path ever loses its `/edit` tail,
+      // it would swallow `new` as an id and this fails.
+      expect(
+        AppRoutes.invoiceTemplateNew.split('/'),
+        isNot(hasLength(AppRoutes.invoiceTemplateEdit.split('/').length)),
+      );
+      expect(AppRoutes.invoiceTemplateEdit, endsWith('/edit'));
+    });
+
+    test('the helper builds the path the route declares', () {
+      // A hand-built string here is how a link goes to a 404 that nothing
+      // catches, since go_router answers an unmatched path at runtime.
+      expect(
+        AppRoutes.invoiceTemplateEditFor('abc-123'),
+        AppRoutes.invoiceTemplateEdit.replaceFirst(':id', 'abc-123'),
+      );
+    });
+
+    test('both are in the real router', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final order = _invoicePaths(
+        container.read(appRouterProvider).configuration.routes,
+      );
+
+      expect(order, contains(AppRoutes.invoiceTemplateNew));
+      expect(order, contains(AppRoutes.invoiceTemplateEdit));
+    });
+  });
+
   group('the detail route', () {
     test('takes a single :id segment', () {
       expect(AppRoutes.invoiceDetail, '${AppRoutes.invoices}/:id');

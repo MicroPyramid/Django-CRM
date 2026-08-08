@@ -179,10 +179,13 @@ export const UPDATE_FIELDS = [
  * control using `can_manage`, but that is a display hint decoded from the JWT;
  * the backend re-derives the role and is the check that matters.
  *
- * The colour checks below mirror nothing on the server. Neither colour field
- * has a format validator; the model is `max_length=7` only, so `"purple"` is
- * stored happily and then renders as an invalid CSS colour in the PDF. That is
- * a backend gap, flagged rather than worked around.
+ * The colour checks below now mirror `_validate_hex_color` in
+ * `InvoiceTemplateCreateSerializer`, which is the check that counts. They used
+ * to mirror nothing: the model is `max_length=7` and had no format validator,
+ * so `"purple"` was stored happily and then rendered as an invalid CSS colour
+ * in the PDF. The serializer closed that when the phone became the third client
+ * constraining the field. These stay because a client-side message beats a raw
+ * 400 on a field the user picked from a swatch.
  *
  * `is_default` is not a plain field write: the model's `save()` clears the flag
  * on every other template in the org inside a transaction, so setting it here

@@ -1,30 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/invoice_template.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/invoice_extras_provider.dart';
+import '../../routes/app_router.dart';
 import '../../widgets/common/badge.dart';
 import 'invoice_shell.dart';
+import 'invoice_template_form_screen.dart' show swatchColor;
 
-/// PDF templates, read-only by design.
+/// PDF templates: the catalogue, and the writes an admin can make from a phone.
 ///
-/// The web has three pages here: a list, a create form and an editor. Only the
-/// list is on mobile, and that is a decision rather than a gap. A template's
-/// body is raw HTML and CSS that WeasyPrint renders server-side, so the editor
-/// is admin-only and the markup never leaves the editor endpoint. Shipping a
-/// markup editor to a phone would mean pulling that markup onto the device to
-/// no benefit, and a two-pane HTML editor is not a 390px screen either.
+/// Reading is open to every member, since knowing which template an invoice
+/// will print in is useful to whoever raised it. Creating, editing and
+/// re-pointing the default are admin-only, which the API enforces
+/// (`_forbid_non_admin_template`); the controls below are hidden from everyone
+/// else as a courtesy, not as the check.
 ///
-/// What is useful on a phone is knowing which template an invoice will come
-/// out in and which is the default, so that is what this shows.
+/// **The layout itself is still edited on the web.** A template's body is
+/// org-authored HTML and CSS that WeasyPrint renders server-side, it never
+/// leaves the admin-only editor route, and a two-pane markup editor is not a
+/// 390px screen. Everything else about a template is ordinary form input, so
+/// that is what the form screen owns, and a save from here leaves the markup
+/// untouched.
 class InvoiceTemplatesScreen extends ConsumerWidget {
   const InvoiceTemplatesScreen({super.key});
+
+  Future<void> _setDefault(
+    BuildContext context,
+    WidgetRef ref,
+    InvoiceTemplate template,
+  ) async {
+    final error = await ref
+        .read(invoiceTemplatesProvider.notifier)
+        .setDefault(template.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          error ?? '${template.name} is now the default for new invoices',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(invoiceTemplatesProvider);
+    final isAdmin = ref.watch(isOrgAdminProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -33,33 +59,52 @@ class InvoiceTemplatesScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
+        actions: [
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(LucideIcons.plus),
+              tooltip: 'New template',
+              onPressed: () => context.push(AppRoutes.invoiceTemplateNew),
+            ),
+        ],
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => InvoiceErrorState(
           message: 'Could not load templates',
-          onRetry: () => ref.invalidate(invoiceTemplatesProvider),
+          onRetry: () => ref.read(invoiceTemplatesProvider.notifier).refresh(),
         ),
         data: (templates) {
           if (templates.isEmpty) {
-            return const InvoiceEmptyState(
+            return InvoiceEmptyState(
               icon: LucideIcons.layoutTemplate,
               message: 'No templates yet',
-              detail: 'Invoices use the built-in layout until one is added.',
+              detail: isAdmin
+                  ? 'Invoices use the built-in layout until one is added.'
+                  : 'Invoices use the built-in layout. An administrator adds '
+                        'these.',
             );
           }
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(invoiceTemplatesProvider),
+            onRefresh: () =>
+                ref.read(invoiceTemplatesProvider.notifier).refresh(),
             child: ListView(
               padding: const EdgeInsets.only(bottom: 96),
               children: [
-                for (final t in templates) _TemplateCard(template: t),
+                for (final t in templates)
+                  _TemplateCard(
+                    template: t,
+                    canManage: isAdmin,
+                    onEdit: () =>
+                        context.push(AppRoutes.invoiceTemplateEditFor(t.id)),
+                    onSetDefault: () => _setDefault(context, ref, t),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Text(
-                    'Templates are edited on the web. The layout is HTML and '
-                    'CSS that renders into the PDF, and only an administrator '
-                    'can change it.',
+                    'A template\'s PDF layout is HTML and CSS, and it is '
+                    'edited on the web. The name, colours, logo and '
+                    'boilerplate are editable here.',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -75,22 +120,21 @@ class InvoiceTemplatesScreen extends ConsumerWidget {
 }
 
 class _TemplateCard extends StatelessWidget {
-  const _TemplateCard({required this.template});
+  const _TemplateCard({
+    required this.template,
+    required this.canManage,
+    required this.onEdit,
+    required this.onSetDefault,
+  });
 
   final InvoiceTemplate template;
-
-  /// `#RRGGBB` to a swatch, falling back to grey rather than throwing on
-  /// anything unexpected: the value is org-authored free text.
-  Color? _swatch(String? hex) {
-    final value = hex?.replaceAll('#', '').trim() ?? '';
-    if (value.length != 6) return null;
-    final parsed = int.tryParse(value, radix: 16);
-    return parsed == null ? null : Color(0xFF000000 | parsed);
-  }
+  final bool canManage;
+  final VoidCallback onEdit;
+  final VoidCallback onSetDefault;
 
   @override
   Widget build(BuildContext context) {
-    final primary = _swatch(template.primaryColor);
+    final primary = swatchColor(template.primaryColor);
 
     return Container(
       color: AppColors.surface,
@@ -123,6 +167,12 @@ class _TemplateCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (canManage)
+                IconButton(
+                  icon: const Icon(LucideIcons.pencil, size: 18),
+                  tooltip: 'Edit template',
+                  onPressed: onEdit,
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -159,6 +209,20 @@ class _TemplateCard extends StatelessWidget {
               ),
             ],
           ),
+          // Making a template the default is a swap, not a toggle: the model
+          // clears the flag on every other row in one transaction. So the one
+          // already holding it gets no control, because there is nothing to
+          // offer that would not leave the org without a default.
+          if (canManage && !template.isDefault) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 44,
+              child: OutlinedButton(
+                onPressed: onSetDefault,
+                child: const Text('Use for new invoices'),
+              ),
+            ),
+          ],
         ],
       ),
     );

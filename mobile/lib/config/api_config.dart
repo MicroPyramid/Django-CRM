@@ -421,9 +421,14 @@ class ApiConfig {
   static String get products => '$apiBaseUrl/invoices/products/';
   static String product(String id) => '$apiBaseUrl/invoices/products/$id/';
 
-  /// PDF templates. This list never carries the raw HTML or CSS: only the
-  /// admin-only editor endpoint does, and this app does not call it.
+  /// PDF templates. Neither of these carries the raw HTML or CSS: only the
+  /// admin-only editor endpoint does, and this app does not call it. That is
+  /// what lets the phone edit a template at all. The fields it writes are the
+  /// ordinary ones, the detail PUT is partial, so a save from here leaves the
+  /// markup exactly as the web editor left it.
   static String get invoiceTemplates => '$apiBaseUrl/invoices/templates/';
+  static String invoiceTemplate(String id) =>
+      '$apiBaseUrl/invoices/templates/$id/';
 
   /// Reports. Both are admin-only and answer 403 to everyone else.
   static String get invoiceReportDashboard =>

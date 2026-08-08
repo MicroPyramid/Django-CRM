@@ -6,20 +6,20 @@
    *
    * SCOPE, ON PURPOSE. No `template_html` / `template_css` input anywhere on
    * this page, and no `{@html}` anywhere in this app. Both fields are org-
-   * authored markup that WeasyPrint renders into a PDF server-side; every read
-   * serializer (list AND detail) strips them, so a value written from a form
-   * here could never be read back or edited afterwards, a write-once field
-   * that is invisible from the moment it is saved. See `templates.js` for the
-   * full reasoning.
+   * authored markup that WeasyPrint renders into a PDF server-side. A new
+   * template starts from the built-in layout, and replacing that whole
+   * document is a deliberate follow-up on an existing template rather than
+   * part of naming a new one, so the edit page owns those two fields. See
+   * `templates.js` for the full reasoning, including the older reason this
+   * page gave, which the editor route made obsolete.
    *
    * VALIDATION HERE IS A UX HINT, NOT A RULE. `POST /api/invoices/templates/`
    * is admin-gated (`_forbid_non_admin_template`) and enforces that
    * regardless of what this page shows; curl and the mobile client reach the
    * API without passing through here. The two colour inputs use
    * `type="color"` so the browser can only ever submit a valid six-digit hex
-   * value: the server has no format validator on either field (only
-   * `max_length=7`), so a text input would make the client check the only
-   * thing standing between "purple" and a broken PDF.
+   * value, and `_validate_hex_color` in the serializer refuses anything else,
+   * which is the check that counts.
    */
   import { enhance } from '$app/forms';
   import PageHeader from '$lib/v2/components/PageHeader.svelte';
@@ -105,8 +105,7 @@
         </label>
       </div>
       <p class="v2-sub" style="font-size:11.5px;margin:-6px 0 16px">
-        Picked, not typed, so the value sent is always a valid six digit hex. The API stores
-        whatever it is given here with no format check.
+        Picked, not typed, so the value sent is always a valid six digit hex.
       </p>
 
       <label class="v2-field">

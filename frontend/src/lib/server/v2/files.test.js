@@ -65,7 +65,8 @@ describe('streamDownload', () => {
 
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe('http://api.test/api/attachments/1/download/');
-    expect(/** @type {Record<string, string>} */ (init?.headers).Authorization).toBe('Bearer tok');
+    const headers = /** @type {Record<string, string>} */ (init?.headers ?? {});
+    expect(headers.Authorization).toBe('Bearer tok');
   });
 
   it('passes the upstream filename through rather than inventing one', async () => {

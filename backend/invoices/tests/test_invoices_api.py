@@ -2558,6 +2558,78 @@ class TestInvoiceTemplateDetailView:
 
 
 @pytest.mark.django_db
+class TestInvoiceTemplateColourValidation:
+    """``primary_color`` / ``secondary_color`` have to parse as CSS colours.
+
+    ``pdf.py`` substitutes ``primary_color`` into the stylesheet by string
+    replacement, so a value a renderer cannot parse does not raise, it prints
+    every invoice in the org with a broken accent. The model carries only
+    ``max_length=7``, so before this the three clients (two web forms and the
+    phone) were the only thing refusing ``purple``.
+    """
+
+    def test_a_six_digit_hex_is_accepted(self, admin_client):
+        response = admin_client.post(
+            "/api/invoices/templates/",
+            {"name": "Hex", "primary_color": "#a1B2c3", "secondary_color": "#000000"},
+            format="json",
+        )
+        assert response.status_code == 201, response.content
+        assert InvoiceTemplate.objects.get(name="Hex").primary_color == "#a1B2c3"
+
+    def test_a_colour_name_is_refused(self, admin_client):
+        response = admin_client.post(
+            "/api/invoices/templates/",
+            {"name": "Named", "primary_color": "purple"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "primary_color" in response.json()["errors"]
+        assert not InvoiceTemplate.objects.filter(name="Named").exists()
+
+    def test_a_missing_hash_is_refused(self, admin_client):
+        response = admin_client.post(
+            "/api/invoices/templates/",
+            {"name": "Bare", "primary_color": "3B82F6"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert not InvoiceTemplate.objects.filter(name="Bare").exists()
+
+    def test_the_secondary_colour_is_checked_too(self, admin_client):
+        """Two fields, two validators; one of them was easy to forget."""
+        response = admin_client.post(
+            "/api/invoices/templates/",
+            {"name": "Second", "primary_color": "#3B82F6", "secondary_color": "}a{b:c"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "secondary_color" in response.json()["errors"]
+
+    def test_an_update_is_checked_as_well_as_a_create(self, admin_client, template):
+        """The edit form writes these fields, so PUT is the likelier caller."""
+        response = admin_client.put(
+            f"/api/invoices/templates/{template.id}/",
+            {"primary_color": "red"},
+            format="json",
+        )
+        assert response.status_code == 400
+        template.refresh_from_db()
+        assert template.primary_color == "#3B82F6"
+
+    def test_omitting_a_colour_leaves_it_alone(self, admin_client, template):
+        """PUT is partial. Editing only the name must not demand the colours."""
+        response = admin_client.put(
+            f"/api/invoices/templates/{template.id}/",
+            {"name": "Renamed"},
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+        template.refresh_from_db()
+        assert template.primary_color == "#3B82F6"
+
+
+@pytest.mark.django_db
 class TestInvoiceTemplateWriteAuthorization:
     """Invoice templates are org-wide shared config: how every invoice reaches a
     customer. Any member reads the catalogue, but creating/editing/deleting a

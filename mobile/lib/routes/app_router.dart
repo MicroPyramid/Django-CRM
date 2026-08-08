@@ -67,6 +67,7 @@ import '../screens/invoices/invoice_detail_screen.dart';
 import '../screens/invoices/estimates_list_screen.dart';
 import '../screens/invoices/recurring_list_screen.dart';
 import '../screens/invoices/products_list_screen.dart';
+import '../screens/invoices/invoice_template_form_screen.dart';
 import '../screens/invoices/invoice_templates_screen.dart';
 import '../screens/invoices/invoice_reports_screen.dart';
 import '../screens/invoices/new_invoice_screen.dart';
@@ -189,7 +190,12 @@ class AppRoutes {
   static const String recurring = '/invoices/recurring';
   static const String products = '/invoices/products';
   static const String invoiceTemplates = '/invoices/templates';
+  static const String invoiceTemplateNew = '/invoices/templates/new';
+  static const String invoiceTemplateEdit = '/invoices/templates/:id/edit';
   static const String invoiceReports = '/invoices/reports';
+
+  static String invoiceTemplateEditFor(String id) =>
+      '/invoices/templates/$id/edit';
 
   // Knowledge base
   static const String solutions = '/solutions';
@@ -507,6 +513,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'invoiceTemplates',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const InvoiceTemplatesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceTemplateNew,
+        name: 'invoiceTemplateNew',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const InvoiceTemplateFormScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.invoiceTemplateEdit,
+        name: 'invoiceTemplateEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            InvoiceTemplateFormScreen(templateId: state.pathParameters['id']),
       ),
       GoRoute(
         path: AppRoutes.invoiceReports,
