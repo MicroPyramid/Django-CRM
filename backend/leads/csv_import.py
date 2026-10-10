@@ -201,8 +201,14 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
     for idx, raw_row in enumerate(data_rows, start=1):
         if not any((cell or "").strip() for cell in raw_row):
             continue
-        if any((cell or "").strip() for cell in raw_row[len(headers) :]):
-            errors.append(RowError(idx, "", "Row has more cells than the header"))
+        if not legacy and any((cell or "").strip() for cell in raw_row[len(headers) :]):
+            errors.append(
+                RowError(
+                    idx,
+                    "",
+                    "Row has more cells than the header; quote values that contain commas",
+                )
+            )
             continue
         parsed.append(
             (
@@ -231,6 +237,7 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
         if email:
             seen_emails[email.lower()] = idx
 
+    errors.sort(key=lambda e: e.row)
     return ImportResult(valid=valid, errors=errors)
 
 
