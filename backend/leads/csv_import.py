@@ -397,7 +397,10 @@ def _get_or_create_tag(name: str, org, cache: dict[str, Tags]) -> Tags:
     # SELECT-then-INSERT race when two imports name the same new tag.
     slug = Tags.slug_for(name)
     if slug not in cache:
-        cache[slug], _ = Tags.objects.get_or_create(
-            slug=slug, org=org, defaults={"name": name}
-        )
+        tag, _ = Tags.objects.get_or_create(slug=slug, org=org, defaults={"name": name})
+        if not tag.is_active:
+            # Same as the tags API: naming an archived tag brings it back.
+            tag.is_active = True
+            tag.save(update_fields=["is_active"])
+        cache[slug] = tag
     return cache[slug]

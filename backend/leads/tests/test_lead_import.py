@@ -591,3 +591,11 @@ class TestTagSlugs:
         tag = Tags.objects.get(org=org_a)
         assert tag.slug == "trade-show"
         assert set(Lead.objects.values_list("tags", flat=True)) == {tag.id}
+
+    def test_archived_tag_is_reactivated(self, admin_client, org_a):
+        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
+        response = _post(admin_client, COMMIT, self._tagged("a@example.com", "VIP"))
+        assert response.status_code == 200, response.json()
+        tag = Lead.objects.get().tags.get()
+        assert tag.is_active
+        assert Tags.objects.filter(org=org_a).count() == 1
