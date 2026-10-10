@@ -318,15 +318,26 @@ class TestAllowedWithAccountAccess:
 
 @pytest.mark.parametrize(
     "first_name, last_name, expected",
-    [("Ada", None, "Ada"), (None, "Smith", "Smith"), ("Ada", "Smith", "Ada Smith")],
+    [
+        ("Ada", None, "Ada"),
+        (None, "Smith", "Smith"),
+        ("Ada", "Smith", "Ada Smith"),
+        (" ", "Smith", "Smith"),
+        (" Ada ", " ", "Ada"),
+    ],
 )
 def test_account_name_skips_missing_name_parts(first_name, last_name, expected):
     lead = SimpleNamespace(
-        company_name=None, first_name=first_name, last_name=last_name
+        id="abc", company_name=None, first_name=first_name, last_name=last_name
     )
     assert conversion_account_name(lead) == expected
 
 
 def test_account_name_for_nameless_lead_has_no_none():
     lead = SimpleNamespace(id="abc", company_name=None, first_name=None, last_name=None)
+    assert conversion_account_name(lead) == "Lead abc"
+
+
+def test_account_name_for_whitespace_only_names_falls_back():
+    lead = SimpleNamespace(id="abc", company_name=None, first_name=" ", last_name=" ")
     assert conversion_account_name(lead) == "Lead abc"

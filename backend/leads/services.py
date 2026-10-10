@@ -22,9 +22,8 @@ def conversion_account_name(lead):
     """The name of the account a conversion files ``lead`` under."""
     if lead.company_name:
         return lead.company_name
-    return (
-        " ".join(p for p in (lead.first_name, lead.last_name) if p) or f"Lead {lead.id}"
-    )
+    parts = [(p or "").strip() for p in (lead.first_name, lead.last_name)]
+    return " ".join(p for p in parts if p) or f"Lead {lead.id}"
 
 
 def conversion_refusal(request, lead):
@@ -35,7 +34,7 @@ def conversion_refusal(request, lead):
     open would make it theirs (and every contact linked to it). That is
     refused. An account they can open, or no match at all, is fine.
 
-    ``lead`` only needs ``company_name``, ``first_name`` and ``last_name``, so
+    ``lead`` only needs ``id``, ``company_name``, ``first_name`` and ``last_name``, so
     a view can ask with the values a save is about to write, before writing.
     """
     matches = Account.objects.filter(
