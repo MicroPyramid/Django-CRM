@@ -810,6 +810,17 @@ class Payment(BaseModel):
                     invoice.paid_at = timezone.now()
             elif total_paid > 0:
                 invoice.status = "Partially_Paid"
+            elif invoice.status in ("Paid", "Partially_Paid"):
+                # A deleted payment left no payments: back to the unpaid state.
+                invoice.status = (
+                    "Overdue"
+                    if invoice.due_date and invoice.due_date < timezone.localdate()
+                    else "Viewed"
+                    if invoice.viewed_at
+                    else "Sent"
+                )
+            if invoice.amount_due > 0:
+                invoice.paid_at = None
 
             invoice.save(update_fields=[*fields, "status", "paid_at"])
 
