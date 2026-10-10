@@ -91,16 +91,18 @@ def add_business_hours(start_dt: datetime, hours: float, calendar) -> datetime:
         day_open = datetime.combine(date_local, open_t, tzinfo=tz)
         day_close = datetime.combine(date_local, close_t, tzinfo=tz)
 
-        if cur >= day_close:
+        # Compare in UTC: same-tzinfo aware datetimes compare by wall clock and
+        # ignore ``fold``, which breaks inside the repeated fall-back hour.
+        day_close_utc = day_close.astimezone(_UTC)
+        cur_utc = cur.astimezone(_UTC)
+        if cur_utc >= day_close_utc:
             cur = _next_midnight(tz, cur)
             continue
-        if cur < day_open:
+        if cur_utc < day_open.astimezone(_UTC):
             cur = day_open
+            cur_utc = cur.astimezone(_UTC)
 
-        # Same-tzinfo aware datetimes subtract as wall-clock; use UTC so a DST
-        # transition inside the window counts the real elapsed time.
-        cur_utc = cur.astimezone(_UTC)
-        available = day_close.astimezone(_UTC) - cur_utc
+        available = day_close_utc - cur_utc
         if remaining <= available:
             return (cur_utc + remaining).astimezone(out_tz)
         remaining -= available
