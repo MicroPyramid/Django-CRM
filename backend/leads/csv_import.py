@@ -197,8 +197,12 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
         )
 
     parsed: list[tuple[int, dict[str, str]]] = []
+    errors: list[RowError] = []
     for idx, raw_row in enumerate(data_rows, start=1):
         if not any((cell or "").strip() for cell in raw_row):
+            continue
+        if any((cell or "").strip() for cell in raw_row[len(headers) :]):
+            errors.append(RowError(idx, "", "Row has more cells than the header"))
             continue
         parsed.append(
             (
@@ -213,7 +217,6 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
 
     profiles, teams = _reference_maps(parsed, org)
     valid: list[ValidatedRow] = []
-    errors: list[RowError] = []
     seen_emails: dict[str, int] = {}
 
     for idx, record in parsed:

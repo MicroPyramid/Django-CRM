@@ -105,6 +105,17 @@ class TestPreview:
             (5, "first_name"),
         }
 
+    def test_a_row_wider_than_the_header_is_a_row_error(self, admin_client):
+        upload = _raw(
+            b"first_name,last_name,company_name,tags\n"
+            b"Ann,Lee,Acme, Inc,vip\n"
+            b"Bob,Ray,Initech,\n"
+        )
+        body = _post(admin_client, PREVIEW, upload).json()
+        assert body["summary"] == {"total": 2, "valid": 1, "invalid": 1}
+        assert [e["row"] for e in body["errors"]] == [1]
+        assert "more cells than the header" in body["errors"][0]["message"]
+
     def test_a_converted_lead_cannot_be_imported(self, admin_client):
         upload = _csv(
             BASE + ["status"], [["Ada", "Byte", "a@example.com", "Converted"]]
