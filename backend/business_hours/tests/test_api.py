@@ -70,6 +70,15 @@ class TestUpdateCalendar:
         r = admin_client.put(CALENDAR_URL, data={"timezone": "UTC"}, format="json")
         assert r.status_code == 200
         assert r.json()["id"] == str(calendar_a.id)
+        calendar_a.refresh_from_db()
+        assert calendar_a.timezone == "UTC"
+
+    def test_admin_put_without_pk_creates_default(self, admin_client, org_a):
+        assert not BusinessCalendar.objects.filter(org=org_a).exists()
+        r = admin_client.put(CALENDAR_URL, data={"timezone": "UTC"}, format="json")
+        assert r.status_code == 200
+        assert r.json()["is_default"] is True
+        assert BusinessCalendar.objects.filter(org=org_a, is_default=True).count() == 1
 
     def test_non_admin_cannot_update_default_without_pk(self, user_client, calendar_a):
         r = user_client.put(CALENDAR_URL, data={"timezone": "UTC"}, format="json")
