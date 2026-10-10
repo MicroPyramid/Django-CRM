@@ -812,13 +812,17 @@ class Payment(BaseModel):
                 invoice.status = "Partially_Paid"
             elif invoice.status in ("Paid", "Partially_Paid"):
                 # A deleted payment left no payments: back to the unpaid state.
+                # An invoice that was never sent goes back to Draft.
                 invoice.status = (
-                    "Overdue"
+                    "Draft"
+                    if not invoice.sent_at
+                    else "Overdue"
                     if invoice.due_date and invoice.due_date < timezone.localdate()
                     else "Viewed"
                     if invoice.viewed_at
                     else "Sent"
                 )
+            # paid_at is cleared whenever a balance is open again.
             if invoice.amount_due > 0:
                 invoice.paid_at = None
 

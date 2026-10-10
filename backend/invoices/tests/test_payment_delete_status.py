@@ -15,6 +15,7 @@ from invoices.models import Invoice, Payment
 
 
 def _invoice(org, **extra):
+    extra.setdefault("sent_at", timezone.now())
     invoice = Invoice.objects.create(
         org=org, invoice_title="Work", client_email="a@b.co", status="Sent", **extra
     )
@@ -89,3 +90,22 @@ class TestPaymentDeleteStatus:
 
         invoice.refresh_from_db()
         assert invoice.status == "Viewed"
+
+    def test_reopened_never_sent_invoice_is_draft(self, org_a):
+        invoice = _invoice(org_a, sent_at=None)
+        payment = _pay(invoice, "30.00")
+
+        payment.delete()
+
+        invoice.refresh_from_db()
+        assert invoice.status == "Draft"
+
+    def test_cancelled_invoice_stays_cancelled_on_payment_delete(self, org_a):
+        invoice = _invoice(org_a)
+        payment = _pay(invoice, "30.00")
+        Invoice.objects.filter(pk=invoice.pk).update(status="Cancelled")
+
+        payment.delete()
+
+        invoice.refresh_from_db()
+        assert invoice.status == "Cancelled"
