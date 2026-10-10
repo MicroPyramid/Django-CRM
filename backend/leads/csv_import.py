@@ -401,6 +401,6 @@ def _get_or_create_tag(name: str, org, cache: dict[str, Tags]) -> Tags:
         if not tag.is_active:
             # Same as the tags API: naming an archived tag brings it back.
             tag.is_active = True
-            tag.save(update_fields=["is_active"])
+            tag.save()
         cache[slug] = tag
     return cache[slug]

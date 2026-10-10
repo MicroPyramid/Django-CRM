@@ -599,3 +599,30 @@ class TestTagSlugs:
         tag = Lead.objects.get().tags.get()
         assert tag.is_active
         assert Tags.objects.filter(org=org_a).count() == 1
+
+    def test_archived_tag_matched_by_slug_is_reactivated_once(
+        self, admin_client, org_a
+    ):
+        archived = Tags.objects.create(
+            name="VIP", slug="vip", org=org_a, is_active=False
+        )
+        csv = _csv(
+            BASE + ["tags"],
+            [
+                ["Ada", "Byte", "a@example.com", "Vip"],
+                ["Bo", "Cee", "b@example.com", "vip "],
+            ],
+        )
+        response = _post(admin_client, COMMIT, csv)
+        assert response.status_code == 200, response.json()
+        archived.refresh_from_db()
+        assert archived.is_active
+        assert archived.name == "VIP"
+        assert archived.updated_by is not None
+        assert Tags.objects.filter(org=org_a).count() == 1
+
+    def test_preview_leaves_an_archived_tag_archived(self, admin_client, org_a):
+        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
+        response = _post(admin_client, PREVIEW, self._tagged("a@example.com", "VIP"))
+        assert response.status_code == 200, response.json()
+        assert not Tags.objects.get(org=org_a).is_active
