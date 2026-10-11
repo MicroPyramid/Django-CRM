@@ -4801,6 +4801,35 @@ class TestRecurringInvoiceModel:
         result = recurring_invoice.calculate_next_date()
         assert result == datetime.date(2027, 1, 1)
 
+    def test_calculate_next_date_monthly_keeps_month_end_day(self, recurring_invoice):
+        recurring_invoice.frequency = "MONTHLY"
+        recurring_invoice.start_date = datetime.date(2026, 1, 31)
+        recurring_invoice.next_generation_date = datetime.date(2026, 1, 31)
+        expected = [
+            datetime.date(2026, 2, 28),
+            datetime.date(2026, 3, 31),
+            datetime.date(2026, 4, 30),
+            datetime.date(2026, 5, 31),
+        ]
+        for date in expected:
+            recurring_invoice.next_generation_date = (
+                recurring_invoice.calculate_next_date()
+            )
+            assert recurring_invoice.next_generation_date == date
+
+    def test_calculate_next_date_yearly_keeps_leap_day(self, recurring_invoice):
+        recurring_invoice.frequency = "YEARLY"
+        recurring_invoice.start_date = datetime.date(2024, 2, 29)
+        recurring_invoice.next_generation_date = datetime.date(2027, 2, 28)
+        assert recurring_invoice.calculate_next_date() == datetime.date(2028, 2, 29)
+
+    def test_calculate_next_date_keeps_edited_day(self, recurring_invoice):
+        """A next_generation_date edited off the anchor day is not overridden."""
+        recurring_invoice.frequency = "MONTHLY"
+        recurring_invoice.start_date = datetime.date(2026, 1, 31)
+        recurring_invoice.next_generation_date = datetime.date(2026, 2, 15)
+        assert recurring_invoice.calculate_next_date() == datetime.date(2026, 3, 15)
+
     def test_calculate_next_date_custom(self, recurring_invoice):
         recurring_invoice.frequency = "CUSTOM"
         recurring_invoice.custom_days = 10

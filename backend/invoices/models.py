@@ -1244,26 +1244,37 @@ class RecurringInvoice(AssignableMixin, BaseModel):
         """Calculate the next generation date based on frequency"""
         from datetime import timedelta
 
-        from dateutil.relativedelta import relativedelta
-
         current = self.next_generation_date
 
         if self.frequency == "WEEKLY":
             return current + timedelta(weeks=1)
         if self.frequency == "BIWEEKLY":
             return current + timedelta(weeks=2)
-        if self.frequency == "MONTHLY":
-            return current + relativedelta(months=1)
-        if self.frequency == "QUARTERLY":
-            return current + relativedelta(months=3)
-        if self.frequency == "SEMI_ANNUALLY":
-            return current + relativedelta(months=6)
-        if self.frequency == "YEARLY":
-            return current + relativedelta(years=1)
+        months = {
+            "MONTHLY": 1,
+            "QUARTERLY": 3,
+            "SEMI_ANNUALLY": 6,
+            "YEARLY": 12,
+        }.get(self.frequency)
+        if months:
+            return self._add_months(current, months)
         if self.frequency == "CUSTOM" and self.custom_days:
             return current + timedelta(days=self.custom_days)
 
-        return current + relativedelta(months=1)
+        return self._add_months(current, 1)
+
+    def _add_months(self, current, months):
+        """Add months, restoring the start_date day after a month-end clamp."""
+        import calendar
+
+        from dateutil.relativedelta import relativedelta
+
+        day = current.day
+        last_day = calendar.monthrange(current.year, current.month)[1]
+        if self.start_date and day == last_day and self.start_date.day > day:
+            day = self.start_date.day
+        # relativedelta clamps `day` to the length of the target month
+        return current + relativedelta(months=months, day=day)
 
 
 class RecurringInvoiceLineItem(LineAmounts, BaseModel):
