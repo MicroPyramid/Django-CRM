@@ -4830,6 +4830,25 @@ class TestRecurringInvoiceModel:
         recurring_invoice.next_generation_date = datetime.date(2026, 2, 15)
         assert recurring_invoice.calculate_next_date() == datetime.date(2026, 3, 15)
 
+    def test_calculate_next_date_month_end_anchors(self, recurring_invoice):
+        d = datetime.date
+        cases = [
+            ("MONTHLY", d(2026, 1, 30), d(2026, 2, 28), d(2026, 3, 30)),
+            ("MONTHLY", d(2026, 1, 31), d(2026, 12, 31), d(2027, 1, 31)),
+            ("QUARTERLY", d(2026, 1, 31), d(2026, 4, 30), d(2026, 7, 31)),
+            ("SEMI_ANNUALLY", d(2026, 8, 31), d(2026, 2, 28), d(2026, 8, 31)),
+            ("MONTHLY", d(2026, 1, 31), d(2026, 2, 28), d(2026, 3, 31)),
+        ]
+        for frequency, start, current, expected in cases:
+            recurring_invoice.frequency = frequency
+            recurring_invoice.start_date = start
+            recurring_invoice.next_generation_date = current
+            assert recurring_invoice.calculate_next_date() == expected, (
+                frequency,
+                start,
+                current,
+            )
+
     def test_calculate_next_date_custom(self, recurring_invoice):
         recurring_invoice.frequency = "CUSTOM"
         recurring_invoice.custom_days = 10

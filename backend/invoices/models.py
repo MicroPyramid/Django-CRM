@@ -1264,7 +1264,11 @@ class RecurringInvoice(AssignableMixin, BaseModel):
         return self._add_months(current, 1)
 
     def _add_months(self, current, months):
-        """Add months, restoring the start_date day after a month-end clamp."""
+        """Add months, restoring the start_date day after a month-end clamp.
+
+        start_date.day is the billing anchor: a next_generation_date on the
+        last day of a short month is treated as clamped and moves back to it.
+        """
         import calendar
 
         from dateutil.relativedelta import relativedelta
