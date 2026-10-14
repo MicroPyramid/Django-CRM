@@ -105,6 +105,32 @@ class TestPreview:
             (5, "first_name"),
         }
 
+    def test_a_row_wider_than_the_header_is_a_row_error(self, admin_client):
+        upload = _raw(
+            b"first_name,last_name,company_name,tags\n"
+            b"Ann,Lee,Acme, Inc,vip\n"
+            b"Bob,Ray,Initech,\n"
+        )
+        body = _post(admin_client, PREVIEW, upload).json()
+        assert body["summary"] == {"total": 2, "valid": 1, "invalid": 1}
+        assert [e["row"] for e in body["errors"]] == [1]
+        assert "more cells than the header" in body["errors"][0]["message"]
+
+    def test_blank_cells_past_the_header_are_accepted(self, admin_client):
+        upload = _raw(b"first_name,last_name\nAnn,Lee,, \n")
+        body = _post(admin_client, PREVIEW, upload).json()
+        assert body["summary"] == {"total": 1, "valid": 1, "invalid": 0}
+
+    def test_row_errors_stay_in_row_order(self, admin_client):
+        upload = _raw(
+            b"first_name,last_name,email\n"
+            b"Ann,Lee,not-an-email\n"
+            b"Bob,Ray,b@example.com,extra\n"
+            b"Cy,Fox,also-bad\n"
+        )
+        body = _post(admin_client, PREVIEW, upload).json()
+        assert [e["row"] for e in body["errors"]] == [1, 2, 3]
+
     def test_a_converted_lead_cannot_be_imported(self, admin_client):
         upload = _csv(
             BASE + ["status"], [["Ada", "Byte", "a@example.com", "Converted"]]
@@ -388,6 +414,12 @@ class TestDeprecatedUploadAlias:
         assert body["error"] is True
         assert body["errors"][0]["row"] == 2
         assert not Lead.objects.exists()
+
+    def test_a_row_wider_than_the_header_still_imports(self, admin_client):
+        upload = _raw(b"first_name,last_name\nAnn,Lee,note\n")
+        response = self._post(admin_client, upload)
+        assert response.status_code == 200, response.json()
+        assert Lead.objects.filter(first_name="Ann").exists()
 
     def test_a_bad_file_is_a_400(self, admin_client):
         response = self._post(admin_client, _raw(b""))
