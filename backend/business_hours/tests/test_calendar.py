@@ -81,6 +81,62 @@ class TestAddBusinessHours:
         # 1h Fri 4-5pm + 8h Monday 9-5 = Mon 3/9 5pm NY (post-DST EDT).
         assert result.astimezone(_NY) == datetime(2026, 3, 9, 17, 0, tzinfo=_NY)
 
+    @pytest.mark.parametrize(
+        "start, real_hours",
+        [
+            # Spring forward: the 00:00-08:00 window is 7 real hours, so the
+            # 8th hour lands at 01:00 the next day (24 real hours later).
+            (datetime(2025, 3, 9, 0, 0, tzinfo=_NY), 24),
+            # Fall back: the window is 9 real hours, so 8h end at 07:00 EST.
+            (datetime(2025, 11, 2, 0, 0, tzinfo=_NY), 8),
+        ],
+    )
+    def test_dst_transition_inside_window(self, org_a, start, real_hours):
+        from datetime import time
+
+        from business_hours.models import BusinessCalendar
+
+        days = "monday tuesday wednesday thursday friday saturday sunday".split()
+        cal = BusinessCalendar.objects.create(
+            org=org_a,
+            name="Overnight",
+            timezone="America/New_York",
+            is_default=False,
+            **{
+                f"{d}_{k}": t
+                for d in days
+                for k, t in (("open", time(0, 0)), ("close", time(8, 0)))
+            },
+        )
+        result = add_business_hours(start, 8, cal)
+        elapsed = (
+            result.astimezone(_UTC) - start.astimezone(_UTC)
+        ).total_seconds() / 3600
+        assert elapsed == real_hours
+
+    def test_start_in_repeated_hour_after_close(self, org_a):
+        from datetime import time
+
+        from business_hours.models import BusinessCalendar
+
+        days = "monday tuesday wednesday thursday friday saturday sunday".split()
+        cal = BusinessCalendar.objects.create(
+            org=org_a,
+            name="Early close",
+            timezone="America/New_York",
+            is_default=False,
+            **{
+                f"{d}_{k}": t
+                for d in days
+                for k, t in (("open", time(0, 0)), ("close", time(1, 45)))
+            },
+        )
+        # 06:30Z on 2025-11-02 is 01:30 EST (second pass); the 01:45 EDT close
+        # (05:45Z) already passed, so work resumes at the next midnight.
+        start = datetime(2025, 11, 2, 6, 30, tzinfo=_UTC)
+        result = add_business_hours(start, 1, cal)
+        assert result.astimezone(_NY) == datetime(2025, 11, 3, 1, 0, tzinfo=_NY)
+
     def test_naive_input_treated_as_utc(self, calendar_a):
         start_naive = datetime(2026, 5, 11, 10, 0)
         result = add_business_hours(start_naive, 2, calendar_a)
