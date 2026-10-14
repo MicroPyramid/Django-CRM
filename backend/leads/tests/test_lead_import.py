@@ -552,7 +552,9 @@ class TestTagSlugs:
         return _csv(BASE + ["tags"], [["Ada", "Byte", email, tag]])
 
     def test_non_latin_tags_import_and_are_reused(self, admin_client, org_a):
-        first = _post(admin_client, COMMIT, self._tagged("one@example.com", "日本;中国"))
+        first = _post(
+            admin_client, COMMIT, self._tagged("one@example.com", "日本;中国")
+        )
         second = _post(admin_client, COMMIT, self._tagged("two@example.com", "日本"))
         assert first.status_code == 200, first.json()
         assert second.status_code == 200, second.json()
