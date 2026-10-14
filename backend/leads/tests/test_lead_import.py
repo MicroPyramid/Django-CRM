@@ -552,9 +552,7 @@ class TestTagSlugs:
         return _csv(BASE + ["tags"], [["Ada", "Byte", email, tag]])
 
     def test_non_latin_tags_import_and_are_reused(self, admin_client, org_a):
-        first = _post(
-            admin_client, COMMIT, self._tagged("one@example.com", "日本;中国")
-        )
+        first = _post(admin_client, COMMIT, self._tagged("one@example.com", "日本;中国"))
         second = _post(admin_client, COMMIT, self._tagged("two@example.com", "日本"))
         assert first.status_code == 200, first.json()
         assert second.status_code == 200, second.json()
@@ -592,37 +590,26 @@ class TestTagSlugs:
         assert tag.slug == "trade-show"
         assert set(Lead.objects.values_list("tags", flat=True)) == {tag.id}
 
-    def test_archived_tag_is_reactivated(self, admin_client, org_a):
+    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
+    def test_archived_tag_is_a_row_error_for_an_admin(self, admin_client, org_a, url):
         Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
-        response = _post(admin_client, COMMIT, self._tagged("a@example.com", "VIP"))
-        assert response.status_code == 200, response.json()
-        tag = Lead.objects.get().tags.get()
-        assert tag.is_active
-        assert Tags.objects.filter(org=org_a).count() == 1
-
-    def test_archived_tag_matched_by_slug_is_reactivated_once(
-        self, admin_client, org_a
-    ):
-        archived = Tags.objects.create(
-            name="VIP", slug="vip", org=org_a, is_active=False
-        )
-        csv = _csv(
-            BASE + ["tags"],
-            [
-                ["Ada", "Byte", "a@example.com", "Vip"],
-                ["Bo", "Cee", "b@example.com", "vip "],
-            ],
-        )
-        response = _post(admin_client, COMMIT, csv)
-        assert response.status_code == 200, response.json()
-        archived.refresh_from_db()
-        assert archived.is_active
-        assert archived.name == "VIP"
-        assert archived.updated_by is not None
-        assert Tags.objects.filter(org=org_a).count() == 1
-
-    def test_preview_leaves_an_archived_tag_archived(self, admin_client, org_a):
-        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
-        response = _post(admin_client, PREVIEW, self._tagged("a@example.com", "VIP"))
-        assert response.status_code == 200, response.json()
+        response = _post(admin_client, url, self._tagged("a@example.com", "vip "))
+        error = response.json()["errors"][0]
+        assert (error["row"], error["field"]) == (1, "tags")
+        assert error["message"] == "Tag 'vip' is archived; restore it in Settings first"
         assert not Tags.objects.get(org=org_a).is_active
+        assert not Lead.objects.exists()
+
+    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
+    def test_archived_tag_is_a_row_error_for_sales_access(
+        self, user_client, user_profile, org_a, url
+    ):
+        user_profile.has_sales_access = True
+        user_profile.save(update_fields=["has_sales_access"])
+        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
+        response = _post(user_client, url, self._tagged("a@example.com", "VIP"))
+        error = response.json()["errors"][0]
+        assert (error["row"], error["field"]) == (1, "tags")
+        assert "archived" in error["message"]
+        assert not Tags.objects.get(org=org_a).is_active
+        assert not Lead.objects.exists()

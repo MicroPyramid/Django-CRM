@@ -215,10 +215,15 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
     valid: list[ValidatedRow] = []
     errors: list[RowError] = []
     seen_emails: dict[str, int] = {}
+    # Restoring a tag is an org-admin action in the tags API, so an import
+    # (open to sales members) reports it instead of reactivating it.
+    archived = set(
+        Tags.objects.filter(org=org, is_active=False).values_list("slug", flat=True)
+    )
 
     for idx, record in parsed:
         row_errors, validated = _validate_row(
-            idx, record, request, profiles, teams, seen_emails, legacy
+            idx, record, request, profiles, teams, seen_emails, legacy, archived
         )
         if row_errors:
             errors.extend(row_errors)
@@ -262,7 +267,7 @@ def _reference_maps(parsed, org) -> tuple[dict[str, str], dict[str, str]]:
     return profiles, teams
 
 
-def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy):
+def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, archived):
     errors: list[RowError] = []
 
     if legacy:
@@ -335,6 +340,14 @@ def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy):
         name_error = Tags.name_error(name)
         if name_error:
             errors.append(RowError(idx, "tags", f"Tag '{name}': {name_error}"))
+        elif Tags.slug_for(name) in archived:
+            errors.append(
+                RowError(
+                    idx,
+                    "tags",
+                    f"Tag '{name}' is archived; restore it in Settings first",
+                )
+            )
 
     if errors:
         return errors, None
@@ -398,9 +411,5 @@ def _get_or_create_tag(name: str, org, cache: dict[str, Tags]) -> Tags:
     slug = Tags.slug_for(name)
     if slug not in cache:
         tag, _ = Tags.objects.get_or_create(slug=slug, org=org, defaults={"name": name})
-        if not tag.is_active:
-            # Same as the tags API: naming an archived tag brings it back.
-            tag.is_active = True
-            tag.save()
         cache[slug] = tag
     return cache[slug]
