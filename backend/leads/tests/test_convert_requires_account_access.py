@@ -25,7 +25,7 @@ from accounts.models import Account
 from common.models import Comment
 from contacts.models import Contact
 from leads.models import Lead
-from leads.services import convert_lead_to_account
+from leads.services import conversion_account_name, convert_lead_to_account
 from opportunity.models import Opportunity
 
 pytestmark = pytest.mark.django_db
@@ -314,3 +314,35 @@ class TestAllowedWithAccountAccess:
         account = Account.objects.get(id=response.json()["account_id"])
         assert account.name == "Elsewhere Inc"
         assert set(hidden_account.assigned_to.all()) == {admin_profile}
+
+
+class TestConversionAccountName:
+    @pytest.mark.parametrize(
+        "first_name, last_name, expected",
+        [
+            ("Ada", None, "Ada"),
+            (None, "Smith", "Smith"),
+            ("Ada", "Smith", "Ada Smith"),
+            (" ", "Smith", "Smith"),
+            (" Ada ", " ", "Ada"),
+        ],
+    )
+    def test_account_name_skips_missing_name_parts(
+        self, first_name, last_name, expected
+    ):
+        lead = SimpleNamespace(
+            id="abc", company_name=None, first_name=first_name, last_name=last_name
+        )
+        assert conversion_account_name(lead) == expected
+
+    def test_account_name_for_nameless_lead_has_no_none(self):
+        lead = SimpleNamespace(
+            id="abc", company_name=None, first_name=None, last_name=None
+        )
+        assert conversion_account_name(lead) == "Lead abc"
+
+    def test_account_name_for_whitespace_only_names_falls_back(self):
+        lead = SimpleNamespace(
+            id="abc", company_name=None, first_name=" ", last_name=" "
+        )
+        assert conversion_account_name(lead) == "Lead abc"
