@@ -4,7 +4,7 @@ Routes (all under /api/business-hours/):
     GET  /calendar/: fetch (and create-on-demand) the
                                             org's default calendar with its
                                             holidays.
-    PUT  /calendar/<pk>/: admin update of weekday hours,
+    PUT  /calendar/, /calendar/<pk>/: admin update of weekday hours,
                                             timezone, name. Holidays are
                                             managed via the nested endpoints
                                             below to keep payloads small.
@@ -71,13 +71,16 @@ class BusinessCalendarView(APIView):
         cal = _get_or_create_default(request.profile.org)
         return Response(BusinessCalendarSerializer(cal).data)
 
-    def put(self, request, pk, *args, **kwargs):
+    def put(self, request, pk=None, *args, **kwargs):
         if not is_org_admin(request.profile):
             return Response(
                 {"error": "Only admins can update business hours."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        cal = get_object_or_404(BusinessCalendar, pk=pk, org=request.profile.org)
+        if pk is None:
+            cal = _get_or_create_default(request.profile.org)
+        else:
+            cal = get_object_or_404(BusinessCalendar, pk=pk, org=request.profile.org)
         serializer = BusinessCalendarSerializer(cal, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
