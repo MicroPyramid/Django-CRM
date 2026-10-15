@@ -1,4 +1,4 @@
-import { loadHelpPage } from '$lib/server/v2/support.js';
+import { loadHelpPage } from '#lib/server/v2/support.js';
 
 /**
  * Help has two tiers and `loadHelpPage` decides which one. The decision lives

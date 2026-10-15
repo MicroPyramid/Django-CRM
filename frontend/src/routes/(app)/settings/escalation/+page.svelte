@@ -30,19 +30,19 @@
    * edit that offered it would report success and change nothing.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count } from '#lib/v2/format.js';
   import {
     DEFAULT_SLA_HOURS,
     ESCALATION_ACTION_LABEL,
     ESCALATION_PRIORITIES,
     PRIORITY_TONE
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import {
     actionNotifies,
     escalationOutcome,
@@ -52,7 +52,7 @@
     unconfiguredPriorities,
     joinWithAnd
   } from './outcome.js';
-  import { missingOption, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import { missingOption, inactiveOptionLabel } from '#lib/v2/pickers.js';
   import { TriangleAlert, BellOff, Plus } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -583,11 +583,11 @@
 
       <p class="v2-sub" style="font-size:11.5px;margin-top:16px;max-width:64ch">
         First response and resolution targets are measured on
-        <a href={resolve('/settings/business-hours')} style="color:inherit">business hours</a>, so a
+        <a href={resolve('settings/business-hours')} style="color:inherit">business hours</a>, so a
         breach counts working time only, and time spent waiting on the customer does not count at
         all. Editing a policy sets both the target and who hears about a breach. The next reply
         target escalates nothing: it is counted around the clock and reported on
-        <a href={resolve('/tickets/analytics')} style="color:inherit">Service analytics</a>.
+        <a href={resolve('tickets/analytics')} style="color:inherit">Service analytics</a>.
       </p>
     {/if}
   </div>

@@ -1,9 +1,9 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { page } from '$app/state';
-  import { TAB_SETS } from '$lib/v2/tabs.js';
-  import { isOrgAdmin } from '$lib/admin.js';
+  import { TAB_SETS } from '#lib/v2/tabs.js';
+  import { isOrgAdmin } from '#lib/admin.js';
 
   /**
    * Second-level navigation within one destination. Tickets has a queue, an

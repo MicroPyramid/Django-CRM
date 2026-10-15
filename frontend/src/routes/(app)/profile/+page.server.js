@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { getProfile } from '$lib/server/v2/profile.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { getProfile } from '#lib/server/v2/profile.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

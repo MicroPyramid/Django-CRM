@@ -22,7 +22,7 @@
  * the caller's own rows for a non-admin, and answers 403 on someone else's
  * entry. Nothing below should be read as having re-checked that.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * The caller's timesheet for a Mon..Sun week, shaped for the page.

@@ -1,6 +1,6 @@
 <script>
   import '../../../app.css';
-  import '$lib/v2/styles/v2.css';
+  import '#lib/v2/styles/v2.css';
   import { onMount } from 'svelte';
 
   onMount(() => {

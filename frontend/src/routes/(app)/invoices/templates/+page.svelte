@@ -22,10 +22,10 @@
    * surfaced in the banner below).
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
   import { Plus, FileCode, ShieldAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -49,7 +49,7 @@
   {/snippet}
   {#snippet actions()}
     {#if canManage}
-      <a class="v2-btn v2-btn-primary" href={resolve('/invoices/templates/new')}
+      <a class="v2-btn v2-btn-primary" href={resolve('invoices/templates/new')}
         ><Plus />New template</a
       >
     {/if}
@@ -132,7 +132,7 @@
                      could not show what was saved and saving would have
                      blanked it. The editor route serves those two fields on an
                      admin-only path, leaving this page's own fetch unchanged. -->
-                <a class="v2-btn v2-btn-sm" href={resolve(`/invoices/templates/${t.id}/edit`)}
+                <a class="v2-btn v2-btn-sm" href={resolve(`invoices/templates/${t.id}/edit`)}
                   >Edit</a
                 >
                 {#if !t.is_default}

@@ -15,9 +15,9 @@
 
 import axios from 'axios';
 import { fail, redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/private';
+import * as publicEnv from '$app/env/public';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const MISSING = 'Missing verification token.';
 
@@ -44,7 +44,7 @@ export const actions = {
         `${publicEnv.PUBLIC_DJANGO_API_URL}/api/auth/magic-link/verify/`,
         { token },
         {
-          // The sign-in audit row records who signed in; see `$lib/server/relay.js`.
+          // The sign-in audit row records who signed in; see `#lib/server/relay.js`.
           headers: {
             'Content-Type': 'application/json',
             ...relayHeaders({ getClientAddress, request })

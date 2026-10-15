@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listAccounts } from '$lib/server/v2/accounts.js';
-import { listContacts } from '$lib/server/v2/contacts.js';
-import { listDeals } from '$lib/server/v2/deals.js';
-import { listProducts } from '$lib/server/v2/products.js';
-import { createEstimate, estimateFromDeal } from '$lib/server/v2/estimates.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { getNumbering } from '$lib/server/v2/organization.js';
+import { listAccounts } from '#lib/server/v2/accounts.js';
+import { listContacts } from '#lib/server/v2/contacts.js';
+import { listDeals } from '#lib/server/v2/deals.js';
+import { listProducts } from '#lib/server/v2/products.js';
+import { createEstimate, estimateFromDeal } from '#lib/server/v2/estimates.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { getNumbering } from '#lib/server/v2/organization.js';
 
 /**
  * The estimate builder's pickers, the same list layers the invoice builder

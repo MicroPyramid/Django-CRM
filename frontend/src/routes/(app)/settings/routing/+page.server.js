@@ -5,9 +5,9 @@ import {
   updateRoutingRule,
   deleteRoutingRule,
   readConditionRows
-} from '$lib/server/v2/routing.js';
-import { getOrgPeopleAndTeams } from '$lib/server/v2/org-people.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/routing.js';
+import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 // The rule list and the create/edit form's people/team pickers are two
 // independent fetches: `getRoutingRules` no longer folds `getOrgPeopleAndTeams`

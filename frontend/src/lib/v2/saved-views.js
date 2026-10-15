@@ -1,7 +1,7 @@
 /**
  * Saved views (G29): a person's named filters for one list, put back with one
  * tap. The API is `/api/saved-views/`; the list pages reach it through the
- * form actions in `$lib/server/v2/saved-views.js`.
+ * form actions in `#lib/server/v2/saved-views.js`.
  *
  * Client-safe on purpose: `SavedViews.svelte` imports these to build its links.
  *

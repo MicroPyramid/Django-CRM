@@ -15,8 +15,8 @@
  * `stage_id` (pipeline mode). The backend checks write access, the WIP limit
  * and the close gate; nothing here decides any of that.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { canMoveCard } from '$lib/v2/board-drag.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { canMoveCard } from '#lib/v2/board-drag.js';
 
 const GREY = '#6B7280';
 

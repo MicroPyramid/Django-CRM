@@ -9,9 +9,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-vi.mock('$env/dynamic/public', () => ({
-  env: { PUBLIC_DJANGO_API_URL: 'http://api.test' }
-}));
+vi.mock('$app/env/public', () => ({ PUBLIC_DJANGO_API_URL: 'http://api.test' }));
 
 const { attachmentHref, documentHref, streamDownload } = await import('./files.js');
 

@@ -22,7 +22,7 @@
    * draws; curl and the mobile client never pass through here.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, Lock, FileCode } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -35,7 +35,7 @@
 
 <PageHeader title={data.template?.name ?? 'Edit template'} record center width="72ch">
   {#snippet crumb()}
-    <a href={resolve('/invoices/templates')}>Templates</a>
+    <a href={resolve('invoices/templates')}>Templates</a>
     <ChevronRight size={12} />
     <span>Edit</span>
   {/snippet}
@@ -54,7 +54,7 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href={resolve('/invoices/templates')} style="margin-top:16px"
+      <a class="v2-btn" href={resolve('invoices/templates')} style="margin-top:16px"
         >Back to templates</a
       >
     </div>
@@ -162,7 +162,7 @@
 
       <div style="display:flex;gap:9px;margin-top:6px">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href={resolve('/invoices/templates')}>Cancel</a>
+        <a class="v2-btn" href={resolve('invoices/templates')}>Cancel</a>
       </div>
     </form>
   {/if}

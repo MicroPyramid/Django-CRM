@@ -1,9 +1,9 @@
 <script>
   import { CalendarDays, ChevronDown, X, Clock, ArrowRight } from '@lucide/svelte';
-  import { cn } from '$lib/utils.js';
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import Calendar from '$lib/components/ui/calendar/Calendar.svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { cn } from '#lib/utils.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import Calendar from '#lib/components/ui/calendar/Calendar.svelte';
+  import { Button } from '#lib/components/ui/button/index.js';
   import { today, getLocalTimeZone, parseDate } from '@internationalized/date';
 
   /**

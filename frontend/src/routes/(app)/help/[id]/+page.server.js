@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { getSupportTicket, replyToSupportTicket } from '$lib/server/v2/support.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getSupportTicket, replyToSupportTicket } from '#lib/server/v2/support.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {

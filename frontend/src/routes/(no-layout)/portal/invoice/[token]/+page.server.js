@@ -6,7 +6,7 @@
  */
 
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 // The Django API, reached server-to-server. Absolute (not a relative `/api/...`
 // that only resolves behind a production reverse proxy) so the anonymous portal

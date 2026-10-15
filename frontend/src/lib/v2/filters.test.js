@@ -6,7 +6,7 @@ import {
   withParams,
   activeChips,
   activePresetKey
-} from '$lib/v2/filters.js';
+} from '#lib/v2/filters.js';
 
 /**
  * Each page's module exports the allow-list its list function forwards. As
@@ -14,17 +14,17 @@ import {
  * below covers whatever is present.
  */
 const MODULES = {
-  tickets: () => import('$lib/server/v2/tickets.js'),
-  leads: () => import('$lib/server/v2/leads.js'),
-  contacts: () => import('$lib/server/v2/contacts.js'),
-  pipeline: () => import('$lib/server/v2/deals.js'),
-  tasks: () => import('$lib/server/v2/tasks.js'),
-  accounts: () => import('$lib/server/v2/accounts.js'),
-  invoices: () => import('$lib/server/v2/invoices.js'),
-  estimates: () => import('$lib/server/v2/estimates.js'),
-  solutions: () => import('$lib/server/v2/solutions.js'),
-  documents: () => import('$lib/server/v2/documents.js'),
-  recurring: () => import('$lib/server/v2/recurring.js')
+  tickets: () => import('#lib/server/v2/tickets.js'),
+  leads: () => import('#lib/server/v2/leads.js'),
+  contacts: () => import('#lib/server/v2/contacts.js'),
+  pipeline: () => import('#lib/server/v2/deals.js'),
+  tasks: () => import('#lib/server/v2/tasks.js'),
+  accounts: () => import('#lib/server/v2/accounts.js'),
+  invoices: () => import('#lib/server/v2/invoices.js'),
+  estimates: () => import('#lib/server/v2/estimates.js'),
+  solutions: () => import('#lib/server/v2/solutions.js'),
+  documents: () => import('#lib/server/v2/documents.js'),
+  recurring: () => import('#lib/server/v2/recurring.js')
 };
 
 describe('every descriptor agrees with its module allow-list', () => {

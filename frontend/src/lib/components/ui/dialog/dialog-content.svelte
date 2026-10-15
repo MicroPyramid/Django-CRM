@@ -3,7 +3,7 @@
   import DialogPortal from './dialog-portal.svelte';
   import XIcon from '@lucide/svelte/icons/x';
   import * as Dialog from './index.js';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   let {
     ref = $bindable(null),
     class: className = undefined,

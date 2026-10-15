@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { deleteDeal, getDeal } from '$lib/server/v2/deals.js';
-import { invoiceFromDeal } from '$lib/server/v2/invoices.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { deleteDeal, getDeal } from '#lib/server/v2/deals.js';
+import { invoiceFromDeal } from '#lib/server/v2/invoices.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

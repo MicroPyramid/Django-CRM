@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, createLead, getLeadFormOptions } from '$lib/server/v2/leads.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { EDITABLE_FIELDS, createLead, getLeadFormOptions } from '#lib/server/v2/leads.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

@@ -1,5 +1,4 @@
-import { json } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ url, cookies, locals }) {
@@ -14,5 +13,5 @@ export async function GET({ url, cookies, locals }) {
     {},
     { cookies, org: locals?.org }
   );
-  return json(data);
+  return Response.json(data);
 }

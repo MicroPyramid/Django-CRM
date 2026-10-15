@@ -49,10 +49,10 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { OPPORTUNITY_TYPE_LABEL, AGING_TONE, AGING_LABEL } from '$lib/v2/enums.js';
-  import { money, longDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { OPPORTUNITY_TYPE_LABEL, AGING_TONE, AGING_LABEL } from '#lib/v2/enums.js';
+  import { money, longDate } from '#lib/v2/format.js';
   import { ChevronRight, TriangleAlert, Lock } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -159,9 +159,9 @@
 
 <PageHeader title="Edit {deal.name}" center>
   {#snippet crumb()}
-    <a href={resolve('/pipeline')}>Pipeline</a>
+    <a href={resolve('pipeline')}>Pipeline</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/pipeline/${deal.id}`)}>{deal.name}</a>
+    <a href={resolve(`pipeline/${deal.id}`)}>{deal.name}</a>
   {/snippet}
   {#snippet sub()}
     {deal.account.name} · <span class="v2-num">{money(deal.amount, deal.currency)}</span> ·
@@ -179,7 +179,7 @@
             “{deal.name}” has been updated.
           </div>
         </div>
-        <a class="v2-btn" href={resolve(`/pipeline/${deal.id}`)}>Back to the deal</a>
+        <a class="v2-btn" href={resolve(`pipeline/${deal.id}`)}>Back to the deal</a>
       </div>
     {/if}
 
@@ -337,7 +337,7 @@
           <p class="v2-error">{errors.amount}</p>
         {:else if amountIsCalculated}
           <p class="v2-hint" id="h-amount">
-            <a href={resolve(`/pipeline/${deal.id}`)}>{server.line_item_count} line items</a> add up
+            <a href={resolve(`pipeline/${deal.id}`)}>{server.line_item_count} line items</a> add up
             to
             <span class="v2-num">{money(server.line_item_total, deal.currency)}</span>. The server
             refuses a different figure on a deal with line items, so this cannot be typed over. Edit
@@ -422,7 +422,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-      <a class="v2-btn" href={resolve(`/pipeline/${deal.id}`)}>Cancel</a>
+      <a class="v2-btn" href={resolve(`pipeline/${deal.id}`)}>Cancel</a>
       <span class="v2-sub" style="margin-left:auto;font-size:12px">
         Last stage change {longDate(server.stage_changed_at)}
       </span>

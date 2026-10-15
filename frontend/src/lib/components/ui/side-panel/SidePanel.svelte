@@ -1,6 +1,6 @@
 <script>
   import { X, ChevronLeft } from '@lucide/svelte';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   import { sidePanelHidden } from './index.js';
 
   /**

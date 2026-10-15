@@ -3,8 +3,8 @@ import {
   getHelpCenterSettings,
   saveErrorMessage,
   updateHelpCenterSettings
-} from '$lib/server/v2/help-center-settings.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/help-center-settings.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

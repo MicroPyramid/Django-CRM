@@ -20,7 +20,7 @@
  *
  * CREATE IS ADMIN-ONLY, LIST IS NOT
  * `/settings` is deliberately member-readable (see the comment in
- * `$lib/v2/components/Sidebar.svelte`), and `TagsListView.get` has no role
+ * `#lib/v2/components/Sidebar.svelte`), and `TagsListView.get` has no role
  * check, so every member reads the full tag list. `TagsListView.post`
  * does gate: it 403s anyone who is not an org admin (`is_org_admin`). `can_edit`
  * below mirrors that split so the page can hide "New tag" for a member instead
@@ -31,7 +31,7 @@
  * check is exactly the kind of thing that should not exist in one more
  * private copy per module.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /**

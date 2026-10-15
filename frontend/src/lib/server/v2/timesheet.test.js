@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const {
   stopTimer,
@@ -12,7 +12,7 @@ const {
   deleteEntry,
   getTimeReport,
   getTimesheet
-} = await import('$lib/server/v2/timesheet.js');
+} = await import('#lib/server/v2/timesheet.js');
 // Cast rather than shaping a full Cookies mock, matching leads.test.js and
 // tags.test.js: stopTimer only ever calls `cookies.get`, and `apiRequest`
 // itself is mocked above, so nothing here touches

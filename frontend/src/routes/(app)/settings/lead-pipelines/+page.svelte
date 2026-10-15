@@ -12,14 +12,14 @@
    */
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { count } from '$lib/v2/format.js';
-  import { LEAD_STATUS_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { count } from '#lib/v2/format.js';
+  import { LEAD_STATUS_LABEL } from '#lib/v2/enums.js';
   import { ArrowDown, ArrowUp, Columns3, Plus } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -134,7 +134,7 @@
           {#each data.pipelines as p (p.id)}
             <a
               class="v2-btn lp-pipeline"
-              href={resolve(`/settings/lead-pipelines?pipeline=${p.id}`)}
+              href={resolve(`settings/lead-pipelines?pipeline=${p.id}`)}
               aria-current={p.id === pipeline?.id ? 'page' : undefined}
             >
               {p.name}
@@ -178,7 +178,7 @@
                 <span class="v2-num">{count(pipeline.stages.length)}</span> stages ·
                 <span class="v2-num">{count(pipeline.leadCount)}</span>
                 {pipeline.leadCount === 1 ? 'lead' : 'leads'} in them ·
-                <a href={resolve(`/leads/board?pipeline=${pipeline.id}`)} style="color:inherit"
+                <a href={resolve(`leads/board?pipeline=${pipeline.id}`)} style="color:inherit"
                   >Open the board</a
                 >
               </div>

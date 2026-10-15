@@ -12,11 +12,11 @@
    * a later visit. The reveal below is the action's response, and it is gone
    * on the next load. Lost it? Regenerate, which also retires the old one.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { relativeDays, shortDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { relativeDays, shortDate } from '#lib/v2/format.js';
   import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import { CalendarDays, Copy, Check, ShieldAlert } from '@lucide/svelte';
@@ -42,7 +42,7 @@
 </script>
 
 <PageHeader title="Calendar feed">
-  {#snippet crumb()}<a href={resolve('/profile')}>Profile</a> ›{/snippet}
+  {#snippet crumb()}<a href={resolve('profile')}>Profile</a> ›{/snippet}
   {#snippet sub()}
     {#if feed.enabled}
       On, URL created {shortDate(feed.created_at)}

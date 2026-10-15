@@ -1,13 +1,13 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import '../../app.css';
-  import '$lib/v2/styles/v2.css';
+  import '#lib/v2/styles/v2.css';
   import { page } from '$app/state';
   import { afterNavigate } from '$app/navigation';
-  import Sidebar from '$lib/v2/components/Sidebar.svelte';
-  import { isOrgAdmin } from '$lib/admin.js';
-  import CommandPalette from '$lib/v2/components/CommandPalette.svelte';
+  import Sidebar from '#lib/v2/components/Sidebar.svelte';
+  import { isOrgAdmin } from '#lib/admin.js';
+  import CommandPalette from '#lib/v2/components/CommandPalette.svelte';
   import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
 
   /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, is_organization_admin: boolean }, children: import('svelte').Snippet }} */
@@ -109,7 +109,7 @@
 
   <!-- Both live inside .v2-root so they inherit the scoped tokens; both are
        position:fixed, so the shell's overflow:hidden does not clip them. -->
-  <a class="v2-fab" href={resolve('/pipeline/new')} aria-label="New deal"><Plus size={21} /></a>
+  <a class="v2-fab" href={resolve('pipeline/new')} aria-label="New deal"><Plus size={21} /></a>
 
   <!-- Mobile navigation drawer. Only openable from the mobile top bar, so it
        never surfaces on desktop; a backdrop click, Escape, or navigating all

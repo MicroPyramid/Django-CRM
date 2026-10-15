@@ -22,11 +22,11 @@
    * org with invoices in several currencies gets a switcher, and every figure,
    * bar and row below it is in the chosen one.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import CurrencySwitch from '$lib/v2/components/CurrencySwitch.svelte';
-  import { money, count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import CurrencySwitch from '#lib/v2/components/CurrencySwitch.svelte';
+  import { money, count } from '#lib/v2/format.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -92,8 +92,8 @@
       <p>
         Invoiced and collected totals, revenue by month and accounts-receivable aging cover the
         whole organisation's money, so they are limited to admins. Your own invoices and estimates
-        are on the <a href={resolve('/invoices')}>Invoices</a> and
-        <a href={resolve('/invoices/estimates')}>Estimates</a> tabs.
+        are on the <a href={resolve('invoices')}>Invoices</a> and
+        <a href={resolve('invoices/estimates')}>Estimates</a> tabs.
       </p>
     </div>
   </div>
@@ -229,7 +229,7 @@
                 <tr>
                   <td class="v2-table-primary">
                     <a
-                      href={resolve(`/accounts/${a.id}`)}
+                      href={resolve(`accounts/${a.id}`)}
                       style="color:inherit;text-decoration:none"
                     >
                       {a.name}

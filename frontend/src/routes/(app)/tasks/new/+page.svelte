@@ -8,7 +8,7 @@
    * pickers would let somebody fill two and learn about the rule from a 400.
    * Pick the kind, then pick the record.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { ChevronRight } from '@lucide/svelte';
@@ -31,7 +31,7 @@
 
 <PageHeader title="New task" record center width="62ch">
   {#snippet crumb()}
-    <a href={resolve('/tasks')}>Tasks</a>
+    <a href={resolve('tasks')}>Tasks</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -144,7 +144,7 @@
 
     <div style="display:flex;gap:9px;margin-top:6px">
       <button class="v2-btn v2-btn-primary" type="submit">Create task</button>
-      <a class="v2-btn" href={resolve('/tasks')}>Cancel</a>
+      <a class="v2-btn" href={resolve('tasks')}>Cancel</a>
     </div>
   </form>
 </div>

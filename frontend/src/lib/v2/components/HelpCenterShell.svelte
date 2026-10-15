@@ -11,7 +11,7 @@
    * column, and none of the CRM's furniture. A visitor here is somebody's
    * customer, not a user of the product.
    */
-  import '$lib/v2/styles/v2.css';
+  import '#lib/v2/styles/v2.css';
   import { resolve } from '$app/paths';
 
   /** @type {{ name: string, slug: string, children: import('svelte').Snippet }} */
@@ -20,7 +20,7 @@
 
 <div class="v2-root hc">
   <header class="hc-top">
-    <a class="hc-brand" href={resolve(`/help-center/${slug}`)}>
+    <a class="hc-brand" href={resolve(`help-center/${slug}`)}>
       {name || 'Help center'}
       <span class="hc-kind">Help center</span>
     </a>

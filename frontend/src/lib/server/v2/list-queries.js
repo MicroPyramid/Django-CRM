@@ -9,13 +9,13 @@
  *
  * Server-only, like `filter-params.js` which it builds on.
  */
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
-import { FILTER_FIELDS as LEAD_FIELDS } from '$lib/server/v2/leads.js';
-import { FILTER_FIELDS as CONTACT_FIELDS } from '$lib/server/v2/contacts.js';
-import { FILTER_FIELDS as ACCOUNT_FIELDS } from '$lib/server/v2/accounts.js';
-import { FILTER_FIELDS as DEAL_FIELDS, BOARD_FIELDS } from '$lib/server/v2/deals.js';
-import { FILTER_FIELDS as TICKET_FIELDS, OPEN_STATUSES } from '$lib/server/v2/tickets.js';
-import { FILTER_FIELDS as INVOICE_FIELDS } from '$lib/server/v2/invoices.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
+import { FILTER_FIELDS as LEAD_FIELDS } from '#lib/server/v2/leads.js';
+import { FILTER_FIELDS as CONTACT_FIELDS } from '#lib/server/v2/contacts.js';
+import { FILTER_FIELDS as ACCOUNT_FIELDS } from '#lib/server/v2/accounts.js';
+import { FILTER_FIELDS as DEAL_FIELDS, BOARD_FIELDS } from '#lib/server/v2/deals.js';
+import { FILTER_FIELDS as TICKET_FIELDS, OPEN_STATUSES } from '#lib/server/v2/tickets.js';
+import { FILTER_FIELDS as INVOICE_FIELDS } from '#lib/server/v2/invoices.js';
 
 /**
  * @param {URLSearchParams} params

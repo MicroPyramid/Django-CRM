@@ -44,8 +44,8 @@
  * already carries, so a deactivated assignee is shown rather than silently
  * dropped by a select with no matching option.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { CASE_STATUSES } from '$lib/v2/enums.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { CASE_STATUSES } from '#lib/v2/enums.js';
 import { viewerIsAdmin } from './organization.js';
 import { myProfileId } from './leads.js';
 import { getOrgPeopleAndTeams } from './org-people.js';

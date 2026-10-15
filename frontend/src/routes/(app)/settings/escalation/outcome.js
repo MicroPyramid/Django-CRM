@@ -28,7 +28,7 @@
  *
  * `mobile/lib/data/models/escalation_policy.dart` carries the same rules.
  */
-import { ESCALATION_ACTION_LABEL, ESCALATION_PRIORITIES } from '$lib/v2/enums.js';
+import { ESCALATION_ACTION_LABEL, ESCALATION_PRIORITIES } from '#lib/v2/enums.js';
 
 /**
  * "the Support team", but "the Support Team" when the name already says so.

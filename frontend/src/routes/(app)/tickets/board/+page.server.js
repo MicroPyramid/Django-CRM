@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { getTicketBoard, moveTicket } from '$lib/server/v2/ticket-board.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getTicketBoard, moveTicket } from '#lib/server/v2/ticket-board.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Tickets by status, or by the stages of one case pipeline when

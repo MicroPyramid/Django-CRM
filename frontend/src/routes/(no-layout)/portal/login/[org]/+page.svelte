@@ -7,7 +7,7 @@
    * customers work with this company.
    */
   import { enhance } from '$app/forms';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
 
   let { form } = $props();
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const {
   createRoutingRule,
@@ -413,9 +413,9 @@ describe('deleteRoutingRule', () => {
 
 describe('CONDITION_FIELDS and CONDITION_OPS', () => {
   // These are derived from `CONDITION_FIELD_LABEL`/`CONDITION_OP_LABEL` in
-  // `$lib/v2/enums.js` rather than hand-restated, because the page's selects
+  // `#lib/v2/enums.js` rather than hand-restated, because the page's selects
   // read those maps directly (a `.svelte` file cannot import from
-  // `$lib/server/`) and two hand-maintained copies of the same set drift.
+  // `#lib/server/`) and two hand-maintained copies of the same set drift.
   // This pins the derived lists to exactly what
   // `RoutingRuleSerializer.validate_conditions` accepts, so an addition to
   // the label maps that the backend does not also accept fails here instead

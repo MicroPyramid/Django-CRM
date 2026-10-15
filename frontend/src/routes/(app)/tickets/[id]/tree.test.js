@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
-import { RESTRICTED_TICKET_NAME } from '$lib/v2/enums.js';
+import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 
 /** @param {any} over */
 function node(over = {}) {

@@ -1,6 +1,6 @@
 <script>
   import { X } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
 
   /** @typedef {{ label: string, onClick: () => void, variant?: 'default'|'outline'|'destructive' }} BulkAction */
 

@@ -1,25 +1,25 @@
 <script>
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import StageMeter from '$lib/v2/components/StageMeter.svelte';
-  import PipelineSwitcher from '$lib/v2/components/PipelineSwitcher.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { money, moneyEach, sumByCurrency, count, shortDate } from '$lib/v2/format.js';
-  import { dealNextStep } from '$lib/v2/deal-next-step.js';
-  import { AGING_TONE, AGING_LABEL } from '$lib/v2/enums.js';
-  import { activeChips, activePresetKey, withoutParam } from '$lib/v2/filters.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import StageMeter from '#lib/v2/components/StageMeter.svelte';
+  import PipelineSwitcher from '#lib/v2/components/PipelineSwitcher.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { money, moneyEach, sumByCurrency, count, shortDate } from '#lib/v2/format.js';
+  import { dealNextStep } from '#lib/v2/deal-next-step.js';
+  import { AGING_TONE, AGING_LABEL } from '#lib/v2/enums.js';
+  import { activeChips, activePresetKey, withoutParam } from '#lib/v2/filters.js';
   import { CalendarClock, Columns3, Download, List, Plus, TriangleAlert } from '@lucide/svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
-  import { holdLockedCard } from '$lib/v2/board-drag.js';
+  import { holdLockedCard } from '#lib/v2/board-drag.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -65,7 +65,7 @@
 
   /* `dndzone` reorders the array it is handed, so the board renders from a
      local copy. Rebuilt whenever the server sends new lanes, which is what
-     makes a rejected move snap back: the action calls `invalidateAll()` and
+     makes a rejected move snap back: the action calls `refreshAll()` and
      this effect overwrites the optimistic arrangement with the stored one. */
   let boardLanes = $state(/** @type {any[]} */ ([]));
   $effect(() => {
@@ -138,7 +138,7 @@
     } catch {
       moveError = 'Could not move the deal, reverted.';
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   /**
@@ -147,7 +147,7 @@
    * this page `?view=board` is a layout toggle, not a filter, so a bare
    * "Board" click from the unfiltered list would otherwise claim these
    * numbers are filtered when nothing was. `'all'` is pipeline's own
-   * empty-params preset (see `$lib/v2/filters.js`), its declared default, so
+   * empty-params preset (see `#lib/v2/filters.js`), its declared default, so
    * being on any other preset counts as filtered even when that preset
    * (`open`, `stalled`) sets no field a chip would represent.
    */
@@ -207,12 +207,12 @@
          from it, so the file holds every row this list would page through. -->
     <a
       class="v2-btn"
-      href="{resolve('/api/deals/export')}?{page.url.searchParams}"
+      href="{resolve('api/deals/export')}?{page.url.searchParams}"
       data-sveltekit-reload
     >
       <Download />Export
     </a>
-    <a class="v2-btn v2-btn-primary" href={resolve('/pipeline/new')}><Plus />New deal</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('pipeline/new')}><Plus />New deal</a>
   {/snippet}
 </PageHeader>
 
@@ -295,7 +295,7 @@
               animate:flip={{ duration: FLIP_MS }}
             >
               <a
-                href={resolve(`/pipeline/${d.id}`)}
+                href={resolve(`pipeline/${d.id}`)}
                 style="font-weight:600;letter-spacing:-0.012em;line-height:1.3;color:inherit;text-decoration:none"
                 >{d.name}</a
               >
@@ -335,8 +335,8 @@
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/pipeline/new')}>New deal</a>
-        <a class="v2-btn" href={resolve('/leads')}>Go to leads</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('pipeline/new')}>New deal</a>
+        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>
   </div>
@@ -361,7 +361,7 @@
             {@const step = dealNextStep(d)}
             <tr>
               <td>
-                <a class="v2-row-link" href={resolve(`/pipeline/${d.id}`)}>
+                <a class="v2-row-link" href={resolve(`pipeline/${d.id}`)}>
                   <div class="v2-table-primary">{d.name}</div>
                   <div class="v2-table-secondary">{d.account.name}</div>
                 </a>

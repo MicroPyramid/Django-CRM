@@ -1,6 +1,6 @@
 import { fail, redirect, error } from '@sveltejs/kit';
-import { getProductForEdit, updateProduct, deleteProduct } from '$lib/server/v2/products.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getProductForEdit, updateProduct, deleteProduct } from '#lib/server/v2/products.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Editing a catalogue product.

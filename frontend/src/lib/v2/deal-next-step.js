@@ -1,4 +1,4 @@
-import { daysSince, shortDate } from '$lib/v2/format.js';
+import { daysSince, shortDate } from '#lib/v2/format.js';
 
 /**
  * A deal's next open task as a phrase for the pipeline card and list row, or

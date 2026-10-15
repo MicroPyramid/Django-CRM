@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, createAccount, getAccountFormOptions } from '$lib/server/v2/accounts.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { EDITABLE_FIELDS, createAccount, getAccountFormOptions } from '#lib/server/v2/accounts.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

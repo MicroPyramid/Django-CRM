@@ -19,8 +19,8 @@
  * lead, that the stage is in the org and in an active pipeline, and that a
  * lead already in a pipeline stays in it. Nothing here decides any of that.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { canMoveCard } from '$lib/v2/board-drag.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { canMoveCard } from '#lib/v2/board-drag.js';
 
 /** The lane id standing for "in no stage". A stage id is always a UUID. */
 export const UNSTAGED = 'unstaged';

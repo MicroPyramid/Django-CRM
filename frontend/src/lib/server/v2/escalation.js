@@ -23,8 +23,8 @@
  * every settings-hub load. The route's `load` fetches `getOrgPeopleAndTeams`
  * itself, in parallel with this.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { ESCALATION_PRIORITIES } from '$lib/v2/enums.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { ESCALATION_PRIORITIES } from '#lib/v2/enums.js';
 import { viewerIsAdmin } from './organization.js';
 
 /**

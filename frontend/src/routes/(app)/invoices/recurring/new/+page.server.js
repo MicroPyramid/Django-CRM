@@ -1,9 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listAccounts } from '$lib/server/v2/accounts.js';
-import { listContacts } from '$lib/server/v2/contacts.js';
-import { listProducts } from '$lib/server/v2/products.js';
-import { createRecurringInvoice } from '$lib/server/v2/recurring.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { listAccounts } from '#lib/server/v2/accounts.js';
+import { listContacts } from '#lib/server/v2/contacts.js';
+import { listProducts } from '#lib/server/v2/products.js';
+import { createRecurringInvoice } from '#lib/server/v2/recurring.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Same three pickers as the one-off invoice builder: account and contact are

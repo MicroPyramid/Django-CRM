@@ -1,5 +1,5 @@
-import { getToday } from '$lib/server/v2/today.js';
-import { getCurrentGoals } from '$lib/server/v2/goals.js';
+import { getToday } from '#lib/server/v2/today.js';
+import { getCurrentGoals } from '#lib/server/v2/goals.js';
 
 /**
  * Today, plus the goals running today.

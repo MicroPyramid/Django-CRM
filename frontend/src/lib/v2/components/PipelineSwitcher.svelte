@@ -10,7 +10,7 @@
    * Rendered only when the org has more than one pipeline; with one there is
    * nothing to choose.
    *
-   * @type {{ url: URL, pipelines: { id: string, name: string }[], current: string | null, allLabel?: string | null }}
+   * @type {{ url: import('$app/state').ReadonlyURL, pipelines: { id: string, name: string }[], current: string | null, allLabel?: string | null }}
    */
   let { url, pipelines, current, allLabel = null } = $props();
 </script>

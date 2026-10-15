@@ -1,5 +1,5 @@
 <script>
-  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+  import * as Sidebar from '#lib/components/ui/sidebar/index.js';
   import AppSidebar from './AppSidebar.svelte';
 
   /**

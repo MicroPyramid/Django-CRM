@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, getLeadForEdit, updateLead } from '$lib/server/v2/leads.js';
-import { collectFromForm, leadFieldDefinitions } from '$lib/server/v2/lead-custom-fields.js';
+import { EDITABLE_FIELDS, getLeadForEdit, updateLead } from '#lib/server/v2/leads.js';
+import { collectFromForm, leadFieldDefinitions } from '#lib/server/v2/lead-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {

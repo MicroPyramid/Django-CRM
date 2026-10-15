@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * The settings hub.
    *
@@ -24,9 +24,9 @@
    * where they live: people go looking, find nothing, and conclude the feature
    * does not exist.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import { count, shortDate } from '$lib/v2/format.js';
-  import { isOrgAdmin } from '$lib/admin.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import { count, shortDate } from '#lib/v2/format.js';
+  import { isOrgAdmin } from '#lib/admin.js';
   import { ChevronRight, ShieldAlert } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -300,7 +300,7 @@
     <p class="v2-sub" style="font-size:11.5px;margin-top:18px;max-width:64ch">
       The organisation API key is not shown here. Credentials are never rendered on a page you can
       arrive at by browsing. See
-      <a href={resolve('/settings/api-tokens')} style="color:inherit">API tokens</a> for how token values
+      <a href={resolve('settings/api-tokens')} style="color:inherit">API tokens</a> for how token values
       are handled.
     </p>
   </div>

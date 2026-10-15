@@ -21,15 +21,15 @@
    * nothing to re-display later even if somebody asks. The reveal below is the
    * only place a full value appears, and it is gone on the next load.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, relativeDays, shortDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, relativeDays, shortDate } from '#lib/v2/format.js';
   import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
   import { Plus, KeyRound, ShieldAlert, Copy, Check } from '@lucide/svelte';
-  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '$lib/v2/token-rules.js';
+  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '#lib/v2/token-rules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -69,7 +69,7 @@
 </script>
 
 <PageHeader title="Your API tokens">
-  {#snippet crumb()}<a href={resolve('/profile')}>Profile</a> ›{/snippet}
+  {#snippet crumb()}<a href={resolve('profile')}>Profile</a> ›{/snippet}
   {#snippet sub()}
     <span class="v2-num">{count(data.live)}</span>
     live of <span class="v2-num">{count(data.tokens.length)}</span> you have issued

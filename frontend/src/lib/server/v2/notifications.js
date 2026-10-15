@@ -17,7 +17,7 @@
  * that slipped into the column can't become a live link or an open redirect),
  * and a correctly-produced `/tickets/` link is not left pointing at the v1 route.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** Verbs the backend actually dispatches. Everything else has no copy and is
  *  flagged on the page as "no producer" rather than shown as a raw identifier. */

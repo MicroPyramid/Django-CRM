@@ -14,17 +14,17 @@
    *    against**, which is the same rail pointing the other way: the ticket
    *    page already links here.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { relativeDays, longDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { relativeDays, longDate } from '#lib/v2/format.js';
   import {
     SOLUTION_STATUS_LABEL,
     SOLUTION_STATUS_TONE,
     PRIORITY_TONE,
     CASE_STATUS_TONE
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { ChevronRight, Eye, EyeOff } from '@lucide/svelte';
 
@@ -77,7 +77,7 @@
 
 <PageHeader title={article.title} record>
   {#snippet crumb()}
-    <a href={resolve('/solutions')}>Knowledge base</a>
+    <a href={resolve('solutions')}>Knowledge base</a>
     <ChevronRight size={12} />
     <span>{SOLUTION_STATUS_LABEL[article.status]}</span>
   {/snippet}
@@ -92,7 +92,7 @@
   {/snippet}
   {#snippet actions()}
     {#if canEdit}
-      <a class="v2-btn" href={resolve(`/solutions/${article.id}/edit`)}>Edit</a>
+      <a class="v2-btn" href={resolve(`solutions/${article.id}/edit`)}>Edit</a>
     {/if}
     {#if article.is_published && canRelease}
       <form method="POST" action="?/setPublished" use:enhance>
@@ -159,7 +159,7 @@
           <div class="v2-card" style="overflow:hidden;max-width:70ch">
             {#each tickets as t (t.id)}
               <a
-                href={resolve(`/tickets/${t.id}`)}
+                href={resolve(`tickets/${t.id}`)}
                 style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
               >
                 <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>

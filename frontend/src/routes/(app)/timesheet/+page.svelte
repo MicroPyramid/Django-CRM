@@ -15,11 +15,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { money, count, shortDate, hoursMinutes as hm } from '$lib/v2/format.js';
-  import { todayIn } from '$lib/v2/dates.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { money, count, shortDate, hoursMinutes as hm } from '#lib/v2/format.js';
+  import { todayIn } from '#lib/v2/dates.js';
   import { ChevronLeft, ChevronRight, Square, Receipt } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -67,12 +67,12 @@
       start: s.toISOString().slice(0, 10),
       end: e.toISOString().slice(0, 10)
     });
-    goto(resolve(`/timesheet?${qs.toString()}`), { keepFocus: true, noScroll: true });
+    goto(resolve(`timesheet?${qs.toString()}`), { reset: false });
   }
 
   /** Back to the current ISO week (no params → server default). */
   function thisWeek() {
-    goto(resolve('/timesheet'), { keepFocus: true, noScroll: true });
+    goto(resolve('timesheet'), { reset: false });
   }
 
   let dayMinutes = $derived(
@@ -121,7 +121,7 @@
     </button>
     <!-- This page is one person's week. The report is every window and every
          grouping of the same entries, and where the CSV comes from. -->
-    <a class="v2-btn" href={resolve('/timesheet/report')}>Report</a>
+    <a class="v2-btn" href={resolve('timesheet/report')}>Report</a>
   {/snippet}
 </PageHeader>
 
@@ -170,8 +170,7 @@
                 <div class="v2-running-row">
                   <span>
                     <span class="v2-num">{hm(liveMinutes(e))}</span> on
-                    <a href={resolve(`/tickets/${e.case.id}`)} style="color:inherit"
-                      >{e.case.name}</a
+                    <a href={resolve(`tickets/${e.case.id}`)} style="color:inherit">{e.case.name}</a
                     >
                   </span>
                   <!-- One form per entry. A single shared button could not say
@@ -218,7 +217,7 @@
                        it again. Double-billing an hour is a refund, not an
                        edge case. -->
                   <a
-                    href={resolve(`/invoices/${e.invoice.id}`)}
+                    href={resolve(`invoices/${e.invoice.id}`)}
                     class="v2-sub"
                     style="font-size:10.5px;display:inline-flex;gap:3px;align-items:center;color:var(--v2-moss)"
                     title="Billed on {e.invoice.invoice_number}"
@@ -228,7 +227,7 @@
                 {/if}
               </div>
               <a
-                href={resolve(`/tickets/${e.case.id}`)}
+                href={resolve(`tickets/${e.case.id}`)}
                 style="color:inherit;text-decoration:none;display:block;margin-top:3px;white-space:normal;line-height:1.35"
               >
                 {e.case.name}

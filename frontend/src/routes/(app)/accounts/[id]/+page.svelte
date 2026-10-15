@@ -11,21 +11,21 @@
    * All four panels come from the single detail response, the API already
    * returned them, so this costs no extra round trips.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import DuplicatesPanel from '$lib/v2/components/DuplicatesPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { money, moneyEach, shortDate, longDate } from '$lib/v2/format.js';
-  import { isOrgAdmin } from '$lib/admin.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import DuplicatesPanel from '#lib/v2/components/DuplicatesPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { money, moneyEach, shortDate, longDate } from '#lib/v2/format.js';
+  import { isOrgAdmin } from '#lib/admin.js';
   import {
     CLOSED_KINDS,
     PRIORITY_TONE,
     INVOICE_STATUS_TONE,
     invoiceStatusLabel
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import { ChevronRight, Mail, Phone } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -57,7 +57,7 @@
 
 <PageHeader title={account.name} record>
   {#snippet crumb()}
-    <a href={resolve('/accounts')}>Accounts</a>
+    <a href={resolve('accounts')}>Accounts</a>
     <ChevronRight size={12} />
     <span>{account.industry || 'No industry'}</span>
   {/snippet}
@@ -78,9 +78,9 @@
   {#snippet actions()}
     {#if isOrgAdmin(data)}
       <!-- Statements are admin-only on the API; a member would only be told so. -->
-      <a class="v2-btn" href={resolve(`/accounts/${account.id}/statement`)}>Statement</a>
+      <a class="v2-btn" href={resolve(`accounts/${account.id}/statement`)}>Statement</a>
     {/if}
-    <a class="v2-btn" href={resolve(`/accounts/${account.id}/edit`)}>Edit</a>
+    <a class="v2-btn" href={resolve(`accounts/${account.id}/edit`)}>Edit</a>
     {#if data.canDelete}
       <!-- Offered only when the API's delete rule admits this caller; the
            DELETE asks the same rule again. -->
@@ -173,11 +173,11 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Deals</span>
-          <a href={resolve('/pipeline')}>View all</a>
+          <a href={resolve('pipeline')}>View all</a>
         </div>
         {#each deals as d (d.id)}
           <a
-            href={resolve(`/pipeline/${d.id}`)}
+            href={resolve(`pipeline/${d.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <div style="flex:1;min-width:0">
@@ -211,7 +211,7 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">People</span>
-          <a href={resolve('/contacts')}>View all</a>
+          <a href={resolve('contacts')}>View all</a>
         </div>
         {#each contacts as c (c.id)}
           <div
@@ -222,7 +222,7 @@
                  `/contacts/<uuid>` answered 404, which is the reason
                  contacts was the module to wire next. -->
             <a
-              href={resolve(`/contacts/${c.id}`)}
+              href={resolve(`contacts/${c.id}`)}
               style="flex:1;min-width:0;color:inherit;text-decoration:none"
             >
               <div style="font-weight:550;font-size:13px">{c.first_name} {c.last_name}</div>
@@ -245,7 +245,7 @@
           </div>
         {:else}
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            Nobody here yet. <a href={resolve(`/contacts/new?account=${account.id}`)}
+            Nobody here yet. <a href={resolve(`contacts/new?account=${account.id}`)}
               >Add the person</a
             > you actually talk to.
           </p>
@@ -256,13 +256,13 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Tickets</span>
-          <a href={resolve('/tickets')}>View all</a>
+          <a href={resolve('tickets')}>View all</a>
         </div>
         {#each tickets as t (t.id)}
           <!-- A link again: tickets is wired, so a real id sent to
                `/tickets/<uuid>` opens the ticket. -->
           <a
-            href={resolve(`/tickets/${t.id}`)}
+            href={resolve(`tickets/${t.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
@@ -271,7 +271,7 @@
           </a>
         {:else}
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            No tickets. <a href={resolve(`/tickets/new?account=${account.id}`)}>Raise one</a> if something
+            No tickets. <a href={resolve(`tickets/new?account=${account.id}`)}>Raise one</a> if something
             is wrong.
           </p>
         {/each}
@@ -281,13 +281,13 @@
       <section class="v2-card" style="overflow:hidden">
         <div class="v2-card-head">
           <span class="v2-label">Invoices</span>
-          <a href={resolve('/invoices')}>View all</a>
+          <a href={resolve('invoices')}>View all</a>
         </div>
         {#each invoices as inv (inv.id)}
           <!-- A link now: invoices is wired, so a real id sent to
                `/invoices/<uuid>` opens the invoice. -->
           <a
-            href={resolve(`/invoices/${inv.id}`)}
+            href={resolve(`invoices/${inv.id}`)}
             style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
           >
             <span class="v2-num" style="font-size:12.5px">{inv.invoice_number}</span>

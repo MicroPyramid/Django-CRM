@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createLead, convertLead } = await import('$lib/server/v2/leads.js');
+const { createLead, convertLead } = await import('#lib/server/v2/leads.js');
 // Cast rather than shaping a full Cookies mock: createLead only ever calls
 // `cookies.get`, and `apiRequest` itself is mocked above, so nothing here
 // touches `getAll`/`set`/`delete`/`serialize`. Without the cast svelte-check

@@ -5,9 +5,9 @@ import {
   updateMailbox,
   deleteMailbox,
   topicArnEdit
-} from '$lib/server/v2/inbound-email.js';
-import { getOrgPeopleAndTeams } from '$lib/server/v2/org-people.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/inbound-email.js';
+import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 // The mailbox list and the create/edit form's assignee picker are two
 // independent fetches: `getMailboxes` does not fold `getOrgPeopleAndTeams`

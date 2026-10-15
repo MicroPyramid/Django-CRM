@@ -1,7 +1,7 @@
 <script>
   import { Calendar } from 'bits-ui';
   import { ChevronLeft, ChevronRight } from '@lucide/svelte';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   import { today, getLocalTimeZone } from '@internationalized/date';
 
   /**

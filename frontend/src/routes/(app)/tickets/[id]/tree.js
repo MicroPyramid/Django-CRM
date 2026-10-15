@@ -19,7 +19,7 @@
  *   already only tickets this person may open.
  */
 
-import { RESTRICTED_TICKET_NAME } from '$lib/v2/enums.js';
+import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 import { findNode } from './close.js';
 
 /**

@@ -5,8 +5,8 @@ import {
   EDITABLE_FIELDS,
   BOOLEAN_FIELDS,
   listTimezones
-} from '$lib/server/v2/organization.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/organization.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Editing organization settings.

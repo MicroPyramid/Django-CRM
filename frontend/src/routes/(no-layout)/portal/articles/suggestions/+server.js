@@ -11,8 +11,7 @@
  * and never resolves as an article whose id happens to be "suggestions".
  */
 
-import { json } from '@sveltejs/kit';
-import { ACCESS_COOKIE, PortalError, suggestArticles } from '$lib/server/portal';
+import { ACCESS_COOKIE, PortalError, suggestArticles } from '#lib/server/portal.js';
 
 // Below this a query matches most of the knowledge base, which is noise rather
 // than a suggestion.
@@ -28,12 +27,12 @@ export async function GET({ cookies, url }) {
   // No session and no match both answer the same way. This route is a hint
   // beside a form: it must never redirect the page or surface an error banner
   // over what the customer is in the middle of typing.
-  if (!token || q.length < MIN_QUERY) return json(EMPTY);
+  if (!token || q.length < MIN_QUERY) return Response.json(EMPTY);
 
   try {
-    return json(await suggestArticles(token, q));
+    return Response.json(await suggestArticles(token, q));
   } catch (err) {
-    if (err instanceof PortalError) return json(EMPTY);
+    if (err instanceof PortalError) return Response.json(EMPTY);
     throw err;
   }
 }

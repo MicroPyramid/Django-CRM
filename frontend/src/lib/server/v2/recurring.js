@@ -30,7 +30,7 @@
  * on a different frequency. `limit=1000`; past that the derived figures would
  * undercount, and that ceiling is called out where it is set.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 const num = (/** @type {any} */ value) => {
   const n = Number(value);
@@ -131,7 +131,7 @@ function bySchedulePriority(/** @type {any} */ a, /** @type {any} */ b) {
 
 /**
  * Every filter param `listRecurringInvoices` will forward. The descriptor in
- * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `#lib/v2/filters.js` must not name a key absent from this list; a test in
  * `filters.test.js` enforces that.
  */
 export const FILTER_FIELDS = ['is_active'];

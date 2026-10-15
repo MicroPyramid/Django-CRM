@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-crm"
-version = "1.16.0"
+version = "1.17.0"
 # The one-line summary PyPI shows under the project title and in search results,
 # so it carries the terms people actually search for ("open source CRM",
 # "self-hosted CRM", "Django CRM") and names the modules rather than the
@@ -59,14 +59,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "django>=6.1.1",
+    "django>=6.1.2",
     "celery>=5.6.3",
-    "python-dotenv>=1.2.3",
+    "python-dotenv>=1.2.4",
     "django-cors-headers>=4.9.0",
-    "djangorestframework>=3.18.1",
+    "djangorestframework>=3.18.3",
     "djangorestframework-simplejwt>=5.5.1",
     "drf-spectacular>=0.30.0",
-    "django-ses>=4.8.0",
+    "django-ses>=4.8.2",
     # psycopg 3, not psycopg2. The `pool` extra is required: Django refuses
     # pool options under psycopg2 (ImproperlyConfigured, "Database pooling
     # requires psycopg >= 3"), and DATABASES["default"]["OPTIONS"]["pool"] in
@@ -74,21 +74,21 @@ dependencies = [
     # directly, so the swap is confined to this line.
     "psycopg[binary,pool]>=3.3.6",
     "whitenoise>=6.12.0",
-    "sentry-sdk>=2.70.0",
+    "sentry-sdk>=2.72.0",
     "django-storages>=1.14.6",
     "django-crum>=0.7.9",
-    "disposable-email-domains>=0.0.268",
+    "disposable-email-domains>=0.0.280",
     "redis>=8.1.0",
-    "pytz>=2026.4",
+    "pytz>=2026.5",
     "requests>=2.34.2",
-    "faker>=40.39.0",
+    "faker>=40.43.0",
     "python-dateutil>=2.9.0.post0",
-    "google-auth>=2.58.1",
+    "google-auth>=2.62.0",
     # X.509 handling for inbound SNS webhook signature verification
     # (cases/inbound/sns.py). The API floor is 42, where the not_valid_*_utc
     # accessors landed; this pin sits higher only because floors here track the
     # versions in uv.lock.
-    "cryptography>=50.0.1",
+    "cryptography>=50.0.2",
     # Routing-rule `regex` conditions (cases/routing.py). RE2 matches in time
     # linear in the input, so an admin's pattern cannot backtrack for hours on
     # a ticket's tags or sender domain the way `re` can.
@@ -118,7 +118,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-django>=4.14.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.16.9",
+    "ruff>=0.17.0",
 ]
 docs = [
     "mkdocs-material>=9.7.7",

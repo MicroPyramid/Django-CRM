@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Every count and the terminology lookup fail; the shell tolerates that.
-vi.mock('$lib/api-helpers.js', () => ({
+vi.mock('#lib/api-helpers.js', () => ({
   apiRequest: async () => {
     throw new Error('offline');
   }

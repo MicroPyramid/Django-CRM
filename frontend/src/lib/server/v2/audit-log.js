@@ -11,7 +11,7 @@
  * what validates them. Token refreshes are hidden by the API unless
  * `include_token_refresh=true` is sent (or `event_type=TOKEN_REFRESH`).
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** Entries per page. */
 export const AUDIT_PAGE = 25;

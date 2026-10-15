@@ -7,9 +7,8 @@ overrides:
   # Only reachable through dev tooling (eslint, @sentry/vite-plugin), but the
   # transitive parents still ask for a vulnerable range, so force the patch.
   'brace-expansion@>=4.0.0 <5.0.9': '^5.0.9'
-  # GHSA-pxg6-pf52-xh8x (low): cookie name/path/domain accept out-of-bounds
-  # characters. Reachable at runtime, not just in dev tooling: @sveltejs/kit
-  # parses and serialises the jwt_access / jwt_refresh / org cookies through
-  # this package. Kit still asks for ^0.6.0, so force the patched line. Kit
-  # only calls parse() and serialize(), both unchanged in 0.7.
-  'cookie@<0.7.0': '^0.7.2'
+  # GHSA-rj75-hqrm-r3gf (moderate): quadratic parsing of flat selectors.
+  # Build-time only: @tailwindcss/typography 0.5.20 pins 6.0.10 exactly. 7.0's
+  # one breaking change makes insertion during iteration safe; typography only
+  # removes nodes from a copied array, and the built CSS is byte-identical.
+  'postcss-selector-parser@<7.1.6': '^7.1.6'

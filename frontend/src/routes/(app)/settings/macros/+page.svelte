@@ -27,14 +27,14 @@
    * error.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
-  import { MACRO_SCOPE_LABEL, CASE_PRIORITIES } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
+  import { MACRO_SCOPE_LABEL, CASE_PRIORITIES } from '#lib/v2/enums.js';
   import { Plus, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */

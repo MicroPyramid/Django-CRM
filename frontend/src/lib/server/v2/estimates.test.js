@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { listEstimates } = await import('$lib/server/v2/estimates.js');
+const { listEstimates } = await import('#lib/server/v2/estimates.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 
@@ -47,7 +47,7 @@ describe('estimate header figures', () => {
 });
 
 const { createEstimate, estimateFromDeal, sendEstimate } =
-  await import('$lib/server/v2/estimates.js');
+  await import('#lib/server/v2/estimates.js');
 
 describe('creating and sending', () => {
   beforeEach(() => {

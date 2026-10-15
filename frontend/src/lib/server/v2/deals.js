@@ -2,7 +2,7 @@
  * Pipeline: the second v2 module wired to the real API.
  *
  * Same rules as `leads.js`, which has the long version of the reasoning:
- * this file lives under `$lib/server` because SvelteKit refuses to bundle
+ * this file lives under `#lib/server` because SvelteKit refuses to bundle
  * that directory into client code and the access token is an httpOnly
  * cookie; the org is never a parameter, only ever a claim inside the JWT.
  *
@@ -24,9 +24,9 @@
  * than in whichever component happens to add them up first.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { sumByCurrency } from '$lib/v2/format.js';
-import { canMoveCard } from '$lib/v2/board-drag.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { sumByCurrency } from '#lib/v2/format.js';
+import { canMoveCard } from '#lib/v2/board-drag.js';
 
 /** DRF decimals are strings. `null` stays `null`. It means "not priced". */
 function num(value) {
@@ -111,7 +111,7 @@ function toRow(deal) {
  * is scoped to the working pipeline is entirely up to whether the caller's
  * `params` carries `?open=true`. That used to be hardcoded on every call,
  * which meant the pipeline's own "All deals" preset (deliberately empty
- * params, see `$lib/v2/filters.js`) could never show a closed deal no matter
+ * params, see `#lib/v2/filters.js`) could never show a closed deal no matter
  * what the URL said, a chip and a preset that cannot change the result set is
  * the exact failure this filter bar exists to remove. Callers that want the
  * open pipeline specifically (the sidebar badge, the task-parent pickers) now

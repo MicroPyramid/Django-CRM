@@ -16,7 +16,7 @@
  * `buildBody` is an allow-list. The secret is minted by the server and the
  * serializer refuses a body that names one; `org` comes from the JWT.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** Deliveries per page on an endpoint's log. */
 export const DELIVERY_PAGE = 20;

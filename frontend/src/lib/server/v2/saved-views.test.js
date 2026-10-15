@@ -4,14 +4,14 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_DJANGO_API_URL: 'http://api.test' } }));
+vi.mock('$app/env/public', () => ({ PUBLIC_DJANGO_API_URL: 'http://api.test' }));
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { SAVED_VIEW_KEYS, loadSavedViews, savedViewActions, savedViewSpec } =
   await import('./saved-views.js');
 const queries = await import('./list-queries.js');
-const { FILTERS } = await import('$lib/v2/filters.js');
+const { FILTERS } = await import('#lib/v2/filters.js');
 
 const UUID = '11111111-2222-3333-4444-555555555555';
 const VIEW = '99999999-8888-7777-6666-555555555555';

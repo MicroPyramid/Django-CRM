@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { updateReopenPolicy } = await import('$lib/server/v2/reopen.js');
+const { updateReopenPolicy } = await import('#lib/server/v2/reopen.js');
 
 // Cast rather than shaping a full Cookies mock, matching tags.test.js: the
 // function under test only reads `cookies.get`, and `apiRequest` is mocked.

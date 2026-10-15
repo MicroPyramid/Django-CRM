@@ -1,4 +1,4 @@
-import { listProducts } from '$lib/server/v2/products.js';
+import { listProducts } from '#lib/server/v2/products.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

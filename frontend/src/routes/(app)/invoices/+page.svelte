@@ -1,15 +1,15 @@
 <script>
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import CurrencySwitch from '$lib/v2/components/CurrencySwitch.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { money, count, shortDate, daysSince } from '$lib/v2/format.js';
-  import { INVOICE_STATUS_TONE, invoiceStatusLabel } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import CurrencySwitch from '#lib/v2/components/CurrencySwitch.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { money, count, shortDate, daysSince } from '#lib/v2/format.js';
+  import { INVOICE_STATUS_TONE, invoiceStatusLabel } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { Download, Plus, Receipt } from '@lucide/svelte';
 
@@ -73,12 +73,12 @@
          from it, so the file holds every row this list would page through. -->
     <a
       class="v2-btn"
-      href="{resolve('/api/invoices/export')}?{page.url.searchParams}"
+      href="{resolve('api/invoices/export')}?{page.url.searchParams}"
       data-sveltekit-reload
     >
       <Download />Export
     </a>
-    <a class="v2-btn v2-btn-primary" href={resolve('/invoices/new')}><Plus />New invoice</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('invoices/new')}><Plus />New invoice</a>
   {/snippet}
 </PageHeader>
 
@@ -105,7 +105,7 @@
 <!-- No "filtered list" line here, unlike the other v2 list pages: the pills
      above come from `totals`, which the API deliberately computes over the
      whole role-scoped queryset regardless of the active filter (see the note
-     on `listInvoices` in `$lib/server/v2/invoices.js`). Saying "these numbers
+     on `listInvoices` in `#lib/server/v2/invoices.js`). Saying "these numbers
      describe the filtered list" would be false for this page. -->
 <FilterBar
   page="invoices"
@@ -131,8 +131,8 @@
     >
       {#snippet icon()}<Receipt size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/invoices/new')}>New invoice</a>
-        <a class="v2-btn" href={resolve('/pipeline')}>Go to pipeline</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('invoices/new')}>New invoice</a>
+        <a class="v2-btn" href={resolve('pipeline')}>Go to pipeline</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -154,7 +154,7 @@
             {@const late = isLate(inv)}
             <tr>
               <td>
-                <a class="v2-row-link" href={resolve(`/invoices/${inv.id}`)}>
+                <a class="v2-row-link" href={resolve(`invoices/${inv.id}`)}>
                   <span class="v2-table-primary v2-num" style="font-size:13px"
                     >{inv.invoice_number}</span
                   >

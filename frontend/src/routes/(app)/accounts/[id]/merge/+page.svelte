@@ -1,5 +1,5 @@
 <script>
-  import MergeCompare from '$lib/v2/components/MergeCompare.svelte';
+  import MergeCompare from '#lib/v2/components/MergeCompare.svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();

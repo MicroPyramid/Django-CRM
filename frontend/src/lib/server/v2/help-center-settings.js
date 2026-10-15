@@ -6,7 +6,7 @@
  * caller's role (admins and superusers). `PATCH` is admin-only there; `can_edit`
  * decides what this page offers, never what it is allowed to do.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

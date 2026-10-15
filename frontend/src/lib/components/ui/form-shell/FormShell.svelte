@@ -1,6 +1,6 @@
 <script>
   import { enhance } from '$app/forms';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
 
   /**
    * @typedef {Object} Props
@@ -8,7 +8,7 @@
    * @property {string} [action]
    * @property {'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain'} [enctype]
    * @property {(this: HTMLFormElement, event: SubmitEvent) => void} [onsubmit]
-   * @property {import('@sveltejs/kit').SubmitFunction} [useEnhance]
+   * @property {import('$app/forms').SubmitFunction} [useEnhance]
    * @property {string} [class]
    * @property {string} [errorMessage]
    * @property {import('svelte').Snippet} children

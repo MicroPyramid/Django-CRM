@@ -14,7 +14,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -63,9 +63,9 @@
 
 <PageHeader title="Edit ticket" center>
   {#snippet crumb()}
-    <a href={resolve('/tickets')}>Tickets</a>
+    <a href={resolve('tickets')}>Tickets</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/tickets/${ticket.id}`)}>{ticket.name}</a>
+    <a href={resolve(`tickets/${ticket.id}`)}>{ticket.name}</a>
   {/snippet}
 </PageHeader>
 
@@ -205,7 +205,7 @@
 
     <p class="v2-sub" style="font-size:12px;margin:6px 0 0">
       {#if data.server.account}
-        Linked to <a href={resolve(`/accounts/${data.server.account.id}`)}
+        Linked to <a href={resolve(`accounts/${data.server.account.id}`)}
           >{data.server.account.name}</a
         >, which cannot be changed after the ticket is raised.
       {:else}
@@ -223,7 +223,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save ticket</button>
-      <a class="v2-btn" href={resolve(`/tickets/${ticket.id}`)}>Cancel</a>
+      <a class="v2-btn" href={resolve(`tickets/${ticket.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

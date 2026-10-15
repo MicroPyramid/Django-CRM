@@ -1,10 +1,10 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { X, Trash2, Maximize2 } from '@lucide/svelte';
-  import * as Sheet from '$lib/components/ui/sheet/index.js';
-  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-  import { cn } from '$lib/utils.js';
+  import * as Sheet from '#lib/components/ui/sheet/index.js';
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js';
+  import { cn } from '#lib/utils.js';
   import CrmPropertyRow from './CrmPropertyRow.svelte';
 
   /**

@@ -17,9 +17,9 @@
  * object; the page wants `{ id, name, is_active }` / `{ id, name }`, so
  * flatten here.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
-import { CONDITION_FIELD_LABEL, CONDITION_OP_LABEL, ROUTING_STRATEGY_NAME } from '$lib/v2/enums.js';
+import { CONDITION_FIELD_LABEL, CONDITION_OP_LABEL, ROUTING_STRATEGY_NAME } from '#lib/v2/enums.js';
 
 /** Profile → the `{ id, name, is_active }` the rule card reads. */
 function shapeAssignee(p) {
@@ -81,7 +81,7 @@ const UPDATE_FIELDS = CREATE_FIELDS;
 /** The fields and operators `RoutingRuleSerializer.validate_conditions`
  *  accepts, derived from the label maps the page renders its selects from.
  *  Derived rather than restated: a `.svelte` file cannot import from
- *  `$lib/server/`, so the page cannot share this module's list, and two
+ *  `#lib/server/`, so the page cannot share this module's list, and two
  *  hand-maintained copies of the same set drift. Keying off the labels
  *  means adding a field in one place adds it to both. */
 export const CONDITION_FIELDS = Object.keys(CONDITION_FIELD_LABEL);
@@ -93,7 +93,7 @@ export const CONDITION_OPS = Object.keys(CONDITION_OP_LABEL);
  * One indexed name per row (`condition_field_0`, `condition_op_0`,
  * `condition_value_0`, then `_1`, and so on), read by index. This lives here
  * rather than in the route's `+page.server.js` so the parse and the clean can
- * be tested together: the harness covers `$lib/server/` modules and cannot
+ * be tested together: the harness covers `#lib/server/` modules and cannot
  * import a route module at all.
  *
  * The indexing is the whole point, and it replaced three parallel `getAll`

@@ -1,4 +1,4 @@
-import { getTimeReport } from '$lib/server/v2/timesheet.js';
+import { getTimeReport } from '#lib/server/v2/timesheet.js';
 
 /**
  * Where the time went, over a window the URL carries.

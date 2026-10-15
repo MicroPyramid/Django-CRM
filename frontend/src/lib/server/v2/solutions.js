@@ -1,7 +1,7 @@
 /**
  * Knowledge base: the sixth v2 module wired to the real API.
  *
- * Same rules as the five before it: this file lives under `$lib/server`
+ * Same rules as the five before it: this file lives under `#lib/server`
  * because SvelteKit refuses to bundle that directory into client code and the
  * access token is an httpOnly cookie. The org is never a parameter; it is a
  * claim inside the JWT and the backend reads it from there.
@@ -39,14 +39,14 @@
  * released it. That row is the one stat card on the list page.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** `Solution.STATUS_CHOICES`, in workflow order. */
 export const SOLUTION_STATUSES = ['draft', 'reviewed', 'approved'];
 
 /**
  * Every filter param `listArticles` will forward. The descriptor in
- * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `#lib/v2/filters.js` must not name a key absent from this list; a test in
  * `filters.test.js` enforces that. `visibility` is not here: it is a view
  * param the page's own load translates to `is_published` before the query
  * ever reaches this module, the same way contacts translates `inactive`.

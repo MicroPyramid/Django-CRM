@@ -4,13 +4,13 @@
    * catalogue, type a line, set quantity and price, remove a line.
    *
    * `items` is bound, so the page owns the list and derives its totals from
-   * it (see `$lib/v2/line-items.js`). A catalogue pick copies the price AND
+   * it (see `#lib/v2/line-items.js`). A catalogue pick copies the price AND
    * links the product: the line stores its own `unit_price` so a later
    * catalogue change never rewrites a sent document, and the `product` FK
    * (server-validated to this org) records where it came from.
    */
-  import { money } from '$lib/v2/format.js';
-  import { blankLine, lineAmount, lineDiscountError, num } from '$lib/v2/line-items.js';
+  import { money } from '#lib/v2/format.js';
+  import { blankLine, lineAmount, lineDiscountError, num } from '#lib/v2/line-items.js';
   import { Plus, Trash2 } from '@lucide/svelte';
 
   /**

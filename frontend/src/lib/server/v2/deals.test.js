@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { listDeals, listBoard, getDealFormOptions } = await import('$lib/server/v2/deals.js');
+const { listDeals, listBoard, getDealFormOptions } = await import('#lib/server/v2/deals.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 

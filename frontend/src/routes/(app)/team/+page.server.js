@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { listTeam, inviteUser, setRole, setStatus, ROLES } from '$lib/server/v2/team.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { listTeam, inviteUser, setRole, setStatus, ROLES } from '#lib/server/v2/team.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Team and access.

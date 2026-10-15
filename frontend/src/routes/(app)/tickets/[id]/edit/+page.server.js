@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getTicketForEdit, updateTicket } from '$lib/server/v2/tickets.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getTicketForEdit, updateTicket } from '#lib/server/v2/tickets.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** Scalars this form owns. `account` is not among them. See the loader note. */
 const FIELDS = ['name', 'status', 'priority', 'case_type', 'description', 'closed_on'];

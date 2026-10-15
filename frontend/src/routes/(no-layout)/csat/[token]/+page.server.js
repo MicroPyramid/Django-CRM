@@ -7,9 +7,9 @@
  */
 
 import { fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
-import { preselectedRating } from '$lib/server/v2/csat.js';
+import { preselectedRating } from '#lib/server/v2/csat.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 

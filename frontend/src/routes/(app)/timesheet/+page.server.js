@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { getTimesheet, stopTimer } from '$lib/server/v2/timesheet.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getTimesheet, stopTimer } from '#lib/server/v2/timesheet.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * `?start=&end=` (YYYY-MM-DD) pick the week; absent, the API picks this week

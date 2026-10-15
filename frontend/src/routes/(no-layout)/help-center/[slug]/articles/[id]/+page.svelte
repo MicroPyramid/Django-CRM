@@ -9,7 +9,7 @@
    * needs a sanitiser, never `{@html}`.
    */
   import { resolve } from '$app/paths';
-  import HelpCenterShell from '$lib/v2/components/HelpCenterShell.svelte';
+  import HelpCenterShell from '#lib/v2/components/HelpCenterShell.svelte';
 
   let { data } = $props();
 
@@ -46,7 +46,7 @@
 </svelte:head>
 
 <HelpCenterShell name={data.name} slug={data.slug}>
-  <a class="back" href={resolve(`/help-center/${data.slug}`)}>All help articles</a>
+  <a class="back" href={resolve(`help-center/${data.slug}`)}>All help articles</a>
 
   <article>
     <h1>{data.article.title}</h1>
@@ -65,7 +65,7 @@
       <ul>
         {#each data.related as item (item.id)}
           <li>
-            <a href={resolve(`/help-center/${data.slug}/articles/${item.id}`)}>{item.title}</a>
+            <a href={resolve(`help-center/${data.slug}/articles/${item.id}`)}>{item.title}</a>
           </li>
         {/each}
       </ul>

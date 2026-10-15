@@ -1,7 +1,7 @@
 <script>
   import { SvelteMap } from 'svelte/reactivity';
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * Render a comment body with `@username` tokens upgraded to styled chips.
    *

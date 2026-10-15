@@ -26,17 +26,17 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import { CURRENCY_CODES } from '$lib/constants/filters.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import { CURRENCY_CODES } from '#lib/constants/filters.js';
   import {
     exampleNumber,
     NUMBER_DATE_PARTS,
     NUMBER_PREFIX_PATTERN
-  } from '$lib/v2/document-numbers.js';
-  import { todayIn } from '$lib/v2/dates.js';
-  import { COUNTRIES } from '$lib/constants/countries.js';
+  } from '#lib/v2/document-numbers.js';
+  import { todayIn } from '#lib/v2/dates.js';
+  import { COUNTRIES } from '#lib/constants/countries.js';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -153,9 +153,9 @@
 {:else}
   <PageHeader title="Edit organization" center>
     {#snippet crumb()}
-      <a href={resolve('/settings')}>Settings</a>
+      <a href={resolve('settings')}>Settings</a>
       <ChevronRight size={12} />
-      <a href={resolve('/settings/organization')}>Organization</a>
+      <a href={resolve('settings/organization')}>Organization</a>
     {/snippet}
   </PageHeader>
 
@@ -509,7 +509,7 @@
 
       <div class="actions">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-        <a class="v2-btn" href={resolve('/settings/organization')}>Cancel</a>
+        <a class="v2-btn" href={resolve('settings/organization')}>Cancel</a>
       </div>
     </form>
   </div>

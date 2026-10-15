@@ -1,14 +1,14 @@
 /**
  * Leads: the first v2 module wired to the real API.
  *
- * WHY THIS LIVES IN `$lib/server`
+ * WHY THIS LIVES IN `#lib/server`
  * SvelteKit refuses to bundle anything under `src/lib/server` into client
  * code, and that guarantee is the point: the access token is read from an
  * httpOnly cookie in here. A module importable from a `+page.js`, and
  * therefore from the browser, cannot be where authenticated requests are
  * made. Leads was the first module to move here off the old mock facade; every
- * other module has since followed and the facade (`$lib/v2/api.js` and
- * `$lib/v2/mock/`) is gone.
+ * other module has since followed and the facade (`#lib/v2/api.js` and
+ * `#lib/v2/mock/`) is gone.
  *
  * SHAPES
  * The functions below return the shapes the v2 pages already consume, so the
@@ -23,14 +23,14 @@
  * would be inventing a way for a caller to ask for another tenant's rows.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { attachmentHref } from '$lib/server/v2/files.js';
-import { recordDuplicates } from '$lib/server/v2/duplicates.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { attachmentHref } from '#lib/server/v2/files.js';
+import { recordDuplicates } from '#lib/server/v2/duplicates.js';
 import {
   leadFieldDefinitions,
   pairForDisplay,
   pairForEdit
-} from '$lib/server/v2/lead-custom-fields.js';
+} from '#lib/server/v2/lead-custom-fields.js';
 
 /** See the note on FILTER_FIELDS in tickets.js. */
 export const FILTER_FIELDS = ['assigned_to', 'status', 'source', 'tags'];

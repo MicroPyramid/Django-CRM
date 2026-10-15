@@ -1,7 +1,7 @@
 /**
  * Invoices: the eighth v2 module wired to the real API.
  *
- * Same rules as the seven before it: this file lives under `$lib/server`
+ * Same rules as the seven before it: this file lives under `#lib/server`
  * because SvelteKit refuses to bundle that directory into client code and the
  * access token is an httpOnly cookie. The org is never a parameter; it is a
  * claim inside the JWT and the backend reads it from there.
@@ -39,7 +39,7 @@
  * list did not wire the board.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** `invoices.models.INVOICE_STATUS`. Underscore on the wire; never shown raw. */
 export const INVOICE_STATUSES = [
@@ -58,7 +58,7 @@ const SETTLED = ['Paid', 'Cancelled'];
 
 /**
  * Every filter param `listInvoices` will forward. See the note on
- * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * FILTER_FIELDS in tickets.js: the descriptor in `#lib/v2/filters.js` must not
  * name a key absent from this list, and `filters.test.js` enforces it.
  *
  * `due_date_gte` / `due_date_lte`: SINGLE underscore.

@@ -10,7 +10,7 @@
  * org.
  */
 import { fail } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * @param {{ request: Request, cookies: import('@sveltejs/kit').Cookies }} event

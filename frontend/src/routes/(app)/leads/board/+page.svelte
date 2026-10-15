@@ -1,17 +1,17 @@
 <script>
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count } from '#lib/v2/format.js';
   import { Columns3, List, TriangleAlert } from '@lucide/svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
-  import { t } from '$lib/terminology.js';
-  import { holdLockedCard } from '$lib/v2/board-drag.js';
+  import { t } from '#lib/terminology.js';
+  import { holdLockedCard } from '#lib/v2/board-drag.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -69,7 +69,7 @@
     // the cards go back rather than pretend it saved. A card dropped in from a
     // stage is a real move: it leaves the pipeline.
     if (lane.unstaged && unstagedLane?.rows.some((/** @type {any} */ r) => r.id === movedId)) {
-      await invalidateAll();
+      await refreshAll();
       return;
     }
     await persistMove(
@@ -108,7 +108,7 @@
     } catch {
       moveError = 'Could not move the lead, so it went back.';
     }
-    await invalidateAll();
+    await refreshAll();
     return false;
   }
 
@@ -124,7 +124,7 @@
     if (!stageId) return;
     busy = true;
     const moved = await persistMove(id, stageId, undefined, undefined);
-    if (moved) await invalidateAll();
+    if (moved) await refreshAll();
     busy = false;
   }
 </script>
@@ -156,7 +156,7 @@
         </select>
       </form>
     {/if}
-    <a class="v2-btn v2-btn-quiet" href={resolve('/leads')}><List />List</a>
+    <a class="v2-btn v2-btn-quiet" href={resolve('leads')}><List />List</a>
     <span class="v2-btn" aria-current="true"><Columns3 />Board</span>
   {/snippet}
 </PageHeader>
@@ -178,8 +178,8 @@
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn" href={resolve('/settings/lead-pipelines')}>Lead pipelines</a>
-        <a class="v2-btn" href={resolve('/leads')}>Back to the list</a>
+        <a class="v2-btn" href={resolve('settings/lead-pipelines')}>Lead pipelines</a>
+        <a class="v2-btn" href={resolve('leads')}>Back to the list</a>
       {/snippet}
     </EmptyState>
   </div>
@@ -230,7 +230,7 @@
               animate:flip={{ duration: FLIP_MS }}
             >
               <a
-                href={resolve(`/leads/${lead.id}`)}
+                href={resolve(`leads/${lead.id}`)}
                 style="font-weight:600;letter-spacing:-0.012em;line-height:1.3;color:inherit;text-decoration:none"
                 >{lead.name}</a
               >

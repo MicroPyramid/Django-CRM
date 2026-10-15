@@ -7,10 +7,10 @@
  * same phrase the tree uses rather than as an empty or null name.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RESTRICTED_TICKET_NAME } from '$lib/v2/enums.js';
+import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { getTicket, listTickets } = await import('./tickets.js');
 

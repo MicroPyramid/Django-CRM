@@ -1,7 +1,7 @@
 <script>
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -84,7 +84,7 @@
         <button class="v2-btn v2-btn-primary" type="submit" disabled={submitting}
           >{submitting ? 'Opening…' : 'Open ticket'}</button
         >
-        <a class="v2-btn" href={resolve('/help')}>Cancel</a>
+        <a class="v2-btn" href={resolve('help')}>Cancel</a>
       </div>
     </form>
   </div>

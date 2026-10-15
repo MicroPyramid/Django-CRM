@@ -12,10 +12,10 @@ import * as Sentry from '@sentry/sveltekit';
 
 import { redirect } from '@sveltejs/kit';
 import axios from 'axios';
-import { env } from '$env/dynamic/public';
-import { isOrgAdmin } from '$lib/admin.js';
-import { describeError } from '$lib/server/log-safe.js';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/public';
+import { isOrgAdmin } from '#lib/admin.js';
+import { describeError } from '#lib/server/log-safe.js';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -120,7 +120,7 @@ function refreshAccessToken(refreshToken, event) {
  * It deduplicates concurrent callers.
  *
  * The API writes an audit row for every refresh, so the visitor's signed
- * address goes along (`$lib/server/relay.js`); without it the row records
+ * address goes along (`#lib/server/relay.js`); without it the row records
  * this server.
  *
  * @param {string} refreshToken - JWT refresh token
@@ -160,7 +160,7 @@ async function performTokenRefresh(refreshToken, event) {
  * @param {string} orgId - Organization UUID to switch to
  * @param {string | undefined} refreshToken - Refresh token being replaced, to be retired
  * @param {{ getClientAddress: () => string, request: Request }} event - For the visitor's address,
- *   which the API's org-switch audit row records (`$lib/server/relay.js`)
+ *   which the API's org-switch audit row records (`#lib/server/relay.js`)
  * @returns {Promise<SwitchOrgResult|null>} New tokens and org data or null if failed
  */
 async function switchOrg(accessToken, orgId, refreshToken, event) {
@@ -265,7 +265,7 @@ export const handle = sequence(Sentry.sentryHandle(), async function _handle({ e
         /** @type {any} */ (event.locals).profile = {
           org: event.locals.org,
           role: jwtPayload.role || 'USER',
-          // The admin fact every admin gate reads (`$lib/admin.js`). Server
+          // The admin fact every admin gate reads (`#lib/admin.js`). Server
           // derived and signed; `role` stays for display only.
           is_organization_admin: isOrgAdmin(jwtPayload)
         };

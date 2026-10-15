@@ -18,7 +18,7 @@
  * preselect the approver multi-select. The page reads `.email` off each entry
  * for the sentence it renders on the row.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /**

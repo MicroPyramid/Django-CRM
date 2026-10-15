@@ -1,8 +1,8 @@
 import { fail } from '@sveltejs/kit';
-import { listTasks, setTaskDone, FILTER_FIELDS } from '$lib/server/v2/tasks.js';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
-import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { listTasks, setTaskDone, FILTER_FIELDS } from '#lib/server/v2/tasks.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
+import { getOrgPeopleAndTeams, resolveMe } from '#lib/server/v2/org-people.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * The task queue.

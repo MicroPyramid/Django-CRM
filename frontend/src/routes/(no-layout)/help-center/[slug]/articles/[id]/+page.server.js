@@ -3,7 +3,7 @@
  * switched off, draft, another org's article, malformed id) is the same 404.
  */
 
-import { canonicalSlug, getHelpArticle } from '$lib/server/help-center.js';
+import { canonicalSlug, getHelpArticle } from '#lib/server/help-center.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

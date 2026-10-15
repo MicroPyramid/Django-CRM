@@ -8,7 +8,7 @@
    * a slow connection.
    */
   import { resolve } from '$app/paths';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
 
   let { data } = $props();
 </script>
@@ -20,7 +20,7 @@
 <PortalShell>
   <header class="head">
     <h1>Help articles</h1>
-    <a class="btn" href={resolve('/portal/cases')}>Your requests</a>
+    <a class="btn" href={resolve('portal/cases')}>Your requests</a>
   </header>
 
   <form method="GET" class="find">
@@ -39,7 +39,7 @@
     <ul class="list">
       {#each data.articles as article (article.id)}
         <li>
-          <a href={resolve(`/portal/articles/${article.id}`)}>{article.title}</a>
+          <a href={resolve(`portal/articles/${article.id}`)}>{article.title}</a>
         </li>
       {/each}
     </ul>

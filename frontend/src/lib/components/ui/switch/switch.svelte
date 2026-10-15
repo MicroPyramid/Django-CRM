@@ -1,6 +1,6 @@
 <script>
   import { Switch as SwitchPrimitive } from 'bits-ui';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
 
   /**
    * @type {{

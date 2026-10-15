@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeBulk } from '$lib/server/v2/tickets.js';
+import { summarizeBulk } from '#lib/server/v2/tickets.js';
 
 describe('summarizeBulk', () => {
   it('counts each outcome status', () => {

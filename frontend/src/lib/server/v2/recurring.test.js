@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({
+vi.mock('#lib/api-helpers.js', () => ({
   apiRequest: (/** @type {any[]} */ ...args) => apiRequest(...args)
 }));
 

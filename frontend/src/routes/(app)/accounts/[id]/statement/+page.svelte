@@ -12,9 +12,9 @@
    * corner, and the invoice, details and running balance wrap beneath.
    */
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import { money, shortDate, longDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import { money, shortDate, longDate } from '#lib/v2/format.js';
   import { ChevronRight, Download } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -29,9 +29,9 @@
 
 <PageHeader title="Statement" record>
   {#snippet crumb()}
-    <a href={resolve('/accounts')}>Accounts</a>
+    <a href={resolve('accounts')}>Accounts</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/accounts/${data.accountId}`)}>{statement?.account.name || 'Account'}</a>
+    <a href={resolve(`accounts/${data.accountId}`)}>{statement?.account.name || 'Account'}</a>
   {/snippet}
   {#snippet sub()}
     {#if statement}
@@ -44,7 +44,7 @@
     {#if statement}
       <a
         class="v2-btn"
-        href={resolve(`/accounts/${data.accountId}/statement/pdf${query(statement)}`)}
+        href={resolve(`accounts/${data.accountId}/statement/pdf${query(statement)}`)}
         target="_blank"
         rel="noopener"
       >
@@ -62,7 +62,7 @@
         <p>
           A statement adds up every invoice on the account, including ones you may not open, so it
           is limited to admins. The invoices you can open are on
-          <a href={resolve(`/accounts/${data.accountId}`)}>the account's page</a>.
+          <a href={resolve(`accounts/${data.accountId}`)}>the account's page</a>.
         </p>
       </div>
     {:else}
@@ -93,11 +93,11 @@
       </form>
       <div class="stmt-presets">
         {#if data.previous}
-          <a href={resolve(`/accounts/${data.accountId}/statement${query(data.previous)}`)}
+          <a href={resolve(`accounts/${data.accountId}/statement${query(data.previous)}`)}
             >Previous month</a
           >
         {/if}
-        <a href={resolve(`/accounts/${data.accountId}/statement`)}>This month</a>
+        <a href={resolve(`accounts/${data.accountId}/statement`)}>This month</a>
       </div>
 
       {#if data.error}
@@ -159,7 +159,7 @@
                       <td data-m="meta">
                         <a
                           class="v2-num stmt-invoice"
-                          href={resolve(`/invoices/${entry.invoice_id}`)}>{entry.invoice_number}</a
+                          href={resolve(`invoices/${entry.invoice_id}`)}>{entry.invoice_number}</a
                         >
                       </td>
                       <td data-m="meta">{entry.description}</td>

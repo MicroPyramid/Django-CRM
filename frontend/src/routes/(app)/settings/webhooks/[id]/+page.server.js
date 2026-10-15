@@ -7,8 +7,8 @@ import {
   rotateWebhookSecret,
   redeliverWebhook,
   eventsFromForm
-} from '$lib/server/v2/webhooks.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/webhooks.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * One webhook: its settings, its actions and a page of its delivery log.

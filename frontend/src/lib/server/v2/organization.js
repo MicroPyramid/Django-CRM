@@ -1,7 +1,7 @@
 /**
  * Organization settings: the eleventh v2 module wired to the real API.
  *
- * Lives under `$lib/server` like the ten before it: the JWT cookie stays
+ * Lives under `#lib/server` like the ten before it: the JWT cookie stays
  * server-side and org is a token claim, never a parameter. `GET/PATCH
  * /api/org/settings/` always acts on `request.profile.org`. There is no org id
  * in the URL, so a caller can only ever read or edit their OWN org. That is the
@@ -28,8 +28,8 @@
  * enforced by the backend (403 for a non-admin). `can_edit` here is a display
  * hint (`viewerIsAdmin` below); the server is what actually refuses.
  */
-import { isOrgAdmin } from '$lib/admin.js';
-import { apiRequest } from '$lib/api-helpers.js';
+import { isOrgAdmin } from '#lib/admin.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * The fields the edit form may submit. An allow-list, so a hand-crafted POST
@@ -71,7 +71,7 @@ export const BOOLEAN_FIELDS = ['csat_enabled', 'auto_close_children_on_parent_cl
 
 /**
  * Whether the signed-in user administers the org, from the access token's
- * `is_organization_admin` claim through `isOrgAdmin` (`$lib/admin.js`), the
+ * `is_organization_admin` claim through `isOrgAdmin` (`#lib/admin.js`), the
  * web app's one admin rule.
  *
  * A display hint only: it decides whether a page shows its edit affordances.

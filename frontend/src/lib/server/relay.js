@@ -26,7 +26,7 @@
  * through nginx. Without them it is nginx's own loopback address.
  */
 
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 /**
  * @param {{ getClientAddress: () => string, request: Request }} event

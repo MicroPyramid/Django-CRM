@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { deleteAccount, getAccount } from '$lib/server/v2/accounts.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { recordDuplicates } from '$lib/server/v2/duplicates.js';
+import { deleteAccount, getAccount } from '#lib/server/v2/accounts.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { recordDuplicates } from '#lib/server/v2/duplicates.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {

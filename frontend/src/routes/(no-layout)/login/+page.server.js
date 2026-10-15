@@ -12,11 +12,11 @@
 
 import axios from 'axios';
 import { redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
-import { generateCodeVerifier, generateCodeChallenge, generateState } from '$lib/utils/pkce.js';
-import { describeError } from '$lib/server/log-safe.js';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/private';
+import * as publicEnv from '$app/env/public';
+import { generateCodeVerifier, generateCodeChallenge, generateState } from '#lib/utils/pkce.js';
+import { describeError } from '#lib/server/log-safe.js';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_SCOPES = ['openid', 'email', 'profile'].join(' ');
@@ -118,7 +118,7 @@ async function handleOAuthCallback(code, returnedState, cookies, visitor) {
       },
       {
         // The sign-in audit row, success or failure, records who signed in,
-        // and failures are capped per address; see `$lib/server/relay.js`.
+        // and failures are capped per address; see `#lib/server/relay.js`.
         headers: { 'Content-Type': 'application/json', ...relayHeaders(visitor) },
         timeout: 30000
       }
@@ -211,7 +211,7 @@ export const actions = {
         `${apiUrl}/api/auth/magic-link/request/`,
         { email },
         {
-          // The token records who asked for it; see `$lib/server/relay.js`.
+          // The token records who asked for it; see `#lib/server/relay.js`.
           headers: {
             'Content-Type': 'application/json',
             ...relayHeaders({ getClientAddress, request })

@@ -6,7 +6,7 @@
    */
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
 
   let { data, form } = $props();
 
@@ -34,7 +34,7 @@
     debounce = setTimeout(async () => {
       const ticket = ++latestQuery;
       const response = await fetch(
-        `${resolve('/portal/articles/suggestions')}?q=${encodeURIComponent(query)}`
+        `${resolve('portal/articles/suggestions')}?q=${encodeURIComponent(query)}`
       );
       if (!response.ok) return;
       const body = await response.json();
@@ -69,7 +69,7 @@
   <header class="head">
     <h1>Your requests</h1>
     <div class="actions">
-      <a class="btn" href={resolve('/portal/articles')}>Help</a>
+      <a class="btn" href={resolve('portal/articles')}>Help</a>
       <button type="button" onclick={() => (composing = !composing)}>
         {composing ? 'Cancel' : 'New request'}
       </button>
@@ -94,7 +94,7 @@
           <ul>
             {#each suggestions as article (article.id)}
               <li>
-                <a href={resolve(`/portal/articles/${article.id}`)}>
+                <a href={resolve(`portal/articles/${article.id}`)}>
                   <span class="deflect-title">{article.title}</span>
                   <span class="deflect-snippet">{article.snippet}</span>
                 </a>
@@ -122,7 +122,7 @@
   <nav class="filters">
     {#each FILTERS as filter (filter.value)}
       <a
-        href={resolve(filter.value ? `/portal/cases?status=${filter.value}` : '/portal/cases')}
+        href={resolve(filter.value ? `portal/cases?status=${filter.value}` : 'portal/cases')}
         class:on={data.status === filter.value}
       >
         {filter.label}
@@ -140,7 +140,7 @@
     <ul class="list">
       {#each data.cases as item (item.id)}
         <li>
-          <a href={resolve(`/portal/cases/${item.id}`)}>
+          <a href={resolve(`portal/cases/${item.id}`)}>
             <span class="name">{item.name}</span>
             <span class="meta">
               <span class="tag" class:open={OPEN_STATUSES.has(item.status)}>{item.status}</span>

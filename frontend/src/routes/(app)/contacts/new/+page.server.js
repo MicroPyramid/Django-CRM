@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, createContact, getContactFormOptions } from '$lib/server/v2/contacts.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { EDITABLE_FIELDS, createContact, getContactFormOptions } from '#lib/server/v2/contacts.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * `?account=<id>` preselects the company, so "add somebody at this account"

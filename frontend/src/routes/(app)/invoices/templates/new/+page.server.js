@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createInvoiceTemplate } from '$lib/server/v2/templates.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { createInvoiceTemplate } from '#lib/server/v2/templates.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * Creating a template.

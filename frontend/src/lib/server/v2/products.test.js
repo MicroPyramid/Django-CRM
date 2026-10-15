@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: vi.fn() }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: vi.fn() }));
 
-const { CURRENCY_CHOICES } = await import('$lib/server/v2/products.js');
-const { CURRENCY_CODES, CURRENCY_SYMBOLS } = await import('$lib/constants/filters.js');
+const { CURRENCY_CHOICES } = await import('#lib/server/v2/products.js');
+const { CURRENCY_CODES, CURRENCY_SYMBOLS } = await import('#lib/constants/filters.js');
 
 describe('CURRENCY_CHOICES', () => {
   it('labels every currency "CODE, Name", as the backend CURRENCY_CODES does', () => {

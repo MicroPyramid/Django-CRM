@@ -23,7 +23,7 @@
    * team files must be the same document, and the only way to guarantee that
    * is to have one authority for the arithmetic.
    */
-  import { money } from '$lib/v2/format.js';
+  import { money } from '#lib/v2/format.js';
 
   /**
    * @type {{

@@ -1,8 +1,8 @@
 <script>
   import { Filter } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import * as Popover from '$lib/components/ui/popover/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
 
   /**
    * @type {{

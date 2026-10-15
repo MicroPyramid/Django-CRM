@@ -6,7 +6,7 @@
  * type is already filtered to what the caller may open). This layer only maps
  * the backend `type` to the palette's group label and the detail route to open.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** Backend `type` → palette group label + detail route. */
 const MAP = {

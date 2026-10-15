@@ -8,7 +8,7 @@
    * refused outright. curl and the mobile client reach the API without passing
    * through this page. The view is the trust boundary (see CLAUDE.md).
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';
   import { ChevronRight, Lock } from '@lucide/svelte';
 
@@ -24,7 +24,7 @@
 
 <PageHeader title="New product" record center width="62ch">
   {#snippet crumb()}
-    <a href={resolve('/invoices/products')}>Products</a>
+    <a href={resolve('invoices/products')}>Products</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -43,7 +43,7 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href={resolve('/invoices/products')} style="margin-top:16px"
+      <a class="v2-btn" href={resolve('invoices/products')} style="margin-top:16px"
         >Back to products</a
       >
     </div>
@@ -158,7 +158,7 @@
         <button class="v2-btn v2-btn-primary" type="submit" disabled={saving}>
           {saving ? 'Adding…' : 'Add product'}
         </button>
-        <a class="v2-btn" href={resolve('/invoices/products')}>Cancel</a>
+        <a class="v2-btn" href={resolve('invoices/products')}>Cancel</a>
       </div>
     </form>
   {/if}

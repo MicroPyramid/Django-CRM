@@ -1,7 +1,7 @@
 /**
  * Team and access: the ninth v2 module wired to the real API.
  *
- * Lives under `$lib/server` for the same reason as the eight before it:
+ * Lives under `#lib/server` for the same reason as the eight before it:
  * SvelteKit refuses to bundle this directory into client code, and the access
  * token is an httpOnly cookie the browser must never see. Org is a JWT claim,
  * never a parameter.
@@ -36,7 +36,7 @@
  * beside invoices. The teams list still renders, read-only, because the
  * people rows need it to show who is on what.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * Profile.role is ADMIN | USER, the only two the backend recognises. There is

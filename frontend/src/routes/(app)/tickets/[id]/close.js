@@ -26,7 +26,7 @@
  *   closed child is still cascaded.
  */
 
-import { RESTRICTED_TICKET_NAME } from '$lib/v2/enums.js';
+import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 
 /** Statuses a cascading close leaves alone: already closed, or merged away. */
 const NOT_OPEN = ['Closed', 'Duplicate'];

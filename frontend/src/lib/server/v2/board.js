@@ -15,7 +15,7 @@
  * any of these anywhere the backend wouldn't, the org, the board and the role
  * are all checked server-side; this layer only carries the request.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** A board card's assignee → `{ id, name }`. ProfileSerializer nests the
  *  display name under `user_details`; fall back to the email, then a label. */

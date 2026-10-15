@@ -6,8 +6,8 @@
  */
 
 import { error, fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/public';
+import { relayHeaders } from '#lib/server/relay.js';
 
 // The Django API, reached server-to-server. Absolute (not a relative `/api/...`
 // that only resolves behind a production reverse proxy) so the anonymous portal

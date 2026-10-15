@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { getToday } = await import('$lib/server/v2/today.js');
+const { getToday } = await import('#lib/server/v2/today.js');
 // Cast rather than shaping a full Cookies mock: getToday only passes `cookies`
 // through to `apiRequest`, which is mocked above. Same reason as
 // timesheet.test.js.

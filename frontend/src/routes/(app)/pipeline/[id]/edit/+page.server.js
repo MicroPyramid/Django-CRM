@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, getDealForEdit, updateDeal } from '$lib/server/v2/deals.js';
+import { EDITABLE_FIELDS, getDealForEdit, updateDeal } from '#lib/server/v2/deals.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

@@ -4,8 +4,8 @@ import {
   createGoal,
   weightsFromForm,
   EDITABLE_FIELDS
-} from '$lib/server/v2/goals.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/goals.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Creating a goal.

@@ -15,8 +15,8 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import DuplicateNotice from '$lib/v2/components/DuplicateNotice.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import DuplicateNotice from '#lib/v2/components/DuplicateNotice.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -96,7 +96,7 @@
 
 <PageHeader title="New account" center>
   {#snippet crumb()}
-    <a href={resolve('/accounts')}>Accounts</a>
+    <a href={resolve('accounts')}>Accounts</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -257,7 +257,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Create account</button>
-      <a class="v2-btn" href={resolve('/accounts')}>Cancel</a>
+      <a class="v2-btn" href={resolve('accounts')}>Cancel</a>
     </div>
   </form>
 </div>

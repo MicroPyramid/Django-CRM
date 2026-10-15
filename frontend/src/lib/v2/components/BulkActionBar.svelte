@@ -1,6 +1,6 @@
 <script>
   import { enhance } from '$app/forms';
-  import { CASE_STATUSES, CASE_PRIORITIES, CASE_TYPES } from '$lib/v2/enums.js';
+  import { CASE_STATUSES, CASE_PRIORITIES, CASE_TYPES } from '#lib/v2/enums.js';
 
   /**
    * @type {{

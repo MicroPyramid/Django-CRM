@@ -1,6 +1,6 @@
 /**
  * The shell's token refresh and org switch send the visitor's signed address
- * (`$lib/server/relay.js`): the API writes an audit row for each, and without
+ * (`#lib/server/relay.js`): the API writes an audit row for each, and without
  * it the row records this server.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +20,9 @@ vi.mock('@sveltejs/kit/hooks', () => ({
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 
 const axios = (await import('axios')).default;
-const { env: privateEnv } = await import('$env/dynamic/private');
+// The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code
+// under test reads. Imported by path because only the stub has a setter.
+const { setRelaySecret } = await import('../test/stubs/app-env-private.js');
 const { handle } = await import('./hooks.server.js');
 
 const SECRET = 'r'.repeat(48);
@@ -62,12 +64,12 @@ const callTo = (path) =>
   vi.mocked(axios.post).mock.calls.find(([url]) => String(url).endsWith(path));
 
 beforeEach(() => {
-  privateEnv.RELAY_SECRET = SECRET;
+  setRelaySecret(SECRET);
   vi.mocked(axios.post).mockReset();
 });
 
 afterEach(() => {
-  delete privateEnv.RELAY_SECRET;
+  setRelaySecret(undefined);
 });
 
 describe('hooks.server.js relays the visitor', () => {
@@ -110,7 +112,7 @@ describe('hooks.server.js relays the visitor', () => {
   });
 
   it('sends only the pre-1.12 X-Forwarded-For without a secret', async () => {
-    delete privateEnv.RELAY_SECRET;
+    setRelaySecret(undefined);
     vi.mocked(axios.post).mockResolvedValue({ data: {} });
 
     await handle({

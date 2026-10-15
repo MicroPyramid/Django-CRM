@@ -29,7 +29,7 @@
  * switcher only when there is more than one. A single-currency org sees one
  * view, exactly as before.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 const num = (/** @type {any} */ value) => {
   const n = Number(value);

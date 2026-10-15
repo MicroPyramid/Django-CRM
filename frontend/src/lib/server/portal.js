@@ -13,8 +13,8 @@
  * surface entirely. See the design note in `common/portal_auth.py`.
  */
 
-import { env } from '$env/dynamic/public';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/public';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api/portal`;
 
@@ -64,7 +64,7 @@ async function call(path, { method = 'GET', token, body, headers = {} } = {}) {
 
 /**
  * The sign-in token records who asked for it, so the visitor's signed address
- * goes along (`$lib/server/relay.js`).
+ * goes along (`#lib/server/relay.js`).
  *
  * @param {string} org
  * @param {string} email

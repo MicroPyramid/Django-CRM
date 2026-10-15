@@ -1,4 +1,4 @@
-import { mergeRoute } from '$lib/server/v2/duplicates.js';
+import { mergeRoute } from '#lib/server/v2/duplicates.js';
 
 /** Side by side with `?with=<id>`, then merge. See `mergeRoute`. */
 const route = mergeRoute('contacts');

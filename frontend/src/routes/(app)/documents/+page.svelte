@@ -22,11 +22,11 @@
    * it, rather than offering it to everyone and failing on press.
    */
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
   import { FileText, FileSpreadsheet, File, Users, Upload, Lock, Pencil } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -72,7 +72,7 @@
     <span class="v2-num">{count(totals.inactive)}</span> archived
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}><Upload />Upload</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('documents/new')}><Upload />Upload</a>
   {/snippet}
 </PageHeader>
 
@@ -106,7 +106,7 @@
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/documents/new')}>Upload a document</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('documents/new')}>Upload a document</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -179,7 +179,7 @@
                 {#if d.can_write}
                   <a
                     class="edit"
-                    href={resolve(`/documents/${d.id}/edit`)}
+                    href={resolve(`documents/${d.id}/edit`)}
                     title="Manage this document"
                   >
                     <Pencil size={13} />

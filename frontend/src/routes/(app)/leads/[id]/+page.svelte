@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * A lead: a person you are trying to reach and, if it goes well, convert.
    *
@@ -19,15 +19,15 @@
    * sentence, there is no banner. The duplicate warning is a real query (see
    * `findDuplicates`) and renders only when there is a match.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import DuplicatesPanel from '$lib/v2/components/DuplicatesPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { money, relativeDays, daysSince, shortDate } from '$lib/v2/format.js';
-  import { LEAD_STATUS_TONE, LEAD_STATUS_LABEL, industryLabel } from '$lib/v2/enums.js';
-  import { t } from '$lib/terminology.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import DuplicatesPanel from '#lib/v2/components/DuplicatesPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { money, relativeDays, daysSince, shortDate } from '#lib/v2/format.js';
+  import { LEAD_STATUS_TONE, LEAD_STATUS_LABEL, industryLabel } from '#lib/v2/enums.js';
+  import { t } from '#lib/terminology.js';
   import { enhance } from '$app/forms';
   import {
     ChevronRight,
@@ -180,7 +180,7 @@
     <Avatar name={fullName} size={42} />
   {/snippet}
   {#snippet crumb()}
-    <a href={resolve('/leads')}>{t(data.org?.terminology, 'lead.plural', 'Leads')}</a>
+    <a href={resolve('leads')}>{t(data.org?.terminology, 'lead.plural', 'Leads')}</a>
     <ChevronRight size={12} />
     <span>{lead.company_name || 'No company'}</span>
   {/snippet}
@@ -197,7 +197,7 @@
     {#if lead.phone}
       <a class="v2-btn" href="tel:{lead.phone}"><Phone />Call</a>
     {/if}
-    <a class="v2-btn" href={resolve(`/leads/${lead.id}/edit`)}><Pencil />Edit</a>
+    <a class="v2-btn" href={resolve(`leads/${lead.id}/edit`)}><Pencil />Edit</a>
     {#if data.canDelete}
       <!-- Offered only when the API's delete rule admits this caller; the
            DELETE asks the same rule again. -->
@@ -291,12 +291,12 @@
               The account, contact and deal are ready.
             </p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a class="v2-btn" href={resolve(`/accounts/${form.account_id}`)}>View account</a>
+              <a class="v2-btn" href={resolve(`accounts/${form.account_id}`)}>View account</a>
               {#if form.contact_id}
-                <a class="v2-btn" href={resolve(`/contacts/${form.contact_id}`)}>View contact</a>
+                <a class="v2-btn" href={resolve(`contacts/${form.contact_id}`)}>View contact</a>
               {/if}
               {#if form.opportunity_id}
-                <a class="v2-btn" href={resolve(`/pipeline/${form.opportunity_id}`)}>View deal</a>
+                <a class="v2-btn" href={resolve(`pipeline/${form.opportunity_id}`)}>View deal</a>
               {/if}
             </div>
           </div>
@@ -415,7 +415,7 @@
                   {#if e.type === 'file' && e.href}
                     <a
                       class="tl-file"
-                      href={resolve(e.href)}
+                      href={resolve(asInternalPath(e.href))}
                       target="_blank"
                       rel="noreferrer noopener"
                     >

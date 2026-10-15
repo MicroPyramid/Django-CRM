@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { getLeadBoard, moveLead } from '$lib/server/v2/lead-board.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getLeadBoard, moveLead } from '#lib/server/v2/lead-board.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Leads grouped by the stages of one lead pipeline. `?pipeline=<id>` picks

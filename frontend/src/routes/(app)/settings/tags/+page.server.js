@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { getTags, createTag, archiveTag, restoreTag, mergeTags } from '$lib/server/v2/tags.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getTags, createTag, archiveTag, restoreTag, mergeTags } from '#lib/server/v2/tags.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

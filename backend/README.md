@@ -29,7 +29,7 @@ Minimum versions, as declared in `pyproject.toml`. That file is the source of
 truth; the list here is a summary and `uv.lock` pins what actually gets
 installed.
 
-- **Django 6.1.1+** - Web framework
+- **Django 6.1.2+** - Web framework
 - **Django REST Framework 3.17+** - API toolkit
 - **PostgreSQL** - Database, via **psycopg 3.2.10+** with the `pool` extra
 - **Celery 5.6+** - Async task queue

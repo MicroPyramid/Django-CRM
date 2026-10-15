@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getTask, setTaskDone, updateTask, deleteTask, addTaskNote } from '$lib/server/v2/tasks.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { getTask, setTaskDone, updateTask, deleteTask, addTaskNote } from '#lib/server/v2/tasks.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * One task.

@@ -1,8 +1,8 @@
-import { getStatement, previousMonth } from '$lib/server/v2/statements.js';
+import { getStatement, previousMonth } from '#lib/server/v2/statements.js';
 
 /**
  * An account's statement for the period in the URL (`?start_date=&end_date=`),
- * this month so far when there is none. See `$lib/server/v2/statements.js`.
+ * this month so far when there is none. See `#lib/server/v2/statements.js`.
  *
  * @type {import('./$types').PageServerLoad}
  */

@@ -12,8 +12,8 @@
  */
 
 import { error, redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/public';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api/public/help`;
 
@@ -63,7 +63,7 @@ export function canonicalSlug(slug, url) {
  */
 async function call(event, path) {
   // The signed visitor address, so the API's per-visitor throttle buckets the
-  // visitor and not this server. See `$lib/server/relay.js`.
+  // visitor and not this server. See `#lib/server/relay.js`.
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { Accept: 'application/json', ...relayHeaders(event) }
   });

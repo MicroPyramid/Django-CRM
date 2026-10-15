@@ -1,5 +1,5 @@
 <script module>
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   import { tv } from 'tailwind-variants';
 
   export const buttonVariants = tv({
@@ -61,7 +61,7 @@
 
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * @type {{
    *   class?: string,

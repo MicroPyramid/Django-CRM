@@ -5,8 +5,8 @@ import {
   markInvoicePaid,
   cancelInvoice,
   duplicateInvoice
-} from '$lib/server/v2/invoices.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/invoices.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * One invoice, with its line items.

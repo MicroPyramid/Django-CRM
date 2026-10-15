@@ -1,7 +1,7 @@
 /**
  * Tasks: the seventh v2 module wired to the real API.
  *
- * Same rules as the six before it: this file lives under `$lib/server` because
+ * Same rules as the six before it: this file lives under `#lib/server` because
  * SvelteKit refuses to bundle that directory into client code and the access
  * token is an httpOnly cookie. The org is never a parameter; it is a claim
  * inside the JWT and the backend reads it from there.
@@ -39,8 +39,8 @@
  * that: "what it must never become is a tick that looks saved and is not."
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { attachmentHref } from '$lib/server/v2/files.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { attachmentHref } from '#lib/server/v2/files.js';
 
 /** `Task.STATUS_CHOICES`. Note `Task` priority is Low/Medium/High. A Case's is not. */
 export const TASK_STATUSES = ['New', 'In Progress', 'Completed'];

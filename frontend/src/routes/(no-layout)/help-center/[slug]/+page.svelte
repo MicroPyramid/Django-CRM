@@ -12,7 +12,7 @@
    * to are still followed and indexed on their own URLs.
    */
   import { resolve } from '$app/paths';
-  import HelpCenterShell from '$lib/v2/components/HelpCenterShell.svelte';
+  import HelpCenterShell from '#lib/v2/components/HelpCenterShell.svelte';
 
   let { data } = $props();
 
@@ -61,7 +61,7 @@
   {#if data.q}
     <p class="meta">
       {data.count === 1 ? '1 article matches' : `${data.count} articles match`} "{data.q}".
-      <a href={resolve(`/help-center/${data.slug}`)}>Show all</a>
+      <a href={resolve(`help-center/${data.slug}`)}>Show all</a>
     </p>
   {/if}
 
@@ -75,7 +75,7 @@
     <ul class="list">
       {#each data.articles as article (article.id)}
         <li>
-          <a href={resolve(`/help-center/${data.slug}/articles/${article.id}`)}>
+          <a href={resolve(`help-center/${data.slug}/articles/${article.id}`)}>
             <span class="t">{article.title}</span>
             {#if article.snippet}
               <span class="s">{article.snippet}</span>
@@ -89,7 +89,7 @@
   {#if data.pages > 1}
     <nav class="pager" aria-label="Pages">
       {#if data.page > 1}
-        <a href="{resolve(`/help-center/${data.slug}`)}{pageQuery(data.page - 1)}" rel="prev"
+        <a href="{resolve(`help-center/${data.slug}`)}{pageQuery(data.page - 1)}" rel="prev"
           >Previous</a
         >
       {:else}
@@ -97,8 +97,7 @@
       {/if}
       <span class="where">Page {data.page} of {data.pages}</span>
       {#if data.page < data.pages}
-        <a href="{resolve(`/help-center/${data.slug}`)}{pageQuery(data.page + 1)}" rel="next"
-          >Next</a
+        <a href="{resolve(`help-center/${data.slug}`)}{pageQuery(data.page + 1)}" rel="next">Next</a
         >
       {:else}
         <span></span>

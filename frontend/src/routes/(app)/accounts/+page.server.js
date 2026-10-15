@@ -1,8 +1,8 @@
-import { listAccounts } from '$lib/server/v2/accounts.js';
-import { accountListQuery } from '$lib/server/v2/list-queries.js';
-import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
-import { getTags } from '$lib/server/v2/tags.js';
-import { loadSavedViews, savedViewActions } from '$lib/server/v2/saved-views.js';
+import { listAccounts } from '#lib/server/v2/accounts.js';
+import { accountListQuery } from '#lib/server/v2/list-queries.js';
+import { getOrgPeopleAndTeams, resolveMe } from '#lib/server/v2/org-people.js';
+import { getTags } from '#lib/server/v2/tags.js';
+import { loadSavedViews, savedViewActions } from '#lib/server/v2/saved-views.js';
 
 /**
  * Only filters the API actually applies are forwarded. A parameter that

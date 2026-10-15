@@ -18,11 +18,11 @@
    * admin status from `request.profile` on every write and is what actually
    * refuses a non-admin.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { shortDate, relativeDays } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { shortDate, relativeDays } from '#lib/v2/format.js';
   import { weeklyHours, isAlwaysOn } from './week.js';
   import { Plus, Clock, TriangleAlert } from '@lucide/svelte';
 
@@ -320,7 +320,7 @@
               {/if}
             </p>
             <p class="v2-sub" style="font-size:12px;margin:8px 0 0">
-              <a href={resolve('/tickets/analytics')} style="color:inherit">Service analytics</a> is measured
+              <a href={resolve('tickets/analytics')} style="color:inherit">Service analytics</a> is measured
               on this calendar.
             </p>
           </div>

@@ -26,14 +26,14 @@
    * topic pin yet. This page drew the last two as "Creating tickets".
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
-  import { MAILBOX_PROVIDER_LABEL, PRIORITY_TONE } from '$lib/v2/enums.js';
-  import { missingOption, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
+  import { MAILBOX_PROVIDER_LABEL, PRIORITY_TONE } from '#lib/v2/enums.js';
+  import { missingOption, inactiveOptionLabel } from '#lib/v2/pickers.js';
   import {
     deliveryState,
     deliveryLabel,
@@ -377,7 +377,7 @@
 
     <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
       Where a new ticket goes after it is created is decided by
-      <a href={resolve('/settings/routing')} style="color:inherit">ticket routing</a>, not by these
+      <a href={resolve('settings/routing')} style="color:inherit">ticket routing</a>, not by these
       defaults.
     </p>
   </div>

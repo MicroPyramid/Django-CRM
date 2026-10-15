@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const {
   getMacros,
@@ -16,7 +16,7 @@ const {
   applyMacro,
   listUsableMacros,
   MACRO_STATUSES
-} = await import('$lib/server/v2/macros.js');
+} = await import('#lib/server/v2/macros.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-// Imports only `@sveltejs/kit` and `$lib`, so the standalone vitest config can
+// Imports only `@sveltejs/kit` and `#lib`, so the standalone vitest config can
 // load it (see the note in `vitest.config.js`).
 const { actions } = await import('./+page.server.js');
 

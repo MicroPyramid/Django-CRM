@@ -3,7 +3,7 @@ import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead
-} from '$lib/server/v2/notifications.js';
+} from '#lib/server/v2/notifications.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

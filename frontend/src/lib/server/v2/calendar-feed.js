@@ -12,7 +12,7 @@
  *            the response carries the new `url`, the one time it is shown.
  * - `DELETE` turns it off. The URL stops working.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 const ENDPOINT = '/profile/calendar-feed/';
 

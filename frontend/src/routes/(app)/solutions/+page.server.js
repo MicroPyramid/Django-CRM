@@ -1,9 +1,9 @@
 import { fail } from '@sveltejs/kit';
-import { listArticles, setPublished, FILTER_FIELDS } from '$lib/server/v2/solutions.js';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
-import { getTags } from '$lib/server/v2/tags.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { listArticles, setPublished, FILTER_FIELDS } from '#lib/server/v2/solutions.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
+import { getTags } from '#lib/server/v2/tags.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * Only filters the API actually applies are forwarded. A parameter that

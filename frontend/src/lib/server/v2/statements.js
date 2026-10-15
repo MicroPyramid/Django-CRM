@@ -12,9 +12,9 @@
  * only offers the link to admins, but that is courtesy, not the control.
  */
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-import { apiRequest } from '$lib/api-helpers.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import * as env from '$app/env/public';
+import { apiRequest } from '#lib/api-helpers.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 const num = (/** @type {any} */ value) => {
   const n = Number(value);

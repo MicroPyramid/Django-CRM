@@ -6,7 +6,7 @@
    */
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
 
   let { data, form } = $props();
 
@@ -28,7 +28,7 @@
 </svelte:head>
 
 <PortalShell>
-  <a class="back" href={resolve('/portal/cases')}>Back to your requests</a>
+  <a class="back" href={resolve('portal/cases')}>Back to your requests</a>
 
   <header class="head">
     <h1>{data.case.name}</h1>

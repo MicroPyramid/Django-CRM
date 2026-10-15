@@ -10,15 +10,15 @@
    * silent and looks exactly like success. It is a column here.
    */
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import { enhance } from '$app/forms';
-  import { money, count, shortDate, daysSince } from '$lib/v2/format.js';
-  import { RECURRING_FREQUENCY_LABEL, PAYMENT_TERMS_LABEL } from '$lib/v2/enums.js';
+  import { money, count, shortDate, daysSince } from '#lib/v2/format.js';
+  import { RECURRING_FREQUENCY_LABEL, PAYMENT_TERMS_LABEL } from '#lib/v2/enums.js';
   import { Plus, RefreshCw, Hand, Pause, Play } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -55,7 +55,7 @@
     <span class="v2-num">{money(totals.monthly_run_rate, data.org.currency)}</span> a month
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href={resolve('/invoices/recurring/new')}
+    <a class="v2-btn v2-btn-primary" href={resolve('invoices/recurring/new')}
       ><Plus />New schedule</a
     >
   {/snippet}
@@ -104,7 +104,7 @@
     >
       {#snippet icon()}<RefreshCw size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/invoices/recurring/new')}>New schedule</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('invoices/recurring/new')}>New schedule</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -132,7 +132,7 @@
                 </span>
               </td>
               <td>
-                <a href={resolve(`/accounts/${s.account.id}`)} style="color:inherit"
+                <a href={resolve(`accounts/${s.account.id}`)} style="color:inherit"
                   >{s.account.name}</a
                 >
                 <span class="v2-table-secondary" style="display:block">{s.contact}</span>

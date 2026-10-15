@@ -11,13 +11,13 @@
  *
  * `mobile/lib/data/models/access_token.dart` carries the same rules.
  *
- * In `$lib` rather than beside one route because two pages now ask these
+ * In `#lib` rather than beside one route because two pages now ask these
  * questions: the admin oversight list under /settings/api-tokens, and the
  * self-service list under /profile/tokens. Every function here is pure, so it
  * is safe on either side of the network.
  */
 
-import { daysSince } from '$lib/v2/format.js';
+import { daysSince } from '#lib/v2/format.js';
 
 /**
  * When this token last did anything, falling back to when it was issued.

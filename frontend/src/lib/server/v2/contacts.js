@@ -2,7 +2,7 @@
  * Contacts: the fourth v2 module wired to the real API.
  *
  * Same rules as `leads.js`, `deals.js` and `accounts.js`: this file lives under
- * `$lib/server` because SvelteKit refuses to bundle that directory into client
+ * `#lib/server` because SvelteKit refuses to bundle that directory into client
  * code and the access token is an httpOnly cookie. The org is never a
  * parameter; it is a claim inside the JWT and the backend reads it from there.
  *
@@ -40,8 +40,8 @@
  * real fields and both are still marked separately.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { attachmentHref } from '$lib/server/v2/files.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { attachmentHref } from '#lib/server/v2/files.js';
 
 /** See the note on FILTER_FIELDS in tickets.js. */
 export const FILTER_FIELDS = ['assigned_to', 'tags', 'city'];

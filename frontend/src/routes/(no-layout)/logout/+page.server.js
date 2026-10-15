@@ -9,8 +9,8 @@
  */
 
 import { redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
-import { relayHeaders } from '$lib/server/relay.js';
+import * as env from '$app/env/public';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const AUTH_COOKIES = ['jwt_access', 'jwt_refresh', 'org', 'oauth_state', 'oauth_code_verifier'];
 
@@ -45,7 +45,7 @@ export async function load({ locals, cookies, fetch, getClientAddress, request }
  *
  * @param {string | undefined} refresh
  * The logout audit row records who signed out, so the visitor's signed
- * address goes along (`$lib/server/relay.js`).
+ * address goes along (`#lib/server/relay.js`).
  *
  * @param {typeof globalThis.fetch} fetch
  * @param {{ getClientAddress: () => string, request: Request }} event

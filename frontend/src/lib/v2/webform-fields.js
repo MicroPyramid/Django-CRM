@@ -19,7 +19,7 @@
 /**
  * The Lead columns a web form may collect, mirrored 1:1 from
  * `backend/webforms/constants.py::LEAD_FIELD_CHOICES`, the same way
- * `$lib/v2/enums.js` mirrors the vocabularies in `common/utils.py`.
+ * `#lib/v2/enums.js` mirrors the vocabularies in `common/utils.py`.
  *
  * A whitelist rather than "any field on Lead": the person filling this in is
  * an anonymous stranger, so which columns they can reach is a decision

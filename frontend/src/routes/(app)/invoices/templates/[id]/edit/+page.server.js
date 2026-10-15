@@ -1,6 +1,6 @@
 import { fail, redirect, error } from '@sveltejs/kit';
-import { getInvoiceTemplateForEdit, updateInvoiceTemplate } from '$lib/server/v2/templates.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getInvoiceTemplateForEdit, updateInvoiceTemplate } from '#lib/server/v2/templates.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Editing an invoice template.

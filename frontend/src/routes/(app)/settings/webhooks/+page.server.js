@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { listWebhooks, createWebhook, eventsFromForm } from '$lib/server/v2/webhooks.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { listWebhooks, createWebhook, eventsFromForm } from '#lib/server/v2/webhooks.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Outbound webhooks: the list and the create panel.

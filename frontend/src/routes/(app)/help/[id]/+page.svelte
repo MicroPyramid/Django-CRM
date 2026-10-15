@@ -1,9 +1,10 @@
 <script>
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { shortDate } from '$lib/v2/format.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { shortDate } from '#lib/v2/format.js';
   import { Paperclip, Send } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -34,7 +35,7 @@
     class="v2-pad"
     style="padding-top:18px;padding-bottom:32px;max-width:840px;margin-inline:auto"
   >
-    <a class="back" href={resolve('/help')}>Back to help</a>
+    <a class="back" href={resolve('help')}>Back to help</a>
 
     <div class="summary v2-card">
       <span><b>Status</b>{ticket.statusLabel}</span>
@@ -56,7 +57,7 @@
           </div>
           {#if message.body}<div class="body">{message.body}</div>{/if}
           {#if message.attachmentUrl}
-            <a class="attachment" href={resolve(message.attachmentUrl)}>
+            <a class="attachment" href={resolve(asInternalPath(message.attachmentUrl))}>
               <Paperclip size={14} />{message.attachmentName}
             </a>
           {/if}
@@ -70,7 +71,7 @@
     {#if ticket.status === 'closed'}
       <div class="v2-card closed">
         This ticket is closed. Open a new ticket if you still need help.
-        <a class="v2-btn" href={resolve('/help/new')}>New ticket</a>
+        <a class="v2-btn" href={resolve('help/new')}>New ticket</a>
       </div>
     {:else}
       <form

@@ -1,11 +1,11 @@
 <script>
   import { Check, Calendar as CalendarIcon } from '@lucide/svelte';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import { Calendar } from '$lib/components/ui/calendar/index.js';
-  import { EditableMultiSelect } from '$lib/components/ui/editable-field/index.js';
-  import { cn } from '$lib/utils.js';
-  import { formatCurrency } from '$lib/utils/formatting.js';
+  import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { Calendar } from '#lib/components/ui/calendar/index.js';
+  import { EditableMultiSelect } from '#lib/components/ui/editable-field/index.js';
+  import { cn } from '#lib/utils.js';
+  import { formatCurrency } from '#lib/utils/formatting.js';
   import { parseDate } from '@internationalized/date';
 
   /**

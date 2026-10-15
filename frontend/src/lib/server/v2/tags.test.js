@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createTag, archiveTag, restoreTag, mergeTags } = await import('$lib/server/v2/tags.js');
+const { createTag, archiveTag, restoreTag, mergeTags } = await import('#lib/server/v2/tags.js');
 // Cast rather than shaping a full Cookies mock, matching leads.test.js:
 // createTag only ever calls `cookies.get`, and `apiRequest` itself is mocked
 // above, so nothing here touches `getAll`/`set`/`delete`/`serialize`. Without

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { deleteLead } = await import('$lib/server/v2/leads.js');
-const { deleteContact } = await import('$lib/server/v2/contacts.js');
-const { deleteAccount } = await import('$lib/server/v2/accounts.js');
-const { deleteDeal } = await import('$lib/server/v2/deals.js');
-const { deleteArticle, getArticle } = await import('$lib/server/v2/solutions.js');
+const { deleteLead } = await import('#lib/server/v2/leads.js');
+const { deleteContact } = await import('#lib/server/v2/contacts.js');
+const { deleteAccount } = await import('#lib/server/v2/accounts.js');
+const { deleteDeal } = await import('#lib/server/v2/deals.js');
+const { deleteArticle, getArticle } = await import('#lib/server/v2/solutions.js');
 const { actions } = await import('../../../routes/(app)/accounts/[id]/+page.server.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });

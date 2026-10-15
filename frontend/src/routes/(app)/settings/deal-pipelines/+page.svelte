@@ -19,12 +19,12 @@
    */
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { count } from '#lib/v2/format.js';
   import { ArrowDown, ArrowUp, Plus } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -123,7 +123,7 @@
         {#each data.pipelines as p (p.id)}
           <a
             class="v2-btn dp-pipeline"
-            href={resolve(`/settings/deal-pipelines?pipeline=${p.id}`)}
+            href={resolve(`settings/deal-pipelines?pipeline=${p.id}`)}
             aria-current={p.id === pipeline?.id ? 'page' : undefined}
           >
             {p.name}
@@ -165,9 +165,8 @@
             {#if pipeline.is_default}<Pill tone="slate">Default</Pill>{/if}
             <div class="v2-sub" style="font-size:11.5px;margin-top:3px">
               <span class="v2-num">{count(pipeline.stages.length)}</span> stages ·
-              <a
-                href={resolve(`/pipeline?view=board&pipeline=${pipeline.id}`)}
-                style="color:inherit">Open the board</a
+              <a href={resolve(`pipeline?view=board&pipeline=${pipeline.id}`)} style="color:inherit"
+                >Open the board</a
               >
             </div>
           </div>

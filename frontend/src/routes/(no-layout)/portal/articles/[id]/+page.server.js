@@ -15,7 +15,7 @@ import {
   clearSession,
   getArticle,
   loginPath
-} from '$lib/server/portal';
+} from '#lib/server/portal.js';
 
 /** Send an expired or missing session back to the right org's sign-in page. */
 function toLogin(cookies) {

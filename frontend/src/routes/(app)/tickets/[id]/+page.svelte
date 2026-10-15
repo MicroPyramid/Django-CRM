@@ -2,10 +2,10 @@
   import { onMount, untrack } from 'svelte';
   import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
   import {
     relativeDays,
     shortAge,
@@ -13,13 +13,13 @@
     relativeTime,
     money,
     hoursMinutes as hm
-  } from '$lib/v2/format.js';
+  } from '#lib/v2/format.js';
   import {
     PRIORITY_TONE,
     CASE_STATUS_TONE,
     APPROVAL_STATE_LABEL,
     APPROVAL_STATE_TONE
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import { cascadeSummary } from './close.js';
   import { approvalView } from './approval.js';
   import { insertAtCaret } from './composer.js';
@@ -123,7 +123,7 @@
   // or a file.
   let canSend = $derived(Boolean(body.trim() || fileName));
 
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
+  /** @type {import('$app/forms').SubmitFunction} */
   /** The reply box, so a saved reply lands at the caret. */
   /** @type {HTMLTextAreaElement | undefined} */
   let replyBox = $state();
@@ -192,7 +192,7 @@
    * macro with no text instead. Apply (a macro with no text) reloads the
    * page, since it changed the ticket.
    */
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
+  /** @type {import('$app/forms').SubmitFunction} */
   const insertMacro = ({ formData, action }) => {
     const id = String(formData.get('macro_id') ?? '');
     const applying = action.search.includes('applyMacro');
@@ -229,7 +229,7 @@
     };
   };
 
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
+  /** @type {import('$app/forms').SubmitFunction} */
   const send = () => {
     sending = true;
     return async ({ result, update }) => {
@@ -322,7 +322,7 @@
    */
   let confirmDelete = $state('');
 
-  /** @type {import('@sveltejs/kit').SubmitFunction} */
+  /** @type {import('$app/forms').SubmitFunction} */
   const timeSubmit = () => {
     timeBusy = true;
     return async ({ update }) => {
@@ -401,10 +401,10 @@
     {/if}
   {/snippet}
   {#snippet crumb()}
-    <a href={resolve('/tickets')}>Tickets</a>
+    <a href={resolve('tickets')}>Tickets</a>
     {#if ticket.account}
       <ChevronRight size={12} />
-      <a href={resolve(`/accounts/${ticket.account.id}`)}>{ticket.account.name}</a>
+      <a href={resolve(`accounts/${ticket.account.id}`)}>{ticket.account.name}</a>
     {/if}
   {/snippet}
   {#snippet actions()}
@@ -423,15 +423,15 @@
       </form>
     {/if}
     {#if canReply}
-      <a class="v2-btn" href={resolve(`/tickets/${ticket.id}/edit`)}><Pencil size={12} />Edit</a>
+      <a class="v2-btn" href={resolve(`tickets/${ticket.id}/edit`)}><Pencil size={12} />Edit</a>
     {/if}
     {#if data.canMerge && !data.merge.open}
-      <a class="v2-btn" href={resolve(`/tickets/${ticket.id}?merge=1`)}
+      <a class="v2-btn" href={resolve(`tickets/${ticket.id}?merge=1`)}
         ><GitMerge size={12} />Merge into…</a
       >
     {/if}
     {#if canReply && !inTree && !data.link.open}
-      <a class="v2-btn" href={resolve(`/tickets/${ticket.id}?link=1`)}
+      <a class="v2-btn" href={resolve(`tickets/${ticket.id}?link=1`)}
         ><GitBranch size={12} />Link parent…</a
       >
     {/if}
@@ -529,7 +529,7 @@
                 aria-label="Search tickets to merge into"
               />
               <button class="v2-btn">Search</button>
-              <a class="v2-btn" href={resolve(`/tickets/${ticket.id}`)}>Cancel</a>
+              <a class="v2-btn" href={resolve(`tickets/${ticket.id}`)}>Cancel</a>
             </form>
 
             {#if data.merge.error}
@@ -685,8 +685,7 @@
                     {#if src.restricted}
                       <span class="merge-option-name">{src.name}</span>
                     {:else}
-                      <a class="merge-option-name" href={resolve(`/tickets/${src.id}`)}
-                        >{src.name}</a
+                      <a class="merge-option-name" href={resolve(`tickets/${src.id}`)}>{src.name}</a
                       >
                     {/if}
                     {#if src.merged_at}
@@ -745,7 +744,7 @@
                 {#if ticket.is_problem}<Pill tone="rust">Problem</Pill>{/if}
               </div>
               {#if canReply && !data.link.open}
-                <a class="v2-btn v2-btn-sm" href={resolve(`/tickets/${ticket.id}?link=1`)}>
+                <a class="v2-btn v2-btn-sm" href={resolve(`tickets/${ticket.id}?link=1`)}>
                   {ticket.parent ? 'Change parent' : 'Link parent…'}
                 </a>
               {/if}
@@ -758,7 +757,7 @@
                   {#if ticket.parent.restricted}
                     <span class="tree-name tree-restricted">{ticket.parent.name}</span>
                   {:else}
-                    <a class="tree-name" href={resolve(`/tickets/${ticket.parent.id}`)}
+                    <a class="tree-name" href={resolve(`tickets/${ticket.parent.id}`)}
                       >{ticket.parent.name}</a
                     >
                   {/if}
@@ -811,7 +810,7 @@
                         >{row.name}</span
                       >
                     {:else}
-                      <a class="tree-name" href={resolve(`/tickets/${row.id}`)}>{row.name}</a>
+                      <a class="tree-name" href={resolve(`tickets/${row.id}`)}>{row.name}</a>
                     {/if}
                     {#if row.status}
                       <Pill tone={CASE_STATUS_TONE[row.status]}>{row.status}</Pill>
@@ -852,7 +851,7 @@
                     aria-label="Search tickets to link under"
                   />
                   <button class="v2-btn">Search</button>
-                  <a class="v2-btn" href={resolve(`/tickets/${ticket.id}`)}>Cancel</a>
+                  <a class="v2-btn" href={resolve(`tickets/${ticket.id}`)}>Cancel</a>
                 </form>
 
                 {#if data.link.error}
@@ -1130,7 +1129,7 @@
             <p class="v2-error time-error">
               <span>{form.timeError}</span>
               {#if form.runningTicketId}
-                <a href={resolve(`/tickets/${form.runningTicketId}`)}>Open that ticket</a>
+                <a href={resolve(`tickets/${form.runningTicketId}`)}>Open that ticket</a>
               {/if}
             </p>
           {/if}
@@ -1191,7 +1190,7 @@
                                the API refuses to delete an invoiced entry, and
                                flipping one to non-billable after it has been
                                charged for would leave the invoice standing. -->
-                          <a class="v2-sub" href={resolve(`/invoices/${e.invoice}`)}>Invoiced</a>
+                          <a class="v2-sub" href={resolve(`invoices/${e.invoice}`)}>Invoiced</a>
                         {:else if confirmDelete === e.id}
                           <form method="POST" action="?/deleteTime" use:enhance={timeSubmit}>
                             <input type="hidden" name="entry_id" value={e.id} />
@@ -1267,7 +1266,7 @@
               <ul class="articles-list">
                 {#each articles as a (a.id)}
                   <li class="articles-row">
-                    <a href={resolve(`/solutions/${a.id}`)} class="articles-link">
+                    <a href={resolve(`solutions/${a.id}`)} class="articles-link">
                       <span class="articles-title">{a.title}</span>
                       <span class="v2-sub articles-meta">
                         {a.is_published ? 'Published' : 'Not published'} · updated {relativeDays(
@@ -1312,7 +1311,7 @@
                 <ul class="articles-list">
                   {#each data.articlePicker.q ? data.articlePicker.candidates : data.articlePicker.candidates.slice(0, 3) as c (c.id)}
                     <li class="articles-row">
-                      <a href={resolve(`/solutions/${c.id}`)} class="articles-link">
+                      <a href={resolve(`solutions/${c.id}`)} class="articles-link">
                         <span class="articles-title">{c.title}</span>
                         {#if c.snippet}<span class="v2-sub articles-meta">{c.snippet}</span>{/if}
                       </a>
@@ -1599,7 +1598,7 @@
       <div class="v2-label v2-rail-head">Account</div>
       <a
         class="v2-rail-row"
-        href={resolve(`/accounts/${ticket.account.id}`)}
+        href={resolve(`accounts/${ticket.account.id}`)}
         style="color:inherit;text-decoration:none"
       >
         <Avatar name={ticket.account.name} size={29} />
@@ -1623,7 +1622,7 @@
       {#each contacts as c (c.id)}
         <a
           class="v2-rail-row"
-          href={resolve(`/contacts/${c.id}`)}
+          href={resolve(`contacts/${c.id}`)}
           style="color:inherit;text-decoration:none"
         >
           <Avatar name={c.name} size={26} />
@@ -1662,7 +1661,7 @@
       {#each alsoOpen as t (t.id)}
         <a
           class="v2-rail-row"
-          href={resolve(`/tickets/${t.id}`)}
+          href={resolve(`tickets/${t.id}`)}
           style="color:inherit;text-decoration:none"
         >
           <div>

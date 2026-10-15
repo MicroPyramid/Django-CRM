@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { listRecurringInvoices, toggleRecurring, FILTER_FIELDS } from '$lib/server/v2/recurring.js';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { listRecurringInvoices, toggleRecurring, FILTER_FIELDS } from '#lib/server/v2/recurring.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * The schedules worklist. `load` returns `{ schedules, totals }`. The names the

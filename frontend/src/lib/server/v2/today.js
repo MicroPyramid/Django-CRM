@@ -17,7 +17,7 @@
  * this contract. `queue[].href` is always an internal `/...` path the server
  * built (never a stored value), so there is no untrusted-link concern here.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * The current user's Today queue, shaped for the page.

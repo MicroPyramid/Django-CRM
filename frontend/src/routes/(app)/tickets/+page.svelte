@@ -1,18 +1,18 @@
 <script>
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { SvelteSet } from 'svelte/reactivity';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import BulkActionBar from '$lib/v2/components/BulkActionBar.svelte';
-  import { count, shortAge } from '$lib/v2/format.js';
-  import { PRIORITY_TONE, CASE_STATUS_TONE } from '$lib/v2/enums.js';
-  import TicketImportDrawer from '$lib/components/tickets/TicketImportDrawer.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import BulkActionBar from '#lib/v2/components/BulkActionBar.svelte';
+  import { count, shortAge } from '#lib/v2/format.js';
+  import { PRIORITY_TONE, CASE_STATUS_TONE } from '#lib/v2/enums.js';
+  import TicketImportDrawer from '#lib/components/tickets/TicketImportDrawer.svelte';
   import { Download, Plus, LifeBuoy, Upload } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -121,18 +121,18 @@
     <span class="v2-num">{count(totals.awaiting_reply)}</span> with no reply yet
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/tickets/board')}>Board</a>
+    <a class="v2-btn" href={resolve('tickets/board')}>Board</a>
     <button class="v2-btn" onclick={() => (importOpen = true)}><Upload />Import</button>
     <!-- The page's own query string: the export rebuilds the same API query
          from it, so the file holds every row this list would page through. -->
     <a
       class="v2-btn"
-      href="{resolve('/api/tickets/export')}?{page.url.searchParams}"
+      href="{resolve('api/tickets/export')}?{page.url.searchParams}"
       data-sveltekit-reload
     >
       <Download />Export
     </a>
-    <a class="v2-btn v2-btn-primary" href={resolve('/tickets/new')}><Plus />New ticket</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('tickets/new')}><Plus />New ticket</a>
   {/snippet}
 </PageHeader>
 
@@ -163,7 +163,7 @@
       if (r?.ok) banner = summaryText(r.kind, r.summary);
       else if (r?.message) banner = r.message;
       selected.clear();
-      await invalidateAll();
+      await refreshAll();
     }}
   />
 {/if}
@@ -189,11 +189,11 @@
     >
       {#snippet icon()}<LifeBuoy size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/tickets/new')}>New ticket</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('tickets/new')}>New ticket</a>
         {#if !data.showAll}
-          <a class="v2-btn" href={resolve('/tickets?all=1')}>Show closed too</a>
+          <a class="v2-btn" href={resolve('tickets?all=1')}>Show closed too</a>
         {/if}
-        <a class="v2-btn" href={resolve('/solutions')}>Knowledge base</a>
+        <a class="v2-btn" href={resolve('solutions')}>Knowledge base</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -232,7 +232,7 @@
                 />
               </td>
               <td data-m="title">
-                <a class="v2-row-link" href={resolve(`/tickets/${t.id}`)}>
+                <a class="v2-row-link" href={resolve(`tickets/${t.id}`)}>
                   <span class="v2-table-primary">{t.name}</span>
                 </a>
               </td>
@@ -245,7 +245,7 @@
               </td>
               <td class="v2-muted" style="font-size:12.5px">
                 {#if t.account}
-                  <a class="v2-row-link" href={resolve(`/accounts/${t.account.id}`)}
+                  <a class="v2-row-link" href={resolve(`accounts/${t.account.id}`)}
                     >{t.account.name}</a
                   >
                 {:else}
@@ -295,9 +295,9 @@
       Showing <span class="v2-num">{tickets.length}</span> of
       <span class="v2-num">{count(totals.count)}</span>
       {#if !data.showAll}
-        · <a href={resolve('/tickets?all=1')} style="color:inherit">include closed</a>
+        · <a href={resolve('tickets?all=1')} style="color:inherit">include closed</a>
       {:else}
-        · <a href={resolve('/tickets')} style="color:inherit">open only</a>
+        · <a href={resolve('tickets')} style="color:inherit">open only</a>
       {/if}
     </p>
   {/if}

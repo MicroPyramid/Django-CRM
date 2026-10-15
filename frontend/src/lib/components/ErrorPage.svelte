@@ -1,8 +1,8 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { goto } from '$app/navigation';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
   import { ArrowLeft, Home, Compass, Users, FileText, Ticket, BarChart3 } from '@lucide/svelte';
 
   /**
@@ -46,7 +46,7 @@
 
   function goBack() {
     if (typeof history !== 'undefined' && history.length > 1) history.back();
-    else goto(resolve('/'));
+    else goto(resolve(''));
   }
 </script>
 
@@ -78,7 +78,7 @@
 
     <!-- Primary actions -->
     <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-      <Button onclick={() => goto(resolve('/'))} class="gap-2">
+      <Button onclick={() => goto(resolve(''))} class="gap-2">
         <Home class="h-4 w-4" />
         Go to dashboard
       </Button>

@@ -18,7 +18,7 @@
    * is what actually refuses an unknown type, a negative number or a word.
    */
   import { untrack } from 'svelte';
-  import { DEAL_TYPE_LABEL } from '$lib/v2/enums.js';
+  import { DEAL_TYPE_LABEL } from '#lib/v2/enums.js';
 
   /** @type {{ weights?: Record<string, any>, goalType: string }} */
   let { weights = {}, goalType } = $props();

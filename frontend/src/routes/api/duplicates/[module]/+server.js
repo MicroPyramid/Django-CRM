@@ -1,5 +1,4 @@
-import { json } from '@sveltejs/kit';
-import { checkDuplicates } from '$lib/server/v2/duplicates.js';
+import { checkDuplicates } from '#lib/server/v2/duplicates.js';
 
 /**
  * The create forms' "possible duplicates" check. The form runs in the browser
@@ -20,12 +19,14 @@ export async function POST({ params, request, cookies }) {
   try {
     criteria = await request.json();
   } catch {
-    return json({ duplicates: [] }, { status: 400 });
+    return Response.json({ duplicates: [] }, { status: 400 });
   }
   try {
-    return json({ duplicates: await checkDuplicates({ cookies }, params.module, criteria) });
+    return Response.json({
+      duplicates: await checkDuplicates({ cookies }, params.module, criteria)
+    });
   } catch (/** @type {any} */ err) {
     if (err?.status === 404) throw err;
-    return json({ duplicates: [] });
+    return Response.json({ duplicates: [] });
   }
 }

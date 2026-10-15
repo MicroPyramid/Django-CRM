@@ -21,8 +21,8 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
-  import { longDate, relativeDays } from '$lib/v2/format.js';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
+  import { longDate, relativeDays } from '#lib/v2/format.js';
   import { Star, CheckCircle2, Clock } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */

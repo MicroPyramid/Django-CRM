@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { AlertCircle, Calendar, Phone, Flame, Zap } from '@lucide/svelte';
 
   /**

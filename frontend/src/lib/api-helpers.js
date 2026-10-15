@@ -5,7 +5,7 @@
  * Used by SvelteKit server files during migration from Prisma to API.
  */
 
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 

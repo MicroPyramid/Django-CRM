@@ -26,11 +26,11 @@
    * screenshots.
    */
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { relativeTime } from '$lib/v2/format.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { relativeTime } from '#lib/v2/format.js';
   import { BookOpen, LifeBuoy, Plus, Bug, Mail, ArrowUpRight, ClipboardList } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -114,7 +114,7 @@
   {/snippet}
   {#snippet actions()}
     {#if data.available}
-      <a class="v2-btn v2-btn-primary" href={resolve('/help/new')}><Plus />New ticket</a>
+      <a class="v2-btn v2-btn-primary" href={resolve('help/new')}><Plus />New ticket</a>
     {/if}
   {/snippet}
 </PageHeader>
@@ -146,7 +146,7 @@
         >
           {#snippet icon()}<LifeBuoy size={21} />{/snippet}
           {#snippet actions()}
-            <a class="v2-btn v2-btn-primary" href={resolve('/help/new')}>Open a ticket</a>
+            <a class="v2-btn v2-btn-primary" href={resolve('help/new')}>Open a ticket</a>
           {/snippet}
         </EmptyState>
       {:else}
@@ -165,7 +165,7 @@
               {#each data.tickets as ticket (ticket.id)}
                 <tr>
                   <td data-m="title">
-                    <a class="v2-row-link" href={resolve(`/help/${ticket.id}`)}>
+                    <a class="v2-row-link" href={resolve(`help/${ticket.id}`)}>
                       <span class="v2-table-primary">{ticket.subject}</span>
                       <span class="v2-sub" style="display:block;font-size:11px;margin-top:2px"
                         >{ticket.reference}</span

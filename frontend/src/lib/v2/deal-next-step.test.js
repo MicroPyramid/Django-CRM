@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dealNextStep } from '$lib/v2/deal-next-step.js';
+import { dealNextStep } from '#lib/v2/deal-next-step.js';
 
 const now = new Date('2026-09-26T12:00:00');
 const task = { id: 't1', title: 'Send proposal', due_date: '2026-10-01' };

@@ -1,6 +1,7 @@
 <script>
   import { resolve } from '$app/paths';
   import { goto } from '$app/navigation';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import {
     Search,
     Columns3,
@@ -143,7 +144,7 @@
     if (!row) return;
     onclose();
     query = '';
-    goto(resolve(row.href));
+    goto(resolve(asInternalPath(row.href)));
   }
 </script>
 

@@ -1,8 +1,8 @@
 <script>
   import { Bell as BellIcon } from '@lucide/svelte';
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { notifications } from '$lib/stores/notifications.svelte.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { notifications } from '#lib/stores/notifications.svelte.js';
   import NotificationPanel from './NotificationPanel.svelte';
 
   let open = $state(false);

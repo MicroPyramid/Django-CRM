@@ -1,5 +1,5 @@
 <script>
-  import { Textarea } from '$lib/components/ui/textarea/index.js';
+  import { Textarea } from '#lib/components/ui/textarea/index.js';
 
   /**
    * Textarea with `@username` typeahead. Accepts the same props as the

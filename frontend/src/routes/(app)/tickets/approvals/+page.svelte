@@ -16,13 +16,13 @@
    *    approver, which is how the oldest one here reached twenty hours.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, shortAge, relativeDays } from '$lib/v2/format.js';
-  import { APPROVAL_STATE_LABEL, APPROVAL_STATE_TONE, PRIORITY_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, shortAge, relativeDays } from '#lib/v2/format.js';
+  import { APPROVAL_STATE_LABEL, APPROVAL_STATE_TONE, PRIORITY_TONE } from '#lib/v2/enums.js';
   import { ShieldCheck, TriangleAlert, ChevronRight } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -117,7 +117,7 @@
                   <span class="v2-num">{shortAge(a.created_at)}</span>
                 </div>
                 <a
-                  href={resolve(`/tickets/${a.case.id}`)}
+                  href={resolve(`tickets/${a.case.id}`)}
                   style="color:inherit;font-weight:600;font-size:14px;text-decoration:none"
                 >
                   {a.case.name}
@@ -207,7 +207,7 @@
           >
             <div style="flex:1;min-width:0">
               <a
-                href={resolve(`/tickets/${a.case.id}`)}
+                href={resolve(`tickets/${a.case.id}`)}
                 style="color:inherit;font-size:13px;font-weight:550;text-decoration:none"
               >
                 {a.case.name}

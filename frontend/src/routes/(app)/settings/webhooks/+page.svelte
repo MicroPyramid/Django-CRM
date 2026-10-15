@@ -11,13 +11,13 @@
    * this list: the API only returns `secret_hint` here.
    */
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, shortDate } from '$lib/v2/format.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, shortDate } from '#lib/v2/format.js';
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert } from '@lucide/svelte';
   import WebhookFields from './WebhookFields.svelte';

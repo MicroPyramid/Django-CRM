@@ -1,14 +1,14 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { untrack } from 'svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { afterNavigate, goto } from '$app/navigation';
 
-  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-  import { Avatar, AvatarFallback } from '$lib/components/ui/avatar/index.js';
+  import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+  import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+  import * as Collapsible from '#lib/components/ui/collapsible/index.js';
+  import { Avatar, AvatarFallback } from '#lib/components/ui/avatar/index.js';
 
   import {
     Target,
@@ -50,7 +50,7 @@
     Smartphone,
     KeyRound
   } from '@lucide/svelte';
-  import { Bell } from '$lib/components/notifications/index.js';
+  import { Bell } from '#lib/components/notifications/index.js';
 
   /**
    * @typedef {Object} Props
@@ -125,7 +125,7 @@
     localStorage.setItem('theme', newTheme);
   };
 
-  let currentPath = $derived($page.url.pathname);
+  let currentPath = $derived(page.url.pathname);
 
   /** @type {{ [key: string]: boolean }} */
   let openDropdowns = $state({});
@@ -380,7 +380,7 @@
   >
     <div class="flex items-center gap-2">
       <a
-        href={resolve('/org')}
+        href={resolve('org')}
         data-sveltekit-preload-data="off"
         class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--sidebar-accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--sidebar-ring)] focus-visible:outline-none"
       >
