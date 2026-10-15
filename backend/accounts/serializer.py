@@ -209,6 +209,9 @@ class EmailSerializer(serializers.ModelSerializer):
             "from_email",
             "rendered_message_body",
         )
+        # Both are the server's: the view sends from `DEFAULT_FROM_EMAIL`, and
+        # the task records what it sent.
+        read_only_fields = ("from_email", "rendered_message_body")
 
     def validate_message_body(self, message_body):
         count = 0
@@ -342,7 +345,6 @@ class EmailWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountEmail
         fields = (
-            "from_email",
             "recipients",
             "message_subject",
             "scheduled_later",
