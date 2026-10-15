@@ -221,14 +221,9 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
             )
         )
 
-    profiles, teams = _reference_maps(parsed, org)
+    profiles, teams, archived = _reference_maps(parsed, org)
     valid: list[ValidatedRow] = []
     seen_emails: dict[str, int] = {}
-    # Restoring a tag is an org-admin action in the tags API, so an import
-    # (open to sales members) reports it instead of reactivating it.
-    archived = set(
-        Tags.objects.filter(org=org, is_active=False).values_list("slug", flat=True)
-    )
 
     for idx, record in parsed:
         row_errors, validated = _validate_row(
@@ -246,13 +241,16 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
     return ImportResult(valid=valid, errors=errors)
 
 
-def _reference_maps(parsed, org) -> tuple[dict[str, str], dict[str, str]]:
-    """One query per reference type, scoped to `org`, keyed lowercase."""
+def _reference_maps(parsed, org) -> tuple[dict[str, str], ...]:
+    """One query per reference type, scoped to `org`. Profiles and teams are
+    keyed lowercase; archived tags by slug, see `Tags.archived_errors`."""
     emails: set[str] = set()
     team_names: set[str] = set()
+    tag_names: set[str] = set()
     for _idx, record in parsed:
         emails.update(e.lower() for e in _split_multi(record.get("assigned_emails")))
         team_names.update(t.lower() for t in _split_multi(record.get("team_names")))
+        tag_names.update(_split_multi(record.get("tags")))
 
     profiles: dict[str, str] = {}
     if emails:
@@ -274,7 +272,7 @@ def _reference_maps(parsed, org) -> tuple[dict[str, str], dict[str, str]]:
         ):
             teams.setdefault(name, str(pk))
 
-    return profiles, teams
+    return profiles, teams, Tags.archived_errors(org, tag_names)
 
 
 def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, archived):
@@ -350,14 +348,8 @@ def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, ar
         name_error = Tags.name_error(name)
         if name_error:
             errors.append(RowError(idx, "tags", f"Tag '{name}': {name_error}"))
-        elif Tags.slug_for(name) in archived:
-            errors.append(
-                RowError(
-                    idx,
-                    "tags",
-                    f"Tag '{name}' is archived; restore it in Settings first",
-                )
-            )
+        elif archived_error := archived.get(Tags.slug_for(name)):
+            errors.append(RowError(idx, "tags", archived_error))
 
     if errors:
         return errors, None
