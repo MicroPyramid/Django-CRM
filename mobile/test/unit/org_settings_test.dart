@@ -113,6 +113,11 @@ void main() {
       timezone: 'Asia/Kolkata',
       csatEnabled: false,
       autoCloseChildren: true,
+      invoiceNumberPrefix: ' INVNSD- ',
+      estimateNumberPrefix: 'ESTNSD-',
+      numberDatePart: 'NONE',
+      numberPadding: 5,
+      invoiceNumberStart: 1042,
     );
 
     test('trims every text field', () {
@@ -142,6 +147,162 @@ void main() {
 
     test('covers exactly the allow-list the web sends', () {
       expect(body.keys.toSet(), {...editableOrgFields, ...orgBooleanFields});
+    });
+
+    test('sends the numbering, the prefixes trimmed (#802)', () {
+      expect(body['invoice_number_prefix'], 'INVNSD-');
+      expect(body['estimate_number_prefix'], 'ESTNSD-');
+      expect(body['number_date_part'], 'NONE');
+      expect(body['number_padding'], 5);
+      expect(body['invoice_number_start'], 1042);
+    });
+
+    test('sends a start of 1 with a dated number, as the server requires', () {
+      // A dated count restarts each period, so the API refuses a start with
+      // a date, including one still stored from undated numbering.
+      final dated = orgSettingsPayload(
+        name: 'MicroPyramid',
+        companyName: '',
+        addressLine: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: '',
+        phone: '',
+        email: '',
+        website: '',
+        taxId: '',
+        defaultCurrency: 'USD',
+        defaultCountry: '',
+        timezone: 'UTC',
+        csatEnabled: true,
+        autoCloseChildren: false,
+        invoiceNumberPrefix: 'INV-',
+        estimateNumberPrefix: 'EST-',
+        numberDatePart: 'YEAR',
+        numberPadding: 4,
+        invoiceNumberStart: 1042,
+      );
+      expect(dated['invoice_number_start'], 1);
+    });
+  });
+
+  group('numbering (#802)', () {
+    test('reads the format, with the old format as the default', () {
+      final org = OrgSettings.fromJson({
+        ...orgJson(),
+        'invoice_number_prefix': 'INVNSD-',
+        'estimate_number_prefix': 'ESTNSD-',
+        'number_date_part': 'NONE',
+        'number_padding': 5,
+        'invoice_number_start': 1042,
+      });
+      expect(
+        (
+          org.invoiceNumberPrefix,
+          org.estimateNumberPrefix,
+          org.numberDatePart,
+          org.numberPadding,
+          org.invoiceNumberStart,
+        ),
+        ('INVNSD-', 'ESTNSD-', 'NONE', 5, 1042),
+      );
+
+      final older = OrgSettings.fromJson(const {});
+      expect(
+        (
+          older.invoiceNumberPrefix,
+          older.estimateNumberPrefix,
+          older.numberDatePart,
+          older.numberPadding,
+          older.invoiceNumberStart,
+        ),
+        ('INV-', 'EST-', 'DAY', 4, 1),
+      );
+    });
+
+    final today = DateTime(2026, 10, 15);
+
+    test('an example number is the series and its first counter', () {
+      String example(String datePart, {int padding = 4, int start = 1}) =>
+          exampleNumber(
+            prefix: 'INV-',
+            datePart: datePart,
+            padding: padding,
+            start: start,
+            today: today,
+          );
+      expect(example('DAY'), 'INV-20261015-0001');
+      expect(example('MONTH'), 'INV-202610-0001');
+      expect(example('YEAR', padding: 6), 'INV-2026-000001');
+      expect(example('NONE', start: 1042), 'INV-1042');
+      // A dated count starts at 1 whatever start the form still holds.
+      expect(example('YEAR', start: 1042), 'INV-2026-0001');
+      // A width still being typed cannot build an enormous string.
+      expect(example('NONE', padding: 1000000000), 'INV-0000000001');
+    });
+
+    test('a prefix needs no separator, and may be blank', () {
+      expect(
+        exampleNumber(
+          prefix: 'INV',
+          datePart: 'NONE',
+          padding: 4,
+          today: today,
+        ),
+        'INV0001',
+      );
+      expect(
+        exampleNumber(prefix: '', datePart: 'YEAR', padding: 4, today: today),
+        '2026-0001',
+      );
+    });
+
+    test('offers the four date parts the server accepts', () {
+      expect(
+        [for (final o in numberDatePartOptions) o.value],
+        ['NONE', 'YEAR', 'MONTH', 'DAY'],
+      );
+    });
+
+    String? problem({
+      String invoicePrefix = 'INV-',
+      String estimatePrefix = 'EST-',
+      String datePart = 'DAY',
+      String padding = '4',
+      String start = '1',
+    }) => numberingProblem(
+      invoicePrefix: invoicePrefix,
+      estimatePrefix: estimatePrefix,
+      datePart: datePart,
+      padding: padding,
+      start: start,
+    );
+
+    test('accepts what the server accepts', () {
+      expect(problem(), isNull);
+      expect(problem(invoicePrefix: '', estimatePrefix: 'EST_2'), isNull);
+      expect(problem(datePart: 'NONE', start: '1042', padding: '10'), isNull);
+    });
+
+    test('refuses a prefix with anything but letters, digits, - and _', () {
+      for (final prefix in ['INV/', 'INV 1', 'INV"', 'FACTÜRA-']) {
+        expect(problem(invoicePrefix: prefix), isNotNull, reason: prefix);
+      }
+      expect(problem(estimatePrefix: 'EST/'), isNotNull);
+    });
+
+    test('refuses a width outside 1 to 10, or no width', () {
+      for (final padding in ['0', '11', '', 'four']) {
+        expect(problem(padding: padding), isNotNull, reason: padding);
+      }
+    });
+
+    test('checks the start only when numbers are undated', () {
+      expect(problem(datePart: 'NONE', start: '0'), isNotNull);
+      expect(problem(datePart: 'NONE', start: '1000000000'), isNotNull);
+      // Hidden and sent as 1 with a date, so whatever it holds is moot.
+      expect(problem(datePart: 'YEAR', start: ''), isNull);
     });
   });
 

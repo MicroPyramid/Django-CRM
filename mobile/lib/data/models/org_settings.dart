@@ -17,7 +17,7 @@ library;
 
 import 'countries.dart';
 
-/// Text and select fields the edit form may submit.
+/// Text, select and number fields the edit form may submit.
 ///
 /// An allow-list, so a field the form never offered cannot be smuggled into a
 /// body, and so `api_key`, `is_active`, `id`, `vertical` and `terminology` are
@@ -37,6 +37,12 @@ const List<String> editableOrgFields = [
   'default_currency',
   'default_country',
   'timezone',
+  // Invoice and estimate numbering (#802).
+  'invoice_number_prefix',
+  'estimate_number_prefix',
+  'number_date_part',
+  'number_padding',
+  'invoice_number_start',
 ];
 
 /// The two org-wide behaviour switches. Kept apart from the text fields because
@@ -68,6 +74,11 @@ class OrgSettings {
     this.csatEnabled = true,
     this.autoCloseChildren = false,
     this.vertical = '',
+    this.invoiceNumberPrefix = 'INV-',
+    this.estimateNumberPrefix = 'EST-',
+    this.numberDatePart = 'DAY',
+    this.numberPadding = 4,
+    this.invoiceNumberStart = 1,
     this.logoUrl,
     this.memberCount = 0,
     this.createdAt,
@@ -108,6 +119,18 @@ class OrgSettings {
   /// and read-only here.
   final String vertical;
 
+  /// How new invoice and estimate numbers look (#802): the prefix, then the
+  /// date and a hyphen unless [numberDatePart] is `NONE`, then a counter
+  /// padded to [numberPadding] digits. The defaults are the format every org
+  /// had before this was a setting. See [exampleNumber].
+  final String invoiceNumberPrefix;
+  final String estimateNumberPrefix;
+  final String numberDatePart;
+  final int numberPadding;
+
+  /// The lowest counter the next invoice may take. Undated numbers only.
+  final int invoiceNumberStart;
+
   final String? logoUrl;
   final int memberCount;
   final DateTime? createdAt;
@@ -133,6 +156,11 @@ class OrgSettings {
     autoCloseChildren:
         json['auto_close_children_on_parent_close'] as bool? ?? false,
     vertical: _text(json['vertical']),
+    invoiceNumberPrefix: json['invoice_number_prefix']?.toString() ?? 'INV-',
+    estimateNumberPrefix: json['estimate_number_prefix']?.toString() ?? 'EST-',
+    numberDatePart: json['number_date_part']?.toString() ?? 'DAY',
+    numberPadding: _intOr(json['number_padding'], 4),
+    invoiceNumberStart: _intOr(json['invoice_number_start'], 1),
     logoUrl: json['logo_url']?.toString(),
     memberCount: _intOr(json['member_count'], 0),
     createdAt: DateTime.tryParse(
@@ -200,6 +228,10 @@ String _offset(int minutes) {
 /// partial body would make "cleared" and "not sent" the same thing. The two
 /// booleans go as real booleans for the same reason.
 ///
+/// [invoiceNumberStart] goes as 1 whenever [numberDatePart] dates the number:
+/// the server refuses a start with a date, including one still stored from
+/// undated numbering, because a dated count restarts each period.
+///
 /// Nothing read-only is included: no `id`, no `api_key` (which the payload has
 /// never carried), no `is_active`, no `vertical`, no `terminology`,
 /// no `member_count`.
@@ -220,6 +252,11 @@ Map<String, dynamic> orgSettingsPayload({
   required String timezone,
   required bool csatEnabled,
   required bool autoCloseChildren,
+  required String invoiceNumberPrefix,
+  required String estimateNumberPrefix,
+  required String numberDatePart,
+  required int numberPadding,
+  required int invoiceNumberStart,
 }) => {
   'name': name.trim(),
   'company_name': companyName.trim(),
@@ -237,6 +274,11 @@ Map<String, dynamic> orgSettingsPayload({
   'timezone': timezone.trim(),
   'csat_enabled': csatEnabled,
   'auto_close_children_on_parent_close': autoCloseChildren,
+  'invoice_number_prefix': invoiceNumberPrefix.trim(),
+  'estimate_number_prefix': estimateNumberPrefix.trim(),
+  'number_date_part': numberDatePart,
+  'number_padding': numberPadding,
+  'invoice_number_start': numberDatePart == 'NONE' ? invoiceNumberStart : 1,
 };
 
 /// What an org save has to fix before it is worth sending, or null.
@@ -259,6 +301,78 @@ String? orgSettingsProblem({required String email, required String website}) {
 
 /// One entry in a picker.
 typedef PickerOption = ({String value, String label});
+
+/// `Org.NUMBER_DATE_PARTS`, labelled as the web's org form labels them.
+const List<PickerOption> numberDatePartOptions = [
+  (value: 'NONE', label: 'No date, one running count'),
+  (value: 'YEAR', label: 'Year, count restarts each year'),
+  (value: 'MONTH', label: 'Year and month, count restarts each month'),
+  (value: 'DAY', label: 'Full date, count restarts each day'),
+];
+
+/// How many digits of `YYYYMMDD` each date part keeps.
+const Map<String, int> _dateDigits = {
+  'NONE': 0,
+  'YEAR': 4,
+  'MONTH': 6,
+  'DAY': 8,
+};
+
+/// What a new number looks like: the series and its first counter. A preview
+/// only, as on the web (`$lib/v2/document-numbers.js`); the server assigns the
+/// real number on save, counting what the org has already issued.
+///
+/// [start] counts for undated numbers only, as on the server. [padding] is
+/// clamped to the server's 1 to 10, so a width still being typed cannot build
+/// an enormous string.
+String exampleNumber({
+  required String prefix,
+  required String datePart,
+  required int padding,
+  required DateTime today,
+  int start = 1,
+}) {
+  final ymd =
+      '${today.year.toString().padLeft(4, '0')}'
+      '${today.month.toString().padLeft(2, '0')}'
+      '${today.day.toString().padLeft(2, '0')}';
+  final digits = ymd.substring(0, _dateDigits[datePart] ?? 8);
+  final series = digits.isEmpty ? prefix : '$prefix$digits-';
+  final counter = datePart == 'NONE' ? start : 1;
+  return '$series${counter.toString().padLeft(padding.clamp(1, 10), '0')}';
+}
+
+/// The server's prefix rule (`number_prefix_validator`): a number becomes a
+/// PDF filename and an email subject, so nothing that means something in a
+/// header or a path.
+final RegExp _numberPrefix = RegExp(r'^[A-Za-z0-9_-]*$');
+
+/// What the numbering section has to fix before a save is worth sending, or
+/// null. The serializer is the rule; this answers a typo immediately. The
+/// start is only checked when it will be sent, which is when [datePart] is
+/// `NONE`.
+String? numberingProblem({
+  required String invoicePrefix,
+  required String estimatePrefix,
+  required String datePart,
+  required String padding,
+  required String start,
+}) {
+  if (!_numberPrefix.hasMatch(invoicePrefix.trim()) ||
+      !_numberPrefix.hasMatch(estimatePrefix.trim())) {
+    return 'A number prefix can use letters, numbers, hyphens and underscores '
+        'only.';
+  }
+  final width = int.tryParse(padding.trim());
+  if (width == null || width < 1 || width > 10) {
+    return 'Counter digits must be from 1 to 10.';
+  }
+  final first = int.tryParse(start.trim());
+  if (datePart == 'NONE' && (first == null || first < 1 || first > 999999999)) {
+    return 'Start invoices at a whole number from 1 to 999,999,999.';
+  }
+  return null;
+}
 
 /// The countries the org form offers: every code the backend `COUNTRIES` set
 /// accepts, as the web's org form does, so any stored country has an option.

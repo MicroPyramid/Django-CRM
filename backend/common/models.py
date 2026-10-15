@@ -10,6 +10,7 @@ import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models.functions import Lower
 from django.utils import timezone
@@ -30,7 +31,11 @@ from common.utils import (
     is_document_file_video,
     is_document_file_zip,
 )
-from common.validators import validate_help_center_slug, validate_iana_timezone
+from common.validators import (
+    number_prefix_validator,
+    validate_help_center_slug,
+    validate_iana_timezone,
+)
 
 from .manager import UserManager
 
@@ -186,6 +191,39 @@ class Org(BaseModel):
         validators=[validate_help_center_slug],
     )
 
+    # Invoice and estimate numbering (#802). A number is the prefix, then the
+    # date and a hyphen if `number_date_part` dates it, then a counter padded to
+    # `number_padding` digits. The defaults give `INV-20261015-0001`, the format
+    # every org had before these existed. The counter restarts whenever the
+    # part before it changes, so a dated series starts again each period. Only
+    # new documents take a change: a number already issued never moves. The
+    # generator is `invoices.models._next_number`.
+    NUMBER_DATE_PARTS = (
+        ("NONE", "No date"),
+        ("YEAR", "Year"),
+        ("MONTH", "Year and month"),
+        ("DAY", "Full date"),
+    )
+    invoice_number_prefix = models.CharField(
+        max_length=20, blank=True, default="INV-", validators=[number_prefix_validator]
+    )
+    estimate_number_prefix = models.CharField(
+        max_length=20, blank=True, default="EST-", validators=[number_prefix_validator]
+    )
+    number_date_part = models.CharField(
+        max_length=5, choices=NUMBER_DATE_PARTS, default="DAY"
+    )
+    number_padding = models.PositiveSmallIntegerField(
+        default=4, validators=[MinValueValidator(1), MaxValueValidator(10)]
+    )
+    # The lowest counter the next invoice may take, for an org carrying on a
+    # sequence from another system. Undated numbering only (the constraint
+    # below): a dated counter starts again each period, and a floor would
+    # start it at the floor every time.
+    invoice_number_start = models.PositiveIntegerField(
+        default=1, validators=[MinValueValidator(1), MaxValueValidator(999_999_999)]
+    )
+
     class Meta:
         verbose_name = "Organization"
         verbose_name_plural = "Organizations"
@@ -202,6 +240,11 @@ class Org(BaseModel):
                 condition=models.Q(help_center_enabled=False)
                 | models.Q(help_center_slug__isnull=False),
                 name="org_help_center_enabled_needs_slug",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(number_date_part="NONE")
+                | models.Q(invoice_number_start=1),
+                name="org_invoice_number_start_needs_undated",
             ),
         ]
 

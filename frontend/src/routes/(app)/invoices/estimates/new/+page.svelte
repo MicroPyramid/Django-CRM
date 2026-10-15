@@ -37,6 +37,7 @@
     taxRateError
   } from '$lib/v2/line-items.js';
   import { addDays, todayIn } from '$lib/v2/dates.js';
+  import { numberPattern } from '$lib/v2/document-numbers.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -359,8 +360,10 @@
         <div class="v2-card" style="padding:15px 16px;margin-top:14px">
           <div class="v2-label" style="margin-bottom:9px">Assigned on save</div>
           <dl class="derived">
-            <dt>Estimate number</dt>
-            <dd>EST-<span class="v2-num">{issueDate.replace(/-/g, '')}</span>-nnnn</dd>
+            {#if data.numbering}
+              <dt>Estimate number</dt>
+              <dd class="v2-num">{numberPattern(data.numbering, 'estimate', today)}</dd>
+            {/if}
             <dt>Customer link</dt>
             <dd>Generated, and only sent when you send the estimate</dd>
           </dl>

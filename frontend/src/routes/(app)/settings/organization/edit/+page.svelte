@@ -18,6 +18,11 @@
    * The two switches submit an explicit on/off, so turning one OFF is a real
    * choice the save records, not the "left blank, so unchanged" behaviour of
    * the text fields.
+   *
+   * Invoice numbering (#802) shows a live example of the format. The starting
+   * number only applies to undated numbers, so with a date part chosen the
+   * field is replaced by a hidden 1: the server refuses a start with a date,
+   * including a start already stored when a date is added.
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
@@ -25,6 +30,12 @@
   import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
+  import {
+    exampleNumber,
+    NUMBER_DATE_PARTS,
+    NUMBER_PREFIX_PATTERN
+  } from '$lib/v2/document-numbers.js';
+  import { todayIn } from '$lib/v2/dates.js';
   import { COUNTRIES } from '$lib/constants/countries.js';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
@@ -45,6 +56,8 @@
   // from the same database the value was validated against. A stored zone with
   // no matching option would make the select submit its first entry instead.
   const timezones = untrack(() => data.timezones ?? [{ name: 'UTC', label: 'UTC' }]);
+  // For the numbering example only; the server dates a number on save.
+  const today = untrack(() => todayIn(org.timezone || 'UTC'));
 
   let form = $state(
     untrack(() => ({
@@ -64,7 +77,12 @@
       timezone: org.timezone || 'UTC',
       // Booleans travel as strings so the select always submits an explicit value.
       csat_enabled: String(org.csat_enabled ?? true),
-      auto_close_children_on_parent_close: String(org.auto_close_children_on_parent_close ?? false)
+      auto_close_children_on_parent_close: String(org.auto_close_children_on_parent_close ?? false),
+      invoice_number_prefix: org.invoice_number_prefix ?? 'INV-',
+      estimate_number_prefix: org.estimate_number_prefix ?? 'EST-',
+      number_date_part: org.number_date_part || 'DAY',
+      number_padding: org.number_padding ?? 4,
+      invoice_number_start: org.invoice_number_start ?? 1
     }))
   );
 
@@ -80,8 +98,21 @@
     // here saves a server round-trip; the serializer is the actual rule.
     if (form.website && !/^https?:\/\/.+\..+/.test(form.website))
       e.website = 'Include the full address, starting with http:// or https://.';
+    for (const field of ['invoice_number_prefix', 'estimate_number_prefix']) {
+      if (!NUMBER_PREFIX_PATTERN.test(form[field].trim()))
+        e[field] = 'Use letters, numbers, hyphens and underscores only.';
+    }
+    if (!wholeIn(form.number_padding, 1, 10)) e.number_padding = 'Use 1 to 10 digits.';
+    if (form.number_date_part === 'NONE' && !wholeIn(form.invoice_number_start, 1, 999999999))
+      e.invoice_number_start = 'Use a whole number from 1 to 999,999,999.';
     return e;
   });
+
+  /** @param {unknown} value @param {number} min @param {number} max */
+  function wholeIn(value, min, max) {
+    const n = Number(value);
+    return value !== '' && value !== null && Number.isInteger(n) && n >= min && n <= max;
+  }
 
   let valid = $derived(Object.keys(errors).length === 0);
   const show = (/** @type {string} */ field) => (touched[field] || submitted) && errors[field];
@@ -152,10 +183,12 @@
         >
           <TriangleAlert size={17} style="color:var(--v2-rust);flex:none" />
           <div class="v2-next-body">
-            <!-- Counted, not assumed. Only two fields are checked here, but one
-                 of them failing on its own is the common case. -->
+            <!-- Counted, not assumed: one field failing on its own is the
+                 common case. -->
             <div style="font-weight:600">
-              {Object.keys(errors).length === 1 ? 'One field to check' : 'Two fields to check'}
+              {Object.keys(errors).length === 1
+                ? 'One field to check'
+                : `${Object.keys(errors).length} fields to check`}
             </div>
             <div class="v2-sub" style="margin-top:2px">Nothing has been saved yet.</div>
           </div>
@@ -332,6 +365,116 @@
         </p>
       </div>
 
+      <div class="v2-label" style="margin:24px 0 12px">Invoice numbers</div>
+      <p class="v2-hint" style="margin-top:-4px;margin-bottom:14px">
+        How new invoice and estimate numbers look. Numbers already issued keep theirs.
+      </p>
+
+      <div class="pair">
+        <div class="v2-field">
+          <label for="f-inv-prefix">Invoice prefix</label>
+          <input
+            id="f-inv-prefix"
+            name="invoice_number_prefix"
+            class="v2-input"
+            maxlength="20"
+            autocapitalize="characters"
+            autocomplete="off"
+            spellcheck="false"
+            bind:value={form.invoice_number_prefix}
+            onblur={() => (touched.invoice_number_prefix = true)}
+            aria-invalid={show('invoice_number_prefix') ? 'true' : undefined}
+          />
+          {#if show('invoice_number_prefix')}
+            <p class="v2-error">{errors.invoice_number_prefix}</p>
+          {/if}
+        </div>
+        <div class="v2-field">
+          <label for="f-est-prefix">Estimate prefix</label>
+          <input
+            id="f-est-prefix"
+            name="estimate_number_prefix"
+            class="v2-input"
+            maxlength="20"
+            autocapitalize="characters"
+            autocomplete="off"
+            spellcheck="false"
+            bind:value={form.estimate_number_prefix}
+            onblur={() => (touched.estimate_number_prefix = true)}
+            aria-invalid={show('estimate_number_prefix') ? 'true' : undefined}
+          />
+          {#if show('estimate_number_prefix')}
+            <p class="v2-error">{errors.estimate_number_prefix}</p>
+          {/if}
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="v2-field">
+          <label for="f-date-part">Date in the number</label>
+          <select
+            id="f-date-part"
+            name="number_date_part"
+            class="v2-input"
+            bind:value={form.number_date_part}
+          >
+            {#each NUMBER_DATE_PARTS as part (part.value)}
+              <option value={part.value}>{part.label}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="v2-field">
+          <label for="f-padding">Counter digits</label>
+          <input
+            id="f-padding"
+            name="number_padding"
+            class="v2-input"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="10"
+            bind:value={form.number_padding}
+            onblur={() => (touched.number_padding = true)}
+            aria-invalid={show('number_padding') ? 'true' : undefined}
+          />
+          {#if show('number_padding')}<p class="v2-error">{errors.number_padding}</p>{/if}
+        </div>
+      </div>
+
+      {#if form.number_date_part === 'NONE'}
+        <div class="v2-field">
+          <label for="f-start">Start invoices at</label>
+          <input
+            id="f-start"
+            name="invoice_number_start"
+            class="v2-input"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="999999999"
+            bind:value={form.invoice_number_start}
+            onblur={() => (touched.invoice_number_start = true)}
+            aria-invalid={show('invoice_number_start') ? 'true' : undefined}
+          />
+          {#if show('invoice_number_start')}
+            <p class="v2-error">{errors.invoice_number_start}</p>
+          {:else}
+            <p class="v2-hint">
+              To carry on a sequence from another system. If invoices here already go higher,
+              numbering carries on from the highest.
+            </p>
+          {/if}
+        </div>
+      {:else}
+        <input type="hidden" name="invoice_number_start" value="1" />
+      {/if}
+
+      <p class="v2-hint" style="margin-top:-4px">
+        New invoices look like
+        <b class="v2-num example">{exampleNumber(form, 'invoice', today)}</b>, estimates like
+        <b class="v2-num example">{exampleNumber(form, 'estimate', today)}</b>.
+      </p>
+
       <div class="v2-label" style="margin:24px 0 12px">Behaviour</div>
 
       <div class="v2-field">
@@ -382,6 +525,10 @@
     display: grid;
     grid-template-columns: 2fr 1fr 1fr;
     gap: 14px;
+  }
+  /* A number broken at its hyphen reads as two. */
+  .example {
+    white-space: nowrap;
   }
   .actions {
     display: flex;

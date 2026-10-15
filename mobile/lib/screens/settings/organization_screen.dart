@@ -8,6 +8,7 @@ import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
+import '../../services/org_date.dart';
 
 /// The organization itself, read view.
 ///
@@ -91,6 +92,30 @@ class OrganizationScreen extends ConsumerWidget {
                     'When a day starts here, so "due today" and "overdue" '
                     'mean what your team expects.',
               ),
+              const _SectionHeader('Invoice numbers'),
+              _Field(
+                label: 'New invoices',
+                value: exampleNumber(
+                  prefix: org.invoiceNumberPrefix,
+                  datePart: org.numberDatePart,
+                  padding: org.numberPadding,
+                  start: org.invoiceNumberStart,
+                  today: orgToday(),
+                ),
+                detail:
+                    '${_datePartLabel(org.numberDatePart)}. Numbers already '
+                    'issued keep theirs.',
+              ),
+              _Field(
+                label: 'New estimates',
+                value: exampleNumber(
+                  prefix: org.estimateNumberPrefix,
+                  datePart: org.numberDatePart,
+                  padding: org.numberPadding,
+                  today: orgToday(),
+                ),
+                detail: 'Same format, own prefix.',
+              ),
               const _SectionHeader('Behaviour'),
               _Field(
                 label: 'Satisfaction surveys',
@@ -116,6 +141,14 @@ class OrganizationScreen extends ConsumerWidget {
     );
   }
 }
+
+/// "Year, count restarts each year" for a stored date part.
+String _datePartLabel(String datePart) => numberDatePartOptions
+    .firstWhere(
+      (option) => option.value == datePart,
+      orElse: () => (value: datePart, label: datePart),
+    )
+    .label;
 
 class _Header extends StatelessWidget {
   const _Header({required this.org});

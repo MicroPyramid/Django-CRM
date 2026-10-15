@@ -49,6 +49,8 @@
   import Pill from '$lib/v2/components/Pill.svelte';
   import NextAction from '$lib/v2/components/NextAction.svelte';
   import { count, shortDate } from '$lib/v2/format.js';
+  import { exampleNumber, NUMBER_DATE_PARTS } from '$lib/v2/document-numbers.js';
+  import { todayIn } from '$lib/v2/dates.js';
   import { FileText, ShieldAlert, Pencil, Trash2 } from '@lucide/svelte';
   import { enhance } from '$app/forms';
 
@@ -59,6 +61,12 @@
   let packs = $derived(data.packs ?? []);
   /** The registry entry matching `org.vertical`, or null if unapplied / unknown. */
   let appliedPack = $derived(packs.find((/** @type {any} */ p) => p.id === org.vertical) ?? null);
+
+  let today = $derived(todayIn(org.timezone || 'UTC'));
+  /** "Year, count restarts each year" for the stored date part. */
+  let numbering = $derived(
+    NUMBER_DATE_PARTS.find((part) => part.value === org.number_date_part)?.label ?? ''
+  );
 
   let address = $derived(
     [org.address_line, org.city, org.state, org.postcode, org.country].filter(Boolean).join(', ')
@@ -185,6 +193,29 @@
               </span>
             </div>
             <span style="font-size:13px">{(org.timezone || 'UTC').replace(/_/g, ' ')}</span>
+          </div>
+        </div>
+
+        <div class="v2-label" style="margin-bottom:10px">Invoice numbers</div>
+        <div class="v2-card" style="overflow:hidden;margin-bottom:20px">
+          <div class="v2-setting">
+            <div class="v2-setting-body">
+              <b>New invoices</b>
+              <span class="v2-sub" style="font-size:11.5px">
+                {numbering}. Numbers already issued keep theirs.
+              </span>
+            </div>
+            <span class="v2-num" style="font-size:13px">{exampleNumber(org, 'invoice', today)}</span
+            >
+          </div>
+          <div class="v2-setting">
+            <div class="v2-setting-body">
+              <b>New estimates</b>
+              <span class="v2-sub" style="font-size:11.5px">Same format, own prefix.</span>
+            </div>
+            <span class="v2-num" style="font-size:13px"
+              >{exampleNumber(org, 'estimate', today)}</span
+            >
           </div>
         </div>
 

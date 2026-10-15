@@ -2743,10 +2743,12 @@ void main() {
       // A picker that cannot display the stored value would either throw or
       // quietly submit its first entry, moving the org somewhere it never
       // chose. Scrolled explicitly on the form's own list: the text fields
-      // each carry a Scrollable of their own.
+      // each carry a Scrollable of their own. Scrolled to the zone itself, not
+      // to the Save button, which sits a whole section further down and would
+      // leave the lazily built picker behind.
       await pump(tester, organizationEditApp(isAdmin: true));
       await tester.scrollUntilVisible(
-        find.text('Save changes'),
+        find.textContaining('Asia/Kolkata'),
         300,
         scrollable: find
             .descendant(
