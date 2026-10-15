@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-crm"
-version = "1.14.11"
+version = "1.14.12"
 # The one-line summary PyPI shows under the project title and in search results,
 # so it carries the terms people actually search for ("open source CRM",
 # "self-hosted CRM", "Django CRM") and names the modules rather than the
@@ -89,6 +89,10 @@ dependencies = [
     # accessors landed; this pin sits higher only because floors here track the
     # versions in uv.lock.
     "cryptography>=50.0.1",
+    # Routing-rule `regex` conditions (cases/routing.py). RE2 matches in time
+    # linear in the input, so an admin's pattern cannot backtrack for hours on
+    # a ticket's tags or sender domain the way `re` can.
+    "google-re2>=1.1.20251105",
     # PDF generation (also needs system libs: cairo, pango, gdk-pixbuf, libffi, shared-mime-info)
     "weasyprint>=70.0",
     "cairocffi>=1.7.1",
