@@ -23,6 +23,7 @@ from cases.models import (
     TimeEntry,
 )
 from cases.parent_guards import check_parent_link
+from cases.routing import compile_pattern
 from cases.workflow import (
     DUPLICATE_BY_MERGE_ONLY,
     duplicate_refusal,
@@ -1045,6 +1046,13 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
                 )
             if "value" not in cond:
                 raise serializers.ValidationError(f"conditions[{i}].value is required.")
+            if op == "regex":
+                try:
+                    compile_pattern(cond["value"])
+                except ValueError as exc:
+                    raise serializers.ValidationError(
+                        f"conditions[{i}].value {exc}."
+                    ) from None
         return value
 
     def validate(self, attrs):

@@ -5,6 +5,8 @@ See docs/cases/tier1/auto-routing.md.
 
 from __future__ import annotations
 
+import logging
+import time
 from datetime import timedelta
 
 import pytest
@@ -857,3 +859,100 @@ class TestRoutingAnalytics:
         body = self._list(admin_client)
         assert body["totals"]["unrouted_last_30d"] == 1
         assert "B rule" not in [r["name"] for r in body["rules"]]
+
+
+class TestRegexConditionsCannotBacktrack:
+    """A `regex` condition runs on RE2, so no pattern can backtrack (issue #830).
+
+    `re` takes time exponential in the input for a pattern like `(a+)+$`: the
+    report's 30 character tag held a worker for 37 s, and the search holds the
+    GIL, so the whole worker process stalls with it. RE2 matches in time
+    linear in the input.
+    """
+
+    def test_a_catastrophic_pattern_returns_at_once(self):
+        # About 3 s under `re` on this machine, doubling with each extra "a".
+        data = {"tags": ["a" * 26 + "c"]}
+        started = time.perf_counter()
+        matched = _matches_all(
+            data, [{"field": "tags", "op": "regex", "value": "(a+)+$"}]
+        )
+        assert time.perf_counter() - started < 0.5
+        assert not matched
+
+    def test_ordinary_patterns_still_match(self):
+        data = {"from_email_domain": "acme.example.com", "tags": ["VIP"]}
+        domain = r"^acme\.(example|test)\.com$"
+        assert _matches_all(
+            data, [{"field": "from_email_domain", "op": "regex", "value": domain}]
+        )
+        assert _matches_all(
+            data, [{"field": "tags", "op": "regex", "value": "(?i)^vip$"}]
+        )
+        assert not _matches_all(
+            data, [{"field": "tags", "op": "regex", "value": "^billing"}]
+        )
+
+    def test_a_stored_pattern_re2_cannot_run_matches_nothing(self, caplog):
+        """A rule saved before patterns were checked may hold one."""
+        data = {"tags": ["aa"]}
+        with caplog.at_level(logging.WARNING, logger="cases.routing"):
+            assert not _matches_all(
+                data, [{"field": "tags", "op": "regex", "value": r"(a)\1"}]
+            )
+        assert "cannot be used" in caplog.text
+
+
+@pytest.mark.django_db
+class TestRegexConditionValidation:
+    """A pattern RE2 cannot run is refused when the rule is saved.
+
+    It used to be accepted and then silently never match.
+    """
+
+    def _create(self, client, org, value):
+        agent = _profile(org, "regex-agent@a.com")
+        return client.post(
+            RULES_URL,
+            data={
+                "name": "Pattern",
+                "strategy": "direct",
+                "conditions": [{"field": "tags", "op": "regex", "value": value}],
+                "target_assignee_ids": [str(agent.id)],
+            },
+            content_type="application/json",
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        [r"(a)\1", r"(?=x)y", "[unclosed", "a" * 501, ["^a"]],
+        ids=["backreference", "lookahead", "syntax-error", "too-long", "not-a-string"],
+    )
+    def test_a_pattern_re2_cannot_run_is_refused(self, admin_client, org_a, value):
+        resp = self._create(admin_client, org_a, value)
+        assert resp.status_code == 400, resp.content
+        assert "conditions" in resp.json()["errors"]
+        assert not RoutingRule.objects.filter(org=org_a).exists()
+
+    def test_a_pattern_at_the_length_cap_is_saved(self, admin_client, org_a):
+        resp = self._create(admin_client, org_a, "a" * 500)
+        assert resp.status_code == 201, resp.content
+
+    def test_an_ordinary_pattern_is_saved(self, admin_client, org_a):
+        resp = self._create(admin_client, org_a, r"(?i)^acme\.")
+        assert resp.status_code == 201, resp.content
+
+    def test_an_edit_to_a_bad_pattern_is_refused(self, admin_client, org_a):
+        rule = _rule(
+            org_a,
+            "Kept",
+            conditions=[{"field": "tags", "op": "regex", "value": "^vip"}],
+        )
+        resp = admin_client.put(
+            f"{RULES_URL}{rule.id}/",
+            data={"conditions": [{"field": "tags", "op": "regex", "value": r"(a)\1"}]},
+            content_type="application/json",
+        )
+        assert resp.status_code == 400, resp.content
+        rule.refresh_from_db()
+        assert rule.conditions[0]["value"] == "^vip"

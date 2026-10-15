@@ -18,10 +18,10 @@ would route to.
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 from typing import Iterable
 
+import re2
 from django.db import transaction
 from django.db.models import Count, Q
 
@@ -42,6 +42,31 @@ SUPPORTED_FIELDS = {
     "mailbox_id",
 }
 # `custom_fields.<key>` is matched dynamically.
+
+# `regex` conditions run on RE2, never `re`. RE2 matches in time linear in the
+# input, where `re` backtracks: `(a+)+$` against a 40 character tag or sender
+# domain held a worker, and through the GIL its whole process, for hours. RE2
+# has no backreferences or lookarounds, so a pattern using them is refused
+# when the rule is saved.
+MAX_PATTERN_LENGTH = 500
+_RE2_OPTIONS = re2.Options()
+_RE2_OPTIONS.log_errors = False  # else absl prints every refused pattern to stderr
+
+
+def compile_pattern(value):
+    """Compile a `regex` condition's pattern, or raise ValueError saying why
+    it cannot be used. Shared by the matcher and `RoutingRuleSerializer`."""
+    if not isinstance(value, str):
+        raise ValueError("must be text")
+    if len(value) > MAX_PATTERN_LENGTH:
+        raise ValueError(f"must be at most {MAX_PATTERN_LENGTH} characters")
+    try:
+        return re2.compile(value, _RE2_OPTIONS)
+    except re2.error as exc:
+        detail = exc.args[0] if exc.args else b""
+        if isinstance(detail, bytes):
+            detail = detail.decode("utf-8", "replace")
+        raise ValueError(f"is not a supported pattern: {detail}") from None
 
 
 @dataclass
@@ -108,8 +133,14 @@ def _match_condition(case_data: dict, condition: dict) -> bool:
         if actual is None:
             return False
         try:
-            pattern = re.compile(str(value))
-        except re.error:
+            pattern = compile_pattern(value)
+        except ValueError as exc:
+            # Only a rule saved before patterns were checked gets here.
+            logger.warning(
+                "RoutingRule regex %.100r cannot be used (%s). Skipping condition",
+                value,
+                exc,
+            )
             return False
         if isinstance(actual, list):
             return any(pattern.search(str(a)) for a in actual)
