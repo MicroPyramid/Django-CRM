@@ -23,11 +23,11 @@ MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB; matches the UI hint
 def _read_upload(request):
     """Return (file_bytes, error_response). One of the two will be None.
 
-    The size cap is enforced against the actual bytes read, not against
-    `upload.size`. `upload.size` is derived from a client-supplied
-    Content-Length header for in-memory uploads and can be zero or absent
-    even when the body is large, so trusting it for the limit check creates
-    a bypass.
+    Reads at most one byte past the cap, so an oversized file is refused
+    without being loaded into memory. Django has already spooled the body to
+    disk by now; an unbounded `read()` pulled all of it into the worker. The
+    cap is measured on the bytes read rather than on `upload.size`, so it does
+    not depend on how the upload object was built.
     """
     upload = request.FILES.get("file")
     if not upload:
@@ -41,7 +41,7 @@ def _read_upload(request):
             {"error": True, "message": "File must have a .csv extension"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    file_bytes = upload.read()
+    file_bytes = upload.read(MAX_UPLOAD_BYTES + 1)
     if len(file_bytes) > MAX_UPLOAD_BYTES:
         return None, Response(
             {"error": True, "message": "File exceeds the 5 MB upload limit"},
