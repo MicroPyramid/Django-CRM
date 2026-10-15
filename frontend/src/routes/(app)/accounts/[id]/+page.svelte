@@ -19,6 +19,7 @@
   import DuplicatesPanel from '$lib/v2/components/DuplicatesPanel.svelte';
   import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
   import { money, moneyEach, shortDate, longDate } from '$lib/v2/format.js';
+  import { isOrgAdmin } from '$lib/admin.js';
   import {
     CLOSED_KINDS,
     PRIORITY_TONE,
@@ -75,6 +76,10 @@
       .join(' · ')}
   {/snippet}
   {#snippet actions()}
+    {#if isOrgAdmin(data)}
+      <!-- Statements are admin-only on the API; a member would only be told so. -->
+      <a class="v2-btn" href={resolve(`/accounts/${account.id}/statement`)}>Statement</a>
+    {/if}
     <a class="v2-btn" href={resolve(`/accounts/${account.id}/edit`)}>Edit</a>
     {#if data.canDelete}
       <!-- Offered only when the API's delete rule admits this caller; the

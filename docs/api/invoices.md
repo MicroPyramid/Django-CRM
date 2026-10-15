@@ -9,8 +9,8 @@ is centralized in `backend/invoices/permissions.py`. See [Conventions](conventio
 filtering and response-shape rules assumed rather than repeated here, and [Errors](errors.md) for the
 404-vs-403 principle this page's own module docstring states almost verbatim.
 
-This page covers invoices, estimates, line items and the public portal, the endpoints this
-documentation task scopes. Payments, products, templates, recurring invoices, dashboards/reports, and
+This page covers invoices, estimates, line items, account statements and the public portal, the
+endpoints this documentation task scopes. Payments, products, templates, recurring invoices, dashboards/reports, and
 invoice-from-opportunity/from-time-entries are also part of this module (`api_urls.py`) but are out of
 scope for this page.
 
@@ -228,6 +228,39 @@ parent-serializer-level check `InvoiceCreateSerializer` has. The same RLS caveat
 `product` is RLS-protected, so this is a missing-ORM-filter gap caught by the safety net under a
 correctly-configured (non-superuser) database role, and a real cross-tenant read under the default,
 superuser one.
+
+## Account statements
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/api/invoices/statements/{account_id}/` | The statement as JSON |
+| GET | `/api/invoices/statements/{account_id}/pdf/` | The same statement as a PDF, `Statement_<start>_<end>.pdf` |
+
+What one account was billed and paid over a period (issue #810). Computed on every request from the
+invoices and payments on record (`backend/invoices/statements.py`), never stored, so it cannot
+disagree with them.
+
+**Admin-only.** A member gets `403` before the account is looked up, so the answer says nothing about
+which accounts exist. The rule is the invoice reports' (`_forbid_non_admin_reports`): a statement sums
+every invoice on the account, including ones a member may not open, and one built from only the
+invoices a member can see would show the customer a wrong balance. An account in another org is `404`.
+
+**Period.** `start_date` and `end_date` (`YYYY-MM-DD`, both included) default to this month so far, in
+the org's day. A period longer than 366 days, or one that ends before it starts, is a `400` with the
+DRF field shape (`{"end_date": ["..."]}`).
+
+**Shape.** One entry in `currencies` per currency, ordered by code, since nothing converts between
+them: `opening_balance`, the period's `invoiced`, `paid` and `cancelled` totals, `closing_balance`,
+and `entries` in date order. Each entry has `date`, `kind` (`invoice`, `payment` or `cancellation`),
+`invoice_id`, `invoice_number`, `description`, a signed `amount` (positive adds to what the account
+owes) and the running `balance`. A negative balance means the account is in credit. A currency with no
+opening balance and nothing in the period is left out.
+
+**What counts.** An invoice is on the statement once its customer was asked to pay: Draft and Pending
+are left off. A cancelled invoice stays on if it was sent or paid toward, billed on its issue date and
+reversed on the day it was cancelled, so an earlier month's statement still closes on the balance it
+showed then, and a payment it took leaves the account in credit. A cancelled invoice nobody was sent
+or paid was never billed, and is left off.
 
 ## Public portal endpoints
 

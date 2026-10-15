@@ -460,7 +460,10 @@ def format_currency(amount, currency="USD"):
     symbol = symbols.get(currency, currency + " ")
     if amount is None:
         amount = Decimal("0.00")
-    return f"{symbol}{amount:,.2f}"
+    # The sign leads ("-$40.00"): a statement's payments and credit balances
+    # are negative, and "$-40.00" reads as a typo.
+    sign = "-" if amount < 0 else ""
+    return f"{sign}{symbol}{abs(amount):,.2f}"
 
 
 def generate_invoice_pdf(invoice, include_payments=True):
@@ -549,13 +552,29 @@ def generate_invoice_pdf(invoice, include_payments=True):
     else:
         css_content = get_default_css()
 
-    # Apply template colors if set
+    return _write_pdf(html_content, _with_template_colors(css_content, template))
+
+
+def _with_template_colors(css_content, template):
+    """``css_content`` in ``template``'s colors, when there is a template."""
     if template:
         css_content = css_content.replace("#3B82F6", template.primary_color)
         if template.secondary_color:
             css_content = css_content.replace("#1E40AF", template.secondary_color)
+    return css_content
 
-    # Generate PDF
+
+def _default_css_for(org):
+    """The default stylesheet in the colors of ``org``'s default template."""
+    from invoices.models import InvoiceTemplate
+
+    template = InvoiceTemplate.objects.filter(org=org, is_default=True).first()
+    return _with_template_colors(get_default_css(), template)
+
+
+def _write_pdf(html_content, css_content):
+    """Render HTML and CSS to PDF bytes, fetching only what
+    `SafePdfURLFetcher` allows."""
     font_config = FontConfiguration()
     url_fetcher = SafePdfURLFetcher()
     html = HTML(
@@ -589,11 +608,6 @@ def generate_estimate_pdf(estimate):
     """
     check_weasyprint()
 
-    # Get the org's default template for styling
-    from invoices.models import InvoiceTemplate
-
-    template = InvoiceTemplate.objects.filter(org=estimate.org, is_default=True).first()
-
     # Pre-format line items with currency
     line_items = []
     for item in estimate.line_items.all().order_by("order"):
@@ -626,36 +640,58 @@ def generate_estimate_pdf(estimate):
         "total_amount": format_currency(estimate.total_amount, estimate.currency),
     }
 
-    # Use default template
+    # Use default template, in the org's default template's colors
     html_content = render_to_string("invoices/pdf/estimate.html", context)
-    css_content = get_default_css()
+    return _write_pdf(html_content, _default_css_for(estimate.org))
 
-    # Apply template colors if set
-    if template:
-        css_content = css_content.replace("#3B82F6", template.primary_color)
-        if template.secondary_color:
-            css_content = css_content.replace("#1E40AF", template.secondary_color)
 
-    # Generate PDF
-    font_config = FontConfiguration()
-    url_fetcher = SafePdfURLFetcher()
-    html = HTML(
-        string=html_content,
-        base_url=settings.BASE_DIR,
-        url_fetcher=url_fetcher,
-    )
-    css = CSS(
-        string=css_content,
-        base_url=settings.BASE_DIR,
-        url_fetcher=url_fetcher,
-        font_config=font_config,
-    )
+def generate_statement_pdf(account, statement):
+    """A PDF of ``statement`` (from `invoices.statements.build_statement`)
+    for ``account``, in the org's default template's colors.
 
-    pdf_buffer = io.BytesIO()
-    html.write_pdf(pdf_buffer, stylesheets=[css], font_config=font_config)
-    pdf_buffer.seek(0)
+    Built from the fixed template only, never an org's custom HTML, and through
+    Django's autoescape, since the account name and invoice titles are written
+    by members.
+    """
+    check_weasyprint()
 
-    return pdf_buffer.getvalue()
+    sections = []
+    for section in statement["currencies"]:
+        code = section["currency"]
+
+        def fmt(amount, code=code):
+            return format_currency(amount, code)
+
+        sections.append(
+            {
+                "currency": code,
+                "opening_balance": fmt(section["opening_balance"]),
+                "invoiced": fmt(section["invoiced"]),
+                "paid": fmt(-section["paid"]),
+                "cancelled": fmt(-section["cancelled"]),
+                "has_cancelled": section["cancelled"] > 0,
+                "closing_balance": fmt(section["closing_balance"]),
+                "in_credit": section["closing_balance"] < 0,
+                "entries": [
+                    {
+                        **entry,
+                        "amount": fmt(entry["amount"]),
+                        "balance": fmt(entry["balance"]),
+                    }
+                    for entry in section["entries"]
+                ],
+            }
+        )
+
+    context = {
+        "org": account.org,
+        "account": account,
+        "start_date": statement["start_date"],
+        "end_date": statement["end_date"],
+        "sections": sections,
+    }
+    html_content = render_to_string("invoices/pdf/statement.html", context)
+    return _write_pdf(html_content, _default_css_for(account.org))
 
 
 def render_invoice_template(template_html, context):
@@ -725,3 +761,9 @@ def generate_invoice_filename(invoice):
 def generate_estimate_filename(estimate):
     """Generate a filename for the estimate PDF."""
     return f"Estimate_{estimate.estimate_number}.pdf"
+
+
+def generate_statement_filename(statement):
+    """Named for the period only. The account name is member-written text and
+    has no place in a Content-Disposition header."""
+    return f"Statement_{statement['start_date']}_{statement['end_date']}.pdf"

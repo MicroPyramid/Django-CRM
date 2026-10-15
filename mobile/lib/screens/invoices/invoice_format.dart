@@ -12,7 +12,10 @@ final _money = NumberFormat('#,##0.00');
 final _wholeMoney = NumberFormat('#,##0');
 
 /// An exact amount, for anything a person might reconcile against a bank line.
-String money(double value, String symbol) => '$symbol${_money.format(value)}';
+/// The sign leads ("-$40.00"): a statement's payments and credit balances are
+/// negative, and "$-40.00" reads as a typo.
+String money(double value, String symbol) =>
+    '${value < 0 ? '-' : ''}$symbol${_money.format(value.abs())}';
 
 /// A shortened amount for header figures, where the magnitude is the point and
 /// the cents are noise. An empty [symbol] is a deliberate caller choice, used

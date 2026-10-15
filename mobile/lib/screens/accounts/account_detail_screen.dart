@@ -8,6 +8,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/account.dart';
 import '../../data/models/deal.dart' show Currency;
 import '../../providers/accounts_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
@@ -123,6 +124,15 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          // Statements are admin-only on the server; a member would only be
+          // told so.
+          if (account != null && ref.watch(isOrgAdminProvider))
+            IconButton(
+              icon: const Icon(LucideIcons.receiptText, size: 20),
+              tooltip: 'Statement',
+              onPressed: () =>
+                  context.push('${AppRoutes.accounts}/${account.id}/statement'),
+            ),
           if (account != null)
             IconButton(
               icon: const Icon(LucideIcons.edit3, size: 20),

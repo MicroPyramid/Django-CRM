@@ -19,6 +19,7 @@ On 2026-09-26 the counts were 90 `+page.svelte` files under `frontend/src/routes
 
 | ID | Gap | Missing on | Backend | Opened | Notes |
 |---|---|---|---|---|---|
+| B10 | Download an invoice's PDF | Mobile | `GET /api/invoices/{id}/pdf/` exists | 2026-10-15 | Found while building account statements (#810). The web's invoice page has Download PDF (`routes/(app)/invoices/[id]/pdf/+server.js`); the phone's invoice detail has no PDF action. The statement screen already saves its PDF through `downloadAttachment`, which is the pattern to reuse. |
 
 ## Web-only by design
 
