@@ -623,3 +623,27 @@ class TestTagSlugs:
         tag = Tags.objects.get(org=org_a)
         assert tag.slug == "trade-show"
         assert set(Lead.objects.values_list("tags", flat=True)) == {tag.id}
+
+    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
+    def test_archived_tag_is_a_row_error_for_an_admin(self, admin_client, org_a, url):
+        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
+        response = _post(admin_client, url, self._tagged("a@example.com", "vip "))
+        error = response.json()["errors"][0]
+        assert (error["row"], error["field"]) == (1, "tags")
+        assert error["message"] == "Tag 'vip' is archived; restore it in Settings first"
+        assert not Tags.objects.get(org=org_a).is_active
+        assert not Lead.objects.exists()
+
+    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
+    def test_archived_tag_is_a_row_error_for_sales_access(
+        self, user_client, user_profile, org_a, url
+    ):
+        user_profile.has_sales_access = True
+        user_profile.save(update_fields=["has_sales_access"])
+        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
+        response = _post(user_client, url, self._tagged("a@example.com", "VIP"))
+        error = response.json()["errors"][0]
+        assert (error["row"], error["field"]) == (1, "tags")
+        assert "archived" in error["message"]
+        assert not Tags.objects.get(org=org_a).is_active
+        assert not Lead.objects.exists()
