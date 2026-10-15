@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import (
     Count,
@@ -1197,9 +1198,12 @@ class AccountCreateMailView(APIView):
                 )
 
         # `org` is the server's to set, never the caller's, and `AccountEmail.save`
-        # would otherwise fall back to reading it off the account.
+        # would otherwise fall back to reading it off the account. So is the
+        # sender: a caller-chosen one let any member send as any address the
+        # mail provider accepts, including the platform's own.
         email_obj = serializer.save(
             from_account=account,
+            from_email=settings.DEFAULT_FROM_EMAIL,
             org=request.profile.org,
             scheduled_later=scheduled_later,
             scheduled_date_time=scheduled_date_time or None,

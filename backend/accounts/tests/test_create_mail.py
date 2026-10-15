@@ -13,11 +13,14 @@ Each test below pins one of the four.
 
 import json
 import uuid
+from smtplib import SMTPException
 from unittest import mock
 
 import pytest
+from django.conf import settings
 
-from accounts.models import Account, AccountEmail
+from accounts.models import Account, AccountEmail, AccountEmailLog
+from accounts.tasks import send_email
 from contacts.models import Contact
 
 
@@ -49,7 +52,6 @@ def _url(account_id):
 
 def _payload(**overrides):
     body = {
-        "from_email": "sales@example.com",
         "message_subject": "Hello",
         "message_body": "Body with no braces",
     }
@@ -163,11 +165,28 @@ class TestCreateMailValidation:
         assert resp.status_code == 400
         assert "message_body" in resp.json()["errors"]
 
-    def test_missing_from_email_rejected(self, admin_client, account):
-        body = _payload()
-        body.pop("from_email")
-        resp = admin_client.post(_url(account.id), body)
-        assert resp.status_code == 400
+    @pytest.mark.parametrize("from_email", [None, "support@bottlecrm.io"])
+    def test_sender_is_the_servers_not_the_callers(
+        self, admin_client, account, from_email
+    ):
+        """A caller-chosen `from_email` let any member send as any address the
+        mail provider would accept, such as one on the platform's own domain."""
+        body = _payload() if from_email is None else _payload(from_email=from_email)
+        with mock.patch("accounts.views.send_email.delay"):
+            resp = admin_client.post(_url(account.id), body)
+        assert resp.status_code == 200, resp.content
+        email = AccountEmail.objects.get(from_account=account)
+        assert email.from_email == settings.DEFAULT_FROM_EMAIL
+
+    def test_rendered_body_is_not_writable(self, admin_client, account):
+        with mock.patch("accounts.views.send_email.delay"):
+            resp = admin_client.post(
+                _url(account.id), _payload(rendered_message_body="<p>forged</p>")
+            )
+        assert resp.status_code == 200, resp.content
+        assert (
+            AccountEmail.objects.get(from_account=account).rendered_message_body is None
+        )
 
 
 @pytest.mark.django_db
@@ -288,3 +307,82 @@ class TestCreateMailRecipientsBelongToTheAccount:
         assert resp.status_code == 200, resp.content
         email = AccountEmail.objects.get(from_account=account)
         assert list(email.recipients.values_list("id", flat=True)) == [stranger.id]
+
+
+@pytest.mark.django_db
+class TestMailBodyIsNotATemplate:
+    """The body is the sender's text with two placeholders, not a Django template.
+
+    `send_email` compiled it with `Template(...)` on the shared Celery worker,
+    so any member who may open an account could run template tags there: a
+    few nested `{% for %}` loops in a short body kept a worker busy for days,
+    and padding filters such as `ljust` allocated as much memory as asked
+    (issue #826).
+    """
+
+    @staticmethod
+    def _send(org, account, contact, body, from_email=None):
+        email = AccountEmail.objects.create(
+            from_account=account,
+            org=org,
+            message_subject="Hello",
+            message_body=body,
+            from_email=from_email or settings.DEFAULT_FROM_EMAIL,
+        )
+        email.recipients.add(contact)
+        send_email.run(email.id, str(org.id))
+        return email
+
+    def test_placeholders_are_filled(self, org_a, account, contact_a, mailoutbox):
+        self._send(org_a, account, contact_a, "Hi {{ name }} at {{email}}")
+        assert mailoutbox[0].body == "Hi Cee at c1@example.com"
+
+    def test_placeholder_values_are_escaped(
+        self, org_a, account, contact_a, mailoutbox
+    ):
+        Contact.objects.filter(pk=contact_a.pk).update(first_name="<b>Cee</b>")
+        self._send(org_a, account, contact_a, "Hi {{ name }}")
+        assert mailoutbox[0].body == "Hi &lt;b&gt;Cee&lt;/b&gt;"
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            "{% widthratio 7 1 7 %}",
+            '{% for c in "abc" %}x{% endfor %}',
+            '{{ name|ljust:"20" }}',
+            "{% debug %}",
+            "{% url 'admin:index' %}",
+        ],
+    )
+    def test_template_tags_are_sent_as_written(
+        self, org_a, account, contact_a, mailoutbox, body
+    ):
+        self._send(org_a, account, contact_a, body)
+        assert mailoutbox[0].body == body
+
+    def test_body_that_is_not_template_syntax_is_still_sent(
+        self, org_a, account, contact_a, mailoutbox
+    ):
+        """It raised inside the task and was swallowed, so the mail was dropped
+        after the API had already answered "Email sent successfully"."""
+        email = self._send(org_a, account, contact_a, "Use {% nope %} as is")
+        assert mailoutbox[0].body == "Use {% nope %} as is"
+        assert AccountEmailLog.objects.filter(
+            email=email, contact=contact_a, is_sent=True
+        ).exists()
+
+    def test_sent_from_the_server_address_whatever_the_row_says(
+        self, org_a, account, contact_a, mailoutbox
+    ):
+        """Rows stored before the sender became server-set still carry the
+        caller's choice, so the task must not read it."""
+        self._send(org_a, account, contact_a, "Hi", from_email="ceo@bottlecrm.io")
+        assert mailoutbox[0].from_email == settings.DEFAULT_FROM_EMAIL
+
+    def test_a_failed_send_is_logged(self, org_a, account, contact_a, caplog):
+        with mock.patch(
+            "accounts.tasks.EmailMessage.send", side_effect=SMTPException("refused")
+        ):
+            email = self._send(org_a, account, contact_a, "Hi")
+        assert f"Account mail {email.id} failed to send" in caplog.text
+        assert not AccountEmailLog.objects.filter(email=email).exists()

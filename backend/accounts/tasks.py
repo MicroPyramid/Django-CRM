@@ -1,9 +1,11 @@
 import logging
+import re
 
 from celery import shared_task
+from django.conf import settings
 from django.core.mail import EmailMessage
-from django.template import Context, Template
 from django.template.loader import render_to_string
+from django.utils.html import escape
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
 from common.links import frontend_url
@@ -11,6 +13,16 @@ from common.models import Profile
 from common.tasks import set_rls_context
 
 logger = logging.getLogger(__name__)
+
+# The body is the sender's own HTML with these two placeholders, and nothing
+# else in it is interpreted. It must never go through Django's `Template`:
+# that ran any tag a member typed on the shared worker, where a few nested
+# `{% for %}` loops in a short body could keep it busy for days.
+_PLACEHOLDER_RE = re.compile(r"\{\{\s*(name|email)\s*\}\}")
+
+
+def _fill_placeholders(body, values):
+    return _PLACEHOLDER_RE.sub(lambda m: escape(values[m.group(1)]), body)
 
 
 @shared_task
@@ -22,13 +34,11 @@ def send_email(email_obj_id, org_id):
         logger.error("AccountEmail id=%s not found, skipping task.", email_obj_id)
         return
     else:
-        from_email = email_obj.from_email
         contacts = email_obj.recipients.all()
         for contact_obj in contacts:
             if not AccountEmailLog.objects.filter(
                 email=email_obj, contact=contact_obj, is_sent=True
             ).exists():
-                html = email_obj.message_body
                 context_data = {
                     "email": contact_obj.email if contact_obj.email else "",
                     "name": (
@@ -42,12 +52,17 @@ def send_email(email_obj_id, org_id):
                     ),
                 }
                 try:
-                    html_content = Template(html).render(Context(context_data))
+                    html_content = _fill_placeholders(
+                        email_obj.message_body or "", context_data
+                    )
                     subject = email_obj.message_subject
+                    # Always the server's address. `email_obj.from_email` came
+                    # from the caller until 1.14.7, so older rows may hold any
+                    # address the mail provider would accept.
                     msg = EmailMessage(
                         subject,
                         html_content,
-                        from_email=from_email,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
                         to=[
                             contact_obj.email,
                         ],
@@ -61,7 +76,11 @@ def send_email(email_obj_id, org_id):
                             email=email_obj, contact=contact_obj, is_sent=True
                         )
                 except Exception:
-                    pass
+                    logger.exception(
+                        "Account mail %s failed to send to contact %s.",
+                        email_obj.id,
+                        contact_obj.id,
+                    )
 
 
 @shared_task
