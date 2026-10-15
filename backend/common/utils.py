@@ -556,14 +556,32 @@ def validate_attachment(file):
     """
     from rest_framework import serializers as drf_serializers
 
-    if file is None:
-        return
+    refusal = _size_refusal(file)
+    if refusal:
+        raise drf_serializers.ValidationError({"attachment": refusal})
+
+
+def validate_upload_size(file):
+    """``validate_attachment`` for a serializer's own file field.
+
+    For ``validate_<field>`` methods (a document's file, the org and invoice
+    template logos). The bare message is raised, so DRF reports it under that
+    field's own name rather than under ``attachment``. Returns ``file``.
+    """
+    from rest_framework import serializers as drf_serializers
+
+    refusal = _size_refusal(file)
+    if refusal:
+        raise drf_serializers.ValidationError(refusal)
+    return file
+
+
+def _size_refusal(file):
+    """The message refusing ``file`` for its size, or None. ``None`` passes."""
     size = getattr(file, "size", None)
     if size is not None and size > ATTACHMENT_MAX_BYTES:
-        megabytes = ATTACHMENT_MAX_BYTES // (1024 * 1024)
-        raise drf_serializers.ValidationError(
-            {"attachment": f"Files must be {megabytes} MB or smaller."}
-        )
+        return f"Files must be {ATTACHMENT_MAX_BYTES // (1024 * 1024)} MB or smaller."
+    return None
 
 
 def create_attachment(file, content_object, profile):
