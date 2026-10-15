@@ -20,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import Account
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.lookups import get_on_visible_record_or_404
 from common.models import Attachments, Comment, CustomFieldDefinition
@@ -48,6 +49,8 @@ from invoices.pdf import (
     generate_estimate_pdf,
     generate_invoice_filename,
     generate_invoice_pdf,
+    generate_statement_filename,
+    generate_statement_pdf,
 )
 from invoices.permissions import (
     get_estimate_or_error,
@@ -58,6 +61,7 @@ from invoices.permissions import (
     visible_recurring_qs,
 )
 from invoices.serializer import (
+    AccountStatementSerializer,
     EstimateCreateSerializer,
     EstimateListSerializer,
     EstimateSerializer,
@@ -80,6 +84,7 @@ from invoices.serializer import (
     issued_lock_message,
     validate_document_account,
 )
+from invoices.statements import build_statement, statement_period
 from invoices.tasks import create_invoice_history, send_email, send_invoice_to_client
 
 logger = logging.getLogger(__name__)
@@ -646,25 +651,35 @@ class InvoicePDFView(APIView):
         if error:
             return error
 
-        try:
-            pdf_content = generate_invoice_pdf(invoice)
-            filename = generate_invoice_filename(invoice)
+        return _pdf_response(
+            lambda: generate_invoice_pdf(invoice), generate_invoice_filename(invoice)
+        )
 
-            response = HttpResponse(pdf_content, content_type="application/pdf")
-            response["Content-Disposition"] = f'attachment; filename="{filename}"'
-            return response
-        except ImportError:
-            logger.exception("PDF generation library not available")
-            return Response(
-                {"error": True, "message": "PDF generation unavailable"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-        except Exception:
-            logger.exception("Failed to generate invoice PDF")
-            return Response(
-                {"error": True, "message": "Failed to generate PDF"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+
+def _pdf_response(render, filename):
+    """The PDF ``render()`` makes, as a download named ``filename``.
+
+    503 when WeasyPrint is not installed, 500 when the render fails; both are
+    logged. Shared by the invoice, estimate and account statement PDF views.
+    """
+    try:
+        pdf_content = render()
+    except ImportError:
+        logger.exception("PDF generation library not available")
+        return Response(
+            {"error": True, "message": "PDF generation unavailable"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except Exception:
+        logger.exception("Failed to generate %s", filename)
+        return Response(
+            {"error": True, "message": "Failed to generate PDF"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    response = HttpResponse(pdf_content, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 # =============================================================================
@@ -1434,25 +1449,10 @@ class EstimatePDFView(APIView):
         if error:
             return error
 
-        try:
-            pdf_content = generate_estimate_pdf(estimate)
-            filename = generate_estimate_filename(estimate)
-
-            response = HttpResponse(pdf_content, content_type="application/pdf")
-            response["Content-Disposition"] = f'attachment; filename="{filename}"'
-            return response
-        except ImportError:
-            logger.exception("PDF generation library not available")
-            return Response(
-                {"error": True, "message": "PDF generation unavailable"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-        except Exception:
-            logger.exception("Failed to generate estimate PDF")
-            return Response(
-                {"error": True, "message": "Failed to generate PDF"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        return _pdf_response(
+            lambda: generate_estimate_pdf(estimate),
+            generate_estimate_filename(estimate),
+        )
 
 
 # =============================================================================
@@ -2036,7 +2036,7 @@ class InvoiceAttachmentDetailView(APIView):
 # =============================================================================
 
 
-def _forbid_non_admin_reports(request):
+def _forbid_non_admin_reports(request, subject="invoice reports"):
     """Return a 403 Response for non-admins, or None to allow.
 
     The invoice reports are org-wide financial roll-ups -- total invoiced and
@@ -2047,12 +2047,16 @@ def _forbid_non_admin_reports(request):
     leak those scopes exist to prevent. So the three report endpoints are
     admin-only (Django superusers included), the same bar as the org and team
     settings.
+
+    Account statements are held to the same bar: one sums every invoice on an
+    account, including ones a member may not open, and one built from only the
+    invoices a member can see would show the customer a wrong balance.
     """
     if not is_org_admin(request.profile):
         return Response(
             {
                 "error": True,
-                "message": "Only an administrator can view invoice reports.",
+                "message": f"Only an administrator can view {subject}.",
             },
             status=status.HTTP_403_FORBIDDEN,
         )
@@ -2390,6 +2394,70 @@ class AgingReportView(APIView):
 
 
 # =============================================================================
+# ACCOUNT STATEMENTS
+# =============================================================================
+
+
+def _statement_or_error(request, account_id):
+    """``(account, statement, None)``, or ``(None, None, response)`` to return.
+
+    Admin-only before anything else, so a member learns nothing about which
+    accounts exist. Then the account, in the caller's org or a 404. A bad
+    period raises the ValidationError DRF answers with a 400.
+    """
+    denied = _forbid_non_admin_reports(request, "account statements")
+    if denied:
+        return None, None, denied
+    account = Account.objects.filter(id=account_id, org=request.profile.org).first()
+    if account is None:
+        return (
+            None,
+            None,
+            Response(
+                {"error": True, "message": "Account not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            ),
+        )
+    start, end = statement_period(request.GET)
+    return account, build_statement(account, start, end), None
+
+
+class AccountStatementView(APIView):
+    """An account's statement for a period: per currency, the opening balance,
+    the period's invoices, payments and cancellations with a running balance,
+    and the closing balance. See `invoices.statements`."""
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(
+        tags=["Reports"],
+        operation_id="account_statement",
+        responses=AccountStatementSerializer,
+    )
+    def get(self, request, account_id):
+        _, statement, error = _statement_or_error(request, account_id)
+        if error:
+            return error
+        return Response(AccountStatementSerializer(statement).data)
+
+
+class AccountStatementPDFView(APIView):
+    """The same statement as a PDF."""
+
+    permission_classes = (IsAuthenticated, HasOrgContext)
+
+    @extend_schema(tags=["Reports"], operation_id="account_statement_pdf")
+    def get(self, request, account_id):
+        account, statement, error = _statement_or_error(request, account_id)
+        if error:
+            return error
+        return _pdf_response(
+            lambda: generate_statement_pdf(account, statement),
+            generate_statement_filename(statement),
+        )
+
+
+# =============================================================================
 # INVOICE FROM OPPORTUNITY
 # =============================================================================
 
@@ -2583,7 +2651,6 @@ class InvoiceFromTimeEntriesView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request, *args, **kwargs):
-        from accounts.models import Account
         from cases.models import TimeEntry
         from cases.services.billing import (
             TimeEntryInvoicingError,

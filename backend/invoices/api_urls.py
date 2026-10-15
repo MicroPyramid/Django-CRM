@@ -163,6 +163,17 @@ urlpatterns = [
         api_views.AgingReportView.as_view(),
         name="reports_aging",
     ),
+    # Account statements (admin-only, like the reports)
+    path(
+        "statements/<uuid:account_id>/",
+        api_views.AccountStatementView.as_view(),
+        name="account_statement",
+    ),
+    path(
+        "statements/<uuid:account_id>/pdf/",
+        api_views.AccountStatementPDFView.as_view(),
+        name="account_statement_pdf",
+    ),
     # ==========================================================================
     # INVOICE FROM OPPORTUNITY
     # ==========================================================================

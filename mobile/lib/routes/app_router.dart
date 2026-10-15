@@ -14,6 +14,7 @@ import '../screens/auth/magic_link_email_screen.dart';
 import '../screens/auth/magic_link_code_screen.dart';
 import '../screens/accounts/account_detail_screen.dart';
 import '../screens/accounts/account_form_screen.dart';
+import '../screens/accounts/account_statement_screen.dart';
 import '../screens/accounts/accounts_list_screen.dart';
 import '../screens/auth/org_create_screen.dart';
 import '../screens/contacts/contact_detail_screen.dart';
@@ -134,6 +135,7 @@ class AppRoutes {
   static const String accountCreate = '/accounts/create';
   static const String accountDetail = '/accounts/:id';
   static const String accountEdit = '/accounts/:id/edit';
+  static const String accountStatement = '/accounts/:id/statement';
   static const String contacts = '/contacts';
   static const String contactCreate = '/contacts/create';
   static const String contactDetail = '/contacts/:id';
@@ -425,6 +427,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             AccountFormScreen(accountId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.accountStatement,
+        name: 'accountStatement',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AccountStatementScreen(accountId: state.pathParameters['id']!),
       ),
       // Registered after `create` and `:id/edit` so those literal segments are
       // not swallowed by the `:id` parameter.

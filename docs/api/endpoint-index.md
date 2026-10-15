@@ -143,6 +143,8 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/invoices/reports/aging/` | GET |
 | `/api/invoices/reports/dashboard/` | GET |
 | `/api/invoices/reports/revenue/` | GET |
+| `/api/invoices/statements/{account_id}/` | GET |
+| `/api/invoices/statements/{account_id}/pdf/` | GET |
 | `/api/invoices/templates/` | GET, POST |
 | `/api/invoices/templates/{id}/` | DELETE, GET, PUT |
 | `/api/invoices/templates/{id}/editor/` | GET |

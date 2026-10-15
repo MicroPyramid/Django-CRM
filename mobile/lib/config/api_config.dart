@@ -639,6 +639,33 @@ class ApiConfig {
       '$apiBaseUrl/invoices/reports/dashboard/';
   static String get invoiceReportAging => '$apiBaseUrl/invoices/reports/aging/';
 
+  /// An account's statement for a period, as figures and as a PDF. Admin-only
+  /// like the reports. Blank dates are left out, so the server's default (this
+  /// month so far, in the org's day) applies.
+  static String accountStatement(
+    String accountId, {
+    String? start,
+    String? end,
+  }) => _withPeriod('$apiBaseUrl/invoices/statements/$accountId/', start, end);
+  static String accountStatementPdf(
+    String accountId, {
+    String? start,
+    String? end,
+  }) => _withPeriod(
+    '$apiBaseUrl/invoices/statements/$accountId/pdf/',
+    start,
+    end,
+  );
+  static String _withPeriod(String url, String? start, String? end) {
+    final query = {
+      if (start != null && start.isNotEmpty) 'start_date': start,
+      if (end != null && end.isNotEmpty) 'end_date': end,
+    };
+    return query.isEmpty
+        ? url
+        : Uri.parse(url).replace(queryParameters: query).toString();
+  }
+
   /// Kanban boards. The list returns only boards you own or belong to, so an
   /// empty list is an answer and not a permission failure: creating one makes
   /// you its owner.

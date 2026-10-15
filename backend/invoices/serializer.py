@@ -1756,3 +1756,45 @@ class PublicEstimateSerializer(serializers.ModelSerializer):
             "terms",
             "line_items",
         )
+
+
+# =============================================================================
+# ACCOUNT STATEMENTS (read-only; built by `invoices.statements.build_statement`)
+# =============================================================================
+
+
+def _statement_money():
+    # No max_digits: a balance is a sum of many invoices and can outgrow one.
+    return serializers.DecimalField(max_digits=None, decimal_places=2)
+
+
+class StatementEntrySerializer(serializers.Serializer):
+    date = serializers.DateField()
+    kind = serializers.ChoiceField(choices=("invoice", "payment", "cancellation"))
+    invoice_id = serializers.UUIDField()
+    invoice_number = serializers.CharField()
+    description = serializers.CharField()
+    amount = _statement_money()
+    balance = _statement_money()
+
+
+class StatementCurrencySerializer(serializers.Serializer):
+    currency = serializers.CharField()
+    opening_balance = _statement_money()
+    invoiced = _statement_money()
+    paid = _statement_money()
+    cancelled = _statement_money()
+    closing_balance = _statement_money()
+    entries = StatementEntrySerializer(many=True)
+
+
+class StatementAccountSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
+class AccountStatementSerializer(serializers.Serializer):
+    account = StatementAccountSerializer()
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    currencies = StatementCurrencySerializer(many=True)
