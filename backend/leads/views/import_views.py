@@ -24,10 +24,10 @@ MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB; matches the UI hint
 def _read_upload(request, field="file", csv_name=True):
     """Return (file_bytes, problem); exactly one is None.
 
-    The cap is measured on the bytes actually read. `upload.size` comes from a
-    client-supplied Content-Length for in-memory uploads and can understate
-    the body. `csv_name=False` skips the extension check for `upload/`, which
-    never had one; the content is parsed as CSV either way.
+    Reads at most one byte past the cap, so an oversized file is refused
+    without being loaded into memory, and the cap is measured on those bytes
+    rather than on `upload.size`. `csv_name=False` skips the extension check
+    for `upload/`, which never had one; the content is parsed as CSV either way.
     """
     upload = request.FILES.get(field)
     if not upload:

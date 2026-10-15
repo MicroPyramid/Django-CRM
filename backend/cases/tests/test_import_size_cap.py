@@ -1,16 +1,13 @@
-"""The upload cap must measure the body, not a number the client supplied.
+"""The upload cap measures the bytes read, not `upload.size`.
 
-`cases.import_views._read_upload` gated on `upload.size`, which for an
-in-memory upload is derived from the request's Content-Length. Two ways past
-it: understate the header, or omit it so `size` is falsy and the guard's
-leading `if upload.size and ...` skipped the comparison outright.
+`cases.import_views._read_upload` used to gate on `upload.size` behind a
+leading `if upload.size and ...`, so a falsy size skipped the comparison
+outright. Django's own upload handlers set `size` from the bytes they
+received, but the cap should not depend on how the upload object was built,
+so it measures what `read()` returns.
 
-`contacts.import_views` already measures `len(file_bytes)` after `read()` and
-says why in its docstring. This pins the cases twin to the same behaviour.
-
-Exercised against the helper rather than over HTTP because the point is what
-the cap trusts. Django's own test client computes an honest size, so a request
-built through it cannot express the lie being defended against.
+Exercised against the helper rather than over HTTP, because Django's test
+client always produces an honest size and the point is what the cap trusts.
 """
 
 import io
@@ -28,8 +25,8 @@ class _LyingUpload:
         self.size = declared_size
         self._buf = io.BytesIO(payload)
 
-    def read(self):
-        return self._buf.read()
+    def read(self, size=-1):
+        return self._buf.read(size)
 
 
 class _Request:
