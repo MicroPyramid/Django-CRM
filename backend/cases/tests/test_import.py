@@ -470,3 +470,58 @@ class TestMalformedInputIsARowErrorNotA500:
         case = Case.objects.get(org=org_a, name="Leap day")
         assert str(case.closed_on) == "2024-02-29"
         assert case.tags.get().name == "t" * 50
+
+
+@pytest.mark.django_db
+class TestArchivedTag:
+    """An archived tag named in the file is a row error, not attached while it
+    stays hidden everywhere else (#814). The import does not restore it either:
+    restoring a tag is admin-only in the tags API, and importing is open to
+    members with sales access. The message names the tag as Settings lists it.
+    """
+
+    PREVIEW = "/api/cases/import/preview/"
+    COMMIT = "/api/cases/import/commit/"
+    MESSAGE = "Tag 'VIP' is archived; an admin can restore it in Settings > Tags"
+
+    def _post(self, client, url):
+        csv_file = _csv(
+            ["name", "status", "priority", "tags"],
+            [["Login fails", "New", "High", "vip "]],
+        )
+        return client.post(url, {"file": csv_file}, format="multipart")
+
+    def _assert_refused(self, response, status, org):
+        assert response.status_code == status, response.json()
+        errors = response.json()["errors"]
+        assert [(e["row"], e["field"], e["message"]) for e in errors] == [
+            (1, "tags", self.MESSAGE)
+        ]
+        assert not Tags.objects.get(org=org).is_active
+        assert not Case.objects.exists()
+
+    @pytest.mark.parametrize("url, status", [(PREVIEW, 200), (COMMIT, 400)])
+    def test_is_a_row_error_for_an_admin(
+        self, admin_client, admin_profile, org_a, url, status
+    ):
+        Tags.objects.create(name="VIP", org=org_a, is_active=False)
+        self._assert_refused(self._post(admin_client, url), status, org_a)
+
+    @pytest.mark.parametrize("url, status", [(PREVIEW, 200), (COMMIT, 400)])
+    def test_is_a_row_error_for_sales_access(
+        self, user_client, user_profile, org_a, url, status
+    ):
+        user_profile.has_sales_access = True
+        user_profile.save(update_fields=["has_sales_access"])
+        Tags.objects.create(name="VIP", org=org_a, is_active=False)
+        self._assert_refused(self._post(user_client, url), status, org_a)
+
+    def test_another_orgs_archived_tag_does_not_block(
+        self, admin_client, admin_profile, org_a, org_b
+    ):
+        with rls_org(org_b):
+            Tags.objects.create(name="VIP", org=org_b, is_active=False)
+        response = self._post(admin_client, self.COMMIT)
+        assert response.status_code == 200, response.json()
+        tag = Case.objects.get().tags.get()
+        assert (tag.org_id, tag.is_active) == (org_a.id, True)

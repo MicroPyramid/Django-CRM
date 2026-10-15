@@ -174,6 +174,7 @@ class _RefMaps:
 
     Keys are lowercased; values are canonical UUID strings for the match.
     The three "existing_*" sets exist only for duplicate detection.
+    `archived_tags` is keyed by slug, see `Tags.archived_errors`.
     """
 
     accounts: dict[str, str]
@@ -182,6 +183,7 @@ class _RefMaps:
     existing_emails: set[str]
     existing_phones: set[str]
     existing_full_names: set[str]
+    archived_tags: dict[str, str]
 
 
 def _decode(file_bytes: bytes) -> str | None:
@@ -334,6 +336,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
     candidate_emails: set[str] = set()
     candidate_phones: set[str] = set()
     candidate_full_names: set[str] = set()
+    tag_names: set[str] = set()
 
     for _idx, record in parsed:
         account_name = record.get("account_name", "")
@@ -343,6 +346,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
             assigned_emails.add(email.lower())
         for team in _split_multi(record.get("team_names", "")):
             team_names.add(team.lower())
+        tag_names.update(_split_multi(record.get("tags", "")))
         email = record.get("email", "")
         if email:
             candidate_emails.add(email.lower())
@@ -442,6 +446,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
         existing_emails=existing_emails,
         existing_phones=existing_phones,
         existing_full_names=existing_full_names,
+        archived_tags=Tags.archived_errors(org, tag_names),
     )
 
 
@@ -661,6 +666,8 @@ def _validate_and_build(
         name_error = Tags.name_error(tag_name)
         if name_error:
             errors.append(RowError(idx, "tags", f"Tag '{tag_name}': {name_error}"))
+        elif archived_error := refs.archived_tags.get(Tags.slug_for(tag_name)):
+            errors.append(RowError(idx, "tags", archived_error))
 
     if errors:
         return errors, None

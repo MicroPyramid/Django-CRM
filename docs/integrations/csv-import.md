@@ -79,10 +79,11 @@ imported lead passes exactly the checks a hand-made one does. A blank cell means
 Choice columns (`status`, `source`, `industry`, `rating`, `currency`, `country`) accept the stored
 value or its label, case-insensitively. A row cannot be imported as `converted`: import it, then
 convert it, so the account, contact and opportunity are created. `assigned_emails` and
-`team_names` must resolve to an active profile or team in your org; `tags` are auto-created. If
-your org has a required lead custom field, the whole file is refused, because a CSV cannot set
-one and the create API would refuse the lead.
+`team_names` must resolve to an active profile or team in your org; `tags` are auto-created (see
+[Matching](#matching) for archived tags). If your org has a required lead custom field, the whole
+file is refused, because a CSV cannot set one and the create API would refuse the lead.
 
+## Contacts
 
 `POST /api/contacts/import/preview/` and `POST /api/contacts/import/commit/`
 (`ContactImportPreviewView` / `ContactImportCommitView`, `backend/contacts/import_views.py`), both
@@ -126,6 +127,13 @@ a 5,000-row file with several reference columns runs on the order of ten queries
 not tens of thousands, and, just as importantly, the lookups can't reach across tenants: a CSV
 that names another org's account or a team that doesn't exist in your org fails to resolve the same
 way a typo would, because the prefetch never looks outside `org=`.
+
+Tags are the one reference that is created rather than resolved: a name your org has no tag for is
+created at commit. A name that matches an **archived** tag is a row error instead, in all three
+importers, with the message `Tag 'VIP' is archived; an admin can restore it in Settings > Tags`.
+Names are compared by slug, so `vip` and `V.I.P` both match `VIP`. The import does not restore the
+tag itself, because restoring is admin-only in the tags API and importing is open to members with
+sales access. Restore it in Settings > Tags, or take it out of the file.
 
 Duplicate detection differs by importer, because "duplicate" means something different for a
 person than for a ticket:

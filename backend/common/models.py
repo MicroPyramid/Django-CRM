@@ -309,6 +309,25 @@ class Tags(BaseModel):
             )
         return None
 
+    @classmethod
+    def archived_errors(cls, org, names):
+        """Row-error text for each of `names` that is an archived tag in `org`.
+
+        Keyed by slug, so "vip" finds "VIP". The three CSV importers refuse
+        such a name rather than attach a tag that is hidden everywhere else,
+        and they do not restore it: restoring is admin-only in the tags API,
+        while importing is open to members with sales access.
+        """
+        slugs = {cls.slug_for(name) for name in names}
+        if not slugs:
+            return {}
+        return {
+            slug: f"Tag '{name}' is archived; an admin can restore it in Settings > Tags"
+            for slug, name in cls.objects.filter(
+                org=org, is_active=False, slug__in=slugs
+            ).values_list("slug", "name")
+        }
+
     def save(self, *args, **kwargs):
         self.slug = self.slug_for(self.name)
         super().save(*args, **kwargs)

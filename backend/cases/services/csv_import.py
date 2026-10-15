@@ -8,7 +8,7 @@ Reference fields (`account_name`, `contact_emails`, `assigned_emails`,
 `team_names`) must resolve within the caller's org, and `account_name` and
 `contact_emails` only among the records the importer may open; missing
 references are reported as row errors rather than silently dropped. Tags are
-auto-created at commit if not present.
+auto-created at commit if not present; an archived one is a row error.
 
 All reference lookups are bulk-prefetched once per call (one SELECT per
 reference type), not per-row, a 5000-row file with five reference columns
@@ -128,6 +128,7 @@ class _RefMaps:
 
     Keys are lowercased; values are the canonical UUID string for the match.
     `existing_case_names` is a set (not a map) because we only need membership.
+    `archived_tags` is keyed by slug, see `Tags.archived_errors`.
     """
 
     existing_case_names: set[str]
@@ -135,6 +136,7 @@ class _RefMaps:
     contacts: dict[str, str]
     profiles: dict[str, str]
     teams: dict[str, str]
+    archived_tags: dict[str, str]
 
 
 def _decode(file_bytes: bytes) -> str | None:
@@ -268,6 +270,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
     contact_emails: set[str] = set()
     assigned_emails: set[str] = set()
     team_names: set[str] = set()
+    tag_names: set[str] = set()
 
     for _idx, record in parsed:
         name = record.get("name", "")
@@ -282,6 +285,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
             assigned_emails.add(email.lower())
         for team in _split_multi(record.get("team_names", "")):
             team_names.add(team.lower())
+        tag_names.update(_split_multi(record.get("tags", "")))
 
     # Only tickets the importer may open. Ticket names carry no DB constraint,
     # so this check is a courtesy against importing the same ticket twice, not
@@ -351,6 +355,7 @@ def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _
         contacts=contacts,
         profiles=profiles,
         teams=teams,
+        archived_tags=Tags.archived_errors(org, tag_names),
     )
 
 
@@ -487,6 +492,8 @@ def _validate_and_build(
         name_error = Tags.name_error(tag_name)
         if name_error:
             errors.append(RowError(idx, "tags", f"Tag '{tag_name}': {name_error}"))
+        elif archived_error := refs.archived_tags.get(Tags.slug_for(tag_name)):
+            errors.append(RowError(idx, "tags", archived_error))
 
     if errors:
         return errors, None

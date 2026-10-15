@@ -13,6 +13,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from common.models import CustomFieldDefinition, Tags, Teams
+from conftest import rls_org
 from leads import csv_import
 from leads.models import Lead
 
@@ -624,26 +625,48 @@ class TestTagSlugs:
         assert tag.slug == "trade-show"
         assert set(Lead.objects.values_list("tags", flat=True)) == {tag.id}
 
-    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
-    def test_archived_tag_is_a_row_error_for_an_admin(self, admin_client, org_a, url):
-        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
-        response = _post(admin_client, url, self._tagged("a@example.com", "vip "))
-        error = response.json()["errors"][0]
-        assert (error["row"], error["field"]) == (1, "tags")
-        assert error["message"] == "Tag 'vip' is archived; restore it in Settings first"
-        assert not Tags.objects.get(org=org_a).is_active
+
+@pytest.mark.django_db
+class TestArchivedTag:
+    """An archived tag named in the file is a row error, not attached while it
+    stays hidden everywhere else (#814). The import does not restore it either:
+    restoring a tag is admin-only in the tags API, and importing is open to
+    members with sales access. The message names the tag as Settings lists it.
+    """
+
+    MESSAGE = "Tag 'VIP' is archived; an admin can restore it in Settings > Tags"
+
+    def _post(self, client, url):
+        upload = _csv(BASE + ["tags"], [["Ada", "Byte", "a@example.com", "vip "]])
+        return _post(client, url, upload)
+
+    def _assert_refused(self, response, status, org):
+        assert response.status_code == status, response.json()
+        errors = response.json()["errors"]
+        assert [(e["row"], e["field"], e["message"]) for e in errors] == [
+            (1, "tags", self.MESSAGE)
+        ]
+        assert not Tags.objects.get(org=org).is_active
         assert not Lead.objects.exists()
 
-    @pytest.mark.parametrize("url", [PREVIEW, COMMIT])
-    def test_archived_tag_is_a_row_error_for_sales_access(
-        self, user_client, user_profile, org_a, url
+    @pytest.mark.parametrize("url, status", [(PREVIEW, 200), (COMMIT, 400)])
+    def test_is_a_row_error_for_an_admin(self, admin_client, org_a, url, status):
+        Tags.objects.create(name="VIP", org=org_a, is_active=False)
+        self._assert_refused(self._post(admin_client, url), status, org_a)
+
+    @pytest.mark.parametrize("url, status", [(PREVIEW, 200), (COMMIT, 400)])
+    def test_is_a_row_error_for_sales_access(
+        self, user_client, user_profile, org_a, url, status
     ):
         user_profile.has_sales_access = True
         user_profile.save(update_fields=["has_sales_access"])
-        Tags.objects.create(name="VIP", slug="vip", org=org_a, is_active=False)
-        response = _post(user_client, url, self._tagged("a@example.com", "VIP"))
-        error = response.json()["errors"][0]
-        assert (error["row"], error["field"]) == (1, "tags")
-        assert "archived" in error["message"]
-        assert not Tags.objects.get(org=org_a).is_active
-        assert not Lead.objects.exists()
+        Tags.objects.create(name="VIP", org=org_a, is_active=False)
+        self._assert_refused(self._post(user_client, url), status, org_a)
+
+    def test_another_orgs_archived_tag_does_not_block(self, admin_client, org_a, org_b):
+        with rls_org(org_b):
+            Tags.objects.create(name="VIP", org=org_b, is_active=False)
+        response = self._post(admin_client, COMMIT)
+        assert response.status_code == 200, response.json()
+        tag = Lead.objects.get().tags.get()
+        assert (tag.org_id, tag.is_active) == (org_a.id, True)
