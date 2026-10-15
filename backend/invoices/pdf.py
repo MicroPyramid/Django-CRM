@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlparse
 
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.utils.html import escape
 
 try:
     from weasyprint import CSS, HTML
@@ -662,6 +663,10 @@ def render_invoice_template(template_html, context):
     Render a custom invoice template with context variables.
 
     Supports basic variable substitution like {{invoice.invoice_number}}.
+    Every value is HTML-escaped, as the default template's autoescape does:
+    the template is admin-authored, but the values are written by any member
+    who may create an invoice, and raw markup in them could restyle or cover
+    the admin's layout in the PDF.
     """
     invoice = context.get("invoice")
     org = context.get("org")
@@ -707,7 +712,7 @@ def render_invoice_template(template_html, context):
         replacements[f"{{{{invoice.{field}}}}}"] = getattr(invoice, field, "") or ""
 
     for placeholder, value in replacements.items():
-        template_html = template_html.replace(placeholder, str(value))
+        template_html = template_html.replace(placeholder, escape(value))
 
     return template_html
 
