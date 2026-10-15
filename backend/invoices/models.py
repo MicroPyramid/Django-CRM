@@ -1,9 +1,10 @@
+import re
 import secrets
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import connection, models, transaction
-from django.db.models import IntegerField, Max
+from django.db.models import DecimalField, Max
 from django.db.models.functions import Cast, Substr
 from django.utils import timezone
 from django.utils.timesince import timesince
@@ -265,14 +266,38 @@ class Product(BaseModel):
         return self.name
 
 
-def _next_number(model, field, prefix, org_id):
-    """Return the next ``<prefix>NNNN`` in one org's sequence for ``field``.
+# What `Org.number_date_part` puts between a number's prefix and its counter.
+_NUMBER_DATE_FORMATS = {"NONE": "", "YEAR": "%Y", "MONTH": "%Y%m", "DAY": "%Y%m%d"}
+
+
+def _number_series(prefix, date_part):
+    """The part of a new number before its counter: the org's prefix, then
+    today in the org's day and a hyphen if the org dates its numbers. Each
+    distinct series counts from 1, which is what restarts a dated counter
+    each period."""
+    date_format = _NUMBER_DATE_FORMATS[date_part]
+    if not date_format:
+        return prefix
+    return f"{prefix}{timezone.localdate():{date_format}}-"
+
+
+def _next_number(model, field, series, org_id, *, padding, start=1):
+    """Return the next number in one org's ``series`` for ``field``: one past
+    the highest counter already issued in it, never below ``start``, padded to
+    ``padding`` digits.
+
+    Only numbers of exactly this shape count, the series and then digits and
+    nothing else. A number from an earlier format can open with the same
+    characters (``INV-20260915-0001`` starts with ``INV-``), and what follows
+    is not a counter. Read as one it would jump the count, or fail the cast
+    and every save in the org with it. The cast is to a decimal rather than an
+    integer so that a long run of digits cannot overflow it either.
 
     Numbers are a per-org sequence, unique on ``(org, field)``. Call this in
     the transaction that inserts the row: the advisory lock serializes
     allocation per model and org until that transaction ends, so a concurrent
     create in the same org waits, then counts this row. A row lock cannot do
-    that, because the day's first number has no row to lock. SQLite, the
+    that, because a series' first number has no row to lock. SQLite, the
     test-only backend, serializes writers itself and has no advisory locks.
     """
     if connection.vendor == "postgresql":
@@ -282,11 +307,19 @@ def _next_number(model, field, prefix, org_id):
                 [f"{model._meta.db_table}:{org_id}"],
             )
     result = (
-        model.objects.filter(org_id=org_id, **{f"{field}__startswith": prefix})
-        .annotate(seq_num=Cast(Substr(field, len(prefix) + 1), IntegerField()))
+        model.objects.filter(
+            org_id=org_id, **{f"{field}__regex": rf"^{re.escape(series)}[0-9]+$"}
+        )
+        .annotate(
+            seq_num=Cast(
+                Substr(field, len(series) + 1),
+                DecimalField(max_digits=50, decimal_places=0),
+            )
+        )
         .aggregate(max_seq=Max("seq_num"))
     )
-    return f"{prefix}{(result['max_seq'] or 0) + 1:04d}"
+    counter = max(int(result["max_seq"] or 0) + 1, start)
+    return f"{series}{counter:0{padding}d}"
 
 
 # =============================================================================
@@ -541,9 +574,17 @@ class Invoice(AssignableMixin, BaseModel):
             register_portal_token(self.public_token, self.org_id, "invoice", self.id)
 
     def generate_invoice_number(self):
-        """Next number in this org's sequence: INV-YYYYMMDD-XXXX"""
-        prefix = f"INV-{timezone.localdate():%Y%m%d}-"
-        return _next_number(Invoice, "invoice_number", prefix, self.org_id)
+        """Next number in this org's sequence, in the format its settings
+        choose (`INV-YYYYMMDD-NNNN` unless an admin changed it)."""
+        org = self.org
+        return _next_number(
+            Invoice,
+            "invoice_number",
+            _number_series(org.invoice_number_prefix, org.number_date_part),
+            self.org_id,
+            padding=org.number_padding,
+            start=org.invoice_number_start,
+        )
 
     def calculate_due_date(self):
         """Calculate due date based on payment terms"""
@@ -1021,9 +1062,16 @@ class Estimate(AssignableMixin, BaseModel):
             register_portal_token(self.public_token, self.org_id, "estimate", self.id)
 
     def generate_estimate_number(self):
-        """Next number in this org's sequence: EST-YYYYMMDD-XXXX"""
-        prefix = f"EST-{timezone.localdate():%Y%m%d}-"
-        return _next_number(Estimate, "estimate_number", prefix, self.org_id)
+        """Next number in this org's sequence, in its invoices' format with
+        the estimate prefix. The invoice starting number does not apply."""
+        org = self.org
+        return _next_number(
+            Estimate,
+            "estimate_number",
+            _number_series(org.estimate_number_prefix, org.number_date_part),
+            self.org_id,
+            padding=org.number_padding,
+        )
 
     def recalculate_totals(self):
         """Recalculate estimate totals from line items; the subtotal is the

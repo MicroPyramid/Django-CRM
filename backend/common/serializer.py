@@ -145,6 +145,10 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
     text (still safe to render -- see `$lib/terminology.js` on the frontend -- but not
     something this endpoint is meant to let anyone set by hand) or overwrite `vertical`,
     which is meant to record which pack was actually applied.
+
+    The five numbering fields set how new invoice and estimate numbers look
+    (#802). Their format rules are validators on the `Org` columns; `validate`
+    adds the one rule that spans two of them.
     """
 
     currency_symbol = serializers.SerializerMethodField()
@@ -177,6 +181,12 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
             # Case-handling behaviour (org-wide switches). Editable only here.
             "csat_enabled",
             "auto_close_children_on_parent_close",
+            # Invoice and estimate numbering. See `Org.NUMBER_DATE_PARTS`.
+            "invoice_number_prefix",
+            "estimate_number_prefix",
+            "number_date_part",
+            "number_padding",
+            "invoice_number_start",
             # Vertical pack. Read-only -- see the class docstring.
             "vertical",
             "terminology",
@@ -197,6 +207,25 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
     @extend_schema_field(str)
     def get_currency_symbol(self, obj):
         return CURRENCY_SYMBOLS.get(obj.default_currency or "USD", "$")
+
+    def validate(self, attrs):
+        # A dated counter starts again each period, so a starting number would
+        # start it there every time. Checked against the stored value of
+        # whichever half this PATCH leaves out, so adding a date to a sequence
+        # that has a start has to reset it. The model's check constraint is
+        # the backstop for any other write path.
+        date_part = attrs.get("number_date_part", self.instance.number_date_part)
+        start = attrs.get("invoice_number_start", self.instance.invoice_number_start)
+        if date_part != "NONE" and start != 1:
+            raise serializers.ValidationError(
+                {
+                    "invoice_number_start": [
+                        "A starting number only applies to numbers without a "
+                        "date. A dated number's counter restarts at 1 each period."
+                    ]
+                }
+            )
+        return attrs
 
     def validate_logo(self, logo):
         return validate_upload_size(logo)

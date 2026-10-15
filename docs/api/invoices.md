@@ -262,6 +262,35 @@ reversed on the day it was cancelled, so an earlier month's statement still clos
 showed then, and a payment it took leaves the account in credit. A cancelled invoice nobody was sent
 or paid was never billed, and is left off.
 
+## Document numbers
+
+An org chooses how its new invoice and estimate numbers look through five fields on
+`GET/PATCH /api/org/settings/`. Any member may read them; only an admin may change them (403
+otherwise). A number is the prefix, then the date and a hyphen if the org dates its numbers, then a
+zero-padded counter.
+
+| Field | Default | Rule |
+|---|---|---|
+| `invoice_number_prefix` | `INV-` | Up to 20 letters, digits, `-` and `_`; may be blank |
+| `estimate_number_prefix` | `EST-` | Same rule |
+| `number_date_part` | `DAY` | `NONE`, `YEAR` (`2026`), `MONTH` (`202610`) or `DAY` (`20261015`) |
+| `number_padding` | `4` | Counter width, 1 to 10 digits. A counter that outgrows it is not cut |
+| `invoice_number_start` | `1` | Lowest counter the next invoice may take, 1 to 999,999,999. Must be `1` unless `number_date_part` is `NONE` |
+
+- **The defaults are the format every org had before these fields existed**, so nothing changes
+  until an admin changes it. A number already issued never moves.
+- **The counter restarts whenever the part before it changes.** With `YEAR`, the first invoice of
+  2027 is `INV-2027-0001`. With `NONE` it is one running sequence.
+- **Estimates share the date part and padding** and have their own prefix. The starting number is
+  for invoices only, for an org carrying on a sequence from another system. If invoices already go
+  past it, numbering carries on from the highest.
+- **Only numbers of exactly the current shape are counted.** After switching from the default to
+  `NONE` with prefix `INV-`, an earlier `INV-20260915-0007` is not counted, so the next invoice is
+  `INV-0001`.
+- `PATCH` with `invoice_number_start` other than `1` and a dated `number_date_part` is a 400 on
+  `invoice_number_start`. That includes a `PATCH` that adds a date to a sequence which already has a
+  start: send `invoice_number_start: 1` with it.
+
 ## Public portal endpoints
 
 **Mounted at `/api/public/...`, not under `/api/invoices/...`**: `backend/crm/urls.py:23`:
@@ -343,9 +372,10 @@ and `PUT /api/invoices/{id}/` accept.
 | `line_items` | list | optional | See [Line items](#line-items) |
 | `status` | one of `INVOICE_STATUS` | **read-only** | Always created `Draft`; changed only via `send`/`mark-paid`/`cancel` |
 
-`invoice_number` is not part of the serializer at all, `Invoice.save()` generates and assigns it
-server-side the first time the row is saved (`invoices/models.py:384-411`), as `INV-YYYYMMDD-NNNN`
-with the date taken from the org's day.
+`invoice_number` is not part of the serializer at all. `Invoice.save()` generates and assigns it
+server-side the first time the row is saved, in the format the org chose (see
+[Document numbers](#document-numbers)). By default that is `INV-YYYYMMDD-NNNN`, with the date taken
+from the org's day.
 
 `EstimateCreateSerializer.Meta.fields` (`invoices/serializer.py:904-928`) mirrors the invoice shape
 closely: `title` (**required**), `account_id`/`contact_id` (**required**, org-validated),
@@ -353,8 +383,8 @@ closely: `title` (**required**), `account_id`/`contact_id` (**required**, org-va
 fields, `issue_date` (optional, defaults to today in the org's timezone), `expiry_date` (optional, no
 default. This is what the public accept endpoint checks), `public_link_enabled`,
 and `line_items`. **`status` is writable here**. See the caveat in [Estimates](#estimates). Like
-invoices, `estimate_number` is server-generated on first save (`EST-YYYYMMDD-NNNN`, the org's day),
-not part of the serializer.
+invoices, `estimate_number` is server-generated on first save in the org's chosen format (by default
+`EST-YYYYMMDD-NNNN`, the org's day), not part of the serializer.
 
 `GET` responses on both (`InvoiceSerializer`/`EstimateSerializer`, `invoices/serializer.py:444-539,
 873-889`) additionally return, but never accept as input: `id`, `subtotal`, `discount_amount`,

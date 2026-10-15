@@ -4,21 +4,24 @@ import { listContacts } from '$lib/server/v2/contacts.js';
 import { listProducts } from '$lib/server/v2/products.js';
 import { createInvoice } from '$lib/server/v2/invoices.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
+import { getNumbering } from '$lib/server/v2/organization.js';
 
 /**
  * The builder needs three pickers: account (required), contact (required, the
  * create serializer enforces it and cross-validates it against the account),
  * and the product catalogue for line items. All three reuse the real list
  * layers; nothing here is a fixture. Contacts carry their primary account so
- * the page can offer only the ones that pass the account↔contact rule.
+ * the page can offer only the ones that pass the account↔contact rule. The
+ * org's numbering format feeds the "Assigned on save" preview.
  *
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies }) {
-  const [accounts, contacts, products] = await Promise.all([
+  const [accounts, contacts, products, numbering] = await Promise.all([
     listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
-    listProducts({ cookies })
+    listProducts({ cookies }),
+    getNumbering({ cookies })
   ]);
 
   return {
@@ -31,7 +34,8 @@ export async function load({ cookies }) {
     })),
     products: products.results
       .filter((p) => p.is_active)
-      .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price }))
+      .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price })),
+    numbering
   };
 }
 

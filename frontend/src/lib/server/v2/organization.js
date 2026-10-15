@@ -51,7 +51,14 @@ export const EDITABLE_FIELDS = [
   'tax_id',
   'default_currency',
   'default_country',
-  'timezone'
+  'timezone',
+  // Invoice and estimate numbering (#802). Sent as typed; the serializer
+  // parses the two numbers and enforces every format rule.
+  'invoice_number_prefix',
+  'estimate_number_prefix',
+  'number_date_part',
+  'number_padding',
+  'invoice_number_start'
 ];
 
 /**
@@ -108,6 +115,29 @@ export async function getOrgSettings({ cookies }) {
  */
 export function updateOrgSettings({ cookies }, body) {
   return apiRequest('/org/settings/', { method: 'PATCH', body }, { cookies });
+}
+
+/**
+ * The org's invoice and estimate numbering (#802), for the "Assigned on save"
+ * preview on the two create forms. Only these five fields leave the server
+ * layer. Null when the read fails: the form drops its preview rather than
+ * failing to open over one.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ */
+export async function getNumbering({ cookies }) {
+  try {
+    const org = await apiRequest('/org/settings/', {}, { cookies });
+    return {
+      invoice_number_prefix: org.invoice_number_prefix,
+      estimate_number_prefix: org.estimate_number_prefix,
+      number_date_part: org.number_date_part,
+      number_padding: org.number_padding,
+      invoice_number_start: org.invoice_number_start
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

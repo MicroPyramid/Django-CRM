@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -7,6 +8,7 @@ import '../../data/models/deal.dart' show Currency;
 import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/org_date.dart';
 
 /// Editing the organization.
 ///
@@ -15,7 +17,8 @@ import '../../providers/settings_provider.dart';
 /// whose role is not ADMIN, whatever reaches it.
 ///
 /// What this form owns is the org's own settings: the company profile printed
-/// on documents, the locale defaults, and the two org-wide switches. What it
+/// on documents, the locale defaults, invoice numbering (#802), and the two
+/// org-wide switches. What it
 /// deliberately does not own is the org API key (a credential, rotated through
 /// its own action) and `is_active`, the org kill switch. Neither is a field
 /// here and the server would not accept them if they were.
@@ -101,6 +104,7 @@ class _FormState extends ConsumerState<_Form> {
   late String _defaultCountry;
   late String _currency;
   late String _timezone;
+  late String _datePart;
   late bool _csat;
   late bool _cascade;
   String? _error;
@@ -121,11 +125,22 @@ class _FormState extends ConsumerState<_Form> {
       'city': TextEditingController(text: org.city),
       'state': TextEditingController(text: org.state),
       'postcode': TextEditingController(text: org.postcode),
+      'invoice_number_prefix': TextEditingController(
+        text: org.invoiceNumberPrefix,
+      ),
+      'estimate_number_prefix': TextEditingController(
+        text: org.estimateNumberPrefix,
+      ),
+      'number_padding': TextEditingController(text: '${org.numberPadding}'),
+      'invoice_number_start': TextEditingController(
+        text: '${org.invoiceNumberStart}',
+      ),
     };
     _country = org.country;
     _defaultCountry = org.defaultCountry;
     _currency = org.defaultCurrency;
     _timezone = org.timezone;
+    _datePart = org.numberDatePart;
     _csat = org.csatEnabled;
     _cascade = org.autoCloseChildren;
   }
@@ -141,10 +156,18 @@ class _FormState extends ConsumerState<_Form> {
   String _value(String key) => _text[key]!.text;
 
   Future<void> _save() async {
-    final problem = orgSettingsProblem(
-      email: _value('email'),
-      website: _value('website'),
-    );
+    final problem =
+        orgSettingsProblem(
+          email: _value('email'),
+          website: _value('website'),
+        ) ??
+        numberingProblem(
+          invoicePrefix: _value('invoice_number_prefix'),
+          estimatePrefix: _value('estimate_number_prefix'),
+          datePart: _datePart,
+          padding: _value('number_padding'),
+          start: _value('invoice_number_start'),
+        );
     if (problem != null) {
       setState(() => _error = problem);
       return;
@@ -174,6 +197,13 @@ class _FormState extends ConsumerState<_Form> {
             timezone: _timezone,
             csatEnabled: _csat,
             autoCloseChildren: _cascade,
+            invoiceNumberPrefix: _value('invoice_number_prefix'),
+            estimateNumberPrefix: _value('estimate_number_prefix'),
+            numberDatePart: _datePart,
+            numberPadding: int.parse(_value('number_padding').trim()),
+            // Checked above when undated; sent as 1 when dated.
+            invoiceNumberStart:
+                int.tryParse(_value('invoice_number_start').trim()) ?? 1,
           ),
         );
     if (!mounted) return;
@@ -259,6 +289,76 @@ class _FormState extends ConsumerState<_Form> {
           ], _timezone),
           onChanged: (v) => setState(() => _timezone = v),
         ),
+        const _SectionLabel('Invoice numbers'),
+        Text(
+          'How new invoice and estimate numbers look. Numbers already issued '
+          'keep theirs.',
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 14),
+        _field(
+          'invoice_number_prefix',
+          'Invoice prefix',
+          maxLength: 20,
+          capitalization: TextCapitalization.characters,
+        ),
+        _field(
+          'estimate_number_prefix',
+          'Estimate prefix',
+          maxLength: 20,
+          capitalization: TextCapitalization.characters,
+        ),
+        _picker(
+          label: 'Date in the number',
+          value: _datePart,
+          options: withCurrent(numberDatePartOptions, _datePart),
+          onChanged: (v) => setState(() => _datePart = v),
+        ),
+        _field('number_padding', 'Counter digits', maxLength: 2, digits: true),
+        // A dated count restarts each period, so the start only exists for
+        // undated numbers; the payload sends 1 otherwise.
+        if (_datePart == 'NONE')
+          _field(
+            'invoice_number_start',
+            'Start invoices at',
+            maxLength: 9,
+            digits: true,
+            helper:
+                'To carry on a sequence from another system. If invoices here '
+                'already go higher, numbering carries on from the highest.',
+          ),
+        ListenableBuilder(
+          listenable: Listenable.merge([
+            _text['invoice_number_prefix'],
+            _text['estimate_number_prefix'],
+            _text['number_padding'],
+            _text['invoice_number_start'],
+          ]),
+          builder: (context, _) {
+            final today = orgToday();
+            final padding = int.tryParse(_value('number_padding').trim()) ?? 1;
+            String example(String prefix, {int start = 1}) => exampleNumber(
+              prefix: _value(prefix).trim(),
+              datePart: _datePart,
+              padding: padding,
+              start: start,
+              today: today,
+            );
+            final start =
+                int.tryParse(_value('invoice_number_start').trim()) ?? 1;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Text(
+                'New invoices look like '
+                '${example('invoice_number_prefix', start: start)}, estimates '
+                'like ${example('estimate_number_prefix')}.',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            );
+          },
+        ),
         const _SectionLabel('Behaviour'),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -316,15 +416,24 @@ class _FormState extends ConsumerState<_Form> {
     String label, {
     int? maxLength,
     TextInputType? keyboard,
+    TextCapitalization capitalization = TextCapitalization.none,
+    bool digits = false,
+    String? helper,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TextField(
         controller: _text[key],
         maxLength: maxLength,
-        keyboardType: keyboard,
+        keyboardType: digits ? TextInputType.number : keyboard,
+        textCapitalization: capitalization,
+        inputFormatters: digits
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : null,
         decoration: InputDecoration(
           labelText: label,
+          helperText: helper,
+          helperMaxLines: 3,
           border: const OutlineInputBorder(),
           counterText: '',
         ),

@@ -16,7 +16,7 @@
    * asked for here, because asking would invite a value the server throws
    * away:
    *
-   *   invoice_number   generate_invoice_number() → INV-YYYYMMDD-XXXX
+   *   invoice_number   generate_invoice_number(), in the org's format (#802)
    *   public_token     secrets.token_urlsafe(32), with a collision re-roll
    *   due_date         calculate_due_date() from issue_date + payment_terms
    *
@@ -41,6 +41,7 @@
   import { CURRENCY_CODES } from '$lib/constants/filters.js';
   import { longDate } from '$lib/v2/format.js';
   import { todayIn } from '$lib/v2/dates.js';
+  import { numberPattern } from '$lib/v2/document-numbers.js';
   import {
     blankLine,
     documentDiscountError,
@@ -53,7 +54,7 @@
   } from '$lib/v2/line-items.js';
   import { Info } from '@lucide/svelte';
 
-  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], org: { currency: string, timezone: string } }, form: any }} */
+  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], numbering: Record<string, any> | null, org: { currency: string, timezone: string } }, form: any }} */
   let { data, form } = $props();
 
   /* The estimate builder's list. The org's default currency to start, read
@@ -70,8 +71,11 @@
   let accountId = $state('');
   let contactId = $state('');
   let title = $state('');
-  // The org's day: a UTC date is yesterday for a morning east of UTC.
-  let issueDate = $state(untrack(() => todayIn(data.org.timezone)));
+  // The org's day: a UTC date is yesterday for a morning east of UTC. The
+  // server dates a new number by the day it is saved, not by the issue date,
+  // so the number preview reads this too.
+  const today = untrack(() => todayIn(data.org.timezone));
+  let issueDate = $state(today);
   let paymentTerms = $state('NET_30');
   let customDueDate = $state('');
   let discountType = $state('');
@@ -408,8 +412,10 @@
         <div class="v2-card" style="padding:15px 16px;margin-top:14px">
           <div class="v2-label" style="margin-bottom:9px">Assigned on save</div>
           <dl class="derived">
-            <dt>Invoice number</dt>
-            <dd>INV-<span class="v2-num">{issueDate.replace(/-/g, '')}</span>-nnnn</dd>
+            {#if data.numbering}
+              <dt>Invoice number</dt>
+              <dd class="v2-num">{numberPattern(data.numbering, 'invoice', today)}</dd>
+            {/if}
             <dt>Customer link</dt>
             <dd>Generated, and only sent when you send the invoice</dd>
           </dl>

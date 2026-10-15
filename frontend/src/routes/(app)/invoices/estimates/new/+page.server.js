@@ -5,6 +5,7 @@ import { listDeals } from '$lib/server/v2/deals.js';
 import { listProducts } from '$lib/server/v2/products.js';
 import { createEstimate, estimateFromDeal } from '$lib/server/v2/estimates.js';
 import { readableError } from '$lib/server/v2/form-errors.js';
+import { getNumbering } from '$lib/server/v2/organization.js';
 
 /**
  * The estimate builder's pickers, the same list layers the invoice builder
@@ -12,19 +13,21 @@ import { readableError } from '$lib/server/v2/form-errors.js';
  * lets this caller see, and the API checks each id again on save.
  *
  * `?opportunity=<id>` (the "Create estimate" action on a deal) prefills the
- * form from that deal; a deal the caller cannot open prefills nothing.
+ * form from that deal; a deal the caller cannot open prefills nothing. The
+ * org's numbering format feeds the "Assigned on save" preview.
  *
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, url }) {
   const dealId = url.searchParams.get('opportunity');
-  const [accounts, contacts, products, deals, prefill] = await Promise.all([
+  const [accounts, contacts, products, deals, prefill, numbering] = await Promise.all([
     listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listProducts({ cookies }),
     // A failed deal list costs the optional deal picker, not the form.
     listDeals({ cookies }, new URLSearchParams({ limit: '1000' })).catch(() => ({ results: [] })),
-    dealId ? estimateFromDeal({ cookies }, dealId) : null
+    dealId ? estimateFromDeal({ cookies }, dealId) : null,
+    getNumbering({ cookies })
   ]);
 
   return {
@@ -39,7 +42,8 @@ export async function load({ cookies, url }) {
       .filter((p) => p.is_active)
       .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price })),
     deals: deals.results.map((d) => ({ id: d.id, name: d.name, account_id: d.account.id })),
-    prefill
+    prefill,
+    numbering
   };
 }
 

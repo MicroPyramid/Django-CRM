@@ -314,3 +314,15 @@ def validate_help_center_slug(value: str) -> None:
         )
     if value in HELP_CENTER_RESERVED_SLUGS:
         raise DjangoValidationError(f"'{value}' is reserved. Choose another address.")
+
+
+# The prefix of an invoice or estimate number (`Org.invoice_number_prefix`,
+# `Org.estimate_number_prefix`). A number becomes the PDF's filename in a
+# Content-Disposition header and is printed into email subjects, so nothing
+# that means something in a path, a header or a quoted string (a slash, a
+# quote, a space, a line break) may reach it. `\A` and `\Z` rather than `^`
+# and `$`, which would let a trailing newline through.
+number_prefix_validator = RegexValidator(
+    regex=r"\A[A-Za-z0-9_-]*\Z",
+    message=_("Use letters, numbers, hyphens and underscores only."),
+)
