@@ -12,6 +12,7 @@ from common.serializer import (
     TeamsSerializer,
     UserSerializer,
 )
+from common.utils import validate_upload_size
 from contacts.access import visible_contacts_qs
 from contacts.models import Contact
 from contacts.serializer import ContactPickerSerializer
@@ -273,6 +274,9 @@ class InvoiceTemplateCreateSerializer(serializers.ModelSerializer):
 
     def validate_secondary_color(self, value):
         return _validate_hex_color(value)
+
+    def validate_logo(self, logo):
+        return validate_upload_size(logo)
 
     def create(self, validated_data):
         request = self.context.get("request")

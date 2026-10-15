@@ -29,7 +29,7 @@ from common.models import (
     User,
 )
 from common.permissions import is_org_admin
-from common.utils import CURRENCY_SYMBOLS
+from common.utils import CURRENCY_SYMBOLS, validate_upload_size
 from common.validators import flexible_phone_validator, validate_help_center_slug
 
 # Safe at module level: contacts.models imports common.models and common.base,
@@ -197,6 +197,9 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
     @extend_schema_field(str)
     def get_currency_symbol(self, obj):
         return CURRENCY_SYMBOLS.get(obj.default_currency or "USD", "$")
+
+    def validate_logo(self, logo):
+        return validate_upload_size(logo)
 
     @extend_schema_field(str)
     def get_logo_url(self, obj):
@@ -968,6 +971,9 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
                     "Document with this Title already exists"
                 )
         return title
+
+    def validate_document_file(self, file):
+        return validate_upload_size(file)
 
     class Meta:
         model = Document
