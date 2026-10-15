@@ -1,7 +1,7 @@
 /**
  * Goals: the twelfth v2 module wired to the real API.
  *
- * Lives under `$lib/server` like the eleven before it: SvelteKit keeps this
+ * Lives under `#lib/server` like the eleven before it: SvelteKit keeps this
  * directory out of the client bundle, so the httpOnly access token never
  * reaches the browser. Org is a JWT claim the backend re-derives; it is never a
  * parameter here.
@@ -33,7 +33,7 @@
  *   here from the fetched goals (sum over the active subset), arithmetic on
  *   fields already in the payload, never a second aggregate query.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 import { getOrgPeopleAndTeams } from './org-people.js';
 

@@ -10,7 +10,7 @@ BottleCRM is a free, open-source Customer Relationship Management solution desig
 
 - **Multi-Tenant Architecture**: Secure organization-based data isolation
 - **Role-Based Access Control**: Granular permissions for users and admins
-- **Modern Technology Stack**: Built with SvelteKit 2.x, Svelte 5.x, and PostgreSQL
+- **Modern Technology Stack**: Built with SvelteKit 3.x, Svelte 5.x, and PostgreSQL
 - **Mobile-First Design**: Responsive interface optimized for all devices
 
 ## 🚀 Core Features
@@ -57,7 +57,7 @@ BottleCRM is a free, open-source Customer Relationship Management solution desig
 
 ## 🖥️ Technology Stack
 
-- **Frontend**: SvelteKit 2.x, Svelte 5.x, TailwindCSS 4.x
+- **Frontend**: SvelteKit 3.x, Svelte 5.x, TailwindCSS 4.x
 - **Backend**: Node.js with Prisma ORM
 - **Database**: PostgreSQL (recommended) with multi-tenant schema
 - **Authentication**: Session-based authentication with organization membership

@@ -1,9 +1,9 @@
 <script>
-  import * as Dialog from '$lib/components/ui/dialog/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
-  import EditableMultiSelect from '$lib/components/ui/editable-field/EditableMultiSelect.svelte';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Input } from '#lib/components/ui/input/index.js';
+  import { Label } from '#lib/components/ui/label/index.js';
+  import EditableMultiSelect from '#lib/components/ui/editable-field/EditableMultiSelect.svelte';
 
   /**
    * @typedef {Object} User

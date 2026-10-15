@@ -16,8 +16,8 @@
  * send anyone anywhere else.
  */
 import { fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { pickFilters } from '$lib/v2/saved-views.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { pickFilters } from '#lib/v2/saved-views.js';
 import { readableError } from './form-errors.js';
 import { FILTER_FIELDS as LEAD_FIELDS } from './leads.js';
 import { FILTER_FIELDS as CONTACT_FIELDS } from './contacts.js';
@@ -25,7 +25,7 @@ import { FILTER_FIELDS as ACCOUNT_FIELDS } from './accounts.js';
 import { FILTER_FIELDS as DEAL_FIELDS, BOARD_FIELDS } from './deals.js';
 import { FILTER_FIELDS as TICKET_FIELDS, OPEN_STATUSES } from './tickets.js';
 import { FILTER_FIELDS as INVOICE_FIELDS } from './invoices.js';
-import { FILTERS } from '$lib/v2/filters.js';
+import { FILTERS } from '#lib/v2/filters.js';
 
 /**
  * Per API list, the URL parameters its page forwards to the list under the
@@ -54,7 +54,7 @@ const PAGE = {
 };
 
 /**
- * How one page's URL maps onto a view (the `Spec` in `$lib/v2/saved-views.js`),
+ * How one page's URL maps onto a view (the `Spec` in `#lib/v2/saved-views.js`),
  * for the URL it is showing.
  *
  * `multi` is read off the filter descriptor, the same flag `readFilters` obeys,
@@ -65,7 +65,7 @@ const PAGE = {
  *
  * @param {keyof typeof SAVED_VIEW_KEYS} module
  * @param {URLSearchParams} params the page's query string
- * @returns {import('$lib/v2/saved-views.js').Spec}
+ * @returns {import('#lib/v2/saved-views.js').Spec}
  */
 export function savedViewSpec(module, params) {
   const multi = FILTERS[PAGE[module]].fields

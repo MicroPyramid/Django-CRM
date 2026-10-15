@@ -1,11 +1,11 @@
 <script>
   import { toast } from 'svelte-sonner';
   import { MessageSquare, Send, Trash2, Loader2, ChevronDown, ChevronUp } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Textarea } from '$lib/components/ui/textarea/index.js';
-  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-  import { formatRelativeDate, getInitials } from '$lib/utils/formatting.js';
-  import * as api from '$lib/api.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Textarea } from '#lib/components/ui/textarea/index.js';
+  import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
+  import { formatRelativeDate, getInitials } from '#lib/utils/formatting.js';
+  import * as api from '#lib/api.js';
   import MentionBody from './MentionBody.svelte';
 
   /**

@@ -9,7 +9,7 @@ import {
   linePayload,
   shippingError,
   taxRateError
-} from '$lib/v2/line-items.js';
+} from '#lib/v2/line-items.js';
 
 const line = (over = {}) => ({
   ...blankLine(),

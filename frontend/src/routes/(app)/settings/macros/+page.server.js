@@ -5,8 +5,8 @@ import {
   updateMacro,
   deleteMacro,
   activateMacro
-} from '$lib/server/v2/macros.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/macros.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

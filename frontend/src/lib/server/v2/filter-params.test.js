@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
 
 const url = (/** @type {string} */ qs) => new URL(`http://x/tickets?${qs}`);
 

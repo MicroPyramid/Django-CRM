@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { EDITABLE_FIELDS, getContactForEdit, updateContact } from '$lib/server/v2/contacts.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { EDITABLE_FIELDS, getContactForEdit, updateContact } from '#lib/server/v2/contacts.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** Fields the form submits as checkboxes: absent means false, not "unchanged". */
 const FLAGS = ['do_not_call', 'is_active'];

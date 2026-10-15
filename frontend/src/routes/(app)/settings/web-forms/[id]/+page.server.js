@@ -7,8 +7,8 @@ import {
   deleteWebForm,
   publishWebForm,
   unpublishWebForm
-} from '$lib/server/v2/web-forms.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/web-forms.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * The form, its recent submissions, and its 30-day analytics.

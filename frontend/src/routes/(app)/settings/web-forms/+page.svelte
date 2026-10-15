@@ -28,18 +28,18 @@
    * the stat strip comes from a server-side count over every form.
    */
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count, shortDate } from '$lib/v2/format.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count, shortDate } from '#lib/v2/format.js';
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert } from '@lucide/svelte';
-  import { WEBFORM_TARGETS } from '$lib/v2/webform-fields.js';
+  import { WEBFORM_TARGETS } from '#lib/v2/webform-fields.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();

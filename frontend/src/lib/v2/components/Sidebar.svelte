@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   import { page } from '$app/state';
   import {
     Sun,
@@ -24,7 +24,7 @@
     Smartphone,
     LogOut
   } from '@lucide/svelte';
-  import { t } from '$lib/terminology.js';
+  import { t } from '#lib/terminology.js';
 
   /**
    * One flat tree, grouped by what the person is doing rather than by which
@@ -43,7 +43,7 @@
    * showing it would only teach them to bounce off it.
    *
    * `termKey` marks the handful of entity destinations a vertical pack may
-   * relabel (see `$lib/terminology.js`). The string in `label` below is only
+   * relabel (see `#lib/terminology.js`). The string in `label` below is only
    * ever the fallback an org with no pack, or no override for that key,
    * still renders; the derived `groups` below is what actually resolves it
    * against `terminology`. No other label branches on the org at all.
@@ -177,7 +177,7 @@
          than in Serve, where it would read as a queue the team shares. -->
     <a
       class="v2-link"
-      href={resolve('/notifications')}
+      href={resolve('notifications')}
       aria-current={isActive('/notifications', false) ? 'page' : undefined}
     >
       <Bell />
@@ -186,11 +186,11 @@
         <span class="v2-count">{counts.notifications}</span>
       {/if}
     </a>
-    <a class="v2-link" href={resolve('/profile')}>
+    <a class="v2-link" href={resolve('profile')}>
       <CircleUser />
       Your profile
     </a>
-    <a class="v2-link" href={resolve('/help')}>
+    <a class="v2-link" href={resolve('help')}>
       <CircleHelp />
       Help
     </a>
@@ -209,7 +209,7 @@
     <!-- Leaving the app. Last in the list, and a plain link. /logout is a
          server load that clears the auth cookies and redirects to /login, so a
          GET navigation is all it takes and no data-fetching component follows. -->
-    <a class="v2-link" href={resolve('/logout')} data-sveltekit-reload>
+    <a class="v2-link" href={resolve('logout')} data-sveltekit-reload>
       <LogOut />
       Sign out
     </a>

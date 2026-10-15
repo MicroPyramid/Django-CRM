@@ -5,7 +5,7 @@ A free, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKi
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-green.svg)
 ![Django](https://img.shields.io/badge/django-6.x-green.svg)
-![SvelteKit](https://img.shields.io/badge/sveltekit-2.x-orange.svg)
+![SvelteKit](https://img.shields.io/badge/sveltekit-3.x-orange.svg)
 ![Svelte](https://img.shields.io/badge/svelte-5-orange.svg)
 ![Flutter](https://img.shields.io/badge/flutter-3.44+-blue.svg)
 ![Coverage](./coverage-badge.svg)

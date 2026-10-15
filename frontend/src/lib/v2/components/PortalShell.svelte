@@ -14,7 +14,7 @@
    * the component and nowhere else, the sibling `(no-layout)` routes (login,
    * bounce) are untouched.
    */
-  import '$lib/v2/styles/v2.css';
+  import '#lib/v2/styles/v2.css';
 
   /** @type {{ children: import('svelte').Snippet }} */
   let { children } = $props();

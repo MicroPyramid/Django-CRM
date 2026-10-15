@@ -10,8 +10,8 @@
    * part of finishing the writing. Approving is not, and is only offered to
    * an admin.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import { SOLUTION_STATUS, SOLUTION_STATUS_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import { SOLUTION_STATUS, SOLUTION_STATUS_LABEL } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { ChevronLeft } from '@lucide/svelte';
@@ -57,7 +57,7 @@
 
 <PageHeader title="Edit article" record center width="760px">
   {#snippet crumb()}
-    <a href={resolve(`/solutions/${data.article.id}`)}
+    <a href={resolve(`solutions/${data.article.id}`)}
       ><ChevronLeft size={13} />{data.article.title}</a
     >
   {/snippet}
@@ -66,7 +66,7 @@
     <span class="v2-num">{data.article.use_count}</span> tickets
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve(`/solutions/${data.article.id}`)}>Cancel</a>
+    <a class="v2-btn" href={resolve(`solutions/${data.article.id}`)}>Cancel</a>
     <button
       class="v2-btn v2-btn-primary"
       type="submit"

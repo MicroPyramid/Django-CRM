@@ -2,8 +2,8 @@
  * What each list page can be filtered by, and how those filters are drawn.
  *
  * Client-safe on purpose: `.svelte` files import this, and SvelteKit hard-blocks
- * importing `$lib/server/` into a component. The server-side counterpart is
- * `$lib/server/v2/filter-params.js`.
+ * importing `#lib/server/` into a component. The server-side counterpart is
+ * `#lib/server/v2/filter-params.js`.
  *
  * Filter state lives in the URL and nowhere else, so a filtered list is
  * shareable and the back button works without any state to synchronise.
@@ -279,7 +279,10 @@ export function fieldKeys(/** @type {Descriptor} */ descriptor) {
 }
 
 /** The same URL with `key` removed. Returns a path plus query, never absolute. */
-export function withoutParam(/** @type {URL} */ url, /** @type {string} */ key) {
+export function withoutParam(
+  /** @type {import('$app/state').ReadonlyURL} */ url,
+  /** @type {string} */ key
+) {
   const next = new URLSearchParams(url.search);
   next.delete(key);
   const qs = next.toString();
@@ -291,7 +294,7 @@ export function withoutParam(/** @type {URL} */ url, /** @type {string} */ key) 
  * one helper covers both adding a filter and clearing one.
  */
 export function withParams(
-  /** @type {URL} */ url,
+  /** @type {import('$app/state').ReadonlyURL} */ url,
   /** @type {Record<string, string|null>} */ params
 ) {
   const next = new URLSearchParams(url.search);
@@ -320,7 +323,7 @@ export function withParams(
  */
 export function activePresetKey(
   /** @type {string} */ pageKey,
-  /** @type {URL} */ url,
+  /** @type {import('$app/state').ReadonlyURL} */ url,
   /** @type {string | null} */ meId = null
 ) {
   const descriptor = FILTERS[pageKey];
@@ -352,7 +355,7 @@ export function activePresetKey(
  */
 export function activeChips(
   /** @type {string} */ pageKey,
-  /** @type {URL} */ url,
+  /** @type {import('$app/state').ReadonlyURL} */ url,
   /** @type {{people?: any[], tags?: any[], accounts?: any[], stages?: any[]}} */ lookups = {}
 ) {
   const descriptor = FILTERS[pageKey];

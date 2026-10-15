@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { auditFilters, listAuditLog, AUDIT_PAGE } = await import('$lib/server/v2/audit-log.js');
+const { auditFilters, listAuditLog, AUDIT_PAGE } = await import('#lib/server/v2/audit-log.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 

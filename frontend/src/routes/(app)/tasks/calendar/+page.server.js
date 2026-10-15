@@ -1,4 +1,4 @@
-import { listTasks } from '$lib/server/v2/tasks.js';
+import { listTasks } from '#lib/server/v2/tasks.js';
 
 /**
  * The task calendar: the third face of Tasks, after the list and the boards.

@@ -20,13 +20,13 @@
    * moment the account is reactivated. That is why the count is here: an
    * offboarding to-do, not a live breach.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
-  import { ROLE_LABEL, ROLE_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
+  import { ROLE_LABEL, ROLE_TONE } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { UserPlus, KeyRound } from '@lucide/svelte';
 
@@ -222,7 +222,7 @@
                 <td data-m="hide">
                   {#if m.active_token_count}
                     <a
-                      href={resolve('/settings/api-tokens')}
+                      href={resolve('settings/api-tokens')}
                       style="display:inline-flex;gap:5px;align-items:center;color:{m.is_active
                         ? 'inherit'
                         : 'var(--v2-clay)'};font-weight:{m.is_active ? 400 : 600}"

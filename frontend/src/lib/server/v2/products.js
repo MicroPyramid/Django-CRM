@@ -2,7 +2,7 @@
  * Products: the product catalogue line items are priced from, wired to the
  * real API. First of the invoices sub-pages to move off fixtures.
  *
- * Lives under `$lib/server` so the httpOnly access token stays out of the
+ * Lives under `#lib/server` so the httpOnly access token stays out of the
  * client bundle. Org is a JWT claim the backend re-derives; it is never a
  * parameter here.
  *
@@ -33,7 +33,7 @@
  *   the list to avoid an N+1, because it is the whole reason a retired product
  *   is still listed rather than deleted.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /**

@@ -1,5 +1,5 @@
-import { listDocuments, FILTER_FIELDS } from '$lib/server/v2/documents.js';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
+import { listDocuments, FILTER_FIELDS } from '#lib/server/v2/documents.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
 
 /**
  * The documents list.

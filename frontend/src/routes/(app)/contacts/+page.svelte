@@ -1,13 +1,13 @@
 <script>
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, relativeDays } from '$lib/v2/format.js';
-  import ContactImportDrawer from '$lib/components/contacts/ContactImportDrawer.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, relativeDays } from '#lib/v2/format.js';
+  import ContactImportDrawer from '#lib/components/contacts/ContactImportDrawer.svelte';
   import { Download, Users, PhoneOff, Plus, Upload } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -30,21 +30,21 @@
   {/snippet}
   {#snippet actions()}
     {#if data.includeInactive}
-      <a class="v2-btn" href={resolve('/contacts')}>Hide inactive</a>
+      <a class="v2-btn" href={resolve('contacts')}>Hide inactive</a>
     {:else}
-      <a class="v2-btn" href={resolve('/contacts?inactive=1')}>Show inactive</a>
+      <a class="v2-btn" href={resolve('contacts?inactive=1')}>Show inactive</a>
     {/if}
     <button class="v2-btn" onclick={() => (importOpen = true)}><Upload />Import</button>
     <!-- The page's own query string: the export rebuilds the same API query
          from it, so the file holds every row this list would page through. -->
     <a
       class="v2-btn"
-      href="{resolve('/api/contacts/export')}?{page.url.searchParams}"
+      href="{resolve('api/contacts/export')}?{page.url.searchParams}"
       data-sveltekit-reload
     >
       <Download />Export
     </a>
-    <a class="v2-btn v2-btn-primary" href={resolve('/contacts/new')}><Plus />New contact</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('contacts/new')}><Plus />New contact</a>
   {/snippet}
 </PageHeader>
 
@@ -66,8 +66,8 @@
     >
       {#snippet icon()}<Users size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/contacts/new')}>New contact</a>
-        <a class="v2-btn" href={resolve('/leads')}>Go to leads</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('contacts/new')}>New contact</a>
+        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -89,7 +89,7 @@
               <td>
                 <a
                   class="v2-row-link"
-                  href={resolve(`/contacts/${c.id}`)}
+                  href={resolve(`contacts/${c.id}`)}
                   style="display:flex;align-items:center;gap:9px"
                 >
                   <Avatar name={c.name} size={26} />
@@ -109,7 +109,7 @@
                   appears only where there is no link to show, and says so.
                 -->
                 {#if c.account}
-                  <a href={resolve(`/accounts/${c.account.id}`)} style="color:inherit"
+                  <a href={resolve(`accounts/${c.account.id}`)} style="color:inherit"
                     >{c.account.name}</a
                   >
                   {#if c.other_accounts.length}

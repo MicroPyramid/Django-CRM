@@ -1,4 +1,4 @@
-import { getGoalHistory } from '$lib/server/v2/goals.js';
+import { getGoalHistory } from '#lib/server/v2/goals.js';
 
 /**
  * Attainment across finished periods.

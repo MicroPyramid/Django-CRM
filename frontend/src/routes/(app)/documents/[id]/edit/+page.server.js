@@ -4,9 +4,9 @@ import {
   updateDocument,
   deleteDocument,
   STATUS_CHOICES
-} from '$lib/server/v2/documents.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { sameIds } from '$lib/v2/pickers.js';
+} from '#lib/server/v2/documents.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { sameIds } from '#lib/v2/pickers.js';
 
 /**
  * Editing a document: rename, archive/restore, and manage who can open it.

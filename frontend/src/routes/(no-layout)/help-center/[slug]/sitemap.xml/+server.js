@@ -4,7 +4,7 @@
  * here too.
  */
 
-import { canonicalSlug, listAllArticles, sitemapXml } from '$lib/server/help-center.js';
+import { canonicalSlug, listAllArticles, sitemapXml } from '#lib/server/help-center.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET(event) {

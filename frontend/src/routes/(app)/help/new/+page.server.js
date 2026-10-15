@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createSupportTicket, SUPPORT_CATEGORIES } from '$lib/server/v2/support.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { createSupportTicket, SUPPORT_CATEGORIES } from '#lib/server/v2/support.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 export function load() {
   return { categories: SUPPORT_CATEGORIES };

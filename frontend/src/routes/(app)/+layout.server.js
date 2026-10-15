@@ -1,12 +1,12 @@
-import { isOrgAdmin } from '$lib/admin.js';
-import { listLeads } from '$lib/server/v2/leads.js';
-import { listDeals } from '$lib/server/v2/deals.js';
-import { listTickets, OPEN_STATUSES } from '$lib/server/v2/tickets.js';
-import { listTasks } from '$lib/server/v2/tasks.js';
-import { listInvoices } from '$lib/server/v2/invoices.js';
-import { countAwaitingApprovals } from '$lib/server/v2/approvals.js';
-import { countUnread } from '$lib/server/v2/notifications.js';
-import { getOrgTerminology } from '$lib/server/v2/organization.js';
+import { isOrgAdmin } from '#lib/admin.js';
+import { listLeads } from '#lib/server/v2/leads.js';
+import { listDeals } from '#lib/server/v2/deals.js';
+import { listTickets, OPEN_STATUSES } from '#lib/server/v2/tickets.js';
+import { listTasks } from '#lib/server/v2/tasks.js';
+import { listInvoices } from '#lib/server/v2/invoices.js';
+import { countAwaitingApprovals } from '#lib/server/v2/approvals.js';
+import { countUnread } from '#lib/server/v2/notifications.js';
+import { getOrgTerminology } from '#lib/server/v2/organization.js';
 
 /**
  * Counts for migrated modules, fetched for real and merged over the fixtures.
@@ -24,7 +24,7 @@ const LIVE_COUNTS = {
   /**
    * Open deals only, same rule as tickets and tasks below: a badge counting
    * closed deals would never go down. `listDeals` no longer assumes this on
-   * its own (`$lib/server/v2/deals.js`'s FILTER_FIELDS note), so it is spelled
+   * its own (`#lib/server/v2/deals.js`'s FILTER_FIELDS note), so it is spelled
    * out here.
    *
    * @param {any} event
@@ -107,7 +107,7 @@ const LIVE_COUNTS = {
  * badge the sidebar renders is in LIVE_COUNTS, so a count that fails just shows
  * no badge rather than a stale number. `terminology` joins the same fan-out.
  * A failed fetch there just leaves the sidebar's hard-coded labels in place
- * (every consumer reads it through `$lib/terminology.js#t()`, which always
+ * (every consumer reads it through `#lib/terminology.js#t()`, which always
  * takes an explicit fallback), the same "missing, not stale or broken" contract
  * as a missing count badge.
  *
@@ -138,12 +138,12 @@ export async function load(event) {
       // currency comes from.
       currency: /** @type {any} */ (event.locals).org_settings?.default_currency || 'USD',
       // The org's IANA zone, from the same claim, for a form's "today"
-      // default (`todayIn`, `$lib/v2/dates.js`). UTC only for a token minted
+      // default (`todayIn`, `#lib/v2/dates.js`). UTC only for a token minted
       // before the claim existed; the next refresh carries it.
       timezone: /** @type {any} */ (event.locals).org_settings?.timezone || 'UTC'
     },
     // Server-derived from the JWT (never the client), and read only through
-    // `isOrgAdmin` (`$lib/admin.js`). Display-only: it lets the shell hide
+    // `isOrgAdmin` (`#lib/admin.js`). Display-only: it lets the shell hide
     // destinations a member can only reach to be turned away. The backend
     // still enforces every one of those gates, so this is UX, not a security
     // control. The non-admin view when the claim is absent.

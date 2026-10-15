@@ -1,10 +1,10 @@
 <script>
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
   import { Loader2, Upload, FileText, Download, CheckCircle2, AlertCircle } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import * as Dialog from '$lib/components/ui/dialog/index.js';
-  import { downloadImportErrors } from '$lib/utils/csv.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import { downloadImportErrors } from '#lib/utils/csv.js';
 
   /**
    * Two-step CSV import flow: upload → preview → confirm.
@@ -190,7 +190,7 @@
       if (result.type === 'success' && result.data?.importCommit) {
         commitResult = result.data.importCommit;
         step = 'done';
-        await invalidateAll();
+        await refreshAll();
       }
     } catch (err) {
       formError = err instanceof Error ? err.message : 'Import failed';

@@ -4,9 +4,9 @@
  * same function the page's `load` uses, which needs the org's pipelines to
  * resolve the one the board shows.
  */
-import { forwardCsvExport } from '$lib/server/v2/csv-export.js';
-import { listPipelines } from '$lib/server/v2/deals.js';
-import { dealListQuery } from '$lib/server/v2/list-queries.js';
+import { forwardCsvExport } from '#lib/server/v2/csv-export.js';
+import { listPipelines } from '#lib/server/v2/deals.js';
+import { dealListQuery } from '#lib/server/v2/list-queries.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET(event) {

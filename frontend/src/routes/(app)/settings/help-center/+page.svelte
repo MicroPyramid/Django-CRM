@@ -9,10 +9,10 @@
    * Any member can see whether it is on and open the public page; only an
    * admin gets the form. The API enforces that regardless of what is shown.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
   import { ExternalLink, Globe } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */

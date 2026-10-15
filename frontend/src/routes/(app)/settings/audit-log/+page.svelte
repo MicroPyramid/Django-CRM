@@ -15,13 +15,13 @@
    * a filter, so it alone does not make the page read as "filtered".
    */
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count, relativeTime } from '$lib/v2/format.js';
-  import { auditActor, auditDetail, auditWebhookId } from '$lib/v2/audit-log.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count, relativeTime } from '#lib/v2/format.js';
+  import { auditActor, auditDetail, auditWebhookId } from '#lib/v2/audit-log.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -114,7 +114,7 @@
         <div class="al-buttons">
           <button class="v2-btn v2-btn-primary al-tap">Apply</button>
           {#if filtered}
-            <a class="v2-btn al-tap" href={resolve('/settings/audit-log')}>Clear</a>
+            <a class="v2-btn al-tap" href={resolve('settings/audit-log')}>Clear</a>
           {/if}
         </div>
       </form>
@@ -122,7 +122,7 @@
       {#if data.filters.actor}
         <p class="v2-sub" style="font-size:12.5px;margin:0 0 12px">
           Showing one person's entries.
-          <a href={resolve(`/settings/audit-log?${pageQuery({ actor: null })}`)}>Show everyone</a>
+          <a href={resolve(`settings/audit-log?${pageQuery({ actor: null })}`)}>Show everyone</a>
         </p>
       {/if}
 
@@ -164,7 +164,7 @@
                       <div class="v2-table-secondary">
                         {detail}
                         {#if webhookId}
-                          <a href={resolve(`/settings/webhooks/${webhookId}`)}>Open webhook</a>
+                          <a href={resolve(`settings/webhooks/${webhookId}`)}>Open webhook</a>
                         {/if}
                       </div>
                     {/if}
@@ -176,7 +176,7 @@
                     {#if e.actor}
                       <a
                         class="al-person"
-                        href={resolve(`/settings/audit-log?${pageQuery({ actor: e.actor.id })}`)}
+                        href={resolve(`settings/audit-log?${pageQuery({ actor: e.actor.id })}`)}
                         >{auditActor(e)}</a
                       >
                     {:else}
@@ -195,7 +195,7 @@
             <a
               class="v2-btn v2-btn-sm al-tap"
               href={resolve(
-                `/settings/audit-log?${pageQuery({ offset: Math.max(0, data.offset - data.pageSize) })}`
+                `settings/audit-log?${pageQuery({ offset: Math.max(0, data.offset - data.pageSize) })}`
               )}>Newer</a
             >
           {/if}
@@ -203,7 +203,7 @@
             <a
               class="v2-btn v2-btn-sm al-tap"
               href={resolve(
-                `/settings/audit-log?${pageQuery({ offset: data.offset + data.pageSize })}`
+                `settings/audit-log?${pageQuery({ offset: data.offset + data.pageSize })}`
               )}>Older</a
             >
           {/if}

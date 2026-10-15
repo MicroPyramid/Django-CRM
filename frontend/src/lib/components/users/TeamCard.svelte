@@ -1,10 +1,10 @@
 <script>
   import { Users, Pencil, Trash2 } from '@lucide/svelte';
-  import { SectionCard } from '$lib/components/ui/section-card/index.js';
-  import * as Avatar from '$lib/components/ui/avatar/index.js';
-  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { getInitials } from '$lib/utils/formatting.js';
+  import { SectionCard } from '#lib/components/ui/section-card/index.js';
+  import * as Avatar from '#lib/components/ui/avatar/index.js';
+  import * as AlertDialog from '#lib/components/ui/alert-dialog/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { getInitials } from '#lib/utils/formatting.js';
 
   /**
    * @typedef {Object} TeamMember

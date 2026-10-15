@@ -22,15 +22,15 @@
    */
   import { dndzone } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { deserialize, enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import { count, shortDate, daysSince } from '$lib/v2/format.js';
-  import { BOARD_PRIORITY_LABEL, BOARD_PRIORITY_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import { count, shortDate, daysSince } from '#lib/v2/format.js';
+  import { BOARD_PRIORITY_LABEL, BOARD_PRIORITY_TONE } from '#lib/v2/enums.js';
   import { Plus, ChevronDown, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -139,11 +139,11 @@
         moveError =
           (result.type === 'failure' && /** @type {any} */ (result.data)?.error) ||
           'Could not move the card; reverted.';
-        await invalidateAll();
+        await refreshAll();
       }
     } catch {
       moveError = 'Could not move the card, reverted.';
-      await invalidateAll();
+      await refreshAll();
     }
   }
 </script>
@@ -208,7 +208,7 @@
             createBoardBusy = false;
             if (result.type === 'success') {
               createBoardError = '';
-              await invalidateAll();
+              await refreshAll();
             } else if (result.type === 'failure') {
               createBoardError =
                 /** @type {any} */ (result.data)?.error || 'Could not create the board.';
@@ -363,7 +363,7 @@
                 addCardBusy = false;
                 if (result.type === 'success') {
                   closeCardForm();
-                  await invalidateAll();
+                  await refreshAll();
                 } else if (result.type === 'failure') {
                   addCardError =
                     /** @type {any} */ (result.data)?.error || 'Could not add the card.';
@@ -436,7 +436,7 @@
                 if (result.type === 'success') {
                   showAddColumn = false;
                   addColumnError = '';
-                  await invalidateAll();
+                  await refreshAll();
                 } else if (result.type === 'failure') {
                   addColumnError =
                     /** @type {any} */ (result.data)?.error || 'Could not add the column.';
@@ -512,8 +512,8 @@
      there, so it is said once, in the open. -->
 <p class="v2-sub v2-pad" style="font-size:11.5px;padding-bottom:14px;flex:none;margin:0">
   Cards on a board are separate records from the
-  <a href={resolve('/tasks')} style="color:inherit">task list</a>. A card here does not appear
-  there, and completing one does not complete the other.
+  <a href={resolve('tasks')} style="color:inherit">task list</a>. A card here does not appear there,
+  and completing one does not complete the other.
 </p>
 
 <style>

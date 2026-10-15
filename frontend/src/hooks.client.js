@@ -1,6 +1,6 @@
 import { handleErrorWithSentry, replayIntegration } from '@sentry/sveltekit';
 import * as Sentry from '@sentry/sveltekit';
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 const dsn = env.PUBLIC_SENTRY_DSN || '';
 

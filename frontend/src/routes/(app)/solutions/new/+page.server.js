@@ -1,8 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createArticle } from '$lib/server/v2/solutions.js';
-import { getTags } from '$lib/server/v2/tags.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { createArticle } from '#lib/server/v2/solutions.js';
+import { getTags } from '#lib/server/v2/tags.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, locals }) {

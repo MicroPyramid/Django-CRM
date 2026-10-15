@@ -1,11 +1,11 @@
 <script>
   import { resolve } from '$app/paths';
   import '../../../app.css';
-  import '$lib/v2/styles/v2.css';
+  import '#lib/v2/styles/v2.css';
   import { enhance } from '$app/forms';
 
-  import imgGoogle from '$lib/assets/images/google.svg';
-  import imgLogo from '$lib/assets/images/logo.png';
+  import imgGoogle from '#lib/assets/images/google.svg';
+  import imgLogo from '#lib/assets/images/logo.png';
   import { Mail, Check } from '@lucide/svelte';
 
   let { data = {} } = $props();
@@ -46,7 +46,7 @@
 
 <div class="v2-root v2-auth">
   <div class="v2-auth-box">
-    <a href={resolve('/')} class="v2-auth-brand">
+    <a href={resolve('')} class="v2-auth-brand">
       <img src={imgLogo} alt="" />
       <b>BottleCRM</b>
     </a>

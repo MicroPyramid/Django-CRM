@@ -42,16 +42,16 @@
    * issued before enforcement carries. That is why the table says "Everything
    * <name> can" for those rows rather than pretending they are limited.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import { count, relativeDays, shortDate } from '$lib/v2/format.js';
-  import { ROLE_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import { count, relativeDays, shortDate } from '#lib/v2/format.js';
+  import { ROLE_LABEL } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert, Copy, Check } from '@lucide/svelte';
-  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '$lib/v2/token-rules.js';
+  import { tokenStatus, staleness, scopeSummary, EXPIRY_CHOICES } from '#lib/v2/token-rules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();

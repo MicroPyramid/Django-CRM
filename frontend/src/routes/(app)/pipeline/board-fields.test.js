@@ -5,9 +5,9 @@ import { describe, it, expect } from 'vitest';
 // test passed while the pipeline page was returning 500 for every request,
 // because vitest imports the module directly and never goes through the
 // router. Do not "simplify" this back to a route import.
-import { BOARD_FIELDS, BOARD_PRESETS } from '$lib/server/v2/deals.js';
-import { FILTERS, fieldKeys } from '$lib/v2/filters.js';
-import { readFilters, buildFilterQuery } from '$lib/server/v2/filter-params.js';
+import { BOARD_FIELDS, BOARD_PRESETS } from '#lib/server/v2/deals.js';
+import { FILTERS, fieldKeys } from '#lib/v2/filters.js';
+import { readFilters, buildFilterQuery } from '#lib/server/v2/filter-params.js';
 
 /**
  * The board renders from `/opportunities/kanban/`, a different endpoint from

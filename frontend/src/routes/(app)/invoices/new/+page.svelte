@@ -33,15 +33,15 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import PortalLineItems from '$lib/v2/components/PortalLineItems.svelte';
-  import LineItemsEditor from '$lib/v2/components/LineItemsEditor.svelte';
-  import { PAYMENT_TERMS_LABEL } from '$lib/v2/enums.js';
-  import { CURRENCY_CODES } from '$lib/constants/filters.js';
-  import { longDate } from '$lib/v2/format.js';
-  import { todayIn } from '$lib/v2/dates.js';
-  import { numberPattern } from '$lib/v2/document-numbers.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
+  import LineItemsEditor from '#lib/v2/components/LineItemsEditor.svelte';
+  import { PAYMENT_TERMS_LABEL } from '#lib/v2/enums.js';
+  import { CURRENCY_CODES } from '#lib/constants/filters.js';
+  import { longDate } from '#lib/v2/format.js';
+  import { todayIn } from '#lib/v2/dates.js';
+  import { numberPattern } from '#lib/v2/document-numbers.js';
   import {
     blankLine,
     documentDiscountError,
@@ -51,7 +51,7 @@
     num,
     shippingError,
     taxRateError
-  } from '$lib/v2/line-items.js';
+  } from '#lib/v2/line-items.js';
   import { Info } from '@lucide/svelte';
 
   /** @type {{ data: { products: any[], accounts: any[], contacts: any[], numbering: Record<string, any> | null, org: { currency: string, timezone: string } }, form: any }} */
@@ -176,7 +176,7 @@
     Nothing is sent until you send it. Saving leaves it as a draft
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/invoices')}>Cancel</a>
+    <a class="v2-btn" href={resolve('invoices')}>Cancel</a>
     <button
       type="submit"
       form="invoice-form"

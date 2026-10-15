@@ -7,21 +7,25 @@
 #
 # RUNTIME CONFIGURATION
 #
-# Every value this app reads from the environment comes through
-# `$env/dynamic/public`, which adapter-node resolves per process at startup, not
-# at build time. So one image serves any deployment and nothing below bakes a
-# hostname in:
+# Every value this app reads from the environment is declared in src/env.js and
+# read per process at startup, not at build time. So one image serves any
+# deployment and nothing below bakes a hostname in:
 #
 #   PUBLIC_DJANGO_API_URL  required. The Django API origin, no trailing /api.
-#   ORIGIN                 required in production. See below.
 #   PUBLIC_SENTRY_DSN      optional. Unset disables Sentry (`enabled: !!dsn`).
 #   PORT                   defaults to 3000. HOST already defaults to 0.0.0.0.
+#   PROTOCOL_HEADER        only for plain http. See below.
 #
-# ORIGIN is the one that fails quietly. adapter-node compares the Origin header
-# of every form POST against it, and with no ORIGIN set a proxied request is
-# answered `403 Cross-site POST form submissions are forbidden`. GETs still
-# work, so the app looks healthy while all 64 form actions reject. Set it to the
-# public URL users type, e.g. ORIGIN=https://crm.example.com.
+# The origin check is the one that fails quietly. SvelteKit compares the Origin
+# header of every form POST with the origin the server thinks it serves, which
+# adapter-node 6 builds from the request's Host header and the scheme `https`.
+# (The ORIGIN variable that used to override this was removed in SvelteKit 3,
+# so setting it does nothing.) Behind a TLS proxy that forwards Host, such as
+# nginx with `proxy_set_header Host $host`, that is already right. If users
+# reach the app over plain http, set PROTOCOL_HEADER=x-forwarded-proto and have
+# the proxy send that header. Otherwise every form POST is answered `403
+# Cross-site POST form submissions are forbidden` while GETs still work, so the
+# app looks healthy while all its form actions reject.
 
 FROM node:24-slim AS base
 # Pinned so image builds are reproducible.

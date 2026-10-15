@@ -1,7 +1,7 @@
 /**
  * Web forms: the wiring behind `/settings/web-forms`.
  *
- * Server-only, like every module in this directory: `$lib/server` is the one
+ * Server-only, like every module in this directory: `#lib/server` is the one
  * path SvelteKit refuses to bundle into client code, and a form's captcha
  * secret passes through here on its way to the API.
  *
@@ -30,9 +30,9 @@
  * over every form in the org, so "3 published" stays true past the tenth form.
  * Nothing here recounts the page.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { missingOption, missingOptions } from '$lib/v2/pickers.js';
-import { builtinFor } from '$lib/v2/webform-fields.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { missingOption, missingOptions } from '#lib/v2/pickers.js';
+import { builtinFor } from '#lib/v2/webform-fields.js';
 import { viewerIsAdmin } from './organization.js';
 
 /** Enough forms that no real org is truncated, small enough to stay one page. */

@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 /**
  * Stream an invoice PDF from the API.

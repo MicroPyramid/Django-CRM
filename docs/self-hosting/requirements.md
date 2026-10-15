@@ -10,7 +10,7 @@ them.
 | Component | Version | Source |
 |---|---|---|
 | Python | 3.12 or later | `backend/pyproject.toml` sets `requires-python = ">=3.12"`; `backend/.python-version` pins `3.12` exactly. |
-| Django | 6.1.1 or later | `backend/pyproject.toml` dependency `django>=6.1.1`. |
+| Django | 6.1.2 or later | `backend/pyproject.toml` dependency `django>=6.1.2`. |
 | PostgreSQL | 16 | `docker-compose.yml`'s `db` service uses image `postgres:16-alpine`. This is also the only version this project's own CI ever runs against. See the note below. |
 | Redis | 7 | `docker-compose.yml`'s `redis` service uses image `redis:7-alpine`. |
 | Node.js | 24 | `.github/workflows/tests.yml`'s `frontend-checks` job sets up `node-version: '24'`. |

@@ -22,7 +22,7 @@
  * same `updateCustomField` PUT with only `is_active: true`, since the
  * detail view has no separate reactivate endpoint.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /**

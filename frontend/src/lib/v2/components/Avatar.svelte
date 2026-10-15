@@ -1,5 +1,5 @@
 <script>
-  import { initials } from '$lib/v2/format.js';
+  import { initials } from '#lib/v2/format.js';
 
   /** @type {{ name: string, size?: number }} */
   let { name, size = 26 } = $props();

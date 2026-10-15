@@ -22,7 +22,7 @@
    * which is the check that counts.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, Lock } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -37,7 +37,7 @@
 
 <PageHeader title="New template" record center width="62ch">
   {#snippet crumb()}
-    <a href={resolve('/invoices/templates')}>Templates</a>
+    <a href={resolve('invoices/templates')}>Templates</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -57,7 +57,7 @@
           </div>
         </div>
       </div>
-      <a class="v2-btn" href={resolve('/invoices/templates')} style="margin-top:16px"
+      <a class="v2-btn" href={resolve('invoices/templates')} style="margin-top:16px"
         >Back to templates</a
       >
     </div>
@@ -164,7 +164,7 @@
         <button class="v2-btn v2-btn-primary" type="submit" disabled={saving}>
           {saving ? 'Creating…' : 'Create template'}
         </button>
-        <a class="v2-btn" href={resolve('/invoices/templates')}>Cancel</a>
+        <a class="v2-btn" href={resolve('invoices/templates')}>Cancel</a>
       </div>
     </form>
   {/if}

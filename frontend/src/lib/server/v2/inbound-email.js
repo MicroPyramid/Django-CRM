@@ -25,7 +25,7 @@
  * returns `default_assignee` as a full profile object (name under
  * `user_details.name`); the page wants `{ id, name }`.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /** Profile → the `{ id, name }` the card reads, or null. */

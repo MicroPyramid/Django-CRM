@@ -1,5 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * One task: what it is, what it is attached to, who is on it, and the one
    * control that finishes it.
@@ -17,12 +18,12 @@
    * is backed by a row that exists (`Task` has no history table, so there are no
    * invented status events beyond the record's own creation).
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import { relativeDays, longDate, shortDate, daysSince } from '$lib/v2/format.js';
-  import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import { relativeDays, longDate, shortDate, daysSince } from '#lib/v2/format.js';
+  import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import {
     ChevronRight,
@@ -165,7 +166,7 @@
     </form>
   {/snippet}
   {#snippet crumb()}
-    <a href={resolve('/tasks')}>Tasks</a>
+    <a href={resolve('tasks')}>Tasks</a>
     <ChevronRight size={12} />
     <span>{task.status}</span>
   {/snippet}
@@ -177,7 +178,7 @@
     ].join(' · ')}
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve(`/tasks/${task.id}/edit`)}>Edit</a>
+    <a class="v2-btn" href={resolve(`tasks/${task.id}/edit`)}>Edit</a>
     {#if canDelete}
       <form method="POST" action="?/delete" use:enhance>
         <button class="v2-btn" type="submit">Delete</button>
@@ -310,7 +311,7 @@
                   {#if e.type === 'file' && e.href}
                     <a
                       class="tl-file"
-                      href={resolve(e.href)}
+                      href={resolve(asInternalPath(e.href))}
                       target="_blank"
                       rel="noreferrer noopener"
                     >
@@ -353,7 +354,7 @@
       <dt>Attached to</dt>
       <dd>
         {#if task.related}
-          <a href={resolve(task.related.href)}>{task.related.name}</a>
+          <a href={resolve(asInternalPath(task.related.href))}>{task.related.name}</a>
           <span class="v2-sub" style="display:block;font-size:11.5px">{task.related.kind}</span>
         {:else}
           <span class="v2-muted">nothing</span>
@@ -394,7 +395,7 @@
       <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:8px">
         {#each contacts as person (person.id)}
           <a
-            href={resolve(`/contacts/${person.id}`)}
+            href={resolve(`contacts/${person.id}`)}
             style="display:flex;gap:8px;align-items:center;color:inherit;text-decoration:none;font-size:12.5px"
           >
             <Avatar name={person.name} size={20} />

@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getUploadOptions, uploadDocument, STATUS_CHOICES } from '$lib/server/v2/documents.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getUploadOptions, uploadDocument, STATUS_CHOICES } from '#lib/server/v2/documents.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Uploading a document.

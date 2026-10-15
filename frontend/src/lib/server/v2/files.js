@@ -13,7 +13,7 @@
  * which streams the file from an authenticated backend endpoint that checks
  * the record's own read predicate first.
  */
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 

@@ -3,7 +3,7 @@
   import SelectPortal from './select-portal.svelte';
   import SelectScrollUpButton from './select-scroll-up-button.svelte';
   import SelectScrollDownButton from './select-scroll-down-button.svelte';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   let {
     ref = $bindable(null),
     class: className = '',

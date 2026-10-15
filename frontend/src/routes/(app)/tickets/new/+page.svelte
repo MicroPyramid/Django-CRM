@@ -12,7 +12,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -65,7 +65,7 @@
 
 <PageHeader title="New ticket" center>
   {#snippet crumb()}
-    <a href={resolve('/tickets')}>Tickets</a>
+    <a href={resolve('tickets')}>Tickets</a>
     <ChevronRight size={12} />
     <span>New</span>
   {/snippet}
@@ -184,7 +184,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Raise ticket</button>
-      <a class="v2-btn" href={resolve('/tickets')}>Cancel</a>
+      <a class="v2-btn" href={resolve('tickets')}>Cancel</a>
     </div>
   </form>
 </div>

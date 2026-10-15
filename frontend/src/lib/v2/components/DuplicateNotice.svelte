@@ -75,7 +75,7 @@
       <ul>
         {#each hits as hit (hit.id)}
           <li>
-            <a href={resolve(`/${module}/${hit.id}`)} target="_blank" rel="noopener">{hit.name}</a>
+            <a href={resolve(`${module}/${hit.id}`)} target="_blank" rel="noopener">{hit.name}</a>
             <span class="v2-sub">· same {hit.matched_on}</span>
           </li>
         {/each}

@@ -1,9 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createTask, getTaskFormOptions } from '$lib/server/v2/tasks.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { listTickets } from '$lib/server/v2/tickets.js';
-import { listDeals } from '$lib/server/v2/deals.js';
-import { listLeads } from '$lib/server/v2/leads.js';
+import { createTask, getTaskFormOptions } from '#lib/server/v2/tasks.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { listTickets } from '#lib/server/v2/tickets.js';
+import { listDeals } from '#lib/server/v2/deals.js';
+import { listLeads } from '#lib/server/v2/leads.js';
 
 /**
  * The new-task form.

@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { listInvoiceTemplates, setDefaultTemplate } from '$lib/server/v2/templates.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { listInvoiceTemplates, setDefaultTemplate } from '#lib/server/v2/templates.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * The template catalogue. `load` returns `{ templates, totals }`. The names the

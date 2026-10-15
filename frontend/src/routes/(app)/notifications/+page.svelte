@@ -1,5 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * Notifications, as a page rather than a 360px dropdown.
    *
@@ -32,10 +33,10 @@
    */
   import { untrack } from 'svelte';
   import { deserialize } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import { relativeTime } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import { relativeTime } from '#lib/v2/format.js';
   import { BellOff, AtSign, MessageSquare, Bell, Check, LifeBuoy } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -150,8 +151,8 @@
               Show read too
             </button>
           {/if}
-          <a class="v2-btn" href={resolve('/tickets')}>Go to tickets</a>
-          <a class="v2-btn" href={resolve('/help')}>Get help</a>
+          <a class="v2-btn" href={resolve('tickets')}>Go to tickets</a>
+          <a class="v2-btn" href={resolve('help')}>Get help</a>
         {/snippet}
       </EmptyState>
     {:else}
@@ -178,7 +179,7 @@
                 {verbPhrase(n)}
                 {#if n.entity_name}
                   {#if n.resolved_link}
-                    <a href={resolve(n.resolved_link)} onclick={() => markRead(n)}
+                    <a href={resolve(asInternalPath(n.resolved_link))} onclick={() => markRead(n)}
                       >{n.entity_name}</a
                     >
                   {:else}

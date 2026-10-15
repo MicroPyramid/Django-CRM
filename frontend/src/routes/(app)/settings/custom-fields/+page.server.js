@@ -4,8 +4,8 @@ import {
   createCustomField,
   updateCustomField,
   deactivateCustomField
-} from '$lib/server/v2/custom-fields.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/custom-fields.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

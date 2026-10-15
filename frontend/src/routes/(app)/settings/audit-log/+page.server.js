@@ -1,4 +1,4 @@
-import { auditFilters, listAuditLog } from '$lib/server/v2/audit-log.js';
+import { auditFilters, listAuditLog } from '#lib/server/v2/audit-log.js';
 
 /**
  * The security audit log, newest first. Read-only, admin-only server-side

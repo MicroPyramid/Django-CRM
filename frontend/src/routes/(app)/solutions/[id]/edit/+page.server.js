@@ -1,9 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getArticle, updateArticle } from '$lib/server/v2/solutions.js';
-import { getTags } from '$lib/server/v2/tags.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { sameIds } from '$lib/v2/pickers.js';
-import { isOrgAdmin } from '$lib/admin.js';
+import { getArticle, updateArticle } from '#lib/server/v2/solutions.js';
+import { getTags } from '#lib/server/v2/tags.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { sameIds } from '#lib/v2/pickers.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /**
  * The mock's detail page had an Edit button that went nowhere, so this route

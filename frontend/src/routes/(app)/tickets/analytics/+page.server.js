@@ -1,4 +1,4 @@
-import { getServiceAnalytics } from '$lib/server/v2/service.js';
+import { getServiceAnalytics } from '#lib/server/v2/service.js';
 
 /**
  * The service-analytics dashboard. `load` returns `{ can_view, totals, volume,

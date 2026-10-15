@@ -2,7 +2,7 @@
  * Tickets: the fifth v2 module wired to the real API.
  *
  * Same rules as `leads.js`, `deals.js`, `accounts.js` and `contacts.js`: this
- * file lives under `$lib/server` because SvelteKit refuses to bundle that
+ * file lives under `#lib/server` because SvelteKit refuses to bundle that
  * directory into client code and the access token is an httpOnly cookie. The
  * org is never a parameter; it is a claim inside the JWT and the backend reads
  * it from there.
@@ -44,9 +44,9 @@
  * nothing in the codebase ever wrote. See `cases/signals.py`.
  */
 import { error, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { attachmentHref } from '$lib/server/v2/files.js';
-import { RESTRICTED_TICKET_NAME } from '$lib/v2/enums.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { attachmentHref } from '#lib/server/v2/files.js';
+import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 
 /** Statuses where somebody still owes the customer something. Mirrors `cases.views.OPEN_STATUSES`. */
 export const OPEN_STATUSES = ['New', 'Assigned', 'Pending'];
@@ -148,7 +148,7 @@ function toRow(row) {
 
 /**
  * Every filter param `listTickets` will forward. The descriptor in
- * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `#lib/v2/filters.js` must not name a key absent from this list; a test in
  * `filters.test.js` enforces that, because the failure mode otherwise is a chip
  * on screen and an unfiltered list underneath it.
  */

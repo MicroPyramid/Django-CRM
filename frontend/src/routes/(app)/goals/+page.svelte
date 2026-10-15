@@ -16,18 +16,18 @@
    * aggregate. Everything that counts records (progress_value,
    * progress_percent, status) stays server-side.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { money, moneyEach, count, shortDate, daysSince } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { money, moneyEach, count, shortDate, daysSince } from '#lib/v2/format.js';
   import {
     GOAL_TYPE_LABEL,
     GOAL_STATUS_LABEL,
     GOAL_STATUS_TONE,
     PERIOD_TYPE_LABEL
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import { Plus, Target, Trophy, History } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -104,9 +104,9 @@
     <span class="v2-num">{count(totals.active)}</span> active goals
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/goals/history')}><History />History</a>
+    <a class="v2-btn" href={resolve('goals/history')}><History />History</a>
     {#if data.can_edit}
-      <a class="v2-btn v2-btn-primary" href={resolve('/goals/new')}><Plus />New goal</a>
+      <a class="v2-btn v2-btn-primary" href={resolve('goals/new')}><Plus />New goal</a>
     {/if}
   {/snippet}
 </PageHeader>
@@ -158,7 +158,7 @@
     </select>
     <button class="v2-btn" type="submit">Filter</button>
     {#if filtered}
-      <a class="v2-btn" href={resolve('/goals')}>Clear</a>
+      <a class="v2-btn" href={resolve('goals')}>Clear</a>
     {/if}
   </form>
 </div>
@@ -180,7 +180,7 @@
         >
           {#snippet icon()}<Target size={21} />{/snippet}
           {#snippet actions()}
-            <a class="v2-btn" href={resolve('/goals')}>Clear filter</a>
+            <a class="v2-btn" href={resolve('goals')}>Clear filter</a>
           {/snippet}
         </EmptyState>
       {:else}
@@ -193,7 +193,7 @@
           {#snippet icon()}<Target size={21} />{/snippet}
           {#snippet actions()}
             {#if data.can_edit}
-              <a class="v2-btn v2-btn-primary" href={resolve('/goals/new')}>New goal</a>
+              <a class="v2-btn v2-btn-primary" href={resolve('goals/new')}>New goal</a>
             {/if}
           {/snippet}
         </EmptyState>
@@ -228,7 +228,7 @@
                     <Pill tone={statusTone(g)}>{statusLabel(g)}</Pill>
                     {#if data.can_edit}
                       <a
-                        href={resolve(`/goals/${g.id}/edit`)}
+                        href={resolve(`goals/${g.id}/edit`)}
                         style="font-size:11px;color:var(--v2-slate);text-decoration:none">Edit</a
                       >
                     {/if}

@@ -50,8 +50,8 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
   import {
     LEAD_STATUSES,
     LEAD_STATUS_LABEL,
@@ -61,8 +61,8 @@
     LEAD_IRREVERSIBLE_STATUSES,
     INDUSTRIES,
     industryLabel
-  } from '$lib/v2/enums.js';
-  import { money, longDate } from '$lib/v2/format.js';
+  } from '#lib/v2/enums.js';
+  import { money, longDate } from '#lib/v2/format.js';
   import { ChevronRight, TriangleAlert, Lock } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -159,7 +159,7 @@
    * still submits and the action still validates; this only spares a full
    * page load and keeps focus on the first field that needs attention.
    *
-   * @type {import('@sveltejs/kit').SubmitFunction}
+   * @type {import('$app/forms').SubmitFunction}
    */
   const submit = async ({ cancel }) => {
     submitted = true;
@@ -182,9 +182,9 @@
 
 <PageHeader title="Edit {displayName}" center>
   {#snippet crumb()}
-    <a href={resolve('/leads')}>Leads</a>
+    <a href={resolve('leads')}>Leads</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/leads/${lead.id}`)}>{displayName}</a>
+    <a href={resolve(`leads/${lead.id}`)}>{displayName}</a>
   {/snippet}
   {#snippet sub()}
     Currently <Pill tone={LEAD_STATUS_TONE[originalStatus]}
@@ -213,17 +213,17 @@
           {/if}
           {#if result?.account_id}
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-              <a class="v2-btn" href={resolve(`/accounts/${result.account_id}`)}>View account</a>
+              <a class="v2-btn" href={resolve(`accounts/${result.account_id}`)}>View account</a>
               {#if result.contact_id}
-                <a class="v2-btn" href={resolve(`/contacts/${result.contact_id}`)}>View contact</a>
+                <a class="v2-btn" href={resolve(`contacts/${result.contact_id}`)}>View contact</a>
               {/if}
               {#if result.opportunity_id}
-                <a class="v2-btn" href={resolve(`/pipeline/${result.opportunity_id}`)}>View deal</a>
+                <a class="v2-btn" href={resolve(`pipeline/${result.opportunity_id}`)}>View deal</a>
               {/if}
             </div>
           {/if}
         </div>
-        <a class="v2-btn" href={resolve(`/leads/${lead.id}`)}>Back to the lead</a>
+        <a class="v2-btn" href={resolve(`leads/${lead.id}`)}>Back to the lead</a>
       </div>
     {/if}
 
@@ -557,7 +557,7 @@
       <button class="v2-btn v2-btn-primary" type="submit" disabled={saving}>
         {saving ? 'Saving…' : 'Save changes'}
       </button>
-      <a class="v2-btn" href={resolve(`/leads/${lead.id}`)}>Cancel</a>
+      <a class="v2-btn" href={resolve(`leads/${lead.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

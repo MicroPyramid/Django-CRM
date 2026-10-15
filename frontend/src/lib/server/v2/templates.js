@@ -45,8 +45,8 @@
  * delete) is derived from the rows. `limit=1000`; an org has a handful of
  * templates, and that ceiling is called out where it is set.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { viewerIsAdmin } from '$lib/server/v2/organization.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { viewerIsAdmin } from '#lib/server/v2/organization.js';
 
 const num = (/** @type {any} */ value) => {
   const n = Number(value);

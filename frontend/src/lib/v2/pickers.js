@@ -18,8 +18,8 @@
  *
  * The fix is to give the select something to match: render the stored value as
  * its own option, labelled so the admin can see why it is there. That is what
- * these two helpers find. They live in `$lib/v2/` rather than `$lib/server/v2/`
- * because a `.svelte` file cannot import from `$lib/server/`, and here they can
+ * these two helpers find. They live in `#lib/v2/` rather than `$lib/server/v2/`
+ * because a `.svelte` file cannot import from `#lib/server/`, and here they can
  * still be unit tested, unlike the markup that consumes them.
  *
  * "Not in the list" is the test, not "is_active is false": the pages that need

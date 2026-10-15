@@ -7,7 +7,7 @@
    * pickers, an optional line-item list, and the whole form serialised into one
    * hidden `payload` field so the dynamic list survives the POST intact. Reused
    * directly: the account/contact filtering rule, the line-item card
-   * (`LineItemsEditor`) and the totals ladder and payload (`$lib/v2/line-items.js`),
+   * (`LineItemsEditor`) and the totals ladder and payload (`#lib/v2/line-items.js`),
    * so a schedule's lines are counted and sent exactly as an invoice's are.
    *
    * WHAT IS DIFFERENT FROM THE INVOICE BUILDER
@@ -36,11 +36,11 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import PortalLineItems from '$lib/v2/components/PortalLineItems.svelte';
-  import LineItemsEditor from '$lib/v2/components/LineItemsEditor.svelte';
-  import { RECURRING_FREQUENCY_LABEL, PAYMENT_TERMS_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
+  import LineItemsEditor from '#lib/v2/components/LineItemsEditor.svelte';
+  import { RECURRING_FREQUENCY_LABEL, PAYMENT_TERMS_LABEL } from '#lib/v2/enums.js';
   import {
     blankLine,
     documentDiscountError,
@@ -49,9 +49,9 @@
     linePayload,
     num,
     taxRateError
-  } from '$lib/v2/line-items.js';
-  import { todayIn } from '$lib/v2/dates.js';
-  import { CURRENCY_CODES } from '$lib/constants/filters.js';
+  } from '#lib/v2/line-items.js';
+  import { todayIn } from '#lib/v2/dates.js';
+  import { CURRENCY_CODES } from '#lib/constants/filters.js';
 
   /** @type {{ data: { products: any[], accounts: any[], contacts: any[], org: { timezone: string } }, form: any }} */
   let { data, form } = $props();
@@ -175,7 +175,7 @@
     Nothing generates until the first run date arrives. Saving creates the schedule
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/invoices/recurring')}>Cancel</a>
+    <a class="v2-btn" href={resolve('invoices/recurring')}>Cancel</a>
     <button
       type="submit"
       form="recurring-form"

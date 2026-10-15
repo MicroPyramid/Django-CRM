@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseBulkForm } from '$lib/server/v2/bulk-form.js';
+import { parseBulkForm } from '#lib/server/v2/bulk-form.js';
 
 function fd(entries) {
   const f = new FormData();

@@ -12,7 +12,7 @@
  * POST on the page, never by arriving at it.
  *
  * Lives here rather than in `+page.server.js` so vitest can reach it: that
- * harness resolves `$lib` and `$env/dynamic/public` and nothing else, so a
+ * harness resolves `#lib` and `$app/env/*` and nothing else, so a
  * route module importing `$app/forms` for its actions cannot be loaded at all.
  * See the docstring in `vitest.config.js`, and `support.js` for the same move.
  */

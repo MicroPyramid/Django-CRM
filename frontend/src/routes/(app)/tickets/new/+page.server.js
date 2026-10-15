@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createTicket, getTicketFormOptions } from '$lib/server/v2/tickets.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { createTicket, getTicketFormOptions } from '#lib/server/v2/tickets.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, url }) {

@@ -11,8 +11,8 @@
     Trash2,
     UserPlus
   } from '@lucide/svelte';
-  import { formatRelativeDate } from '$lib/utils/formatting.js';
-  import { notifications } from '$lib/stores/notifications.svelte.js';
+  import { formatRelativeDate } from '#lib/utils/formatting.js';
+  import { notifications } from '#lib/stores/notifications.svelte.js';
 
   /**
    * @type {{

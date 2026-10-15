@@ -1,4 +1,4 @@
-import { listReports } from '$lib/server/v2/reports.js';
+import { listReports } from '#lib/server/v2/reports.js';
 
 /**
  * The invoice reports dashboard. `load` returns `{ can_view, invoice_count,

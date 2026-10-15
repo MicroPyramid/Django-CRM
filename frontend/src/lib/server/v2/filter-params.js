@@ -12,7 +12,7 @@
  * `is_org_admin` itself (`cases/views.py:176`). These exist so the UI does not
  * silently inherit every param these endpoints grow.
  */
-import { FILTERS } from '$lib/v2/filters.js';
+import { FILTERS } from '#lib/v2/filters.js';
 
 const BOOLEANS = ['true', 'false'];
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

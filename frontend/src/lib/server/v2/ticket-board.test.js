@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { getTicketBoard, moveTicket } = await import('$lib/server/v2/ticket-board.js');
+const { getTicketBoard, moveTicket } = await import('#lib/server/v2/ticket-board.js');
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 
 const PIPELINES = { pipelines: [{ id: 'p-1', name: 'Onboarding', is_default: true }] };

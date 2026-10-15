@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * The signature element. One per record, at the top, always a verb.
    * This is the one place ember earns its keep on a record page: it is

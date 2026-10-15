@@ -1,7 +1,7 @@
 <script>
   import { ChevronLeft, ChevronRight, ChevronsUpDown } from '@lucide/svelte';
-  import * as Popover from '$lib/components/ui/popover/index.js';
-  import { cn } from '$lib/utils.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
+  import { cn } from '#lib/utils.js';
 
   /**
    * @type {{

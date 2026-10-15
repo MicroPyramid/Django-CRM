@@ -17,7 +17,7 @@ import {
   requestLogin,
   setSession,
   verifyLogin
-} from '$lib/server/portal';
+} from '#lib/server/portal.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ params, cookies }) {

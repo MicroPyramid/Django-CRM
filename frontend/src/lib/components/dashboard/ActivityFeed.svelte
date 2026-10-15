@@ -1,6 +1,6 @@
 <script>
   import { SvelteDate } from 'svelte/reactivity';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
   import {
     Activity,
     Plus,

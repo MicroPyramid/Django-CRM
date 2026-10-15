@@ -1,17 +1,17 @@
 <script>
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { count } from '$lib/v2/format.js';
-  import { PRIORITY_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { count } from '#lib/v2/format.js';
+  import { PRIORITY_TONE } from '#lib/v2/enums.js';
   import { Columns3, List, TriangleAlert } from '@lucide/svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { deserialize } from '$app/forms';
-  import { holdLockedCard } from '$lib/v2/board-drag.js';
+  import { holdLockedCard } from '#lib/v2/board-drag.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -85,7 +85,7 @@
     } catch {
       moveError = 'Could not move the ticket, so it went back.';
     }
-    await invalidateAll();
+    await refreshAll();
     return false;
   }
 
@@ -101,7 +101,7 @@
     if (!laneId) return;
     busy = true;
     const moved = await persistMove(id, laneId, undefined, undefined);
-    if (moved) await invalidateAll();
+    if (moved) await refreshAll();
     busy = false;
   }
 </script>
@@ -130,7 +130,7 @@
         </select>
       </form>
     {/if}
-    <a class="v2-btn v2-btn-quiet" href={resolve('/tickets')}><List />List</a>
+    <a class="v2-btn v2-btn-quiet" href={resolve('tickets')}><List />List</a>
     <span class="v2-btn" aria-current="true"><Columns3 />Board</span>
   {/snippet}
 </PageHeader>
@@ -152,8 +152,8 @@
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn" href={resolve('/tickets/board')}>By status</a>
-        <a class="v2-btn" href={resolve('/tickets')}>Back to the list</a>
+        <a class="v2-btn" href={resolve('tickets/board')}>By status</a>
+        <a class="v2-btn" href={resolve('tickets')}>Back to the list</a>
       {/snippet}
     </EmptyState>
   </div>
@@ -195,7 +195,7 @@
               data-locked={ticket.canMove ? undefined : ''}
               animate:flip={{ duration: FLIP_MS }}
             >
-              <a class="tb-name" href={resolve(`/tickets/${ticket.id}`)}>{ticket.name}</a>
+              <a class="tb-name" href={resolve(`tickets/${ticket.id}`)}>{ticket.name}</a>
               {#if ticket.account}<div class="v2-sub" style="margin-top:2px">
                   {ticket.account}
                 </div>{/if}

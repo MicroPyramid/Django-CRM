@@ -1,7 +1,7 @@
 /**
  * Accounts: the third v2 module wired to the real API.
  *
- * Same rules as `leads.js` and `deals.js`: this file lives under `$lib/server`
+ * Same rules as `leads.js` and `deals.js`: this file lives under `#lib/server`
  * because SvelteKit refuses to bundle that directory into client code and the
  * access token is an httpOnly cookie. The org is never a parameter; it is a
  * claim inside the JWT and the backend reads it from there.
@@ -46,7 +46,7 @@
  * together, so everything numeric is coerced here, at the boundary.
  */
 import { error } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** DRF decimals are strings. `null` stays `null`. It means "not recorded". */
 function num(value) {
@@ -162,7 +162,7 @@ function toRow(account) {
 
 /**
  * Every filter param `listAccounts` will forward. See the note on
- * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * FILTER_FIELDS in tickets.js: the descriptor in `#lib/v2/filters.js` must not
  * name a key absent from this list, and `filters.test.js` enforces it.
  *
  * `industry` and `city` are `icontains` matches server-side, and `tags` and

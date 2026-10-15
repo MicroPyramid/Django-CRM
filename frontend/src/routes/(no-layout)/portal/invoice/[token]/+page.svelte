@@ -31,9 +31,9 @@
    *    be; it is not in the body, where it would survive a screenshot pasted
    *    into a support thread.
    */
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
-  import PortalLineItems from '$lib/v2/components/PortalLineItems.svelte';
-  import { money, longDate } from '$lib/v2/format.js';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
+  import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
+  import { money, longDate } from '#lib/v2/format.js';
   import { Download, CheckCircle2 } from '@lucide/svelte';
 
   /** @type {{ data: { invoice: any, token: string } }} */

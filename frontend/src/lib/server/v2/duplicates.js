@@ -13,8 +13,8 @@
  * believed. `can_delete` on each hit is a hint for the page, not a gate.
  */
 import { error, fail, redirect } from '@sveltejs/kit';
-import { apiRequest } from '$lib/api-helpers.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * The modules that have duplicates, the query fields each one's create form

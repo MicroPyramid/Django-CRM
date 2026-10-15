@@ -1,7 +1,7 @@
 /**
  * API tokens: the tenth v2 module wired to the real API.
  *
- * Lives under `$lib/server` like the nine before it: this directory is the one
+ * Lives under `#lib/server` like the nine before it: this directory is the one
  * SvelteKit refuses to bundle into client code, and a token is a bearer
  * credential the browser must never handle except for the single moment it is
  * shown. Org is a JWT claim, never a parameter.
@@ -37,7 +37,7 @@
  * - Revoke posts to the admin `DELETE /api/org/tokens/<id>/`. Org-scoped, so
  *   an admin can retire any token in their own org (a colleague's included).
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * Live first, then most-recently-used first, the order an admin scans in,

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { createCustomField, updateCustomField, deactivateCustomField } =
-  await import('$lib/server/v2/custom-fields.js');
+  await import('#lib/server/v2/custom-fields.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 

@@ -19,11 +19,11 @@
    * in ninety minutes are not the same event. Attainment is reported per
    * priority, against that priority's own target, or not at all.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import { count, shortDate } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import { count, shortDate } from '#lib/v2/format.js';
   import { Clock } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -99,7 +99,7 @@
       <p>
         Opened and closed volume, response attainment, customer satisfaction and the queue breakdown
         are whole-organisation figures, so they are limited to admins. Your own tickets are on the <a
-          href={resolve('/tickets')}>Tickets</a
+          href={resolve('tickets')}>Tickets</a
         > tab.
       </p>
     </div>
@@ -222,7 +222,7 @@
 
           {#if data.byType.find((t) => t.case_type === 'Question')}
             <p class="v2-sub" style="font-size:11.5px;margin:16px 0 0">
-              <a href={resolve('/solutions')} style="color:inherit">
+              <a href={resolve('solutions')} style="color:inherit">
                 {data.byType.find((t) => t.case_type === 'Question').count} questions in this window
               </a>. The ones that repeat belong in the knowledge base.
             </p>
@@ -238,7 +238,7 @@
           <p class="v2-sub" style="font-size:11.5px;margin:0 0 14px">
             The wait after a customer writes back, once the first reply has gone. Counted around the
             clock, against each priority's <a
-              href={resolve('/settings/escalation')}
+              href={resolve('settings/escalation')}
               style="color:inherit">next reply target</a
             >. A reply still overdue on an open ticket counts as late.
           </p>
@@ -287,7 +287,7 @@
             <p class="v2-sub" style="font-size:11.5px;margin:0">
               No ratings came back in this window. A survey goes to the ticket's contact when it
               closes, if surveys are switched on in <a
-                href={resolve('/settings/organization')}
+                href={resolve('settings/organization')}
                 style="color:inherit">organisation settings</a
               >.
             </p>
@@ -378,13 +378,13 @@
             These figures count elapsed time around the clock, evenings and weekends included. Each
             ticket's own SLA deadline is counted inside {totals.calendar_name}, so a reply on time
             there can show as late here.
-            <a href={resolve('/settings/business-hours')} style="color:inherit"
+            <a href={resolve('settings/business-hours')} style="color:inherit"
               >Change the calendar</a
             >.
           {:else}
             Elapsed time is counted around the clock. No business-hours calendar is set, so evenings
             and weekends count against a target.
-            <a href={resolve('/settings/business-hours')} style="color:inherit">Set up a calendar</a
+            <a href={resolve('settings/business-hours')} style="color:inherit">Set up a calendar</a
             >.
           {/if}
         </p>

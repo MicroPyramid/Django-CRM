@@ -4,9 +4,9 @@ import {
   createApprovalRule,
   updateApprovalRule,
   deleteApprovalRule
-} from '$lib/server/v2/ticket-approvals.js';
-import { getOrgPeopleAndTeams } from '$lib/server/v2/org-people.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/ticket-approvals.js';
+import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 // The rule list and the create/edit form's approver picker are two independent
 // fetches: `getApprovalRules` does not fold `getOrgPeopleAndTeams` into its own

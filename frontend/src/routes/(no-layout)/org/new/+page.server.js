@@ -3,13 +3,13 @@
  * org, then an optional vertical pack applied to it.
  */
 
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
+import * as env from '$app/env/private';
+import * as publicEnv from '$app/env/public';
 import axios from 'axios';
-import { describeError } from '$lib/server/log-safe.js';
-import { relayHeaders } from '$lib/server/relay.js';
-import { listPacks, applyPack } from '$lib/server/packs.js';
-import { listTimezones } from '$lib/server/v2/organization.js';
+import { describeError } from '#lib/server/log-safe.js';
+import { relayHeaders } from '#lib/server/relay.js';
+import { listPacks, applyPack } from '#lib/server/packs.js';
+import { listTimezones } from '#lib/server/v2/organization.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {

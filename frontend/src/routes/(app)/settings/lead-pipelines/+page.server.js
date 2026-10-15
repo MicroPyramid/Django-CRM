@@ -8,8 +8,8 @@ import {
   updateStage,
   deleteStage,
   moveStage
-} from '$lib/server/v2/lead-pipelines.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/lead-pipelines.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 const ADMIN_ONLY = 'Only an admin can change lead pipelines.';
 

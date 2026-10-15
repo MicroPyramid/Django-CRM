@@ -12,7 +12,7 @@
  * this caller may see, which is where that decision belongs.
  */
 
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 

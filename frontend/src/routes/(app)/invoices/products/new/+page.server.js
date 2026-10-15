@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getNewProductOptions, createProduct } from '$lib/server/v2/products.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getNewProductOptions, createProduct } from '#lib/server/v2/products.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Adding to the product catalogue.

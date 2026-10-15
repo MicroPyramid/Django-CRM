@@ -17,7 +17,7 @@
  * and re-issues the JWT rather than editing a field; that lives in the page's
  * `switchOrg` action, not here.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** Split a single display name into first/last for the page's header.
  *  The backend stores one `name` on User; the page shows "First Last". */

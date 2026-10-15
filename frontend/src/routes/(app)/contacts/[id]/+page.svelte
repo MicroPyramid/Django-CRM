@@ -1,5 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * A person, and everything that person is involved in.
    *
@@ -20,19 +21,19 @@
    * a contact is recording that you spoke to them. Nothing is faked. Every
    * event kind is backed by a row that exists.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import DuplicatesPanel from '$lib/v2/components/DuplicatesPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { money, moneyEach, shortDate, relativeDays, daysSince } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import DuplicatesPanel from '#lib/v2/components/DuplicatesPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { money, moneyEach, shortDate, relativeDays, daysSince } from '#lib/v2/format.js';
   import {
     CLOSED_KINDS,
     PRIORITY_TONE,
     CASE_STATUS_TONE,
     TASK_PRIORITY_TONE
-  } from '$lib/v2/enums.js';
+  } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import {
     ChevronRight,
@@ -179,10 +180,10 @@
     <Avatar name={contact.name} size={42} />
   {/snippet}
   {#snippet crumb()}
-    <a href={resolve('/contacts')}>Contacts</a>
+    <a href={resolve('contacts')}>Contacts</a>
     <ChevronRight size={12} />
     {#if contact.account}
-      <a href={resolve(`/accounts/${contact.account.id}`)}>{contact.account.name}</a>
+      <a href={resolve(`accounts/${contact.account.id}`)}>{contact.account.name}</a>
     {:else if contact.organization}
       <span>{contact.organization}</span>
     {:else}
@@ -208,8 +209,7 @@
     {:else if contact.phone}
       <a class="v2-btn" href="tel:{contact.phone}"><Phone />Call</a>
     {/if}
-    <a class="v2-btn v2-btn-primary" href={resolve(`/contacts/${contact.id}/edit`)}
-      ><Pencil />Edit</a
+    <a class="v2-btn v2-btn-primary" href={resolve(`contacts/${contact.id}/edit`)}><Pencil />Edit</a
     >
     {#if data.canDelete}
       <!-- Offered only when the API's delete rule admits this caller; the
@@ -259,7 +259,7 @@
         <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
           {#each deals as d (d.id)}
             <a
-              href={resolve(`/pipeline/${d.id}`)}
+              href={resolve(`pipeline/${d.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <div style="flex:1;min-width:0">
@@ -305,7 +305,7 @@
                  wired and had nowhere to go, which is what made tasks the
                  module to do next. -->
             <a
-              href={resolve(`/tasks/${t.id}`)}
+              href={resolve(`tasks/${t.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <span style="flex:1;font-size:13px;min-width:0">{t.title}</span>
@@ -343,7 +343,7 @@
             <!-- A link again: tickets is wired, so a real id sent to
                  `/tickets/<uuid>` opens the ticket. -->
             <a
-              href={resolve(`/tickets/${t.id}`)}
+              href={resolve(`tickets/${t.id}`)}
               style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
             >
               <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
@@ -454,7 +454,7 @@
                   {#if e.type === 'file' && e.href}
                     <a
                       class="tl-file"
-                      href={resolve(e.href)}
+                      href={resolve(asInternalPath(e.href))}
                       target="_blank"
                       rel="noreferrer noopener"
                     >
@@ -487,7 +487,7 @@
       <dt>Account</dt>
       <dd>
         {#if contact.account}
-          <a href={resolve(`/accounts/${contact.account.id}`)} style="color:inherit"
+          <a href={resolve(`accounts/${contact.account.id}`)} style="color:inherit"
             >{contact.account.name}</a
           >
         {:else},
@@ -497,7 +497,7 @@
         <dt>Also at</dt>
         <dd>
           {#each contact.other_accounts as other, i (other.id)}
-            {i > 0 ? ', ' : ''}<a href={resolve(`/accounts/${other.id}`)} style="color:inherit"
+            {i > 0 ? ', ' : ''}<a href={resolve(`accounts/${other.id}`)} style="color:inherit"
               >{other.name}</a
             >
           {/each}
@@ -558,7 +558,7 @@
       {#each colleagues as c (c.id)}
         <a
           class="v2-rail-row"
-          href={resolve(`/contacts/${c.id}`)}
+          href={resolve(`contacts/${c.id}`)}
           style="color:inherit;text-decoration:none;align-items:center"
         >
           <Avatar name={c.name} size={27} />

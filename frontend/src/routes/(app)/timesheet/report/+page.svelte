@@ -12,9 +12,9 @@
    * of it.
    */
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import { money, count, shortDate, hoursMinutes as hm } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import { money, count, shortDate, hoursMinutes as hm } from '#lib/v2/format.js';
   import { Download } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -65,7 +65,7 @@
 
 <PageHeader title="Time report">
   {#snippet crumb()}
-    <a href={resolve('/timesheet')}>Timesheet</a>
+    <a href={resolve('timesheet')}>Timesheet</a>
   {/snippet}
   {#snippet sub()}
     {shortDate(report.start)} - {shortDate(report.end)} · by {GROUP_NOUN[
@@ -157,10 +157,9 @@
               <tr>
                 <td data-m="title">
                   {#if report.group_by === 'ticket' && row.key}
-                    <a href={resolve(`/tickets/${row.key}`)} class="v2-table-primary">{row.name}</a>
+                    <a href={resolve(`tickets/${row.key}`)} class="v2-table-primary">{row.name}</a>
                   {:else if report.group_by === 'account' && row.key}
-                    <a href={resolve(`/accounts/${row.key}`)} class="v2-table-primary">{row.name}</a
-                    >
+                    <a href={resolve(`accounts/${row.key}`)} class="v2-table-primary">{row.name}</a>
                   {:else}
                     {row.name}
                   {/if}

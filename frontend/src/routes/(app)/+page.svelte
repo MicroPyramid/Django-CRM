@@ -1,8 +1,9 @@
 <script>
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import { money, count } from '$lib/v2/format.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import { money, count } from '#lib/v2/format.js';
   import { Target } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -79,7 +80,7 @@
         <div class="v2-queue-item">
           <span class="v2-queue-spine" style="background:{TONE_VAR[item.tone]}"></span>
           <div class="v2-queue-body">
-            <a href={resolve(item.href)} style="color:inherit;text-decoration:none">
+            <a href={resolve(asInternalPath(item.href))} style="color:inherit;text-decoration:none">
               <div style="font-weight:640;letter-spacing:-0.012em">{item.title}</div>
             </a>
             <div class="v2-sub" style="margin-top:2px">{item.detail}</div>
@@ -88,8 +89,10 @@
                the title into three words per row. -->
           <div class="v2-queue-actions">
             <Pill tone={item.tone}>{item.due}</Pill>
-            <a class="v2-btn" class:v2-btn-primary={i === 0} href={resolve(item.href)}
-              >{item.action}</a
+            <a
+              class="v2-btn"
+              class:v2-btn-primary={i === 0}
+              href={resolve(asInternalPath(item.href))}>{item.action}</a
             >
           </div>
         </div>
@@ -103,7 +106,7 @@
         <span class="v2-num">{hidden}</span>
         {hidden === 1 ? 'more is' : 'more are'} waiting:
         {#each summary.sources as source, i (source.href)}<a
-            href={resolve(source.href)}
+            href={resolve(asInternalPath(source.href))}
             style="color:inherit">{source.count} {source.label}</a
           >{i < summary.sources.length - 1 ? ', ' : '.'}{/each}
       </p>
@@ -134,7 +137,7 @@
       </div>
       <div class="goals">
         {#each goals as g (g.id)}
-          <a class="v2-card goal" href={resolve('/goals')}>
+          <a class="v2-card goal" href={resolve('goals')}>
             <div class="goal-head">
               <span class="goal-name">{g.name}</span>
               <span class="v2-num" style="font-weight:650;font-size:12.5px;color:{goalColor(g)}">

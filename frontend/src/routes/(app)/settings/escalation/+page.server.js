@@ -4,9 +4,9 @@ import {
   createEscalationPolicy,
   updateEscalationPolicy,
   deleteEscalationPolicy
-} from '$lib/server/v2/escalation.js';
-import { getOrgPeopleAndTeams } from '$lib/server/v2/org-people.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/escalation.js';
+import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 // The policy list and the create/edit form's target picker are two
 // independent fetches: `getEscalationPolicies` does not fold

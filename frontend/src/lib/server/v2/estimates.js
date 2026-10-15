@@ -2,7 +2,7 @@
  * Estimates: the fifteenth v2 module wired to the real API, and the second of
  * the invoices sub-pages (after products).
  *
- * Same rules as the fourteen before it: this file lives under `$lib/server`
+ * Same rules as the fourteen before it: this file lives under `#lib/server`
  * because the access token is an httpOnly cookie SvelteKit refuses to bundle
  * into client code. The org is never a parameter; it is a claim in the JWT and
  * the backend reads it from there.
@@ -33,12 +33,12 @@
  * CREATING ONE
  * `/invoices/estimates/new` is the builder: the same line-item editor and
  * totals preview as the invoice builder (`LineItemsEditor`,
- * `$lib/v2/line-items.js`), plus a deal link and a validity date. Started from
+ * `#lib/v2/line-items.js`), plus a deal link and a validity date. Started from
  * a deal (`?opportunity=<id>`) it is prefilled from that deal by
  * `estimateFromDeal` below.
  */
-import { apiRequest } from '$lib/api-helpers.js';
-import { sumByCurrency } from '$lib/v2/format.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import { sumByCurrency } from '#lib/v2/format.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,7 +47,7 @@ const AWAITING = ['Sent', 'Viewed'];
 
 /**
  * Every filter param `listEstimates` will forward. See the note on
- * FILTER_FIELDS in tickets.js: the descriptor in `$lib/v2/filters.js` must not
+ * FILTER_FIELDS in tickets.js: the descriptor in `#lib/v2/filters.js` must not
  * name a key absent from this list, and `filters.test.js` enforces it.
  *
  * `EstimateListView.get` (`backend/invoices/api_views.py:1028-1036`) reads

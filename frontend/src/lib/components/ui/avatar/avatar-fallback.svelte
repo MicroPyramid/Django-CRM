@@ -1,6 +1,6 @@
 <script>
   import { Avatar as AvatarPrimitive } from 'bits-ui';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
   import { gradientFor, WORKSPACE_GRADIENT } from './avatar-gradients.js';
 
   /**

@@ -1,9 +1,9 @@
 <script>
   import { tick } from 'svelte';
   import { Check, ChevronDown, Building2, User } from '@lucide/svelte';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { getOptionStyle, getOptionLabel, getOptionBgColor } from '$lib/utils/table-helpers.js';
-  import { formatCurrency } from '$lib/utils/formatting.js';
+  import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+  import { getOptionStyle, getOptionLabel, getOptionBgColor } from '#lib/utils/table-helpers.js';
+  import { formatCurrency } from '#lib/utils/formatting.js';
 
   /**
    * @typedef {Object} ColumnDef

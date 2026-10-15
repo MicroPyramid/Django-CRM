@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { getOrgSettings } from '$lib/server/v2/organization.js';
-import { listPacks, applyPack, clearSampleData } from '$lib/server/packs.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+import { getOrgSettings } from '#lib/server/v2/organization.js';
+import { listPacks, applyPack, clearSampleData } from '#lib/server/packs.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Organization settings (read) + the "Vertical pack" section.

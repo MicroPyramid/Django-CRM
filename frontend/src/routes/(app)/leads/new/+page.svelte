@@ -16,8 +16,8 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import DuplicateNotice from '$lib/v2/components/DuplicateNotice.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import DuplicateNotice from '#lib/v2/components/DuplicateNotice.svelte';
   import {
     LEAD_STATUSES,
     LEAD_STATUS_LABEL,
@@ -25,8 +25,8 @@
     LEAD_SOURCE_LABEL,
     INDUSTRIES,
     industryLabel
-  } from '$lib/v2/enums.js';
-  import { money } from '$lib/v2/format.js';
+  } from '#lib/v2/enums.js';
+  import { money } from '#lib/v2/format.js';
   import { TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -129,7 +129,7 @@
 
 <PageHeader title="New lead" center>
   {#snippet crumb()}
-    <a href={resolve('/leads')}>Leads</a> ›
+    <a href={resolve('leads')}>Leads</a> ›
   {/snippet}
   {#snippet sub()}
     A name and a company is enough to start. The rest can wait.
@@ -321,7 +321,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit" disabled={busy}>Create lead</button>
-      <a class="v2-btn" href={resolve('/leads')}>Cancel</a>
+      <a class="v2-btn" href={resolve('leads')}>Cancel</a>
     </div>
   </form>
 </div>

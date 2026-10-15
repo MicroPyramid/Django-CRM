@@ -17,8 +17,8 @@
   import { untrack } from 'svelte';
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import { mergeSideLabel } from '$lib/v2/merge-label.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import { mergeSideLabel } from '#lib/v2/merge-label.js';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @typedef {{ id: string, name: string, can_delete: boolean, fields: Array<{ label: string, value: string }> }} Side */
@@ -53,9 +53,9 @@
 
 <PageHeader title="Merge {singular}s" center width="820px">
   {#snippet crumb()}
-    <a href={resolve(`/${module}`)}>{module[0].toUpperCase() + module.slice(1)}</a>
+    <a href={resolve(`${module}`)}>{module[0].toUpperCase() + module.slice(1)}</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/${module}/${current.id}`)}>{current.name}</a>
+    <a href={resolve(`${module}/${current.id}`)}>{current.name}</a>
     <ChevronRight size={12} />
     <span>Merge</span>
   {/snippet}
@@ -147,7 +147,7 @@
         <button class="v2-btn v2-btn-primary" type="submit" disabled={!confirmed || busy}>
           Merge into {label(kept)}
         </button>
-        <a class="v2-btn" href={resolve(`/${module}/${current.id}`)}>Cancel</a>
+        <a class="v2-btn" href={resolve(`${module}/${current.id}`)}>Cancel</a>
       </div>
     {:else}
       <p class="v2-sub" style="font-size:12.5px">
@@ -155,7 +155,7 @@
         person who created a {singular} may delete it.
       </p>
       <div class="actions">
-        <a class="v2-btn" href={resolve(`/${module}/${current.id}`)}>Back</a>
+        <a class="v2-btn" href={resolve(`${module}/${current.id}`)}>Back</a>
       </div>
     {/if}
   </form>

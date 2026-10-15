@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Local mock plus a thin wrapper, matching every other test in this
 // directory (business-hours.test.js, tags.test.js, etc). Destructuring
-// `apiRequest` straight off `await import('$lib/api-helpers.js')` types it
+// `apiRequest` straight off `await import('#lib/api-helpers.js')` types it
 // against the real module's declared signature, which has no
 // `mockReset`/`mockResolvedValue`, and fails `svelte-check`.
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { getOrgPeopleAndTeams, resolveMe } = await import('./org-people.js');
 

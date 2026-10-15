@@ -9,11 +9,11 @@
  *   mv +page.server.api.js +page.server.js
  */
 
-import { env as publicEnv } from '$env/dynamic/public';
+import * as publicEnv from '$app/env/public';
 import { redirect, fail } from '@sveltejs/kit';
 import axios from 'axios';
-import { describeError } from '$lib/server/log-safe.js';
-import { relayHeaders } from '$lib/server/relay.js';
+import { describeError } from '#lib/server/log-safe.js';
+import { relayHeaders } from '#lib/server/relay.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

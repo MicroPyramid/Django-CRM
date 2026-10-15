@@ -12,13 +12,13 @@
    * meaning the same thing, and the work splits silently across them.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count } from '#lib/v2/format.js';
   import { Plus, Merge, Tags as TagsIcon } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */

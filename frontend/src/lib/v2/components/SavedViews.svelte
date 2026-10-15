@@ -7,10 +7,10 @@
    * Opening a view is a plain link to the page with the view's filters, so it
    * works like every other filter in the bar: in the URL, shareable, undone by
    * the back button. Save, rename and delete post to the page's form actions
-   * (`$lib/server/v2/saved-views.js`), which return to this same URL.
+   * (`#lib/server/v2/saved-views.js`), which return to this same URL.
    *
    * @type {{
-   *   saved: { spec: import('$lib/v2/saved-views.js').Spec, views: { id: string, name: string, filters: Record<string, string[]> }[], limit: number | null },
+   *   saved: { spec: import('#lib/v2/saved-views.js').Spec, views: { id: string, name: string, filters: Record<string, string[]> }[], limit: number | null },
    *   url: URL
    * }}
    */
@@ -18,9 +18,9 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { Bookmark, ChevronDown, Pencil } from '@lucide/svelte';
-  import { asInternalPath } from '$lib/utils/paths.js';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { droppedValues, isShowing, viewHref } from '$lib/v2/saved-views.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { droppedValues, isShowing, viewHref } from '#lib/v2/saved-views.js';
 
   let { saved, url } = $props();
 

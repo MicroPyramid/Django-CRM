@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { listInvoices, getInvoice, FILTER_FIELDS } = await import('$lib/server/v2/invoices.js');
-const { readFilters, buildFilterQuery } = await import('$lib/server/v2/filter-params.js');
+const { listInvoices, getInvoice, FILTER_FIELDS } = await import('#lib/server/v2/invoices.js');
+const { readFilters, buildFilterQuery } = await import('#lib/server/v2/filter-params.js');
 
 // Cast rather than shaping a full Cookies mock: listInvoices only ever calls
 // `cookies.get` (through the mocked apiRequest), so nothing here touches

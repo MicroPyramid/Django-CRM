@@ -21,7 +21,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -96,9 +96,9 @@
 
 <PageHeader title="Edit {contact.name}" center>
   {#snippet crumb()}
-    <a href={resolve('/contacts')}>Contacts</a>
+    <a href={resolve('contacts')}>Contacts</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/contacts/${contact.id}`)}>{contact.name}</a>
+    <a href={resolve(`contacts/${contact.id}`)}>{contact.name}</a>
   {/snippet}
   {#snippet sub()}
     {[
@@ -121,7 +121,7 @@
           <div class="v2-next-text">Saved.</div>
           <div class="v2-sub" style="margin-top:3px">“{contact.name}” has been updated.</div>
         </div>
-        <a class="v2-btn" href={resolve(`/contacts/${contact.id}`)}>Back to the contact</a>
+        <a class="v2-btn" href={resolve(`contacts/${contact.id}`)}>Back to the contact</a>
       </div>
     {/if}
 
@@ -370,7 +370,7 @@
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>
-      <a class="v2-btn" href={resolve(`/contacts/${contact.id}`)}>Cancel</a>
+      <a class="v2-btn" href={resolve(`contacts/${contact.id}`)}>Cancel</a>
     </div>
   </form>
 </div>

@@ -1,8 +1,8 @@
 <script>
   import { SvelteDate } from 'svelte/reactivity';
   import { resolve } from '$app/paths';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
   import { Circle, CheckCircle2, ChevronRight, ListTodo } from '@lucide/svelte';
 
   /**
@@ -199,7 +199,7 @@
         {#each filteredTasks() as task (task.id)}
           {@const config = getPriorityConfig(task.priority)}
           <a
-            href={resolve(`/tasks?view=${task.id}`)}
+            href={resolve(`tasks?view=${task.id}`)}
             class="group flex items-center gap-3 px-5 py-3 transition-all duration-200 hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-default)]/5"
           >
             <!-- Status icon -->

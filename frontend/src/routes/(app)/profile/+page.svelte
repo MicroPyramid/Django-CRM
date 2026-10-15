@@ -15,11 +15,11 @@
    * field, so it goes through its own action and the copy says so.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import { relativeDays, shortDate, count } from '$lib/v2/format.js';
-  import { ROLE_LABEL, ROLE_TONE } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import { relativeDays, shortDate, count } from '#lib/v2/format.js';
+  import { ROLE_LABEL, ROLE_TONE } from '#lib/v2/enums.js';
   import { KeyRound, Lock, ArrowLeftRight, CalendarDays } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -191,7 +191,7 @@
           <!-- /profile/tokens, not /settings/api-tokens. The settings page is
                the org-wide oversight list and 403s a member, so this count used
                to lead most of the people who clicked it to "Admins only". -->
-          <a class="v2-setting" href={resolve('/profile/tokens')}>
+          <a class="v2-setting" href={resolve('profile/tokens')}>
             <div class="v2-setting-body">
               <b>API tokens</b>
               <span class="v2-sub" style="font-size:11.5px">
@@ -203,7 +203,7 @@
               {count(p.active_token_count)}
             </span>
           </a>
-          <a class="v2-setting" href={resolve('/profile/calendar-feed')}>
+          <a class="v2-setting" href={resolve('profile/calendar-feed')}>
             <div class="v2-setting-body">
               <b>Calendar feed</b>
               <span class="v2-sub" style="font-size:11.5px">
@@ -229,19 +229,19 @@
 
         <div class="v2-label" style="margin-bottom:10px">Where your work shows up</div>
         <div class="v2-card" style="overflow:hidden">
-          <a class="v2-setting" href={resolve('/goals')}>
+          <a class="v2-setting" href={resolve('goals')}>
             <div class="v2-setting-body">
               <b>Goals</b>
               <span class="v2-sub" style="font-size:11.5px">Your quota and how it is pacing</span>
             </div>
           </a>
-          <a class="v2-setting" href={resolve('/timesheet')}>
+          <a class="v2-setting" href={resolve('timesheet')}>
             <div class="v2-setting-body">
               <b>Timesheet</b>
               <span class="v2-sub" style="font-size:11.5px">Hours you have logged this week</span>
             </div>
           </a>
-          <a class="v2-setting" href={resolve('/tasks')}>
+          <a class="v2-setting" href={resolve('tasks')}>
             <div class="v2-setting-body">
               <b>Tasks</b>
               <span class="v2-sub" style="font-size:11.5px">What is assigned to you</span>

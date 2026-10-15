@@ -9,7 +9,7 @@
    * If rich text arrives later it needs a sanitiser, not `{@html}`.
    */
   import { resolve } from '$app/paths';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
 
   let { data } = $props();
 
@@ -28,7 +28,7 @@
 </svelte:head>
 
 <PortalShell>
-  <a class="back" href={resolve('/portal/articles')}>Back to help articles</a>
+  <a class="back" href={resolve('portal/articles')}>Back to help articles</a>
 
   <article>
     <h1>{data.article.title}</h1>
@@ -43,7 +43,7 @@
       <h2>Related articles</h2>
       <ul>
         {#each data.related as item (item.id)}
-          <li><a href={resolve(`/portal/articles/${item.id}`)}>{item.title}</a></li>
+          <li><a href={resolve(`portal/articles/${item.id}`)}>{item.title}</a></li>
         {/each}
       </ul>
     </nav>
@@ -54,7 +54,7 @@
        action this whole page exists to avoid needing. -->
   <div class="ask">
     <p>Still stuck?</p>
-    <a href={resolve('/portal/cases')}>Send us a request</a>
+    <a href={resolve('portal/cases')}>Send us a request</a>
   </div>
 </PortalShell>
 

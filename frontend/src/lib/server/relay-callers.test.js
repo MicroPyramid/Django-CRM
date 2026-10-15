@@ -10,11 +10,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
-vi.mock('$lib/server/packs.js', () => ({ listPacks: vi.fn(), applyPack: vi.fn() }));
+vi.mock('#lib/server/packs.js', () => ({ listPacks: vi.fn(), applyPack: vi.fn() }));
 
 const axios = (await import('axios')).default;
-const { env: privateEnv } = await import('$env/dynamic/private');
-const { requestLogin, verifyLogin } = await import('$lib/server/portal.js');
+// The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code
+// under test reads. Imported by path because only the stub has a setter.
+const { setRelaySecret } = await import('../../../test/stubs/app-env-private.js');
+const { requestLogin, verifyLogin } = await import('#lib/server/portal.js');
 const login = await import('../../routes/(no-layout)/login/+page.server.js');
 const verify = await import('../../routes/(no-layout)/login/verify/+page.server.js');
 const logout = await import('../../routes/(no-layout)/logout/+page.server.js');
@@ -49,7 +51,7 @@ async function ignoringRedirect(run) {
 const fetchMock = vi.fn();
 
 beforeEach(() => {
-  privateEnv.RELAY_SECRET = SECRET;
+  setRelaySecret(SECRET);
   fetchMock.mockReset();
   fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
   vi.stubGlobal('fetch', fetchMock);
@@ -59,7 +61,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete privateEnv.RELAY_SECRET;
+  setRelaySecret(undefined);
 });
 
 describe('magic-link request (records the address on the token)', () => {
@@ -78,7 +80,7 @@ describe('magic-link request (records the address on the token)', () => {
   });
 
   it('sends only the unsigned, pre-1.12 address without a secret', async () => {
-    delete privateEnv.RELAY_SECRET;
+    setRelaySecret(undefined);
     await submit();
     expect(vi.mocked(axios.post).mock.calls[0][2]?.headers).toEqual({
       'Content-Type': 'application/json',
@@ -157,7 +159,7 @@ describe('portal sign-in (records the address on the token)', () => {
   });
 
   it('sends only the unsigned, pre-1.12 address without a secret', async () => {
-    delete privateEnv.RELAY_SECRET;
+    setRelaySecret(undefined);
     await requestLogin('org-1', 'ada@example.com', { getClientAddress, request: visit() });
     expect(fetchMock.mock.calls[0][1].headers).toEqual({
       'Content-Type': 'application/json',

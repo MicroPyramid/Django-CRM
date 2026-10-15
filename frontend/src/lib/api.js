@@ -8,7 +8,7 @@ import { resolve } from '$app/paths';
  * @module lib/api
  */
 
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 import { goto } from '$app/navigation';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -177,7 +177,7 @@ async function performTokenRefresh() {
     // Refresh token expired or invalid
     clearAuthData();
     if (typeof window !== 'undefined') {
-      goto(resolve('/login'));
+      goto(resolve('login'));
     }
     return null;
   } catch (error) {
@@ -318,7 +318,7 @@ export const auth = {
   logout() {
     clearAuthData();
     if (typeof window !== 'undefined') {
-      goto(resolve('/login'));
+      goto(resolve('login'));
     }
   }
 };

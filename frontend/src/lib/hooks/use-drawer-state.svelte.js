@@ -1,11 +1,11 @@
 import { SvelteURL } from 'svelte/reactivity';
 import { resolve } from '$app/paths';
-import { asInternalPath } from '$lib/utils/paths.js';
+import { asInternalPath } from '#lib/utils/paths.js';
 import { goto } from '$app/navigation';
 
 /**
  * @typedef {Object} DrawerStateOptions
- * @property {import('@sveltejs/kit').Page} [page] - SvelteKit page store for URL sync
+ * @property {import('$app/state').Page} [page] - SvelteKit page store for URL sync
  * @property {boolean} [syncUrl=false] - Whether to sync drawer state with URL
  */
 
@@ -32,7 +32,7 @@ export function useDrawerState(options = {}) {
   function updateUrl(viewId, action) {
     if (!syncUrl || !page) return;
 
-    const url = new SvelteURL(page.url);
+    const url = new SvelteURL(page.url.href);
     if (viewId) {
       url.searchParams.set('view', viewId);
       url.searchParams.delete('action');
@@ -44,8 +44,8 @@ export function useDrawerState(options = {}) {
       url.searchParams.delete('action');
     }
     goto(resolve(asInternalPath(`${url.pathname}${url.search}${url.hash}`)), {
-      replaceState: true,
-      noScroll: true
+      replace: true,
+      reset: false
     });
   }
 

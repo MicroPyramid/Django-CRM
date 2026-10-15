@@ -1,10 +1,10 @@
 import { fail } from '@sveltejs/kit';
-import { listInvoices, sendInvoice } from '$lib/server/v2/invoices.js';
-import { invoiceListQuery } from '$lib/server/v2/list-queries.js';
-import { listAccountsPicker } from '$lib/server/v2/accounts.js';
-import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { loadSavedViews, savedViewActions } from '$lib/server/v2/saved-views.js';
+import { listInvoices, sendInvoice } from '#lib/server/v2/invoices.js';
+import { invoiceListQuery } from '#lib/server/v2/list-queries.js';
+import { listAccountsPicker } from '#lib/server/v2/accounts.js';
+import { getOrgPeopleAndTeams, resolveMe } from '#lib/server/v2/org-people.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadSavedViews, savedViewActions } from '#lib/server/v2/saved-views.js';
 
 /**
  * The invoice list.
@@ -12,7 +12,7 @@ import { loadSavedViews, savedViewActions } from '$lib/server/v2/saved-views.js'
  * Server load, so the JWT cookie stays server-side. Rows arrive from one API
  * call, filtered by whatever `FILTER_FIELDS` params are on the URL. The
  * header pills do NOT narrow with them, see the note on `totals` in
- * `listInvoices` (`$lib/server/v2/invoices.js`): the API computes them over
+ * `listInvoices` (`#lib/server/v2/invoices.js`): the API computes them over
  * the role-scoped queryset before filtering, by design, so this page has no
  * "these numbers describe the filtered list" line the way accounts, estimates,
  * tasks, tickets and pipeline do. Adding one here would describe something

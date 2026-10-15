@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { canonicalSlug, getHelpArticle, getHelpCenter, listAllArticles, pageNumber, sitemapXml } =
-  await import('$lib/server/help-center.js');
-const { env: privateEnv } = await import('$env/dynamic/private');
+  await import('#lib/server/help-center.js');
+// The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code
+// under test reads. Imported by path because only the stub has a setter.
+const { setRelaySecret } = await import('../../../test/stubs/app-env-private.js');
 
 const SECRET = 'r'.repeat(48);
 
@@ -31,7 +33,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete privateEnv.RELAY_SECRET;
+  setRelaySecret(undefined);
 });
 
 describe('canonicalSlug', () => {
@@ -66,7 +68,7 @@ describe('canonicalSlug', () => {
 
 describe('API calls', () => {
   it('sends no credential and the signed visitor address', async () => {
-    privateEnv.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     fetchMock.mockResolvedValue(
       reply(200, { help_center: { name: 'Acme' }, articles: [], articles_count: 0 })
     );
@@ -79,7 +81,7 @@ describe('API calls', () => {
   });
 
   it('never passes on the incoming forwarded chain, which the visitor writes', async () => {
-    privateEnv.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     fetchMock.mockResolvedValue(reply(200, { articles: [] }));
     await getHelpCenter(event({ 'x-forwarded-for': '203.0.113.9' }), 'acme');
     const { headers } = fetchMock.mock.calls[0][1];

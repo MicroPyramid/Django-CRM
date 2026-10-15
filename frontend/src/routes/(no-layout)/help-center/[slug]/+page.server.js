@@ -5,7 +5,7 @@
  * from the slug; nothing this page sends can widen it.
  */
 
-import { canonicalSlug, getHelpCenter, pageNumber, PAGE_SIZE } from '$lib/server/help-center.js';
+import { canonicalSlug, getHelpCenter, pageNumber, PAGE_SIZE } from '#lib/server/help-center.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {

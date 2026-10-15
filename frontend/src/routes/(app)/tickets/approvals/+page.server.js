@@ -4,8 +4,8 @@ import {
   approveApproval,
   rejectApproval,
   cancelApproval
-} from '$lib/server/v2/approvals.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/approvals.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * The approvals queue. `load` returns `{ approvals, totals, rules }`; the three

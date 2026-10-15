@@ -1,12 +1,12 @@
 <script>
   import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { Sliders, Loader2, Check } from '@lucide/svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Input } from '#lib/components/ui/input/index.js';
+  import { Label } from '#lib/components/ui/label/index.js';
 
   /**
    * @typedef {Object} CustomFieldDef
@@ -80,7 +80,7 @@
   {#if isEmpty}
     <p class="text-sm text-[var(--text-secondary)]">
       No custom fields configured for {target.toLowerCase()}.
-      <a class="underline" href={resolve(`/settings/custom-fields?target=${target}`)}>Manage</a>
+      <a class="underline" href={resolve(`settings/custom-fields?target=${target}`)}>Manage</a>
     </p>
   {:else}
     <form
@@ -93,7 +93,7 @@
           saving = false;
           if (result.type === 'success') {
             toast.success(`${title} saved`);
-            await invalidateAll();
+            await refreshAll();
           } else if (result.type === 'failure') {
             toast.error(String(result.data?.error || 'Failed to save'));
           }

@@ -12,7 +12,7 @@
  * link cannot attach. It never gates: the export views decide what the caller
  * may see, the same way the list views do.
  */
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 
 /**
  * @param {{ cookies: import('@sveltejs/kit').Cookies, request: Request }} event

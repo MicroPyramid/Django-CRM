@@ -23,9 +23,9 @@
    *    the link".
    */
   import { enhance } from '$app/forms';
-  import PortalShell from '$lib/v2/components/PortalShell.svelte';
-  import PortalLineItems from '$lib/v2/components/PortalLineItems.svelte';
-  import { money, longDate } from '$lib/v2/format.js';
+  import PortalShell from '#lib/v2/components/PortalShell.svelte';
+  import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
+  import { money, longDate } from '#lib/v2/format.js';
   import { Download, CheckCircle2, XCircle, AlertTriangle } from '@lucide/svelte';
 
   /** @type {{ data: { estimate: any, token: string }, form: any }} */

@@ -10,15 +10,15 @@
    * "has it been billed" are two separate facts and get two separate columns.
    */
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import { enhance } from '$app/forms';
-  import { money, moneyEach, count, daysSince } from '$lib/v2/format.js';
-  import { ESTIMATE_STATUS_TONE } from '$lib/v2/enums.js';
+  import { money, moneyEach, count, daysSince } from '#lib/v2/format.js';
+  import { ESTIMATE_STATUS_TONE } from '#lib/v2/enums.js';
   import { Plus, FileText } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -53,7 +53,7 @@
     <span class="v2-num">{perCurrency(totals.awaiting_reply)}</span> awaiting a reply
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn v2-btn-primary" href={resolve('/invoices/estimates/new')}
+    <a class="v2-btn v2-btn-primary" href={resolve('invoices/estimates/new')}
       ><Plus />New estimate</a
     >
   {/snippet}
@@ -110,8 +110,8 @@
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/invoices/estimates/new')}>New estimate</a>
-        <a class="v2-btn" href={resolve('/pipeline')}>Start from a deal</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('invoices/estimates/new')}>New estimate</a>
+        <a class="v2-btn" href={resolve('pipeline')}>Start from a deal</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -138,7 +138,7 @@
                 </span>
               </td>
               <td>
-                <a href={resolve(`/accounts/${e.account.id}`)} style="color:inherit"
+                <a href={resolve(`accounts/${e.account.id}`)} style="color:inherit"
                   >{e.account.name}</a
                 >
                 {#if e.opportunity}
@@ -149,7 +149,7 @@
               <td>
                 {#if e.converted_invoice}
                   <a
-                    href={resolve(`/invoices/${e.converted_invoice.id}`)}
+                    href={resolve(`invoices/${e.converted_invoice.id}`)}
                     class="v2-num"
                     style="color:inherit"
                   >

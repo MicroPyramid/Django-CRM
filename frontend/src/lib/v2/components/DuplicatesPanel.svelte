@@ -33,11 +33,11 @@
     {#each duplicates as d (d.id)}
       <div class="row">
         <div style="flex:1;min-width:0">
-          <a href={resolve(`/${module}/${d.id}`)}>{d.name}</a>
+          <a href={resolve(`${module}/${d.id}`)}>{d.name}</a>
           <span class="v2-sub"> · same {d.matched_on}</span>
         </div>
         {#if canDelete || d.can_delete}
-          <a class="v2-btn v2-btn-sm merge" href={resolve(`/${module}/${id}/merge?with=${d.id}`)}>
+          <a class="v2-btn v2-btn-sm merge" href={resolve(`${module}/${id}/merge?with=${d.id}`)}>
             Compare
           </a>
         {/if}

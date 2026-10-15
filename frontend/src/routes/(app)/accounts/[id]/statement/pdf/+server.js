@@ -1,4 +1,4 @@
-import { forwardStatementPdf } from '$lib/server/v2/statements.js';
+import { forwardStatementPdf } from '#lib/server/v2/statements.js';
 
 /**
  * The statement as a PDF, for the period in the query string. The API decides

@@ -15,20 +15,20 @@
    *    dead, and "matched 0 times" on its own looks like a quiet month.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count } from '#lib/v2/format.js';
   import {
     ROUTING_STRATEGY_LABEL,
     ROUTING_STRATEGY_NAME,
     CONDITION_FIELD_LABEL,
     CONDITION_OP_LABEL
-  } from '$lib/v2/enums.js';
-  import { missingOptions, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  } from '#lib/v2/enums.js';
+  import { missingOptions, inactiveOptionLabel } from '#lib/v2/pickers.js';
   import { nextInRotation } from './rotation.js';
   import { Plus, GripVertical, TriangleAlert, UserX } from '@lucide/svelte';
 

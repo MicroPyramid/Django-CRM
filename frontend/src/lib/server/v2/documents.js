@@ -1,7 +1,7 @@
 /**
  * Documents: the thirteenth v2 module wired to the real API.
  *
- * Lives under `$lib/server` like the twelve before it: SvelteKit keeps this
+ * Lives under `#lib/server` like the twelve before it: SvelteKit keeps this
  * directory out of the client bundle, so the httpOnly access token never
  * reaches the browser. Org is a JWT claim the backend re-derives; it is never a
  * parameter here.
@@ -49,9 +49,9 @@
  *   properly: a route on this origin that streams from an authenticated
  *   endpoint gated by the same `_may_read` the detail view uses.
  */
-import { isOrgAdmin } from '$lib/admin.js';
-import { apiRequest } from '$lib/api-helpers.js';
-import { env } from '$env/dynamic/public';
+import { isOrgAdmin } from '#lib/admin.js';
+import { apiRequest } from '#lib/api-helpers.js';
+import * as env from '$app/env/public';
 import { documentHref } from './files.js';
 import { getOrgPeopleAndTeams } from './org-people.js';
 
@@ -62,7 +62,7 @@ export const STATUS_CHOICES = ['active', 'inactive'];
 
 /**
  * Every filter param `listDocuments` will forward. The descriptor in
- * `$lib/v2/filters.js` must not name a key absent from this list; a test in
+ * `#lib/v2/filters.js` must not name a key absent from this list; a test in
  * `filters.test.js` enforces that. `status` is the only one: `tags` has no
  * backing relation on `Document` at all, and `shared_to` is passed straight to
  * `json.loads` by `DocumentListView.get`, so a plain `?shared_to=<uuid>` would

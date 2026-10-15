@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-const { relayHeaders } = await import('$lib/server/relay.js');
-const { env } = await import('$env/dynamic/private');
+const { relayHeaders } = await import('#lib/server/relay.js');
+// The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code
+// under test reads. Imported by path because only the stub has a setter.
+const { setRelaySecret } = await import('../../../test/stubs/app-env-private.js');
 
 const SECRET = 'r'.repeat(48);
 
@@ -17,12 +19,12 @@ const event = (getClientAddress, headers = { 'user-agent': BROWSER }) => ({
 });
 
 afterEach(() => {
-  delete env.RELAY_SECRET;
+  setRelaySecret(undefined);
 });
 
 describe('relayHeaders', () => {
   it('names the visitor and their browser, signed, when a secret is set', () => {
-    env.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     expect(relayHeaders(event(() => '198.51.100.7'))).toEqual({
       'X-Forwarded-For': '198.51.100.7',
       'X-BottleCRM-Relay-Secret': SECRET,
@@ -32,7 +34,7 @@ describe('relayHeaders', () => {
   });
 
   it('names an empty browser when the visitor sent no User-Agent', () => {
-    env.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     expect(relayHeaders(event(() => '198.51.100.7', {}))).toMatchObject({
       'X-BottleCRM-User-Agent': ''
     });
@@ -45,14 +47,14 @@ describe('relayHeaders', () => {
   });
 
   it('treats an empty secret as unset', () => {
-    env.RELAY_SECRET = '';
+    setRelaySecret('');
     expect(relayHeaders(event(() => '198.51.100.7'))).toEqual({
       'X-Forwarded-For': '198.51.100.7'
     });
   });
 
   it('sends nothing when the address cannot be read', () => {
-    env.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     expect(
       relayHeaders(
         event(() => {
@@ -63,7 +65,7 @@ describe('relayHeaders', () => {
   });
 
   it('sends nothing when the address is empty', () => {
-    env.RELAY_SECRET = SECRET;
+    setRelaySecret(SECRET);
     expect(relayHeaders(event(() => ''))).toEqual({});
   });
 });

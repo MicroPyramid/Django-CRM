@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { updateBusinessHours, addHoliday, removeHoliday } =
-  await import('$lib/server/v2/business-hours.js');
+  await import('#lib/server/v2/business-hours.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 

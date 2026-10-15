@@ -41,14 +41,14 @@
   import { untrack } from 'svelte';
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count, relativeTime, shortDate } from '$lib/v2/format.js';
-  import { LEAD_SOURCES, LEAD_SOURCE_LABEL, CASE_PRIORITIES, CASE_TYPES } from '$lib/v2/enums.js';
-  import { inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count, relativeTime, shortDate } from '#lib/v2/format.js';
+  import { LEAD_SOURCES, LEAD_SOURCE_LABEL, CASE_PRIORITIES, CASE_TYPES } from '#lib/v2/enums.js';
+  import { inactiveOptionLabel } from '#lib/v2/pickers.js';
   import {
     moveField,
     withOrder,
@@ -56,7 +56,7 @@
     hasRequiredField,
     builtinFor,
     builtinFieldLabel
-  } from '$lib/v2/webform-fields.js';
+  } from '#lib/v2/webform-fields.js';
   import { ChevronUp, ChevronDown, GripVertical, Plus, Trash2, Copy, Check } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -274,7 +274,7 @@
 
 <PageHeader title={wf.name} record>
   {#snippet crumb()}
-    <a href={resolve('/settings/web-forms')}>Web forms</a>
+    <a href={resolve('settings/web-forms')}>Web forms</a>
   {/snippet}
   {#snippet sub()}
     <Pill tone={wf.is_published ? 'moss' : 'slate'}>
@@ -983,9 +983,9 @@
                   >
                   <td data-m="meta">
                     {#if s.case}
-                      <a href={resolve(`/tickets/${s.case}`)}>{s.case_name}</a>
+                      <a href={resolve(`tickets/${s.case}`)}>{s.case_name}</a>
                     {:else if s.lead}
-                      <a href={resolve(`/leads/${s.lead}`)}>{s.lead_name}</a>
+                      <a href={resolve(`leads/${s.lead}`)}>{s.lead_name}</a>
                     {:else}
                       <span class="v2-muted">No {recordNoun}</span>
                     {/if}

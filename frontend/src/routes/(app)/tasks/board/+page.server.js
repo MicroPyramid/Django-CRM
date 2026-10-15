@@ -5,8 +5,8 @@ import {
   createColumn,
   getBoard,
   moveBoardTask
-} from '$lib/server/v2/board.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/board.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /** Map an api-helpers error to a form `fail`, preserving a 403 as a 403. */
 function toFail(/** @type {any} */ err, /** @type {string} */ fallback) {

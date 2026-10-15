@@ -31,7 +31,7 @@
  * the backend re-derives admin status from the request's own profile and is
  * what actually refuses.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
 
 /** Monday-first weekday label ↔ the model's field prefix. */

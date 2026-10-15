@@ -1,13 +1,13 @@
 <script>
   import { resolve } from '$app/paths';
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import Timeline from '$lib/v2/components/Timeline.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import Avatar from '$lib/v2/components/Avatar.svelte';
-  import { money, longDate } from '$lib/v2/format.js';
-  import { AGING_TONE, AGING_LABEL, OPPORTUNITY_TYPE_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import Timeline from '#lib/v2/components/Timeline.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import Avatar from '#lib/v2/components/Avatar.svelte';
+  import { money, longDate } from '#lib/v2/format.js';
+  import { AGING_TONE, AGING_LABEL, OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
   import { Check, ChevronRight } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -40,16 +40,16 @@
 
 <PageHeader title={deal.name} record>
   {#snippet crumb()}
-    <a href={resolve('/pipeline')}>Pipeline</a>
+    <a href={resolve('pipeline')}>Pipeline</a>
     <ChevronRight size={12} />
-    <a href={resolve(`/accounts/${deal.account.id}`)}>{deal.account.name}</a>
+    <a href={resolve(`accounts/${deal.account.id}`)}>{deal.account.name}</a>
   {/snippet}
   {#snippet actions()}
     <!-- "Move stage" was a second button that did nothing. Stage is edited on
          the form below, where the page can show what moving it costs, the
          aging clock resets, instead of moving it in one anonymous click. -->
-    <a class="v2-btn" href={resolve(`/pipeline/${deal.id}/edit`)}>Edit</a>
-    <a class="v2-btn" href="{resolve('/invoices/estimates/new')}?opportunity={deal.id}"
+    <a class="v2-btn" href={resolve(`pipeline/${deal.id}/edit`)}>Edit</a>
+    <a class="v2-btn" href="{resolve('invoices/estimates/new')}?opportunity={deal.id}"
       >Create estimate</a
     >
     {#if deal.stage_kind === 'won'}
@@ -211,7 +211,7 @@
            plain text because the contacts module was still fixtures. -->
       <a
         class="v2-rail-row"
-        href={resolve(`/contacts/${c.id}`)}
+        href={resolve(`contacts/${c.id}`)}
         style="color:inherit;text-decoration:none"
       >
         <Avatar name="{c.first_name} {c.last_name}" size={27} />

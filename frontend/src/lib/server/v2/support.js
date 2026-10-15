@@ -8,7 +8,7 @@
  */
 import { error } from '@sveltejs/kit';
 
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 export const SUPPORT_CATEGORIES = [
   { value: 'technical', label: 'Technical issue' },
@@ -75,7 +75,7 @@ export async function listSupportTickets({ cookies }) {
  * quietly downgraded to the community page while their tickets sit unread.
  *
  * Lives here rather than in `+page.server.js` so the vitest harness can reach
- * it. That harness resolves `$lib` and nothing else, and its include glob
+ * it. That harness resolves `#lib` and nothing else, and its include glob
  * cannot match a path containing `(app)` anyway, so a test placed next to the
  * route would never run. See the docstring in `vitest.config.js`.
  *

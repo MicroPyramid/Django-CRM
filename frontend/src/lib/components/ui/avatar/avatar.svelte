@@ -1,6 +1,6 @@
 <script>
   import { Avatar as AvatarPrimitive } from 'bits-ui';
-  import { cn } from '$lib/utils.js';
+  import { cn } from '#lib/utils.js';
 
   /**
    * @typedef {'loading' | 'loaded' | 'error'} LoadingStatus

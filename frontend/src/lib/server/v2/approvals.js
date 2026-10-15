@@ -13,7 +13,7 @@
  * Since the self-approval guard landed, `can_act` is already false on a row you
  * filed yourself, so the queue's Approve/Reject offer and the endpoint agree.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** A `{ id, email }` profile object (or null) → a display string. */
 const label = (/** @type {any} */ p) => (p && typeof p === 'object' ? p.email || '' : p || '');

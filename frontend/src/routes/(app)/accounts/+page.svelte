@@ -1,12 +1,12 @@
 <script>
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import FilterBar from '$lib/v2/components/FilterBar.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { moneyEach, count } from '$lib/v2/format.js';
-  import { activeChips, activePresetKey } from '$lib/v2/filters.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import FilterBar from '#lib/v2/components/FilterBar.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { moneyEach, count } from '#lib/v2/format.js';
+  import { activeChips, activePresetKey } from '#lib/v2/filters.js';
   import { Download, Plus, Building2 } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -47,12 +47,12 @@
          from it, so the file holds every row this list would page through. -->
     <a
       class="v2-btn"
-      href="{resolve('/api/accounts/export')}?{page.url.searchParams}"
+      href="{resolve('api/accounts/export')}?{page.url.searchParams}"
       data-sveltekit-reload
     >
       <Download />Export
     </a>
-    <a class="v2-btn v2-btn-primary" href={resolve('/accounts/new')}><Plus />New account</a>
+    <a class="v2-btn v2-btn-primary" href={resolve('accounts/new')}><Plus />New account</a>
   {/snippet}
 </PageHeader>
 
@@ -80,8 +80,8 @@
     >
       {#snippet icon()}<Building2 size={21} />{/snippet}
       {#snippet actions()}
-        <a class="v2-btn v2-btn-primary" href={resolve('/accounts/new')}>New account</a>
-        <a class="v2-btn" href={resolve('/leads')}>Go to leads</a>
+        <a class="v2-btn v2-btn-primary" href={resolve('accounts/new')}>New account</a>
+        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>
   {:else}
@@ -101,7 +101,7 @@
           {#each accounts as a (a.id)}
             <tr>
               <td>
-                <a class="v2-row-link" href={resolve(`/accounts/${a.id}`)}>
+                <a class="v2-row-link" href={resolve(`accounts/${a.id}`)}>
                   <div class="v2-table-primary">{a.name}</div>
                   <div class="v2-table-secondary">
                     {[a.city, a.country_display].filter(Boolean).join(', ') || 'No address'}

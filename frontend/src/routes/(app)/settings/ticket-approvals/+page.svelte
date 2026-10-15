@@ -27,14 +27,14 @@
    * closed it, so the warning is gone.
    */
   import { enhance } from '$app/forms';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count } from '$lib/v2/format.js';
-  import { ROLE_LABEL } from '$lib/v2/enums.js';
-  import { missingOptions, missingOption, inactiveOptionLabel } from '$lib/v2/pickers.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count } from '#lib/v2/format.js';
+  import { ROLE_LABEL } from '#lib/v2/enums.js';
+  import { missingOptions, missingOption, inactiveOptionLabel } from '#lib/v2/pickers.js';
   import {
     approverSentence,
     clearableByNobody,
@@ -47,7 +47,7 @@
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
-  // cases.approvals: PRIORITY_CHOICE and CASE_TYPE. Not in `$lib/v2/enums.js`
+  // cases.approvals: PRIORITY_CHOICE and CASE_TYPE. Not in `#lib/v2/enums.js`
   // because there is no shared label map to derive from: value and label are
   // the same string for both, and no other v2 page reads either list.
   const MATCH_PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'];
@@ -338,7 +338,7 @@
             <div style="flex:none;text-align:right">
               {#if r.pending_count}
                 <a
-                  href={resolve('/tickets/approvals')}
+                  href={resolve('tickets/approvals')}
                   class="v2-sub"
                   style="font-size:12px;display:inline-flex;align-items:center;gap:2px"
                 >

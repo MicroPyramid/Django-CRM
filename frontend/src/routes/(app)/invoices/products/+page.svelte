@@ -11,11 +11,11 @@
    * sold, so `is_active=false` takes it out of the picker and leaves the
    * record intact. The row says which, and how many invoices it is on.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { money, count } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { money, count } from '#lib/v2/format.js';
   import { Plus, Package, Pencil } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -50,7 +50,7 @@
   {/snippet}
   {#snippet actions()}
     {#if canManage}
-      <a class="v2-btn v2-btn-primary" href={resolve('/invoices/products/new')}
+      <a class="v2-btn v2-btn-primary" href={resolve('invoices/products/new')}
         ><Plus />New product</a
       >
     {/if}
@@ -69,8 +69,7 @@
         {#snippet icon()}<Package size={21} />{/snippet}
         {#snippet actions()}
           {#if canManage}
-            <a class="v2-btn v2-btn-primary" href={resolve('/invoices/products/new')}>New product</a
-            >
+            <a class="v2-btn v2-btn-primary" href={resolve('invoices/products/new')}>New product</a>
           {:else}
             <span class="v2-sub" style="font-size:12px">Ask an admin to add products.</span>
           {/if}
@@ -100,7 +99,7 @@
               {#if canManage}
                 <a
                   class="prod-edit"
-                  href={resolve(`/invoices/products/${p.id}/edit`)}
+                  href={resolve(`invoices/products/${p.id}/edit`)}
                   title="Edit {p.name}"
                 >
                   <Pencil size={14} />

@@ -24,7 +24,7 @@
  * this layer surfaces `can_view` so the page can say so plainly rather than
  * render a dashboard built from a personal slice.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** A fully-shaped but empty payload, so a non-admin render never throws. */
 const EMPTY = {

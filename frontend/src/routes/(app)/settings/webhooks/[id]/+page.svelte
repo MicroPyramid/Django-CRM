@@ -10,12 +10,12 @@
    * settled row sends the same event again as a new row.
    */
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import NextAction from '$lib/v2/components/NextAction.svelte';
-  import ConfirmAction from '$lib/v2/components/ConfirmAction.svelte';
-  import { count, relativeTime } from '$lib/v2/format.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import NextAction from '#lib/v2/components/NextAction.svelte';
+  import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
+  import { count, relativeTime } from '#lib/v2/format.js';
   import { enhance } from '$app/forms';
   import WebhookFields from '../WebhookFields.svelte';
   import SecretOnce from '../SecretOnce.svelte';
@@ -162,7 +162,7 @@
         <a
           class="v2-btn v2-btn-sm wh-tap"
           style="margin-left:auto"
-          href={resolve(`/settings/webhooks/${e.id}?offset=${data.offset}`)}
+          href={resolve(`settings/webhooks/${e.id}?offset=${data.offset}`)}
         >
           Refresh
         </a>
@@ -227,7 +227,7 @@
             <a
               class="v2-btn v2-btn-sm wh-tap"
               href={resolve(
-                `/settings/webhooks/${e.id}?offset=${Math.max(0, data.offset - data.pageSize)}`
+                `settings/webhooks/${e.id}?offset=${Math.max(0, data.offset - data.pageSize)}`
               )}
             >
               Newer
@@ -236,7 +236,7 @@
           {#if data.offset + data.pageSize < data.deliveryCount}
             <a
               class="v2-btn v2-btn-sm wh-tap"
-              href={resolve(`/settings/webhooks/${e.id}?offset=${data.offset + data.pageSize}`)}
+              href={resolve(`settings/webhooks/${e.id}?offset=${data.offset + data.pageSize}`)}
               >Older</a
             >
           {/if}

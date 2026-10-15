@@ -5,11 +5,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('$env/dynamic/public', () => ({
-  env: { PUBLIC_DJANGO_API_URL: 'http://api.test' }
-}));
+vi.mock('$app/env/public', () => ({ PUBLIC_DJANGO_API_URL: 'http://api.test' }));
 const apiRequest = vi.fn();
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
 const { statementQuery, previousMonth, getStatement, forwardStatementPdf } =
   await import('./statements.js');

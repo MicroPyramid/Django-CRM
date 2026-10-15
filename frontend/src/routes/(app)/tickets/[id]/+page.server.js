@@ -14,15 +14,15 @@ import {
   setWatching,
   suggestTicketArticles,
   setTicketArticle
-} from '$lib/server/v2/tickets.js';
+} from '#lib/server/v2/tickets.js';
 import {
   listUsableMacros,
   renderMacro,
   applyMacro,
   keptActions,
   applySummary
-} from '$lib/server/v2/macros.js';
-import { getOrgSettings } from '$lib/server/v2/organization.js';
+} from '#lib/server/v2/macros.js';
+import { getOrgSettings } from '#lib/server/v2/organization.js';
 import {
   listTicketTime,
   startTicketTimer,
@@ -30,15 +30,15 @@ import {
   logTicketTime,
   setEntryBillable,
   deleteEntry
-} from '$lib/server/v2/timesheet.js';
+} from '#lib/server/v2/timesheet.js';
 import {
   listTicketApprovals,
   requestApproval,
   approveApproval,
   rejectApproval,
   cancelApproval
-} from '$lib/server/v2/approvals.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/approvals.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 import { openDescendants, subtreeTruncated, cascadedCount, closeResultMessage } from './close.js';
 import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
 

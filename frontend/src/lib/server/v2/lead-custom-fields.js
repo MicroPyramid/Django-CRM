@@ -21,7 +21,7 @@
  * here is a convenience for the form, never the control. A forged key is
  * discarded server-side whatever this file does.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * Active custom-field definitions targeting Lead, in display order.

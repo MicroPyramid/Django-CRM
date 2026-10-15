@@ -1,9 +1,9 @@
 <script>
   import { ChevronDown, X, Search, AlertCircle, RotateCw } from '@lucide/svelte';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-  import { cn } from '$lib/utils.js';
+  import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js';
+  import { cn } from '#lib/utils.js';
 
   /**
    * @typedef {Object} SelectOption

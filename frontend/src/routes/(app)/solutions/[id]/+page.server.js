@@ -4,9 +4,9 @@ import {
   getArticle,
   setPublished,
   updateArticle
-} from '$lib/server/v2/solutions.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { isOrgAdmin } from '$lib/admin.js';
+} from '#lib/server/v2/solutions.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { isOrgAdmin } from '#lib/admin.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, locals, params }) {

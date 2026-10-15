@@ -1,7 +1,7 @@
 <script>
   import { ChevronDown, Check, X, Tag, Hash } from '@lucide/svelte';
-  import { cn } from '$lib/utils.js';
-  import * as Popover from '$lib/components/ui/popover/index.js';
+  import { cn } from '#lib/utils.js';
+  import * as Popover from '#lib/components/ui/popover/index.js';
 
   /**
    * @typedef {{

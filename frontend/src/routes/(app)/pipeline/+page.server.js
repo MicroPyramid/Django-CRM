@@ -6,12 +6,12 @@ import {
   moveDeal,
   BOARD_FIELDS,
   BOARD_PRESETS
-} from '$lib/server/v2/deals.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { dealListQuery } from '$lib/server/v2/list-queries.js';
-import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
-import { getTags } from '$lib/server/v2/tags.js';
-import { loadSavedViews, savedViewActions } from '$lib/server/v2/saved-views.js';
+} from '#lib/server/v2/deals.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { dealListQuery } from '#lib/server/v2/list-queries.js';
+import { getOrgPeopleAndTeams, resolveMe } from '#lib/server/v2/org-people.js';
+import { getTags } from '#lib/server/v2/tags.js';
+import { loadSavedViews, savedViewActions } from '#lib/server/v2/saved-views.js';
 
 /**
  * The list and the board are two different queries, not two renderings of one
@@ -69,7 +69,7 @@ export async function load(event) {
     // Handed to the page even in list mode, so the List<->Board toggle can
     // build a board-safe link without a `.svelte` file importing anything
     // from this `.server.js` module (SvelteKit forbids that, the same
-    // protection as `$lib/server/`); the toggle just needs to know which of
+    // protection as `#lib/server/`); the toggle just needs to know which of
     // the CURRENT params survive the switch.
     boardFields: BOARD_FIELDS
   };

@@ -15,7 +15,7 @@ import {
   getCase,
   loginPath,
   postReply
-} from '$lib/server/portal';
+} from '#lib/server/portal.js';
 
 /**
  * This page is what the "support has replied" email links to, so it is reached

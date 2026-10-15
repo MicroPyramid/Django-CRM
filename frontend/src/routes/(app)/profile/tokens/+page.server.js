@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { listMyTokens, createToken, revokeMyToken } from '$lib/server/v2/tokens.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
-import { expiryFromChoice, scopesFromChoice } from '$lib/v2/token-rules.js';
+import { listMyTokens, createToken, revokeMyToken } from '#lib/server/v2/tokens.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
+import { expiryFromChoice, scopesFromChoice } from '#lib/v2/token-rules.js';
 
 /**
  * Your own API tokens: issue one, see what you have, revoke one.

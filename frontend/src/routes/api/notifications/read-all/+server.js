@@ -1,4 +1,4 @@
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request, cookies, locals }) {

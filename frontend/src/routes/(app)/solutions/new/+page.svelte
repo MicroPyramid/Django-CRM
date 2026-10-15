@@ -32,8 +32,8 @@
    * over the Case M2M and belongs to the database. None of the three appear
    * here, and the API rejects all three from the request body.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import { SOLUTION_STATUS, SOLUTION_STATUS_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import { SOLUTION_STATUS, SOLUTION_STATUS_LABEL } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { ChevronLeft, Eye, EyeOff } from '@lucide/svelte';
@@ -88,13 +88,13 @@
 
 <PageHeader title="New article" center width="760px">
   {#snippet crumb()}
-    <a href={resolve('/solutions')}><ChevronLeft size={13} />Knowledge base</a>
+    <a href={resolve('solutions')}><ChevronLeft size={13} />Knowledge base</a>
   {/snippet}
   {#snippet sub()}
     Write the answer once, attach it to every ticket that asks
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/solutions')}>Cancel</a>
+    <a class="v2-btn" href={resolve('solutions')}>Cancel</a>
     <button
       class="v2-btn v2-btn-primary"
       type="submit"

@@ -1,5 +1,4 @@
-import { json } from '@sveltejs/kit';
-import { search } from '$lib/server/v2/search.js';
+import { search } from '#lib/server/v2/search.js';
 
 /**
  * ⌘K palette search. The palette runs in the browser and the access token is an
@@ -11,8 +10,8 @@ import { search } from '$lib/server/v2/search.js';
 export async function GET({ url, cookies }) {
   const q = url.searchParams.get('q') || '';
   try {
-    return json(await search({ cookies }, q));
+    return Response.json(await search({ cookies }, q));
   } catch (/** @type {any} */ err) {
-    return json({ results: [], error: err?.message || 'Search failed' }, { status: 400 });
+    return Response.json({ results: [], error: err?.message || 'Search failed' }, { status: 400 });
   }
 }

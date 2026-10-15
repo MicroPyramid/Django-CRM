@@ -1,12 +1,12 @@
 /**
  * Vertical packs: the pack chooser shown at org creation.
  *
- * Server-only, matching every other `$lib/server/*` module: the JWT cookie
- * never leaves the server. `apiRequest` lives at `$lib/api-helpers.js` (NOT
- * `$lib/server/api`: that module does not exist) and its `API_BASE_URL`
+ * Server-only, matching every other `#lib/server/*` module: the JWT cookie
+ * never leaves the server. `apiRequest` lives at `#lib/api-helpers.js` (NOT
+ * `#lib/server/api`: that module does not exist) and its `API_BASE_URL`
  * already includes `/api`, so endpoints here are given WITHOUT the `/api`
- * prefix, same as every neighbouring module (see `$lib/server/v2/tags.js`,
- * `$lib/server/v2/organization.js`).
+ * prefix, same as every neighbouring module (see `#lib/server/v2/tags.js`,
+ * `#lib/server/v2/organization.js`).
  *
  * GET /api/packs/ needs IsAuthenticated only, no org context. It is exempt
  * from HasOrgContext / RequireOrgContext (see `PackListView` and
@@ -17,7 +17,7 @@
  * letting the error propagate and break the page. This call can still fail
  * for other reasons (network, auth token expiry, etc).
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 
 /**
  * The minimal shape `apiRequest` actually needs: something with a `.get()`

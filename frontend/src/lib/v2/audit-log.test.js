@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { auditActor, auditDetail, auditWebhookId } from '$lib/v2/audit-log.js';
+import { auditActor, auditDetail, auditWebhookId } from '#lib/v2/audit-log.js';
 
 describe('auditActor', () => {
   it('prefers the name, then the email', () => {

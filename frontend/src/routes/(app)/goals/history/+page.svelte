@@ -15,11 +15,11 @@
    * browser.
    */
   import { resolve } from '$app/paths';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import EmptyState from '$lib/v2/components/EmptyState.svelte';
-  import { money, count, shortDate } from '$lib/v2/format.js';
-  import { GOAL_TYPE_LABEL, PERIOD_TYPE_LABEL } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import EmptyState from '#lib/v2/components/EmptyState.svelte';
+  import { money, count, shortDate } from '#lib/v2/format.js';
+  import { GOAL_TYPE_LABEL, PERIOD_TYPE_LABEL } from '#lib/v2/enums.js';
   import { History } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -53,7 +53,7 @@
 </script>
 
 <PageHeader title="Goal history">
-  {#snippet crumb()}<a href={resolve('/goals')}>Goals</a> ›{/snippet}
+  {#snippet crumb()}<a href={resolve('goals')}>Goals</a> ›{/snippet}
   {#snippet sub()}
     Finished periods, newest first. A closed period is settled, so these are results rather than
     pace.
@@ -72,7 +72,7 @@
       >
         {#snippet icon()}<History size={21} />{/snippet}
         {#snippet actions()}
-          <a class="v2-btn" href={resolve('/goals')}>Back to goals</a>
+          <a class="v2-btn" href={resolve('goals')}>Back to goals</a>
         {/snippet}
       </EmptyState>
     {:else}

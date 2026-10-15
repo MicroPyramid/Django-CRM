@@ -14,9 +14,9 @@
  * once. The page's own `+page.server.js` action turns a rejected save into a
  * message the user reads.
  */
-import { apiRequest } from '$lib/api-helpers.js';
+import { apiRequest } from '#lib/api-helpers.js';
 import { viewerIsAdmin } from './organization.js';
-import { REOPEN_TO_STATUSES } from '$lib/v2/enums.js';
+import { REOPEN_TO_STATUSES } from '#lib/v2/enums.js';
 
 /**
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event

@@ -12,13 +12,13 @@
    * Those four are the cost of the current setting. A settings form that shows
    * the field but not the consequence makes the number a guess forever.
    */
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SettingsCrumb from '$lib/v2/components/SettingsCrumb.svelte';
-  import Pill from '$lib/v2/components/Pill.svelte';
-  import StatCard from '$lib/v2/components/StatCard.svelte';
-  import SettingsFormPanel from '$lib/v2/components/SettingsFormPanel.svelte';
-  import { count } from '$lib/v2/format.js';
-  import { REOPEN_TO_STATUSES } from '$lib/v2/enums.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
+  import Pill from '#lib/v2/components/Pill.svelte';
+  import StatCard from '#lib/v2/components/StatCard.svelte';
+  import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
+  import { count } from '#lib/v2/format.js';
+  import { REOPEN_TO_STATUSES } from '#lib/v2/enums.js';
   import { RotateCcw, MailX } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -247,7 +247,7 @@
 
         <p class="v2-sub" style="font-size:11.5px;margin-top:14px">
           Which addresses accept replies at all is set in
-          <a href={resolve('/settings/inbound-email')} style="color:inherit">inbound email</a>.
+          <a href={resolve('settings/inbound-email')} style="color:inherit">inbound email</a>.
         </p>
       </div>
     </div>

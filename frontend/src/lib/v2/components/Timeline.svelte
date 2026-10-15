@@ -1,5 +1,5 @@
 <script>
-  import { relativeDays } from '$lib/v2/format.js';
+  import { relativeDays } from '#lib/v2/format.js';
 
   /**
    * Newest first. The filled dot marks the latest event only. Everything

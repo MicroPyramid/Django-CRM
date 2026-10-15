@@ -4,7 +4,7 @@ import {
   numberPattern,
   numberSeries,
   NUMBER_PREFIX_PATTERN
-} from '$lib/v2/document-numbers.js';
+} from '#lib/v2/document-numbers.js';
 
 describe('numberSeries', () => {
   const today = '2026-10-15';

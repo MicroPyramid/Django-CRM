@@ -7,7 +7,7 @@
    * instead of payment terms, an optional deal link, no shipping (the model
    * has none), and terms alongside the notes. The line-item card and the
    * totals ladder are the invoice builder's own (`LineItemsEditor`,
-   * `$lib/v2/line-items.js`), so the two previews cannot drift apart.
+   * `#lib/v2/line-items.js`), so the two previews cannot drift apart.
    *
    * THE SERVER IS THE AUTHORITY ON THE MONEY. Everything computed here is a
    * preview of what `Estimate.recalculate_totals()` decides on save. The
@@ -21,11 +21,11 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
-  import PageHeader from '$lib/v2/components/PageHeader.svelte';
-  import SectionTabs from '$lib/v2/components/SectionTabs.svelte';
-  import PortalLineItems from '$lib/v2/components/PortalLineItems.svelte';
-  import LineItemsEditor from '$lib/v2/components/LineItemsEditor.svelte';
-  import { CURRENCY_CODES } from '$lib/constants/filters.js';
+  import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
+  import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
+  import LineItemsEditor from '#lib/v2/components/LineItemsEditor.svelte';
+  import { CURRENCY_CODES } from '#lib/constants/filters.js';
   import {
     blankLine,
     documentDiscountError,
@@ -35,9 +35,9 @@
     linePayload,
     num,
     taxRateError
-  } from '$lib/v2/line-items.js';
-  import { addDays, todayIn } from '$lib/v2/dates.js';
-  import { numberPattern } from '$lib/v2/document-numbers.js';
+  } from '#lib/v2/line-items.js';
+  import { addDays, todayIn } from '#lib/v2/dates.js';
+  import { numberPattern } from '#lib/v2/document-numbers.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -165,7 +165,7 @@
     Nothing is sent until you send it. Saving leaves it as a draft
   {/snippet}
   {#snippet actions()}
-    <a class="v2-btn" href={resolve('/invoices/estimates')}>Cancel</a>
+    <a class="v2-btn" href={resolve('invoices/estimates')}>Cancel</a>
     <button
       type="submit"
       form="estimate-form"

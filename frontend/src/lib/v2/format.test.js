@@ -7,7 +7,7 @@ import {
   relativeTime,
   hoursMinutes,
   sumByCurrency
-} from '$lib/v2/format.js';
+} from '#lib/v2/format.js';
 
 /**
  * A date and an instant are not the same kind of value, and the API sends both.

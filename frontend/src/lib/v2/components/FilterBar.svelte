@@ -1,6 +1,6 @@
 <script>
   import { resolve } from '$app/paths';
-  import { asInternalPath } from '$lib/utils/paths.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
   /**
    * One filter system, for every v2 list page.
    *
@@ -33,9 +33,9 @@
    * }}
    */
   import { X, Plus, ChevronDown } from '@lucide/svelte';
-  import { FILTERS, activeChips, activePresetKey, withParams } from '$lib/v2/filters.js';
-  import { invoiceStatusLabel } from '$lib/v2/enums.js';
-  import SavedViews from '$lib/v2/components/SavedViews.svelte';
+  import { FILTERS, activeChips, activePresetKey, withParams } from '#lib/v2/filters.js';
+  import { invoiceStatusLabel } from '#lib/v2/enums.js';
+  import SavedViews from '#lib/v2/components/SavedViews.svelte';
 
   let {
     page,

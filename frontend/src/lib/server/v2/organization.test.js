@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('$lib/api-helpers.js', () => ({ apiRequest: vi.fn() }));
+vi.mock('#lib/api-helpers.js', () => ({ apiRequest: vi.fn() }));
 
 const { viewerIsAdmin, getNumbering } = await import('./organization.js');
-const { apiRequest } = /** @type {any} */ (await import('$lib/api-helpers.js'));
+const { apiRequest } = /** @type {any} */ (await import('#lib/api-helpers.js'));
 
 /** @param {Record<string, unknown> | null} claims */
 function cookiesWith(claims) {

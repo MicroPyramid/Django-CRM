@@ -3,8 +3,8 @@ import {
   getCalendarFeed,
   issueCalendarFeed,
   disableCalendarFeed
-} from '$lib/server/v2/calendar-feed.js';
-import { readableError } from '$lib/server/v2/form-errors.js';
+} from '#lib/server/v2/calendar-feed.js';
+import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
  * Your own task calendar feed. No role check: every member may subscribe to

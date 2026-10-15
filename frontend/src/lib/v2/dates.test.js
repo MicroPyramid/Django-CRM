@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { todayIn, addDays } from '$lib/v2/dates.js';
+import { todayIn, addDays } from '#lib/v2/dates.js';
 
 describe('todayIn', () => {
   // 23:30 UTC on 31 Dec is 05:00 on 1 Jan in Kolkata (UTC+5:30).
