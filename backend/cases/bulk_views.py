@@ -24,6 +24,28 @@ ALLOWED_M2M = {"assigned_to", "tags"}
 # so without this an authenticated caller could persist an off-enum status.
 _CHOICE_FIELDS = ("status", "priority", "case_type")
 
+# A batch runs the full single-ticket write for every ticket it matches, so its
+# length is the request's cost: uncapped, a member's own tickets could hold a
+# worker for minutes. The web selects from one list page, 25 by default.
+MAX_BULK_IDS = 200
+
+
+def _oversized_batch(raw):
+    """The 400 for a batch over `MAX_BULK_IDS`, or None.
+
+    Counted before `_valid_ids` drops malformed entries, so padding a batch
+    with junk cannot slip it past the cap.
+    """
+    if isinstance(raw, (list, tuple)) and len(raw) > MAX_BULK_IDS:
+        return Response(
+            {
+                "error": True,
+                "errors": f"Select at most {MAX_BULK_IDS} tickets at a time.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return None
+
 
 def _valid_ids(raw):
     """Keep only the well-formed UUIDs from a client-supplied `ids` list.
@@ -69,6 +91,9 @@ class BulkUpdateCasesView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request):
+        refusal = _oversized_batch(request.data.get("ids"))
+        if refusal:
+            return refusal
         ids = _valid_ids(request.data.get("ids"))
         fields = request.data.get("fields") or {}
         if not ids:
@@ -185,6 +210,9 @@ class BulkDeleteCasesView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request):
+        refusal = _oversized_batch(request.data.get("ids"))
+        if refusal:
+            return refusal
         ids = _valid_ids(request.data.get("ids"))
         if not ids:
             return Response(
