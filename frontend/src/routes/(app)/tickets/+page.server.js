@@ -9,6 +9,7 @@ import { ticketListQuery } from '$lib/server/v2/list-queries.js';
 import { getOrgPeopleAndTeams, resolveMe } from '$lib/server/v2/org-people.js';
 import { getTags } from '$lib/server/v2/tags.js';
 import { parseBulkForm } from '$lib/server/v2/bulk-form.js';
+import { readableError } from '$lib/server/v2/form-errors.js';
 import { forwardCsvImport } from '$lib/server/v2/csv-import.js';
 import { loadSavedViews, savedViewActions } from '$lib/server/v2/saved-views.js';
 
@@ -59,17 +60,27 @@ export async function load({ cookies, url, locals }) {
 
 export const actions = {
   ...savedViewActions('cases'),
+  // A batch the API refuses outright (over 200 tickets, an invalid value)
+  // comes back as its sentence for the bulk bar's banner, not an error page.
   bulkUpdate: async ({ request, cookies }) => {
     const { ids, fields } = parseBulkForm(await request.formData());
     if (ids.length === 0) return fail(400, { message: 'Select at least one ticket.' });
-    const res = await bulkUpdateTickets({ cookies }, ids, fields);
-    return { ok: true, kind: 'update', summary: summarizeBulk(res.results) };
+    try {
+      const res = await bulkUpdateTickets({ cookies }, ids, fields);
+      return { ok: true, kind: 'update', summary: summarizeBulk(res.results) };
+    } catch (/** @type {any} */ err) {
+      return fail(400, { message: readableError(err, 'Could not update these tickets.') });
+    }
   },
   bulkDelete: async ({ request, cookies }) => {
     const ids = (await request.formData()).getAll('ids').map(String);
     if (ids.length === 0) return fail(400, { message: 'Select at least one ticket.' });
-    const res = await bulkDeleteTickets({ cookies }, ids);
-    return { ok: true, kind: 'delete', summary: summarizeBulk(res.results) };
+    try {
+      const res = await bulkDeleteTickets({ cookies }, ids);
+      return { ok: true, kind: 'delete', summary: summarizeBulk(res.results) };
+    } catch (/** @type {any} */ err) {
+      return fail(400, { message: readableError(err, 'Could not delete these tickets.') });
+    }
   },
   // The CSV import drawer's two steps; see `forwardCsvImport`.
   importPreview: (event) => forwardCsvImport(event, '/cases/import/preview/', 'importPreview'),

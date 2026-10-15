@@ -157,9 +157,11 @@
     tags={data.tags}
     onclear={() => selected.clear()}
     ondone={async () => {
-      // The form action returned; show its summary, refresh, clear selection.
+      // The form action returned; show its summary (or why the API refused
+      // the batch), refresh, clear selection.
       const r = page.form;
       if (r?.ok) banner = summaryText(r.kind, r.summary);
+      else if (r?.message) banner = r.message;
       selected.clear();
       await invalidateAll();
     }}

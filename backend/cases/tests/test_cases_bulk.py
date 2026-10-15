@@ -1,5 +1,6 @@
 """Tests for the bulk update / bulk delete Case endpoints."""
 
+import uuid
 from unittest.mock import patch
 
 import pytest
@@ -527,3 +528,73 @@ class TestBulkUpdateSharesTheTicketWrite:
         assert response.json()["results"][0]["status"] == "invalid"
         case_a.refresh_from_db()
         assert case_a.status == "New"
+
+
+@pytest.mark.django_db
+class TestBulkBatchCap:
+    """A batch carries at most 200 ids, on both endpoints (issue #829).
+
+    Each matched ticket gets the full single-ticket write, about 4 ms apiece in
+    the test DB, and Django's 2.5 MB body limit fits roughly 67,000 ids, so an
+    uncapped batch of a member's own tickets could hold a worker for minutes.
+    The web selects from one list page, 25 tickets by default.
+    """
+
+    CAP = 200
+    REFUSAL = "Select at most 200 tickets at a time."
+
+    @staticmethod
+    def _ids(case, total):
+        """`case` first, padded to `total` with ids that name no ticket."""
+        return [str(case.pk)] + [str(uuid.uuid4()) for _ in range(total - 1)]
+
+    def _update(self, client, ids):
+        return client.post(
+            "/api/cases/bulk/update/",
+            {"ids": ids, "fields": {"priority": "Urgent"}},
+            content_type="application/json",
+        )
+
+    def _delete(self, client, ids):
+        return client.post(
+            "/api/cases/bulk/delete/",
+            {"ids": ids},
+            content_type="application/json",
+        )
+
+    def test_update_at_the_cap_is_accepted(self, admin_client, case_a):
+        resp = self._update(admin_client, self._ids(case_a, self.CAP))
+        assert resp.status_code == 200, resp.content
+        case_a.refresh_from_db()
+        assert case_a.priority == "Urgent"
+
+    def test_update_over_the_cap_is_refused_and_writes_nothing(
+        self, admin_client, case_a
+    ):
+        resp = self._update(admin_client, self._ids(case_a, self.CAP + 1))
+        assert resp.status_code == 400
+        assert resp.json()["errors"] == self.REFUSAL
+        case_a.refresh_from_db()
+        assert case_a.priority != "Urgent"
+
+    def test_delete_at_the_cap_is_accepted(self, admin_client, case_a):
+        resp = self._delete(admin_client, self._ids(case_a, self.CAP))
+        assert resp.status_code == 200, resp.content
+        case_a.refresh_from_db()
+        assert case_a.is_active is False
+
+    def test_delete_over_the_cap_is_refused_and_writes_nothing(
+        self, admin_client, case_a
+    ):
+        resp = self._delete(admin_client, self._ids(case_a, self.CAP + 1))
+        assert resp.status_code == 400
+        assert resp.json()["errors"] == self.REFUSAL
+        case_a.refresh_from_db()
+        assert case_a.is_active is True
+
+    def test_malformed_ids_count_toward_the_cap(self, admin_client, case_a):
+        """Counted before malformed ids are dropped, so junk cannot pad past it."""
+        resp = self._delete(admin_client, [str(case_a.pk)] + ["junk"] * self.CAP)
+        assert resp.status_code == 400
+        case_a.refresh_from_db()
+        assert case_a.is_active is True
