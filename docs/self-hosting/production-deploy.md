@@ -114,12 +114,12 @@ static files and is not covered by WhiteNoise. With `ENV_TYPE=dev` (the default)
 `DEFAULT_FILE_STORAGE` to `storages.backends.s3boto3.S3Boto3Storage`, reading `AWS_BUCKET_NAME`,
 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`, `AWS_SES_REGION_ENDPOINT` and
 `SENTRY_DSN` from the environment with `os.environ[...]`: a plain `KeyError` at import time, and
-the process refusing to start, if any of them are unset. It also switches `EMAIL_BACKEND` to
-`django_ses.SESBackend` and hardcodes `SESSION_COOKIE_DOMAIN = ".bottlecrm.io"`. That domain is
-specific to the project's own SaaS hosting, not to your deployment. Setting `ENV_TYPE=prod`
-without also being ready to supply AWS S3, SES and Sentry credentials, and without meaning to
-scope session cookies to `bottlecrm.io`, will not do what you want. See
-[Required settings](#required-settings) below for the practical consequence.
+the process refusing to start, if any of them are unset. It also switches
+`MAILERS["default"]["BACKEND"]` to `django_ses.SESBackend` and hardcodes
+`SESSION_COOKIE_DOMAIN = ".bottlecrm.io"`. That domain is specific to the project's own SaaS
+hosting, not to your deployment. Setting `ENV_TYPE=prod` without also being ready to supply AWS S3,
+SES and Sentry credentials, and without meaning to scope session cookies to `bottlecrm.io`, will not
+do what you want. See [Required settings](#required-settings) below for the practical consequence.
 
 ## Reverse proxy
 

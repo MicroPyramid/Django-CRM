@@ -88,8 +88,8 @@ def send_welcome_email(user_id):
     msg.content_subtype = "html"
     try:
         msg.send()
-    except ClientError:
-        logger.exception("SES rejected welcome email for user %s", user_id)
+    except (ClientError, OSError):
+        logger.exception("Failed to send welcome email for user %s", user_id)
 
 
 @shared_task
@@ -144,8 +144,8 @@ def send_magic_link_email(token_id, raw_code=None):
     msg.content_subtype = "html"
     try:
         msg.send()
-    except ClientError:
-        logger.exception("SES rejected email for magic link token %s", token_id)
+    except (ClientError, OSError):
+        logger.exception("Failed to send email for magic link token %s", token_id)
 
 
 @shared_task
@@ -206,8 +206,8 @@ def send_portal_login_email(token_id, raw_code):
     msg.content_subtype = "html"
     try:
         msg.send()
-    except ClientError:
-        logger.exception("SES rejected email for portal login token %s", token_id)
+    except (ClientError, OSError):
+        logger.exception("Failed to send email for portal login token %s", token_id)
     return str(token_obj.id)
 
 

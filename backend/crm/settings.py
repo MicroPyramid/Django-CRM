@@ -224,9 +224,38 @@ USE_I18N = True
 
 USE_TZ = True
 
-EMAIL_BACKEND = os.environ.get(
+
+# Outbound mail is configured through MAILERS. Django 6.1 deprecates the flat
+# EMAIL_BACKEND / EMAIL_HOST / ... settings it replaces, and setting any of them
+# here warns on every startup, so none of those names may be assigned in this
+# module. The environment variables keep their old names so an existing .env
+# carries over unchanged.
+#
+# Connection OPTIONS are built only for the SMTP backend. A mailer configured
+# through MAILERS rejects options its backend does not take (InvalidMailer), so
+# handing host or port to the console or SES backend would stop every send. The
+# SMTP variables are therefore ignored unless EMAIL_BACKEND selects SMTP.
+# EMAIL_HOST falls back to "localhost", the default of the deprecated setting:
+# a MAILERS SMTP mailer has no default host and fails every send without one.
+# EMAIL_PORT and EMAIL_TIMEOUT are left out when empty rather than handed 0, so
+# Django picks the port itself: 465 with EMAIL_USE_SSL, 587 with EMAIL_USE_TLS,
+# otherwise 25.
+_email_backend = os.environ.get(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )
+MAILERS = {"default": {"BACKEND": _email_backend}}
+if _email_backend == "django.core.mail.backends.smtp.EmailBackend":
+    MAILERS["default"]["OPTIONS"] = {
+        "host": os.environ.get("EMAIL_HOST") or "localhost",
+        "username": os.environ.get("EMAIL_HOST_USER"),
+        "password": os.environ.get("EMAIL_HOST_PASSWORD"),
+        "use_tls": os.environ.get("EMAIL_USE_TLS", "False").lower() == "true",
+        "use_ssl": os.environ.get("EMAIL_USE_SSL", "False").lower() == "true",
+    }
+    if os.environ.get("EMAIL_PORT"):
+        MAILERS["default"]["OPTIONS"]["port"] = int(os.environ["EMAIL_PORT"])
+    if os.environ.get("EMAIL_TIMEOUT"):
+        MAILERS["default"]["OPTIONS"]["timeout"] = int(os.environ["EMAIL_TIMEOUT"])
 
 AUTH_USER_MODEL = "common.User"
 
@@ -254,8 +283,8 @@ elif ENV_TYPE == "prod":
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@localhost")
 
-# AWS SES settings (loaded when EMAIL_BACKEND is django_ses.SESBackend)
-if "django_ses" in EMAIL_BACKEND:
+# AWS SES settings (loaded when MAILERS["default"]["BACKEND"] is django_ses.SESBackend)
+if "django_ses" in MAILERS["default"]["BACKEND"]:
     AWS_SES_REGION_NAME = os.environ.get("AWS_SES_REGION_NAME", "ap-south-1")
     AWS_SES_REGION_ENDPOINT = os.environ.get(
         "AWS_SES_REGION_ENDPOINT", f"email.{AWS_SES_REGION_NAME}.amazonaws.com"

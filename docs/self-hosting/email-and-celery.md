@@ -7,21 +7,23 @@ background task that touches tenant data has to follow.
 
 ## Email backend
 
-`EMAIL_BACKEND` in `backend/crm/settings.py` defaults to
+`backend/crm/settings.py` builds `MAILERS["default"]` from `EMAIL_BACKEND`, which defaults to
 `django.core.mail.backends.console.EmailBackend`: outbound mail is printed to the process's stdout
 rather than delivered anywhere. `.env.example` sets `EMAIL_BACKEND` to that console backend
 explicitly; `.env.docker` doesn't set `EMAIL_BACKEND` at all (only a comment noting the console
 backend is what's active for local development), so it relies on the same default rather than
-setting it. To send real email, set `EMAIL_BACKEND` to a working Django email backend, most
-commonly `django_ses.SESBackend` (see [Amazon SES](#amazon-ses) below); `django_ses` is always in
-`INSTALLED_APPS`, so the package is available regardless of which backend you choose.
+setting it. To send real email, set `EMAIL_BACKEND` to a working Django email backend: SMTP (see
+[SMTP and Mailtrap](#smtp-and-mailtrap) below) or `django_ses.SESBackend` (see
+[Amazon SES](#amazon-ses)); `django_ses` is always in `INSTALLED_APPS`, so the package is available
+regardless of which backend you choose.
 
-There is a second, coarser way `EMAIL_BACKEND` gets set to SES: if you set `ENV_TYPE=prod`,
-`backend/crm/server_settings.py` is imported and hardcodes `EMAIL_BACKEND = "django_ses.SESBackend"`
-unconditionally, overriding whatever `EMAIL_BACKEND` you set directly. `ENV_TYPE=prod` also requires
-`AWS_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`,
-`AWS_SES_REGION_ENDPOINT` and `SENTRY_DSN` to already be set (a plain `KeyError` at import time if
-any is missing) and hardcodes `SESSION_COOKIE_DOMAIN = ".bottlecrm.io"`. See
+There is a second, coarser way the backend gets set to SES: if you set `ENV_TYPE=prod`,
+`backend/crm/server_settings.py` is imported and hardcodes
+`MAILERS = {"default": {"BACKEND": "django_ses.SESBackend"}}` unconditionally, overriding whatever
+`EMAIL_BACKEND` you set directly. `ENV_TYPE=prod` also requires `AWS_BUCKET_NAME`,
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION_NAME`, `AWS_SES_REGION_ENDPOINT` and
+`SENTRY_DSN` to already be set (a plain `KeyError` at import time if any is missing) and hardcodes
+`SESSION_COOKIE_DOMAIN = ".bottlecrm.io"`. See
 [Production deployment](production-deploy.md#static-files) for the full consequences. If you only
 want SES for email and don't want the S3/Sentry/cookie-domain side effects that come with
 `ENV_TYPE=prod`, set `EMAIL_BACKEND=django_ses.SESBackend` directly instead and leave `ENV_TYPE=dev`.
@@ -30,22 +32,80 @@ want SES for email and don't want the S3/Sentry/cookie-domain side effects that 
 message; `ADMIN_EMAIL` (default `admin@localhost`) is separate and is what
 `manage.py create_default_admin` uses for the seeded admin account, not a mail setting.
 
+## SMTP and Mailtrap
+
+Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` to send through any SMTP server.
+`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`,
+`EMAIL_USE_SSL` and `EMAIL_TIMEOUT` are read into `MAILERS["default"]["OPTIONS"]`; `EMAIL_PORT` and
+`EMAIL_TIMEOUT` are left out of `OPTIONS` entirely when unset rather than sent as `0`, so Django
+picks the port itself: 465 with `EMAIL_USE_SSL`, 587 with `EMAIL_USE_TLS`, otherwise 25. An unset
+or empty `EMAIL_HOST` means `localhost`, for a local relay. `ENV_TYPE=prod` still forces SES
+regardless of these variables, as described above, so SMTP only takes effect with `ENV_TYPE=dev`
+(the default). To run a production install on SMTP, leave `ENV_TYPE` unset and set `EMAIL_BACKEND`
+directly, the same way as for SES without the `ENV_TYPE=prod` side effects.
+
+Mailtrap is one SMTP provider among others; nothing in this codebase is Mailtrap-specific, this is
+just a worked example with real host/port values.
+
+### Mailtrap Email Sandbox (development and staging)
+
+The Sandbox captures outbound mail in an inbox you view in the Mailtrap UI instead of delivering it
+to the real recipient, which is useful for a shared dev or staging deployment where you don't want
+test traffic reaching real customer addresses. From a Sandbox inbox's SMTP settings:
+
+```bash
+EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST="sandbox.smtp.mailtrap.io"
+EMAIL_PORT=2525
+EMAIL_HOST_USER="<inbox username>"
+EMAIL_HOST_PASSWORD="<inbox password>"
+EMAIL_USE_TLS=True
+EMAIL_TIMEOUT=10
+```
+
+Once mail is landing in the inbox, its HTML Check and Spam Analysis tabs are worth running against
+this project's email templates (welcome, magic-link, portal sign-in, case reply) since they render
+across more email clients than a browser preview does. Use a separate Sandbox inbox per environment
+(dev, staging, CI) rather than sharing one, or messages from one environment's run show up mixed
+into another's.
+
+### Mailtrap Email Sending (production)
+
+Email Sending delivers to the real recipient and requires verifying the sending domain in the
+Mailtrap dashboard first; set `DEFAULT_FROM_EMAIL` to an address on that verified domain, or the
+provider will reject the send. Its SMTP settings:
+
+```bash
+EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST="live.smtp.mailtrap.io"
+EMAIL_PORT=587
+EMAIL_HOST_USER="api"
+EMAIL_HOST_PASSWORD="<API token>"
+EMAIL_USE_TLS=True
+```
+
+As with any SMTP provider, `send_welcome_email`, `send_magic_link_email` and `send_portal_login_email`
+in `backend/common/tasks.py` log an SMTP failure rather than raising (see below), so check the
+worker's logs rather than the API response if an expected email never arrives.
+
 ## Amazon SES
 
-Once `EMAIL_BACKEND` resolves to `django_ses.SESBackend`, whichever of the two paths above got you
-there; `crm/settings.py` reads `AWS_SES_REGION_NAME` (default `ap-south-1`) and
+Once `MAILERS["default"]["BACKEND"]` resolves to `django_ses.SESBackend`, whichever of the two paths
+above got you there; `crm/settings.py` reads `AWS_SES_REGION_NAME` (default `ap-south-1`) and
 `AWS_SES_REGION_ENDPOINT` (default `email.{AWS_SES_REGION_NAME}.amazonaws.com`, computed from
 whatever you set for the region). AWS credentials are read implicitly by `django-ses`/`boto3` from
 `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` if you set them; if you don't, `boto3` falls back to
 IAM role credentials, which is the intended path when running inside AWS (EC2/ECS instance role)
 rather than with long-lived access keys in the environment.
 
-The Celery tasks that actually send mail; `send_welcome_email` and `send_magic_link_email` in
-`backend/common/tasks.py`: catch `botocore.exceptions.ClientError` around the `msg.send()` call and
-log the failure rather than letting the task raise, specifically because SES can reject a send (an
-unverified sender identity, a suppressed recipient address, being outside the SES sandbox) in ways
-that are the mail provider's problem, not a bug in the task. Check the worker's logs, not the Celery
-task result, if an expected email never arrives.
+The Celery tasks that actually send mail; `send_welcome_email`, `send_magic_link_email` and
+`send_portal_login_email` in `backend/common/tasks.py`: catch `botocore.exceptions.ClientError` and
+`OSError` (which covers `smtplib.SMTPException` and connection failures from the SMTP backend above)
+around the `msg.send()` call and log the failure rather than letting the task raise, specifically
+because a mail provider can reject a send (an unverified sender identity, a suppressed recipient
+address, being outside the SES sandbox, bad SMTP credentials) in ways that are the provider's
+problem, not a bug in the task. Check the worker's logs, not the Celery task result, if an expected
+email never arrives.
 
 ## Broker and result backend
 
