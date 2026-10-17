@@ -500,7 +500,7 @@ class TestSesReplacesTheMessageId:
 
     @pytest.fixture(autouse=True)
     def ses(self, settings):
-        settings.EMAIL_BACKEND = f"{__name__}.FakeSESBackend"
+        settings.MAILERS = {"default": {"BACKEND": f"{__name__}.FakeSESBackend"}}
 
     @pytest.mark.parametrize(
         "region, host",

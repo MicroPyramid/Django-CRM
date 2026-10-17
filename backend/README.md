@@ -504,7 +504,7 @@ uv lock --upgrade
 | `TRUST_PROXY_SSL_HEADER` | Set when running behind a TLS-terminating proxy |
 | `DEFAULT_FROM_EMAIL` | Default sender email |
 | `ADMIN_EMAIL` | Admin notification email |
-| `EMAIL_BACKEND` | Django email backend. Defaults to AWS SES |
+| `EMAIL_BACKEND` | Django email backend. Defaults to the console backend; `ENV_TYPE=prod` switches it to AWS SES. For SMTP, see [Email and Celery](../docs/self-hosting/email-and-celery.md) |
 | `AWS_SES_REGION_NAME` | AWS SES region |
 | `AWS_SES_REGION_ENDPOINT` | AWS SES endpoint |
 | `CELERY_BROKER_URL` | Redis URL for Celery broker |
