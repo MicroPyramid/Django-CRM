@@ -753,12 +753,12 @@ def case_ids_for_metric(
         # Bucket = profile_id (uuid string).
         if not bucket:
             raise ValueError("agents drilldown requires a bucket=<profile_id>")
-        bucket = UUID(bucket)
+        profile_id = UUID(bucket)
         return (
             qs.filter(
                 created_at__gte=from_dt,
                 created_at__lt=to_dt,
-                assigned_to=bucket,
+                assigned_to=profile_id,
             )
             .values_list("id", flat=True)
             .distinct()

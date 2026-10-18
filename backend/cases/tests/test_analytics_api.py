@@ -182,12 +182,23 @@ class TestDrilldown:
         assert resp.status_code == 200
         assert resp.data["count"] == 1
 
-    def test_drilldown_sla_nrt_breach_bucket(self, admin_client, cases_in_window):
+    def test_drilldown_sla_nrt_breach_bucket(
+        self, admin_client, cases_in_window, monkeypatch
+    ):
+        c1, c2 = cases_in_window
+        monkeypatch.setattr(
+            "cases.analytics.compute_sla",
+            lambda *a, **k: {
+                "frt_breach_case_ids": [str(c1.id)],
+                "resolution_breach_case_ids": [str(c1.id)],
+                "nrt_breach_case_ids": [str(c2.id)],
+            },
+        )
         resp = admin_client.get(
             "/api/cases/analytics/drilldown/?metric=sla&bucket=nrt_breach&from=2026-05-01&to=2026-05-02"
         )
         assert resp.status_code == 200
-        assert resp.data["count"] == 0
+        assert [r["id"] for r in resp.data["results"]] == [str(c2.id)]
 
     @pytest.mark.parametrize(
         "query",
