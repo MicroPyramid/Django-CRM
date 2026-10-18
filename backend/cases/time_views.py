@@ -269,6 +269,11 @@ class TimeEntryDetailView(APIView):
                 {"detail": "Not authorized to edit this entry."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        if entry.invoice_id is not None:
+            return Response(
+                {"detail": "Cannot edit an entry that has been invoiced."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = TimeEntryUpdateSerializer(entry, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         # Apply allowed fields explicitly so we never overwrite invoice/profile/case.
