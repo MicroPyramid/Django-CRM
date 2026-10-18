@@ -253,13 +253,16 @@ class TimeEntryDetailView(APIView):
 
     def _get_entry(self, request, pk):
         try:
-            entry = TimeEntry.objects.get(id=pk, org=request.profile.org)
+            entry = TimeEntry.objects.select_for_update().get(
+                id=pk, org=request.profile.org
+            )
         except TimeEntry.DoesNotExist:
             return None
         if entry.profile_id != request.profile.id and not is_org_admin(request.profile):
             return False  # Sentinel: row exists but caller is not authorized.
         return entry
 
+    @transaction.atomic
     def put(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:
@@ -282,6 +285,7 @@ class TimeEntryDetailView(APIView):
         entry.save()
         return Response(TimeEntrySerializer(entry).data)
 
+    @transaction.atomic
     def delete(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:

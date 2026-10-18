@@ -361,8 +361,17 @@ class TestDetail:
         resp = admin_client.delete(f"/api/time-entries/{entry.id}/")
         assert resp.status_code == 400
 
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"hourly_rate": "1.00", "billable": False},
+            {"description": "edited"},
+            {"ended_at": "2030-01-01T00:00:00Z"},
+        ],
+    )
+    @pytest.mark.parametrize("invoice_status", ["Draft", "Sent"])
     def test_update_invoiced_entry_rejected(
-        self, admin_client, admin_user, admin_profile, org_a
+        self, admin_client, admin_user, admin_profile, org_a, payload, invoice_status
     ):
         case = _make_case(org_a, admin_user)
         account = Account.objects.create(name="ACME", org=org_a)
@@ -370,7 +379,7 @@ class TestDetail:
             invoice_title="Test",
             account=account,
             currency="USD",
-            status="Draft",
+            status=invoice_status,
             org=org_a,
         )
         entry = _entry(
@@ -383,11 +392,10 @@ class TestDetail:
         )
         TimeEntry.objects.filter(id=entry.id).update(invoice=invoice)
         resp = admin_client.put(
-            f"/api/time-entries/{entry.id}/",
-            {"hourly_rate": "1.00", "billable": False},
-            format="json",
+            f"/api/time-entries/{entry.id}/", payload, format="json"
         )
         assert resp.status_code == 400
+        assert resp.data["detail"] == "Cannot edit an entry that has been invoiced."
         entry.refresh_from_db()
         assert entry.hourly_rate == Decimal("100.00")
         assert entry.billable is True
