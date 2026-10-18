@@ -707,6 +707,8 @@ def case_ids_for_metric(
         if bucket == "breach":
             data = compute_frt(qs, from_dt, to_dt)
             return [UUID(s) for s in data["breach_case_ids"]]
+        if bucket:
+            raise ValueError(f"unknown frt bucket: {bucket}")
         return in_window.values_list("id", flat=True)
 
     if metric == "mttr":
@@ -726,6 +728,12 @@ def case_ids_for_metric(
                 UUID(s)
                 for s in compute_sla(qs, from_dt, to_dt)["resolution_breach_case_ids"]
             ]
+        if bucket == "nrt_breach":
+            return [
+                UUID(s) for s in compute_sla(qs, from_dt, to_dt)["nrt_breach_case_ids"]
+            ]
+        if bucket:
+            raise ValueError(f"unknown sla bucket: {bucket}")
         return qs.filter(created_at__gte=from_dt, created_at__lt=to_dt).values_list(
             "id", flat=True
         )
@@ -745,6 +753,7 @@ def case_ids_for_metric(
         # Bucket = profile_id (uuid string).
         if not bucket:
             raise ValueError("agents drilldown requires a bucket=<profile_id>")
+        bucket = UUID(bucket)
         return (
             qs.filter(
                 created_at__gte=from_dt,
