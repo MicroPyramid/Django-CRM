@@ -65,6 +65,10 @@ Frontend at http://localhost:5181, API and Swagger UI at http://localhost:8000/s
 the [Docker quick start guide](docs/getting-started/docker-quick-start.md) for the default admin
 login, loading demo data, and what each service does.
 
+## One-click deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/BottleCRM/)
+
 ## Documentation
 
 The full documentation (setup, self-hosting, architecture, the REST API, and contributing) is
