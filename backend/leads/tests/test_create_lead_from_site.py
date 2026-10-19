@@ -204,6 +204,20 @@ class TestDefect4Notification:
         admin_client.post(URL, payload(api_setting), format="json")
         assert len(calls) == 1
 
+    def test_a_broker_outage_does_not_fail_a_saved_submission(
+        self, admin_client, org_a, api_setting, monkeypatch
+    ):
+        def broker_down(*args):
+            raise ConnectionError("broker down")
+
+        monkeypatch.setattr(
+            "leads.views.lead_interactions.send_webform_submission_email.delay",
+            broker_down,
+        )
+        response = admin_client.post(URL, payload(api_setting), format="json")
+        assert response.status_code == 200
+        assert Lead.objects.filter(org=org_a).count() == 1
+
 
 @pytest.mark.django_db
 class TestDefect5Tags:
