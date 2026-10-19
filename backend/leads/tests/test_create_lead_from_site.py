@@ -205,7 +205,7 @@ class TestDefect4Notification:
         assert len(calls) == 1
 
     def test_a_broker_outage_does_not_fail_a_saved_submission(
-        self, admin_client, org_a, api_setting, monkeypatch
+        self, admin_client, org_a, api_setting, monkeypatch, caplog
     ):
         def broker_down(*args):
             raise ConnectionError("broker down")
@@ -216,7 +216,9 @@ class TestDefect4Notification:
         )
         response = admin_client.post(URL, payload(api_setting), format="json")
         assert response.status_code == 200
-        assert Lead.objects.filter(org=org_a).count() == 1
+        lead = Lead.objects.get(org=org_a)
+        assert lead.contacts.count() == 1
+        assert "Failed to queue the email" in caplog.text
 
 
 @pytest.mark.django_db
