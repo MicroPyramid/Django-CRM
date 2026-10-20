@@ -83,8 +83,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instr
 ## Community
 
 - **Issues**: [GitHub Issues](https://github.com/django-crm/Django-CRM/issues)
-- **Twitter**: [@micropyramid](https://twitter.com/micropyramid)
-- **Commercial Support**: [Contact us](https://micropyramid.com/contact/)
+- **Commercial support**: [Contact us](https://bottlecrm.io/contact)
 
 ## License
 
@@ -92,11 +91,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Sponsors
 
-We are grateful to the sponsors who support BottleCRM's continued development and maintenance.
+BottleCRM is developed and maintained by [RunCode Inc.](https://runcode.io)
 
-- [MicroPyramid](https://micropyramid.com/)
-
-We warmly welcome new sponsors. If you would like to support BottleCRM and help the project grow, please [get in touch](https://micropyramid.com/contact/).
+We warmly welcome new sponsors. If you would like to support BottleCRM and help the project grow, please [get in touch](https://bottlecrm.io/contact).
 
 ## Contributors
 
