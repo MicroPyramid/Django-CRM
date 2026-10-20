@@ -1,6 +1,6 @@
-# BottleCRM: Open Source Django CRM for Startups & Enterprises
+# BottleCRM: CRM for AI and People
 
-A free, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKit and Flutter.
+A free, open-source, self-hosted, multi-tenant CRM built with Django REST Framework, SvelteKit and Flutter.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-green.svg)

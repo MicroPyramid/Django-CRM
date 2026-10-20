@@ -12,7 +12,7 @@ version = "1.17.1"
 # DjangoCRM/django-crm, shares this one's name on GitHub and awesome lists.
 # Published release metadata is immutable, so a change here only reaches PyPI
 # on the next version bump.
-description = "BottleCRM, the open-source self-hosted CRM with a Django REST API: leads, deals, contacts, invoices and support tickets, multi-tenant by PostgreSQL row-level security."
+description = "BottleCRM, CRM for AI and People. The open-source self-hosted CRM with a Django REST API: leads, deals, contacts, invoices and support tickets, multi-tenant by PostgreSQL row-level security."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }

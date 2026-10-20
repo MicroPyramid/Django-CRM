@@ -570,7 +570,7 @@ SOFTWARE.
 
 <div align="center">
 
-**BottleCRM Mobile** - Free CRM for startups and enterprises
+**BottleCRM Mobile**: CRM for AI and People
 
 Made with ❤️ using Flutter
 

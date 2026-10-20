@@ -535,7 +535,7 @@ if _bad_account_ids:
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BottleCRM API",
-    "DESCRIPTION": "Open source CRM application",
+    "DESCRIPTION": "CRM for AI and People",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
