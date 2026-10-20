@@ -3628,6 +3628,11 @@ Invoice _row({
   });
 }
 
+/// `YYYY-MM-DD` for the day `days` from today, for a fixture whose meaning
+/// depends on being in the future or the past whenever the test runs.
+String _isoDateFromToday(int days) =>
+    DateTime.now().add(Duration(days: days)).toIso8601String().substring(0, 10);
+
 /// A draft, a long-overdue invoice, and one settled years ago.
 class _FakeInvoices extends InvoicesNotifier {
   @override
@@ -3661,7 +3666,9 @@ class _FakeInvoices extends InvoicesNotifier {
         account: 'Initech',
         total: '400.00',
         amountDue: '400.00',
-        due: '2026-09-30',
+        // Always a month out, so the draft is never late. A fixed date here
+        // went stale and gave the draft a "d late" label of its own.
+        due: _isoDateFromToday(30),
       ),
       _row(
         id: '3',
@@ -3676,7 +3683,8 @@ class _FakeInvoices extends InvoicesNotifier {
 }
 
 /// The same list billed in two currencies, which makes the server's sums a
-/// total of unlike things.
+/// total of unlike things. Due dates stay in the future: a fixed one aged into
+/// a "Nd late" label that a test asserting no "200" would one day match.
 class _FakeMixedInvoices extends InvoicesNotifier {
   @override
   Future<InvoicesListData> build() async => InvoicesListData(
@@ -3695,7 +3703,7 @@ class _FakeMixedInvoices extends InvoicesNotifier {
         account: 'Northwind',
         total: '100.00',
         amountDue: '100.00',
-        due: '2026-09-01',
+        due: _isoDateFromToday(30),
       ),
       _row(
         id: '2',
@@ -3704,7 +3712,7 @@ class _FakeMixedInvoices extends InvoicesNotifier {
         account: 'Initech',
         total: '100.00',
         amountDue: '100.00',
-        due: '2026-09-01',
+        due: _isoDateFromToday(30),
         currency: 'EUR',
       ),
     ],

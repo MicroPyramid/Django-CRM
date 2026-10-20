@@ -122,6 +122,18 @@ Pooling uses psycopg 3's `psycopg_pool` through Django's PostgreSQL backend. It 
 | `PORTAL_LOGIN_THROTTLE_ORG` | `100/hour` | No | Rate limit for customer portal sign-in code requests, per org across all clients. Reaching it pauses portal sign-in for that org only. |
 | `CALENDAR_FEED_THROTTLE_TOKEN` | `60/hour` | No | Rate limit for the task calendar feed, per feed URL across all clients. Bucketed on the token's hash, never the raw token. A calendar app polls every few minutes at most, so this is only reached by something hammering one URL. |
 
+### Imports
+
+| Variable | Default | Required | Purpose |
+| --- | --- | --- | --- |
+| `IMPORT_THROTTLE` | `30/minute` | No | Per-user rate limit (scope `csv_import`) shared by the preview and commit endpoints of the contacts and leads importers (`/api/contacts/import/` and `/api/leads/import/`). Each upload parses up to 5,000 rows, so this stops one account from keeping a worker busy. |
+
+### Frontend (SvelteKit server)
+
+| Variable | Default | Required | Purpose |
+| --- | --- | --- | --- |
+| `BODY_SIZE_LIMIT` | `512K` (adapter-node 6); `6M` in the published image and `.env.docker` | Yes, `6M` or more, if you run the frontend outside the published image and want spreadsheet imports | The largest request body the frontend server accepts. A contact or lead import can be 5 MB, so the adapter's default refuses it with a `413` before the API sees it. Read by the Node process at startup, not by `crm/settings.py`. |
+
 ### CORS and CSRF
 
 | Variable | Default | Required | Purpose |

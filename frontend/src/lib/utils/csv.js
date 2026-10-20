@@ -1,5 +1,6 @@
 /**
- * CSV files the browser builds itself, such as the import drawers' errors file.
+ * CSV files the browser builds itself, such as the import drawers' errors file
+ * and the import flow's skipped rows.
  *
  * The same two rules as the server's exports (`backend/common/csv_export.py`)
  * and the mobile import sheet (`csvImportErrorsCsv`):
@@ -37,6 +38,22 @@ export function importErrorsCsv(errors) {
 }
 
 /**
+ * Save `text` as a CSV file named `filename`, in the browser.
+ *
+ * @param {string} text
+ * @param {string} filename
+ */
+export function downloadCsv(text, filename) {
+  const blob = new Blob([text], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Save `errors` as `<plural>-import-errors.csv`. Does nothing for none.
  *
  * @param {{ row: number, field: string, message: string }[]} errors
@@ -44,11 +61,5 @@ export function importErrorsCsv(errors) {
  */
 export function downloadImportErrors(errors, plural) {
   if (!errors?.length) return;
-  const blob = new Blob([importErrorsCsv(errors)], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${plural}-import-errors.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(importErrorsCsv(errors), `${plural}-import-errors.csv`);
 }

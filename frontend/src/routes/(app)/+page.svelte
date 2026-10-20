@@ -4,6 +4,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import { money, count } from '#lib/v2/format.js';
+  import { todayLayout } from '#lib/v2/today-layout.js';
   import { Target } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -39,6 +40,11 @@
   const plural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) =>
     `${n} ${n === 1 ? one : many}`;
 
+  // The queue shows the most urgent 8. Everything past that is real work with
+  // nowhere on this page to go, so name it and link each source to its own
+  // list. "That's everything" is only true when nothing was left out.
+  let layout = $derived(todayLayout(summary, queue.length));
+
   // Built as one string rather than conditional markup: the "quiet deals"
   // clause only makes sense when there are any, and the numbers are often zero
   // in a real org, so the copy adapts instead of reading "0 deals … have gone
@@ -47,21 +53,19 @@
   // It used to close with "Those are first", which was generated from a count
   // rather than from the sort it described. Quiet deals rank below overdue
   // invoices, so on the seeded org all seven of them fell off the end of the
-  // list the sentence had just promised to lead with.
+  // list the sentence had just promised to lead with. It promises the import
+  // card only on the condition that renders it.
   let subText = $derived(
-    summary.count === 0
-      ? 'Nothing needs you right now: you’re all clear for today.'
-      : summary.quiet_deals === 0
-        ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
-        : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
-          `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value, data.org.currency)} ` +
-          `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet.`
+    layout.importCard
+      ? 'Your workspace is new. Start by bringing in your people.'
+      : summary.count === 0
+        ? 'Nothing needs you right now: you’re all clear for today.'
+        : summary.quiet_deals === 0
+          ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
+          : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
+            `${plural(summary.quiet_deals, 'deal', 'deals')} worth ${money(summary.quiet_value, data.org.currency)} ` +
+            `${summary.quiet_deals === 1 ? 'has' : 'have'} gone quiet.`
   );
-
-  // The queue shows the most urgent 8. Everything past that is real work with
-  // nowhere on this page to go, so name it and link each source to its own
-  // list. "That's everything" is only true when nothing was left out.
-  let hidden = $derived(Math.max(0, summary.count - summary.shown));
 </script>
 
 <PageHeader title="Today">
@@ -70,10 +74,25 @@
 
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-top:14px;padding-bottom:26px">
+    {#if layout.importCard}
+      <div class="v2-card" style="margin-bottom:8px">
+        <div class="v2-pad" style="padding:20px;text-align:center">
+          <div style="font-weight:640;letter-spacing:-0.012em">Bring in your contacts</div>
+          <div class="v2-sub" style="margin:3px 0 14px">
+            Upload a spreadsheet and your workspace fills up in a minute.
+          </div>
+          <a class="v2-btn v2-btn-primary" href={resolve('welcome')} style="min-height:44px"
+            >Import a spreadsheet</a
+          >
+        </div>
+      </div>
+    {/if}
+
     <!--
-      Only the top item gets the ember button. Five ember buttons down a page
-      is v1's mistake in a new coat: if everything is the primary action then
-      nothing is, and the colour stops carrying information.
+      Only the top item gets the ember button, and none does under the import
+      card, which holds it. Five ember buttons down a page is v1's mistake in a
+      new coat: if everything is the primary action then nothing is, and the
+      colour stops carrying information.
     -->
     {#each queue as item, i (item.id)}
       <div class="v2-card" style="margin-bottom:8px">
@@ -91,7 +110,7 @@
             <Pill tone={item.tone}>{item.due}</Pill>
             <a
               class="v2-btn"
-              class:v2-btn-primary={i === 0}
+              class:v2-btn-primary={i === 0 && !layout.importCard}
               href={resolve(asInternalPath(item.href))}>{item.action}</a
             >
           </div>
@@ -99,18 +118,18 @@
       </div>
     {/each}
 
-    {#if queue.length && hidden === 0}
+    {#if layout.tail === 'everything'}
       <p class="v2-sub" style="margin:15px 0 21px;font-size:12.5px">That’s everything due today.</p>
-    {:else if queue.length}
+    {:else if layout.tail === 'more'}
       <p class="v2-sub" style="margin:15px 0 21px;font-size:12.5px">
-        <span class="v2-num">{hidden}</span>
-        {hidden === 1 ? 'more is' : 'more are'} waiting:
+        <span class="v2-num">{layout.hidden}</span>
+        {layout.hidden === 1 ? 'more is' : 'more are'} waiting:
         {#each summary.sources as source, i (source.href)}<a
             href={resolve(asInternalPath(source.href))}
             style="color:inherit">{source.count} {source.label}</a
           >{i < summary.sources.length - 1 ? ', ' : '.'}{/each}
       </p>
-    {:else}
+    {:else if layout.tail === 'clear'}
       <div class="v2-card" style="margin-bottom:8px">
         <div class="v2-pad" style="padding:20px;text-align:center">
           <div style="font-weight:640;letter-spacing:-0.012em">Inbox zero for today</div>

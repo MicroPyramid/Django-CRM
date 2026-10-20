@@ -1,5 +1,6 @@
 import 'package:bottle_crm/data/models/auth_response.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
+import 'package:bottle_crm/routes/app_router.dart';
 import 'package:bottle_crm/screens/auth/org_create_screen.dart';
 import 'package:bottle_crm/screens/auth/org_selection_screen.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +96,42 @@ void main() {
       expect(find.text('the picker'), findsNothing);
     });
 
+    testWidgets('a created organization opens the import welcome, not the '
+        'dashboard', (tester) async {
+      final router = GoRouter(
+        initialLocation: AppRoutes.orgCreate,
+        routes: [
+          GoRoute(
+            path: AppRoutes.orgCreate,
+            builder: (_, _) => const OrgCreateScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.importWelcome,
+            builder: (_, _) => const Text('the welcome screen'),
+          ),
+          GoRoute(
+            path: AppRoutes.dashboard,
+            builder: (_, _) => const Text('the dashboard'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authProvider.overrideWith(_CreatingAuth.new)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'Acme Inc.');
+      await tester.tap(find.text('Create organization'));
+      await tester.pumpAndSettle();
+
+      // The web's org/new sends a new workspace to /welcome the same way.
+      expect(find.text('the welcome screen'), findsOneWidget);
+      expect(find.text('the dashboard'), findsNothing);
+    });
+
     testWidgets('accepts an ordinary name', (tester) async {
       await tester.pumpWidget(_host(const OrgCreateScreen()));
       await tester.pump();
@@ -132,4 +169,14 @@ class _FakeAuth extends AuthNotifier {
     selectedOrganization: orgs.isEmpty ? null : orgs.first,
     isAuthenticated: true,
   );
+}
+
+/// A create that succeeds, as `AuthService.createOrganization` does once the
+/// server has made the org and selected it.
+class _CreatingAuth extends _FakeAuth {
+  _CreatingAuth() : super(const []);
+
+  @override
+  Future<String?> createOrganization(String name, {String? timezone}) async =>
+      null;
 }

@@ -11,12 +11,21 @@ one at a time does (field lengths, choices, email format, one lead per email
 per org). This module adds only what a file needs on top of that: header
 checks, duplicates within the file, and resolving `assigned_emails`,
 `team_names` and `tags` inside the caller's org.
+
+Column-matching mode (`preview_mapped`, `commit_mapped`) takes a table read
+from any .csv or .xlsx plus a column-to-field mapping, and runs the same row
+validator. Where the template path refuses the whole file, it skips a row
+with no name or that duplicates a lead, and drops a bad optional value while
+keeping the row. It finds duplicates the way the contacts importer does: by
+email across the org, and by phone, or by first and last name when the row
+has no usable email or phone, among the leads the importer may open.
 """
 
 from __future__ import annotations
 
 import csv
 import io
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -24,7 +33,21 @@ from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 
 from common.custom_fields import validate_payload as validate_custom_fields_payload
+from common.import_mapping import (
+    FULL_NAME,
+    SKIP_DUPLICATE,
+    SKIP_ROW,
+    MappedPreview,
+    SkippedRow,
+    describe_columns,
+    describe_fields,
+    mapped_records,
+)
 from common.models import Profile, Tags, Teams
+from common.spreadsheet import SpreadsheetError, Table
+from common.validators import normalize_phone
+from contacts.services.csv_import import CONTACT_SYNONYMS
+from leads.access import visible_leads_qs
 from leads.models import Lead
 from leads.serializer import LeadCreateSerializer
 from leads.workflow import IRREVERSIBLE_STATUSES
@@ -46,6 +69,85 @@ HEADER_ALIASES = {
     "first name": "first_name",
     "last name": "last_name",
     "address": "address_line",
+}
+
+# The fields a mapped column may target: exactly the template's columns, plus a
+# full name that is split into first and last. Nothing server-derived (org,
+# creator, ids, `is_active`) is here, so a mapping can never set it. None is
+# required: a row needs a first or last name, which either column gives.
+LEAD_FIELDS: tuple[tuple[str, str, bool], ...] = (
+    ("title", "Lead title", False),
+    ("salutation", "Salutation", False),
+    ("first_name", "First name", False),
+    ("last_name", "Last name", False),
+    ("email", "Email", False),
+    ("phone", "Phone", False),
+    ("job_title", "Job title", False),
+    ("website", "Website", False),
+    ("linkedin_url", "LinkedIn URL", False),
+    ("status", "Status", False),
+    ("source", "Source", False),
+    ("industry", "Industry", False),
+    ("rating", "Rating", False),
+    ("opportunity_amount", "Deal value", False),
+    ("currency", "Currency", False),
+    ("probability", "Win probability (%)", False),
+    ("close_date", "Expected close date", False),
+    ("address_line", "Address", False),
+    ("city", "City", False),
+    ("state", "State", False),
+    ("postcode", "Postal code", False),
+    ("country", "Country", False),
+    ("last_contacted", "Last contacted", False),
+    ("next_follow_up", "Next follow-up", False),
+    ("description", "Notes", False),
+    ("company_name", "Company", False),
+    ("assigned_emails", "Assigned to (emails)", False),
+    ("team_names", "Teams", False),
+    ("tags", "Tags", False),
+    (FULL_NAME, "Full name (split into first and last)", False),
+)
+
+# Headers that guess each field; every field also matches its own name, ranked
+# below its listed names (see `guess_mapping`). The person fields a lead shares
+# with a contact reuse the contacts table, which covers the Google Contacts,
+# Outlook and HubSpot exports. A bare "Title" stays this lead's own title (the
+# template's header), so it is never listed under `salutation`. HubSpot's
+# "Contact owner" holds a person's name, not an email, so nothing here guesses
+# assigned_emails.
+# Keep "title" first so a bare "Title" header stays this lead's own title.
+LEAD_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "title": ("lead title", "subject"),
+    "salutation": ("salutation", "prefix", "honorific"),
+    "first_name": CONTACT_SYNONYMS["first_name"],
+    "last_name": CONTACT_SYNONYMS["last_name"],
+    "email": CONTACT_SYNONYMS["email"],
+    "phone": CONTACT_SYNONYMS["phone"],
+    "job_title": CONTACT_SYNONYMS["title"],
+    "website": ("website url", "web page", "website 1 - value"),
+    "linkedin_url": CONTACT_SYNONYMS["linkedin_url"],
+    "status": ("lead status",),
+    "source": ("lead source", "source"),
+    "industry": (),
+    "rating": (),
+    "opportunity_amount": (),
+    "currency": (),
+    "probability": (),
+    "close_date": (),
+    "address_line": CONTACT_SYNONYMS["address_line"],
+    "city": CONTACT_SYNONYMS["city"],
+    "state": CONTACT_SYNONYMS["state"],
+    "postcode": CONTACT_SYNONYMS["postcode"],
+    "country": CONTACT_SYNONYMS["country"],
+    "last_contacted": (),
+    "next_follow_up": (),
+    "description": CONTACT_SYNONYMS["description"],
+    "company_name": CONTACT_SYNONYMS["organization"],
+    "assigned_emails": (),
+    "team_names": CONTACT_SYNONYMS["team_names"],
+    "tags": CONTACT_SYNONYMS["tags"],
+    # In everyday lead sheets, "Lead Name" holds the person.
+    FULL_NAME: (*CONTACT_SYNONYMS[FULL_NAME], "lead name"),
 }
 
 MAX_ROWS = 5000
@@ -187,14 +289,9 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
     if len(data_rows) > MAX_ROWS:
         return _header_error(f"Too many rows ({len(data_rows)}); limit is {MAX_ROWS}")
 
-    # The create API refuses a lead missing a required custom field, and a
-    # CSV has no way to supply one, so an import would be a way around it.
-    _, cf_errors = validate_custom_fields_payload("Lead", {}, org)
-    if cf_errors:
-        return _header_error(
-            "Your organisation requires custom field(s) on every lead that CSV "
-            f"import cannot set: {', '.join(sorted(cf_errors))}"
-        )
+    refusal = _custom_field_refusal(org)
+    if refusal:
+        return _header_error(refusal)
 
     parsed: list[tuple[int, dict[str, str]]] = []
     errors: list[RowError] = []
@@ -241,6 +338,21 @@ def parse_and_validate(file_bytes: bytes, request, legacy=False) -> ImportResult
     return ImportResult(valid=valid, errors=errors)
 
 
+def _custom_field_refusal(org) -> str | None:
+    """The message refusing the whole file, or None when the org allows it.
+
+    The create API refuses a lead missing a required custom field, and a file
+    has no way to supply one, so an import would be a way around it.
+    """
+    _, cf_errors = validate_custom_fields_payload("Lead", {}, org)
+    if not cf_errors:
+        return None
+    return (
+        "Your organisation requires custom field(s) on every lead that CSV "
+        f"import cannot set: {', '.join(sorted(cf_errors))}"
+    )
+
+
 def _reference_maps(parsed, org) -> tuple[dict[str, str], ...]:
     """One query per reference type, scoped to `org`. Profiles and teams are
     keyed lowercase; archived tags by slug, see `Tags.archived_errors`."""
@@ -275,6 +387,10 @@ def _reference_maps(parsed, org) -> tuple[dict[str, str], ...]:
     return profiles, teams, Tags.archived_errors(org, tag_names)
 
 
+_NEEDS_NAME = "A lead needs a first or last name"
+_EMAIL_EXISTS = "A lead with this email already exists"
+
+
 def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, archived):
     errors: list[RowError] = []
 
@@ -286,7 +402,7 @@ def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, ar
                 )
             )
     elif not record.get("first_name") and not record.get("last_name"):
-        errors.append(RowError(idx, "first_name", "A lead needs a first or last name"))
+        errors.append(RowError(idx, "first_name", _NEEDS_NAME))
 
     # A blank cell means "not supplied", so the model default applies, the
     # same as leaving the field off a create request.
@@ -362,6 +478,12 @@ def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, ar
     )
 
 
+_CONCURRENT_CONFLICT = (
+    "A lead was created at the same time that conflicts with this "
+    "import (likely a duplicate email). Run the preview again."
+)
+
+
 def commit_rows(file_bytes: bytes, request, legacy=False) -> dict[str, Any]:
     """Re-validate the file and create every lead, or none of them."""
     result = parse_and_validate(file_bytes, request, legacy)
@@ -380,14 +502,7 @@ def commit_rows(file_bytes: bytes, request, legacy=False) -> dict[str, Any]:
         # A lead with one of these emails was created between validation and
         # the insert. The exception text is not returned: on Postgres it names
         # the constraint and echoes the conflicting key.
-        return {
-            "error": True,
-            "message": (
-                "A lead was created at the same time that conflicts with this "
-                "import (likely a duplicate email). Run the preview again."
-            ),
-            "created": 0,
-        }
+        return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
 
 
 @transaction.atomic
@@ -415,3 +530,221 @@ def _get_or_create_tag(name: str, org, cache: dict[str, Tags]) -> Tags:
         tag, _ = Tags.objects.get_or_create(slug=slug, org=org, defaults={"name": name})
         cache[slug] = tag
     return cache[slug]
+
+
+# Column-matching mode
+
+
+def preview_mapped(table: Table, mapping: list[str | None], request) -> MappedPreview:
+    """Validate a mapped table against the caller's org without writing.
+
+    A row with no name, or whose email is already a lead (in this org or
+    earlier in the file, case-insensitively), is skipped with its original
+    cells. A "converted" status is dropped before validation. When the row
+    then fails validation, an email that is already a lead by the create
+    serializer's own match skips it as a duplicate; otherwise the failing
+    values are dropped (counted per field) and the row is validated again,
+    and a second failure skips it. A row that validates is still skipped as
+    a duplicate when its phone, or its name once it has no email or phone
+    left, matches an earlier row or a lead the importer may open
+    (`_duplicate`).
+
+    Raises SpreadsheetError when the org requires a lead custom field, which
+    no file can set.
+    """
+    org = request.profile.org
+    refusal = _custom_field_refusal(org)
+    if refusal:
+        raise SpreadsheetError(refusal)
+
+    records = mapped_records(table, mapping)
+    parsed = [(row, record) for row, record, _cells in records]
+    profiles, teams, archived = _reference_maps(parsed, org)
+    emails = {r["email"].lower() for _row, r in parsed if r.get("email")}
+    existing = set()
+    if emails:
+        existing = set(
+            Lead.objects.filter(org=org)
+            .annotate(email_lower=Lower("email"))
+            .filter(email_lower__in=emails)
+            .values_list("email_lower", flat=True)
+        )
+    phones, names = _visible_phones_and_names(parsed, request.profile)
+
+    valid: list[ValidatedRow] = []
+    skipped: list[SkippedRow] = []
+    dropped: Counter = Counter()
+    seen_emails: dict[str, int] = {}
+    seen_phones: dict[str, int] = {}
+    seen_names: dict[tuple, int] = {}
+    for row, record, cells in records:
+        if not record.get("first_name") and not record.get("last_name"):
+            skipped.append(SkippedRow(row, "first_name", _NEEDS_NAME, cells, SKIP_ROW))
+            continue
+        email = record.get("email", "").lower()
+        if email in existing:
+            skipped.append(
+                SkippedRow(row, "email", _EMAIL_EXISTS, cells, SKIP_DUPLICATE)
+            )
+            continue
+        if email in seen_emails:
+            message = f"Duplicate email also used by row {seen_emails[email]}"
+            skipped.append(SkippedRow(row, "email", message, cells, SKIP_DUPLICATE))
+            continue
+
+        removed: set[str] = set()
+        status = record.get("status", "")
+        if CHOICE_MAPS["status"].get(status.lower(), status) in IRREVERSIBLE_STATUSES:
+            removed.add("status")
+        kept = {k: v for k, v in record.items() if k not in removed}
+        errors, validated = _validate_row(
+            row, kept, request, profiles, teams, seen_emails, False, archived
+        )
+        if errors and _email_is_taken(errors, kept, org):
+            skipped.append(
+                SkippedRow(row, "email", _EMAIL_EXISTS, cells, SKIP_DUPLICATE)
+            )
+            continue
+        if errors:
+            removed |= {e.field for e in errors} & kept.keys()
+            kept = {k: v for k, v in kept.items() if k not in removed}
+            errors, validated = _validate_row(
+                row, kept, request, profiles, teams, seen_emails, False, archived
+            )
+        if errors:
+            skipped.append(
+                SkippedRow(row, errors[0].field, errors[0].message, cells, SKIP_ROW)
+            )
+            continue
+        data = validated.serializer.validated_data
+        duplicate = _duplicate(data, seen_phones, seen_names, phones, names)
+        if duplicate:
+            skipped.append(SkippedRow(row, *duplicate, cells, SKIP_DUPLICATE))
+            continue
+        dropped.update(removed)
+        valid.append(validated)
+        email, phone = data.get("email"), data.get("phone")
+        if email:
+            seen_emails[email.lower()] = row
+        if normalized := normalize_phone(phone or ""):
+            seen_phones[normalized] = row
+        if not email and not phone:
+            seen_names[_name_key(data.get("first_name"), data.get("last_name"))] = row
+
+    return MappedPreview(
+        columns=describe_columns(table, mapping),
+        fields=describe_fields(LEAD_FIELDS),
+        valid=valid,
+        skipped=skipped,
+        dropped=dropped,
+    )
+
+
+_PHONE_EXISTS = "A lead with this phone number already exists in your organization"
+_NAME_EXISTS = (
+    "A lead with this name already exists; add an email or phone to confirm "
+    "it's a different person"
+)
+
+
+def _name_key(first, last) -> tuple[str, str]:
+    return ((first or "").lower(), (last or "").lower())
+
+
+def _visible_phones_and_names(parsed, profile) -> tuple[set[str], set[tuple]]:
+    """The normalized phones and name keys of the leads `profile` may open.
+
+    Neither field has a database constraint, so, as in the contacts importer,
+    both are matched only among `visible_leads_qs`: across the org, "A lead
+    with this phone number already exists" for a number held only by a lead
+    the importer cannot open would confirm that lead exists. Email stays
+    org-wide, because the per-org index refuses that duplicate anyway.
+
+    One query each per file, and the phone query only when a row has a phone.
+    There is no normalized phone column, so phones are normalized here. Every
+    visible lead's name is keyed, not only those matching rows that arrive
+    with no email or phone, because dropping a bad email or phone (or a name
+    half that is too long) leaves a row whose stored values decide the check.
+    """
+    leads = visible_leads_qs(profile)
+    phones: set[str] = set()
+    if any(record.get("phone") for _row, record in parsed):
+        phones = {
+            normalize_phone(phone)
+            for phone in leads.exclude(phone__isnull=True)
+            .exclude(phone="")
+            .values_list("phone", flat=True)
+        }
+    names = {
+        _name_key(first, last)
+        for first, last in leads.values_list("first_name", "last_name")
+    }
+    return phones, names
+
+
+def _duplicate(data, seen_phones, seen_names, phones, names) -> tuple[str, str] | None:
+    """The field and message that skip a valid row as a duplicate, or None.
+
+    `data` is the row's validated data, so a value dropped as unreadable is
+    already gone: a row whose bad email and phone were dropped is name-checked
+    like one that never had them. The rules are the contacts importer's. A
+    phone matches on `normalize_phone`, within the file and against `phones`.
+    The first and last name, compared case-insensitively, are checked only
+    when the row has neither an email nor a phone, since nothing else tells
+    two same-named people apart. A lead may have one name, whose missing half
+    compares as blank.
+    """
+    phone = data.get("phone")
+    if normalized := normalize_phone(phone or ""):
+        if normalized in seen_phones:
+            return (
+                "phone",
+                "Duplicate phone number also used by row "
+                f"{seen_phones[normalized]} in this file",
+            )
+        if normalized in phones:
+            return "phone", _PHONE_EXISTS
+    if not data.get("email") and not phone:
+        key = _name_key(data.get("first_name"), data.get("last_name"))
+        if key in seen_names:
+            return (
+                "first_name",
+                f"Same name as row {seen_names[key]} in this file; add an email "
+                "or phone to either row to confirm they're different people",
+            )
+        if key in names:
+            return "first_name", _NAME_EXISTS
+    return None
+
+
+def _email_is_taken(errors, record, org) -> bool:
+    """Whether an email error is the create serializer's duplicate check.
+
+    The bulk pre-check compares Python's lower() with the database's LOWER(),
+    which can disagree outside ASCII, so this repeats the serializer's own
+    `email__iexact` match rather than trusting the pre-check or the message.
+    """
+    email = record.get("email")
+    return bool(
+        email
+        and any(e.field == "email" for e in errors)
+        and Lead.objects.filter(org=org, email__iexact=email).exists()
+    )
+
+
+def commit_mapped(table: Table, mapping: list[str | None], request) -> dict[str, Any]:
+    """Create the importable rows of a mapped table in one transaction."""
+    preview = preview_mapped(table, mapping, request)
+    report = preview.to_dict()
+    if not preview.valid:
+        return {
+            "error": True,
+            "message": "Nothing in this file can be imported.",
+            "skipped": report["skipped"],
+            "created": 0,
+        }
+    try:
+        result = _commit_validated(preview.valid, request.profile)
+    except IntegrityError:
+        return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
+    return {**result, "skipped": report["skipped"], "dropped": report["dropped"]}

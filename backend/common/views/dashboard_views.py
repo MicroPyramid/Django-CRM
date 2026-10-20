@@ -15,7 +15,7 @@ from cases.access import visible_cases_qs, writable_cases_qs
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
-from common.permissions import HasOrgContext, is_org_admin
+from common.permissions import HasOrgContext, can_mass_import, is_org_admin
 from contacts.access import visible_contacts_qs
 from contacts.models import Contact
 from invoices.models import UNPAID_STATUSES, Invoice
@@ -50,6 +50,24 @@ _CURRENCY_SYMBOL = {
     "AUD": "A$",
     "CAD": "C$",
 }
+
+
+def import_prompt_facts(profile):
+    """Two facts the home screens use to offer "Bring in your contacts".
+
+    ``empty_workspace``: the caller can see no real contact and no real lead
+    (sample rows do not count). Visibility-scoped on purpose, so a member who
+    can see nothing is shown the empty state too. ``can_import`` is the import
+    gate itself, so the card is never offered to someone the importer refuses.
+    """
+    has_records = (
+        visible_contacts_qs(profile).filter(is_sample=False).exists()
+        or visible_leads_qs(profile).filter(is_sample=False).exists()
+    )
+    return {
+        "empty_workspace": not has_records,
+        "can_import": can_mass_import(profile),
+    }
 
 
 def _fmt_money(amount, currency):
@@ -140,6 +158,8 @@ class ApiHomeView(APIView):
                     "tasks": TaskSerializer(many=True),
                     "activities": serializer.DashboardActivitySerializer(many=True),
                     "goal_summary": serializers.ListField(),
+                    "empty_workspace": serializers.BooleanField(),
+                    "can_import": serializers.BooleanField(),
                 },
             )
         },
@@ -373,6 +393,8 @@ class ApiHomeView(APIView):
             activities, many=True
         ).data
 
+        context.update(import_prompt_facts(profile))
+
         return Response(context, status=status.HTTP_200_OK)
 
 
@@ -421,6 +443,8 @@ class ApiTodayView(APIView):
                             "quiet_deals": serializers.IntegerField(),
                             "quiet_value": serializers.FloatField(),
                             "cleared_yesterday": serializers.IntegerField(),
+                            "empty_workspace": serializers.BooleanField(),
+                            "can_import": serializers.BooleanField(),
                         },
                     ),
                     "later": serializers.ListField(child=serializers.DictField()),
@@ -618,6 +642,7 @@ class ApiTodayView(APIView):
             "quiet_deals": quiet_deals,
             "quiet_value": float(quiet_value or 0),
             "cleared_yesterday": cleared_tasks.count() + cleared_cases.count(),
+            **import_prompt_facts(profile),
         }
 
         # ── "later this week" (due tomorrow … +7 days) ──────────────────────

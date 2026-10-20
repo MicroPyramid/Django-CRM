@@ -221,6 +221,10 @@ class EmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// A second, quieter action under the first, such as Import beside Add.
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+
   const EmptyState({
     super.key,
     required this.icon,
@@ -228,6 +232,8 @@ class EmptyState extends StatelessWidget {
     this.description,
     this.actionLabel,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   @override
@@ -266,6 +272,13 @@ class EmptyState extends StatelessWidget {
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+            if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: onSecondaryAction,
+                child: Text(secondaryActionLabel!),
+              ),
             ],
           ],
         ),

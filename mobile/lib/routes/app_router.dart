@@ -21,6 +21,7 @@ import '../screens/contacts/contact_detail_screen.dart';
 import '../screens/contacts/contact_form_screen.dart';
 import '../screens/contacts/contacts_list_screen.dart';
 import '../screens/duplicates/merge_compare_screen.dart';
+import '../screens/onboarding/import_welcome_screen.dart';
 import '../screens/auth/org_selection_screen.dart';
 
 // Main Screens
@@ -111,6 +112,11 @@ class AppRoutes {
   static const String magicLinkCode = '/magic-link/code';
   static const String orgSelection = '/org-selection';
   static const String orgCreate = '/org-selection/new';
+
+  /// The first screen after creating a workspace: import contacts or leads
+  /// from a spreadsheet, or skip. The web's `/welcome`. Also where the
+  /// dashboard's card sends a workspace that is still empty.
+  static const String importWelcome = '/welcome/import';
 
   // Main routes
   static const String dashboard = '/dashboard';
@@ -844,6 +850,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'orgCreate',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const OrgCreateScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.importWelcome,
+        name: 'importWelcome',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ImportWelcomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.orgSelection,

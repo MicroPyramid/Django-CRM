@@ -101,7 +101,10 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
       );
       return;
     }
-    context.go(AppRoutes.dashboard);
+    // A new workspace is empty, so the first thing offered is bringing in
+    // the people from a spreadsheet, with a skip to the dashboard. The web's
+    // org/new goes to /welcome the same way.
+    context.go(AppRoutes.importWelcome);
   }
 
   /// The timezone is a guess the screen made, not something the user typed,

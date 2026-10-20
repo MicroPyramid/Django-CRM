@@ -15,6 +15,8 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
+from functools import lru_cache
+from importlib.resources import files
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from django.conf import settings
@@ -23,14 +25,55 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=1)
+def _timezone_links():
+    """Map each tz database link name to the zone it points at.
+
+    Read from the ``tzdata`` package's compiled source, whose ``L <zone> <link>``
+    lines are the tz database's own list of aliases (``Asia/Calcutta`` is a link
+    to ``Asia/Kolkata``). The package is the same file on every machine, so the
+    answer does not depend on which tz database the host happens to ship.
+    """
+    text = (files("tzdata.zoneinfo") / "tzdata.zi").read_text(encoding="utf-8")
+    links = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[0] == "L":
+            links[parts[2]] = parts[1]
+    return links
+
+
+def canonical_timezone(name):
+    """``name`` with a tz database alias replaced by the zone it points at.
+
+    Python's ``zoneinfo`` accepts aliases such as ``Asia/Calcutta`` because the
+    ``tzdata`` package carries them, but PostgreSQL reads the system tz database,
+    and recent distributions move those aliases to an optional package. An alias
+    that reaches a query as ``AT TIME ZONE`` then fails the whole request.
+
+    ``UTC`` is left alone even though the tz database lists it as a link to
+    ``Etc/UTC``: it is the field default and every database knows it.
+    """
+    if not name or name == "UTC":
+        return name
+    links = _timezone_links()
+    seen = set()
+    while name in links and name not in seen:
+        seen.add(name)
+        name = links[name]
+    return name
+
+
 def resolve_timezone_name(org):
     """The IANA name whose day ``org`` keeps its books in.
 
     Falls back to ``settings.TIME_ZONE`` when there is no org, which is the case
-    on the auth endpoints that run before one is chosen.
+    on the auth endpoints that run before one is chosen. A stored alias comes back
+    as its canonical zone, so a row written before aliases were normalised on
+    save still produces a name the database recognises.
     """
     name = getattr(org, "timezone", None)
-    return name or settings.TIME_ZONE
+    return canonical_timezone(name) or settings.TIME_ZONE
 
 
 def activate_org_timezone(org):

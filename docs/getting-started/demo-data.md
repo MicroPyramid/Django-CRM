@@ -39,7 +39,7 @@ custom field definitions; tags; products; some terminology overrides (for exampl
 "Lead" as "Enquiry"); and a short list of named sample records (accounts, contacts, deals,
 tickets, leads, tasks) that reference each other by name within the manifest.
 
-Four packs ship in `backend/packs/`, one manifest file per pack:
+Four packs ship in `backend/common/packs/manifests/`, one manifest file per pack:
 
 | Pack id | File | Description |
 |---|---|---|
@@ -80,6 +80,13 @@ and tasks) are marked with an `is_sample` boolean field, set only by the applier
 sample row is also tagged with a "Sample data" tag and assigned to whichever admin applied the
 pack, purely for visibility in the UI; the tag carries no special authority and isn't what the
 system uses to know a row is sample data.
+
+Sample dates are written relative to one day, which the manifest records as
+`sample_dates_written_on`. When the pack is applied, every sample date (task due dates, deal close
+dates, and values of custom fields whose `field_type` is `date`) moves by the days between that day
+and today in the org's timezone. A task written as due the next day is due the day after the pack
+is applied, and a deal that closed three weeks earlier still closed three weeks earlier. A manifest
+whose sample rows hold dates without `sample_dates_written_on` fails validation.
 
 If an org already has any sample rows (from this pack or a previous one), applying `sample_data`
 again is skipped. A pack's sample data is only ever created once per org, regardless of how many

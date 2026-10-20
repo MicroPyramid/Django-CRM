@@ -173,13 +173,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           // Offered to every member, as on the web; the import views answer
           // 403 for anyone without admin or sales access.
           IconButton(
-            tooltip: 'Import from CSV',
+            tooltip: 'Import from a spreadsheet',
             icon: const Icon(LucideIcons.upload),
-            onPressed: () => showCsvImportSheet(
-              context,
-              CsvImportTarget.leads,
-              onImported: () => ref.read(leadsProvider.notifier).refresh(),
-            ),
+            onPressed: _import,
           ),
           SavedViewsButton(
             list: SavedViewList.leads,
@@ -460,6 +456,12 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     );
   }
 
+  void _import() => showCsvImportSheet(
+    context,
+    CsvImportTarget.leads,
+    onImported: () => ref.read(leadsProvider.notifier).refresh(),
+  );
+
   Widget _buildEmptyState() {
     final isFiltered = _filters.isActive;
     return EmptyState(
@@ -472,6 +474,10 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       onAction: isFiltered
           ? _clearAll
           : () => context.push(AppRoutes.leadCreate),
+      // As on the web's empty leads list. Not for a filter that matched
+      // nothing: importing is not the answer to that.
+      secondaryActionLabel: isFiltered ? null : 'Import',
+      onSecondaryAction: isFiltered ? null : _import,
     );
   }
 

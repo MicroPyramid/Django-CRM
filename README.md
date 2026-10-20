@@ -84,6 +84,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instr
 
 - **Issues**: [GitHub Issues](https://github.com/django-crm/Django-CRM/issues)
 - **Commercial support**: [Contact us](https://bottlecrm.io/contact)
+- **LinkedIn**: [BottleCRM on LinkedIn](https://www.linkedin.com/company/bottle-crm)
 
 ## License
 

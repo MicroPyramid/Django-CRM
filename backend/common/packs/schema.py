@@ -23,7 +23,48 @@ TOP_LEVEL_KEYS = {
     "tags",
     "products",
     "sample_data",
+    "sample_dates_written_on",
 }
+
+# The day a manifest's sample dates were written for. The applier moves every
+# sample date by the days since then, so a task written as "due today" is due
+# on the day the starter is applied, not on a date that has long passed.
+SAMPLE_DATES_KEY = "sample_dates_written_on"
+
+# Where sample rows carry dates: the sample section, the custom field target
+# its rows belong to, and the built-in date fields of that entity.
+_SAMPLE_DATE_FIELDS = (
+    ("accounts", "Account", ()),
+    ("contacts", "Contact", ()),
+    ("deals", "Opportunity", ("closed_on",)),
+    ("tickets", "Case", ()),
+    ("leads", "Lead", ()),
+    ("tasks", "Task", ("due_date",)),
+)
+
+
+def sample_date_slots(raw: dict):
+    """Yield ``(container, key)`` for every date value in ``raw``'s sample rows.
+
+    Covers the built-in date fields and every value of a custom field the
+    manifest declares with ``field_type`` "date" for that row's entity. The
+    validator checks each one, and the applier rewrites each one in a copy.
+    """
+    date_keys: dict[str, set] = {}
+    for field in raw.get("custom_fields") or []:
+        if field.get("field_type") == "date":
+            date_keys.setdefault(field.get("target"), set()).add(field.get("key"))
+    sample = raw.get("sample_data") or {}
+    for section, target, builtins in _SAMPLE_DATE_FIELDS:
+        for row in sample.get(section) or []:
+            for key in builtins:
+                if row.get(key) is not None:
+                    yield row, key
+            custom = row.get("custom_fields") or {}
+            for key in sorted(date_keys.get(target, ())):
+                if custom.get(key) is not None:
+                    yield custom, key
+
 
 #  is_default is a recognised key on both, not a typo, but is rejected by
 # _reject_is_default with a specific message rather than lumped in with
@@ -605,5 +646,16 @@ def validate_manifest(raw: dict) -> dict:
         # Passes the whole manifest: sample rows name stages that live in the
         # pipeline sections, so the reference check needs both halves.
         _validate_sample_data("manifest.sample_data", raw["sample_data"], raw)
+
+    slots = list(sample_date_slots(raw))
+    for container, key in slots:
+        _validate_date("manifest.sample_data", container[key], key)
+    if raw.get(SAMPLE_DATES_KEY) is not None:
+        _validate_date("manifest", raw[SAMPLE_DATES_KEY], SAMPLE_DATES_KEY)
+    elif slots:
+        raise PackValidationError(
+            f"manifest: {SAMPLE_DATES_KEY} is required when sample_data holds dates,"
+            " so they can be moved to the day the pack is applied"
+        )
 
     return raw

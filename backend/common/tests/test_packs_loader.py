@@ -161,3 +161,18 @@ def test_registry_lookup_of_unknown_id_returns_none():
 def test_registry_cannot_be_traversed():
     assert get_pack("../../etc/passwd") is None
     assert get_pack("real-estate/../demo") is None
+
+
+def test_missing_pack_directory_is_logged_not_silent(monkeypatch, tmp_path, caplog):
+    # An empty registry hides the org-creation starter picker, so a missing
+    # directory must leave a trace in the logs.
+    from common.packs import loader
+
+    monkeypatch.setattr(loader, "PACKS_DIR", tmp_path / "absent")
+    loader.get_registry.cache_clear()
+    try:
+        with caplog.at_level("ERROR", logger="common.packs.loader"):
+            assert loader.get_registry() == {}
+    finally:
+        loader.get_registry.cache_clear()
+    assert "no vertical packs load" in caplog.text

@@ -3,6 +3,7 @@
   "version": 1,
   "name": "Events & weddings",
   "description": "Wedding planners, event agencies and venues taking enquiries through to a delivered event.",
+  "sample_dates_written_on": "2026-08-03",
   "terminology": {
     "lead.singular": "Enquiry",
     "lead.plural": "Enquiries",

@@ -3,6 +3,7 @@
   "version": 2,
   "name": "Real estate",
   "description": "Brokers, agencies and developers selling residential and commercial property.",
+  "sample_dates_written_on": "2026-08-03",
   "terminology": {
     "lead.singular": "Enquiry",
     "lead.plural": "Enquiries",

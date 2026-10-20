@@ -50,7 +50,7 @@ See [Multi-tenancy and RLS](../architecture/multi-tenancy-and-rls.md).
 
 ### Vertical pack
 
-A small, declarative JSON manifest (`backend/packs/*.json`, validated by
+A small, declarative JSON manifest (`backend/common/packs/manifests/*.json`, validated by
 `backend/common/packs/schema.py`) that shapes an *already-existing* organization toward one
 industry: a starter pipeline (with stages) for leads, cases, and tasks; custom field definitions;
 tags; products; terminology overrides (for example relabeling "Lead" as "Enquiry"); and a short list

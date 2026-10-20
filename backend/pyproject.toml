@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-crm"
-version = "1.17.1"
+version = "1.18.0"
 # The one-line summary PyPI shows under the project title and in search results,
 # so it carries the terms people actually search for ("open source CRM",
 # "self-hosted CRM", "Django CRM") and names the modules rather than the
@@ -101,6 +101,10 @@ dependencies = [
     # Production WSGI server
     "gunicorn>=26.2.0",
     "uvicorn[standard]>=0.54.0",
+    "openpyxl>=3.1.5",
+    "defusedxml>=0.7.1",
+    # The tz database's own alias list, read by common.org_time.canonical_timezone.
+    "tzdata>=2026.5",
 ]
 
 [project.urls]

@@ -388,8 +388,8 @@ than returning every case the article happens to be linked to.
 
 ## CSV import
 
-Two endpoints, gated to org admins or members with `has_sales_access` (`_can_import`,
-`cases/import_views.py:23-31`). Anyone else gets `403`.
+Two endpoints, gated to org admins or members with `has_sales_access` (`can_mass_import` in
+`common/permissions.py`). Anyone else gets `403`.
 
 `POST /api/cases/import/preview/` (`CaseImportPreviewView`, `import_views.py:56-88`) reads a
 `multipart/form-data` upload in a field named `file` (`.csv` extension required). The 5 MB cap is

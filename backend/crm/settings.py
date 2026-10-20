@@ -458,6 +458,8 @@ REST_FRAMEWORK = {
         "magic_link_global": os.environ.get("MAGIC_LINK_THROTTLE_GLOBAL", "300/hour"),
         # Portal sign-in requests per org, across every caller.
         "portal_login_org": os.environ.get("PORTAL_LOGIN_THROTTLE_ORG", "100/hour"),
+        # Contact and lead spreadsheet import (preview and commit), per user.
+        "csv_import": os.getenv("IMPORT_THROTTLE", "30/minute"),
     },
 }
 

@@ -20,7 +20,7 @@ it:
 All of them need the shared cache `crm/settings.py` builds from `CACHE_URL`.
 """
 
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import SimpleRateThrottle, UserRateThrottle
 
 from common.request_meta import client_ip
 
@@ -76,3 +76,11 @@ class PortalLoginOrgThrottle(SimpleRateThrottle):
             "scope": self.scope,
             "ident": str(view.kwargs.get("org_id")),
         }
+
+
+class ImportThrottle(UserRateThrottle):
+    """Spreadsheet imports parse an upload and write up to a whole file of rows,
+    so they are metered per signed-in user, one bucket across the contact and
+    lead preview and commit views and both of their modes."""
+
+    scope = "csv_import"

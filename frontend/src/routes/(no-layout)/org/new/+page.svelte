@@ -33,7 +33,7 @@
   $effect(() => {
     if (form?.data) {
       const timer = setTimeout(() => {
-        goto(resolve('org'));
+        goto(resolve('welcome'));
       }, 1500);
       return () => clearTimeout(timer);
     }

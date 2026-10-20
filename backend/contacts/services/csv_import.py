@@ -26,6 +26,12 @@ All reference lookups (account, assignees, teams) are bulk-prefetched once per
 call (one SELECT per reference type), scoped to the caller's org so a
 malicious CSV cannot reach across tenants. `account_name` resolves only among
 the accounts the importer may open, so a hidden account reads as a missing one.
+
+Column-matching mode (`preview_mapped`, `commit_mapped`) takes a table read
+from any .csv or .xlsx plus a column-to-field mapping, and runs the same
+validator per row. Where the template path refuses the whole file, it skips a
+row that cannot become a contact or already exists, and drops a bad optional
+value while keeping the row.
 """
 
 from __future__ import annotations
@@ -33,6 +39,7 @@ from __future__ import annotations
 import csv
 import io
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
@@ -42,7 +49,18 @@ from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 
 from accounts.access import visible_accounts_qs
+from common.import_mapping import (
+    FULL_NAME,
+    SKIP_DUPLICATE,
+    SKIP_ROW,
+    MappedPreview,
+    SkippedRow,
+    describe_columns,
+    describe_fields,
+    mapped_records,
+)
 from common.models import Profile, Tags, Teams
+from common.spreadsheet import Table
 from common.utils import COUNTRIES
 from common.validators import normalize_phone
 from contacts.access import visible_contacts_qs
@@ -71,6 +89,131 @@ OPTIONAL_HEADERS = (
 )
 KNOWN_HEADERS = REQUIRED_HEADERS + OPTIONAL_HEADERS
 
+# The fields a mapped column may target: exactly the template's columns, plus a
+# full name that is split into first and last. Nothing server-derived (org,
+# creator, ids) is here, so a mapping can never set it.
+CONTACT_FIELDS: tuple[tuple[str, str, bool], ...] = (
+    ("first_name", "First name", True),
+    ("last_name", "Last name", True),
+    ("email", "Email", False),
+    ("phone", "Phone", False),
+    ("organization", "Company", False),
+    ("title", "Job title", False),
+    ("department", "Department", False),
+    ("do_not_call", "Do not call", False),
+    ("linkedin_url", "LinkedIn URL", False),
+    ("address_line", "Address", False),
+    ("city", "City", False),
+    ("state", "State", False),
+    ("postcode", "Postal code", False),
+    ("country", "Country", False),
+    ("description", "Notes", False),
+    ("account_name", "Account", False),
+    ("assigned_emails", "Assigned to (emails)", False),
+    ("team_names", "Teams", False),
+    ("tags", "Tags", False),
+    (FULL_NAME, "Full name (split into first and last)", False),
+)
+
+# Headers that guess each field; every field also matches its own name, ranked
+# below its listed names (see `guess_mapping`). Covers the Google Contacts,
+# Outlook and HubSpot exports and everyday sheets. HubSpot's "Contact owner"
+# holds a person's name, not an email, so nothing here guesses assigned_emails.
+CONTACT_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "first_name": ("first name", "given name", "first", "forename"),
+    "last_name": ("last name", "family name", "surname", "last"),
+    "email": (
+        "email",
+        "e-mail",
+        "email address",
+        "e-mail address",
+        "email id",
+        "mail id",
+        "e-mail 1 - value",
+        "email 1",
+        "primary email",
+        "work email",
+    ),
+    # Earlier names win when a sheet has several phone columns (Outlook has
+    # Business, Home and Mobile), so a mobile number is preferred.
+    "phone": (
+        "mobile phone",
+        "mobile",
+        "mobile no",
+        "mobile number",
+        "mobile phone number",
+        "cell",
+        "cell phone",
+        "whatsapp",
+        "whatsapp number",
+        "phone",
+        "phone number",
+        "phone no",
+        "phone 1 - value",
+        "contact number",
+        "contact no",
+        "telephone",
+        "tel",
+        "business phone",
+        "work phone",
+        "home phone",
+    ),
+    "organization": (
+        "company",
+        "company name",
+        "organization",
+        "organisation",
+        "organization name",
+        "organisation name",
+        "organization 1 - name",
+        "business name",
+    ),
+    "title": (
+        "job title",
+        "designation",
+        "position",
+        "organization title",
+        "organization 1 - title",
+    ),
+    "department": ("dept", "organization department", "organization 1 - department"),
+    "do_not_call": ("do not call", "dnc"),
+    "linkedin_url": ("linkedin", "linkedin url", "linkedin profile"),
+    "address_line": (
+        "address",
+        "street",
+        "street address",
+        "address line 1",
+        "address 1 - street",
+        "business street",
+    ),
+    "city": ("town", "address 1 - city", "business city"),
+    "state": (
+        "state/region",
+        "state/province",
+        "province",
+        "address 1 - region",
+        "business state",
+    ),
+    "postcode": (
+        "postal code",
+        "post code",
+        "zip",
+        "zip code",
+        "zip/postal code",
+        "pincode",
+        "pin code",
+        "address 1 - postal code",
+        "business postal code",
+    ),
+    "country": ("country/region", "address 1 - country", "business country/region"),
+    "description": ("notes", "note", "remarks", "comments", "comment"),
+    "account_name": (),
+    "assigned_emails": (),
+    "team_names": ("team", "teams"),
+    "tags": ("tag",),
+    FULL_NAME: ("name", "full name", "contact name"),
+}
+
 MAX_ROWS = 5000
 NAME_MAX_LEN = 255
 # Column widths the regexes below do not bound. SQLite ignores them, Postgres
@@ -90,6 +233,10 @@ class RowError:
     row: int  # 1-based, matching CSV line numbers (header is row 0)
     field: str
     message: str
+    # "row": the row cannot become a contact. "duplicate": the contact already
+    # exists. "value": one optional value is bad. Mapped mode skips the first
+    # two kinds and drops the third; the template path refuses all three.
+    kind: str = "value"
 
     def to_dict(self) -> dict[str, Any]:
         return {"row": self.row, "field": self.field, "message": self.message}
@@ -308,17 +455,28 @@ def parse_and_validate(file_bytes: bytes, org, profile) -> ImportResult:
             errors.extend(row_errors)
             continue
         valid.append(validated)
-        if validated.email:
-            seen_emails[validated.email.lower()] = idx
-        if validated.phone:
-            normalized = normalize_phone(validated.phone)
-            if normalized:
-                seen_phones[normalized] = idx
-        if not validated.email and not validated.phone:
-            key = f"{validated.first_name.lower()}|{validated.last_name.lower()}"
-            seen_full_names[key] = idx
+        _remember(validated, seen_emails, seen_phones, seen_full_names)
 
     return ImportResult(valid=valid, errors=errors)
+
+
+def _remember(
+    validated: ValidatedRow,
+    seen_emails: dict[str, int],
+    seen_phones: dict[str, int],
+    seen_full_names: dict[str, int],
+) -> None:
+    """Record a valid row so a later row in the same file reads as its duplicate."""
+    idx = validated.row
+    if validated.email:
+        seen_emails[validated.email.lower()] = idx
+    if validated.phone:
+        normalized = normalize_phone(validated.phone)
+        if normalized:
+            seen_phones[normalized] = idx
+    if not validated.email and not validated.phone:
+        key = f"{validated.first_name.lower()}|{validated.last_name.lower()}"
+        seen_full_names[key] = idx
 
 
 def _build_ref_maps(parsed: list[tuple[int, dict[str, str]]], org, profile) -> _RefMaps:
@@ -467,16 +625,26 @@ def _validate_and_build(
     first_name = record.get("first_name", "")
     last_name = record.get("last_name", "")
     if not first_name:
-        errors.append(RowError(idx, "first_name", "First name is required"))
+        errors.append(RowError(idx, "first_name", "First name is required", kind="row"))
     elif len(first_name) > NAME_MAX_LEN:
         errors.append(
-            RowError(idx, "first_name", f"First name exceeds {NAME_MAX_LEN} characters")
+            RowError(
+                idx,
+                "first_name",
+                f"First name exceeds {NAME_MAX_LEN} characters",
+                kind="row",
+            )
         )
     if not last_name:
-        errors.append(RowError(idx, "last_name", "Last name is required"))
+        errors.append(RowError(idx, "last_name", "Last name is required", kind="row"))
     elif len(last_name) > NAME_MAX_LEN:
         errors.append(
-            RowError(idx, "last_name", f"Last name exceeds {NAME_MAX_LEN} characters")
+            RowError(
+                idx,
+                "last_name",
+                f"Last name exceeds {NAME_MAX_LEN} characters",
+                kind="row",
+            )
         )
 
     email = record.get("email", "")
@@ -496,6 +664,7 @@ def _validate_and_build(
                         idx,
                         "email",
                         f"Duplicate email also used by row {prior} in this file",
+                        kind="duplicate",
                     )
                 )
             elif email_lower in refs.existing_emails:
@@ -504,6 +673,7 @@ def _validate_and_build(
                         idx,
                         "email",
                         "A contact with this email already exists in your organization",
+                        kind="duplicate",
                     )
                 )
 
@@ -528,6 +698,7 @@ def _validate_and_build(
                             idx,
                             "phone",
                             f"Duplicate phone number also used by row {prior} in this file",
+                            kind="duplicate",
                         )
                     )
                 elif normalized_phone in refs.existing_phones:
@@ -536,6 +707,7 @@ def _validate_and_build(
                             idx,
                             "phone",
                             "A contact with this phone number already exists in your organization",
+                            kind="duplicate",
                         )
                     )
 
@@ -551,6 +723,7 @@ def _validate_and_build(
                     idx,
                     "first_name",
                     f"Same name as row {prior} in this file; add an email or phone to either row to confirm they're different people",
+                    kind="duplicate",
                 )
             )
         elif key in refs.existing_full_names:
@@ -559,6 +732,7 @@ def _validate_and_build(
                     idx,
                     "first_name",
                     "A contact with this name already exists; add an email or phone to confirm it's a different person",
+                    kind="duplicate",
                 )
             )
 
@@ -696,6 +870,12 @@ def _validate_and_build(
     )
 
 
+_CONCURRENT_CONFLICT = (
+    "A contact was created concurrently that conflicts with this "
+    "import (likely a duplicate email). Re-run preview and try again."
+)
+
+
 def commit_rows(file_bytes: bytes, org, profile) -> dict[str, Any]:
     """Re-parse the uploaded CSV and create contacts in a single transaction.
 
@@ -728,14 +908,7 @@ def commit_rows(file_bytes: bytes, org, profile) -> dict[str, Any]:
         # the user to re-preview so the conflict shows up as a row error.
         # The exception text is not returned: on Postgres it names the
         # constraint and echoes the conflicting key.
-        return {
-            "error": True,
-            "message": (
-                "A contact was created concurrently that conflicts with this "
-                "import (likely a duplicate email). Re-run preview and try again."
-            ),
-            "created": 0,
-        }
+        return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
 
 
 @transaction.atomic
@@ -802,3 +975,94 @@ def _get_or_create_tag(name: str, org, cache: dict[str, Tags]) -> Tags:
     )
     cache[slug] = tag
     return tag
+
+
+# Column-matching mode
+
+
+def preview_mapped(
+    table: Table, mapping: list[str | None], org, profile
+) -> MappedPreview:
+    """Validate a mapped table against `org` without writing anything.
+
+    A row that cannot become a contact, or whose contact already exists, is
+    skipped with its original cells. A row whose only errors are bad optional
+    values loses those values (counted per field) and is validated again; a
+    second failure skips it.
+    """
+    country_codes = {str(label).lower(): code for code, label in COUNTRIES}
+    records = mapped_records(table, mapping)
+    for _row, record, _cells in records:
+        country = record.get("country", "")
+        if country and country.upper() not in COUNTRY_CODES:
+            # A name with no match is left for the validator to drop and count.
+            record["country"] = country_codes.get(country.lower(), country)
+
+    parsed = [(row, record) for row, record, _cells in records]
+    # Dropping a bad email or phone can leave a row with neither, which brings
+    # in the name check. Prefetch every row's name, not only the rows that
+    # arrived without both, so that check sees the existing contacts.
+    names = [
+        (
+            row,
+            {
+                "first_name": r.get("first_name", ""),
+                "last_name": r.get("last_name", ""),
+            },
+        )
+        for row, r in parsed
+    ]
+    refs = _build_ref_maps(parsed + names, org, profile)
+
+    valid: list[ValidatedRow] = []
+    skipped: list[SkippedRow] = []
+    dropped: Counter = Counter()
+    seen_emails: dict[str, int] = {}
+    seen_phones: dict[str, int] = {}
+    seen_full_names: dict[str, int] = {}
+    for row, record, cells in records:
+        errors, validated = _validate_and_build(
+            row, record, refs, seen_emails, seen_phones, seen_full_names
+        )
+        bad_fields = {e.field for e in errors}
+        if errors and all(e.kind == "value" for e in errors):
+            kept = {k: v for k, v in record.items() if k not in bad_fields}
+            errors, validated = _validate_and_build(
+                row, kept, refs, seen_emails, seen_phones, seen_full_names
+            )
+        if errors:
+            reason = next((e for e in errors if e.kind != "value"), errors[0])
+            kind = SKIP_DUPLICATE if reason.kind == "duplicate" else SKIP_ROW
+            skipped.append(SkippedRow(row, reason.field, reason.message, cells, kind))
+            continue
+        dropped.update(bad_fields)
+        valid.append(validated)
+        _remember(validated, seen_emails, seen_phones, seen_full_names)
+
+    return MappedPreview(
+        columns=describe_columns(table, mapping),
+        fields=describe_fields(CONTACT_FIELDS),
+        valid=valid,
+        skipped=skipped,
+        dropped=dropped,
+    )
+
+
+def commit_mapped(
+    table: Table, mapping: list[str | None], org, profile
+) -> dict[str, Any]:
+    """Create the importable rows of a mapped table in one transaction."""
+    preview = preview_mapped(table, mapping, org, profile)
+    report = preview.to_dict()
+    if not preview.valid:
+        return {
+            "error": True,
+            "message": "Nothing in this file can be imported.",
+            "skipped": report["skipped"],
+            "created": 0,
+        }
+    try:
+        result = _commit_validated(preview.valid, org, profile)
+    except IntegrityError:
+        return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
+    return {**result, "skipped": report["skipped"], "dropped": report["dropped"]}
