@@ -1066,18 +1066,6 @@ class CustomFieldDefinition(BaseModel):
     See docs/cases/tier1/custom-fields.md.
     """
 
-    TARGET_MODEL_CHOICES = [
-        ("Account", "Account"),
-        ("Case", "Case"),
-        ("Contact", "Contact"),
-        ("Estimate", "Estimate"),
-        ("Invoice", "Invoice"),
-        ("Lead", "Lead"),
-        ("Opportunity", "Opportunity"),
-        ("RecurringInvoice", "Recurring Invoice"),
-        ("Task", "Task"),
-    ]
-
     FIELD_TYPE_CHOICES = [
         ("text", "Text"),
         ("textarea", "Textarea"),
@@ -1090,7 +1078,7 @@ class CustomFieldDefinition(BaseModel):
     org = models.ForeignKey(
         Org, on_delete=models.CASCADE, related_name="custom_field_definitions"
     )
-    target_model = models.CharField(max_length=32, choices=TARGET_MODEL_CHOICES)
+    target_model = models.CharField(max_length=32)
     key = models.SlugField(max_length=64)
     label = models.CharField(max_length=128)
     field_type = models.CharField(max_length=16, choices=FIELD_TYPE_CHOICES)

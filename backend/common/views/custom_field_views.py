@@ -6,7 +6,6 @@ can drive their per-entity schemas through one API.
 See docs/cases/tier1/custom-fields.md.
 """
 
-from django.apps import apps
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -14,23 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import CustomFieldDefinition
+from common.object_registry import object_for_target
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import CustomFieldDefinitionSerializer
-
-# Each custom-field target_model → the (app_label, model) whose rows store the
-# values in a `custom_fields` JSONField. Mirrors custom_fields.SUPPORTED_TARGETS;
-# used to count how many records predate a field (see _records_missing_map).
-_TARGET_MODELS = {
-    "Account": ("accounts", "Account"),
-    "Case": ("cases", "Case"),
-    "Contact": ("contacts", "Contact"),
-    "Estimate": ("invoices", "Estimate"),
-    "Invoice": ("invoices", "Invoice"),
-    "Lead": ("leads", "Lead"),
-    "Opportunity": ("opportunity", "Opportunity"),
-    "RecurringInvoice": ("invoices", "RecurringInvoice"),
-    "Task": ("tasks", "Task"),
-}
 
 
 def _admin_required():
@@ -38,16 +23,6 @@ def _admin_required():
         {"error": True, "errors": "Admin access required"},
         status=status.HTTP_403_FORBIDDEN,
     )
-
-
-def _resolve_target_model(target_model):
-    ref = _TARGET_MODELS.get(target_model)
-    if ref is None:
-        return None
-    try:
-        return apps.get_model(*ref)
-    except LookupError:
-        return None
 
 
 def _records_missing_map(org, definitions):
@@ -67,17 +42,16 @@ def _records_missing_map(org, definitions):
 
     result = {}
     for target_model, defs in by_model.items():
-        model = _resolve_target_model(target_model)
-        if model is None:
+        entry = object_for_target(org, target_model)
+        if entry is None:
             # Unknown/unwired target, can't count, report zero rather than 500.
             for defn in defs:
                 result[str(defn.id)] = 0
             continue
-        total = model.objects.filter(org=org).count()
+        records = entry.records(org)
+        total = records.count()
         for defn in defs:
-            with_value = model.objects.filter(
-                org=org, custom_fields__has_key=defn.key
-            ).count()
+            with_value = records.filter(custom_fields__has_key=defn.key).count()
             result[str(defn.id)] = max(total - with_value, 0)
     return result
 

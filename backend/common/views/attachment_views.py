@@ -14,11 +14,12 @@ worked for the wrong people.
 
 **Reading an attachment is reading the record it hangs off**, so this view
 asks that record's own read rule rather than inventing a second one: each
-module's `visible_*_qs`, the queryset its list and detail views use. A file on
-a record the caller cannot open answers the same 404 as an id that does not
-exist, so the download cannot confirm the record or the file is there. A
-content type not in the map, and an attachment whose record is gone, answer
-that 404 too: a new attachable model must opt in here deliberately, because
+module's `visible_*_qs`, the queryset its list and detail views use, reached
+through the object registry. A file on a record the caller cannot open
+answers the same 404 as an id that does not exist, so the download cannot
+confirm the record or the file is there. An object that does not take
+attachments, and an attachment whose record is gone, answer that 404 too: a
+new attachable object must opt in through the registry deliberately, because
 the failure mode of the other default is handing out somebody's file.
 """
 
@@ -31,49 +32,27 @@ from rest_framework.views import APIView
 from common import swagger_params
 from common.lookups import get_on_visible_record_or_404, get_scoped_or_404
 from common.models import Attachments
+from common.object_registry import object_for_record
 from common.permissions import HasOrgContext
-
-
-def _visible():
-    """content_type.model -> the records of that kind the caller may open.
-
-    Built lazily inside the function because these modules import from
-    `common`, and importing them at `common.views` module level would close
-    the circle.
-    """
-    from accounts.access import visible_accounts_qs
-    from cases.access import visible_cases_qs
-    from contacts.access import visible_contacts_qs
-    from invoices.permissions import visible_invoices_qs
-    from leads.access import visible_leads_qs
-    from opportunity.access import visible_deals_qs
-    from tasks.access import visible_tasks_qs
-
-    return {
-        "lead": lambda request: visible_leads_qs(request.profile),
-        "opportunity": lambda request: visible_deals_qs(request.profile),
-        "contact": lambda request: visible_contacts_qs(request.profile),
-        "account": lambda request: visible_accounts_qs(request.profile),
-        "case": lambda request: visible_cases_qs(request.profile),
-        "task": lambda request: visible_tasks_qs(request.profile),
-        "invoice": lambda request: visible_invoices_qs(request.profile),
-    }
 
 
 def get_readable_attachment_or_404(request, pk):
     """The attachment ``pk`` if the caller may open the record it hangs off.
 
     Raises the same 404 for a missing id, another org's file, a file on a
-    record the caller cannot read, an unmapped content type and a record that
-    has been deleted: the second lookup only finds the row through the
-    module's read-rule queryset, which holds none of those.
+    record the caller cannot read, an object that does not take
+    attachments and a record that has been deleted: the second lookup only
+    finds the row through the module's read-rule queryset, which holds none
+    of those.
     """
     org = request.profile.org
     found = get_scoped_or_404(Attachments, pk, org)
-    visible = _visible().get(found.content_type.model)
-    if visible is None:
+    entry = object_for_record(org, found.content_type, found.object_id)
+    if entry is None or not entry.attachments:
         raise Http404(f"No such {Attachments._meta.verbose_name}.")
-    return get_on_visible_record_or_404(Attachments, pk, org, visible(request))
+    return get_on_visible_record_or_404(
+        Attachments, pk, org, entry.readable(request.profile)
+    )
 
 
 class AttachmentDownloadView(APIView):

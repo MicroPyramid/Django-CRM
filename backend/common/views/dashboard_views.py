@@ -15,6 +15,7 @@ from cases.access import visible_cases_qs, writable_cases_qs
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
+from common.object_registry import all_objects
 from common.permissions import HasOrgContext, can_mass_import, is_org_admin
 from contacts.access import visible_contacts_qs
 from contacts.models import Contact
@@ -99,41 +100,30 @@ def _readable(queryset, visible):
     return queryset.filter(pk__in=visible.values("pk"))
 
 
-# The read rule for each `Activity.entity_type` a feed may name. An activity
-# carries the record's name and what was done to it, so showing one is showing
-# a slice of that record: it has to pass the same rule the record's own detail
-# view applies. Types without an entry here (Event, Document, Team: nothing
-# writes them today) have no rule to pass, so a member never sees them.
-_ACTIVITY_READ_RULES = {
-    "Account": visible_accounts_qs,
-    "Lead": visible_leads_qs,
-    "Contact": visible_contacts_qs,
-    "Opportunity": visible_deals_qs,
-    "Case": visible_cases_qs,
-    "Task": visible_tasks_qs,
-    "Invoice": visible_invoices_qs,
-}
-
-
 def _readable_activities(profile):
     """The org's activities that ``profile`` may see: one query, whatever the size.
 
     An admin sees the whole org's feed, as before. Anyone else sees an activity
     only while its record is one they can open, resolved as one id subquery per
-    entity type, so the cost does not grow with the number of rows returned.
-    That fails closed twice: an entity type with no read rule is hidden, and so
-    is an activity whose record has since been deleted, because no read rule
-    can match a row that no longer exists.
+    registry entry with ``activity_feed`` on. An activity carries the record's
+    name and what was done to it, so it has to pass the same read rule as the
+    record's detail view. That fails closed three ways: a type with no entry or
+    with the feed off (Event, Document and Team have no entry, and nothing
+    writes them today) is hidden, and so is an activity whose record has since
+    been deleted, because no read rule can match a row that no longer exists.
     """
     qs = Activity.objects.filter(org=profile.org)
     if is_org_admin(profile):
         return qs
     readable = Q()
-    for entity_type, rule in _ACTIVITY_READ_RULES.items():
-        readable |= Q(
-            entity_type=entity_type,
-            entity_id__in=rule(profile).values("pk"),
-        )
+    for entry in all_objects(profile.org):
+        if entry.activity_feed:
+            readable |= Q(
+                entity_type=entry.model.__name__,
+                entity_id__in=entry.readable(profile).values("pk"),
+            )
+    if not readable:
+        return qs.none()
     return qs.filter(readable)
 
 

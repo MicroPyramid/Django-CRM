@@ -1,7 +1,9 @@
 """Shared pytest fixtures and RLS helpers for tests against Django CRM.
 
-Authenticated API clients, test organizations, users and profiles, plus the
-helpers that drive the PostgreSQL ``app.current_org`` session variable.
+Authenticated API clients, test organizations, users and profiles, the
+helpers that drive the PostgreSQL ``app.current_org`` session variable, and the
+row-level security coverage checks (``org_tables_not_covered`` and
+``rls_policy_gaps``) that downstream suites call with their own tables.
 
 This lives inside the ``common`` app rather than in the repository-root
 ``conftest.py`` so that it ships in the wheel. Anything defined only in that
@@ -11,19 +13,29 @@ it by pointing at a source checkout on disk. The enterprise suite did exactly
 that, loading the file through a symlink by absolute path, which is the last
 thing that tied the two repositories together at runtime.
 
-The root ``conftest.py`` now re-exports every name below, so
+The root ``conftest.py`` re-exports every fixture and RLS context helper below, so
 ``from conftest import rls_org`` keeps working unchanged in this repository.
 Downstream consumers should import from ``common.testing`` instead.
 """
 
 import contextlib
+from collections.abc import Iterable, Mapping
 
 import pytest
+from django.apps import apps
+from django.core.exceptions import FieldDoesNotExist
 from django.core.signals import request_finished
-from django.db import connection
+from django.db import connection, models
 from rest_framework.test import APIClient
 
 from common.models import Org, Profile, User
+from common.rls import (
+    INSERT_POLICY,
+    ISOLATION_POLICY,
+    ORG_SCOPED_TABLES,
+    get_check_rls_status_sql,
+    get_check_table_exists_sql,
+)
 from common.serializer import OrgAwareRefreshToken
 
 # The org a test's bare ORM calls act as. Tracked in a mutable holder rather
@@ -33,6 +45,85 @@ from common.serializer import OrgAwareRefreshToken
 # On SQLite this whole mechanism is inert: RLS is a PostgreSQL feature, the
 # session variable does not exist, and every helper here returns early.
 _ambient_org = {"id": None}
+
+
+TABLES_WITHOUT_RLS = {
+    "security_audit_log": (
+        "platform ledger; its rows have no org or straddle two, "
+        "which the insert policy refuses (common/0036)"
+    ),
+    "personal_access_token": "looked up by token hash before any org context exists",
+    "calendar_feed_token": "the public feed looks it up by token hash to learn the org",
+    "profile": "the middleware reads it to learn the org before it sets app.current_org",
+    "portal_access_token": "resolved by token before the portal sets the org context",
+    "portal_login_token": "resolved by token before the portal sets the org context",
+}
+
+
+def _org_table_names():
+    tables = set()
+    for model in apps.get_models():
+        if model._meta.proxy or not model._meta.managed:
+            continue
+        try:
+            field = model._meta.get_field("org")
+        except FieldDoesNotExist:
+            continue
+        if isinstance(field, models.ForeignKey) and field.related_model is Org:
+            tables.add(model._meta.db_table)
+    return tables
+
+
+def org_tables_not_covered(
+    excluded: Mapping[str, str] = TABLES_WITHOUT_RLS,
+) -> list[str]:
+    """Return one ``"<table>: <problem>"`` line per gap between models and RLS.
+
+    Reads ``ORG_SCOPED_TABLES`` at call time so tables a downstream suite
+    appends to it count.
+    """
+    org_tables = _org_table_names()
+    listed = set(ORG_SCOPED_TABLES)
+    problems = []
+    for table in sorted(org_tables - listed - set(excluded)):
+        problems.append(f"{table}: has an org field but is neither listed nor excluded")
+    for table in sorted(set(excluded) - org_tables):
+        problems.append(f"{table}: excluded but is not an org table (stale exclusion)")
+    for table in sorted(listed & set(excluded)):
+        problems.append(f"{table}: both listed and excluded")
+    return problems
+
+
+def rls_policy_gaps(tables: Iterable[str] | None = None) -> list[str]:
+    """Return one ``"<table>: <problem>"`` line per missing RLS control.
+
+    PostgreSQL only. Defaults to ``ORG_SCOPED_TABLES`` read at call time.
+    """
+    if tables is None:
+        tables = ORG_SCOPED_TABLES
+    problems = []
+    with connection.cursor() as cursor:
+        for table in tables:
+            cursor.execute(get_check_table_exists_sql(), [table])
+            if not cursor.fetchone()[0]:
+                problems.append(f"{table}: table is missing")
+                continue
+            cursor.execute(get_check_rls_status_sql(), [table])
+            enabled, forced = cursor.fetchone()
+            if not enabled:
+                problems.append(f"{table}: RLS is not enabled")
+            if not forced:
+                problems.append(f"{table}: RLS is not forced")
+            cursor.execute(
+                "SELECT policyname FROM pg_policies "
+                "WHERE schemaname = 'public' AND tablename = %s",
+                [table],
+            )
+            present = {row[0] for row in cursor.fetchall()}
+            for policy in (ISOLATION_POLICY, INSERT_POLICY):
+                if policy not in present:
+                    problems.append(f"{table}: policy {policy} is absent")
+    return problems
 
 
 def _apply_rls_context(org_id):

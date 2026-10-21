@@ -110,10 +110,10 @@ enum CustomFieldType {
 /// this app already uses for them elsewhere (`Case` is a ticket, `Opportunity`
 /// is a deal).
 ///
-/// Mirrors `SUPPORTED_TARGETS` in `backend/common/custom_fields.py` and
+/// Mirrors the custom-field targets in `backend/common/object_registry.py` and
 /// `TARGET_MODEL_LABEL` in `frontend/src/lib/v2/enums.js`.
-/// `CustomFieldDefinitionSerializer.validate_target_model` rejects anything
-/// outside this set, so offering a wider list would only produce a 400.
+/// `CustomFieldDefinitionSerializer` rejects anything outside this set, so
+/// offering a wider list would only produce a 400.
 const Map<String, String> customFieldTargets = {
   'Account': 'Accounts',
   'Case': 'Tickets',

@@ -11,19 +11,20 @@ Every check asserts BOTH directions. A permission test that only ever sees
 one answer cannot tell a working check from a constant.
 """
 
+import dataclasses
 import uuid
 
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Account
 from cases.models import Case, CaseWatcher
+from common import object_registry
 from common.models import Attachments, Document, Teams
+from common.tests.object_records import make_record
 from common.utils import create_attachment
-from contacts.models import Contact
-from invoices.models import Invoice
 from leads.models import Lead
-from opportunity.models import Opportunity
 from tasks.models import Task
 
 FILE_BYTES = b"the quick brown fox"
@@ -262,27 +263,7 @@ class TestAttachmentDownload:
         assert admin_client.get(_attachment_url(attachment.pk)).status_code == 404
 
 
-def _record(kind, org):
-    """One record of each attachable kind, owned by nobody in particular."""
-    if kind == "lead":
-        return Lead.objects.create(title="Hidden", org=org)
-    if kind == "opportunity":
-        return Opportunity.objects.create(name="Hidden", stage="QUALIFICATION", org=org)
-    if kind == "contact":
-        return Contact.objects.create(first_name="Hidden", last_name="Person", org=org)
-    if kind == "account":
-        return Account.objects.create(name="Hidden", org=org)
-    if kind == "case":
-        return Case.objects.create(name="Hidden", org=org, status="New")
-    if kind == "task":
-        return Task.objects.create(
-            title="Hidden", org=org, status="New", priority="Low"
-        )
-    account = Account.objects.create(name="Billed", org=org)
-    return Invoice.objects.create(org=org, account=account, invoice_title="Hidden")
-
-
-KINDS = ["lead", "opportunity", "contact", "account", "case", "task", "invoice"]
+ATTACHABLE = ["lead", "contact", "account", "deal", "ticket", "task", "invoice"]
 
 
 @pytest.mark.django_db
@@ -290,12 +271,11 @@ class TestHiddenFileAnswersLikeAMissingOne:
     """A file on a record the caller cannot open is indistinguishable from an id
     that does not exist: same status, same body, on every module's records."""
 
-    @pytest.mark.parametrize("kind", KINDS)
+    @pytest.mark.parametrize("key", ATTACHABLE)
     def test_whole_response_matches_a_missing_id(
-        self, kind, user_client, admin_client, admin_user, admin_profile, org_a
+        self, key, user_client, admin_client, admin_user, admin_profile, org_a
     ):
-        record = _record(kind, org_a)
-        type(record).objects.filter(pk=record.pk).update(created_by=admin_user)
+        record = make_record(key, org_a, admin_user)
         attachment = _attach(record, admin_profile)
 
         hidden = user_client.get(_attachment_url(attachment.pk))
@@ -312,9 +292,56 @@ class TestHiddenFileAnswersLikeAMissingOne:
     def test_another_orgs_file_matches_a_missing_id(
         self, org_b_client, admin_user, admin_profile, org_a
     ):
-        record = _record("case", org_a)
+        record = make_record("ticket", org_a)
         attachment = _attach(record, admin_profile)
         other = org_b_client.get(_attachment_url(attachment.pk))
         missing = org_b_client.get(_attachment_url(uuid.uuid4()))
         assert other.status_code == missing.status_code == 404
         assert other.content == missing.content
+
+
+@pytest.mark.django_db
+class TestEveryAttachableObject:
+    def test_the_registry_decides_which_objects_take_downloads(
+        self, monkeypatch, admin_client, admin_user, admin_profile, org_a
+    ):
+        attachment = _attach(make_record("lead", org_a, admin_user), admin_profile)
+        assert admin_client.get(_attachment_url(attachment.pk)).status_code == 200
+        monkeypatch.setattr(
+            object_registry,
+            "BUILT_IN",
+            tuple(
+                dataclasses.replace(e, attachments=False) if e.key == "lead" else e
+                for e in object_registry.BUILT_IN
+            ),
+        )
+        assert admin_client.get(_attachment_url(attachment.pk)).status_code == 404
+
+    @pytest.mark.parametrize("key", ATTACHABLE)
+    def test_the_creator_downloads(
+        self, key, user_client, regular_user, user_profile, org_a
+    ):
+        attachment = _attach(make_record(key, org_a, regular_user), user_profile)
+        assert user_client.get(_attachment_url(attachment.pk)).status_code == 200
+
+    @pytest.mark.parametrize("key", ATTACHABLE)
+    def test_another_org_gets_404(
+        self, key, org_b_client, admin_user, admin_profile, org_a
+    ):
+        attachment = _attach(make_record(key, org_a, admin_user), admin_profile)
+        assert org_b_client.get(_attachment_url(attachment.pk)).status_code == 404
+
+    @pytest.mark.parametrize("key", ["estimate", "recurring_invoice"])
+    def test_objects_without_downloads_today_404_even_for_an_admin(
+        self, key, admin_client, admin_user, admin_profile, org_a
+    ):
+        attachment = _attach(make_record(key, org_a, admin_user), admin_profile)
+        assert admin_client.get(_attachment_url(attachment.pk)).status_code == 404
+
+    def test_a_content_type_whose_model_is_gone_is_404_not_500(
+        self, admin_client, admin_user, admin_profile, org_a
+    ):
+        ghost = ContentType.objects.create(app_label="gone", model="ghost")
+        attachment = _attach(make_record("lead", org_a, admin_user), admin_profile)
+        Attachments.objects.filter(pk=attachment.pk).update(content_type=ghost)
+        assert admin_client.get(_attachment_url(attachment.pk)).status_code == 404

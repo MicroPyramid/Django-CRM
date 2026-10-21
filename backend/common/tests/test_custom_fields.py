@@ -11,6 +11,8 @@ import pytest
 from cases.models import Case
 from common.custom_fields import validate_definition_options, validate_payload
 from common.models import CustomFieldDefinition
+from common.tests.object_records import make_record
+from conftest import rls_org
 from leads.models import Lead
 
 
@@ -544,3 +546,81 @@ class TestCustomFieldAnalytics:
         assert resp.status_code == 200
         assert "totals" in resp.json()
         assert resp.json()["definitions"][0]["records_missing_value"] == 0
+
+
+TARGET_KEYS = {
+    "Account": "account",
+    "Case": "ticket",
+    "Contact": "contact",
+    "Estimate": "estimate",
+    "Invoice": "invoice",
+    "Lead": "lead",
+    "Opportunity": "deal",
+    "RecurringInvoice": "recurring_invoice",
+    "Task": "task",
+}
+
+
+@pytest.mark.django_db
+class TestEveryTarget:
+    URL = "/api/custom-fields/"
+
+    @pytest.mark.parametrize("target", TARGET_KEYS)
+    def test_an_admin_creates_a_definition_on_every_target(self, target, admin_client):
+        payload = TestCustomFieldDefinitionAPI()._payload(target_model=target)
+        response = admin_client.post(self.URL, payload, format="json")
+        assert response.status_code == 201, response.content
+
+    @pytest.mark.parametrize("value", ["Comment", "", "x" * 33])
+    def test_a_bad_target_gets_todays_exact_error(self, value, admin_client):
+        payload = TestCustomFieldDefinitionAPI()._payload(target_model=value)
+        response = admin_client.post(self.URL, payload, format="json")
+        assert response.status_code == 400
+        assert response.json()["errors"]["target_model"] == [
+            f'"{value}" is not a valid choice.'
+        ]
+
+    def test_missing_counts_and_totals_cover_every_target(
+        self, admin_client, org_a, org_b
+    ):
+        for target, key in TARGET_KEYS.items():
+            CustomFieldDefinition.objects.create(
+                org=org_a,
+                target_model=target,
+                key="probe",
+                label="Probe",
+                field_type="text",
+                is_required=True,
+            )
+            make_record(key, org_a)
+            filled = make_record(key, org_a)
+            type(filled).objects.filter(pk=filled.pk).update(
+                custom_fields={"probe": "set"}
+            )
+            with rls_org(org_b):
+                make_record(key, org_b)
+        body = admin_client.get(self.URL).json()
+        assert {
+            d["target_model"]: d["records_missing_value"] for d in body["definitions"]
+        } == dict.fromkeys(TARGET_KEYS, 1)
+        assert body["totals"] == {
+            "count": 9,
+            "active": 9,
+            "models_extended": 9,
+            "required_with_gaps": 9,
+        }
+
+    def test_a_stored_target_the_registry_does_not_know_counts_zero(
+        self, admin_client, org_a
+    ):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Ghost",
+            key="probe",
+            label="Probe",
+            field_type="text",
+        )
+        response = admin_client.get(self.URL)
+        assert response.status_code == 200
+        (row,) = response.json()["definitions"]
+        assert row["records_missing_value"] == 0

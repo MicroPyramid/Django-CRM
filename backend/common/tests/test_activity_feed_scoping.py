@@ -13,6 +13,7 @@ rule, and an activity whose record is gone, fail closed for a member.
 without-org-claim case is pinned here too.
 """
 
+import dataclasses
 import uuid
 
 import pytest
@@ -24,7 +25,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import Account
 from cases.models import Case, CaseWatcher
+from common import object_registry
 from common.models import Activity
+from common.tests.object_records import make_record
 from conftest import rls_org
 
 pytestmark = pytest.mark.django_db
@@ -195,3 +198,93 @@ class TestOrgContextIsRequired:
         from common.permissions import HasOrgContext
 
         assert HasOrgContext in resolve(url).func.view_class.permission_classes
+
+
+FEED_OBJECTS = {
+    "lead": "Lead",
+    "contact": "Contact",
+    "account": "Account",
+    "deal": "Opportunity",
+    "ticket": "Case",
+    "task": "Task",
+    "invoice": "Invoice",
+}
+
+
+class TestEveryFeedObject:
+    @pytest.mark.parametrize("key,entity_type", FEED_OBJECTS.items())
+    def test_a_member_sees_activity_only_on_records_they_can_open(
+        self,
+        key,
+        entity_type,
+        org_a,
+        regular_user,
+        admin_user,
+        admin_profile,
+        user_client,
+        admin_client,
+    ):
+        mine = make_record(key, org_a, regular_user)
+        hidden = make_record(key, org_a, admin_user)
+        _activity(org_a, entity_type, mine.id, f"mine {key}", admin_profile)
+        _activity(org_a, entity_type, hidden.id, f"hidden {key}", admin_profile)
+        names = _feed_names(user_client)
+        assert f"mine {key}" in names and f"hidden {key}" not in names
+        assert {f"mine {key}", f"hidden {key}"} <= _feed_names(admin_client)
+
+    @pytest.mark.parametrize(
+        "key,entity_type",
+        [("estimate", "Estimate"), ("recurring_invoice", "RecurringInvoice")],
+    )
+    def test_objects_outside_the_feed_stay_hidden_even_when_readable(
+        self,
+        key,
+        entity_type,
+        org_a,
+        regular_user,
+        admin_profile,
+        user_client,
+        admin_client,
+    ):
+        record = make_record(key, org_a, regular_user)
+        _activity(org_a, entity_type, record.id, "outside", admin_profile)
+        assert "outside" not in _feed_names(user_client)
+        assert "outside" in _feed_names(admin_client)
+
+    @pytest.mark.parametrize("entity_type", ["Event", "Document"])
+    def test_types_without_an_entry_stay_hidden_from_a_member(
+        self, entity_type, org_a, user_profile, user_client, admin_client
+    ):
+        _activity(org_a, entity_type, uuid.uuid4(), "typed", user_profile)
+        assert "typed" not in _feed_names(user_client)
+        assert "typed" in _feed_names(admin_client)
+
+
+def test_the_registry_decides_which_objects_reach_a_members_feed(
+    monkeypatch, user_client, feed
+):
+    assert "Mine Co" in _feed_names(user_client)
+    monkeypatch.setattr(
+        object_registry,
+        "BUILT_IN",
+        tuple(
+            dataclasses.replace(e, activity_feed=False) if e.key == "account" else e
+            for e in object_registry.BUILT_IN
+        ),
+    )
+    assert "Mine Co" not in _feed_names(user_client)
+
+
+def test_a_registry_with_no_feed_objects_shows_a_member_nothing(
+    monkeypatch, user_client, admin_client, feed
+):
+    monkeypatch.setattr(
+        object_registry,
+        "BUILT_IN",
+        tuple(
+            dataclasses.replace(e, activity_feed=False)
+            for e in object_registry.BUILT_IN
+        ),
+    )
+    assert _feed_names(user_client) == set()
+    assert "Mine Co" in _feed_names(admin_client)
