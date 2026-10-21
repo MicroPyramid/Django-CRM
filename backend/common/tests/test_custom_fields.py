@@ -128,10 +128,69 @@ class TestValidatePayload:
         assert errors == {}
         assert cleaned == {"severity": "S1"}
 
-    def test_empty_value_clears_field(self, org_a):
+    def test_inactive_field_sent_back_keeps_its_stored_value(self, org_a):
+        """The phone sends a record's whole stored map back on save, so a
+        turned-off field arrives with its own value. Sending the key must not
+        erase what leaving it out would have kept."""
+        self._defn(org_a, is_active=False)
+        cleaned, errors = validate_payload(
+            "Case", {"severity": "S1"}, org_a, existing={"severity": "S1"}
+        )
+        assert errors == {}
+        assert cleaned == {"severity": "S1"}
+
+    @pytest.mark.parametrize("sent", ["S2", None, ""])
+    def test_inactive_field_cannot_be_changed_or_cleared(self, org_a, sent):
+        self._defn(org_a, is_active=False)
+        cleaned, errors = validate_payload(
+            "Case", {"severity": sent}, org_a, existing={"severity": "S1"}
+        )
+        assert errors == {}
+        assert cleaned == {"severity": "S1"}
+
+    def test_removed_option_sent_back_unchanged_is_kept(self, org_a):
+        """A record still holding an option an admin has since removed must
+        stay savable. Its value comes back exactly as stored and is kept."""
         self._defn(org_a)
         cleaned, errors = validate_payload(
-            "Case", {"severity": ""}, org_a, existing={"severity": "S1"}
+            "Case", {"severity": "S9"}, org_a, existing={"severity": "S9"}
+        )
+        assert errors == {}
+        assert cleaned == {"severity": "S9"}
+
+    def test_removed_option_cannot_replace_another_value(self, org_a):
+        self._defn(org_a)
+        cleaned, errors = validate_payload(
+            "Case", {"severity": "S9"}, org_a, existing={"severity": "S1"}
+        )
+        assert "severity" in errors
+
+    def test_unchanged_value_keeps_the_stored_copy(self, org_a):
+        """A value equal to the stored one skips validation, and the stored
+        copy is what gets kept, so nothing a request sends is written
+        unchecked: `1 == True` keeps the stored boolean, not the integer."""
+        self._defn(org_a, key="vip", field_type="checkbox", options=None)
+        cleaned, errors = validate_payload(
+            "Case", {"vip": 1}, org_a, existing={"vip": True}
+        )
+        assert errors == {}
+        assert cleaned["vip"] is True
+
+    def test_whole_number_against_stored_float_is_unchanged(self, org_a):
+        self._defn(org_a, key="hours", field_type="number", options=None)
+        cleaned, errors = validate_payload(
+            "Case", {"hours": 3}, org_a, existing={"hours": 3.0}
+        )
+        assert errors == {}
+        assert cleaned == {"hours": 3.0}
+
+    # The phone's lead form clears a text field with an empty string; the
+    # web and the phone's shared custom-fields form send null.
+    @pytest.mark.parametrize("sent", ["", None])
+    def test_empty_value_clears_field(self, org_a, sent):
+        self._defn(org_a)
+        cleaned, errors = validate_payload(
+            "Case", {"severity": sent}, org_a, existing={"severity": "S1"}
         )
         assert cleaned == {}
         assert errors == {}

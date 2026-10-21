@@ -130,6 +130,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // A workspace with no contacts or leads yet is offered the import
+        // first, as the web home page does. `/api/dashboard/` decides both
+        // halves, and the import views still check the role themselves.
+        if (data.offersImport) const _ImportCard(),
+
         // KPI Cards
         _buildKpiSection(data, currencyFormat),
 
@@ -1239,6 +1244,50 @@ class _DashboardGoalRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The web home page's "Bring in your contacts" card, in its words: one line,
+/// and the way to the import welcome screen.
+class _ImportCard extends StatelessWidget {
+  const _ImportCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: AppLayout.borderRadiusMd,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Bring in your contacts',
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Upload a spreadsheet and your workspace fills up in a minute.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(AppLayout.buttonHeightLarge),
+            ),
+            onPressed: () => context.push(AppRoutes.importWelcome),
+            child: const Text('Import a spreadsheet'),
+          ),
+        ],
       ),
     );
   }

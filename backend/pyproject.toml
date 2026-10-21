@@ -4,18 +4,20 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-crm"
-version = "1.17.0"
+version = "1.18.1"
 # The one-line summary PyPI shows under the project title and in search results,
 # so it carries the terms people actually search for ("open source CRM",
 # "self-hosted CRM", "Django CRM") and names the modules rather than the
-# architecture. Published release metadata is immutable, so a change here only
-# reaches PyPI on the next version bump.
-description = "Open-source self-hosted CRM with a Django REST API: leads, deals, contacts, invoices and support tickets, multi-tenant by PostgreSQL row-level security."
+# architecture. It leads with the product name because an unrelated project,
+# DjangoCRM/django-crm, shares this one's name on GitHub and awesome lists.
+# Published release metadata is immutable, so a change here only reaches PyPI
+# on the next version bump.
+description = "BottleCRM, CRM for AI and People. The open-source self-hosted CRM with a Django REST API: leads, deals, contacts, invoices and support tickets, multi-tenant by PostgreSQL row-level security."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
-    { name = "MicroPyramid", email = "hello@micropyramid.com" },
+    { name = "RunCode Inc.", email = "hello@bottlecrm.io" },
 ]
 keywords = [
     "django",
@@ -99,6 +101,10 @@ dependencies = [
     # Production WSGI server
     "gunicorn>=26.2.0",
     "uvicorn[standard]>=0.54.0",
+    "openpyxl>=3.1.5",
+    "defusedxml>=0.7.1",
+    # The tz database's own alias list, read by common.org_time.canonical_timezone.
+    "tzdata>=2026.5",
 ]
 
 [project.urls]

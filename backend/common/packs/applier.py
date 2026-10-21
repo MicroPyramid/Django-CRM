@@ -8,13 +8,20 @@ destroying tenant configuration.
 
 from __future__ import annotations
 
+import copy
 import logging
+from datetime import date
 
 from django.db import transaction
+from django.utils import timezone
 
 from cases.models import CasePipeline, CaseStage
 from common.models import CustomFieldDefinition, Org, PackApplication, Tags
-from common.packs.schema import SAMPLE_ENTITY_KEYS
+from common.packs.schema import (
+    SAMPLE_DATES_KEY,
+    SAMPLE_ENTITY_KEYS,
+    sample_date_slots,
+)
 from invoices.models import Product
 from leads.models import LeadPipeline, LeadStage
 from tasks.models import TaskPipeline, TaskStage
@@ -240,6 +247,28 @@ def _create_sample(report, type_: str, name: str, build):
     return obj
 
 
+def _sample_moved_to_today(pack: dict) -> dict:
+    """A copy of the pack's sample_data with every date moved to the apply day.
+
+    Each date moves by the days between the manifest's ``sample_dates_written_on``
+    and today in the org's timezone (the request activated it), so a task written
+    as due the next day is due the day after the starter is applied, and a deal
+    that closed three weeks before still closed three weeks before. The loaded
+    manifest is cached and shared, so it is copied, never edited in place.
+    """
+    view = {
+        "custom_fields": pack.get("custom_fields"),
+        "sample_data": copy.deepcopy(pack.get("sample_data") or {}),
+    }
+    written_on = pack.get(SAMPLE_DATES_KEY)
+    if written_on:
+        shift = timezone.localdate() - date.fromisoformat(written_on)
+        for container, key in sample_date_slots(view):
+            moved = date.fromisoformat(str(container[key])) + shift
+            container[key] = moved.isoformat()
+    return view["sample_data"]
+
+
 def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     from accounts.models import Account
     from cases.models import Case, CaseStage
@@ -248,7 +277,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     from opportunity.models import Opportunity
     from tasks.models import Task, TaskStage
 
-    sample = pack.get("sample_data") or {}
+    sample = _sample_moved_to_today(pack)
     if not any(sample.get(key) for key in SAMPLE_ENTITY_KEYS):
         return
 

@@ -18,6 +18,7 @@ from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from common.base import BaseModel, BaseOrgModel
+from common.org_time import canonical_timezone
 from common.utils import (
     COUNTRIES,
     CURRENCY_CODES,
@@ -250,6 +251,12 @@ class Org(BaseModel):
 
     def __str__(self):
         return str(self.name)
+
+    def save(self, *args, **kwargs):
+        # Store the zone a tz alias points at, never the alias: PostgreSQL may
+        # not know the alias (see `common.org_time.canonical_timezone`).
+        self.timezone = canonical_timezone(self.timezone)
+        super().save(*args, **kwargs)
 
 
 class Tags(BaseModel):

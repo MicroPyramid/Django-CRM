@@ -63,6 +63,8 @@ class TestTodayView:
             "quiet_deals",
             "quiet_value",
             "cleared_yesterday",
+            "empty_workspace",
+            "can_import",
         }
         assert isinstance(resp.data["queue"], list)
         assert isinstance(resp.data["later"], list)
@@ -413,3 +415,49 @@ class TestTheHeaderCountMatchesThePage:
         summary = admin_client.get(self.url).data["summary"]
 
         assert summary["count"] == 1
+
+
+@pytest.mark.django_db
+class TestTodayEmptyWorkspace:
+    url = "/api/dashboard/today/"
+
+    def test_today_empty_workspace_true_for_new_org(self, admin_client, org_a):
+        summary = admin_client.get(self.url).data["summary"]
+        assert summary["empty_workspace"] is True
+        assert summary["can_import"] is True
+
+    def test_today_sample_data_does_not_count(self, admin_client, org_a):
+        from contacts.models import Contact
+        from leads.models import Lead
+
+        Contact.objects.create(first_name="S", last_name="C", org=org_a, is_sample=True)
+        Lead.objects.create(
+            first_name="S", last_name="L", email="s@test.com", org=org_a, is_sample=True
+        )
+        assert admin_client.get(self.url).data["summary"]["empty_workspace"] is True
+
+    def test_today_real_contact_makes_it_non_empty(self, admin_client, org_a):
+        from contacts.models import Contact
+
+        Contact.objects.create(first_name="R", last_name="C", org=org_a)
+        assert admin_client.get(self.url).data["summary"]["empty_workspace"] is False
+
+    def test_today_real_lead_makes_it_non_empty(self, admin_client, org_a):
+        from leads.models import Lead
+
+        Lead.objects.create(
+            first_name="R", last_name="L", email="r@test.com", org=org_a
+        )
+        assert admin_client.get(self.url).data["summary"]["empty_workspace"] is False
+
+    def test_today_other_org_records_do_not_count(self, admin_client, org_a, org_b):
+        from contacts.models import Contact
+
+        _set_rls(org_b)
+        Contact.objects.create(first_name="B", last_name="C", org=org_b)
+        _set_rls(org_a)
+        assert admin_client.get(self.url).data["summary"]["empty_workspace"] is True
+
+    def test_today_can_import_false_for_plain_user(self, user_client, org_a):
+        summary = user_client.get(self.url).data["summary"]
+        assert summary["can_import"] is False

@@ -5,6 +5,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from common.public_tokens import scrub_public_tokens
+from common.sentry_scrub import before_send
 
 DEBUG = False
 
@@ -156,8 +157,9 @@ sentry_sdk.init(
     # The calendar feed, survey, invoice and estimate links carry their
     # credential in the URL path, which the denylist above cannot see (it
     # matches keys, not values). Traces are sampled at 1.0, so every fetch
-    # would otherwise send its token. See `common.public_tokens`.
-    before_send=scrub_public_tokens,
+    # would otherwise send its token. See `common.public_tokens`. `before_send`
+    # also drops an import upload's body and parser locals (`common.sentry_scrub`).
+    before_send=before_send,
     before_send_transaction=scrub_public_tokens,
 )
 

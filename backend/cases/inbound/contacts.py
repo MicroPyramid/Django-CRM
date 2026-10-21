@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from common.utils import split_full_name
 from contacts.models import Contact
 
 from .parser import ParsedEmail
@@ -21,10 +22,7 @@ def _split_display_name(display: str, fallback_email: str) -> tuple[str, str]:
     if not name:
         local = (fallback_email or "").split("@", 1)[0]
         return (local or "Unknown", "")
-    parts = name.split(maxsplit=1)
-    if len(parts) == 1:
-        return (parts[0], "")
-    return (parts[0], parts[1])
+    return split_full_name(name)
 
 
 def resolve_contact(parsed: ParsedEmail, org) -> Optional[Contact]:

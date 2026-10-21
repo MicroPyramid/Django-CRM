@@ -130,7 +130,7 @@
     <div class="v2-auth-foot">
       <a href="https://bottlecrm.io/privacy-policy">Privacy</a>
       <span class="v2-auth-dot"></span>
-      <a href="https://bottlecrm.io/terms">Terms</a>
+      <a href="https://bottlecrm.io/terms-of-service">Terms</a>
       <span class="v2-auth-dot"></span>
       <a href="https://github.com/django-crm/Django-CRM" target="_blank" rel="noopener">GitHub</a>
     </div>

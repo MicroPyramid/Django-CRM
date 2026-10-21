@@ -41,7 +41,9 @@ export async function getToday({ cookies }) {
       sources: summary.sources ?? [],
       quiet_deals: summary.quiet_deals ?? 0,
       quiet_value: summary.quiet_value ?? 0,
-      cleared_yesterday: summary.cleared_yesterday ?? 0
+      cleared_yesterday: summary.cleared_yesterday ?? 0,
+      empty_workspace: summary.empty_workspace ?? false,
+      can_import: summary.can_import ?? false
     },
     later: resp.later ?? []
   };

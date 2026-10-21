@@ -48,7 +48,10 @@ as this role), `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` (both pointing at `re
 `DEFAULT_FROM_EMAIL`/`ADMIN_EMAIL`/`ADMIN_PASSWORD`, `CORS_ALLOW_ALL=True`,
 `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (blank. Google sign-in stays disabled until both
 are set), and `PUBLIC_DJANGO_API_URL=http://backend:8000`, the compose service name the
-frontend's server-side code uses to reach the API.
+frontend's server-side code uses to reach the API, and `BODY_SIZE_LIMIT=6M`, the largest request
+body the frontend accepts. The Node adapter's default is 512K, which would refuse a contact or lead
+spreadsheet import (the API accepts up to 5 MB) before it reached the API. The published frontend
+image sets it to `6M` itself; set it yourself only if you run the frontend some other way.
 
 ## Running it
 

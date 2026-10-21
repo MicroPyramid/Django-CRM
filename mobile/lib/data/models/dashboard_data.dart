@@ -271,6 +271,13 @@ class DashboardData {
   /// their teams', and (for an admin) the org-wide ones.
   final List<DashboardGoal> goalSummary;
 
+  /// The caller can see no real contact and no real lead (sample data does
+  /// not count). From `import_prompt_facts` on `/api/dashboard/`.
+  final bool emptyWorkspace;
+
+  /// The import views would let the caller in (`can_mass_import`).
+  final bool canImport;
+
   const DashboardData({
     this.accountsCount = 0,
     this.contactsCount = 0,
@@ -283,7 +290,14 @@ class DashboardData {
     this.tasks = const [],
     this.activities = const [],
     this.goalSummary = const [],
+    this.emptyWorkspace = false,
+    this.canImport = false,
   });
+
+  /// Whether the home screen offers an import, as the web home page's "Bring
+  /// in your contacts" card does. Absent keys, from an older server, offer
+  /// nothing.
+  bool get offersImport => emptyWorkspace && canImport;
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     debugPrint('DashboardData.fromJson: Starting to parse...');
@@ -400,6 +414,8 @@ class DashboardData {
       tasks: tasksList,
       activities: activitiesList,
       goalSummary: goalSummaryList,
+      emptyWorkspace: json['empty_workspace'] == true,
+      canImport: json['can_import'] == true,
     );
   }
 }

@@ -149,7 +149,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Your CRM, Simplified',
+                        'CRM for AI and People',
                         style: AppTypography.body.copyWith(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 16,

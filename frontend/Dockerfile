@@ -15,6 +15,9 @@
 #   PUBLIC_SENTRY_DSN      optional. Unset disables Sentry (`enabled: !!dsn`).
 #   PORT                   defaults to 3000. HOST already defaults to 0.0.0.0.
 #   PROTOCOL_HEADER        only for plain http. See below.
+#   BODY_SIZE_LIMIT        set to 6M below. adapter-node 6 defaults to 512K, which
+#                          would refuse a spreadsheet import (the API caps files
+#                          at 5 MB) with a plain-text 413.
 #
 # The origin check is the one that fails quietly. SvelteKit compares the Origin
 # header of every form POST with the origin the server thinks it serves, which
@@ -69,6 +72,7 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 FROM node:24-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV BODY_SIZE_LIMIT=6M
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/build ./build

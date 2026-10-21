@@ -6,6 +6,11 @@ is what the web import drawers speak. All three endpoints are gated by
 `common.permissions.can_mass_import`, so a member without admin or sales
 access cannot mass-create leads here even though they can create them one at
 a time.
+
+A preview or commit request with a `mapping` form field ("auto", or JSON of
+column index to field name) takes the column-matching path: any column names,
+.csv or .xlsx, and rows that do not fit are skipped instead of refusing the
+file. Without `mapping`, both endpoints keep the template-only behaviour.
 """
 
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -15,10 +20,26 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.import_mapping import MappingError, read_mapped_upload
 from common.permissions import HasOrgContext, can_mass_import
-from leads.csv_import import commit_rows, parse_and_validate
+from common.spreadsheet import SpreadsheetError
+from common.throttles import ImportThrottle
+from leads.csv_import import (
+    LEAD_FIELDS,
+    LEAD_SYNONYMS,
+    MAX_ROWS,
+    commit_mapped,
+    commit_rows,
+    parse_and_validate,
+    preview_mapped,
+)
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB; matches the UI hint
+_MAPPABLE_FIELDS = frozenset(name for name, _label, _required in LEAD_FIELDS)
+_MAPPING_FIELD = serializers.CharField(
+    required=False,
+    help_text='"auto" to guess, or JSON of column index to field name.',
+)
 
 
 def _read_upload(request, field="file", csv_name=True):
@@ -64,15 +85,31 @@ def _forbidden():
     )
 
 
+def _run_mapped(request, step):
+    """Return (step's result, None) or (None, error_response).
+
+    `step` is `preview_mapped` or `commit_mapped`. An unreadable file, a
+    refused mapping and an org rule no file can satisfy are all a 400.
+    """
+    try:
+        table, mapping = read_mapped_upload(
+            request, MAX_ROWS, LEAD_SYNONYMS, _MAPPABLE_FIELDS
+        )
+        return step(table, mapping, request), None
+    except (SpreadsheetError, MappingError) as exc:
+        return None, _bad_upload(str(exc))
+
+
 class LeadImportPreviewView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
+    throttle_classes = (ImportThrottle,)
     parser_classes = (MultiPartParser,)
 
     @extend_schema(
         tags=["Leads"],
         request=inline_serializer(
             name="LeadImportPreviewRequest",
-            fields={"file": serializers.FileField()},
+            fields={"file": serializers.FileField(), "mapping": _MAPPING_FIELD},
         ),
         responses={
             200: inline_serializer(
@@ -89,6 +126,11 @@ class LeadImportPreviewView(APIView):
     def post(self, request, *args, **kwargs):
         if not can_mass_import(request.profile):
             return _forbidden()
+        if "mapping" in request.data:
+            preview, err = _run_mapped(request, preview_mapped)
+            if err is not None:
+                return err
+            return Response(preview.to_dict(), status=status.HTTP_200_OK)
         file_bytes, problem = _read_upload(request)
         if problem:
             return _bad_upload(problem)
@@ -98,13 +140,14 @@ class LeadImportPreviewView(APIView):
 
 class LeadImportCommitView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
+    throttle_classes = (ImportThrottle,)
     parser_classes = (MultiPartParser,)
 
     @extend_schema(
         tags=["Leads"],
         request=inline_serializer(
             name="LeadImportCommitRequest",
-            fields={"file": serializers.FileField()},
+            fields={"file": serializers.FileField(), "mapping": _MAPPING_FIELD},
         ),
         responses={
             200: inline_serializer(
@@ -120,6 +163,16 @@ class LeadImportCommitView(APIView):
     def post(self, request, *args, **kwargs):
         if not can_mass_import(request.profile):
             return _forbidden()
+        if "mapping" in request.data:
+            result, err = _run_mapped(request, commit_mapped)
+            if err is not None:
+                return err
+            return Response(
+                result,
+                status=status.HTTP_400_BAD_REQUEST
+                if result["error"]
+                else status.HTTP_200_OK,
+            )
         file_bytes, problem = _read_upload(request)
         if problem:
             return _bad_upload(problem)

@@ -128,12 +128,12 @@ exception, only an admin or the contact's own creator may delete
 ## CSV import
 
 Two endpoints, both gated to org admins or members with `has_sales_access`
-(`_can_import`, `contacts/import_views.py:23-31`). An ordinary member gets `403`:
+(`can_mass_import` in `common/permissions.py`). An ordinary member gets `403`:
 
-`POST /api/contacts/import/preview/` (`ContactImportPreviewView`, `import_views.py:64-96`) reads a
+`POST /api/contacts/import/preview/` (`ContactImportPreviewView`, `contacts/import_views.py`) reads a
 `multipart/form-data` upload in a field named `file` (must end in `.csv`, capped at 5 MB, checked
-against the actual bytes read rather than the client-supplied `Content-Length`,
-`import_views.py:34-61`), validates every row without writing anything, and returns:
+against the actual bytes read rather than the client-supplied `Content-Length`; `_read_upload`),
+validates every row without writing anything, and returns:
 
 ```json
 {
@@ -152,12 +152,11 @@ against the actual bytes read rather than the client-supplied `Content-Length`,
 }
 ```
 
-`POST /api/contacts/import/commit/` (`ContactImportCommitView`, `:99-133`) re-validates the same file
-and writes inside one transaction (`commit_rows` / `_commit_validated`,
-`contacts/services/csv_import.py:634-714`), if any row fails validation, **nothing is written**
-(`:650-657`); a concurrent conflict (e.g. a duplicate email created by another request between preview
-and commit) rolls the whole batch back and reports `400` rather than partially importing
-(`:659-672`). On success (`200`):
+`POST /api/contacts/import/commit/` (`ContactImportCommitView`) re-validates the same file
+and writes inside one transaction (`commit_rows` / `_commit_validated` in
+`contacts/services/csv_import.py`), if any row fails validation, **nothing is written**; a
+concurrent conflict (e.g. a duplicate email created by another request between preview
+and commit) rolls the whole batch back and reports `400` rather than partially importing. On success (`200`):
 
 ```json
 {"error": false, "created": 12, "ids": ["<uuid>", "..."]}
@@ -167,21 +166,59 @@ The CSV must have a header row with `first_name` and `last_name` at minimum; the
 recognized optional headers is `email`, `phone`, `organization`, `title`, `department`,
 `do_not_call`, `linkedin_url`, `address_line`, `city`, `state`, `postcode`, `country`,
 `description`, `account_name`, `assigned_emails`, `team_names`, `tags`
-(`REQUIRED_HEADERS`/`OPTIONAL_HEADERS`, `csv_import.py:46-66`); an unrecognized header or a missing
+(`REQUIRED_HEADERS`/`OPTIONAL_HEADERS` in `csv_import.py`); an unrecognized header or a missing
 required one fails the whole file with `header_error` before any row is checked. `assigned_emails`
 and `team_names` accept `;`-separated multiple values per cell. Duplicates are rejected per org: email
 and phone (normalized) are always hard errors; a matching first+last name is only a hard error when
 the row supplies **neither** an email nor a phone to disambiguate it from an existing contact
-(`csv_import.py:8-19`, `408-514`). The file is capped at 5,000 data rows (`MAX_ROWS`, `:68`).
+(`csv_import.py`). The file is capped at 5,000 data rows (`MAX_ROWS`).
 
-**A row with `account_name` sets only the `account` foreign key, not the `Account.contacts`
-membership.** `_commit_validated` creates each `Contact` with `account_id=vr.account_id` directly
-(`csv_import.py:681-700`) and never calls `link_primary_account`, unlike `POST /api/contacts/` and
-the `PUT`/`PATCH` update endpoints, which always do (see [Two links to an account](#two-links-to-an-account-not-one)).
-A contact imported this way resolves correctly under `account_detail`, but will not show up on that
-account's contact list (`Account.contacts`, the M2M) until something else adds it there. This looks
-like an oversight rather than a documented design choice. It is reported here, not fixed, per this
-documentation task's scope.
+**A row with `account_name` sets both links to the account.** `_commit_validated` creates each
+`Contact` with `account_id=vr.account_id` and then calls `link_primary_account`, as
+`POST /api/contacts/` and the `PUT`/`PATCH` update endpoints do (see
+[Two links to an account](#two-links-to-an-account-not-one)), so an imported contact appears on that
+account's contact list (`Account.contacts`, the M2M) as well as under `account_detail`.
+
+### Column matching (`mapping`)
+
+Both endpoints also accept an optional `mapping` form field, which switches them to the
+column-matching mode. Its value is `"auto"` (guess each column from its header; Google Contacts,
+Outlook and HubSpot exports are recognised) or a JSON object `{"<column index>": "<field>" | null}`
+that sets or overrides the guess, where `null` ignores a column. In this mode the file may be a
+`.csv` (UTF-8 or Windows-1252; comma, semicolon or tab delimited) or an `.xlsx` (first sheet only),
+still capped at 5 MB, 5,000 rows and 1,000 columns, and the header names need not match the list
+above. Without
+`mapping` everything above applies unchanged.
+
+A bad value does not cost you the person: it is dropped, counted, and the rest of the row is
+imported. Only a row that cannot become a contact, or that duplicates one (by email org-wide, or by
+phone and name among contacts you can see), is skipped. Rows are numbered from 1, the first row
+under the header. The preview answers (the `valid` entry is shortened here):
+
+```json
+{
+  "columns": [{"index": 0, "header": "First Name", "field": "first_name", "samples": ["Ada", "Grace"]}],
+  "fields": [{"name": "first_name", "label": "First name", "required": true}],
+  "valid": [{"row": 1, "first_name": "Ada", "last_name": "Lovelace"}],
+  "skipped": [
+    {
+      "row": 2, "field": "email",
+      "message": "A contact with this email already exists in your organization",
+      "cells": ["Grace", "Hopper", "grace@example.com"], "kind": "duplicate"
+    }
+  ],
+  "dropped": [{"field": "phone", "count": 1}],
+  "summary": {"total": 2, "valid": 1, "skipped": 1}
+}
+```
+
+`kind` is `"duplicate"` when the contact already exists (in the org, or earlier in the file) and
+`"row"` when the row cannot become a contact; clients branch on it, not on `message`.
+
+and the commit answers `{"error": false, "created": 1, "ids": ["<uuid>"], "skipped": [...],
+"dropped": [...]}`. A file with nothing importable gets `400` `"Nothing in this file can be
+imported."`. All four contacts and leads import endpoints share a per-user rate limit,
+`IMPORT_THROTTLE` (default `30/minute`; see [Environment variables](../reference/environment-variables.md#imports)).
 
 ## Duplicates and merging
 

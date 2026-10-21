@@ -108,9 +108,9 @@
   }
 
   /**
-   * The Node adapter refuses a body over its limit (512 KB unless the deploy
-   * sets BODY_SIZE_LIMIT) with a plain-text 413 before the action runs, which
-   * `deserialize` cannot parse.
+   * The Node adapter refuses a body over BODY_SIZE_LIMIT (512K unless the
+   * deploy sets it; the image sets 6M) with a plain-text 413 before the
+   * action runs, which `deserialize` cannot parse.
    * @param {Response} res
    */
   async function readResult(res) {

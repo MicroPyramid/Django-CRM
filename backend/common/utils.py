@@ -1205,3 +1205,11 @@ def is_document_file_sheet(ext):
 def is_document_file_zip(ext):
     ext_list = ["zip", "7z", "gz", "rar", "zipx", "ace", "tar"]
     return ext.lower() in ext_list
+
+
+def split_full_name(name: str) -> tuple[str, str]:
+    """Split a full name on the first whitespace into (first, last)."""
+    parts = (name or "").split(maxsplit=1)
+    if not parts:
+        return ("", "")
+    return (parts[0], parts[1] if len(parts) > 1 else "")

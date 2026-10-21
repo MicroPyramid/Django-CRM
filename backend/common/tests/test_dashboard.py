@@ -383,3 +383,13 @@ class TestDashboardSendsOnlyWhatItRenders:
         response = admin_client.get(self.url)
 
         assert response.data["accounts_count"] == 2
+
+
+@pytest.mark.django_db
+def test_home_dashboard_carries_the_same_two_keys(admin_client, user_client, org_a):
+    data = admin_client.get("/api/dashboard/").data
+    assert data["empty_workspace"] is True
+    assert data["can_import"] is True
+    Contact.objects.create(first_name="R", last_name="C", org=org_a)
+    assert admin_client.get("/api/dashboard/").data["empty_workspace"] is False
+    assert user_client.get("/api/dashboard/").data["can_import"] is False

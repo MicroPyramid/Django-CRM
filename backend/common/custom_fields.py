@@ -131,12 +131,20 @@ def validate_payload(
 
     Returns (cleaned_dict, errors_dict). Non-empty errors -> caller should 400.
     Unknown keys are dropped silently and logged. `existing` is the value
-    currently stored on the entity. Required fields already set on the entity
-    are preserved across PATCHes that omit them.
+    currently stored on the entity, read from the database and never from the
+    request. Required fields already set on the entity are preserved across
+    PATCHes that omit them.
 
     Values tied to soft-deleted (is_active=False) definitions are carried
-    forward on save so admins can soft-delete a field without losing history,
-    but new writes against an inactive key are rejected as unknown.
+    forward on every save so admins can soft-delete a field without losing
+    history. Writes against an inactive key are rejected as unknown, and the
+    key arriving does not erase the stored value: the phone sends a record's
+    whole stored map back on save.
+
+    A value sent back exactly as stored is kept without being validated again,
+    so a record still holding a dropdown option an admin has since removed can
+    be saved. The stored copy is what is kept, so nothing the request carries
+    is written unchecked.
     """
     from common.models import CustomFieldDefinition  # avoid import cycle
 
@@ -156,11 +164,11 @@ def validate_payload(
     cleaned: dict = {}
     errors: dict = {}
 
-    # Carry forward existing recognized values (active OR soft-deleted) that
-    # the caller didn't touch. Values whose definition was hard-deleted are
-    # dropped. The schema is gone.
+    # Carry forward existing recognized values the caller cannot change: the
+    # ones it left out, and soft-deleted ones whatever it sent. Values whose
+    # definition was hard-deleted are dropped. The schema is gone.
     for key, value in existing.items():
-        if key in all_keys and key not in value_dict:
+        if key in all_keys and (key not in value_dict or key not in active_by_key):
             cleaned[key] = value
 
     for key, raw in value_dict.items():
@@ -172,6 +180,9 @@ def validate_payload(
                 target_model,
                 getattr(org, "id", org),
             )
+            continue
+        if key in existing and raw == existing[key]:
+            cleaned[key] = existing[key]
             continue
         coerced, error = _coerce_value(defn.field_type, raw)
         if error:

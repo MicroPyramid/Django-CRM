@@ -13,6 +13,7 @@ import '../../providers/csv_import_provider.dart';
 import '../../providers/saved_views_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/export_csv_button.dart';
+import '../../widgets/common/loading.dart';
 import '../../widgets/common/saved_views_button.dart';
 import '../../widgets/forms/csv_import_sheet.dart';
 
@@ -69,6 +70,12 @@ class _ContactsListScreenState extends ConsumerState<ContactsListScreen> {
     ref.read(contactsProvider.notifier).search(search);
   }
 
+  void _import() => showCsvImportSheet(
+    context,
+    CsvImportTarget.contacts,
+    onImported: () => ref.read(contactsProvider.notifier).refresh(),
+  );
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(contactsProvider);
@@ -85,12 +92,8 @@ class _ContactsListScreenState extends ConsumerState<ContactsListScreen> {
           // 403 for anyone without admin or sales access.
           IconButton(
             icon: const Icon(LucideIcons.upload),
-            tooltip: 'Import from CSV',
-            onPressed: () => showCsvImportSheet(
-              context,
-              CsvImportTarget.contacts,
-              onImported: () => ref.read(contactsProvider.notifier).refresh(),
-            ),
+            tooltip: 'Import from a spreadsheet',
+            onPressed: _import,
           ),
           SavedViewsButton(
             list: SavedViewList.contacts,
@@ -186,25 +189,20 @@ class _ContactsListScreenState extends ConsumerState<ContactsListScreen> {
       ),
       data: (data) {
         if (data.contacts.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.users, size: 48, color: AppColors.gray300),
-                  const SizedBox(height: 12),
-                  Text(
-                    _searchController.text.isNotEmpty
-                        ? 'No contacts match that search'
-                        : 'No contacts yet',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // An empty list is where a new workspace looks first, so it offers
+          // the import, as the web's does. Not for a search that matched
+          // nothing: importing is not the answer to that.
+          if (_searchController.text.isNotEmpty) {
+            return const EmptyState(
+              icon: LucideIcons.search,
+              title: 'No contacts match that search',
+            );
+          }
+          return EmptyState(
+            icon: LucideIcons.users,
+            title: 'No contacts yet',
+            actionLabel: 'Import contacts',
+            onAction: _import,
           );
         }
         return RefreshIndicator(

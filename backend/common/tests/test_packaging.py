@@ -29,6 +29,8 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 
+from common.packs.loader import PACKS_DIR
+
 # The project package. Holds settings/urls/celery/wsgi, so it is required at
 # runtime, but it is not an app and never appears in INSTALLED_APPS.
 PROJECT_PACKAGE = "crm"
@@ -97,6 +99,32 @@ def test_sdist_includes_every_wheel_package():
     assert not missing, (
         f"pyproject.toml [tool.hatch.build.targets.sdist].include is missing {missing}. "
         "An sdist that omits an installed app builds a wheel that cannot start."
+    )
+
+
+def test_pack_manifests_ship_in_the_wheel():
+    """Every vertical-pack manifest sits inside a packaged app.
+
+    The manifests used to live in a top-level ``backend/packs/`` directory that
+    no wheel package covers. A source checkout found them; an installed copy
+    looked in ``site-packages/packs``, found nothing, and ``GET /api/packs/``
+    answered an empty list, so the org-creation page hid its starter picker
+    without logging a thing.
+    """
+    root = _backend_root().resolve()
+    manifests = sorted(PACKS_DIR.glob("*.json"))
+    assert manifests, f"No pack manifests found in {PACKS_DIR}."
+
+    packaged = set(_build_config()["wheel"]["packages"])
+    unpackaged = [
+        str(path.resolve().relative_to(root))
+        for path in manifests
+        if path.resolve().relative_to(root).parts[0] not in packaged
+    ]
+    assert not unpackaged, (
+        f"Pack manifests outside every wheel package: {unpackaged}. An installed "
+        "copy would load no packs. Keep them inside a package listed in "
+        "[tool.hatch.build.targets.wheel].packages."
     )
 
 

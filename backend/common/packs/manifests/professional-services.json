@@ -3,6 +3,7 @@
   "version": 2,
   "name": "Professional services",
   "description": "Agencies, consultancies and accounting firms selling billable work.",
+  "sample_dates_written_on": "2026-08-03",
   "terminology": {
     "lead.singular": "Enquiry",
     "lead.plural": "Enquiries",

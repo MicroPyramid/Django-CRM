@@ -135,6 +135,29 @@ class TestCaseUpdateWithCustomFields:
         assert case_a.custom_fields == {"severity": "S1", "hours": 4.0}
 
     @patch("cases.views.send_email_to_assigned_user")
+    def test_patch_with_the_whole_stored_map_keeps_every_value(
+        self, mock_email, admin_client, case_a, org_a
+    ):
+        """The phone's ticket form PATCHes the ticket's whole stored map back.
+        A turned-off field and an option an admin has since removed must both
+        survive that save, and the save must not fail."""
+        _make_severity_def(org_a)
+        _make_severity_def(
+            org_a, key="legacy", field_type="text", options=None, is_active=False
+        )
+        case_a.custom_fields = {"severity": "S9", "legacy": "old note"}
+        case_a.save()
+
+        response = admin_client.patch(
+            f"{CASES_LIST_URL}{case_a.id}/",
+            {"custom_fields": {"severity": "S9", "legacy": "old note"}},
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+        case_a.refresh_from_db()
+        assert case_a.custom_fields == {"severity": "S9", "legacy": "old note"}
+
+    @patch("cases.views.send_email_to_assigned_user")
     def test_patch_invalid_returns_400(self, mock_email, admin_client, case_a, org_a):
         _make_severity_def(org_a)
         response = admin_client.patch(

@@ -41,22 +41,51 @@ All three importers share the same design: a stateless two-phase flow (`parse_an
 `backend/cases/services/csv_import.py`), a 5 MB / 5,000-row cap, UTF-8-only decoding (with or
 without a BOM. Anything else returns a `header_error` asking you to re-save the file, rather than
 silently producing mojibake that then passes validation), and gating to admins or users with sales
-access:
-
-```python
-def _can_import(profile) -> bool:
-    if profile is None:
-        return False
-    if getattr(profile, "role", None) == "ADMIN":
-        return True
-    if getattr(profile, "is_admin", False):
-        return True
-    return bool(getattr(profile, "has_sales_access", False))
-```
+access through one shared check, `can_mass_import` in `backend/common/permissions.py`: an org admin
+(`role == "ADMIN"`), a Django superuser, or a member with `has_sales_access`.
 
 Anyone else gets `403 {"error": true, "message": "Permission denied"}` from either endpoint of
 any importer. This mass-create surface is deliberately not open to every org member the way a
 single `POST` is.
+
+## Column matching, spreadsheets and forgiving rows
+
+The contacts and leads endpoints (`/api/contacts/import/preview/`, `/commit/`,
+`/api/leads/import/preview/` and `/commit/`) have a second mode, switched on by an optional
+`mapping` form field next to `file`. Without it they behave exactly as the sections below
+describe. With it:
+
+- `mapping` is `"auto"` to guess every column from its header, or a JSON object
+  `{"<column index>": "<field>" | null}` that sets a column's field (`null` ignores the column).
+  The guess recognises the headers of Google Contacts, Outlook and HubSpot exports as well as
+  this importer's own names.
+- The file may be `.csv` (UTF-8 or Windows-1252, comma, semicolon or tab delimited) or `.xlsx`
+  (first sheet only). The limits are 5 MB, 5,000 rows and 1,000 columns.
+- The first non-blank row is read as the column names. A column holding values but no name is
+  kept and offered as an unnamed column, and empty columns at the right edge are ignored. In an
+  `.xlsx`, a run of 1,000 blank rows is read as the end of the data.
+- Rows are forgiving. A bad value is dropped and counted, and the person is still imported. A row
+  is skipped only when it cannot become a record at all, or duplicates one. Contacts and leads
+  share the rule: email across the org, plus phone, and first and last name when the row has no
+  email or phone left once bad values are dropped. Phone and name are matched only among the
+  records you can see, so a record hidden from you is never reported.
+- Re-importing the same file is safe: each row matches the record it created, by its email, else
+  its phone, else its name. That holds for whoever ran the first import and for admins. Another
+  member who cannot see those records gets the rows without an email created again.
+- The preview returns `columns`, `fields`, `valid`, `skipped` (each with `row`, `field`,
+  `message`, `cells` and `kind`), `dropped` (`field` and `count`) and `summary`
+  (`total`, `valid`, `skipped`). The commit returns `{"error": false, "created", "ids", "skipped",
+  "dropped"}`, or `400` "Nothing in this file can be imported." when no row survives.
+
+The web app and the phone app use this mode. The web app's first-run page, `/welcome` ("Bring in
+your contacts"), is shown after a workspace is created, and the home page shows an import card
+while the workspace is empty. `GET /api/dashboard/` and `GET /api/dashboard/today/` carry
+`empty_workspace` and `can_import` for that.
+
+All four endpoints share a per-user rate limit, scope `csv_import`, set with the `IMPORT_THROTTLE`
+environment variable (default `30/minute`). The frontend must also accept a 5 MB body, which means
+`BODY_SIZE_LIMIT=6M` on the web server (see
+[Environment variables](../reference/environment-variables.md#imports)).
 
 ## Leads
 
@@ -139,8 +168,11 @@ Duplicate detection differs by importer, because "duplicate" means something dif
 person than for a ticket:
 
 - **Leads**: `email` is a hard error against both the file and the org's existing leads, mirroring
-  the per-org, case-insensitive `unique_lead_email_per_org` constraint. There is no phone or name
-  check, the same as creating a lead by hand.
+  the per-org, case-insensitive `unique_lead_email_per_org` constraint. Without `mapping` there is
+  no phone or name check, the same as creating a lead by hand. With `mapping`, a row is also
+  skipped as a duplicate by the phone and full-name rules the contacts importer uses, below,
+  matched among the leads you can see. A lead may carry one name, and its missing half compares
+  as blank.
 - **Contacts**: `email` is a hard error against both the file (another row with the same address)
   and the org's existing contacts. The database enforces a per-org, case-insensitive unique
   constraint, and the importer mirrors it so the failure surfaces as a row error instead of an

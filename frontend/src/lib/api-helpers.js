@@ -20,13 +20,16 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
  * are managed by hooks and locals contains the user and org context.
  *
  * @param {string} endpoint - API endpoint (e.g., '/accounts/', '/leads/123/')
- * @param {{ method?: string, body?: Record<string, unknown> | FormData, headers?: Record<string, string> }} options - Fetch options
+ * @param {{ method?: string, body?: Record<string, unknown> | FormData, headers?: Record<string, string>, quietErrors?: boolean }} options - Fetch options.
+ *   `quietErrors` logs a failed request's status and the server's `message`
+ *   only, never the response body: for replies that can quote the caller's
+ *   data, such as an import's skipped rows and their cells.
  * @param {{ cookies?: Cookies, org?: { id: string } } | Cookies} locals - SvelteKit locals object or cookies directly
  * @returns {Promise<any>} Response data
  * @throws {Error} If request fails
  */
 export async function apiRequest(endpoint, options = {}, locals) {
-  const { method = 'GET', body, headers = {} } = options;
+  const { method = 'GET', body, headers = {}, quietErrors = false } = options;
 
   // Get access token from cookies (server-side)
   // In server load functions, cookies is passed directly
@@ -113,7 +116,14 @@ export async function apiRequest(endpoint, options = {}, locals) {
         }
       }
 
-      console.error(`API Error Response:`, errorData);
+      if (quietErrors) {
+        console.error(
+          `API Error Response: ${method} ${endpoint} ${response.status}`,
+          typeof errorData.message === 'string' ? errorData.message : ''
+        );
+      } else {
+        console.error(`API Error Response:`, errorData);
+      }
       /*
        * The status travels with the error.
        *
@@ -140,7 +150,13 @@ export async function apiRequest(endpoint, options = {}, locals) {
     // Return JSON response
     return await response.json();
   } catch (error) {
-    console.error(`API request failed: ${method} ${endpoint}`, error);
+    if (!quietErrors) {
+      console.error(`API request failed: ${method} ${endpoint}`, error);
+    } else if (!(/** @type {{ status?: number }} */ (error).status)) {
+      // A network failure; an error reply was logged quietly above. The
+      // error object itself is not logged, since it carries the body.
+      console.error(`API request failed: ${method} ${endpoint}`, String(error));
+    }
     throw error;
   }
 }

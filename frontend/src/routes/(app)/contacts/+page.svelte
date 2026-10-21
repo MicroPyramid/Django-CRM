@@ -67,6 +67,7 @@
       {#snippet icon()}<Users size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('contacts/new')}>New contact</a>
+        <button class="v2-btn" onclick={() => (importOpen = true)}>Import</button>
         <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
       {/snippet}
     </EmptyState>

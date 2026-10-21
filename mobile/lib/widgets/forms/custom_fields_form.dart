@@ -26,13 +26,11 @@ class CustomFieldsForm extends ConsumerWidget {
     required this.onChanged,
   });
 
+  /// A cleared field stays in the map as null. The server keeps every key a
+  /// save leaves out, so removing it would leave the old value in place.
   void _setValue(String key, dynamic value) {
     final next = Map<String, dynamic>.from(values);
-    if (value == null || (value is String && value.isEmpty)) {
-      next.remove(key);
-    } else {
-      next[key] = value;
-    }
+    next[key] = (value is String && value.isEmpty) ? null : value;
     onChanged(next);
   }
 

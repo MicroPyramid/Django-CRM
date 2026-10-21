@@ -458,6 +458,8 @@ REST_FRAMEWORK = {
         "magic_link_global": os.environ.get("MAGIC_LINK_THROTTLE_GLOBAL", "300/hour"),
         # Portal sign-in requests per org, across every caller.
         "portal_login_org": os.environ.get("PORTAL_LOGIN_THROTTLE_ORG", "100/hour"),
+        # Contact and lead spreadsheet import (preview and commit), per user.
+        "csv_import": os.getenv("IMPORT_THROTTLE", "30/minute"),
     },
 }
 
@@ -535,7 +537,7 @@ if _bad_account_ids:
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BottleCRM API",
-    "DESCRIPTION": "Open source CRM application",
+    "DESCRIPTION": "CRM for AI and People",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
