@@ -14,7 +14,7 @@ Usage in settings.py:
     MIDDLEWARE = [
         ...
         'common.middleware.get_company.GetProfileAndOrg',
-        'common.middleware.rls_context.SetOrgContext',  # After GetProfileAndOrg
+        'common.middleware.rls_context.RequireOrgContext',  # After GetProfileAndOrg
         ...
     ]
 """
@@ -27,78 +27,10 @@ from django.http import JsonResponse
 logger = logging.getLogger(__name__)
 
 
-class SetOrgContext:
-    """
-    Middleware to set PostgreSQL session variable for Row-Level Security.
-
-    This sets `app.current_org` to the user's organization ID, which is
-    used by RLS policies to automatically filter data at the database level.
-
-    Security: This provides defense-in-depth. Even if application code
-    forgets to filter by org, the database will enforce isolation.
-    """
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # Set org context before processing request
-        self._set_org_context(request)
-
-        # The reset MUST run even when the view raises. `app.current_org` is
-        # set at SESSION scope, so it outlives the statement and the
-        # transaction; it is cleared only because we clear it. Without the
-        # finally, an exception anywhere downstream hands the connection back
-        # still carrying this tenant's org id, and the next request to reuse
-        # that connection inherits it. That is a cross-tenant read.
-        try:
-            return self.get_response(request)
-        finally:
-            self._reset_org_context()
-
-    def _set_org_context(self, request):
-        """
-        Set the PostgreSQL session variable for RLS.
-
-        Args:
-            request: Django request object with profile attached
-        """
-        if not hasattr(request, "org") or request.org is None:
-            return
-
-        org_id = str(request.org.id)
-
-        try:
-            with connection.cursor() as cursor:
-                # Set the session variable (is_local=false for session scope)
-                # Required because Django uses autocommit mode by default
-                cursor.execute(
-                    "SELECT set_config('app.current_org', %s, false)", [org_id]
-                )
-                logger.debug("Set RLS context: app.current_org = %s", org_id)
-
-        except Exception as e:
-            # RLS might not be configured - log but don't fail
-            logger.debug("Could not set RLS context: %s", e)
-
-    def _reset_org_context(self):
-        """
-        Reset the PostgreSQL session variable after request.
-        Critical to prevent context leakage between requests on pooled connections.
-        """
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT set_config('app.current_org', '', false)")
-        except Exception:
-            pass
-
-
 class RequireOrgContext:
     """
-    Stricter middleware that fails if org context is not set.
-
-    Use this instead of SetOrgContext when you want to ensure
-    all requests have proper org context (after RLS is fully enabled).
+    Sets `app.current_org` for the request and refuses a request with no org
+    context, except on the exempt paths below.
 
     Usage in settings.py:
         MIDDLEWARE = [
@@ -263,7 +195,7 @@ class RequireOrgContext:
         # Set org context
         self._set_org_context(request)
 
-        # See SetOrgContext.__call__: the reset is in a finally because
+        # The reset is in a finally because
         # `app.current_org` is SESSION-scoped and survives an exception. On a
         # pooled or otherwise reused connection, skipping it leaks this
         # tenant's context to whoever borrows the connection next.

@@ -22,17 +22,21 @@ step "Run the RLS tests as a policy-bound role").
 
 import contextlib
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest import mock
 from uuid import uuid4
 
 import pytest
+from celery.fixups.django import DjangoWorkerFixup
 from django.db import connection
 from django.utils import timezone
 
 from cases.models import Case, EscalationPolicy, TimeEntry
 from cases.tasks import auto_stop_stale_timers, scan_for_breached_cases
 from common.models import Profile, User
+from common.tasks import set_rls_context
 from conftest import clear_rls_context, rls_org
+from crm.celery import app as celery_app
 from invoices.models import Estimate, Invoice, RecurringInvoice
 from invoices.tasks import (
     check_expired_estimates,
@@ -266,3 +270,19 @@ def test_check_expired_estimates_expires_in_every_org(org_a, org_b):
         with rls_org(org):
             estimate = Estimate.objects.get(pk=estimates[org.id].pk)
             assert estimate.status == "Expired"
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("hook", ["on_task_prerun", "on_task_postrun"])
+def test_no_task_inherits_the_previous_tasks_context(hook):
+    """Celery's Django fixup closes every connection around each task, which is
+    what keeps a context a task never cleared from reaching the next one.
+    Setting CELERY_DB_REUSE_MAX would quietly turn that off."""
+    fixup = DjangoWorkerFixup(celery_app)
+    worker_task = SimpleNamespace(request=SimpleNamespace(is_eager=False))
+    org = str(uuid4())
+
+    set_rls_context(org)
+    assert _current_org() == org
+    getattr(fixup, hook)(sender=worker_task)
+    assert _current_org() == ""

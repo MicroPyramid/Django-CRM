@@ -47,13 +47,12 @@ def set_rls_context(org_id):
 
 
 def clear_rls_context():
-    """Drop the RLS context a task set, mirroring the middleware's reset.
+    """Drop the session-scoped RLS context set by `set_rls_context`.
 
-    `app.current_org` is set at SESSION scope, so it outlives the statement and
-    the transaction. A task that walks several orgs and then returns leaves the
-    last one's id on the connection, and on a pooled connection that is the next
-    borrower's tenant context. Always paired with `set_rls_context` in a
-    ``finally``.
+    Between worker tasks this is a second guard: Celery's Django fixup already
+    closes every connection around each task (test_periodic_tasks_rls.py). It is
+    the only guard where the connection lives on, such as a streamed response
+    that runs after the middleware's reset.
     """
     if connection.vendor != "postgresql":
         return

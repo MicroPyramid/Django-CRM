@@ -26,8 +26,7 @@ Neither layer is optional, and neither is a superset of the other in practice: s
 ## BaseOrgModel
 
 `BaseOrgModel` (`backend/common/base.py`) is a `BaseModel` subclass that adds an `org` foreign key
-to `common.Org`, an `OrgScopedManager` (giving you `Model.objects.for_org(org)` and
-`Model.objects.for_request(request)` helpers), and a `["org", "-created_at"]` index. Its own
+to `common.Org` and a `["org", "-created_at"]` index. Its own
 docstring states the intent plainly: "All tenant-owned models should inherit from this instead of
 `BaseModel`."
 
@@ -58,9 +57,7 @@ class CaseWatcher(BaseModel):
 checkout; treat the reasoning captured in the code comments themselves as the source of truth.)
 
 The practical takeaway: inheriting `BaseOrgModel` is a correct and recommended way to add an `org`
-field to a new model. Doing so also gets you the `OrgScopedManager` helpers
-(`Model.objects.for_org(org)`, `Model.objects.for_request(request)`) for free, which is itself a
-reason to prefer it, and you should default to it unless you have a specific reason to match this
+field to a new model, and you should default to it unless you have a specific reason to match this
 codebase's more common hand-rolled-FK convention instead (for consistency with a sibling model in
 the same app, for instance). But inheriting it is not what makes RLS protection work,
 and it is not sufficient on its own; `PersonalAccessToken` inherits `BaseOrgModel` and is

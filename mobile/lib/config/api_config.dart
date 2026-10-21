@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart';
 
 /// API Configuration for BottleCRM
 ///
-/// Provides centralized configuration for API endpoints.
-/// Update [_developmentUrl] with your ngrok URL for development.
+/// Provides centralized configuration for API endpoints. Point a build at any
+/// server with `--dart-define=API_BASE_URL=...` rather than editing this file.
 class ApiConfig {
-  // ==========================================================================
-  // BASE URLS - Update these for your environment
-  // ==========================================================================
-
-  /// Development API URL
-  static const String _developmentUrl = 'https://pc-8004.rcdev.in';
+  /// A debug build with no override talks to a backend on this machine, never
+  /// a remote host: it would receive every sign-in token.
+  static const String _developmentUrl = 'http://localhost:8000';
 
   /// Production API URL
   static const String _productionUrl = 'https://api.bottlecrm.io';

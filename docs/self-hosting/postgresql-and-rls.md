@@ -155,11 +155,8 @@ by `RequireOrgContext` (`backend/common/middleware/rls_context.py`, wired into `
 `backend/crm/settings.py`) from `request.org`, which is itself derived earlier in the same
 middleware chain by `GetProfileAndOrg` (`backend/common/middleware/get_company.py`) from the
 `org_id` claim inside the caller's signed JWT, validated against an active `Profile` for that
-user in that org before it's trusted. (The file also defines a second, older middleware class,
-`SetOrgContext`, referenced in that file's own module docstring, but `settings.py` wires
-`RequireOrgContext` instead, which additionally rejects unauthenticated/context-less requests
-with a 403 rather than silently proceeding without a context; `RequireOrgContext` is the class
-actually enforced.) Every policy uses `NULLIF(current_setting('app.current_org', true), '')`,
+user in that org before it's trusted. A request that arrives with no org context is refused with a
+403 rather than run without one. Every policy uses `NULLIF(current_setting('app.current_org', true), '')`,
 when no context has been set, `current_setting` returns an empty string, `NULLIF` turns that into
 SQL `NULL`, and `org_id::text = NULL` is never true. **No context means zero rows, by design**.
 A fail-safe default, not an edge case to special-case around.

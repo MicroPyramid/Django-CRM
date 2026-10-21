@@ -334,7 +334,7 @@ Every endpoint is built from one host, resolved in `lib/config/api_config.dart`:
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-With no `API_BASE_URL`, the host comes from `kDebugMode`: the development server
+With no `API_BASE_URL`, the host comes from `kDebugMode`: `http://localhost:8000`
 in debug, `https://api.bottlecrm.io` in release. See
 [Environment Configuration](#environment-configuration) above for the release
 build flags and the plain-HTTP rule.

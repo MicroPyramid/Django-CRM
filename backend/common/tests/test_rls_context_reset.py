@@ -18,7 +18,7 @@ a real PostgreSQL with a non-superuser role.
 
 import pytest
 
-from common.middleware.rls_context import RequireOrgContext, SetOrgContext
+from common.middleware.rls_context import RequireOrgContext
 
 
 class _Boom(Exception):
@@ -44,16 +44,14 @@ def _instrument(middleware_cls, get_response):
     return mw, calls
 
 
-@pytest.mark.parametrize("middleware_cls", [SetOrgContext, RequireOrgContext])
-def test_reset_runs_on_the_happy_path(middleware_cls):
-    mw, calls = _instrument(middleware_cls, lambda request: "response")
+def test_reset_runs_on_the_happy_path():
+    mw, calls = _instrument(RequireOrgContext, lambda request: "response")
 
     assert mw(_FakeRequest()) == "response"
     assert calls == ["set", "reset"]
 
 
-@pytest.mark.parametrize("middleware_cls", [SetOrgContext, RequireOrgContext])
-def test_reset_runs_when_the_view_raises(middleware_cls):
+def test_reset_runs_when_the_view_raises():
     """The regression this file exists for.
 
     Without the try/finally the middleware returned early on the exception and
@@ -63,7 +61,7 @@ def test_reset_runs_when_the_view_raises(middleware_cls):
     def boom(request):
         raise _Boom("view exploded")
 
-    mw, calls = _instrument(middleware_cls, boom)
+    mw, calls = _instrument(RequireOrgContext, boom)
 
     with pytest.raises(_Boom):
         mw(_FakeRequest())
@@ -74,14 +72,13 @@ def test_reset_runs_when_the_view_raises(middleware_cls):
     )
 
 
-@pytest.mark.parametrize("middleware_cls", [SetOrgContext, RequireOrgContext])
-def test_the_exception_still_propagates(middleware_cls):
+def test_the_exception_still_propagates():
     """The finally must not swallow the error into a silent 200."""
 
     def boom(request):
         raise _Boom("view exploded")
 
-    mw, _ = _instrument(middleware_cls, boom)
+    mw, _ = _instrument(RequireOrgContext, boom)
 
     with pytest.raises(_Boom, match="view exploded"):
         mw(_FakeRequest())

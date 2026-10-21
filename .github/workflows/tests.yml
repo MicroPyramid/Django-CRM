@@ -64,8 +64,8 @@ jobs:
         working-directory: backend
         run: uv sync --frozen
 
-      # The suite runs with --no-migrations for speed, so nothing else would
-      # catch a model change that is missing its migration.
+      # Running the migrations cannot notice a model change that has no
+      # migration yet, so this checks for one explicitly.
       - name: Check for missing migrations
         working-directory: backend
         env:

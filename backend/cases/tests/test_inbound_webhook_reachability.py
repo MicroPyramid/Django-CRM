@@ -374,7 +374,7 @@ class TestBackfill:
 
 
 # ---------------------------------------------------------------------------
-# Under a role RLS binds (RLS_ENFORCE run, --ds=crm.test_settings_postgres)
+# Under a role RLS binds (--ds=crm.test_settings_postgres)
 # ---------------------------------------------------------------------------
 
 
