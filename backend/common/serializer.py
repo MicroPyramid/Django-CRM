@@ -486,7 +486,7 @@ class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
     after creation. Admins must create a new definition to change shape."""
 
     target_model = serializers.ChoiceField(
-        choices=sorted(e.custom_field_target for e in BUILT_IN)
+        choices=sorted((e.custom_field_target, e.label_plural) for e in BUILT_IN)
     )
 
     class Meta:

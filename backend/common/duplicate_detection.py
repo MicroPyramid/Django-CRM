@@ -39,6 +39,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import BooleanField, Q
 
+from common.signals import pre_merge
 from common.validators import normalize_phone
 
 MAX_RESULTS = 10
@@ -353,6 +354,8 @@ def merge_records(keeper, loser):
     model = type(keeper)
     _prefix, build = SPECS[model._meta.label_lower]
     loser._webhook_snapshot = build(loser)
+
+    pre_merge.send(sender=model, keeper=keeper, loser=loser)
 
     for field in model._meta.many_to_many:
         through = field.remote_field.through

@@ -7,11 +7,14 @@ Read rules are not restated here: an entry points at its module's own
 cached, because those modules import from `common` and a module-level import
 would be circular.
 
-`model_label` and `read_rule` are for the registry's own use. Callers use only
-`key`, `custom_field_target`, `attachments`, `activity_feed`, `model`,
-`records()` and `readable()`.
+An installed app adds per-org entries with `register_hook`. `model_label`,
+`read_rule` and `edit_rule` are for the registry's own use. Callers use only
+`key`, `label`, `label_plural`, `custom_field_target`, `attachments`,
+`activity_feed`, `links`, `model`, `records(org)`, `readable(profile)` and
+`editable(profile)`.
 """
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from django.apps import apps
@@ -26,6 +29,10 @@ class ObjectEntry:
     read_rule: str
     attachments: bool
     activity_feed: bool
+    label: str
+    label_plural: str
+    links: bool
+    edit_rule: str | None
 
     @property
     def model(self):
@@ -37,6 +44,18 @@ class ObjectEntry:
     def readable(self, profile):
         return import_string(self.read_rule)(profile)
 
+    def editable(self, profile):
+        if self.edit_rule is None:
+            return self.model.objects.none()
+        return import_string(self.edit_rule)(profile)
+
+
+class RegistryConflict(Exception):
+    pass
+
+
+_HOOKS = []
+
 
 BUILT_IN = (
     ObjectEntry(
@@ -46,6 +65,10 @@ BUILT_IN = (
         "leads.access.visible_leads_qs",
         attachments=True,
         activity_feed=True,
+        label="Lead",
+        label_plural="Leads",
+        links=True,
+        edit_rule="leads.access.visible_leads_qs",
     ),
     ObjectEntry(
         "contact",
@@ -54,6 +77,10 @@ BUILT_IN = (
         "contacts.access.visible_contacts_qs",
         attachments=True,
         activity_feed=True,
+        label="Contact",
+        label_plural="Contacts",
+        links=True,
+        edit_rule="contacts.access.visible_contacts_qs",
     ),
     ObjectEntry(
         "account",
@@ -62,6 +89,10 @@ BUILT_IN = (
         "accounts.access.visible_accounts_qs",
         attachments=True,
         activity_feed=True,
+        label="Account",
+        label_plural="Accounts",
+        links=True,
+        edit_rule="accounts.access.visible_accounts_qs",
     ),
     ObjectEntry(
         "deal",
@@ -70,6 +101,10 @@ BUILT_IN = (
         "opportunity.access.visible_deals_qs",
         attachments=True,
         activity_feed=True,
+        label="Deal",
+        label_plural="Deals",
+        links=True,
+        edit_rule="opportunity.access.visible_deals_qs",
     ),
     ObjectEntry(
         "ticket",
@@ -78,6 +113,10 @@ BUILT_IN = (
         "cases.access.visible_cases_qs",
         attachments=True,
         activity_feed=True,
+        label="Ticket",
+        label_plural="Tickets",
+        links=True,
+        edit_rule="cases.access.writable_cases_qs",
     ),
     ObjectEntry(
         "task",
@@ -86,6 +125,10 @@ BUILT_IN = (
         "tasks.access.visible_tasks_qs",
         attachments=True,
         activity_feed=True,
+        label="Task",
+        label_plural="Tasks",
+        links=True,
+        edit_rule="tasks.access.visible_tasks_qs",
     ),
     ObjectEntry(
         "invoice",
@@ -94,6 +137,10 @@ BUILT_IN = (
         "invoices.permissions.visible_invoices_qs",
         attachments=True,
         activity_feed=True,
+        label="Invoice",
+        label_plural="Invoices",
+        links=False,
+        edit_rule=None,
     ),
     ObjectEntry(
         "estimate",
@@ -102,6 +149,10 @@ BUILT_IN = (
         "invoices.permissions.visible_estimates_qs",
         attachments=False,
         activity_feed=False,
+        label="Estimate",
+        label_plural="Estimates",
+        links=False,
+        edit_rule=None,
     ),
     ObjectEntry(
         "recurring_invoice",
@@ -110,12 +161,39 @@ BUILT_IN = (
         "invoices.permissions.visible_recurring_qs",
         attachments=False,
         activity_feed=False,
+        label="Recurring invoice",
+        label_plural="Recurring invoices",
+        links=False,
+        edit_rule=None,
     ),
 )
 
 
 def all_objects(org):
-    return BUILT_IN
+    """BUILT_IN, then each hook's entries for `org`; no hook runs when org is None."""
+    entries = BUILT_IN
+    if org is not None:
+        extra = [e for hook in _HOOKS for e in hook(org)]
+        entries = (*BUILT_IN, *extra)
+    seen_keys, seen_targets = set(), set()
+    for entry in entries:
+        for seen, value in (
+            (seen_keys, entry.key),
+            (seen_targets, entry.custom_field_target),
+        ):
+            if value in seen:
+                raise RegistryConflict(f"{value!r} is registered twice")
+            seen.add(value)
+    return entries
+
+
+def register_hook(hook: Callable[[object], Iterable]) -> None:
+    if hook not in _HOOKS:
+        _HOOKS.append(hook)
+
+
+def object_for_key(org, key):
+    return next((e for e in all_objects(org) if e.key == key), None)
 
 
 def object_for_target(org, target):
@@ -125,16 +203,19 @@ def object_for_target(org, target):
 def object_for_record(org, content_type, object_id):
     """The entry the record at `content_type` and `object_id` belongs to.
 
-    The record id is in the signature because built-ins are decided by content
-    type alone, but from step 2 one content type (`CustomRecord`) holds many
-    objects, so the record decides. Never calls `content_type.model_class()`,
-    which is None for a model that is gone.
+    One entry on the content type is decided with no query. When several share
+    it (one model holding many objects), the one whose records hold the id wins.
+    Never calls `content_type.model_class()`, which is None for a model that is
+    gone.
     """
-    for entry in all_objects(org):
-        meta = entry.model._meta
-        if (meta.app_label, meta.model_name) == (
-            content_type.app_label,
-            content_type.model,
-        ):
-            return entry
-    return None
+    matches = [
+        e
+        for e in all_objects(org)
+        if (e.model._meta.app_label, e.model._meta.model_name)
+        == (content_type.app_label, content_type.model)
+    ]
+    if len(matches) <= 1:
+        return matches[0] if matches else None
+    return next(
+        (e for e in matches if e.records(org).filter(pk=object_id).exists()), None
+    )

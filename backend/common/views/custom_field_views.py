@@ -13,9 +13,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import CustomFieldDefinition
-from common.object_registry import object_for_target
+from common.object_registry import BUILT_IN, all_objects
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import CustomFieldDefinitionSerializer
+
+
+def _built_in_definitions(**filters):
+    """Rows on non-built-in targets are never exposed here."""
+    return CustomFieldDefinition.objects.filter(
+        target_model__in=[e.custom_field_target for e in BUILT_IN], **filters
+    )
 
 
 def _admin_required():
@@ -40,14 +47,10 @@ def _records_missing_map(org, definitions):
     for defn in definitions:
         by_model.setdefault(defn.target_model, []).append(defn)
 
+    entries = {e.custom_field_target: e for e in all_objects(org)}
     result = {}
     for target_model, defs in by_model.items():
-        entry = object_for_target(org, target_model)
-        if entry is None:
-            # Unknown/unwired target, can't count, report zero rather than 500.
-            for defn in defs:
-                result[str(defn.id)] = 0
-            continue
+        entry = entries[target_model]
         records = entry.records(org)
         total = records.count()
         for defn in defs:
@@ -83,7 +86,7 @@ class CustomFieldDefinitionListCreateView(APIView):
     )
     def get(self, request, *args, **kwargs):
         org = request.profile.org
-        qs = CustomFieldDefinition.objects.filter(org=org)
+        qs = _built_in_definitions(org=org)
         target_model = request.query_params.get("target_model")
         if target_model:
             qs = qs.filter(target_model=target_model)
@@ -105,7 +108,7 @@ class CustomFieldDefinitionListCreateView(APIView):
         # records_missing_value + totals are computed over the org's FULL
         # definition set (independent of the target_model/active_only filters)
         # so the stat cards stay correct when the list is filtered.
-        all_defs = list(CustomFieldDefinition.objects.filter(org=org))
+        all_defs = list(_built_in_definitions(org=org))
         missing_by_id = _records_missing_map(org, all_defs)
 
         for row in rows:
@@ -145,7 +148,7 @@ class CustomFieldDefinitionDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def _get_object(self, pk, org):
-        return CustomFieldDefinition.objects.filter(pk=pk, org=org).first()
+        return _built_in_definitions(pk=pk, org=org).first()
 
     @extend_schema(
         tags=["CustomFields"], responses={200: CustomFieldDefinitionSerializer}

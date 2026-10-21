@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from cases.models import Case
+from common import object_registry
 from common.custom_fields import validate_definition_options, validate_payload
 from common.models import CustomFieldDefinition
 from common.tests.object_records import make_record
@@ -610,7 +611,25 @@ class TestEveryTarget:
             "required_with_gaps": 9,
         }
 
-    def test_a_stored_target_the_registry_does_not_know_counts_zero(
+    def test_the_registry_hooks_run_once_per_list(
+        self, admin_client, org_a, monkeypatch
+    ):
+        calls = []
+        monkeypatch.setattr(
+            object_registry, "_HOOKS", [lambda org: calls.append(org) or ()]
+        )
+        for target in TARGET_KEYS:
+            CustomFieldDefinition.objects.create(
+                org=org_a,
+                target_model=target,
+                key="probe",
+                label="Probe",
+                field_type="text",
+            )
+        assert admin_client.get(self.URL).status_code == 200
+        assert len(calls) == 1
+
+    def test_a_stored_target_the_registry_does_not_know_is_not_listed(
         self, admin_client, org_a
     ):
         CustomFieldDefinition.objects.create(
@@ -622,5 +641,65 @@ class TestEveryTarget:
         )
         response = admin_client.get(self.URL)
         assert response.status_code == 200
-        (row,) = response.json()["definitions"]
-        assert row["records_missing_value"] == 0
+        assert response.json()["definitions"] == []
+
+
+@pytest.mark.django_db
+class TestObjectFieldRowsStayInvisible:
+    URL = "/api/custom-fields/"
+
+    @pytest.fixture
+    def plant(self, admin_client, org_a):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
+        )
+        before = admin_client.get(self.URL).json()
+        row = CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="obj:example",
+            key="amount",
+            label="Amount",
+            field_type="number",
+        )
+        return before, row
+
+    def test_the_list_and_totals_do_not_change(self, admin_client, plant):
+        before, _row = plant
+        assert admin_client.get(self.URL).json() == before
+
+    def test_filtering_by_an_object_target_finds_nothing(self, admin_client, plant):
+        response = admin_client.get(self.URL + "?target_model=obj:example")
+        assert response.status_code == 200
+        assert response.json()["definitions"] == []
+
+    @pytest.mark.parametrize("method", ["get", "put", "delete"])
+    def test_the_detail_route_answers_404(self, method, admin_client, plant):
+        _before, row = plant
+        kwargs = {"format": "json"} if method == "put" else {}
+        if method == "put":
+            kwargs["data"] = {"label": "Changed", "is_active": False}
+        response = getattr(admin_client, method)(f"{self.URL}{row.id}/", **kwargs)
+        assert response.status_code == 404
+        row.refresh_from_db()
+        assert row.label == "Amount"
+        assert row.is_active is True
+
+    def test_creating_one_is_refused(self, admin_client):
+        response = admin_client.post(
+            self.URL,
+            {
+                "target_model": "obj:example",
+                "key": "amount",
+                "label": "Amount",
+                "field_type": "number",
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert response.json()["errors"]["target_model"] == [
+            '"obj:example" is not a valid choice.'
+        ]

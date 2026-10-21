@@ -7,9 +7,12 @@ to automatically create Activity records when entities are created, updated, or 
 
 from crum import get_current_request
 from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 
 from common.models import Activity
+
+pre_merge = Signal()
+"""Sent by merge_records before any row moves; arguments: sender (model), keeper, loser."""
 
 
 def get_entity_name(instance):
