@@ -253,13 +253,16 @@ class TimeEntryDetailView(APIView):
 
     def _get_entry(self, request, pk):
         try:
-            entry = TimeEntry.objects.get(id=pk, org=request.profile.org)
+            entry = TimeEntry.objects.select_for_update().get(
+                id=pk, org=request.profile.org
+            )
         except TimeEntry.DoesNotExist:
             return None
         if entry.profile_id != request.profile.id and not is_org_admin(request.profile):
             return False  # Sentinel: row exists but caller is not authorized.
         return entry
 
+    @transaction.atomic
     def put(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:
@@ -269,6 +272,11 @@ class TimeEntryDetailView(APIView):
                 {"detail": "Not authorized to edit this entry."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        if entry.invoice_id is not None:
+            return Response(
+                {"detail": "Cannot edit an entry that has been invoiced."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = TimeEntryUpdateSerializer(entry, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         # Apply allowed fields explicitly so we never overwrite invoice/profile/case.
@@ -277,6 +285,7 @@ class TimeEntryDetailView(APIView):
         entry.save()
         return Response(TimeEntrySerializer(entry).data)
 
+    @transaction.atomic
     def delete(self, request, pk):
         entry = self._get_entry(request, pk)
         if entry is None:

@@ -182,6 +182,38 @@ class TestDrilldown:
         assert resp.status_code == 200
         assert resp.data["count"] == 1
 
+    def test_drilldown_sla_nrt_breach_bucket(
+        self, admin_client, cases_in_window, monkeypatch
+    ):
+        c1, c2 = cases_in_window
+        monkeypatch.setattr(
+            "cases.analytics.compute_sla",
+            lambda *a, **k: {
+                "frt_breach_case_ids": [str(c1.id)],
+                "resolution_breach_case_ids": [str(c1.id)],
+                "nrt_breach_case_ids": [str(c2.id)],
+            },
+        )
+        resp = admin_client.get(
+            "/api/cases/analytics/drilldown/?metric=sla&bucket=nrt_breach&from=2026-05-01&to=2026-05-02"
+        )
+        assert resp.status_code == 200
+        assert [r["id"] for r in resp.data["results"]] == [str(c2.id)]
+
+    @pytest.mark.parametrize(
+        "query",
+        [
+            "metric=sla&bucket=typo",
+            "metric=frt&bucket=typo",
+            "metric=agents&bucket=abc",
+        ],
+    )
+    def test_drilldown_bad_bucket_is_400(self, admin_client, cases_in_window, query):
+        base = "/api/cases/analytics/drilldown/?from=2026-05-01&to=2026-05-02&"
+        assert admin_client.get(base + query).status_code == 400
+        export = base.replace("drilldown", "export") + query
+        assert admin_client.get(export).status_code == 400
+
     def test_drilldown_backlog_requires_bucket(self, admin_client, cases_in_window):
         resp = admin_client.get(
             "/api/cases/analytics/drilldown/?metric=backlog&from=2026-05-01&to=2026-05-02"
