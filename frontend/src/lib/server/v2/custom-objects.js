@@ -399,7 +399,10 @@ const BUILT_IN = ['lead', 'contact', 'account', 'deal', 'ticket', 'task'];
  * @returns {Promise<any | null>}
  */
 export async function getRelated({ cookies }, to, id) {
-  if (!BUILT_IN.includes(to) || !UUID.test(id) || absent()) return null;
+  if (!BUILT_IN.includes(to) || !UUID.test(id)) return null;
+  // Once the absent memo lapses, re-ask `/objects/` rather than this route,
+  // which 404s on every detail view of a backend without custom objects.
+  if (absentUntil && !(await getCustomObjects({ cookies }))) return null;
   try {
     const body = await apiRequest(
       `/objects/related/?${query({ to, id })}`,

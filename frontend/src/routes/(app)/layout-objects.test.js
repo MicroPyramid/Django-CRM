@@ -2,7 +2,7 @@
  * The shell asks once whether this install serves custom objects and hands the
  * answer to every page; any failure leaves it null and the shell intact.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /** @type {(endpoint: string) => Promise<any>} */
 let respond = async () => {
@@ -15,6 +15,7 @@ vi.mock('#lib/api-helpers.js', () => ({
 }));
 
 const { load } = await import('./+layout.server.js');
+const { resetObjectsAbsentMemo } = await import('#lib/server/v2/custom-objects.js');
 
 const ANSWER = {
   has_custom_objects: true,
@@ -28,15 +29,26 @@ const event = () =>
     cookies: { get: () => 'token' }
   });
 
+/** @type {string[]} */
+let asked = [];
+
 /** @param {() => Promise<any>} objects */
 function route(objects) {
   respond = async (endpoint) => {
-    if (endpoint.startsWith('/objects/')) return objects();
+    if (endpoint.startsWith('/objects/')) {
+      asked.push(endpoint);
+      return objects();
+    }
     throw new Error('offline');
   };
 }
 
 describe('the shell custom objects answer', () => {
+  beforeEach(() => {
+    asked = [];
+    resetObjectsAbsentMemo();
+  });
+
   it('carries the objects answer', async () => {
     route(async () => ANSWER);
     const shell = /** @type {any} */ (await load(event()));
@@ -56,6 +68,7 @@ describe('the shell custom objects answer', () => {
       throw Object.assign(new Error('boom'), { status: 500 });
     });
     const shell = /** @type {any} */ (await load(event()));
+    expect(asked).toEqual(['/objects/']);
     expect(shell.customObjects).toBeNull();
     expect(shell.org.name).toBe('Acme');
   });

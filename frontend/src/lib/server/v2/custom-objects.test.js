@@ -92,16 +92,35 @@ describe('the absent memo', () => {
     expect(apiRequest).toHaveBeenCalledTimes(2);
   });
 
+  it('sends Related to the objects list once it lapses, so a 404 there renews it', async () => {
+    vi.useFakeTimers();
+    apiRequest.mockRejectedValueOnce(status(404));
+    await getCustomObjects(event);
+    vi.advanceTimersByTime(5 * 60 * 1000 + 1);
+
+    apiRequest.mockRejectedValueOnce(status(404));
+    expect(await getRelated(event, 'lead', ID)).toBeNull();
+    expect(await getRelated(event, 'lead', ID)).toBeNull();
+    expect(apiRequest.mock.calls.map(([url]) => url)).toEqual(['/objects/', '/objects/']);
+  });
+
   it('is cleared by a 200 from the objects list', async () => {
     vi.useFakeTimers();
     apiRequest.mockRejectedValueOnce(status(404));
     await getCustomObjects(event);
     vi.advanceTimersByTime(5 * 60 * 1000 + 1);
-    apiRequest.mockResolvedValueOnce(answer);
-    await getCustomObjects(event);
-    apiRequest.mockResolvedValueOnce(answer);
-    expect(await getCustomObjects(event)).toBe(answer);
-    expect(apiRequest).toHaveBeenCalledTimes(3);
+
+    const related = { groups: [], can_edit: false, link_fields: [] };
+    apiRequest.mockResolvedValueOnce(answer).mockResolvedValueOnce(related);
+    expect(await getRelated(event, 'lead', ID)).toBe(related);
+    apiRequest.mockResolvedValueOnce(related);
+    expect(await getRelated(event, 'lead', ID)).toBe(related);
+    expect(apiRequest.mock.calls.map(([url]) => url)).toEqual([
+      '/objects/',
+      '/objects/',
+      `/objects/related/?to=lead&id=${ID}`,
+      `/objects/related/?to=lead&id=${ID}`
+    ]);
   });
 
   it('is not set by a 404 from the related endpoint', async () => {
