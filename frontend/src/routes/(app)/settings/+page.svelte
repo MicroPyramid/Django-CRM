@@ -27,6 +27,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { count, shortDate } from '#lib/v2/format.js';
   import { isOrgAdmin } from '#lib/admin.js';
+  import { showObjectsSetting } from '#lib/v2/custom-objects.js';
   import { ChevronRight, ShieldAlert } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -243,6 +244,17 @@
           value: `${data.fieldTotals.active} across ${data.fieldTotals.models_extended} record types`,
           warn: data.fieldTotals.required_with_gaps > 0
         },
+        ...(showObjectsSetting(data.customObjects, isOrgAdmin(data))
+          ? [
+              {
+                href: '/settings/objects',
+                title: 'Objects',
+                body: 'Record types this organisation defined.',
+                value: `${data.customObjects.objects.length} active`,
+                warn: false
+              }
+            ]
+          : []),
         {
           href: '/invoices/templates',
           title: 'Invoice templates',

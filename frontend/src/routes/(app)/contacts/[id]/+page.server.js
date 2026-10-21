@@ -1,19 +1,22 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { addContactNote, deleteContact, getContact } from '#lib/server/v2/contacts.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { recordDuplicates } from '#lib/server/v2/duplicates.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  const [contact, duplicates] = await Promise.all([
+  const [contact, duplicates, related] = await Promise.all([
     getContact({ cookies }, params.id),
-    recordDuplicates({ cookies }, 'contacts', params.id)
+    recordDuplicates({ cookies }, 'contacts', params.id),
+    loadRelated({ cookies }, 'contact', params.id)
   ]);
-  return { ...contact, duplicates };
+  return { ...contact, duplicates, related };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+  ...relatedActions('contact'),
   /**
    * Log a note against the contact, with an optional file. The body carries only
    * the note text and the file; who wrote it and which org it belongs to are

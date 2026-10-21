@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/custom_objects_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -19,6 +20,16 @@ class MoreScreen extends ConsumerStatefulWidget {
 }
 
 class _MoreScreenState extends ConsumerState<MoreScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The first visit asks again after a failure. The shell keeps this screen
+    // alive, so later visits ask from its branch switch instead.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) retryFailedCustomObjects(ref);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,6 +100,32 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               label: 'Goals',
               description: 'Targets for you and your teams, and how far along',
               onTap: () => context.push(AppRoutes.goals),
+            ),
+
+            Consumer(
+              builder: (context, ref, _) {
+                final answer = shownCustomObjects(
+                  ref.watch(customObjectsProvider),
+                );
+                final objects = [
+                  for (final o in answer?.objects ?? const [])
+                    if (o.isActive) o,
+                ];
+                if (objects.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader('Objects'),
+                    for (final o in objects)
+                      MenuRow(
+                        icon: LucideIcons.boxes,
+                        label: o.labelPlural,
+                        onTap: () =>
+                            context.push(AppRoutes.objectRecords(o.key)),
+                      ),
+                  ],
+                );
+              },
             ),
 
             // Account Section

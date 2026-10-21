@@ -22,6 +22,7 @@
     SlidersHorizontal,
     Search,
     Smartphone,
+    Boxes,
     LogOut
   } from '@lucide/svelte';
   import { t } from '#lib/terminology.js';
@@ -53,6 +54,7 @@
    *   org?: { name: string },
    *   isAdmin?: boolean,
    *   terminology?: Record<string, string> | null,
+   *   objects?: { href: string, label: string }[],
    *   onsearch?: () => void
    * }}
    */
@@ -61,6 +63,7 @@
     org = { name: 'BottleCRM' },
     isAdmin = false,
     terminology = undefined,
+    objects = [],
     onsearch = () => {}
   } = $props();
 
@@ -132,7 +135,13 @@
         .map((item) =>
           item.termKey ? { ...item, label: t(terminology, item.termKey, item.label) } : item
         )
-    })).filter((group) => group.items.length > 0)
+    }))
+      .filter((group) => group.items.length > 0)
+      .concat(
+        objects.length
+          ? [{ label: 'Objects', items: objects.map((o) => ({ ...o, icon: Boxes })) }]
+          : []
+      )
   );
 
   const isActive = (href, exact) =>

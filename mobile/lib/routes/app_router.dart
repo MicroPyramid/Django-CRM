@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../config/api_config.dart';
 import '../data/models/deal.dart' show Deal;
 import '../providers/auth_provider.dart';
 import '../providers/duplicates_provider.dart';
 
 // Auth Screens
+import '../screens/objects/object_record_detail_screen.dart';
+import '../screens/objects/object_record_form_screen.dart';
+import '../screens/objects/object_records_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/magic_link_email_screen.dart';
@@ -44,6 +48,8 @@ import '../screens/tasks/task_detail_screen.dart';
 import '../screens/tasks/task_form_screen.dart';
 import '../screens/settings/custom_fields_screen.dart';
 import '../screens/settings/macros_screen.dart';
+import '../screens/settings/object_settings_screen.dart';
+import '../screens/settings/objects_settings_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/api_tokens_screen.dart';
@@ -186,6 +192,24 @@ class AppRoutes {
   static const String settingsApiTokens = '/more/settings/api-tokens';
   static const String settingsWebForms = '/more/settings/web-forms';
 
+  /// Custom objects. `new` is declared before `:id` in the router.
+  static const String objectRecordsPattern = '/more/objects/:key';
+  static const String objectRecordCreatePattern = '/more/objects/:key/new';
+  static const String objectRecordPattern = '/more/objects/:key/:id';
+  static const String objectRecordEditPattern = '/more/objects/:key/:id/edit';
+  static const String settingsObjects = '/more/settings/objects';
+  static const String settingsObjectPattern = '/more/settings/objects/:key';
+
+  static String objectRecords(String key) =>
+      '/more/objects/${Uri.encodeComponent(key)}';
+  static String objectRecordCreate(String key) => '${objectRecords(key)}/new';
+  static String objectRecord(String key, String id) =>
+      '${objectRecords(key)}/${Uri.encodeComponent(id)}';
+  static String objectRecordEdit(String key, String id) =>
+      '${objectRecord(key, id)}/edit';
+  static String settingsObject(String key) =>
+      '$settingsObjects/${Uri.encodeComponent(key)}';
+
   /// One form's editor. The id is a UUID the embed hands to every visitor
   /// by design, so it is an identifier rather than a secret; the org filter
   /// and the admin check on the endpoints behind it are the controls.
@@ -306,6 +330,30 @@ class AppRoutes {
 
 /// Navigation shell key for bottom navigation
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Where a linked record opens: a built-in kind by name, a custom object as
+/// `obj:<key>`. `null` for anything else, so callers render it as plain text.
+String? linkedRecordRoute(String target, String id) {
+  switch (target) {
+    case 'lead':
+      return AppRoutes.leadDetail.replaceFirst(':id', id);
+    case 'contact':
+      return AppRoutes.contactDetail.replaceFirst(':id', id);
+    case 'account':
+      return AppRoutes.accountDetail.replaceFirst(':id', id);
+    case 'deal':
+      return AppRoutes.dealDetail.replaceFirst(':id', id);
+    case 'ticket':
+      return AppRoutes.ticketDetail.replaceFirst(':id', id);
+    case 'task':
+      return AppRoutes.taskDetail.replaceFirst(':id', id);
+  }
+  if (target.startsWith('obj:')) {
+    final key = target.substring(4);
+    return ApiConfig.isObjectKey(key) ? AppRoutes.objectRecord(key, id) : null;
+  }
+  return null;
+}
 
 /// Auth routes that don't require authentication
 const _publicRoutes = [
@@ -794,6 +842,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsReopen',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ReopenScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.objectRecordsPattern,
+        name: 'objectRecords',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final key = state.pathParameters['key'] ?? '';
+          return ObjectRecordsScreen(
+            key: ValueKey('objects-$key'),
+            objectKey: key,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.objectRecordCreatePattern,
+        name: 'objectRecordCreate',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ObjectRecordFormScreen(
+          key: ValueKey('object-new-${state.pathParameters['key']}'),
+          objectKey: state.pathParameters['key'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.objectRecordPattern,
+        name: 'objectRecord',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ObjectRecordDetailScreen(
+          key: ValueKey('object-record-${state.pathParameters['id']}'),
+          objectKey: state.pathParameters['key'] ?? '',
+          recordId: state.pathParameters['id'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.objectRecordEditPattern,
+        name: 'objectRecordEdit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ObjectRecordFormScreen(
+          key: ValueKey('object-edit-${state.pathParameters['id']}'),
+          objectKey: state.pathParameters['key'] ?? '',
+          recordId: state.pathParameters['id'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsObjects,
+        name: 'settingsObjects',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ObjectsSettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsObjectPattern,
+        name: 'settingsObject',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ObjectSettingsScreen(
+          key: ValueKey('object-settings-${state.pathParameters['key']}'),
+          objectKey: state.pathParameters['key'] ?? '',
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsHelpCenter,

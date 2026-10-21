@@ -45,9 +45,12 @@
     Unlink,
     X
   } from '@lucide/svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   let { ticket, conversation, articles, alsoOpen, contacts, attachments, activity, canReply } =
     $derived(data);
@@ -1335,6 +1338,8 @@
             {/if}
           </section>
         {/if}
+
+        <RelatedRecords {related} error={form?.related?.error} />
 
         {#if conversation.length === 0}
           <p class="v2-sub" style="margin:0 0 18px;font-size:12.5px">

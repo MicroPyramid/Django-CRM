@@ -41,6 +41,7 @@ import {
   cancelApproval
 } from '#lib/server/v2/approvals.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { openDescendants, subtreeTruncated, cascadedCount, closeResultMessage } from './close.js';
 import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
 
@@ -88,12 +89,13 @@ import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, params, locals, url }) {
-  const [data, timeEntries, approvals, watchers, orgPeople] = await Promise.all([
+  const [data, timeEntries, approvals, watchers, orgPeople, related] = await Promise.all([
     getTicket({ cookies }, params.id),
     listTicketTime({ cookies }, params.id).catch(() => null),
     listTicketApprovals({ cookies }, params.id).catch(() => null),
     getTicketWatchers({ cookies }, params.id).catch(() => null),
-    getOrgPeopleAndTeams(cookies)
+    getOrgPeopleAndTeams(cookies),
+    loadRelated({ cookies }, 'ticket', params.id)
   ]);
 
   const merge = { open: false, q: '', targets: /** @type {any[]} */ ([]), error: '' };
@@ -170,6 +172,7 @@ export async function load({ cookies, params, locals, url }) {
     time,
     approvals,
     watchers,
+    related,
     macros,
     articlePicker,
     mentionPeople: mentionPeople(orgPeople.people)
@@ -213,6 +216,7 @@ async function applyNow(cookies, macroId, caseId) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+  ...relatedActions('ticket'),
   /**
    * Post a reply, or an internal note.
    *

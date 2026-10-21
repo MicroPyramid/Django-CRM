@@ -12,6 +12,7 @@ import '../../providers/tickets_provider.dart';
 import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// Task Detail Screen
 /// Shows task info with actions: Edit, Complete, Delete
@@ -360,6 +361,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             _buildRelatedCard(related),
             const SizedBox(height: 16),
           ],
+
+          RelatedObjectsSection(to: 'task', recordId: task.id),
 
           if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
             _buildCard(

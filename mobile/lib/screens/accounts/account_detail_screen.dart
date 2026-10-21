@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// One account: who they are, what they are worth, and what is open against
 /// them.
@@ -195,6 +196,7 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
           ),
           _relationSection('Tickets', LucideIcons.lifeBuoy, account.cases),
           _relationSection('Tasks', LucideIcons.checkCheck, account.tasks),
+          RelatedObjectsSection(to: 'account', recordId: account.id),
         ],
       ),
     );

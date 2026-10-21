@@ -67,6 +67,18 @@ import 'package:bottle_crm/screens/goals/goal_form_screen.dart';
 import 'package:bottle_crm/screens/goals/goal_history_screen.dart';
 import 'package:bottle_crm/screens/goals/goals_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
+import 'package:bottle_crm/data/models/custom_object.dart';
+import 'package:bottle_crm/data/models/models.dart' show Lead;
+import 'package:bottle_crm/providers/custom_objects_provider.dart';
+import 'package:bottle_crm/providers/duplicates_provider.dart';
+import 'package:bottle_crm/providers/leads_provider.dart';
+import 'package:bottle_crm/screens/leads/lead_detail_screen.dart';
+import 'package:bottle_crm/screens/objects/object_record_detail_screen.dart';
+import 'package:bottle_crm/screens/objects/object_record_form_screen.dart';
+import 'package:bottle_crm/screens/objects/object_records_screen.dart';
+import 'package:bottle_crm/screens/settings/object_field_sheet.dart';
+import 'package:bottle_crm/screens/settings/object_settings_screen.dart';
+import 'package:bottle_crm/screens/settings/objects_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,8 +130,17 @@ void main() {
     child: routed(const TimesheetScreen()),
   );
 
-  Widget settingsHubApp() =>
-      const ProviderScope(child: MaterialApp(home: SettingsHubScreen()));
+  /// [answer] null is a server with no custom objects, which is what the hub
+  /// must also render without a request of its own.
+  Widget settingsHubApp({CustomObjectsAnswer? answer, bool isAdmin = false}) =>
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          customObjectsProvider.overrideWith(() => _FakeObjectsAnswer(answer)),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: SettingsHubScreen()),
+      );
 
   /// [isAdmin] is overridden rather than left to fall out of a signed-in
   /// profile, because both answers matter here: the read is open to a member
@@ -585,6 +606,163 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
   }
+
+  /// Every object screen is checked at its fullest: the eight-field Property
+  /// with long labels, four link fields (one holding links the viewer cannot
+  /// open), three photos and two files.
+  Future<void> scrollToEnd(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  Widget objRecordsApp({bool writes = true}) => ProviderScope(
+    overrides: [
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+      ),
+      objectDefinitionProvider.overrideWith((ref, key) async => _objDefinition),
+      objectRecordsProvider(
+        _objKey,
+      ).overrideWith(() => _FakeObjectRecords(_objKey, _objRecordsData)),
+    ],
+    child: routed(const ObjectRecordsScreen(objectKey: _objKey)),
+  );
+
+  Widget objDetailApp({bool canEdit = true, bool canDelete = true}) =>
+      ProviderScope(
+        overrides: [
+          objectDefinitionProvider.overrideWith(
+            (ref, key) async => _objDefinition,
+          ),
+          customObjectsApiProvider.overrideWithValue(
+            _FakeObjectsApi(_objRecordJson(canEdit, canDelete)),
+          ),
+          attachmentBytesProvider.overrideWith((ref, id) async => null),
+        ],
+        child: routed(
+          const ObjectRecordDetailScreen(objectKey: _objKey, recordId: _objId),
+        ),
+      );
+
+  Widget objFormApp({String? recordId}) => ProviderScope(
+    overrides: [
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: true)),
+      ),
+      objectDefinitionProvider.overrideWith((ref, key) async => _objDefinition),
+      customObjectsApiProvider.overrideWithValue(
+        _FakeObjectsApi(_objRecordJson(true, true)),
+      ),
+      usersProvider.overrideWithValue(const [
+        UserLookup(
+          id: 'p1',
+          email: 'ravi@example.com',
+          name: 'Ravi Shankar Venkataraghavan',
+          role: 'USER',
+          isActive: true,
+        ),
+      ]),
+    ],
+    child: routed(
+      ObjectRecordFormScreen(objectKey: _objKey, recordId: recordId),
+    ),
+  );
+
+  Widget objSettingsListApp({required bool admin, required bool writes}) =>
+      ProviderScope(
+        overrides: [
+          isOrgAdminProvider.overrideWithValue(admin),
+          customObjectsProvider.overrideWith(
+            () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+          ),
+          objectsSettingsProvider.overrideWith(
+            (ref) async => _objAnswer(writes: writes),
+          ),
+        ],
+        child: routed(const ObjectsSettingsScreen()),
+      );
+
+  Widget objSettingsApp({
+    required bool admin,
+    required bool writes,
+    bool archived = false,
+  }) => ProviderScope(
+    overrides: [
+      isOrgAdminProvider.overrideWithValue(admin),
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+      ),
+      objectSettingsProvider(_objKey).overrideWith(
+        (ref) async => ObjectSettingsData(
+          summary: archived ? _objSummaryArchived : _objSummary,
+          fields: _objFields,
+        ),
+      ),
+    ],
+    child: routed(const ObjectSettingsScreen(objectKey: _objKey)),
+  );
+
+  Widget objFieldSheetApp(ObjectField? existing) => ProviderScope(
+    child: routed(
+      Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () => showObjectFieldSheet(
+                context,
+                existing: existing,
+                linkTargets: _objAnswer(writes: true).linkTargets,
+                onSubmit: (_) async => null,
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget objLeadApp() => ProviderScope(
+    overrides: [
+      leadsProvider.overrideWith(_FakeObjectLead.new),
+      duplicatesApiProvider.overrideWithValue(_NoObjectDuplicates()),
+      isOrgAdminProvider.overrideWithValue(true),
+      currentUserProvider.overrideWithValue(null),
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: true)),
+      ),
+      relatedProvider((to: 'lead', id: 'l1')).overrideWith(
+        (ref) async => RelatedAnswer(
+          canEdit: true,
+          groups: [
+            RelatedGroup(
+              objectKey: _objKey,
+              objectLabel: _objLong60,
+              fieldKey: 'agent',
+              fieldLabel: _objLong64,
+              records: const [
+                RelatedRecordRef(
+                  id: _objId,
+                  name: '12 Harbour Road, Old Town Quarter, Northern District',
+                ),
+              ],
+            ),
+          ],
+          linkFields: [
+            RelatedLinkField(
+              objectKey: _objKey,
+              objectLabel: _objLong60,
+              fieldKey: 'agent',
+              fieldLabel: _objLong64,
+            ),
+          ],
+        ),
+      ),
+    ],
+    child: const MaterialApp(home: LeadDetailScreen(leadId: 'l1')),
+  );
 
   group('timesheet at 390px', () {
     testWidgets('renders a week without overflowing', (tester) async {
@@ -1157,6 +1335,22 @@ void main() {
       await pump(tester, settingsHubApp());
       expect(find.text('Custom fields'), findsOneWidget);
       expect(find.text('Tags'), findsOneWidget);
+    });
+
+    testWidgets('the hub shows the Objects row only when offered', (
+      tester,
+    ) async {
+      await pump(tester, settingsHubApp());
+      expect(find.text('Objects'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await pump(
+        tester,
+        settingsHubApp(answer: _objAnswer(writes: true), isAdmin: true),
+        textScale: 1.5,
+      );
+      expect(find.text('Objects'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('custom fields render without overflowing', (tester) async {
@@ -3154,6 +3348,166 @@ void main() {
       expect(find.textContaining('not shown or counted'), findsOneWidget);
     });
   });
+  group('custom objects at 390px', () {
+    for (final scale in [1.0, 1.3, 1.5]) {
+      final at = 'text scale $scale';
+
+      testWidgets('the records list, $at', (tester) async {
+        await pump(tester, objRecordsApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('Harbourfront'), findsWidgets);
+      });
+
+      testWidgets('the records list without writes, $at', (tester) async {
+        await pump(tester, objRecordsApp(writes: false), textScale: scale);
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('New '), findsNothing);
+      });
+
+      testWidgets('the record detail with every section, $at', (tester) async {
+        await pump(tester, objDetailApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record detail, read only, $at', (tester) async {
+        await pump(
+          tester,
+          objDetailApp(canEdit: false, canDelete: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record form, editing, $at', (tester) async {
+        await pump(tester, objFormApp(recordId: _objId), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record form, creating, $at', (tester) async {
+        await pump(tester, objFormApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the objects settings list, admin with writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: true, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the objects settings list, admin without writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: true, writes: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text(
+            'Creating and editing is turned off for this organization.',
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the objects settings list, member, $at', (tester) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: false, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one object settings, admin with writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one object settings, admin without writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one archived object settings, $at', (tester) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: true, archived: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet on a link field, $at', (tester) async {
+        await pump(
+          tester,
+          objFieldSheetApp(_objFields.firstWhere((f) => f.key == 'agent')),
+          textScale: scale,
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet on a dropdown field, $at', (tester) async {
+        await pump(
+          tester,
+          objFieldSheetApp(_objFields.firstWhere((f) => f.key == 'kind')),
+          textScale: scale,
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet adding a field, $at', (tester) async {
+        await pump(tester, objFieldSheetApp(null), textScale: scale);
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a lead detail carrying Related, $at', (tester) async {
+        await pump(tester, objLeadApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Related'), findsOneWidget);
+      });
+    }
+  });
 }
 
 /// A working week with one holiday, which is what most orgs look like.
@@ -4383,3 +4737,310 @@ int _editableRows(WidgetTester tester) =>
 /// fourth downloadable row.
 int _downloadableRows(WidgetTester tester) =>
     tester.widgetList(find.byIcon(LucideIcons.download)).length;
+
+const _objKey = 'property';
+const _objId = '11111111-1111-1111-1111-111111111111';
+const _objLeadId = '55555555-5555-5555-5555-555555555555';
+
+/// 60 and 64 characters, the longest an object or field label may be.
+final _objLong60 = ('Harbourfront residential ' * 3).substring(0, 60);
+final _objLong64 = ('Estimated annual rental yield percentage ' * 2).substring(
+  0,
+  64,
+);
+const _objAddress =
+    '12 Harbour Road, Old Town Quarter, Northern District, Greater Metropolitan Area, Postcode 12345';
+
+final _objSummary = ObjectSummary(
+  key: _objKey,
+  label: _objLong60,
+  labelPlural: _objLong60,
+  nameLabel: 'Address',
+  description: 'Every property we list, sell or manage for an owner.',
+);
+
+final _objSummaryArchived = ObjectSummary(
+  key: _objKey,
+  label: _objLong60,
+  labelPlural: _objLong60,
+  nameLabel: 'Address',
+  isActive: false,
+);
+
+final _objFields = [
+  ObjectField(
+    key: 'beds',
+    label: _objLong64,
+    fieldType: 'number',
+    displayOrder: 1,
+    isRequired: true,
+  ),
+  const ObjectField(
+    key: 'baths',
+    label: 'Baths',
+    fieldType: 'number',
+    displayOrder: 2,
+  ),
+  const ObjectField(
+    key: 'listed',
+    label: 'Listed',
+    fieldType: 'checkbox',
+    displayOrder: 3,
+  ),
+  ObjectField(
+    key: 'kind',
+    label: 'Kind',
+    fieldType: 'dropdown',
+    displayOrder: 4,
+    options: [
+      const CustomFieldOption(value: 'flat', label: 'Flat'),
+      CustomFieldOption(value: 'house', label: _objLong64),
+    ],
+  ),
+  const ObjectField(
+    key: 'price',
+    label: 'Price',
+    fieldType: 'number',
+    displayOrder: 5,
+  ),
+  const ObjectField(
+    key: 'built',
+    label: 'Built on',
+    fieldType: 'date',
+    displayOrder: 6,
+  ),
+  const ObjectField(
+    key: 'city',
+    label: 'City',
+    fieldType: 'text',
+    displayOrder: 7,
+  ),
+  const ObjectField(
+    key: 'notes',
+    label: 'Notes',
+    fieldType: 'textarea',
+    displayOrder: 8,
+  ),
+  ObjectField(
+    key: 'agent',
+    label: _objLong64,
+    fieldType: 'link',
+    displayOrder: 9,
+    target: 'lead',
+    many: true,
+  ),
+  const ObjectField(
+    key: 'buyers',
+    label: 'Buyers',
+    fieldType: 'link',
+    displayOrder: 10,
+    target: 'contact',
+    many: true,
+  ),
+  const ObjectField(
+    key: 'seller',
+    label: 'Seller',
+    fieldType: 'link',
+    displayOrder: 11,
+    target: 'account',
+    many: false,
+  ),
+  const ObjectField(
+    key: 'twin',
+    label: 'Twin property',
+    fieldType: 'link',
+    displayOrder: 12,
+    target: 'obj:property',
+    many: false,
+  ),
+  const ObjectField(
+    key: 'old',
+    label: 'Old note',
+    fieldType: 'text',
+    displayOrder: 13,
+    isActive: false,
+  ),
+];
+
+final _objDefinition = ObjectDefinition(
+  summary: _objSummary,
+  fields: _objFields,
+);
+
+CustomObjectsAnswer _objAnswer({required bool writes}) => CustomObjectsAnswer(
+  hasCustomObjects: writes,
+  objects: [
+    _objSummary,
+    const ObjectSummary(
+      key: 'vehicle',
+      label: 'Vehicle',
+      labelPlural: 'Vehicles',
+      isActive: false,
+    ),
+  ],
+  linkTargets: const [
+    LinkTarget(key: 'lead', label: 'Lead', labelPlural: 'Leads'),
+    LinkTarget(key: 'contact', label: 'Contact', labelPlural: 'Contacts'),
+    LinkTarget(key: 'account', label: 'Account', labelPlural: 'Accounts'),
+    LinkTarget(
+      key: 'obj:property',
+      label: 'Property',
+      labelPlural: 'Properties',
+    ),
+  ],
+);
+
+final _objRecordsData = ObjectRecordsData(
+  count: 3,
+  records: [
+    ObjectRecord(
+      id: _objId,
+      name: _objAddress,
+      customFields: const {
+        'beds': 3,
+        'baths': 2,
+        'city': 'Greater Metropolitan Area',
+      },
+      assignedTo: const [
+        PersonRef(id: 'p1'),
+        PersonRef(id: 'p2'),
+      ],
+    ),
+    const ObjectRecord(id: '2', name: '4 Mill Road', customFields: {'beds': 1}),
+    const ObjectRecord(id: '3', name: 'Untitled'),
+  ],
+);
+
+Map<String, dynamic> _objAttachment(String id, String name, bool image) => {
+  'id': id,
+  'file_name': name,
+  'is_image': image,
+  'can_delete': true,
+  'created_by': {'id': 'p2', 'name': 'Meera', 'email': 'meera@example.com'},
+  'created_at': '2026-10-01T10:00:00Z',
+};
+
+Map<String, dynamic> _objRecordJson(bool canEdit, bool canDelete) => {
+  'id': _objId,
+  'name': _objAddress,
+  'custom_fields': {
+    'beds': 3,
+    'baths': 2,
+    'listed': true,
+    'kind': 'house',
+    'price': 1250000,
+    'built': '1998-04-12',
+    'city': 'Greater Metropolitan Area',
+    'notes':
+        'A long note about the property that wraps across several lines on a phone, mentioning the garden, the harbour view, and the history of the building.',
+  },
+  'assigned_to': [
+    {
+      'id': 'p1',
+      'name': 'Ravi Shankar Venkataraghavan',
+      'email': 'ravi@example.com',
+    },
+    {'id': 'gone', 'name': 'Old Hand', 'email': 'old@example.com'},
+  ],
+  'created_by': {'id': 'p2', 'name': 'Meera', 'email': 'meera@example.com'},
+  'created_at': '2026-10-01T10:00:00Z',
+  'updated_at': '2026-10-02T10:00:00Z',
+  'links': {
+    'agent': {
+      'many': true,
+      'records': [
+        {
+          'id': _objLeadId,
+          'object': 'lead',
+          'name': 'Asha Raman-Venkataraghavan',
+        },
+      ],
+      'hidden': 2,
+    },
+    'buyers': {
+      'many': true,
+      'records': [
+        {'id': 'c1', 'object': 'contact', 'name': 'Bela Nagy'},
+        {'id': 'c2', 'object': 'contact', 'name': 'Chen Wei'},
+      ],
+      'hidden': 0,
+    },
+    'seller': {'many': false, 'records': const [], 'hidden': 1},
+    'twin': {
+      'many': false,
+      'records': [
+        {'id': _objId, 'object': 'obj:property', 'name': '4 Mill Road'},
+      ],
+      'hidden': 0,
+    },
+  },
+  'can_edit': canEdit,
+  'can_delete': canDelete,
+  'attachments': [
+    _objAttachment('a1', 'front-of-the-house-from-the-harbour-side.jpg', true),
+    _objAttachment('a2', 'kitchen.png', true),
+    _objAttachment('a3', 'garden-in-spring-with-the-old-oak-tree.webp', true),
+    _objAttachment(
+      'a4',
+      'survey-report-and-structural-assessment-final-signed-version.pdf',
+      false,
+    ),
+    _objAttachment('a5', 'floor-plan.pdf', false),
+  ],
+};
+
+class _FakeObjectsAnswer extends CustomObjectsNotifier {
+  _FakeObjectsAnswer(this.answer);
+
+  final CustomObjectsAnswer? answer;
+
+  @override
+  Future<CustomObjectsAnswer?> build() async => answer;
+}
+
+class _FakeObjectRecords extends ObjectRecordsNotifier {
+  _FakeObjectRecords(super.key, this.data);
+
+  final ObjectRecordsData data;
+
+  @override
+  Future<ObjectRecordsData> build() async => data;
+}
+
+class _FakeObjectsApi extends CustomObjectsApi {
+  _FakeObjectsApi(this.record);
+
+  final Map<String, dynamic> record;
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> fetchRecord(
+    String key,
+    String id,
+  ) async => ApiResponse(success: true, data: record, statusCode: 200);
+}
+
+class _NoObjectDuplicates extends DuplicatesApi {
+  @override
+  Future<RecordDuplicates> forRecord(DuplicateModule module, String id) async =>
+      const RecordDuplicates();
+}
+
+class _FakeObjectLead extends LeadsNotifier {
+  @override
+  Future<LeadsListData> build() async => const LeadsListData();
+
+  @override
+  Future<LeadDetail?> getLeadDetail(
+    String id, {
+    void Function()? onNotFound,
+  }) async => LeadDetail(
+    lead: Lead.fromJson({
+      'id': id,
+      'first_name': 'Asha',
+      'last_name': 'Raman',
+      'status': 'assigned',
+      'created_by': {'email': 'me@example.com'},
+    }),
+    canDelete: true,
+  );
+}

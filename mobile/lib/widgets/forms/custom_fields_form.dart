@@ -12,19 +12,25 @@ import '../common/common.dart';
 /// Schema-driven custom-fields editor.
 ///
 /// Loads the per-org `CustomFieldDefinition` rows for the given `targetModel`
-/// and renders one input per definition. The current value map is held by the
-/// parent; we only call `onChanged` so the parent decides when to persist.
+/// (or renders the [definitions] it is handed) with one input per definition.
+/// The current value map is held by the parent; we only call `onChanged` so
+/// the parent decides when to persist.
 class CustomFieldsForm extends ConsumerWidget {
-  final String targetModel;
+  final String? targetModel;
+  final List<CustomFieldDefinition>? definitions;
   final Map<String, dynamic> values;
   final ValueChanged<Map<String, dynamic>> onChanged;
 
   const CustomFieldsForm({
     super.key,
-    required this.targetModel,
+    this.targetModel,
+    this.definitions,
     required this.values,
     required this.onChanged,
-  });
+  }) : assert(
+         (targetModel == null) != (definitions == null),
+         'Give exactly one of targetModel and definitions',
+       );
 
   /// A cleared field stays in the map as null. The server keeps every key a
   /// save leaves out, so removing it would leave the old value in place.
@@ -34,9 +40,28 @@ class CustomFieldsForm extends ConsumerWidget {
     onChanged(next);
   }
 
+  Widget _fields(List<CustomFieldDefinition> defs) {
+    if (defs.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final def in defs) ...[
+          _CustomFieldInput(
+            definition: def,
+            value: values[def.key],
+            onChanged: (v) => _setValue(def.key, v),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncDefs = ref.watch(customFieldDefinitionsProvider(targetModel));
+    final given = definitions;
+    if (given != null) return _fields(given);
+    final asyncDefs = ref.watch(customFieldDefinitionsProvider(targetModel!));
 
     return asyncDefs.when(
       loading: () => const Padding(
@@ -47,22 +72,7 @@ class CustomFieldsForm extends ConsumerWidget {
         'Failed to load custom fields',
         style: AppTypography.caption.copyWith(color: AppColors.danger500),
       ),
-      data: (defs) {
-        if (defs.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final def in defs) ...[
-              _CustomFieldInput(
-                definition: def,
-                value: values[def.key],
-                onChanged: (v) => _setValue(def.key, v),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ],
-        );
-      },
+      data: _fields,
     );
   }
 }
@@ -130,10 +140,14 @@ class _CustomFieldInput extends StatelessWidget {
         .where((o) => o.value == value?.toString())
         .map((o) => o.label)
         .firstOrNull;
+    // A stored value that is no longer an option shows as itself; only the
+    // user choosing something else changes it.
+    final stored = value?.toString() ?? '';
+    final shown = selectedLabel ?? (stored.isEmpty ? null : stored);
     return _DropdownField(
       label: _label(),
-      valueLabel: selectedLabel ?? 'Select…',
-      hasValue: selectedLabel != null,
+      valueLabel: shown ?? 'Select…',
+      hasValue: shown != null,
       onTap: () => _showDropdownSheet(context),
     );
   }

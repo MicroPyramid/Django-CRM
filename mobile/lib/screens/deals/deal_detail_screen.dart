@@ -14,6 +14,7 @@ import '../../services/attachment_upload.dart';
 import '../../widgets/cards/deal_aging_badge.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/misc/stage_stepper.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// Deal Detail Screen, mirrors the lead-detail tab structure (Overview /
 /// Activity / Notes / Files) and surfaces the full payload returned by the
@@ -540,7 +541,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
 
           // Metadata footer: created by / closed by.
           _buildCard(title: 'Metadata', child: _buildMetadataContent(deal)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          RelatedObjectsSection(to: 'deal', recordId: deal.id),
+          const SizedBox(height: 8),
         ],
       ),
     );

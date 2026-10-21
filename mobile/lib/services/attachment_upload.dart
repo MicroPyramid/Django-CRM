@@ -170,6 +170,20 @@ Future<AttachmentUploadResult> pickAndUploadAttachment({
   required String recordId,
   Future<PlatformFile?> Function()? pickFile,
   ApiService? api,
+}) => pickAndUploadAttachmentTo(
+  url: target.urlFor(recordId),
+  field: target.field,
+  pickFile: pickFile,
+  api: api,
+);
+
+/// Pick a file and post it to [url] as the multipart field [field], for a
+/// record whose URL is not one of the [AttachmentTarget]s.
+Future<AttachmentUploadResult> pickAndUploadAttachmentTo({
+  required String url,
+  required String field,
+  Future<PlatformFile?> Function()? pickFile,
+  ApiService? api,
 }) async {
   final picked = await (pickFile ?? _pickOneFile)();
   if (picked == null) return const AttachmentUploadResult.cancelled();
@@ -201,8 +215,8 @@ Future<AttachmentUploadResult> pickAndUploadAttachment({
   }
 
   final response = await (api ?? ApiService()).postMultipart(
-    target.urlFor(recordId),
-    fileField: target.field,
+    url,
+    fileField: field,
     filePath: path,
     fileName: picked.name,
   );

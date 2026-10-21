@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/custom_objects_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -47,6 +48,25 @@ class SettingsHubScreen extends StatelessWidget {
               label: 'Custom fields',
               description: 'Extra fields on leads, deals, tickets and the rest',
               onTap: () => context.push(AppRoutes.settingsCustomFields),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                final answer = shownCustomObjects(
+                  ref.watch(customObjectsProvider),
+                );
+                final show =
+                    answer != null &&
+                    answer.offered &&
+                    (ref.watch(isOrgAdminProvider) ||
+                        answer.objects.isNotEmpty);
+                if (!show) return const SizedBox.shrink();
+                return MenuRow(
+                  icon: LucideIcons.boxes,
+                  label: 'Objects',
+                  description: 'Your own record types, with their fields',
+                  onTap: () => context.push(AppRoutes.settingsObjects),
+                );
+              },
             ),
             MenuRow(
               icon: LucideIcons.tags,

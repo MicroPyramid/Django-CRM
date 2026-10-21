@@ -6,12 +6,15 @@
   import Timeline from '#lib/v2/components/Timeline.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
   import { money, longDate } from '#lib/v2/format.js';
   import { AGING_TONE, AGING_LABEL, OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
   import { Check, ChevronRight } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   /* Raising an invoice copies the lines of a won deal. The API refuses any
      other stage kind, so the button is offered only where it can succeed; a
@@ -170,6 +173,8 @@
             </div>
           </div>
         {/if}
+
+        <RelatedRecords {related} error={form?.related?.error} />
       </div>
     </div>
   </div>

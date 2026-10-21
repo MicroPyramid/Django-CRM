@@ -1,14 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { addLeadNote, convertLead, deleteLead, getLead } from '#lib/server/v2/leads.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  return await getLead({ cookies }, params.id);
+  const [lead, related] = await Promise.all([
+    getLead({ cookies }, params.id),
+    loadRelated({ cookies }, 'lead', params.id)
+  ]);
+  return { ...lead, related };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+  ...relatedActions('lead'),
   /**
    * Log a note against the lead. The body carries only the note text; who
    * wrote it and which org it belongs to are derived server-side from the JWT
