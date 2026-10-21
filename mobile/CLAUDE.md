@@ -40,7 +40,7 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://crm.example
 
 ## Gotchas
 
-- **The API base URL is compile-time** (`--dart-define=API_BASE_URL`), on purpose: a runtime setting would let anything that can write app storage redirect every JWT. A release build throws unless it is `https://`. Without the define, debug builds use the maintainer's dev server, so pass it. `GOOGLE_SERVER_CLIENT_ID` overrides the same way.
+- **The API base URL is compile-time** (`--dart-define=API_BASE_URL`), on purpose: a runtime setting would let anything that can write app storage redirect every JWT. A release build throws unless it is `https://`. Without the define, debug builds use `http://localhost:8000`; on an Android emulator pass `http://10.0.2.2:8000` or run `adb reverse tcp:8000 tcp:8000`. `GOOGLE_SERVER_CLIENT_ID` overrides the same way.
 - **Keep `cupertino_icons`.** Nothing names `CupertinoIcons`, but `SwitchListTile.adaptive` needs the font and the build fails without it.
 - **Do not set `android.builtInKotlin=true`.** AGP 8.x hardcodes built-in Kotlin to 2.0.0, a downgrade from our 2.4.10 and below Flutter's 2.2.20 floor. The Kotlin Gradle Plugin warning from `file_picker` is hidden by Flutter until AGP 9, not fixed.
 - **`file_picker` and `flutter_secure_storage` upgrade together**: file_picker below 12 pins `win32 ^5`, and flutter_secure_storage 11 needs `win32 ^6`.

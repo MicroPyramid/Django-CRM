@@ -1,62 +1,37 @@
 # Connect to a self-hosted backend
 
 Read this page before you run or build the mobile app against anything other than
-`api.bottlecrm.io`. The short version: the backend URL is baked into the binary at compile time,
-there is no way to point a build at a different server without editing source and rebuilding, and
-the two URLs shipped in source today aren't `localhost` or any generic placeholder. They're a
-specific developer's tunnel and BottleCRM's own production API.
+`api.bottlecrm.io`. The short version: the backend URL is fixed when the app is compiled, and you
+choose it with a build flag, not by editing source.
 
 ## The compile-time base URL
 
-`mobile/lib/config/api_config.dart` (lines 12-19):
+`mobile/lib/config/api_config.dart` resolves one host for every request:
 
-```dart
-/// Development API URL
-static const String _developmentUrl = 'https://msi-8000.rcdev.in';
+| Build | No `API_BASE_URL` | With `--dart-define=API_BASE_URL=<url>` |
+| --- | --- | --- |
+| Debug (`flutter run`) | `http://localhost:8000` | `<url>`, `http://` allowed |
+| Release (`flutter build`) | `https://api.bottlecrm.io` | `<url>`, which must start with `https://` |
 
-/// Production API URL
-static const String _productionUrl = 'https://api.bottlecrm.io';
-
-/// Get the current base URL based on build mode
-static String get baseUrl => kDebugMode ? _developmentUrl : _productionUrl;
-```
-
-Both URLs are `static const` Dart strings, and the choice between them is `kDebugMode`. A
-compile-time flag set by which `flutter run`/`flutter build` mode you use, not anything read at
-runtime. There is no `--dart-define`, no `String.fromEnvironment` anywhere in `lib/`, and no
-runtime settings screen: grepping `lib/` for `SharedPreferences` turns up exactly four files, and
-none of them touch the base URL, `auth_service.dart` (auth tokens/user data), list-view
-filter/sort state in `screens/tickets/tickets_list_screen.dart` and
-`screens/deals/deals_list_screen.dart`, and `providers/tickets_provider.dart`, which only defines
-the JSON-serialization helper (`TicketListFilters.toJson()`) that `tickets_list_screen.dart`
-persists. It doesn't call the `SharedPreferences` API itself. Whatever `baseUrl` resolves to when
-the app is *compiled* is what it talks to for the life of that install.
-
-The practical consequences:
-
-- **A store-distributed release build can only ever talk to `https://api.bottlecrm.io`.** If
-  you're self-hosting, a generic APK/AAB/IPA built from this source with the constants unchanged
-  will authenticate against and read/write data on BottleCRM's own hosted API, not yours. There is
-  no in-app way to redirect it.
-- **A debug build (`flutter run`) does not point at `localhost` either.** `_developmentUrl` is
-  `https://msi-8000.rcdev.in`: an individual developer's personal tunnel/host, not a generic
-  loopback address, and not one you control. If you want to run the app against a backend on your
-  own machine, you have to edit this constant regardless of whether you're in debug or release
-  mode.
-- **This means self-hosting the mobile app is source-edit-and-rebuild, not configure-and-run.**
-  There's no middle ground between "use BottleCRM's hosted API" and "maintain your own fork of
-  this one file." If that's a blocker for your deployment, treat it as a known limitation rather
-  than something you missed a flag for.
+The choice is compile-time on purpose. A runtime setting would let anything able to write the
+app's storage redirect every request, and every JWT with it, to a server of its own choosing. So
+whatever the URL was when the app was built is what it talks to for the life of that install, and a
+store-distributed build can only ever reach `https://api.bottlecrm.io`.
 
 ## Pointing at your backend
 
-1. Edit `mobile/lib/config/api_config.dart` and change `_developmentUrl` and/or `_productionUrl`
-   to your backend's URL, which one(s) you need depends on which build modes you'll use. If you
-   don't need a separate dev/prod split, it's simplest to set both to the same value.
-2. Rebuild. Because these are compile-time constants, don't rely on hot reload to pick up the
-   change reliably. Stop and re-run (`flutter run`) for a debug build, or do a full `flutter build
-   apk --release` / `appbundle --release` / iOS build (see [Release builds](release-builds.md)) for
-   a release one.
+```bash
+# Debug build against a backend on your machine (Android emulator)
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+
+# Release build against your own server
+flutter build appbundle --release --dart-define=API_BASE_URL=https://crm.example.com
+```
+
+A trailing slash is dropped. A release build given a plain `http://` URL refuses to start rather
+than send tokens unencrypted. Hot reload does not pick up a changed define: stop and re-run, or
+rebuild (see [Release builds](release-builds.md)). Google Sign-In needs its own client id for your
+backend, also passed as a define; see below.
 
 A few things to get right about the URL itself:
 
@@ -125,19 +100,13 @@ blank and Google Sign-In stays off. Magic links are the only path in.
 
 **Android side**: three things, all tied to BottleCRM's own Google Cloud project as shipped:
 
-1. `mobile/lib/services/auth_service.dart` (lines 70-73) hardcodes a **Web** OAuth client ID as
-   `serverClientId`:
-   ```dart
-   await _googleSignIn.initialize(
-     serverClientId:
-         '1072513761792-p59rct7b1c3go7l58e51r3geuqff2tfl.apps.googleusercontent.com',
-   );
+1. The app signs in with a **Web** OAuth client id as `serverClientId`, the audience your
+   backend's `GOOGLE_CLIENT_ID` verifies against. It defaults to BottleCRM's own, which your
+   backend will reject. Build with a Web client id from **your own** Google Cloud project, the
+   same value as your backend's `GOOGLE_CLIENT_ID`:
+   ```bash
+   --dart-define=GOOGLE_SERVER_CLIENT_ID=<your-web-client-id>.apps.googleusercontent.com
    ```
-   The code comment identifies this as "the audience the Django backend's `GOOGLE_CLIENT_ID`
-   verifies against." For your self-hosted backend to accept tokens from your own mobile build,
-   this constant must be a Web client ID from **your own** Google Cloud project, and your
-   backend's `GOOGLE_CLIENT_ID` must be that same value. Reusing BottleCRM's own client ID here
-   will not work against your backend, because your `GOOGLE_CLIENT_ID` won't match it.
 2. Android sign-in additionally needs an **Android**-type OAuth client (separate from the Web
    client above) registered in Google Cloud, tied to your app's `applicationId` and the SHA-1
    fingerprint of whatever certificate signs the build. Get the fingerprint with `cd android &&

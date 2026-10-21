@@ -41,7 +41,7 @@ example on this page uses `django_db` freely alongside the two markers that actu
 
 ## Markers
 
-`pytest.ini` declares exactly two custom markers:
+`pytest.ini` declares two custom markers:
 
 ```ini
 markers =
@@ -49,24 +49,10 @@ markers =
     postgres_only: marks tests that require PostgreSQL
 ```
 
-`postgres_only` is in active use. Exactly six tests carry it, confirmed by collecting the marker
-directly (`uv run pytest -m postgres_only --collect-only` → `6/2776 tests collected`), across four
-files: `common/tests/test_pat_auth.py` (one test), `common/tests/test_pat_model.py` (one),
-`common/tests/test_rls_pipeline_tables.py` (two), and `invoices/tests/test_portal_rls.py` (two).
-(`common/tests/test_pat_integration.py` mentions `postgres_only` only in a comment explaining that
-its own tests deliberately *don't* carry the marker and run on SQLite instead. It contributes zero
-of the six.) Four of the six assert RLS policy state directly (`pg_policies`,
-`pg_class.relrowsecurity`): the two in `test_rls_pipeline_tables.py`, plus one each in
-`test_pat_model.py` and `test_portal_rls.py` confirming `personal_access_token` and
-`portal_access_token` deliberately carry *no* policy. The other two assert isolation *behaviour*
-under a real, RLS-enforcing role instead of reading policy metadata:
-`test_pat_auth.py::test_cross_org_pat_cannot_read_other_orgs_leads` calls the real `/api/leads/`
-endpoint and checks a foreign org's lead never appears, and
-`test_portal_rls.py::test_resolution_reads_estimate_that_empty_context_hides` exercises the full
-portal-token resolution path. `slow` is declared but,
-as of this writing, applied to nothing (`grep -rn "pytest.mark.slow" --include='*.py' .`, excluding
-`venv/`, returns no matches in application code). It's reserved for future use, not a marker you'll
-see filtering anything today.
+`postgres_only` marks the tests that need a real PostgreSQL: RLS policy state, isolation behaviour
+under a role that RLS binds, and session-scoped connection state. List them with
+`uv run pytest -m postgres_only --collect-only -q`. `slow` is declared and currently applied to
+nothing.
 
 ## The SQLite caveat
 
@@ -80,34 +66,36 @@ included, is invisible to this default suite; only the explicit `Model.objects.f
 application code is being tested. See [Multi-tenancy and RLS](../architecture/multi-tenancy-and-rls.md#the-two-layer-contract)
 for why that ORM filter has to be correct on its own merits, independent of RLS.
 
-The `postgres_only`-marked tests exist to close part of that gap, and they self-skip safely rather
-than fail when there's no PostgreSQL connection: each one checks `connection.vendor != "postgresql"`
-and calls `pytest.skip(...)` if so. Under the SQLite settings this repository ships, that check is
-always true, so these six tests always skip. They don't fail, and a green `uv run pytest` run tells
-you nothing about whether they'd pass. One of them, `test_portal_rls.py`'s module docstring,
-describes an intended way to actually run them for real, against a non-superuser PostgreSQL role:
-`RLS_ENFORCE=1`, pointed at a `crm.test_settings_postgres` module. A comment in `backend/.env`
-(gitignored, `.gitignore:20`, and absent from `.env.example`, so a fresh clone has neither the
-file nor the reference) names the same two pieces. Neither source is authoritative, because that
-settings module does not exist anywhere in this checkout as of this writing, so this documented path
-does not currently work. If you need to prove RLS isolation holds against real data rather than
-just reading the policy SQL, use `manage.py manage_rls --test` against a real, non-superuser-configured PostgreSQL
-database instead. See [PostgreSQL and RLS](../self-hosting/postgresql-and-rls.md#verifying-isolation)
-for exactly what it proves and how to set up that role.
+The `postgres_only` tests close part of that gap. Under SQLite nearly all of them skip, so a green
+default run tells you nothing about them. Run them for real with `crm.test_settings_postgres`,
+which changes only the database and reads the same `DB*` variables as the application:
+
+```bash
+DJANGO_SETTINGS_MODULE=crm.test_settings_postgres DBUSER=<role> DBPASSWORD=<password> \
+  uv run pytest --no-cov -m postgres_only
+```
+
+**The role must not be a superuser or have `BYPASSRLS`.** Either one bypasses every policy, so the
+isolation assertions pass whether or not a policy exists. It needs `CREATEDB` so pytest-django can
+build the test database. See [PostgreSQL and RLS](../self-hosting/postgresql-and-rls.md#verifying-isolation)
+for setting that role up, and for `manage.py manage_rls --test`, which checks isolation on a real
+database outside the suite.
 
 ## What CI runs
 
-`.github/workflows/tests.yml`'s `backend-tests` job runs on the same SQLite settings described
-above, there's no PostgreSQL service in that job, so `postgres_only` tests skip there too, and
-CI itself has no path that runs them for real. Two steps matter, in this order:
+`.github/workflows/tests.yml` runs the backend suite three ways:
 
-```bash
-uv run python manage.py makemigrations --check --dry-run
-uv run pytest -m "not postgres_only" --tb=short -v
-```
+1. **SQLite**, the fast run that produces coverage, after the migration check:
+   ```bash
+   uv run python manage.py makemigrations --check --dry-run
+   uv run pytest -m "not postgres_only" --tb=short -v
+   ```
+2. **PostgreSQL as the superuser**: the whole suite minus `postgres_only`, for what SQLite cannot
+   see (declared string lengths, constraints, real type coercion). RLS is inert under a superuser,
+   so this run proves nothing about isolation.
+3. **PostgreSQL as `crm_ci`**, a `NOSUPERUSER NOBYPASSRLS` role, running only the `postgres_only`
+   tests. This is the run that tests tenant isolation.
 
-The migration check runs first and fails the build if any model change is missing its migration.
-See [Pull requests](pull-requests.md#what-ci-runs) for what that means for your workflow. The
-`-m "not postgres_only"` filter on the test step is redundant with the tests self-skipping, but
-makes the exclusion explicit in the command itself rather than relying on every future
-`postgres_only` test remembering its own skip guard.
+The split exists because the shared fixtures insert rows with no `app.current_org` set, which a
+policy-bound role refuses. The migration check fails the build when a model change is missing its
+migration; see [Pull requests](pull-requests.md#what-ci-runs) for what that means for your workflow.

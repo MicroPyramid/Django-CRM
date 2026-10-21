@@ -10,11 +10,13 @@ import 'package:flutter_test/flutter_test.dart';
 /// takes the two inputs as arguments for exactly that reason.
 void main() {
   group('with no override, which is every build today', () {
-    test('debug and release resolve to different hosts', () {
+    test('debug talks to a local backend, release to the hosted API', () {
+      // A debug build must never send sign-in tokens to a remote host that
+      // nobody running it chose.
       final debug = ApiConfig.resolveBaseUrl(override: '', isDebug: true);
       final release = ApiConfig.resolveBaseUrl(override: '', isDebug: false);
 
-      expect(debug, isNot(release));
+      expect(debug, 'http://localhost:8000');
       expect(release, 'https://api.bottlecrm.io');
     });
 

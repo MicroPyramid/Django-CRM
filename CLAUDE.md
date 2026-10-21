@@ -12,7 +12,7 @@ This is a production multi-tenant app under active attack. The two targets are a
 - **Scope every query by org**, then check visibility (see Reuse below), and pass `org=` on `create()` and `serializer.save()`. RLS is the safety net, not the contract.
 - **Server-owned fields** (`org`, `created_by`, `profile`, publish flags) are `read_only=True` or popped before save. State transitions validate the source state, not just the target.
 - Check by name for: org auto-join by email domain, IDOR on detail and nested routes, mass assignment, refresh tokens surviving a privilege change, SSRF, path traversal, stored-markdown XSS, and secrets or another tenant's data in responses and logs.
-- **Never weaken a protection** (RLS policy, permission class, org filter, validator, CSRF or auth check) to make something work: surface it and ask. Flag vulnerabilities you notice, but never in a public issue, PR or commit message.
+- **Never weaken a protection** (RLS policy, permission class, org filter, validator, CSRF or auth check) to make something work: surface it and ask. Flag vulnerabilities you notice, but never in a public issue, PR or commit message: they are reported as `SECURITY.md` describes.
 
 ## House rules
 
@@ -71,7 +71,7 @@ pnpm run format
 docker compose up --build                                   # full stack, from the repo root
 ```
 
-CI (`.github/workflows/tests.yml`) blocks on `makemigrations --check`, `ruff check`, `ruff format --check`, pytest on SQLite and on Postgres, the `postgres_only` tests as a non-superuser role, a wheel install check, `eslint`, `pnpm check`, `pnpm test`, `pnpm build` and `mkdocs --strict`. Prettier only warns. Nothing runs for mobile.
+CI (`.github/workflows/tests.yml`) blocks on `makemigrations --check`, `ruff check`, `ruff format --check`, pytest on SQLite and on Postgres, the `postgres_only` tests as a non-superuser role, a wheel install check, `eslint`, `pnpm check`, `pnpm test`, `pnpm build` and `mkdocs --strict`. Prettier only warns. Nothing runs for mobile. Markers, the Postgres role and the three CI runs: `docs/contributing/testing.md`.
 
 ## Gotchas
 
@@ -94,7 +94,7 @@ Frontend:
 - **Data loads on the server.** A route's `+page.server.js` calls `#lib/server/v2/<entity>.js`, which calls `apiRequest` from `#lib/api-helpers.js` with the cookies; writes are form actions with `use:enhance` and `fail()`. There are no `+page.js` files, because the JWT is an httpOnly cookie the browser cannot read. Browser code talks to `src/routes/api/*/+server.js` proxies or `?/action`, never to Django, and cannot import `#lib/server/*`.
 - **A load's returned names are the page's contract.** `server/v2` returns `{ results, totals }` and each load renames them; a mismatch is an SSR 500 while the API answers 200, and `pnpm check` does not catch it. Load the page.
 - **Forms drop values silently.** A `<select>` with no option matching the stored value submits nothing and clears it on save (use `missingOptions` from `#lib/v2/pickers.js`); an unchecked checkbox submits nothing, so send an explicit `false`.
-- **`toast()` renders nothing**, because no `<Toaster>` is mounted. Feedback is `fail()` plus `form?.error` or `form?.message`.
+- **There are no toasts.** No live code calls `toast()` and no `<Toaster>` is mounted; `svelte-sonner` and the notifications store survive only in the unused v1 shell (`components/layout`). Feedback is `fail()` plus `form?.error` or `form?.message`.
 - Env vars are declared in `src/env.js` and read through `$app/env/public` or `$app/env/private`. In SvelteKit 3 a string starting with `/` is a route ID: link with `resolve()` from `$app/paths`, or `asInternalPath` for a built string.
 - Vitest runs in Node: it cannot compile `.svelte` or resolve `$app/*` beyond the env stubs, so a testable module imports neither. Tests sit beside the code as `*.test.js`; run them from `frontend/`.
 - Never log a raw axios error in `hooks.server.js`, since it carries the tokens: use `describeError`. `/help` (the signed-in user's tickets) is not `/help-center` (public) and stays out of `PUBLIC_ROUTES`.
