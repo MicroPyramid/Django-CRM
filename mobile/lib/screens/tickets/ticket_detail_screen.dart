@@ -22,6 +22,7 @@ import '../../services/api_service.dart' show ApiResponse;
 import '../../services/attachment_upload.dart';
 import '../../data/models/lookup_models.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/common/mention_text.dart';
 import '../../widgets/forms/multi_select_sheet.dart';
 import '../../widgets/tickets/ticket_approval_panel.dart';
 import '../../widgets/tickets/ticket_properties_card.dart';
@@ -676,6 +677,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
             : 'Add the first comment to get started.',
       );
     }
+    final handles = mentionHandles(ref.watch(usersProvider));
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       itemCount: comments.length,
@@ -684,6 +686,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
         return _CommentTile(
           comment: comment,
           isInternal: internalIds.contains(comment.id),
+          handles: handles,
         );
       },
     );
@@ -2278,8 +2281,13 @@ class _InfoRow extends StatelessWidget {
 class _CommentTile extends StatelessWidget {
   final Comment comment;
   final bool isInternal;
+  final Set<String> handles;
 
-  const _CommentTile({required this.comment, required this.isInternal});
+  const _CommentTile({
+    required this.comment,
+    required this.isInternal,
+    required this.handles,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2321,8 +2329,9 @@ class _CommentTile extends StatelessWidget {
             ),
             const SizedBox(height: 6),
           ],
-          Text(
+          MentionText(
             comment.comment,
+            handles: handles,
             style: AppTypography.body.copyWith(
               color: AppColors.textPrimary,
               height: 1.5,

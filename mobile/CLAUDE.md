@@ -17,7 +17,7 @@ Flutter client for the BottleCRM API: Riverpod 3 (hand-written `AsyncNotifier` a
 - "Today" is the org's, not the device's: `lib/services/org_date.dart` (`orgToday`, `todayIn`, `orgDaysUntil`, `orgTimeZoneOf`).
 - Currency: `Currency.symbolFor(code)` (`lib/data/models/deal.dart`), which never falls back to `$`. Invoice amounts: `money()` and `compactMoney()` in `lib/screens/invoices/invoice_format.dart`.
 - Attachments: `lib/services/attachment_upload.dart` (`AttachmentTarget`, `downloadAttachment`) and nowhere else. Each record type posts its own multipart field (`task_attachment`, `lead_attachment`, `opportunity_attachment`, `case_attachment`). A wrong name is answered 200 with nothing stored, so `test/unit/attachment_upload_test.dart` pins all four.
-- Forms: `lib/widgets/forms/custom_fields_form.dart`, `unsaved_changes.dart` (`UnsavedChangesGuard`), `multi_select_sheet.dart`. Shared widgets: the `lib/widgets/common/common.dart` barrel and `badge.dart` (`StatusBadge`, `PriorityBadge`, `LabelPill`).
+- Forms: `lib/widgets/forms/custom_fields_form.dart`, `unsaved_changes.dart` (`UnsavedChangesGuard`), `multi_select_sheet.dart`. Shared widgets: the `lib/widgets/common/common.dart` barrel and `badge.dart` (`StatusBadge`, `PriorityBadge`, `LabelPill`). @mention chips: `MentionText` in `lib/widgets/common/mention_text.dart`.
 
 ## Commands
 

@@ -23,6 +23,8 @@ import {
   applySummary
 } from '#lib/server/v2/macros.js';
 import { getOrgSettings } from '#lib/server/v2/organization.js';
+import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
+import { mentionPeople } from '#lib/v2/mentions.js';
 import {
   listTicketTime,
   startTicketTimer,
@@ -86,11 +88,12 @@ import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, params, locals, url }) {
-  const [data, timeEntries, approvals, watchers] = await Promise.all([
+  const [data, timeEntries, approvals, watchers, orgPeople] = await Promise.all([
     getTicket({ cookies }, params.id),
     listTicketTime({ cookies }, params.id).catch(() => null),
     listTicketApprovals({ cookies }, params.id).catch(() => null),
-    getTicketWatchers({ cookies }, params.id).catch(() => null)
+    getTicketWatchers({ cookies }, params.id).catch(() => null),
+    getOrgPeopleAndTeams(cookies)
   ]);
 
   const merge = { open: false, q: '', targets: /** @type {any[]} */ ([]), error: '' };
@@ -162,7 +165,15 @@ export async function load({ cookies, params, locals, url }) {
     ? { rows: treeRows(tree.root, params.id), rootId: tree.root.id }
     : null;
 
-  const extras = { time, approvals, watchers, macros, articlePicker };
+  // Who an @handle can name, for the composer and the chips in the thread.
+  const extras = {
+    time,
+    approvals,
+    watchers,
+    macros,
+    articlePicker,
+    mentionPeople: mentionPeople(orgPeople.people)
+  };
   if (!hasChildren) return { ...data, ...extras, merge, link, tree: treeView };
 
   return {

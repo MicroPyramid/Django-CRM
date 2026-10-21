@@ -41,8 +41,8 @@ Frontend:
 
 - Formatting: `#lib/v2/format.js` (`money(n, currency)`, which defaults to USD, so pass `data.org.currency`; `shortDate`, `longDate`, `relativeTime`). The org's "today": `todayIn(tz)` from `#lib/v2/dates.js` with `data.org.timezone`.
 - Admin: `isOrgAdmin` from `#lib/admin.js`. Labels and tones: `#lib/v2/enums.js`. Classes: `cn` from `#lib/utils.js`. DRF errors to a sentence: `readableError` from `#lib/server/v2/form-errors.js`.
-- Lists and filters: `#lib/v2/filters.js`, `#lib/server/v2/filter-params.js`, `#lib/server/v2/list-queries.js`, `#lib/server/v2/saved-views.js`. Custom fields: `#lib/server/v2/custom-fields.js`.
-- Components: `#lib/v2/components/<Name>.svelte` (`PageHeader`, `Pill`, `EmptyState`, `StatCard`, `ConfirmAction`, `FilterBar`, ...). Many shadcn components in `components/ui/` and everything in `components/layout`, `components/dashboard` and `components/users` have no importers, and neither does `#lib/api.js`. Find a live caller before building on any of them.
+- Lists and filters: `#lib/v2/filters.js`, `#lib/server/v2/filter-params.js`, `#lib/server/v2/list-queries.js`, `#lib/server/v2/saved-views.js`. Custom fields: `#lib/server/v2/custom-fields.js`. @mentions: `MentionTextarea` and `MentionBody` in `#lib/v2/components/`, fed by `mentionPeople()` from `#lib/v2/mentions.js`.
+- Components: `#lib/v2/components/<Name>.svelte` (`PageHeader`, `Pill`, `EmptyState`, `StatCard`, `ConfirmAction`, `FilterBar`, ...). Many shadcn components in `components/ui/` and everything in `components/layout`, `components/dashboard` and `components/users` have no importers. Find a live caller before building on any of them.
 
 ## Commands
 
@@ -94,7 +94,7 @@ Frontend:
 - **Data loads on the server.** A route's `+page.server.js` calls `#lib/server/v2/<entity>.js`, which calls `apiRequest` from `#lib/api-helpers.js` with the cookies; writes are form actions with `use:enhance` and `fail()`. There are no `+page.js` files, because the JWT is an httpOnly cookie the browser cannot read. Browser code talks to `src/routes/api/*/+server.js` proxies or `?/action`, never to Django, and cannot import `#lib/server/*`.
 - **A load's returned names are the page's contract.** `server/v2` returns `{ results, totals }` and each load renames them; a mismatch is an SSR 500 while the API answers 200, and `pnpm check` does not catch it. Load the page.
 - **Forms drop values silently.** A `<select>` with no option matching the stored value submits nothing and clears it on save (use `missingOptions` from `#lib/v2/pickers.js`); an unchecked checkbox submits nothing, so send an explicit `false`.
-- **There are no toasts.** No live code calls `toast()` and no `<Toaster>` is mounted; `svelte-sonner` and the notifications store survive only in the unused v1 shell (`components/layout`). Feedback is `fail()` plus `form?.error` or `form?.message`.
+- **There are no toasts and no toast library.** Feedback is `fail()` plus `form?.error` or `form?.message`.
 - Env vars are declared in `src/env.js` and read through `$app/env/public` or `$app/env/private`. In SvelteKit 3 a string starting with `/` is a route ID: link with `resolve()` from `$app/paths`, or `asInternalPath` for a built string.
 - Vitest runs in Node: it cannot compile `.svelte` or resolve `$app/*` beyond the env stubs, so a testable module imports neither. Tests sit beside the code as `*.test.js`; run them from `frontend/`.
 - Never log a raw axios error in `hooks.server.js`, since it carries the tokens: use `describeError`. `/help` (the signed-in user's tickets) is not `/help-center` (public) and stays out of `PUBLIC_ROUTES`.

@@ -6,6 +6,8 @@
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
+  import MentionTextarea from '#lib/v2/components/MentionTextarea.svelte';
+  import MentionBody from '#lib/v2/components/MentionBody.svelte';
   import {
     relativeDays,
     shortAge,
@@ -1357,7 +1359,9 @@
                 <b style="color:var(--v2-ink);font-weight:600">{m.author}</b>
                 · internal note · {shortAge(m.at)} ago
               </div>
-              <div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">{m.body}</div>
+              <div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">
+                <MentionBody body={m.body} people={data.mentionPeople} />
+              </div>
             </div>
           {:else}
             <div
@@ -1380,7 +1384,13 @@
                 {#if m.subject}
                   <div style="font-size:12.5px;font-weight:600;margin-bottom:4px">{m.subject}</div>
                 {/if}
-                <div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">{m.body}</div>
+                <!-- The backend reads mentions in comments and notes, never in emails. -->
+                <div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">
+                  {#if m.kind === 'email'}{m.body}{:else}<MentionBody
+                      body={m.body}
+                      people={data.mentionPeople}
+                    />{/if}
+                </div>
               </div>
             </div>
           {/if}
@@ -1455,14 +1465,15 @@
                   {/each}
                 </div>
               {/if}
-              <textarea
-                bind:this={replyBox}
-                name="body"
+              <MentionTextarea
+                bind:ref={replyBox}
                 bind:value={body}
+                people={data.mentionPeople}
+                name="body"
                 rows="3"
                 placeholder={internal ? 'Note for the team…' : 'Write a reply…'}
                 style="width:100%;border:none;background:transparent;resize:vertical;font:inherit;font-size:13.5px;line-height:1.55;color:var(--v2-ink);outline:none"
-              ></textarea>
+              />
               <div
                 style="display:flex;gap:9px;align-items:center;border-top:1px solid var(--v2-line);padding-top:12px;flex-wrap:wrap"
               >
