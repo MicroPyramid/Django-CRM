@@ -192,7 +192,7 @@ void main() {
       api.setClientForTesting(
         MockClient((request) async {
           throw const SocketException(
-            'Failed host lookup: pc-8000.rcdev.in',
+            'Failed host lookup: api.example.com',
             osError: OSError('No address associated with hostname', 7),
           );
         }),

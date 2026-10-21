@@ -507,8 +507,7 @@ class TestPublicCsatResolvesOrgFirst:
 def test_public_survey_answers_under_enforced_rls(client):
     """The anonymous survey GET and POST work under a role that enforces RLS.
 
-    Runs only against PostgreSQL as a non-superuser (``RLS_ENFORCE=1
-    --ds=crm.test_settings_postgres``): a superuser bypasses RLS, and the first
+    Runs only against PostgreSQL as a non-superuser (``--ds=crm.test_settings_postgres``): a superuser bypasses RLS, and the first
     assertion below says so rather than passing vacuously.
     """
     from django.db import connection

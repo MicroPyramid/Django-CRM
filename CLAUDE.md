@@ -42,7 +42,7 @@ Frontend:
 - Formatting: `#lib/v2/format.js` (`money(n, currency)`, which defaults to USD, so pass `data.org.currency`; `shortDate`, `longDate`, `relativeTime`). The org's "today": `todayIn(tz)` from `#lib/v2/dates.js` with `data.org.timezone`.
 - Admin: `isOrgAdmin` from `#lib/admin.js`. Labels and tones: `#lib/v2/enums.js`. Classes: `cn` from `#lib/utils.js`. DRF errors to a sentence: `readableError` from `#lib/server/v2/form-errors.js`.
 - Lists and filters: `#lib/v2/filters.js`, `#lib/server/v2/filter-params.js`, `#lib/server/v2/list-queries.js`, `#lib/server/v2/saved-views.js`. Custom fields: `#lib/server/v2/custom-fields.js`. @mentions: `MentionTextarea` and `MentionBody` in `#lib/v2/components/`, fed by `mentionPeople()` from `#lib/v2/mentions.js`.
-- Components: `#lib/v2/components/<Name>.svelte` (`PageHeader`, `Pill`, `EmptyState`, `StatCard`, `ConfirmAction`, `FilterBar`, ...). Many shadcn components in `components/ui/` and everything in `components/layout`, `components/dashboard` and `components/users` have no importers. Find a live caller before building on any of them.
+- Components: `#lib/v2/components/<Name>.svelte` (`PageHeader`, `Pill`, `EmptyState`, `StatCard`, `ConfirmAction`, `FilterBar`, ...).
 
 ## Commands
 

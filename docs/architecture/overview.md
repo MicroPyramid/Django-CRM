@@ -66,11 +66,6 @@ never runs before both steps have completed; `RequireOrgContext` sits after `Get
 the list above and returns a response itself (the 403) rather than calling `get_response` when the
 context is missing, so a request that fails tenancy resolution never reaches URL dispatch.
 
-This file also defines an older class, `SetOrgContext`, whose own docstring describes it as the
-one wired into `MIDDLEWARE`. That docstring is stale. `SetOrgContext` sets the session variable
-but never rejects a context-less request; `RequireOrgContext` is what `settings.py` actually
-lists, and it is the one enforced.
-
 One layer above middleware, DRF's own authentication runs at view dispatch time
 (`DEFAULT_AUTHENTICATION_CLASSES` in `REST_FRAMEWORK`: `PATAuthentication`, then simplejwt's
 `JWTAuthentication`, then `APIKeyAuthentication`) to populate `request.user` for `IsAuthenticated`

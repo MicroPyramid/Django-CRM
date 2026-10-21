@@ -81,7 +81,6 @@ dependencies = [
     "django-crum>=0.7.9",
     "disposable-email-domains>=0.0.280",
     "redis>=8.1.0",
-    "pytz>=2026.5",
     "requests>=2.34.2",
     "faker>=40.43.0",
     "python-dateutil>=2.9.0.post0",

@@ -1,7 +1,6 @@
 """RLS-enforced proof for the portal token → org resolution (Option 1).
 
-These run only under a non-superuser Postgres role (``RLS_ENFORCE=1
---ds=crm.test_settings_postgres``), because the whole point is the behaviour
+These run only under a non-superuser Postgres role (``--ds=crm.test_settings_postgres``), because the whole point is the behaviour
 that a superuser dev DB hides: with an empty ``app.current_org`` the isolation
 policy makes the estimate row invisible, so the anonymous portal view can only
 work if it resolves the org from the unscoped lookup first.

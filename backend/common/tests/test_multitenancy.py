@@ -314,36 +314,6 @@ class TestBaseOrgModel(TestCase):
         self.assertIsNotNone(team.id)
 
 
-class TestOrgScopedQuerySet(MultiTenancyBaseTestCase):
-    """Test OrgScopedQuerySet helper methods"""
-
-    def setUp(self):
-        super().setUp()
-
-        # Create teams in each org
-        self.team_a = Teams.objects.create(
-            name="Team A", description="In Org A", org=self.org_a
-        )
-        self.team_b = Teams.objects.create(
-            name="Team B", description="In Org B", org=self.org_b
-        )
-
-    def test_for_org_filters_correctly(self):
-        """for_org() should filter by organization"""
-        teams = Teams.objects.filter(org=self.org_a)
-        self.assertEqual(teams.count(), 1)
-        self.assertEqual(teams.first().name, "Team A")
-
-    def test_for_request_uses_profile_org(self):
-        """for_request() should use org from request.profile"""
-        # Create mock request
-        request = MagicMock()
-        request.profile = self.profile_a
-
-        # This would be used with OrgScopedManager
-        # Teams.objects.for_request(request)
-
-
 class TestNullOrgPrevention(MultiTenancyBaseTestCase):
     """Test that models properly handle org field"""
 

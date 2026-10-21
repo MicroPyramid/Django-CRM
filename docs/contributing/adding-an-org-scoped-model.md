@@ -9,7 +9,7 @@ these steps exists; this page is the checklist for *doing* it.
 ## The checklist
 
 1. **Inherit `BaseOrgModel`** (`common.base`) so the model gets an `org` foreign key, the UUID
-   primary key, audit fields, and the `OrgScopedManager` helpers for free.
+   primary key and audit fields.
 2. **Add the table's `db_table` name to `ORG_SCOPED_TABLES`** in `backend/common/rls/__init__.py`.
 3. **Write a migration** that calls `get_enable_policy_sql('your_table')` inside a `RunPython`
    operation, with a `dependencies` entry that guarantees the table already exists when it runs.

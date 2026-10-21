@@ -37,22 +37,20 @@ uv run pytest --no-cov -x
 rather than being silently ignored. Every custom marker you use has to be declared in `pytest.ini`'s
 `markers` list. It doesn't touch markers a plugin registers itself, like `@pytest.mark.django_db`
 (from `pytest-django`). Those work without appearing in `pytest.ini` at all, which is why every
-example on this page uses `django_db` freely alongside the two markers that actually are declared.
+example on this page uses `django_db` freely alongside the one marker that is declared.
 
 ## Markers
 
-`pytest.ini` declares two custom markers:
+`pytest.ini` declares one custom marker:
 
 ```ini
 markers =
-    slow: marks tests as slow
     postgres_only: marks tests that require PostgreSQL
 ```
 
 `postgres_only` marks the tests that need a real PostgreSQL: RLS policy state, isolation behaviour
 under a role that RLS binds, and session-scoped connection state. List them with
-`uv run pytest -m postgres_only --collect-only -q`. `slow` is declared and currently applied to
-nothing.
+`uv run pytest -m postgres_only --collect-only -q`.
 
 ## The SQLite caveat
 

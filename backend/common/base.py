@@ -118,33 +118,6 @@ class BaseModel(AuditModel):
         return str(self.id)
 
 
-class OrgScopedQuerySet(models.QuerySet):
-    """QuerySet with automatic organization filtering support"""
-
-    def for_org(self, org):
-        """Filter queryset by organization"""
-        return self.filter(org=org)
-
-    def for_request(self, request):
-        """Filter queryset by organization from request"""
-        if hasattr(request, "profile") and request.profile:
-            return self.filter(org=request.profile.org)
-        return self.none()
-
-
-class OrgScopedManager(models.Manager):
-    """Manager that uses OrgScopedQuerySet"""
-
-    def get_queryset(self):
-        return OrgScopedQuerySet(self.model, using=self._db)
-
-    def for_org(self, org):
-        return self.get_queryset().for_org(org)
-
-    def for_request(self, request):
-        return self.get_queryset().for_request(request)
-
-
 class BaseOrgModel(BaseModel):
     """
     Base model for all organization-scoped entities.
@@ -153,7 +126,6 @@ class BaseOrgModel(BaseModel):
     This ensures:
     - Required org field (no null values)
     - Per-org indexes for performance
-    - OrgScopedManager for easier filtering
 
     RLS Protection:
     ---------------
@@ -173,8 +145,6 @@ class BaseOrgModel(BaseModel):
         related_name="%(class)s_set",
         help_text="Organization this record belongs to",
     )
-
-    objects = OrgScopedManager()
 
     class Meta:
         abstract = True

@@ -46,7 +46,7 @@ class GetProfileAndOrg:
         # another's without any view knowing about it.
         #
         # The deactivate is in a `finally` for the same reason the RLS reset is
-        # (see `rls_context.SetOrgContext.__call__`): the active timezone is a
+        # (see `rls_context.RequireOrgContext.__call__`): the active timezone is a
         # thread-local, worker threads are reused, and a request that raised
         # after activating would hand the next tenant its own day boundary.
         activate_org_timezone(getattr(request, "org", None))

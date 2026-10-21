@@ -1,4 +1,3 @@
-import pytz
 from django.utils.translation import gettext_lazy as _
 
 INDCHOICES = (
@@ -421,14 +420,6 @@ CURRENCY_SYMBOLS = {
     "MXN": "MX$",
     "ZAR": "R",
 }
-
-
-def convert_to_custom_timezone(custom_date, custom_timezone, to_utc=False):
-    user_time_zone = pytz.timezone(custom_timezone)
-    if to_utc:
-        custom_date = user_time_zone.localize(custom_date.replace(tzinfo=None))
-        user_time_zone = pytz.UTC
-    return custom_date.astimezone(user_time_zone)
 
 
 # =============================================================================
