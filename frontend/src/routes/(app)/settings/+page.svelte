@@ -27,7 +27,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { count, shortDate } from '#lib/v2/format.js';
   import { isOrgAdmin } from '#lib/admin.js';
-  import { hubValue } from '#lib/v2/automation.js';
+  import { hubValue, showAutomationSetting } from '#lib/v2/automation.js';
   import { showObjectsSetting } from '#lib/v2/custom-objects.js';
   import { ChevronRight, ShieldAlert } from '@lucide/svelte';
 
@@ -256,7 +256,7 @@
               }
             ]
           : []),
-        ...(isOrgAdmin(data)
+        ...(showAutomationSetting(data.automation, isOrgAdmin(data))
           ? [
               {
                 href: '/settings/automation',

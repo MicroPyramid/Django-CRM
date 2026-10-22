@@ -100,6 +100,39 @@ void main() {
     );
   });
 
+  test('an API without automation answers not offered', () async {
+    client.routes['GET /api/automation/rules/'] = (
+      404,
+      '{"detail":"Not found."}',
+    );
+    container.listen(automationRulesProvider, (_, _) {});
+    await expectLater(
+      container.read(automationRulesProvider.future),
+      throwsA(isA<AutomationNotOffered>()),
+    );
+    expect(
+      automationNotOffered(container.read(automationRulesProvider)),
+      isTrue,
+    );
+    expect(
+      const AutomationNotOffered().toString(),
+      'Automation rules are not available here.',
+    );
+  });
+
+  test('any other failure is not read as not offered', () async {
+    client.routes['GET /api/automation/rules/'] = (500, '{"detail":"boom"}');
+    container.listen(automationRulesProvider, (_, _) {});
+    await expectLater(
+      container.read(automationRulesProvider.future),
+      throwsA(isNot(isA<AutomationNotOffered>())),
+    );
+    expect(
+      automationNotOffered(container.read(automationRulesProvider)),
+      isFalse,
+    );
+  });
+
   test('a failed load is an error, not an empty answer', () async {
     client.routes['GET /api/automation/rules/'] = (500, '{"detail":"boom"}');
     await expectLater(

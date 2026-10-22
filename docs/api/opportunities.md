@@ -201,7 +201,7 @@ accept. Only `name` is required at the model level (`opportunity/models.py:46`, 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `name` | string | **required** | Unique per org, case-insensitive |
-| `account` | uuid | optional | |
+| `account` | uuid | optional | An account in the caller's org that the caller can open (an admin can open any). Anything else, an unknown id included, is a 400 `"No such account."`. On edit, the account the deal already has is kept whoever saves |
 | `pipeline` | uuid | optional | One of the org's pipelines. Defaults to the deal's current pipeline, or the org's default on create. Changing it requires `stage` too |
 | `stage` | a stage code of the deal's pipeline | optional | Defaults to the pipeline's first open stage on create; see [Stages](#stages) |
 | `opportunity_type` | one of `OPPORTUNITY_TYPES` | optional | `NEW_BUSINESS`, `EXISTING_BUSINESS`, `RENEWAL`, `UPSELL`, `CROSS_SELL` |

@@ -77,7 +77,13 @@ class _Body extends ConsumerWidget {
     final catalogue = loaded.isLoading || loaded.hasError ? null : loaded.value;
     if (answer == null) {
       if (async.hasError && !async.isLoading) {
+        if (automationNotOffered(async)) {
+          return const _ErrorState(
+            message: 'Automation rules are not available here.',
+          );
+        }
         return _ErrorState(
+          message: 'Could not load automation rules',
           onRetry: () => ref.read(automationRulesProvider.notifier).refresh(),
         );
       }
@@ -317,9 +323,10 @@ class _MemberNotice extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({required this.message, this.onRetry});
 
-  final VoidCallback onRetry;
+  final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -334,13 +341,11 @@ class _ErrorState extends StatelessWidget {
             color: AppColors.textTertiary,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Could not load automation rules',
-            style: AppTypography.body,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+          Text(message, style: AppTypography.body, textAlign: TextAlign.center),
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+          ],
         ],
       ),
     ),

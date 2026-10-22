@@ -17,6 +17,16 @@ final automationCatalogueProvider =
       return AutomationCatalogue.fromJson(data);
     }, retry: (_, _) => null);
 
+/// The rules list answered 404: this API has no automation, which the hosted
+/// app can meet while its API is a release behind. Read as "not offered", as
+/// custom objects read a 404.
+class AutomationNotOffered implements Exception {
+  const AutomationNotOffered();
+
+  @override
+  String toString() => 'Automation rules are not available here.';
+}
+
 class AutomationRulesNotifier extends AsyncNotifier<AutomationRulesAnswer> {
   @override
   Future<AutomationRulesAnswer> build() {
@@ -26,6 +36,7 @@ class AutomationRulesNotifier extends AsyncNotifier<AutomationRulesAnswer> {
 
   Future<AutomationRulesAnswer> _fetch() async {
     final response = await ApiService().get(ApiConfig.automationRules);
+    if (response.statusCode == 404) throw const AutomationNotOffered();
     final data = response.data;
     if (!response.success || data == null) {
       throw Exception(response.message ?? 'Could not load the rules');
@@ -80,6 +91,10 @@ class AutomationRulesNotifier extends AsyncNotifier<AutomationRulesAnswer> {
 AutomationRulesAnswer? shownAutomationRules(
   AsyncValue<AutomationRulesAnswer> v,
 ) => v.isLoading || v.hasError ? null : v.value;
+
+/// True only when the last load found no automation on this API.
+bool automationNotOffered(AsyncValue<AutomationRulesAnswer> v) =>
+    v.error is AutomationNotOffered;
 
 final automationRulesProvider =
     AsyncNotifierProvider<AutomationRulesNotifier, AutomationRulesAnswer>(

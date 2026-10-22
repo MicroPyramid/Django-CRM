@@ -3,6 +3,7 @@ import {
   actorName,
   notificationText,
   hubValue,
+  showAutomationSetting,
   objectOf,
   fieldOf,
   triggerFields,
@@ -527,6 +528,20 @@ describe('moveItem', () => {
     expect(moveItem(list, 2, 1)).toEqual(['a', 'b', 'c']);
     expect(moveItem(list, 0, 1)).not.toBe(list);
     expect(list).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('showAutomationSetting', () => {
+  it('shows admins the row unless the API has no automation', () => {
+    const summary = { active: 1, failing: 0, attention: false };
+    expect(showAutomationSetting(summary, true)).toBe(true);
+    expect(showAutomationSetting(null, true)).toBe(true);
+    expect(showAutomationSetting(false, true)).toBe(false);
+  });
+
+  it('never shows a member the row', () => {
+    expect(showAutomationSetting({ active: 1, failing: 0, attention: false }, false)).toBe(false);
+    expect(showAutomationSetting(null, false)).toBe(false);
   });
 });
 

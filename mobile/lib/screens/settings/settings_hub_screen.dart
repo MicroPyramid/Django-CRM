@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/automation_provider.dart';
 import '../../providers/custom_objects_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
@@ -158,15 +159,20 @@ class SettingsHubScreen extends StatelessWidget {
                   : const SizedBox.shrink(),
             ),
             Consumer(
-              builder: (context, ref, _) => ref.watch(isOrgAdminProvider)
-                  ? MenuRow(
-                      icon: LucideIcons.zap,
-                      label: 'Automation',
-                      description:
-                          'Rules that act when a record is created or changes',
-                      onTap: () => context.push(AppRoutes.settingsAutomation),
-                    )
-                  : const SizedBox.shrink(),
+              builder: (context, ref, _) {
+                // Members never ask: the rules answer them 403.
+                if (!ref.watch(isOrgAdminProvider) ||
+                    automationNotOffered(ref.watch(automationRulesProvider))) {
+                  return const SizedBox.shrink();
+                }
+                return MenuRow(
+                  icon: LucideIcons.zap,
+                  label: 'Automation',
+                  description:
+                      'Rules that act when a record is created or changes',
+                  onTap: () => context.push(AppRoutes.settingsAutomation),
+                );
+              },
             ),
             // Admins only, as on the web: the audit log answers a member 403.
             Consumer(

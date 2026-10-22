@@ -4,6 +4,7 @@ from django.db.models import Sum
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from accounts.access import has_account_access
 from accounts.serializer import AccountPickerSerializer
 from common.serializer import (
     OrganizationSerializer,
@@ -309,11 +310,16 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
         request_obj = kwargs.pop("request_obj", None)
         super().__init__(*args, **kwargs)
         self.org = None
+        self.profile = None
         # Set by `validate`: whether this save puts the deal in a won or lost
         # stage it named, which is when the view records who closed it.
         self.closing = False
+        # An id that matches no account at all reads the same as one the
+        # caller may not open; see `validate_account`.
+        self.fields["account"].error_messages["does_not_exist"] = "No such account."
         if request_obj:
             self.org = request_obj.profile.org
+            self.profile = request_obj.profile
             # Only this org's pipelines resolve; another org's id is "does not
             # exist", the same answer as an id nobody has.
             self.fields["pipeline"].queryset = DealPipeline.objects.filter(org=self.org)
@@ -334,6 +340,23 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
                     "Opportunity already exists with this name"
                 )
         return name
+
+    def validate_account(self, account):
+        """Only an account in this org that the caller may open, as on contacts
+        and tickets, and every refusal reads like an unknown id. The account the
+        deal already has is kept whoever saves: the phone form sends it back on
+        every edit, and the caller never chose it."""
+        if account is None:
+            return account
+        if self.instance is not None and account.id == self.instance.account_id:
+            return account
+        if (
+            self.org is None
+            or account.org_id != self.org.id
+            or not has_account_access(self.profile, account)
+        ):
+            raise serializers.ValidationError("No such account.")
+        return account
 
     def _resolved(self, data, field):
         """The value this save will end up with, the submitted one if the

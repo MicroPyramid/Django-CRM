@@ -703,8 +703,20 @@ export function switchLabel(status) {
 }
 
 /**
+ * Whether the Settings hub offers the Automation row: admins only, and not
+ * where the API answered 404 (`automationSummary` returns false there).
+ *
+ * @param {{ active: number, failing: number, attention: boolean } | null | false} summary
+ * @param {boolean} isAdmin
+ * @returns {boolean}
+ */
+export function showAutomationSetting(summary, isAdmin) {
+  return isAdmin && summary !== false;
+}
+
+/**
  * The settings hub row's value and warning from `automationSummary`.
- * @param {{ active: number, failing: number, attention: boolean } | null | undefined} summary
+ * @param {{ active: number, failing: number, attention: boolean } | null | false | undefined} summary
  * @returns {{ value: string | null, warn: boolean }}
  */
 export function hubValue(summary) {

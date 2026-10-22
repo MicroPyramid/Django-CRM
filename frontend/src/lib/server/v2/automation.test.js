@@ -15,6 +15,7 @@ const {
   listRuns,
   reorderRules,
   automationSummary,
+  NOT_AVAILABLE,
   ruleBody,
   moveRule,
   ruleErrors
@@ -94,12 +95,22 @@ describe('requests', () => {
     expect(apiRequest.mock.calls[0][1].expectedStatuses).toEqual([403, 404]);
   });
 
-  it('expects a 403 on the list and the catalogue so a member logs no error', async () => {
+  it('expects a 403 and a 404 on the list and the catalogue, so a member or an API without automation logs no error', async () => {
     apiRequest.mockResolvedValue({ results: [] });
     await listRules(event);
     await getCatalogue(event);
-    expect(apiRequest.mock.calls[0][1].expectedStatuses).toEqual([403]);
-    expect(apiRequest.mock.calls[1][1].expectedStatuses).toEqual([403]);
+    expect(apiRequest.mock.calls[0][1].expectedStatuses).toEqual([403, 404]);
+    expect(apiRequest.mock.calls[1][1].expectedStatuses).toEqual([403, 404]);
+  });
+
+  it('turns a 404 on the list or the catalogue into a page 404 that says rules are not offered', async () => {
+    expect(NOT_AVAILABLE).toBe('Automation rules are not available here.');
+    for (const call of [() => listRules(event), () => getCatalogue(event)]) {
+      apiRequest.mockRejectedValueOnce(status(404));
+      await expect(call()).rejects.toMatchObject({ status: 404, body: { message: NOT_AVAILABLE } });
+    }
+    apiRequest.mockRejectedValueOnce(status(403));
+    await expect(getCatalogue(event)).rejects.toMatchObject({ status: 403 });
   });
 
   it('refuses a malformed id before any request', async () => {
@@ -124,11 +135,16 @@ describe('requests', () => {
 });
 
 describe('automationSummary', () => {
-  it('answers null for the summary on 403, 404, 500 and a network error', async () => {
-    for (const err of [status(403), status(404), status(500), new TypeError('fetch failed')]) {
+  it('answers null for the summary on 403, 500 and a network error', async () => {
+    for (const err of [status(403), status(500), new TypeError('fetch failed')]) {
       apiRequest.mockRejectedValueOnce(err);
       expect(await automationSummary(event)).toBeNull();
     }
+  });
+
+  it('answers false on a 404: this API has no automation', async () => {
+    apiRequest.mockRejectedValueOnce(status(404));
+    expect(await automationSummary(event)).toBe(false);
   });
 
   it('counts active, failing and attention', async () => {

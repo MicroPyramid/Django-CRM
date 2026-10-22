@@ -147,7 +147,56 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Automation'), findsNothing);
+    expect(_FakeRules.builds, 0);
   });
+
+  testWidgets('the hub hides Automation from admins where the API has none', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      home: const SettingsHubScreen(),
+      rules: () async => throw const AutomationNotOffered(),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Help center'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Automation'), findsNothing);
+  });
+
+  testWidgets(
+    'the hub keeps Automation when the rules fail for another reason',
+    (tester) async {
+      await _pump(
+        tester,
+        home: const SettingsHubScreen(),
+        rules: () async => throw Exception('boom'),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Automation'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Automation'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the screen says rules are not available where the API has none',
+    (tester) async {
+      await _pump(
+        tester,
+        rules: () async => throw const AutomationNotOffered(),
+      );
+      expect(
+        find.text('Automation rules are not available here.'),
+        findsOneWidget,
+      );
+      expect(find.text('Try again'), findsNothing);
+    },
+  );
 
   testWidgets(
     'a member who opens the screen sees the notice and no request is made',

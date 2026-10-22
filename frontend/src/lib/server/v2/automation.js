@@ -8,6 +8,9 @@ import { readableError } from '#lib/server/v2/form-errors.js';
 import { checkId } from '#lib/server/v2/custom-objects.js';
 
 export const RULE_GONE = 'That rule does not exist, or you do not have access to it.';
+// The hosted web app can run ahead of its API during a release, so an API
+// without these routes reads as "not offered", as custom objects do.
+export const NOT_AVAILABLE = 'Automation rules are not available here.';
 const UNREADABLE = 'Could not read the rule.';
 
 /** Runs per page on a rule's history. */
@@ -17,16 +20,30 @@ export const RUN_PAGE = 20;
 
 /** @param {Event} event */
 export async function getCatalogue({ cookies }) {
-  return await apiRequest('/automation/catalogue/', { expectedStatuses: [403] }, { cookies });
+  try {
+    return await apiRequest(
+      '/automation/catalogue/',
+      { expectedStatuses: [403, 404] },
+      { cookies }
+    );
+  } catch (/** @type {any} */ err) {
+    if (err?.status === 404) error(404, NOT_AVAILABLE);
+    throw err;
+  }
 }
 
 /** @param {Event} event */
 export async function listRules({ cookies }) {
   try {
-    const resp = await apiRequest('/automation/rules/', { expectedStatuses: [403] }, { cookies });
+    const resp = await apiRequest(
+      '/automation/rules/',
+      { expectedStatuses: [403, 404] },
+      { cookies }
+    );
     return { summary: resp?.summary ?? null, rules: resp?.results ?? [] };
   } catch (/** @type {any} */ err) {
     if (err?.status === 403) return { forbidden: true };
+    if (err?.status === 404) error(404, NOT_AVAILABLE);
     throw err;
   }
 }
@@ -130,9 +147,10 @@ export async function reorderRules({ cookies }, ids) {
 }
 
 /**
- * The Settings tile's numbers. Any failure is null: the tile just does not show.
+ * The Settings row's numbers. Null when they cannot be read, so the row shows
+ * without them; false when the API has no automation, so the row is hidden.
  * @param {Event} event
- * @returns {Promise<{ active: number, failing: number, attention: boolean } | null>}
+ * @returns {Promise<{ active: number, failing: number, attention: boolean } | null | false>}
  */
 export async function automationSummary({ cookies }) {
   try {
@@ -148,8 +166,8 @@ export async function automationSummary({ cookies }) {
       if (bad || r.status === 'paused') attention = true;
     }
     return { active, failing, attention };
-  } catch {
-    return null;
+  } catch (/** @type {any} */ err) {
+    return err?.status === 404 ? false : null;
   }
 }
 
