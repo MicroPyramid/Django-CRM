@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "macros",
     "webforms",
     "webhooks",
+    "automation",
     # "teams",  # Merged into common app
 ]
 
@@ -98,9 +99,12 @@ MIDDLEWARE = [
     "crum.CurrentRequestUserMiddleware",
     "common.middleware.get_company.GetProfileAndOrg",
     "common.middleware.rls_context.RequireOrgContext",  # RLS: Enforce org context + set PostgreSQL session variable
-    # Last, so it queues the request's webhook events while crum still holds
-    # the request and the RLS context is still set. See webhooks/emit.py.
+    # After these, so it queues the request's webhook events while crum still
+    # holds the request and the RLS context is still set. See webhooks/emit.py.
     "webhooks.middleware.WebhookEventsMiddleware",
+    # Last, so its flush runs before the webhook flush and a rule's own
+    # changes reach webhooks. See automation/capture.py.
+    "automation.middleware.AutomationMiddleware",
 ]
 
 ROOT_URLCONF = "crm.urls"

@@ -9,6 +9,7 @@ from crum import get_current_request
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import Signal, receiver
 
+from common.actor import current_actor
 from common.models import Activity
 
 pre_merge = Signal()
@@ -35,17 +36,20 @@ def get_entity_name(instance):
 
 
 def create_activity(instance, action, entity_type):
-    """Create an activity record for a model instance"""
-    request = get_current_request()
+    """Create an activity record for a model instance.
 
-    # Skip if no request context (e.g., management commands)
-    if not request:
-        return
-
-    # Get profile from request
-    profile = getattr(request, "profile", None)
-    if not profile:
-        return
+    Credited to the `common.actor` override when one is set, even with no
+    request, else to the request's profile; with neither, nothing is written.
+    """
+    override = current_actor()
+    metadata = {}
+    if override is not None:
+        profile, note = override
+        metadata = {"automation": note}
+    else:
+        profile = getattr(get_current_request(), "profile", None)
+        if not profile:
+            return
 
     # Get org from instance or profile
     org = getattr(instance, "org", None)
@@ -61,6 +65,7 @@ def create_activity(instance, action, entity_type):
         entity_type=entity_type,
         entity_id=instance.id,
         entity_name=get_entity_name(instance),
+        metadata=metadata,
         org=org,
     )
 

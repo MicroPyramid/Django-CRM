@@ -181,3 +181,20 @@ def test_api_resources_covers_the_live_urlconf():
 
     missing = found - set(scopes.API_RESOURCES)
     assert not missing, f"API roots missing from API_RESOURCES: {sorted(missing)}"
+
+
+@pytest.mark.django_db
+def test_tokens_cannot_reach_automation(org_a, admin_profile):
+    """The denial runs in middleware, so it holds before the route resolves."""
+    from rest_framework.test import APIClient
+
+    from common.models import PersonalAccessToken
+
+    url = "/api/automation/rules/"
+    raw, _ = PersonalAccessToken.generate(profile=admin_profile, name="cli")
+    pat = APIClient()
+    pat.credentials(HTTP_AUTHORIZATION=f"Bearer {raw}")
+    assert pat.get(url).status_code == 403
+    key = APIClient()
+    key.credentials(HTTP_TOKEN=org_a.api_key)
+    assert key.get(url).status_code == 403

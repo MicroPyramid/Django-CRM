@@ -28,6 +28,7 @@ from django.db import transaction
 from django.db.models.functions import Lower
 
 from accounts.access import visible_accounts_qs
+from automation.capture import suppress_rules
 from cases.access import visible_cases_qs
 from cases.models import Case
 from cases.signals import route_after_relations
@@ -514,6 +515,7 @@ def _validate_and_build(
     )
 
 
+@suppress_rules()
 @transaction.atomic
 def commit_rows(file_bytes: bytes, org, profile) -> dict[str, Any]:
     """Re-parse the uploaded CSV and create cases in a single transaction.

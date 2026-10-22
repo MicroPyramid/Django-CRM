@@ -49,6 +49,7 @@ from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 
 from accounts.access import visible_accounts_qs
+from automation.capture import suppress_rules
 from common.import_mapping import (
     FULL_NAME,
     SKIP_DUPLICATE,
@@ -911,6 +912,7 @@ def commit_rows(file_bytes: bytes, org, profile) -> dict[str, Any]:
         return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
 
 
+@suppress_rules()
 @transaction.atomic
 def _commit_validated(rows: list[ValidatedRow], org, profile) -> dict[str, Any]:
     created_ids: list[str] = []

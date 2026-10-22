@@ -36,6 +36,12 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/auth/profile/` | GET |
 | `/api/auth/refresh-token/` | POST |
 | `/api/auth/switch-org/` | POST |
+| `/api/automation/catalogue/` | GET |
+| `/api/automation/rules/` | GET, POST |
+| `/api/automation/rules/reorder/` | POST |
+| `/api/automation/rules/{id}/` | DELETE, GET, PATCH |
+| `/api/automation/rules/{id}/runs/` | GET |
+| `/api/automation/rules/{id}/try/` | POST |
 | `/api/boards/` | GET, POST |
 | `/api/boards/columns/{column_pk}/tasks/` | GET, POST |
 | `/api/boards/tasks/{id}/` | DELETE, PUT |

@@ -114,6 +114,8 @@ API_RESOURCES = frozenset(
         # Outbound webhooks. Listed so the vocabulary matches the URLconf, but
         # no scope reaches it: the whole root is in CREDENTIAL_PATHS below.
         "webhooks",
+        # Automation rules. Same: the whole root is in CREDENTIAL_PATHS.
+        "automation",
     }
 )
 
@@ -168,6 +170,9 @@ CREDENTIAL_PATHS = (
     # is revoked. Same persistence argument as minting a token, so webhooks are
     # managed from a signed-in session only.
     "/api/webhooks/",
+    # A rule keeps acting on the org's records after the token that wrote it
+    # is revoked. Managed from a signed-in admin session only.
+    "/api/automation/",
     # The security audit log records who signed in from where and what was
     # refused. Read from a signed-in admin session only, like webhooks: a
     # leaked token should not also reveal what the org has noticed about it.

@@ -84,4 +84,9 @@ app.conf.beat_schedule = {
         "task": "webhooks.tasks.prune_webhook_deliveries",
         "schedule": crontab(hour=3, minute=45),
     },
+    # Drop automation runs older than 30 days, daily at 3:50 AM
+    "prune-automation-runs": {
+        "task": "automation.tasks.prune_runs",
+        "schedule": crontab(hour=3, minute=50),
+    },
 }

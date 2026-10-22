@@ -10,8 +10,8 @@ would be circular.
 An installed app adds per-org entries with `register_hook`. `model_label`,
 `read_rule` and `edit_rule` are for the registry's own use. Callers use only
 `key`, `label`, `label_plural`, `custom_field_target`, `attachments`,
-`activity_feed`, `links`, `model`, `records(org)`, `readable(profile)` and
-`editable(profile)`.
+`activity_feed`, `links`, `model`, `records(org)`, `readable(profile)`,
+`editable(profile)` and `automation_adapter()`.
 """
 
 from collections.abc import Callable, Iterable
@@ -33,6 +33,7 @@ class ObjectEntry:
     label_plural: str
     links: bool
     edit_rule: str | None
+    automation: str | None = None
 
     @property
     def model(self):
@@ -48,6 +49,12 @@ class ObjectEntry:
         if self.edit_rule is None:
             return self.model.objects.none()
         return import_string(self.edit_rule)(profile)
+
+    def automation_adapter(self):
+        """What rules use to reach this object's records, or None if they cannot."""
+        if self.automation is None:
+            return None
+        return import_string(self.automation)(self)
 
 
 class RegistryConflict(Exception):
@@ -69,6 +76,7 @@ BUILT_IN = (
         label_plural="Leads",
         links=True,
         edit_rule="leads.access.visible_leads_qs",
+        automation="automation.adapters.leads.LeadAdapter",
     ),
     ObjectEntry(
         "contact",
@@ -81,6 +89,7 @@ BUILT_IN = (
         label_plural="Contacts",
         links=True,
         edit_rule="contacts.access.visible_contacts_qs",
+        automation="automation.adapters.contacts.ContactAdapter",
     ),
     ObjectEntry(
         "account",
@@ -93,6 +102,7 @@ BUILT_IN = (
         label_plural="Accounts",
         links=True,
         edit_rule="accounts.access.visible_accounts_qs",
+        automation="automation.adapters.accounts.AccountAdapter",
     ),
     ObjectEntry(
         "deal",
@@ -105,6 +115,7 @@ BUILT_IN = (
         label_plural="Deals",
         links=True,
         edit_rule="opportunity.access.visible_deals_qs",
+        automation="automation.adapters.deals.DealAdapter",
     ),
     ObjectEntry(
         "ticket",
@@ -117,6 +128,7 @@ BUILT_IN = (
         label_plural="Tickets",
         links=True,
         edit_rule="cases.access.writable_cases_qs",
+        automation="automation.adapters.tickets.TicketAdapter",
     ),
     ObjectEntry(
         "task",
@@ -129,6 +141,7 @@ BUILT_IN = (
         label_plural="Tasks",
         links=True,
         edit_rule="tasks.access.visible_tasks_qs",
+        automation="automation.adapters.tasks.TaskAdapter",
     ),
     ObjectEntry(
         "invoice",

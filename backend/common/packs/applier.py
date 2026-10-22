@@ -15,6 +15,7 @@ from datetime import date
 from django.db import transaction
 from django.utils import timezone
 
+from automation.capture import suppress_rules
 from cases.models import CasePipeline, CaseStage
 from common.models import CustomFieldDefinition, Org, PackApplication, Tags
 from common.packs.schema import (
@@ -269,6 +270,7 @@ def _sample_moved_to_today(pack: dict) -> dict:
     return view["sample_data"]
 
 
+@suppress_rules()
 def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     from accounts.models import Account
     from cases.models import Case, CaseStage

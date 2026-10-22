@@ -23,7 +23,7 @@ from tasks.models import Board, BoardColumn, BoardMember, BoardTask, Task
 
 URL = "/api/tasks/"
 BODY = {"title": "Task", "status": "New", "priority": "High"}
-NOTIFY = "tasks.views.task_views.send_email_to_assigned_user.delay"
+NOTIFY = "tasks.updates.send_email_to_assigned_user.delay"
 NOTIFY_CARD = "tasks.views.board_views.send_board_card_email_to_assigned_user.delay"
 
 
@@ -70,9 +70,14 @@ def _ids(*profiles):
 @pytest.mark.django_db
 class TestTaskCreateNotifies:
     def test_each_assignee_is_named_once(
-        self, admin_client, org_a, user_profile, other_profile
+        self,
+        admin_client,
+        org_a,
+        user_profile,
+        other_profile,
+        django_capture_on_commit_callbacks,
     ):
-        with patch(NOTIFY) as notify:
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = admin_client.post(
                 URL,
                 {**BODY, "assigned_to": _ids(user_profile, other_profile)},
@@ -85,8 +90,10 @@ class TestTaskCreateNotifies:
             _ids(user_profile, other_profile), str(task.id), str(org_a.id)
         )
 
-    def test_no_assignees_enqueues_nothing(self, admin_client):
-        with patch(NOTIFY) as notify:
+    def test_no_assignees_enqueues_nothing(
+        self, admin_client, django_capture_on_commit_callbacks
+    ):
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = admin_client.post(URL, BODY, format="json")
 
         assert response.status_code == 200, response.data
@@ -97,9 +104,16 @@ class TestTaskCreateNotifies:
 @pytest.mark.parametrize("method", ["put", "patch"])
 class TestTaskUpdateNotifies:
     def test_an_added_assignee_is_the_only_one_named(
-        self, admin_client, task, org_a, user_profile, other_profile, method
+        self,
+        admin_client,
+        task,
+        org_a,
+        user_profile,
+        other_profile,
+        method,
+        django_capture_on_commit_callbacks,
     ):
-        with patch(NOTIFY) as notify:
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{task.id}/",
                 {**BODY, "assigned_to": _ids(user_profile, other_profile)},
@@ -112,9 +126,14 @@ class TestTaskUpdateNotifies:
         )
 
     def test_unchanged_assignees_enqueue_nothing(
-        self, admin_client, task, user_profile, method
+        self,
+        admin_client,
+        task,
+        user_profile,
+        method,
+        django_capture_on_commit_callbacks,
     ):
-        with patch(NOTIFY) as notify:
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{task.id}/",
                 {**BODY, "assigned_to": _ids(user_profile)},
@@ -124,8 +143,10 @@ class TestTaskUpdateNotifies:
         assert response.status_code == 200, response.data
         notify.assert_not_called()
 
-    def test_a_removed_assignee_enqueues_nothing(self, admin_client, task, method):
-        with patch(NOTIFY) as notify:
+    def test_a_removed_assignee_enqueues_nothing(
+        self, admin_client, task, method, django_capture_on_commit_callbacks
+    ):
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{task.id}/", {**BODY, "assigned_to": []}, format="json"
             )
@@ -136,8 +157,10 @@ class TestTaskUpdateNotifies:
 
 
 @pytest.mark.django_db
-def test_patch_without_assigned_to_enqueues_nothing(admin_client, task, user_profile):
-    with patch(NOTIFY) as notify:
+def test_patch_without_assigned_to_enqueues_nothing(
+    admin_client, task, user_profile, django_capture_on_commit_callbacks
+):
+    with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
         response = admin_client.patch(
             f"{URL}{task.id}/", {"title": "Renamed"}, format="json"
         )

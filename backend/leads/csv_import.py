@@ -32,6 +32,7 @@ from typing import Any
 from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 
+from automation.capture import suppress_rules
 from common.custom_fields import validate_payload as validate_custom_fields_payload
 from common.import_mapping import (
     FULL_NAME,
@@ -505,6 +506,7 @@ def commit_rows(file_bytes: bytes, request, legacy=False) -> dict[str, Any]:
         return {"error": True, "message": _CONCURRENT_CONFLICT, "created": 0}
 
 
+@suppress_rules()
 @transaction.atomic
 def _commit_validated(rows: list[ValidatedRow], profile) -> dict[str, Any]:
     org = profile.org

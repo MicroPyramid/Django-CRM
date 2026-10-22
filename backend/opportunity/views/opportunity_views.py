@@ -58,6 +58,7 @@ from opportunity.serializer import (
 )
 from opportunity.stages import aging_q, stage_choices, stage_index
 from opportunity.tasks import send_email_to_assigned_user
+from opportunity.updates import update_deal
 from opportunity.workflow import CLOSED_KINDS
 
 
@@ -760,104 +761,24 @@ class OpportunityDetailView(APIView):
         },
     )
     def patch(self, request, pk, format=None):
-        """Handle partial updates to an opportunity."""
-        params = request.data
+        """Handle partial updates to an opportunity.
+
+        The write itself is `opportunity.updates.update_deal`, shared with
+        automation rules.
+        """
         opportunity_object = self.get_object(pk=pk)
         if not opportunity_object:
             return Response(
                 {"error": True, "errors": "Opportunity not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        serializer = OpportunityCreateSerializer(
-            opportunity_object,
-            data=params,
-            request_obj=request,
-            partial=True,
-        )
-
-        if serializer.is_valid():
-            save_kwargs = {
-                "closed_on": params.get("closed_on")
-                if "closed_on" in params
-                else opportunity_object.closed_on
-            }
-            if "custom_fields" in params:
-                cf_payload = params.get("custom_fields")
-                if isinstance(cf_payload, str):
-                    try:
-                        cf_payload = json.loads(cf_payload)
-                    except (TypeError, ValueError):
-                        cf_payload = None
-                cleaned_cf, cf_errors = validate_custom_fields_payload(
-                    "Opportunity",
-                    cf_payload or {},
-                    request.profile.org,
-                    existing=opportunity_object.custom_fields or {},
-                )
-                if cf_errors:
-                    return Response(
-                        {"error": True, "errors": {"custom_fields": cf_errors}},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                save_kwargs["custom_fields"] = cleaned_cf
-            # Parsed before the first write, as in PUT. An absent key parses to [].
-            contact_ids = payload_id_list(params.get("contacts"), "contacts")
-            tag_ids = payload_id_list(params.get("tags"), "tags")
-            team_ids = payload_id_list(params.get("teams"), "teams")
-            assigned_ids = payload_id_list(params.get("assigned_to"), "assigned_to")
-            opportunity_object = serializer.save(**save_kwargs)
-
-            # Handle M2M fields if present in request
-            if "contacts" in params:
-                replace_visible_contacts(
-                    opportunity_object.contacts, contact_ids, request.profile
-                )
-
-            if "tags" in params:
-                opportunity_object.tags.clear()
-                if tag_ids:
-                    tag_objs = Tags.objects.filter(
-                        id__in=tag_ids, org=request.profile.org, is_active=True
-                    )
-                    opportunity_object.tags.add(*tag_objs)
-
-            if "teams" in params:
-                opportunity_object.teams.clear()
-                if team_ids:
-                    teams = Teams.objects.filter(
-                        id__in=team_ids, org=request.profile.org
-                    )
-                    opportunity_object.teams.add(*teams)
-
-            if "assigned_to" in params:
-                previous = set(
-                    opportunity_object.assigned_to.values_list("id", flat=True)
-                )
-                opportunity_object.assigned_to.clear()
-                if assigned_ids:
-                    profiles = Profile.objects.filter(
-                        id__in=assigned_ids, org=request.profile.org, is_active=True
-                    )
-                    opportunity_object.assigned_to.add(*profiles)
-                # PUT has always told a newly assigned person; PATCH never did.
-                current = opportunity_object.assigned_to.values_list("id", flat=True)
-                recipients = list(set(current) - previous)
-                if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients, opportunity_object.id, str(request.profile.org.id)
-                    )
-
-            # Handle closed_by if stage changed to closed
-            if serializer.closing:
-                opportunity_object.closed_by = self.request.profile
-                opportunity_object.save()
-
+        errors = update_deal(request, opportunity_object, request.data)
+        if errors is not None:
             return Response(
-                {"error": False, "message": "Opportunity Updated Successfully"},
-                status=status.HTTP_200_OK,
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": False, "message": "Opportunity Updated Successfully"},
+            status=status.HTTP_200_OK,
         )

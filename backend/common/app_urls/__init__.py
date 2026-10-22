@@ -36,6 +36,8 @@ urlpatterns = [
     path("webforms/", include("webforms.urls", namespace="api_webforms")),
     # Outbound webhooks. Admin-only for every method, see webhooks/views.py.
     path("webhooks/", include("webhooks.urls", namespace="api_webhooks")),
+    # Automation rules. Admin-only for every method, see automation/views.py.
+    path("automation/", include("automation.urls", namespace="api_automation")),
     # Public CSAT (Tier 2 csat): anonymous, token-scoped. Lives outside
     # any app namespace because the customer reaches it from an emailed
     # link with no auth context.

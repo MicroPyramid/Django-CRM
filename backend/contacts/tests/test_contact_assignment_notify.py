@@ -31,9 +31,16 @@ def contact(org_a, user_profile):
 @pytest.mark.parametrize("method", ["put", "patch"])
 class TestContactAssignmentNotification:
     def test_an_added_assignee_is_notified_once(
-        self, admin_client, contact, user_profile, admin_profile, org_a, method
+        self,
+        admin_client,
+        contact,
+        user_profile,
+        admin_profile,
+        org_a,
+        method,
+        django_capture_on_commit_callbacks,
     ):
-        with patch(NOTIFY) as notify:
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{contact.id}/",
                 {
@@ -47,9 +54,14 @@ class TestContactAssignmentNotification:
         notify.assert_called_once_with([admin_profile.id], contact.id, str(org_a.id))
 
     def test_unchanged_assignees_notify_nobody(
-        self, admin_client, contact, user_profile, method
+        self,
+        admin_client,
+        contact,
+        user_profile,
+        method,
+        django_capture_on_commit_callbacks,
     ):
-        with patch(NOTIFY) as notify:
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{contact.id}/",
                 {**BODY, "assigned_to": [str(user_profile.id)]},
@@ -59,8 +71,10 @@ class TestContactAssignmentNotification:
         assert response.status_code == 200, response.data
         notify.assert_not_called()
 
-    def test_a_removed_assignee_is_not_notified(self, admin_client, contact, method):
-        with patch(NOTIFY) as notify:
+    def test_a_removed_assignee_is_not_notified(
+        self, admin_client, contact, method, django_capture_on_commit_callbacks
+    ):
+        with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
             response = getattr(admin_client, method)(
                 f"{URL}{contact.id}/",
                 {**BODY, "assigned_to": []},
@@ -73,8 +87,10 @@ class TestContactAssignmentNotification:
 
 
 @pytest.mark.django_db
-def test_patch_without_assigned_to_notifies_nobody(admin_client, contact, user_profile):
-    with patch(NOTIFY) as notify:
+def test_patch_without_assigned_to_notifies_nobody(
+    admin_client, contact, user_profile, django_capture_on_commit_callbacks
+):
+    with patch(NOTIFY) as notify, django_capture_on_commit_callbacks(execute=True):
         response = admin_client.patch(
             f"{URL}{contact.id}/", {"first_name": "Jolene"}, format="json"
         )
