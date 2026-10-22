@@ -12,6 +12,7 @@ The limit is patched down to a few bytes so no test has to allocate 25 MB. The
 helper reads the module constant at call time, so the patch is the real rule.
 """
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Callable
 from unittest.mock import patch
@@ -120,6 +121,9 @@ SPECS = {
     ),
 }
 WRITE_SPECS = [name for name in SPECS if name != "task"]
+# These PUTs queue the assignment email on commit, so a refusal only proves it
+# sent nothing once the captured callbacks have run.
+NOTIFY_ON_COMMIT = {"case", "contact"}
 
 
 def _file(size):
@@ -178,12 +182,23 @@ class TestCreate:
 class TestPut:
     @pytest.mark.parametrize("name", WRITE_SPECS)
     def test_oversized_is_400_and_changes_nothing(
-        self, admin_client, admin_profile, admin_user, org_a, name
+        self,
+        admin_client,
+        admin_profile,
+        admin_user,
+        org_a,
+        name,
+        django_capture_on_commit_callbacks,
     ):
         spec = SPECS[name]
         record = spec.make(org_a, admin_user)
+        on_commit = (
+            django_capture_on_commit_callbacks(execute=True)
+            if name in NOTIFY_ON_COMMIT
+            else nullcontext()
+        )
 
-        with patch(spec.notify) as notify:
+        with patch(spec.notify) as notify, on_commit:
             response = admin_client.put(
                 f"{spec.url}{record.id}/",
                 {

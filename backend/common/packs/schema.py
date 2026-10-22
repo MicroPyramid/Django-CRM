@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
-from common.custom_fields import SUPPORTED_TARGETS, validate_definition_options
+from common.custom_fields import is_supported_target, validate_definition_options
 
 TOP_LEVEL_KEYS = {
     "id",
@@ -330,7 +330,7 @@ def _validate_pipeline(
 def _validate_custom_field(where: str, field: dict) -> None:
     _reject_unknown(where, field, CUSTOM_FIELD_KEYS)
     target = field.get("target")
-    if target not in SUPPORTED_TARGETS:
+    if not is_supported_target(target):
         raise PackValidationError(
             f"{where}: target {target!r} is not a supported entity"
         )

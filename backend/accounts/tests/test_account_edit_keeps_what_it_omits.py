@@ -232,26 +232,39 @@ class TestPatchAnnouncesNewAssignees:
 
     @patch("accounts.views.send_email_to_assigned_user.delay")
     def test_a_new_assignee_is_emailed(
-        self, mail, admin_client, world, admin_profile, user_profile
+        self,
+        mail,
+        admin_client,
+        world,
+        admin_profile,
+        user_profile,
+        django_capture_on_commit_callbacks,
     ):
         account = world["account"]
         account.assigned_to.add(user_profile)
-        response = admin_client.patch(
-            _url(account),
-            {"assigned_to": [str(user_profile.id), str(admin_profile.id)]},
-            format="json",
-        )
+        with django_capture_on_commit_callbacks(execute=True):
+            response = admin_client.patch(
+                _url(account),
+                {"assigned_to": [str(user_profile.id), str(admin_profile.id)]},
+                format="json",
+            )
         assert response.status_code == 200, response.content
         mail.assert_called_once()
         assert mail.call_args[0][0] == [admin_profile.id]
 
     @patch("accounts.views.send_email_to_assigned_user.delay")
     def test_nobody_is_emailed_when_nobody_is_new(
-        self, mail, admin_client, world, user_profile
+        self,
+        mail,
+        admin_client,
+        world,
+        user_profile,
+        django_capture_on_commit_callbacks,
     ):
         account = world["account"]
         account.assigned_to.add(user_profile)
         for body in ({"assigned_to": [str(user_profile.id)]}, {"city": "York"}):
-            response = admin_client.patch(_url(account), body, format="json")
+            with django_capture_on_commit_callbacks(execute=True):
+                response = admin_client.patch(_url(account), body, format="json")
             assert response.status_code == 200, response.content
         mail.assert_not_called()

@@ -107,4 +107,97 @@ void main() {
     expectSentAsNull(changes.last, 'severity');
     expect(find.text('Select…'), findsOneWidget);
   });
+
+  CustomFieldDefinition statusDropdown({required List<String> options}) =>
+      CustomFieldDefinition(
+        id: '',
+        targetModel: 'obj:property',
+        key: 'status',
+        label: 'Status',
+        fieldType: CustomFieldType.dropdown,
+        options: [
+          for (final o in options) CustomFieldOption(value: o, label: o),
+        ],
+      );
+
+  Future<void> pumpForm(
+    WidgetTester tester, {
+    required List<CustomFieldDefinition> definitions,
+    required Map<String, dynamic> values,
+    ValueChanged<Map<String, dynamic>>? onChanged,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CustomFieldsForm(
+                definitions: definitions,
+                values: values,
+                onChanged: onChanged ?? (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('renders definitions it is given, with no provider', (
+    tester,
+  ) async {
+    await pumpForm(
+      tester,
+      definitions: [
+        statusDropdown(options: ['available']),
+        const CustomFieldDefinition(
+          id: '',
+          targetModel: 'obj:property',
+          key: 'beds',
+          label: 'Beds',
+          fieldType: CustomFieldType.number,
+        ),
+      ],
+      values: {'status': 'available', 'beds': 3},
+    );
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('available'), findsOneWidget);
+    expect(find.text('Beds'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets(
+    'shows a stored value that is no longer an option, and leaves it alone',
+    (tester) async {
+      var changes = 0;
+      await pumpForm(
+        tester,
+        definitions: [
+          statusDropdown(options: ['available']),
+        ],
+        values: {'status': 'let_agreed'},
+        onChanged: (_) => changes++,
+      );
+      expect(find.textContaining('let_agreed'), findsOneWidget);
+      expect(changes, 0);
+    },
+  );
+
+  test('exactly one of targetModel and definitions is required', () {
+    expect(
+      () => CustomFieldsForm(values: const {}, onChanged: (_) {}),
+      throwsAssertionError,
+    );
+    expect(
+      () => CustomFieldsForm(
+        targetModel: 'Case',
+        definitions: const [],
+        values: const {},
+        onChanged: (_) {},
+      ),
+      throwsAssertionError,
+    );
+  });
 }

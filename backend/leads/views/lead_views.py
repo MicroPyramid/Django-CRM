@@ -59,14 +59,8 @@ from leads.serializer import (
 )
 from leads.services import conversion_refusal
 from leads.tasks import send_email_to_assigned_user
+from leads.updates import converts, update_lead
 from leads.workflow import IRREVERSIBLE_STATUSES
-
-
-def _converting(request):
-    """Whether this write converts the lead. PATCH also takes `is_converted`."""
-    return request.data.get("status") == "converted" or bool(
-        request.data.get("is_converted")
-    )
 
 
 def _atomic_when_converting(method):
@@ -88,7 +82,7 @@ def _atomic_when_converting(method):
 
     @functools.wraps(method)
     def wrapper(self, request, *args, **kwargs):
-        if not _converting(request):
+        if not converts(request.data):
             return method(self, request, *args, **kwargs)
         with transaction.atomic():
             self._lock_for_conversion = True
@@ -910,11 +904,26 @@ class LeadDetailView(APIView):
     )
     @_atomic_when_converting
     def patch(self, request, pk, **kwargs):
-        """Handle partial updates to a lead, including conversion."""
+        """Handle partial updates to a lead, including conversion.
+
+        An edit is `leads.updates.update_lead`, shared with automation rules.
+        Conversion stays here, since no rule may convert a lead.
+        """
         params = request.data
         # Through the read rule: another org's lead, a hidden one and a
         # missing id are the same 404.
         self.lead_obj = self.get_object(pk)
+        if not converts(params):
+            errors = update_lead(request, self.lead_obj, params)
+            if errors is not None:
+                return Response(
+                    {"error": True, "errors": errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {"error": False, "message": "Lead updated Successfully"},
+                status=status.HTTP_200_OK,
+            )
 
         # A conversion rides on an ordinary partial save. The fields sent with
         # it are saved first and the lead is converted afterwards, which is the
@@ -922,11 +931,10 @@ class LeadDetailView(APIView):
         # and drop everything else in the body, so a form that corrected the
         # email and chose "converted" was refused for having no email, and one
         # that fixed a job title converted the lead with the old one.
-        converting = params.get("status") == "converted" or params.get("is_converted")
         # `LeadCreateSerializer.validate_status` refuses a repeat conversion
         # too, but only when `status` is in the body; `is_converted` is not a
         # serializer field, so this is the check that covers it.
-        if converting and self.lead_obj.status in IRREVERSIBLE_STATUSES:
+        if self.lead_obj.status in IRREVERSIBLE_STATUSES:
             return Response(
                 {
                     "error": True,
@@ -941,12 +949,6 @@ class LeadDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Handle regular partial updates
-        # Capture previous assignees for email notification
-        previous_assigned_to_users = list(
-            self.lead_obj.assigned_to.all().values_list("id", flat=True)
-        )
-
         serializer = LeadCreateSerializer(
             data=params,
             instance=self.lead_obj,
@@ -959,7 +961,7 @@ class LeadDetailView(APIView):
             # opportunity with nobody attached. Checked against the email this
             # save leaves the lead with, before anything is written.
             email = serializer.validated_data.get("email", self.lead_obj.email)
-            if converting and not (email or "").strip():
+            if not (email or "").strip():
                 return Response(
                     {
                         "error": True,
@@ -997,13 +999,11 @@ class LeadDetailView(APIView):
             contact_ids = payload_id_list(params.get("contacts"), "contacts")
             team_ids = payload_id_list(params.get("teams"), "teams")
             assigned_ids = payload_id_list(params.get("assigned_to"), "assigned_to")
-            if converting:
-                refused = _conversion_refused(request, serializer)
-                if refused:
-                    return refused
+            refused = _conversion_refused(request, serializer)
+            if refused:
+                return refused
             lead_obj = serializer.save(**save_kwargs)
 
-            # Handle M2M fields if present in request
             if "tags" in params:
                 lead_obj.tags.clear()
                 if tag_ids:
@@ -1025,6 +1025,8 @@ class LeadDetailView(APIView):
                     )
                     lead_obj.teams.add(*teams)
 
+            # No email for a new assignee here: the conversion emails every
+            # assignee below.
             if "assigned_to" in params:
                 lead_obj.assigned_to.clear()
                 if assigned_ids:
@@ -1033,53 +1035,28 @@ class LeadDetailView(APIView):
                     )
                     lead_obj.assigned_to.add(*profiles)
 
-                # Send email to newly assigned users (after assignees are updated)
-                current_assigned_users = list(
-                    lead_obj.assigned_to.all().values_list("id", flat=True)
-                )
-                recipients = list(
-                    set(current_assigned_users) - set(previous_assigned_to_users)
-                )
-                # A conversion emails every assignee below, so not twice.
-                if recipients and not converting:
-                    send_email_to_assigned_user.delay(
+            from leads.services import convert_lead_to_account
+
+            account, contact, opportunity = convert_lead_to_account(lead_obj, request)
+            recipients = list(lead_obj.assigned_to.all().values_list("id", flat=True))
+            if recipients:
+                # After the commit: a conversion that rolls back sent nothing.
+                transaction.on_commit(
+                    functools.partial(
+                        send_email_to_assigned_user.delay,
                         recipients,
                         lead_obj.id,
                         str(request.profile.org.id),
                     )
-
-            if converting:
-                from leads.services import convert_lead_to_account
-
-                account, contact, opportunity = convert_lead_to_account(
-                    lead_obj, request
                 )
-                recipients = list(
-                    lead_obj.assigned_to.all().values_list("id", flat=True)
-                )
-                if recipients:
-                    # After the commit: a conversion that rolls back sent nothing.
-                    transaction.on_commit(
-                        functools.partial(
-                            send_email_to_assigned_user.delay,
-                            recipients,
-                            lead_obj.id,
-                            str(request.profile.org.id),
-                        )
-                    )
-                return Response(
-                    {
-                        "error": False,
-                        "message": "Lead Converted Successfully",
-                        "account_id": str(account.id),
-                        "contact_id": str(contact.id) if contact else None,
-                        "opportunity_id": str(opportunity.id) if opportunity else None,
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
             return Response(
-                {"error": False, "message": "Lead updated Successfully"},
+                {
+                    "error": False,
+                    "message": "Lead Converted Successfully",
+                    "account_id": str(account.id),
+                    "contact_id": str(contact.id) if contact else None,
+                    "opportunity_id": str(opportunity.id) if opportunity else None,
+                },
                 status=status.HTTP_200_OK,
             )
         return Response(

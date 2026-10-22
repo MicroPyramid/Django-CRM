@@ -54,7 +54,7 @@ const _feed = '''
     {
       "id": "n-mention",
       "verb": "case.mentioned",
-      "actor": {"id": "u-1", "name": "Ada Lovelace", "email": "ada@example.com"},
+      "actor": {"id": "u-1", "user_details": {"email": "ada@example.com", "profile_pic": null}},
       "entity_type": "Case",
       "entity_id": "case-9",
       "entity_name": "Printer on fire",
@@ -78,7 +78,7 @@ const _feed = '''
     {
       "id": "n-read",
       "verb": "case.sla_breached",
-      "actor": {"id": "u-2", "name": "Grace", "email": "grace@example.com"},
+      "actor": {"id": "u-2", "user_details": {"email": "grace@example.com", "profile_pic": null}},
       "entity_type": "Case",
       "entity_id": "case-1",
       "entity_name": "Handled",
@@ -166,7 +166,7 @@ void main() {
       () async {
         final feed = await container.read(notificationsProvider.future);
 
-        expect(feed.items[0].actorName, 'Ada Lovelace');
+        expect(feed.items[0].actorName, 'ada@example.com');
         expect(feed.items[1].actorName, isNull);
       },
     );
@@ -231,6 +231,10 @@ void main() {
         'case.commented',
         'support.replied',
         'support.status_changed',
+        'automation.message',
+        'automation.failed',
+        'automation.paused',
+        'automation.limit',
       ]);
     });
 
@@ -361,6 +365,8 @@ void main() {
       expect(client.sent, hasLength(before));
     });
   });
+
+  _automationTests();
 }
 
 AppNotification _withLink(String? link) => AppNotification.fromJson({
@@ -369,3 +375,308 @@ AppNotification _withLink(String? link) => AppNotification.fromJson({
   'link': link,
   'created_at': '2026-08-07T09:00:00Z',
 });
+
+const _id = '3f2b8c1e-7a4d-4e2b-9c1a-5d6e7f8a9b0c';
+
+AppNotification _automation(
+  String verb,
+  Object? data, {
+  String? link,
+  String? actor,
+}) => AppNotification.fromJson({
+  'id': 'n-auto',
+  'verb': verb,
+  'actor': actor == null
+      ? null
+      : {
+          'id': 'p-1',
+          'user_details': {'email': actor, 'profile_pic': null},
+        },
+  'data': data,
+  'link': link,
+  'created_at': '2026-10-22T09:00:00Z',
+});
+
+void _automationTests() {
+  group('automation notifications', () {
+    test('a message reads as sent, with its rule as the source line', () {
+      final n = _automation('automation.message', {
+        'message': 'Kick off onboarding for Harbour Lane',
+        'rule': 'Deal won: onboarding',
+      }, actor: 'asha.rao@example.com');
+
+      expect(n.message, 'Kick off onboarding for Harbour Lane');
+      expect(n.ruleName, 'Deal won: onboarding');
+      expect(n.automationText(), 'Kick off onboarding for Harbour Lane');
+      expect(n.automationSource, 'From the rule "Deal won: onboarding"');
+      expect(n.displayActorName, 'asha.rao@example.com');
+    });
+
+    test('the actor is read as the feed sends it', () {
+      AppNotification withActor(Object? actor) => AppNotification.fromJson({
+        'id': 'n-a',
+        'verb': 'automation.message',
+        'actor': actor,
+        'created_at': '2026-10-22T09:00:00Z',
+      });
+      final cases = <Object?, String>{
+        {
+          'id': 'p-1',
+          'user_details': {'email': 'asha@example.com', 'profile_pic': null},
+        }: 'asha@example.com',
+        {
+          'id': 'p-1',
+          'name': 'Asha Rao',
+          'user_details': {'email': 'asha@example.com'},
+        }: 'Asha Rao',
+        {
+          'id': 'p-1',
+          'name': '',
+          'user_details': {'email': 'asha@example.com'},
+        }: 'asha@example.com',
+        {'id': 'p-1', 'user_details': null}: 'Someone',
+        {'id': 'p-1', 'user_details': <String, dynamic>{}}: 'Someone',
+        {
+          'id': 'p-1',
+          'name': 7,
+          'user_details': {'email': 8},
+        }: 'Someone',
+        {'id': 'p-1', 'email': 'top-level@example.com'}: 'Someone',
+      };
+      for (final e in cases.entries) {
+        expect(withActor(e.key).displayActorName, e.value, reason: '${e.key}');
+      }
+      expect(withActor(null).actorName, isNull);
+      expect(withActor(null).displayActorName, 'The system');
+      expect(withActor('p-1').displayActorName, 'The system');
+    });
+
+    test('markup in a message stays the same string', () {
+      const markup =
+          '<img src=x onerror=alert(1)> <b>now</b> [open](javascript:x)';
+      final n = _automation('automation.message', {
+        'message': markup,
+        'rule': '<b>Rule</b>',
+      });
+
+      expect(n.automationText(), markup);
+      expect(n.automationSource, 'From the rule "<b>Rule</b>"');
+    });
+
+    test('a failed rule names the rule and the reason', () {
+      final n = _automation('automation.failed', {
+        'rule': 'Close it',
+        'rule_id': _id,
+        'reason': "That is not a stage of this deal's pipeline.",
+      });
+
+      expect(n.ruleName, 'Close it');
+      expect(n.reason, "That is not a stage of this deal's pipeline.");
+      expect(
+        n.automationText(),
+        'The rule "Close it" failed: '
+        "That is not a stage of this deal's pipeline.",
+      );
+      expect(n.automationSource, isNull);
+      expect(n.displayActorName, 'The system');
+    });
+
+    test('a pause gives the reason, then every rule it paused', () {
+      final n = _automation('automation.paused', {
+        'rules': ['Deal won: onboarding', 'New lead: rotate owners'],
+        'reason':
+            'Paused because the admin who switched it on left the '
+            'organization.',
+      });
+
+      expect(n.ruleNames, ['Deal won: onboarding', 'New lead: rotate owners']);
+      expect(
+        n.automationText(),
+        'Paused because the admin who switched it on left the organization. '
+        'Paused: Deal won: onboarding, New lead: rotate owners.',
+      );
+    });
+
+    test('the limit names the hour it started, in the zone asked for', () {
+      final n = _automation('automation.limit', {
+        'window_start': '2025-01-15T14:00:00+00:00',
+      });
+
+      expect(n.windowStart, DateTime.utc(2025, 1, 15, 14));
+      expect(
+        n.automationText(zone: 'UTC'),
+        'Automation reached its limit of 1,000 runs in the hour from '
+        "15 Jan 2025 14:00. The rest of that hour's runs were skipped.",
+      );
+      expect(
+        n.automationText(zone: 'Asia/Kolkata'),
+        contains('in the hour from 15 Jan 2025 19:30.'),
+      );
+    });
+
+    test('the limit writes today and yesterday in lower case', () {
+      final now = DateTime.utc(2026, 10, 22, 15);
+      String? from(String at) => _automation('automation.limit', {
+        'window_start': at,
+      }).automationText(zone: 'UTC', now: now);
+
+      expect(
+        from('2026-10-22T14:00:00+00:00'),
+        contains('in the hour from today 14:00.'),
+      );
+      expect(
+        from('2026-10-21T14:00:00+00:00'),
+        contains('in the hour from yesterday 14:00.'),
+      );
+      expect(
+        from('2026-10-19T14:00:00+00:00'),
+        contains('in the hour from 19 Oct 14:00.'),
+      );
+    });
+
+    test('data of the wrong type gives no automation text', () {
+      final cases = <(String, Object?)>[
+        ('automation.message', null),
+        ('automation.message', 'Kick off'),
+        ('automation.message', {'message': 7, 'rule': 'R'}),
+        (
+          'automation.message',
+          {
+            'message': 'Kick off',
+            'rule': ['R'],
+          },
+        ),
+        ('automation.failed', {'rule': 'R', 'reason': null}),
+        ('automation.failed', {'rule': 9, 'reason': 'Broke'}),
+        ('automation.paused', {'rules': 'R', 'reason': 'Paused.'}),
+        (
+          'automation.paused',
+          {
+            'rules': ['R', 3],
+            'reason': 'Paused.',
+          },
+        ),
+        (
+          'automation.paused',
+          {
+            'rules': ['R'],
+            'reason': 5,
+          },
+        ),
+        ('automation.limit', {'window_start': 1760000000}),
+        ('automation.limit', {'window_start': 'not a date'}),
+        ('automation.limit', <String, dynamic>{}),
+      ];
+      for (final (verb, data) in cases) {
+        final n = _automation(verb, data);
+        expect(n.automationText(), isNull, reason: '$verb $data');
+        expect(n.automationSource, isNull, reason: '$verb $data');
+      }
+      final bad = _automation('automation.paused', {
+        'rules': ['R', 3],
+        'reason': 5,
+        'message': ['x'],
+        'rule': 1,
+        'window_start': 2,
+      });
+      expect(bad.ruleNames, isNull);
+      expect(bad.reason, isNull);
+      expect(bad.message, isNull);
+      expect(bad.ruleName, isNull);
+      expect(bad.windowStart, isNull);
+    });
+
+    test('marking it read keeps what the row says', () {
+      final n = _automation('automation.paused', {
+        'rules': ['R'],
+        'reason': 'Paused because the owner left.',
+      });
+      final read = n.copyWith(readAt: DateTime.utc(2026, 10, 22, 10));
+
+      expect(read.isUnread, isFalse);
+      expect(read.automationText(), n.automationText());
+      expect(read.ruleNames, ['R']);
+    });
+
+    test('other verbs have no automation text', () {
+      final n = _automation('case.mentioned', {
+        'message': 'Kick off',
+        'rule': 'R',
+      });
+
+      expect(n.automationText(), isNull);
+      expect(n.automationSource, isNull);
+    });
+
+    test('record links open the record screens', () {
+      final routes = {
+        '/leads/$_id': '/leads/$_id',
+        '/contacts/$_id': '/contacts/$_id',
+        '/accounts/$_id': '/accounts/$_id',
+        '/pipeline/$_id': '/deals/$_id',
+        '/tasks/$_id': '/tasks/$_id',
+        '/tickets/$_id': '/tickets/$_id',
+        '/objects/property_unit/$_id': '/more/objects/property_unit/$_id',
+        '/leads/${_id.toUpperCase()}': '/leads/${_id.toUpperCase()}',
+      };
+      for (final e in routes.entries) {
+        expect(_withLink(e.key).destinationPath, e.value, reason: e.key);
+      }
+    });
+
+    test('settings links open automation', () {
+      expect(
+        _withLink('/settings/automation').destinationPath,
+        '/more/settings/automation',
+      );
+      expect(
+        _withLink('/settings/automation/$_id').destinationPath,
+        '/more/settings/automation/$_id',
+      );
+    });
+
+    test('foreign, script and malformed links open nothing', () {
+      for (final link in [
+        'https://evil.example/leads/$_id',
+        '//evil.example',
+        '//evil.example/leads/$_id',
+        'javascript:alert(1)',
+        '/leads/not-a-uuid',
+        '/pipeline/1',
+        '/deals/$_id',
+        '/objects/BAD/$_id',
+        '/objects/x/$_id',
+        '/objects/property/not-a-uuid',
+        '/settings/automation/x',
+        '/settings/automationx',
+        '/settings/automation/$_id/runs',
+        '/leads/$_id?next=//evil.example',
+        '/leads/$_id/edit',
+        '',
+        '/leads/$_id/',
+        '/pipeline/$_id/',
+        '/objects/property/$_id/',
+        '/settings/automation/',
+        '/settings/automation/$_id/',
+        '/LEADS/$_id',
+        '/Settings/automation',
+        '/leads/$_id/../x',
+        '/leads/../settings/automation',
+        '/leads/%2F%2Fevil.example',
+        '/leads/${_id.replaceAll('-', '%2D')}',
+        r'\\evil.example\leads\' + _id,
+        '/leads\\$_id',
+        '/\\evil.example/leads/$_id',
+        ' /leads/$_id',
+        '/leads/$_id ',
+        ' /settings/automation ',
+        '/leads/$_id\n',
+        '/settings/automation\n',
+        '/settings/automation/$_id\n',
+        '\t/tasks/$_id',
+      ]) {
+        expect(_withLink(link).destinationPath, isNull, reason: link);
+      }
+    });
+  });
+}

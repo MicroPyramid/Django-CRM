@@ -104,6 +104,7 @@ class SecurityAuditLog(BaseModel):
         ("CALENDAR_FEED_DISABLED", "Calendar Feed Disabled"),
         ("API_TOKEN_CREATED", "API Token Created"),
         ("API_TOKEN_REVOKED", "API Token Revoked"),
+        ("FEATURE_GRANT_CHANGED", "Feature Grant Changed"),
     )
 
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, db_index=True)
@@ -441,6 +442,26 @@ class AuditLogger:
                 "merged_name": merged["name"],
             },
             request=request,
+        )
+
+    def feature_grant_changed(self, org, feature, expires_at, note=""):
+        """Log an operator granting or revoking an org's access to a feature.
+
+        Written by a management command, so there is no user and no request.
+        """
+        if expires_at is None:
+            description = f"{feature} grant revoked"
+        else:
+            description = f"{feature} granted until {expires_at:%Y-%m-%d}"
+        self._log(
+            "FEATURE_GRANT_CHANGED",
+            org=org,
+            description=description,
+            metadata={
+                "feature": feature,
+                "expires_at": expires_at.isoformat() if expires_at else None,
+                "note": note,
+            },
         )
 
     def calendar_feed(self, event_type, user, org, request=None):

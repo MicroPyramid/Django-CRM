@@ -37,7 +37,18 @@
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import { relativeTime } from '#lib/v2/format.js';
-  import { BellOff, AtSign, MessageSquare, Bell, Check, LifeBuoy } from '@lucide/svelte';
+  import { notificationText, actorName, AUTOMATION_FALLBACK } from '#lib/v2/automation.js';
+  import {
+    BellOff,
+    AtSign,
+    MessageSquare,
+    Bell,
+    Check,
+    LifeBuoy,
+    Zap,
+    TriangleAlert,
+    CirclePause
+  } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -55,7 +66,11 @@
     'case.mentioned': AtSign,
     'case.commented': MessageSquare,
     'support.replied': LifeBuoy,
-    'support.status_changed': LifeBuoy
+    'support.status_changed': LifeBuoy,
+    'automation.message': Zap,
+    'automation.failed': TriangleAlert,
+    'automation.limit': TriangleAlert,
+    'automation.paused': CirclePause
   };
 
   /**
@@ -69,6 +84,14 @@
     if (n.verb === 'support.replied') return 'replied to';
     if (n.verb === 'support.status_changed') return 'updated';
     return `${n.verb.replace(/^[^.]+\./, '').replace(/_/g, ' ')}, `;
+  }
+
+  function isAutomation(n) {
+    return n.verb?.startsWith('automation.');
+  }
+
+  function isTicketVerb(n) {
+    return n.verb?.startsWith('case.') || n.verb?.startsWith('support.');
   }
 
   function isSupportNotification(n) {
@@ -141,8 +164,8 @@
       <EmptyState
         title={filter === 'unread' ? 'Nothing unread' : 'No notifications'}
         body={filter === 'unread'
-          ? 'Everything here has been read. Notifications arrive for CRM ticket activity and updates from BottleCRM Support.'
-          : 'Notifications arrive for CRM ticket activity and updates from BottleCRM Support.'}
+          ? 'Everything here has been read. Notifications arrive for CRM ticket activity, automation rules, and updates from BottleCRM Support.'
+          : 'Notifications arrive for CRM ticket activity, automation rules, and updates from BottleCRM Support.'}
       >
         {#snippet icon()}<BellOff size={21} />{/snippet}
         {#snippet actions()}
@@ -159,6 +182,7 @@
       <ul class="feed">
         {#each visible as n (n.id)}
           {@const Icon = ICON[n.verb] ?? Bell}
+          {@const auto = notificationText(n, data.org?.timezone ?? 'UTC')}
           <li class="row" class:read={n.read_at !== null}>
             <span class="mark" aria-hidden="true">
               {#if n.read_at === null}<i class="dot"></i>{/if}
@@ -171,13 +195,27 @@
                 {#if isSupportNotification(n)}
                   <b class="system">BottleCRM Support</b>
                 {:else if n.actor}
-                  <Avatar name={n.actor.name} size={17} />
-                  <b>{n.actor.name}</b>
+                  <Avatar name={actorName(n)} size={17} />
+                  <b>{actorName(n)}</b>
                 {:else}
                   <b class="system">The system</b>
                 {/if}
-                {verbPhrase(n)}
-                {#if n.entity_name}
+                {#if isAutomation(n)}
+                  {#if n.resolved_link}
+                    <a
+                      class="auto-text"
+                      href={resolve(asInternalPath(n.resolved_link))}
+                      onclick={() => markRead(n)}>{auto?.text ?? AUTOMATION_FALLBACK}</a
+                    >
+                  {:else}
+                    <span class="auto-text">{auto?.text ?? AUTOMATION_FALLBACK}</span>
+                  {/if}
+                {:else}
+                  {verbPhrase(n)}
+                {/if}
+                {#if isAutomation(n)}
+                  <!-- the sentence above carries the link -->
+                {:else if n.entity_name}
                   {#if n.resolved_link}
                     <a href={resolve(asInternalPath(n.resolved_link))} onclick={() => markRead(n)}
                       >{n.entity_name}</a
@@ -185,10 +223,14 @@
                   {:else}
                     <span class="entity">{n.entity_name}</span>
                   {/if}
-                {:else}
+                {:else if isTicketVerb(n)}
                   <span class="entity v2-muted">a ticket that no longer has a name</span>
                 {/if}
               </p>
+
+              {#if auto?.source}
+                <p class="source">{auto.source}</p>
+              {/if}
 
               {#if n.data.comment_excerpt}
                 <!-- Quoted, not restyled as a card: it is somebody else's
@@ -318,6 +360,16 @@
     color: var(--v2-slate);
     max-width: 72ch;
     line-height: 1.55;
+  }
+
+  .source {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--v2-slate);
+  }
+  .auto-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .meta {

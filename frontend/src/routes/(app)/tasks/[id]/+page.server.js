@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getTask, setTaskDone, updateTask, deleteTask, addTaskNote } from '#lib/server/v2/tasks.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { isOrgAdmin } from '#lib/admin.js';
 
 /**
@@ -13,9 +14,13 @@ import { isOrgAdmin } from '#lib/admin.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, locals, params }) {
-  const detail = await getTask({ cookies }, params.id);
+  const [detail, related] = await Promise.all([
+    getTask({ cookies }, params.id),
+    loadRelated({ cookies }, 'task', params.id)
+  ]);
   return {
     ...detail,
+    related,
     // Decides what renders, never what is allowed. The API refuses a delete
     // from an assignee with a 403 whatever this says.
     canDelete: isOrgAdmin(/** @type {any} */ (locals).profile)
@@ -24,6 +29,7 @@ export async function load({ cookies, locals, params }) {
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+  ...relatedActions('task'),
   /** Tick it off, or reopen it. Same one-field PATCH as the list row. */
   toggle: async ({ cookies, params, request }) => {
     const form = await request.formData();

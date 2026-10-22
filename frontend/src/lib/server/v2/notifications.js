@@ -18,6 +18,7 @@
  * and a correctly-produced `/tickets/` link is not left pointing at the v1 route.
  */
 import { apiRequest } from '#lib/api-helpers.js';
+import { UUID, OBJECT_KEY } from '#lib/v2/custom-objects.js';
 
 /** Verbs the backend actually dispatches. Everything else has no copy and is
  *  flagged on the page as "no producer" rather than shown as a raw identifier. */
@@ -25,7 +26,11 @@ export const PRODUCED_VERBS = [
   'case.mentioned',
   'case.commented',
   'support.replied',
-  'support.status_changed'
+  'support.status_changed',
+  'automation.message',
+  'automation.failed',
+  'automation.paused',
+  'automation.limit'
 ];
 
 /**
@@ -43,7 +48,19 @@ export function resolvedLink(link) {
   const m = link.match(/^\/(?:cases|tickets)\/([^/?#]+)\/?$/);
   if (m) return `/tickets/${encodeURIComponent(m[1])}`;
   const help = link.match(/^\/(?:support|help)\/([^/?#]+)\/?$/);
-  return help ? `/help/${encodeURIComponent(help[1])}` : '';
+  if (help) return `/help/${encodeURIComponent(help[1])}`;
+  return automationLink(link);
+}
+
+/** Record and settings links the automation engine writes; every id a UUID. */
+function automationLink(/** @type {string} */ link) {
+  if (link === '/settings/automation') return link;
+  const rec = link.match(
+    /^\/(leads|contacts|accounts|pipeline|tasks|settings\/automation)\/([^/?#]+)$/
+  );
+  if (rec) return UUID.test(rec[2]) ? link : '';
+  const obj = link.match(/^\/objects\/([^/?#]+)\/([^/?#]+)$/);
+  return obj && OBJECT_KEY.test(obj[1]) && UUID.test(obj[2]) ? link : '';
 }
 
 /** One API notification → the row shape the page renders. */

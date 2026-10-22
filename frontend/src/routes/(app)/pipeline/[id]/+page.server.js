@@ -2,14 +2,20 @@ import { fail, redirect } from '@sveltejs/kit';
 import { deleteDeal, getDeal } from '#lib/server/v2/deals.js';
 import { invoiceFromDeal } from '#lib/server/v2/invoices.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  return await getDeal(event, event.params.id);
+  const [deal, related] = await Promise.all([
+    getDeal(event, event.params.id),
+    loadRelated(event, 'deal', event.params.id)
+  ]);
+  return { ...deal, related };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
+  ...relatedActions('deal'),
   /**
    * Raise a Draft invoice from this deal and open it. The deal id is the
    * route's, never the body's, and the API decides the rest: a deal this

@@ -1,0 +1,16 @@
+{% extends 'root_email_template_new.html' %}
+{% comment %}
+`text` is written by an org admin and carries a record's name. Django
+autoescapes it; never add |safe here or switch autoescape off.
+{% endcomment %}
+
+{% block content_body %}
+<p style="margin:0;white-space:pre-line;">{{ text }}</p>
+{% endblock content_body %}
+
+{% block button_link %}
+<a class="btn-link" href="{{ url }}"
+   style="display:inline-block;padding:14px 32px;background-color:#EA580C;color:#ffffff;text-decoration:none;border-radius:6px;font-size:16px;font-weight:600;line-height:1;">
+  Open the record
+</a>
+{% endblock button_link %}

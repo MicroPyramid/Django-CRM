@@ -43,6 +43,7 @@ from contacts.serializer import (
 )
 from contacts.services.account_link import link_primary_account
 from contacts.tasks import send_email_to_assigned_user
+from contacts.updates import notify_newly_assigned, update_contact
 from opportunity.access import visible_deals_qs
 from opportunity.models import Opportunity, stage_kind_q
 from opportunity.stages import stage_index
@@ -281,24 +282,6 @@ class ContactsListView(APIView, LimitOffsetPagination):
             },
             status=status.HTTP_200_OK,
         )
-
-
-def notify_newly_assigned(request, contact, previous_assignee_ids):
-    """Email whoever the edit just put on this contact, and nobody else.
-
-    Shared by PUT and PATCH, as in cases. PUT used to read the "previous"
-    assignees after it had replaced them, so it never told anybody; PATCH,
-    which the web app edits with, never tried.
-    """
-    current = set(contact.assigned_to.all().values_list("id", flat=True))
-    recipients = list(current - set(previous_assignee_ids))
-    if not recipients:
-        return
-    send_email_to_assigned_user.delay(
-        recipients,
-        contact.id,
-        str(request.profile.org.id),
-    )
 
 
 class ContactDetailView(APIView):
@@ -772,75 +755,18 @@ class ContactDetailView(APIView):
         },
     )
     def patch(self, request, pk, format=None):
-        """Handle partial updates to a contact."""
-        data = request.data
-        contact_obj = self.get_object(pk=pk)
+        """Handle partial updates to a contact.
 
-        contact_serializer = CreateContactSerializer(
-            data=data, instance=contact_obj, request_obj=request, partial=True
-        )
-        if not contact_serializer.is_valid():
+        The write itself is `contacts.updates.update_contact`, shared with
+        automation rules.
+        """
+        contact_obj = self.get_object(pk=pk)
+        errors = update_contact(request, contact_obj, request.data)
+        if errors is not None:
             return Response(
-                {"error": True, "errors": contact_serializer.errors},
+                {"error": True, "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        save_kwargs = {}
-        if "custom_fields" in data:
-            cf_payload = data.get("custom_fields")
-            if isinstance(cf_payload, str):
-                try:
-                    cf_payload = json.loads(cf_payload)
-                except (TypeError, ValueError):
-                    cf_payload = None
-            cleaned_cf, cf_errors = validate_custom_fields_payload(
-                "Contact",
-                cf_payload or {},
-                request.profile.org,
-                existing=contact_obj.custom_fields or {},
-            )
-            if cf_errors:
-                return Response(
-                    {"error": True, "errors": {"custom_fields": cf_errors}},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            save_kwargs["custom_fields"] = cleaned_cf
-
-        # Parsed before the first write, as in PUT. An absent key parses to [].
-        team_ids = payload_id_list(data.get("teams"), "teams")
-        assigned_ids = payload_id_list(data.get("assigned_to"), "assigned_to")
-        tag_ids = payload_id_list(data.get("tags"), "tags")
-
-        contact_obj = contact_serializer.save(**save_kwargs)
-        link_primary_account(contact_obj)
-
-        # Handle M2M fields if present in request
-        if "teams" in data:
-            contact_obj.teams.clear()
-            if team_ids:
-                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
-                contact_obj.teams.add(*teams)
-
-        if "assigned_to" in data:
-            previous_assigned_to_users = list(
-                contact_obj.assigned_to.all().values_list("id", flat=True)
-            )
-            contact_obj.assigned_to.clear()
-            if assigned_ids:
-                profiles = Profile.objects.filter(
-                    id__in=assigned_ids, org=request.profile.org, is_active=True
-                )
-                contact_obj.assigned_to.add(*profiles)
-            notify_newly_assigned(request, contact_obj, previous_assigned_to_users)
-
-        if "tags" in data:
-            contact_obj.tags.clear()
-            if tag_ids:
-                tag_objs = Tags.objects.filter(
-                    id__in=tag_ids, org=request.profile.org, is_active=True
-                )
-                contact_obj.tags.add(*tag_objs)
-
         return Response(
             {"error": False, "message": "Contact Updated Successfully"},
             status=status.HTTP_200_OK,

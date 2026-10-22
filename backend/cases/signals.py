@@ -33,6 +33,7 @@ from django.utils import timezone
 from cases.approvals import closing_date
 from cases.models import Case, InboundMailbox, ReopenPolicy, Solution, TimeEntry
 from cases.workflow import resolve_sla_targets
+from common.actor import current_actor
 from common.models import Activity, Comment, PortalAccessToken
 from common.portal_tokens import register_portal_token
 
@@ -79,7 +80,12 @@ def _resolve_actor():
     ``request.profile`` is None for an anonymous request and for a customer
     portal one (the portal's caller lands on ``request.portal_contact``, and a
     Contact is not a Profile), so those still record as system actions.
+
+    A ``common.actor`` override comes first: a running rule names its owner.
     """
+    override = current_actor()
+    if override is not None:
+        return override[0]
     request = get_current_request()
     return getattr(request, "profile", None)
 
@@ -120,8 +126,15 @@ def _truncate_metadata(metadata: dict) -> dict:
 
 
 def _create_activity(case, action, metadata=None, actor=None):
-    """Single insertion point for all Case-scoped Activity rows."""
+    """Single insertion point for all Case-scoped Activity rows.
+
+    Inside `common.actor.acting_for` the row also notes the rule, as
+    `common.signals.create_activity` does, beside the row's own metadata.
+    """
     metadata = _truncate_metadata(metadata or {})
+    override = current_actor()
+    if override is not None:
+        metadata = {"automation": override[1], **metadata}
     if actor is None:
         actor = _resolve_actor()
     Activity.objects.create(

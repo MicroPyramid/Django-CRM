@@ -28,6 +28,7 @@ import '../../widgets/tickets/ticket_approval_panel.dart';
 import '../../widgets/tickets/ticket_properties_card.dart';
 import '../../widgets/tickets/ticket_solutions_panel.dart';
 import '../../widgets/tickets/ticket_time_panel.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// Ticket Detail Screen, Overview / Comments / Activity tabs.
 class TicketDetailScreen extends ConsumerStatefulWidget {
@@ -529,7 +530,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
               ),
             ),
           ],
-          const SizedBox(height: 100),
+          const SizedBox(height: 16),
+          RelatedObjectsSection(to: 'ticket', recordId: c.id),
+          const SizedBox(height: 84),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bottle_crm/config/api_config.dart';
 import 'package:bottle_crm/services/api_service.dart';
 import 'package:bottle_crm/services/attachment_upload.dart';
 import 'package:file_picker/file_picker.dart';
@@ -275,4 +276,39 @@ void main() {
       expect(result.data?['attachments'], hasLength(1));
     },
   );
+
+  group('a custom record file', () {
+    const recordUrl =
+        'http://localhost:8000/api/objects/property/records/'
+        '3f2b8c1e-5a4d-4e8b-9c3a-1d2e3f4a5b6c/attachments/';
+
+    test('uploads as the field "file"', () async {
+      final result = await pickAndUploadAttachmentTo(
+        url: ApiConfig.objectRecordAttachments(
+          'property',
+          '3f2b8c1e-5a4d-4e8b-9c3a-1d2e3f4a5b6c',
+        ),
+        field: 'file',
+        pickFile: () async => file(),
+      );
+
+      expect(result.succeeded, isTrue);
+      expect(client.sent!.method, 'POST');
+      expect(client.sent!.url.path, endsWith('/attachments/'));
+      expect(client.sent!.url.path, contains('/api/objects/property/records/'));
+      expect(utf8.decode(client.sentBody!), contains('name="file"'));
+    });
+
+    test('refuses a 26 MB file before any request', () async {
+      final result = await pickAndUploadAttachmentTo(
+        url: recordUrl,
+        field: 'file',
+        pickFile: () async => file(name: 'big.mov', size: 26 * 1024 * 1024),
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(client.sent, isNull);
+      expect(result.error, contains('25 MB or smaller'));
+    });
+  });
 }

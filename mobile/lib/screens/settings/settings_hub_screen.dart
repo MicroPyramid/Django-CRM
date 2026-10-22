@@ -5,6 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/automation_provider.dart';
+import '../../providers/custom_objects_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -47,6 +49,25 @@ class SettingsHubScreen extends StatelessWidget {
               label: 'Custom fields',
               description: 'Extra fields on leads, deals, tickets and the rest',
               onTap: () => context.push(AppRoutes.settingsCustomFields),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                final answer = shownCustomObjects(
+                  ref.watch(customObjectsProvider),
+                );
+                final show =
+                    answer != null &&
+                    answer.offered &&
+                    (ref.watch(isOrgAdminProvider) ||
+                        answer.objects.isNotEmpty);
+                if (!show) return const SizedBox.shrink();
+                return MenuRow(
+                  icon: LucideIcons.boxes,
+                  label: 'Objects',
+                  description: 'Your own record types, with their fields',
+                  onTap: () => context.push(AppRoutes.settingsObjects),
+                );
+              },
             ),
             MenuRow(
               icon: LucideIcons.tags,
@@ -136,6 +157,22 @@ class SettingsHubScreen extends StatelessWidget {
                       onTap: () => context.push(AppRoutes.settingsWebhooks),
                     )
                   : const SizedBox.shrink(),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                // Members never ask: the rules answer them 403.
+                if (!ref.watch(isOrgAdminProvider) ||
+                    automationNotOffered(ref.watch(automationRulesProvider))) {
+                  return const SizedBox.shrink();
+                }
+                return MenuRow(
+                  icon: LucideIcons.zap,
+                  label: 'Automation',
+                  description:
+                      'Rules that act when a record is created or changes',
+                  onTap: () => context.push(AppRoutes.settingsAutomation),
+                );
+              },
             ),
             // Admins only, as on the web: the audit log answers a member 403.
             Consumer(

@@ -16,6 +16,7 @@ import '../../services/attachment_upload.dart';
 import '../../services/org_date.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// Lead Detail Screen
 /// Shows lead info with tabs: Overview, Timeline, Notes
@@ -507,7 +508,9 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
               ),
             ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          RelatedObjectsSection(to: 'lead', recordId: lead.id),
+          const SizedBox(height: 8),
         ],
       ),
     );

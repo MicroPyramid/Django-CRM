@@ -1,0 +1,6 @@
+{% autoescape off %}{% comment %}Plain text: escaping would turn "R&D" into "R&amp;D".{% endcomment %}{{ text }}
+
+Open the record: {{ url }}
+
+Sent by BottleCRM
+{% endautoescape %}

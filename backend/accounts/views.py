@@ -38,6 +38,7 @@ from accounts.serializer import (
     TagsSerializer,
 )
 from accounts.tasks import send_email, send_email_to_assigned_user
+from accounts.updates import update_account
 from cases.access import visible_cases_qs
 from cases.models import Case
 from cases.serializer import CaseSerializer, parent_access_context
@@ -848,92 +849,21 @@ class AccountDetailView(APIView):
         description="Partial Account Update",
     )
     def patch(self, request, pk, format=None):
-        """Handle partial updates to an account."""
-        data = request.data
+        """Handle partial updates to an account.
+
+        The write itself is `accounts.updates.update_account`, shared with
+        automation rules.
+        """
         account_object = self.get_object(pk=pk)
-        # Parsed before the first write, as in PUT. An absent key parses to [].
-        contact_ids = payload_id_list(data.get("contacts"), "contacts")
-        tag_ids = payload_id_list(data.get("tags"), "tags")
-        team_ids = payload_id_list(data.get("teams"), "teams")
-        assigned_ids = payload_id_list(data.get("assigned_to"), "assigned_to")
-
-        serializer = AccountCreateSerializer(
-            account_object,
-            data=data,
-            request_obj=request,
-            account=True,
-            partial=True,
-        )
-
-        if serializer.is_valid():
-            save_kwargs = {}
-            if "custom_fields" in data:
-                cf_payload = data.get("custom_fields")
-                if isinstance(cf_payload, str):
-                    try:
-                        cf_payload = json.loads(cf_payload)
-                    except (TypeError, ValueError):
-                        cf_payload = None
-                cleaned_cf, cf_errors = validate_custom_fields_payload(
-                    "Account",
-                    cf_payload or {},
-                    request.profile.org,
-                    existing=account_object.custom_fields or {},
-                )
-                if cf_errors:
-                    return Response(
-                        {"error": True, "errors": {"custom_fields": cf_errors}},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                save_kwargs["custom_fields"] = cleaned_cf
-            account_object = serializer.save(**save_kwargs)
-
-            # Handle M2M fields if present in request
-            if "contacts" in data:
-                replace_visible_contacts(
-                    account_object.contacts, contact_ids, request.profile
-                )
-
-            if "tags" in data:
-                account_object.tags.clear()
-                if tag_ids:
-                    tag_objs = Tags.objects.filter(
-                        id__in=tag_ids, org=request.profile.org, is_active=True
-                    )
-                    account_object.tags.add(*tag_objs)
-
-            if "teams" in data:
-                account_object.teams.clear()
-                if team_ids:
-                    teams = Teams.objects.filter(
-                        id__in=team_ids, org=request.profile.org
-                    )
-                    account_object.teams.add(*teams)
-
-            if "assigned_to" in data:
-                previous = set(account_object.assigned_to.values_list("id", flat=True))
-                account_object.assigned_to.clear()
-                if assigned_ids:
-                    profiles = Profile.objects.filter(
-                        id__in=assigned_ids, org=request.profile.org, is_active=True
-                    )
-                    account_object.assigned_to.add(*profiles)
-                # PUT has always told a newly assigned person; PATCH never did,
-                # so every assignment made from the web went unannounced.
-                current = account_object.assigned_to.values_list("id", flat=True)
-                recipients = list(set(current) - previous)
-                if recipients:
-                    send_email_to_assigned_user.delay(
-                        recipients, account_object.id, str(request.profile.org.id)
-                    )
-
+        errors = update_account(request, account_object, request.data)
+        if errors is not None:
             return Response(
-                {"error": False, "message": "Account Updated Successfully"},
-                status=status.HTTP_200_OK,
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": False, "message": "Account Updated Successfully"},
+            status=status.HTTP_200_OK,
         )
 
 

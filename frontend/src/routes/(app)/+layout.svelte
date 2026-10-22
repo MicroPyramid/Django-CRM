@@ -7,10 +7,11 @@
   import { afterNavigate } from '$app/navigation';
   import Sidebar from '#lib/v2/components/Sidebar.svelte';
   import { isOrgAdmin } from '#lib/admin.js';
+  import { objectNavItems } from '#lib/v2/custom-objects.js';
   import CommandPalette from '#lib/v2/components/CommandPalette.svelte';
   import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
 
-  /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, is_organization_admin: boolean }, children: import('svelte').Snippet }} */
+  /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, is_organization_admin: boolean, customObjects: any }, children: import('svelte').Snippet }} */
   let { data, children } = $props();
 
   let paletteOpen = $state(false);
@@ -64,6 +65,7 @@
     org={data.org}
     isAdmin={isOrgAdmin(data)}
     terminology={data.org.terminology}
+    objects={objectNavItems(data.customObjects)}
     onsearch={() => (paletteOpen = true)}
   />
   <div class="v2-main">
@@ -141,6 +143,7 @@
           org={data.org}
           isAdmin={isOrgAdmin(data)}
           terminology={data.org.terminology}
+          objects={objectNavItems(data.customObjects)}
           onsearch={() => {
             menuOpen = false;
             paletteOpen = true;

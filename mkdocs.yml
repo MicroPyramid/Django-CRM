@@ -98,6 +98,7 @@ nav:
       - Web forms: integrations/web-forms.md
       - Inbound email: integrations/inbound-email.md
       - Webhooks: integrations/webhooks.md
+      - Automation rules: integrations/automation.md
       - CSV import: integrations/csv-import.md
       - Python sample: integrations/python-sample.md
       - JavaScript sample: integrations/javascript-sample.md

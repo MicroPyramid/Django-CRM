@@ -27,9 +27,12 @@
     invoiceStatusLabel
   } from '#lib/v2/enums.js';
   import { ChevronRight, Mail, Phone } from '@lucide/svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   let { account, deals, contacts, tickets, invoices, owners } = $derived(data);
 
@@ -302,6 +305,7 @@
           <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">Nothing billed yet.</p>
         {/each}
       </section>
+      <RelatedRecords {related} error={form?.related?.error} flush />
     </div>
   </div>
 </div>

@@ -11,11 +11,10 @@ import '../../widgets/common/common.dart';
 
 /// The notification feed.
 ///
-/// Two things about the real data shaped this. Only two verbs are ever
-/// produced, `case.mentioned` and `case.commented`, so there is copy for those
-/// and a plain readable sentence for anything else, rather than labels for a
-/// rich notification system that is in fact one comment hook. And the stored
-/// link is a database value: it is matched against the two ticket shapes and
+/// Two things about the real data shaped this. Only the verbs in
+/// [producedVerbs] get copy; anything else reads as a plain sentence rather
+/// than a raw identifier. And the stored link is a database value: it is
+/// matched against known shapes ([AppNotification.destinationPath]) and
 /// otherwise ignored, so a row can never navigate this app somewhere of its
 /// own choosing.
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -133,8 +132,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Notifications arrive for CRM ticket activity and updates from '
-            'BottleCRM Support.',
+            'Notifications arrive for CRM ticket activity, automation rules, '
+            'and updates from BottleCRM Support.',
             textAlign: TextAlign.center,
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),
@@ -151,6 +150,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Widget _row(AppNotification n) {
     final destination = n.destinationPath;
+    final automation = n.verb.startsWith('automation.')
+        ? n.automationText() ?? 'An automation rule sent a notification.'
+        : null;
     return InkWell(
       // Tapping opens the ticket and marks it read. With no resolvable ticket
       // the row still marks read, because otherwise the only way to clear an
@@ -183,39 +185,43 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
               ),
             ),
-            UserAvatar(name: n.displayActorName, size: AvatarSize.sm),
+            if (automation == null)
+              UserAvatar(name: n.displayActorName, size: AvatarSize.sm)
+            else
+              _AutomationIcon(verb: n.verb),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: n.displayActorName,
-                          style: AppTypography.body.copyWith(
-                            fontWeight: FontWeight.w600,
+                  if (automation != null)
+                    ..._automationLines(n, automation, destination)
+                  else
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: n.displayActorName,
+                            style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text: ' ${n.verbPhrase} ',
-                          style: AppTypography.body,
-                        ),
-                        TextSpan(
-                          text:
-                              n.entityName ??
-                              'a ticket that no longer has a name',
-                          style: AppTypography.body.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: destination != null
-                                ? AppColors.primary600
-                                : AppColors.textSecondary,
+                          TextSpan(
+                            text: ' ${n.verbPhrase} ',
+                            style: AppTypography.body,
                           ),
-                        ),
-                      ],
+                          TextSpan(
+                            text: n.entityName ?? _missingName(n.verb),
+                            style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: destination != null
+                                  ? AppColors.primary600
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   if ((n.commentExcerpt ?? '').isNotEmpty) ...[
                     const SizedBox(height: 6),
                     // Somebody else's words, quoted rather than restyled as a
@@ -270,6 +276,46 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 
+  /// Who, the sentence, and for a message the rule that sent it. The sentence
+  /// already names what the row opens, so no entity name follows it; it takes
+  /// the link colour when there is somewhere to go. Every string is server
+  /// data, shown as text.
+  List<Widget> _automationLines(
+    AppNotification n,
+    String text,
+    String? destination,
+  ) {
+    final source = n.automationSource;
+    return [
+      Text(
+        n.displayActorName,
+        style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        text,
+        style: AppTypography.body.copyWith(
+          height: 1.45,
+          color: destination != null ? AppColors.primary600 : null,
+        ),
+      ),
+      if (source != null) ...[
+        const SizedBox(height: 4),
+        Text(
+          source,
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+        ),
+      ],
+    ];
+  }
+
+  /// The ticket wording only fits the ticket verbs; any other row with no
+  /// name shows none.
+  static String _missingName(String verb) =>
+      verb.startsWith('case.') || verb.startsWith('support.')
+      ? 'a ticket that no longer has a name'
+      : '';
+
   Widget _legacyNote(int count) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -323,6 +369,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('d MMM').format(when);
   }
+}
+
+/// Stands where the avatar does on a row an automation rule raised.
+class _AutomationIcon extends StatelessWidget {
+  const _AutomationIcon({required this.verb});
+
+  final String verb;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: AvatarSize.sm.size,
+    height: AvatarSize.sm.size,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: AppColors.gray100, shape: BoxShape.circle),
+    child: Icon(
+      switch (verb) {
+        'automation.paused' => LucideIcons.circlePause,
+        'automation.message' => LucideIcons.zap,
+        'automation.failed' || 'automation.limit' => LucideIcons.triangleAlert,
+        _ => LucideIcons.bell,
+      },
+      size: 16,
+      color: AppColors.textSecondary,
+    ),
+  );
 }
 
 class _ErrorState extends StatelessWidget {

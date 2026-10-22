@@ -9,6 +9,7 @@ import '../../providers/contacts_provider.dart';
 import '../../providers/duplicates_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
+import '../../widgets/objects/related_objects_section.dart';
 
 /// One contact.
 class ContactDetailScreen extends ConsumerStatefulWidget {
@@ -172,6 +173,7 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
           ),
           _details(contact),
           _accounts(contact),
+          RelatedObjectsSection(to: 'contact', recordId: contact.id),
         ],
       ),
     );

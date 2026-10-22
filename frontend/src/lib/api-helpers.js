@@ -20,16 +20,25 @@ const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
  * are managed by hooks and locals contains the user and org context.
  *
  * @param {string} endpoint - API endpoint (e.g., '/accounts/', '/leads/123/')
- * @param {{ method?: string, body?: Record<string, unknown> | FormData, headers?: Record<string, string>, quietErrors?: boolean }} options - Fetch options.
+ * @param {{ method?: string, body?: Record<string, unknown> | FormData, headers?: Record<string, string>, quietErrors?: boolean, expectedStatuses?: number[] }} options - Fetch options.
  *   `quietErrors` logs a failed request's status and the server's `message`
  *   only, never the response body: for replies that can quote the caller's
  *   data, such as an import's skipped rows and their cells.
+ *   `expectedStatuses` lists statuses that are an answer rather than a failure
+ *   (a 404 from a route this install does not have): they are thrown as usual,
+ *   with `status` and `body`, but never logged.
  * @param {{ cookies?: Cookies, org?: { id: string } } | Cookies} locals - SvelteKit locals object or cookies directly
  * @returns {Promise<any>} Response data
  * @throws {Error} If request fails
  */
 export async function apiRequest(endpoint, options = {}, locals) {
-  const { method = 'GET', body, headers = {}, quietErrors = false } = options;
+  const {
+    method = 'GET',
+    body,
+    headers = {},
+    quietErrors = false,
+    expectedStatuses = []
+  } = options;
 
   // Get access token from cookies (server-side)
   // In server load functions, cookies is passed directly
@@ -116,7 +125,9 @@ export async function apiRequest(endpoint, options = {}, locals) {
         }
       }
 
-      if (quietErrors) {
+      if (expectedStatuses.includes(response.status)) {
+        // Thrown below, not logged.
+      } else if (quietErrors) {
         console.error(
           `API Error Response: ${method} ${endpoint} ${response.status}`,
           typeof errorData.message === 'string' ? errorData.message : ''
@@ -150,7 +161,10 @@ export async function apiRequest(endpoint, options = {}, locals) {
     // Return JSON response
     return await response.json();
   } catch (error) {
-    if (!quietErrors) {
+    const status = /** @type {{ status?: number }} */ (error).status;
+    if (status !== undefined && expectedStatuses.includes(status)) {
+      // An expected answer, already left unlogged above.
+    } else if (!quietErrors) {
       console.error(`API request failed: ${method} ${endpoint}`, error);
     } else if (!(/** @type {{ status?: number }} */ (error).status)) {
       // A network failure; an error reply was logged quietly above. The

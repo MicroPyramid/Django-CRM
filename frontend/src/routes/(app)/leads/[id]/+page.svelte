@@ -39,9 +39,12 @@
     Sparkles,
     X
   } from '@lucide/svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   let { lead, activity, duplicates, customFields } = $derived(data);
   let isConverted = $derived(lead.status === 'converted');
@@ -325,6 +328,8 @@
             {/each}
           </div>
         {/if}
+
+        <RelatedRecords {related} error={form?.related?.error} />
 
         <div class="act-head">
           <div class="v2-label">Activity</div>

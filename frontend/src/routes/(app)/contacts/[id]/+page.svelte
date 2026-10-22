@@ -46,9 +46,12 @@
     Sparkles,
     X
   } from '@lucide/svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   let { contact, deals, tickets, tasks, colleagues, owners, activity } = $derived(data);
 
@@ -359,6 +362,8 @@
           <div class="v2-label" style="margin:0 0 10px">About</div>
           <div class="v2-card about">{contact.description}</div>
         {/if}
+
+        <RelatedRecords {related} error={form?.related?.error} />
 
         <div class="act-head">
           <div class="v2-label">Activity</div>

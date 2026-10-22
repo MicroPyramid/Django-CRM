@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bottle_crm/data/models/auth_response.dart';
 import 'package:bottle_crm/providers/accounts_provider.dart';
 import 'package:bottle_crm/providers/analytics_provider.dart';
 import 'package:bottle_crm/providers/approvals_provider.dart';
@@ -8,6 +9,7 @@ import 'package:bottle_crm/providers/auth_provider.dart';
 import 'package:bottle_crm/providers/board_provider.dart';
 import 'package:bottle_crm/providers/calendar_feed_provider.dart';
 import 'package:bottle_crm/providers/contacts_provider.dart';
+import 'package:bottle_crm/providers/custom_objects_provider.dart';
 import 'package:bottle_crm/providers/dashboard_provider.dart';
 import 'package:bottle_crm/providers/deal_pipelines_provider.dart';
 import 'package:bottle_crm/providers/deals_provider.dart';
@@ -131,7 +133,20 @@ const Map<String, String> _notSessionScoped = {
   'timesheetRangeProvider': 'which week is on screen, no records',
   'orgPacksProvider': 'the global pack catalogue, served without an org',
   'orgTimezonesProvider': 'the IANA zone list, the same for everyone',
+  'customObjectsProvider':
+      'derived from the selected org id, which sign-out and every org switch '
+      'change, so it rebuilds with them (pinned by its own test below)',
+  'automationRulesProvider':
+      'derived from the selected org id, so it rebuilds with every org switch '
+      'and sign-out (pinned by automation_provider_test.dart)',
 };
+
+class _OrgSwitch extends Notifier<Organization?> {
+  @override
+  Organization? build() => null;
+
+  void set(Organization? next) => state = next;
+}
 
 class _FakeClient extends http.BaseClient {
   final List<http.BaseRequest> sent = [];
@@ -197,6 +212,33 @@ void main() {
         );
       });
     }
+  });
+
+  test('customObjectsProvider asks again when the org changes', () async {
+    final org = NotifierProvider<_OrgSwitch, Organization?>(_OrgSwitch.new);
+    final scoped = ProviderContainer(
+      overrides: [selectedOrgProvider.overrideWith((ref) => ref.watch(org))],
+    );
+    addTearDown(scoped.dispose);
+    int asked() =>
+        client.reads.where((r) => r.url.path == '/api/objects/').length;
+
+    scoped
+        .read(org.notifier)
+        .set(Organization.fromJson({'id': 'a', 'name': 'A'}));
+    scoped.listen(customObjectsProvider, (_, _) {});
+    await _settle();
+    expect(asked(), 1);
+
+    scoped
+        .read(org.notifier)
+        .set(Organization.fromJson({'id': 'b', 'name': 'B'}));
+    await _settle();
+    expect(asked(), 2, reason: 'an org switch kept the old org answer');
+
+    scoped.read(org.notifier).set(null);
+    await _settle();
+    expect(asked(), 3, reason: 'sign-out kept the ended session answer');
   });
 
   test('sign-out empties the approvals list', () async {

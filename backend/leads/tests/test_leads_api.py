@@ -738,7 +738,13 @@ class TestLeadDetailView:
 
     @patch("leads.views.lead_views.send_email_to_assigned_user.delay")
     def test_patch_lead_with_assigned_to(
-        self, mock_email, admin_client, admin_user, admin_profile, org_a
+        self,
+        mock_email,
+        admin_client,
+        admin_user,
+        admin_profile,
+        org_a,
+        django_capture_on_commit_callbacks,
     ):
         """PATCH with assigned_to updates assignees and sends email to new ones."""
         lead = Lead.objects.create(
@@ -748,11 +754,12 @@ class TestLeadDetailView:
             created_by=admin_user,
             org=org_a,
         )
-        response = admin_client.patch(
-            _detail_url(lead.id),
-            {"assigned_to": [str(admin_profile.id)]},
-            format="json",
-        )
+        with django_capture_on_commit_callbacks(execute=True):
+            response = admin_client.patch(
+                _detail_url(lead.id),
+                {"assigned_to": [str(admin_profile.id)]},
+                format="json",
+            )
         assert response.status_code == 200
         lead.refresh_from_db()
         assert admin_profile in lead.assigned_to.all()

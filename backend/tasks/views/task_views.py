@@ -50,7 +50,6 @@ from tasks.access import (
     is_org_admin,
     visible_tasks_qs,
 )
-from tasks.celery_tasks import send_email_to_assigned_user
 from tasks.models import Task
 from tasks.serializer import (
     TaskCommentEditSwaggerSerializer,
@@ -60,34 +59,12 @@ from tasks.serializer import (
     TaskListSerializer,
     TaskSerializer,
 )
-
-
-def _model_errors(exc):
-    """Django's ``ValidationError`` in the shape this API answers 400 with.
-
-    ``Task.save()`` calls ``full_clean()``, so a model-level rule, today, "one
-    parent entity", fires on the way to the database. Django's exception is
-    not DRF's, so nothing caught it and the client got a 500 for breaking a
-    documented rule. Same rule, same wording, now with the right status.
-    """
-    return (
-        exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
-    )
-
-
-def notify_newly_assigned(request, task, previous_assignee_ids=()):
-    """Email whoever this write just put on the task, and nobody else.
-
-    Shared by create, PUT and PATCH, as in cases and contacts. Tasks used to
-    send nothing on any of them.
-    """
-    current = set(task.assigned_to.values_list("id", flat=True))
-    recipients = sorted(str(pk) for pk in current - set(previous_assignee_ids))
-    if not recipients:
-        return
-    send_email_to_assigned_user.delay(
-        recipients, str(task.id), str(request.profile.org.id)
-    )
+from tasks.updates import (
+    _model_errors,
+    create_task,
+    notify_newly_assigned,
+    update_task,
+)
 
 
 class TaskListView(APIView, LimitOffsetPagination):
@@ -278,78 +255,20 @@ class TaskListView(APIView, LimitOffsetPagination):
         },
     )
     def post(self, request, *args, **kwargs):
-        params = request.data
-        serializer = TaskCreateSerializer(data=params, request_obj=request)
-        if serializer.is_valid():
-            cf_payload = params.get("custom_fields")
-            if isinstance(cf_payload, str):
-                try:
-                    cf_payload = json.loads(cf_payload)
-                except (TypeError, ValueError):
-                    cf_payload = None
-            cleaned_cf, cf_errors = validate_custom_fields_payload(
-                "Task", cf_payload or {}, request.profile.org
-            )
-            if cf_errors:
-                return Response(
-                    {"error": True, "errors": {"custom_fields": cf_errors}},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            # Every id list is parsed before the first write, so a malformed
-            # one is a 400 with no half-created task behind it.
-            contact_ids = payload_id_list(params.get("contacts"), "contacts")
-            team_ids = payload_id_list(params.get("teams"), "teams")
-            assigned_ids = payload_id_list(params.get("assigned_to"), "assigned_to")
-            tag_ids = payload_id_list(params.get("tags"), "tags")
-            try:
-                task_obj = serializer.save(
-                    created_by=request.profile.user,
-                    due_date=params.get("due_date"),
-                    org=request.profile.org,
-                    custom_fields=cleaned_cf,
-                )
-            except DjangoValidationError as exc:
-                return Response(
-                    {"error": True, "errors": _model_errors(exc)},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            if contact_ids:
-                replace_visible_contacts(
-                    task_obj.contacts, contact_ids, request.profile
-                )
+        """Create a task.
 
-            if team_ids:
-                teams = Teams.objects.filter(id__in=team_ids, org=request.profile.org)
-                task_obj.teams.add(*teams)
-
-            if assigned_ids:
-                profiles = Profile.objects.filter(
-                    id__in=assigned_ids, org=request.profile.org, is_active=True
-                )
-                task_obj.assigned_to.add(*profiles)
-
-            if tag_ids:
-                tag_objs = Tags.objects.filter(
-                    id__in=tag_ids, org=request.profile.org, is_active=True
-                )
-                task_obj.tags.add(*tag_objs)
-
-            notify_newly_assigned(request, task_obj)
-
-            # The parent FKs used to be re-read from `params` and re-saved here
-            # with an org filter, *after* the serializer had already written
-            # whatever the client sent. On create that second pass only ever
-            # assigned, it never cleared, so another org's lead survived it
-            # and the list rendered that org's name back. The serializer now
-            # scopes the four querysets itself, which is one place instead of
-            # three and refuses out-of-org ids instead of quietly dropping them.
+        The write itself is `tasks.updates.create_task`, shared with
+        automation rules.
+        """
+        task, errors = create_task(request, request.data)
+        if task is None:
             return Response(
-                {"error": False, "message": "Task Created Successfully"},
-                status=status.HTTP_200_OK,
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": False, "message": "Task Created Successfully"},
+            status=status.HTTP_200_OK,
         )
 
 
@@ -644,93 +563,22 @@ class TaskDetailView(APIView):
         },
     )
     def patch(self, request, pk, **kwargs):
-        """Handle partial updates to a task."""
-        params = request.data
+        """Handle partial updates to a task.
+
+        The write itself is `tasks.updates.update_task`, shared with
+        automation rules.
+        """
         self.task_obj = self.get_object(pk)
         assert_task_access(request.profile, self.task_obj)
-
-        serializer = TaskCreateSerializer(
-            data=params,
-            instance=self.task_obj,
-            request_obj=request,
-            partial=True,
-        )
-        if serializer.is_valid():
-            save_kwargs = {}
-            if "custom_fields" in params:
-                cf_payload = params.get("custom_fields")
-                if isinstance(cf_payload, str):
-                    try:
-                        cf_payload = json.loads(cf_payload)
-                    except (TypeError, ValueError):
-                        cf_payload = None
-                cleaned_cf, cf_errors = validate_custom_fields_payload(
-                    "Task",
-                    cf_payload or {},
-                    request.profile.org,
-                    existing=self.task_obj.custom_fields or {},
-                )
-                if cf_errors:
-                    return Response(
-                        {"error": True, "errors": {"custom_fields": cf_errors}},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                save_kwargs["custom_fields"] = cleaned_cf
-            # Parsed before the first write, as in PUT. An absent key parses to [].
-            contact_ids = payload_id_list(params.get("contacts"), "contacts")
-            team_ids = payload_id_list(params.get("teams"), "teams")
-            assigned_ids = payload_id_list(params.get("assigned_to"), "assigned_to")
-            tag_ids = payload_id_list(params.get("tags"), "tags")
-            try:
-                task_obj = serializer.save(**save_kwargs)
-            except DjangoValidationError as exc:
-                return Response(
-                    {"error": True, "errors": _model_errors(exc)},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Handle M2M fields if present in request
-            if "contacts" in params:
-                replace_visible_contacts(
-                    task_obj.contacts, contact_ids, request.profile
-                )
-
-            if "teams" in params:
-                task_obj.teams.clear()
-                if team_ids:
-                    teams = Teams.objects.filter(
-                        id__in=team_ids, org=request.profile.org
-                    )
-                    task_obj.teams.add(*teams)
-
-            if "assigned_to" in params:
-                previous_assignee_ids = list(
-                    task_obj.assigned_to.values_list("id", flat=True)
-                )
-                task_obj.assigned_to.clear()
-                if assigned_ids:
-                    profiles = Profile.objects.filter(
-                        id__in=assigned_ids, org=request.profile.org, is_active=True
-                    )
-                    task_obj.assigned_to.add(*profiles)
-                notify_newly_assigned(request, task_obj, previous_assignee_ids)
-
-            if "tags" in params:
-                task_obj.tags.clear()
-                if tag_ids:
-                    tag_objs = Tags.objects.filter(
-                        id__in=tag_ids, org=request.profile.org, is_active=True
-                    )
-                    task_obj.tags.add(*tag_objs)
-
-            # Parent FKs: the serializer's job, org-scoped there. See PUT.
+        errors = update_task(request, self.task_obj, request.data)
+        if errors is not None:
             return Response(
-                {"error": False, "message": "Task updated Successfully"},
-                status=status.HTTP_200_OK,
+                {"error": True, "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(
-            {"error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": False, "message": "Task updated Successfully"},
+            status=status.HTTP_200_OK,
         )
 
     @extend_schema(

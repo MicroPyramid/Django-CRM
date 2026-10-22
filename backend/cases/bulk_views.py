@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from automation.capture import suppress_rules
 from cases.access import has_case_write_access, is_org_admin, visible_cases_qs
 from cases.models import Case
 from cases.updates import update_case
@@ -161,44 +162,49 @@ class BulkUpdateCasesView(APIView):
         updated_count = 0
         # Only tickets the caller may open. One they may not is left out of
         # `results` exactly as a missing id is, so the batch cannot be used to
-        # learn which ids exist.
-        for case in Case.objects.filter(
-            org=org,
-            pk__in=visible_cases_qs(request.profile).filter(pk__in=ids).values("pk"),
-        ):
-            # Per-case authorization, mirroring the single-case PUT path
-            # (`CaseDetailView.put` calls `assert_case_write_access`). Without
-            # this any org member could edit, reassign or close any case in
-            # the org. Cases the caller may open but not write are reported as
-            # `no_access` rather than silently skipped, so the caller can see
-            # which of their selected tickets were denied.
-            if not has_case_write_access(request.profile, case):
-                results.append({"id": str(case.pk), "status": "no_access"})
-                continue
-            # The single-case rule, reported per ticket like the close gate.
-            refusal = merged_status_refusal(case, fields.get("status", case.status))
-            if refusal:
-                results.append(
-                    {
-                        "id": str(case.pk),
-                        "status": "merged",
-                        "detail": refusal["status"],
-                    }
-                )
-                continue
-            # The single-ticket write (`update_case`, the PATCH's own path),
-            # so the close gate, active-only assignees and tags, and the email
-            # to whoever is newly assigned all apply here too. Tags append:
-            # bulk-tagging must not wipe a ticket's other tags. `assigned_to`
-            # replaces. A savepoint per case, so one ticket's failure rolls
-            # back only itself and the rest of the batch still commits.
-            with transaction.atomic():
-                errors = update_case(request, case, fields, append_tags=True)
-            if errors:
-                results.append(_refusal_outcome(str(case.pk), errors))
-                continue
-            results.append({"id": str(case.pk), "status": "updated"})
-            updated_count += 1
+        # learn which ids exist. A bulk edit sets off no automation rule, as an
+        # import does not, or one bulk close would run them once per ticket.
+        with suppress_rules():
+            for case in Case.objects.filter(
+                org=org,
+                pk__in=visible_cases_qs(request.profile)
+                .filter(pk__in=ids)
+                .values("pk"),
+            ):
+                # Per-case authorization, mirroring the single-case PUT path
+                # (`CaseDetailView.put` calls `assert_case_write_access`).
+                # Without this any org member could edit, reassign or close any
+                # case in the org. Cases the caller may open but not write are
+                # reported as `no_access` rather than silently skipped, so the
+                # caller can see which of their selected tickets were denied.
+                if not has_case_write_access(request.profile, case):
+                    results.append({"id": str(case.pk), "status": "no_access"})
+                    continue
+                # The single-case rule, reported per ticket like the close gate.
+                refusal = merged_status_refusal(case, fields.get("status", case.status))
+                if refusal:
+                    results.append(
+                        {
+                            "id": str(case.pk),
+                            "status": "merged",
+                            "detail": refusal["status"],
+                        }
+                    )
+                    continue
+                # The single-ticket write (`update_case`, the PATCH's own
+                # path), so the close gate, active-only assignees and tags, and
+                # the email to whoever is newly assigned all apply here too.
+                # Tags append: bulk-tagging must not wipe a ticket's other
+                # tags. `assigned_to` replaces. A savepoint per case, so one
+                # ticket's failure rolls back only itself and the rest of the
+                # batch still commits.
+                with transaction.atomic():
+                    errors = update_case(request, case, fields, append_tags=True)
+                if errors:
+                    results.append(_refusal_outcome(str(case.pk), errors))
+                    continue
+                results.append({"id": str(case.pk), "status": "updated"})
+                updated_count += 1
 
         return Response(
             {"error": False, "updated": updated_count, "results": results},

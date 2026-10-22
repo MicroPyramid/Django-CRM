@@ -25,35 +25,56 @@ def deal(org_a, admin_user, admin_profile):
     return deal
 
 
-def _patch(client, deal, body):
-    with patch(MAIL) as mail:
+def _patch(client, deal, body, capture_on_commit):
+    with patch(MAIL) as mail, capture_on_commit(execute=True):
         response = client.patch(f"/api/opportunities/{deal.id}/", body, format="json")
     assert response.status_code == 200, response.content
     return mail
 
 
 def test_adding_an_assignee_emails_only_them(
-    admin_client, deal, org_a, admin_profile, user_profile
+    admin_client,
+    deal,
+    org_a,
+    admin_profile,
+    user_profile,
+    django_capture_on_commit_callbacks,
 ):
     mail = _patch(
         admin_client,
         deal,
         {"assigned_to": [str(admin_profile.id), str(user_profile.id)]},
+        django_capture_on_commit_callbacks,
     )
     mail.assert_called_once_with([user_profile.id], deal.id, str(org_a.id))
 
 
-def test_no_assigned_to_key_sends_nothing(admin_client, deal):
-    mail = _patch(admin_client, deal, {"name": "Renamed"})
+def test_no_assigned_to_key_sends_nothing(
+    admin_client, deal, django_capture_on_commit_callbacks
+):
+    mail = _patch(
+        admin_client, deal, {"name": "Renamed"}, django_capture_on_commit_callbacks
+    )
     mail.assert_not_called()
 
 
-def test_unchanged_assignees_send_nothing(admin_client, deal, admin_profile):
-    mail = _patch(admin_client, deal, {"assigned_to": [str(admin_profile.id)]})
+def test_unchanged_assignees_send_nothing(
+    admin_client, deal, admin_profile, django_capture_on_commit_callbacks
+):
+    mail = _patch(
+        admin_client,
+        deal,
+        {"assigned_to": [str(admin_profile.id)]},
+        django_capture_on_commit_callbacks,
+    )
     mail.assert_not_called()
 
 
-def test_removing_an_assignee_sends_nothing(admin_client, deal):
-    mail = _patch(admin_client, deal, {"assigned_to": []})
+def test_removing_an_assignee_sends_nothing(
+    admin_client, deal, django_capture_on_commit_callbacks
+):
+    mail = _patch(
+        admin_client, deal, {"assigned_to": []}, django_capture_on_commit_callbacks
+    )
     mail.assert_not_called()
     assert deal.assigned_to.count() == 0

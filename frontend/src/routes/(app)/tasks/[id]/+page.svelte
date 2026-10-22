@@ -34,9 +34,12 @@
     Sparkles,
     X
   } from '@lucide/svelte';
+  import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import { relatedView } from '#lib/v2/custom-objects.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let related = $derived(relatedView(data.related));
 
   let { task, activity, contacts, owners, canDelete } = $derived(data);
 
@@ -216,6 +219,8 @@
             No note on this task. The title is all anyone else has to go on.
           </p>
         {/if}
+
+        <RelatedRecords {related} error={form?.related?.error} />
 
         <div class="act-head">
           <div class="v2-label">Activity</div>

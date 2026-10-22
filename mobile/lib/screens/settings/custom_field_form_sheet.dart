@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/custom_field_definition.dart';
+import 'options_editor.dart';
 
 /// Add or edit a custom field definition.
 ///
@@ -50,7 +50,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
   /// untouched, because every record already holding that option refers to it;
   /// a row added here has an empty value and gets one slugified from its label
   /// at submit time.
-  late List<_OptionDraft> _options;
+  late List<OptionDraft> _options;
 
   /// True once the admin edits the key by hand, after which the label stops
   /// writing into it. Without this, correcting the label would silently
@@ -74,7 +74,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
     _isFilterable = f?.isFilterable ?? false;
     _options = [
       for (final o in f?.options ?? const <CustomFieldOption>[])
-        _OptionDraft(value: o.value, label: o.label),
+        OptionDraft(value: o.value, label: o.label),
     ];
   }
 
@@ -100,7 +100,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
   }
 
   void _addOption() {
-    setState(() => _options.add(_OptionDraft(value: '', label: '')));
+    setState(() => _options.add(OptionDraft(value: '', label: '')));
   }
 
   void _removeOption(int index) {
@@ -257,7 +257,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
               ),
             if (_fieldType == CustomFieldType.dropdown) ...[
               const SizedBox(height: 16),
-              _OptionsEditor(
+              OptionsEditor(
                 options: _options,
                 onAdd: _addOption,
                 onRemove: _removeOption,
@@ -337,86 +337,6 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// One dropdown option being edited.
-///
-/// [value] is what records store. It is empty for a row added in this sheet
-/// and is left exactly as it was for a row that came back from the server,
-/// because relabelling an option must not move the records that hold it.
-class _OptionDraft {
-  _OptionDraft({required this.value, required String label})
-    : controller = TextEditingController(text: label);
-
-  final String value;
-  final TextEditingController controller;
-}
-
-class _OptionsEditor extends StatelessWidget {
-  const _OptionsEditor({
-    required this.options,
-    required this.onAdd,
-    required this.onRemove,
-  });
-
-  final List<_OptionDraft> options;
-  final VoidCallback onAdd;
-  final void Function(int index) onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Options',
-          style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Renaming an option keeps the records that already use it.',
-          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        for (var i = 0; i < options.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: options[i].controller,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: 'Option ${i + 1}',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => onRemove(i),
-                  tooltip: 'Remove option',
-                  icon: Icon(
-                    LucideIcons.x,
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        SizedBox(
-          height: 44,
-          child: OutlinedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Add option'),
-          ),
-        ),
-      ],
     );
   }
 }

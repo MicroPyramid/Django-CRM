@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-crm"
-version = "1.18.2"
+version = "1.22.1"
 # The one-line summary PyPI shows under the project title and in search results,
 # so it carries the terms people actually search for ("open source CRM",
 # "self-hosted CRM", "Django CRM") and names the modules rather than the
@@ -137,6 +137,7 @@ docs = [
 # went missing. common/tests/test_packaging.py fails if the two drift apart.
 packages = [
     "accounts",
+    "automation",
     "business_hours",
     "cases",
     "common",
@@ -155,6 +156,7 @@ packages = [
 [tool.hatch.build.targets.sdist]
 include = [
     "accounts/",
+    "automation/",
     "business_hours/",
     "cases/",
     "common/",

@@ -17,6 +17,7 @@
  * member cannot count. Every other destination is readable by any member, so a
  * throw from one of those is a real failure and is left to propagate.
  */
+import { automationSummary } from './automation.js';
 import { getBusinessHours } from './business-hours.js';
 import { getCustomFields } from './custom-fields.js';
 import { getEscalationPolicies } from './escalation.js';
@@ -110,7 +111,8 @@ export async function getSettingsHub(event) {
     tag,
     field,
     webForm,
-    helpCenter
+    helpCenter,
+    automation
   ] = await Promise.all([
     getOrgSettings(event),
     getBusinessHours(event),
@@ -125,7 +127,9 @@ export async function getSettingsHub(event) {
     getTags(event),
     getCustomFields(event),
     getWebForms(event),
-    getHelpCenterSettings(event)
+    getHelpCenterSettings(event),
+    // Never throws: null when the rules cannot be read, so the hub still loads.
+    automationSummary(event)
   ]);
 
   const now = Date.now();
@@ -149,6 +153,7 @@ export async function getSettingsHub(event) {
     tagTotals: tag.totals,
     fieldTotals: field.totals,
     webFormTotals: webForm.totals,
-    helpCenter
+    helpCenter,
+    automation
   };
 }

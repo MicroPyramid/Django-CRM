@@ -9,8 +9,11 @@ from __future__ import annotations
 import pytest
 
 from cases.models import Case
+from common import object_registry
 from common.custom_fields import validate_definition_options, validate_payload
 from common.models import CustomFieldDefinition
+from common.tests.object_records import make_record
+from conftest import rls_org
 from leads.models import Lead
 
 
@@ -544,3 +547,159 @@ class TestCustomFieldAnalytics:
         assert resp.status_code == 200
         assert "totals" in resp.json()
         assert resp.json()["definitions"][0]["records_missing_value"] == 0
+
+
+TARGET_KEYS = {
+    "Account": "account",
+    "Case": "ticket",
+    "Contact": "contact",
+    "Estimate": "estimate",
+    "Invoice": "invoice",
+    "Lead": "lead",
+    "Opportunity": "deal",
+    "RecurringInvoice": "recurring_invoice",
+    "Task": "task",
+}
+
+
+@pytest.mark.django_db
+class TestEveryTarget:
+    URL = "/api/custom-fields/"
+
+    @pytest.mark.parametrize("target", TARGET_KEYS)
+    def test_an_admin_creates_a_definition_on_every_target(self, target, admin_client):
+        payload = TestCustomFieldDefinitionAPI()._payload(target_model=target)
+        response = admin_client.post(self.URL, payload, format="json")
+        assert response.status_code == 201, response.content
+
+    @pytest.mark.parametrize("value", ["Comment", "", "x" * 33])
+    def test_a_bad_target_gets_todays_exact_error(self, value, admin_client):
+        payload = TestCustomFieldDefinitionAPI()._payload(target_model=value)
+        response = admin_client.post(self.URL, payload, format="json")
+        assert response.status_code == 400
+        assert response.json()["errors"]["target_model"] == [
+            f'"{value}" is not a valid choice.'
+        ]
+
+    def test_missing_counts_and_totals_cover_every_target(
+        self, admin_client, org_a, org_b
+    ):
+        for target, key in TARGET_KEYS.items():
+            CustomFieldDefinition.objects.create(
+                org=org_a,
+                target_model=target,
+                key="probe",
+                label="Probe",
+                field_type="text",
+                is_required=True,
+            )
+            make_record(key, org_a)
+            filled = make_record(key, org_a)
+            type(filled).objects.filter(pk=filled.pk).update(
+                custom_fields={"probe": "set"}
+            )
+            with rls_org(org_b):
+                make_record(key, org_b)
+        body = admin_client.get(self.URL).json()
+        assert {
+            d["target_model"]: d["records_missing_value"] for d in body["definitions"]
+        } == dict.fromkeys(TARGET_KEYS, 1)
+        assert body["totals"] == {
+            "count": 9,
+            "active": 9,
+            "models_extended": 9,
+            "required_with_gaps": 9,
+        }
+
+    def test_the_registry_hooks_run_once_per_list(
+        self, admin_client, org_a, monkeypatch
+    ):
+        calls = []
+        monkeypatch.setattr(
+            object_registry, "_HOOKS", [lambda org: calls.append(org) or ()]
+        )
+        for target in TARGET_KEYS:
+            CustomFieldDefinition.objects.create(
+                org=org_a,
+                target_model=target,
+                key="probe",
+                label="Probe",
+                field_type="text",
+            )
+        assert admin_client.get(self.URL).status_code == 200
+        assert len(calls) == 1
+
+    def test_a_stored_target_the_registry_does_not_know_is_not_listed(
+        self, admin_client, org_a
+    ):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Ghost",
+            key="probe",
+            label="Probe",
+            field_type="text",
+        )
+        response = admin_client.get(self.URL)
+        assert response.status_code == 200
+        assert response.json()["definitions"] == []
+
+
+@pytest.mark.django_db
+class TestObjectFieldRowsStayInvisible:
+    URL = "/api/custom-fields/"
+
+    @pytest.fixture
+    def plant(self, admin_client, org_a):
+        CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="Case",
+            key="severity",
+            label="Severity",
+            field_type="text",
+        )
+        before = admin_client.get(self.URL).json()
+        row = CustomFieldDefinition.objects.create(
+            org=org_a,
+            target_model="obj:example",
+            key="amount",
+            label="Amount",
+            field_type="number",
+        )
+        return before, row
+
+    def test_the_list_and_totals_do_not_change(self, admin_client, plant):
+        before, _row = plant
+        assert admin_client.get(self.URL).json() == before
+
+    def test_filtering_by_an_object_target_finds_nothing(self, admin_client, plant):
+        response = admin_client.get(self.URL + "?target_model=obj:example")
+        assert response.status_code == 200
+        assert response.json()["definitions"] == []
+
+    @pytest.mark.parametrize("method", ["get", "put", "delete"])
+    def test_the_detail_route_answers_404(self, method, admin_client, plant):
+        _before, row = plant
+        kwargs = {"format": "json"} if method == "put" else {}
+        if method == "put":
+            kwargs["data"] = {"label": "Changed", "is_active": False}
+        response = getattr(admin_client, method)(f"{self.URL}{row.id}/", **kwargs)
+        assert response.status_code == 404
+        row.refresh_from_db()
+        assert row.label == "Amount"
+        assert row.is_active is True
+
+    def test_creating_one_is_refused(self, admin_client):
+        response = admin_client.post(
+            self.URL,
+            {
+                "target_model": "obj:example",
+                "key": "amount",
+                "label": "Amount",
+                "field_type": "number",
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert response.json()["errors"]["target_model"] == [
+            '"obj:example" is not a valid choice.'
+        ]

@@ -7,10 +7,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from common.custom_fields import (
-    is_supported_target,
-    validate_definition_options,
-)
+from common.custom_fields import validate_definition_options
 from common.links import frontend_url
 from common.models import (
     Activity,
@@ -28,6 +25,7 @@ from common.models import (
     Teams,
     User,
 )
+from common.object_registry import BUILT_IN
 from common.permissions import is_org_admin
 from common.utils import CURRENCY_SYMBOLS, validate_upload_size
 from common.validators import flexible_phone_validator, validate_help_center_slug
@@ -487,6 +485,10 @@ class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
     """Per-org custom-field definition. key/target_model/field_type are immutable
     after creation. Admins must create a new definition to change shape."""
 
+    target_model = serializers.ChoiceField(
+        choices=sorted((e.custom_field_target, e.label_plural) for e in BUILT_IN)
+    )
+
     class Meta:
         model = CustomFieldDefinition
         fields = (
@@ -504,13 +506,6 @@ class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
-
-    def validate_target_model(self, value):
-        if not is_supported_target(value):
-            raise serializers.ValidationError(
-                f"target_model {value!r} is not yet wired for custom fields"
-            )
-        return value
 
     def validate_key(self, value):
         if not value:

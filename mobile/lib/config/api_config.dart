@@ -378,6 +378,66 @@ class ApiConfig {
   static String attachmentDownload(String id) =>
       '$apiBaseUrl/attachments/$id/download/';
 
+  // Custom objects. Keys and ids are checked here because they go into the
+  // path; a malformed one throws instead of reaching another route.
+  static final _objectKey = RegExp(r'^[a-z][a-z0-9_]{1,27}$');
+  static bool isObjectKey(String key) => _objectKey.hasMatch(key);
+
+  static final _fieldKey = RegExp(r'^[a-z][a-z0-9_]{0,63}$');
+  static final _uuid = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+
+  static bool isUuid(String id) => _uuid.hasMatch(id);
+
+  static String _checked(RegExp pattern, String value, String what) {
+    if (!pattern.hasMatch(value)) throw ArgumentError.value(value, what);
+    return value;
+  }
+
+  static String get objects => '$apiBaseUrl/objects/';
+
+  static String object(String key) =>
+      '$apiBaseUrl/objects/${_checked(_objectKey, key, 'key')}/';
+
+  static String objectFields(String key) => '${object(key)}fields/';
+
+  static String objectField(String key, String fieldKey) =>
+      '${objectFields(key)}${_checked(_fieldKey, fieldKey, 'fieldKey')}/';
+
+  static String objectRecords(String key) => '${object(key)}records/';
+
+  static String objectRecord(String key, String id) =>
+      '${objectRecords(key)}${_checked(_uuid, id, 'id')}/';
+
+  static String objectRecordAttachments(String key, String id) =>
+      '${objectRecord(key, id)}attachments/';
+
+  static String objectRecordAttachment(
+    String key,
+    String id,
+    String attachmentId,
+  ) =>
+      '${objectRecordAttachments(key, id)}'
+      '${_checked(_uuid, attachmentId, 'attachmentId')}/';
+
+  static String get objectsRelated => '$apiBaseUrl/objects/related/';
+
+  static String get automationCatalogue => '$apiBaseUrl/automation/catalogue/';
+
+  static String get automationRules => '$apiBaseUrl/automation/rules/';
+
+  static String get automationReorder => '${automationRules}reorder/';
+
+  static String automationRule(String id) =>
+      '$automationRules${_checked(_uuid, id, 'id')}/';
+
+  static String automationRuleTry(String id) => '${automationRule(id)}try/';
+
+  static String automationRuleRuns(String id, {int offset = 0}) =>
+      '${automationRule(id)}runs/?limit=20&offset=$offset';
+
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
 

@@ -15,25 +15,13 @@ from typing import Any
 
 from rest_framework import serializers as drf_serializers
 
-logger = logging.getLogger(__name__)
+from common.object_registry import BUILT_IN
 
-# Targets whose entity model has a `custom_fields` JSONField column. Adding a
-# new entity? Drop a column on it (one migration), then add it here.
-SUPPORTED_TARGETS: set[str] = {
-    "Account",
-    "Case",
-    "Contact",
-    "Estimate",
-    "Invoice",
-    "Lead",
-    "Opportunity",
-    "RecurringInvoice",
-    "Task",
-}
+logger = logging.getLogger(__name__)
 
 
 def is_supported_target(target_model: str) -> bool:
-    return target_model in SUPPORTED_TARGETS
+    return any(e.custom_field_target == target_model for e in BUILT_IN)
 
 
 def validate_definition_options(field_type: str, options: Any) -> None:

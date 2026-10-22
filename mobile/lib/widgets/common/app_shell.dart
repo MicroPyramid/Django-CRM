@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/custom_objects_provider.dart';
 import '../../routes/app_router.dart';
 import 'avatar.dart';
 
@@ -37,14 +38,47 @@ const _navBranches = <_NavBranch>[
   ),
 ];
 
+const _moreBranch = 5;
+
 /// App Shell - Main wrapper with bottom navigation
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppShell({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  // Branches shown so far. The shell keeps each one alive after its first
+  // visit, so a screen's initState does not run again on a later switch.
+  final _shown = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _shown.add(widget.navigationShell.currentIndex);
+  }
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _shown.add(widget.navigationShell.currentIndex);
+  }
+
+  /// Every branch switch goes through here. More asks again for a failed
+  /// objects answer on its first visit; after that, switching to it asks.
+  void _goBranch(int branch, {bool initialLocation = false}) {
+    if (branch == _moreBranch && _shown.contains(branch)) {
+      retryFailedCustomObjects(ref);
+    }
+    widget.navigationShell.goBranch(branch, initialLocation: initialLocation);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
     final currentBranch = navigationShell.currentIndex;
     final selectedNavIndex = _navBranches.indexWhere(
       (b) => b.branches.contains(currentBranch),
@@ -57,38 +91,31 @@ class AppShell extends ConsumerWidget {
         onTap: (navIndex) {
           final entry = _navBranches[navIndex];
           if (entry.opensSheet) {
-            _showMoreSheet(context, ref, navigationShell);
+            _showMoreSheet(context, _goBranch);
             return;
           }
           final target = entry.branches.first;
-          navigationShell.goBranch(
-            target,
-            initialLocation: target == currentBranch,
-          );
+          _goBranch(target, initialLocation: target == currentBranch);
         },
       ),
     );
   }
 }
 
-void _showMoreSheet(
-  BuildContext context,
-  WidgetRef ref,
-  StatefulNavigationShell navigationShell,
-) {
+void _showMoreSheet(BuildContext context, void Function(int branch) goBranch) {
   showModalBottomSheet(
     context: context,
     backgroundColor: AppColors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (sheetContext) => _MoreSheet(navigationShell: navigationShell),
+    builder: (sheetContext) => _MoreSheet(goBranch: goBranch),
   );
 }
 
 class _MoreSheet extends ConsumerWidget {
-  final StatefulNavigationShell navigationShell;
-  const _MoreSheet({required this.navigationShell});
+  final void Function(int branch) goBranch;
+  const _MoreSheet({required this.goBranch});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,7 +178,7 @@ class _MoreSheet extends ConsumerWidget {
             label: 'Tasks',
             onTap: () {
               Navigator.pop(context);
-              navigationShell.goBranch(4);
+              goBranch(4);
             },
           ),
           _SheetItem(
@@ -159,7 +186,7 @@ class _MoreSheet extends ConsumerWidget {
             label: 'Settings',
             onTap: () {
               Navigator.pop(context);
-              navigationShell.goBranch(5);
+              goBranch(_moreBranch);
             },
           ),
           _SheetItem(

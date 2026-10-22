@@ -148,6 +148,11 @@ ORG_SCOPED_TABLES = [
     # context from the org it was queued for. See webhooks/tasks.py.
     "webhook_endpoint",
     "webhook_delivery",
+    # Automation rules (all three carry org_id). The engine sets the context
+    # from the rule's org before it touches them.
+    "automation_rule",
+    "automation_run",
+    "automation_rotation",
     # Saved list views (G29). Private to one profile as well; the views filter
     # on it, this keeps another org's rows out even if one forgets.
     "saved_view",

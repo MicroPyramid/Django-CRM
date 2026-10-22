@@ -7,6 +7,7 @@ import { listInvoices } from '#lib/server/v2/invoices.js';
 import { countAwaitingApprovals } from '#lib/server/v2/approvals.js';
 import { countUnread } from '#lib/server/v2/notifications.js';
 import { getOrgTerminology } from '#lib/server/v2/organization.js';
+import { getCustomObjects } from '#lib/server/v2/custom-objects.js';
 
 /**
  * Counts for migrated modules, fetched for real and merged over the fixtures.
@@ -147,24 +148,30 @@ export async function load(event) {
     // destinations a member can only reach to be turned away. The backend
     // still enforces every one of those gates, so this is UX, not a security
     // control. The non-admin view when the claim is absent.
-    is_organization_admin: isOrgAdmin(event.locals.profile)
+    is_organization_admin: isOrgAdmin(event.locals.profile),
+    // The `/objects/` answer, or null on a self-hosted install or any failure.
+    customObjects: /** @type {any} */ (null)
   };
 
   // countKeys' fetches and the terminology fetch are pushed into ONE
   // Promise.allSettled call so they all fire in the same network wave. The
   // terminology lookup is not a second round trip, it rides the wave that was
   // already here for the badges. `results` is indexed by position: the count
-  // keys first (in `countKeys` order), terminology last.
+  // keys first (in `countKeys` order), then terminology, then custom objects.
   const countKeys = Object.keys(LIVE_COUNTS);
   const results = await Promise.allSettled([
     ...countKeys.map((key) => LIVE_COUNTS[/** @type {keyof typeof LIVE_COUNTS} */ (key)](event)),
-    getOrgTerminology(event)
+    getOrgTerminology(event),
+    getCustomObjects(event)
   ]);
 
   countKeys.forEach((key, index) => {
     const result = results[index];
     if (result.status === 'fulfilled') shell.counts[key] = result.value;
   });
+
+  const objectsResult = results[countKeys.length + 1];
+  if (objectsResult.status === 'fulfilled') shell.customObjects = objectsResult.value ?? null;
 
   const terminologyResult = results[countKeys.length];
   if (terminologyResult.status === 'fulfilled') {

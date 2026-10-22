@@ -12,6 +12,8 @@ export 'activity.dart';
 export 'comment.dart';
 export 'lookup_models.dart';
 export 'custom_field_definition.dart';
+export 'custom_object.dart';
+export 'automation.dart';
 export 'email_message.dart';
 export 'time_entry.dart';
 export 'timesheet.dart';

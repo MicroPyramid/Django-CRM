@@ -67,11 +67,34 @@ import 'package:bottle_crm/screens/goals/goal_form_screen.dart';
 import 'package:bottle_crm/screens/goals/goal_history_screen.dart';
 import 'package:bottle_crm/screens/goals/goals_screen.dart';
 import 'package:bottle_crm/screens/timesheet/timesheet_screen.dart';
+import 'package:bottle_crm/data/models/custom_object.dart';
+import 'package:bottle_crm/data/models/models.dart' show Lead;
+import 'package:bottle_crm/providers/custom_objects_provider.dart';
+import 'package:bottle_crm/providers/duplicates_provider.dart';
+import 'package:bottle_crm/providers/leads_provider.dart';
+import 'package:bottle_crm/screens/leads/lead_detail_screen.dart';
+import 'package:bottle_crm/screens/objects/object_record_detail_screen.dart';
+import 'package:bottle_crm/screens/objects/object_record_form_screen.dart';
+import 'package:bottle_crm/screens/objects/object_records_screen.dart';
+import 'package:bottle_crm/screens/settings/object_field_sheet.dart';
+import 'package:bottle_crm/screens/settings/object_settings_screen.dart';
+import 'package:bottle_crm/screens/settings/objects_settings_screen.dart';
+import 'package:bottle_crm/core/theme/theme.dart';
+import 'package:bottle_crm/data/models/automation.dart';
+import 'package:bottle_crm/screens/settings/automation/action_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_rule_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_rules_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_runs_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/condition_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/trigger_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/try_rule_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+
+import '../support/automation_fixtures.dart';
 
 /// The newest screens, rendered at a real phone.
 ///
@@ -118,8 +141,17 @@ void main() {
     child: routed(const TimesheetScreen()),
   );
 
-  Widget settingsHubApp() =>
-      const ProviderScope(child: MaterialApp(home: SettingsHubScreen()));
+  /// [answer] null is a server with no custom objects, which is what the hub
+  /// must also render without a request of its own.
+  Widget settingsHubApp({CustomObjectsAnswer? answer, bool isAdmin = false}) =>
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          customObjectsProvider.overrideWith(() => _FakeObjectsAnswer(answer)),
+          isOrgAdminProvider.overrideWithValue(isAdmin),
+        ],
+        child: const MaterialApp(home: SettingsHubScreen()),
+      );
 
   /// [isAdmin] is overridden rather than left to fall out of a signed-in
   /// profile, because both answers matter here: the read is open to a member
@@ -491,6 +523,37 @@ void main() {
     child: routed(const NotificationsScreen()),
   );
 
+  /// The four automation verbs, plus one whose `data` has the wrong type, under
+  /// a router that answers the destinations they resolve to.
+  Widget automationFeedApp() => ProviderScope(
+    overrides: [
+      notificationsProvider.overrideWith(_FakeAutomationNotifications.new),
+    ],
+    child: MaterialApp.router(
+      routerConfig: GoRouter(
+        initialLocation: '/here',
+        routes: [
+          GoRoute(
+            path: '/here',
+            builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/deals/:id',
+            builder: (_, s) => Text('deal ${s.pathParameters['id']}'),
+          ),
+          GoRoute(
+            path: '/more/settings/automation',
+            builder: (_, _) => const Text('the rules'),
+          ),
+          GoRoute(
+            path: '/more/settings/automation/:ruleId',
+            builder: (_, s) => Text('rule ${s.pathParameters['ruleId']}'),
+          ),
+        ],
+      ),
+    ),
+  );
+
   Widget invoicesApp({bool mixedCurrency = false}) => ProviderScope(
     overrides: [
       invoicesProvider.overrideWith(
@@ -585,6 +648,163 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
   }
+
+  /// Every object screen is checked at its fullest: the eight-field Property
+  /// with long labels, four link fields (one holding links the viewer cannot
+  /// open), three photos and two files.
+  Future<void> scrollToEnd(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  Widget objRecordsApp({bool writes = true}) => ProviderScope(
+    overrides: [
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+      ),
+      objectDefinitionProvider.overrideWith((ref, key) async => _objDefinition),
+      objectRecordsProvider(
+        _objKey,
+      ).overrideWith(() => _FakeObjectRecords(_objKey, _objRecordsData)),
+    ],
+    child: routed(const ObjectRecordsScreen(objectKey: _objKey)),
+  );
+
+  Widget objDetailApp({bool canEdit = true, bool canDelete = true}) =>
+      ProviderScope(
+        overrides: [
+          objectDefinitionProvider.overrideWith(
+            (ref, key) async => _objDefinition,
+          ),
+          customObjectsApiProvider.overrideWithValue(
+            _FakeObjectsApi(_objRecordJson(canEdit, canDelete)),
+          ),
+          attachmentBytesProvider.overrideWith((ref, id) async => null),
+        ],
+        child: routed(
+          const ObjectRecordDetailScreen(objectKey: _objKey, recordId: _objId),
+        ),
+      );
+
+  Widget objFormApp({String? recordId}) => ProviderScope(
+    overrides: [
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: true)),
+      ),
+      objectDefinitionProvider.overrideWith((ref, key) async => _objDefinition),
+      customObjectsApiProvider.overrideWithValue(
+        _FakeObjectsApi(_objRecordJson(true, true)),
+      ),
+      usersProvider.overrideWithValue(const [
+        UserLookup(
+          id: 'p1',
+          email: 'ravi@example.com',
+          name: 'Ravi Shankar Venkataraghavan',
+          role: 'USER',
+          isActive: true,
+        ),
+      ]),
+    ],
+    child: routed(
+      ObjectRecordFormScreen(objectKey: _objKey, recordId: recordId),
+    ),
+  );
+
+  Widget objSettingsListApp({required bool admin, required bool writes}) =>
+      ProviderScope(
+        overrides: [
+          isOrgAdminProvider.overrideWithValue(admin),
+          customObjectsProvider.overrideWith(
+            () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+          ),
+          objectsSettingsProvider.overrideWith(
+            (ref) async => _objAnswer(writes: writes),
+          ),
+        ],
+        child: routed(const ObjectsSettingsScreen()),
+      );
+
+  Widget objSettingsApp({
+    required bool admin,
+    required bool writes,
+    bool archived = false,
+  }) => ProviderScope(
+    overrides: [
+      isOrgAdminProvider.overrideWithValue(admin),
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: writes)),
+      ),
+      objectSettingsProvider(_objKey).overrideWith(
+        (ref) async => ObjectSettingsData(
+          summary: archived ? _objSummaryArchived : _objSummary,
+          fields: _objFields,
+        ),
+      ),
+    ],
+    child: routed(const ObjectSettingsScreen(objectKey: _objKey)),
+  );
+
+  Widget objFieldSheetApp(ObjectField? existing) => ProviderScope(
+    child: routed(
+      Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () => showObjectFieldSheet(
+                context,
+                existing: existing,
+                linkTargets: _objAnswer(writes: true).linkTargets,
+                onSubmit: (_) async => null,
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget objLeadApp() => ProviderScope(
+    overrides: [
+      leadsProvider.overrideWith(_FakeObjectLead.new),
+      duplicatesApiProvider.overrideWithValue(_NoObjectDuplicates()),
+      isOrgAdminProvider.overrideWithValue(true),
+      currentUserProvider.overrideWithValue(null),
+      customObjectsProvider.overrideWith(
+        () => _FakeObjectsAnswer(_objAnswer(writes: true)),
+      ),
+      relatedProvider((to: 'lead', id: 'l1')).overrideWith(
+        (ref) async => RelatedAnswer(
+          canEdit: true,
+          groups: [
+            RelatedGroup(
+              objectKey: _objKey,
+              objectLabel: _objLong60,
+              fieldKey: 'agent',
+              fieldLabel: _objLong64,
+              records: const [
+                RelatedRecordRef(
+                  id: _objId,
+                  name: '12 Harbour Road, Old Town Quarter, Northern District',
+                ),
+              ],
+            ),
+          ],
+          linkFields: [
+            RelatedLinkField(
+              objectKey: _objKey,
+              objectLabel: _objLong60,
+              fieldKey: 'agent',
+              fieldLabel: _objLong64,
+            ),
+          ],
+        ),
+      ),
+    ],
+    child: const MaterialApp(home: LeadDetailScreen(leadId: 'l1')),
+  );
 
   group('timesheet at 390px', () {
     testWidgets('renders a week without overflowing', (tester) async {
@@ -715,6 +935,246 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ticket case-9'), findsOneWidget);
+    });
+  });
+
+  group('automation notifications at 390px', () {
+    Future<void> reveal(WidgetTester tester, Finder target) async {
+      await tester.scrollUntilVisible(
+        target,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(target.first);
+      await tester.pumpAndSettle();
+    }
+
+    Finder rowOf(Finder text) =>
+        find.ancestor(of: text, matching: find.byType(InkWell)).first;
+
+    const message =
+        'Harbour Lane Logistics is won. Please review the handover notes and '
+        'confirm the kickoff date with the customer today.';
+    const markup = '<img src=x onerror=alert(1)> [open](javascript:x)';
+    const failed =
+        'The rule "$longRuleName" failed: '
+        "That is not a stage of this deal's pipeline.";
+    const paused =
+        'Paused because the admin who switched it on left the organization. '
+        'Paused: New lead: rotate owners, $longRuleName.';
+    const limit =
+        'Automation reached its limit of 1,000 runs in the hour from '
+        "15 Jan 2025 14:00. The rest of that hour's runs were skipped.";
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      testWidgets('every verb fits, text scale $scale', (tester) async {
+        await pump(tester, automationFeedApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('each row says who, what happened and which rule', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+
+      expect(
+        find.descendant(
+          of: rowOf(find.text(message)),
+          matching: find.text('asha.rao@example.com'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(message), findsOneWidget);
+      expect(find.text('From the rule "$longRuleName"'), findsOneWidget);
+      for (final text in [failed, paused, limit]) {
+        await reveal(tester, find.text(text));
+        expect(find.text(text), findsOneWidget, reason: text);
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining('The system'),
+          ),
+          findsOneWidget,
+          reason: text,
+        );
+      }
+    });
+
+    testWidgets('markup in a message and a rule name shows as typed', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(markup));
+
+      expect(find.text(markup), findsOneWidget);
+      expect(find.text('From the rule "<b>Rule</b>"'), findsOneWidget);
+    });
+
+    testWidgets('each verb carries its icon', (tester) async {
+      await pump(tester, automationFeedApp());
+      final icons = {
+        message: LucideIcons.zap,
+        markup: LucideIcons.zap,
+        failed: LucideIcons.triangleAlert,
+        paused: LucideIcons.circlePause,
+        limit: LucideIcons.triangleAlert,
+      };
+      for (final e in icons.entries) {
+        await reveal(tester, find.text(e.key));
+        expect(
+          find.descendant(
+            of: rowOf(find.text(e.key)),
+            matching: find.byIcon(e.value),
+          ),
+          findsOneWidget,
+          reason: e.key,
+        );
+      }
+    });
+
+    testWidgets('a message opens its deal', (tester) async {
+      await pump(tester, automationFeedApp());
+      await tester.tap(find.text(message));
+      await tester.pumpAndSettle();
+
+      expect(find.text('deal $autoDealId'), findsOneWidget);
+    });
+
+    testWidgets('a failed rule opens that rule', (tester) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(failed));
+      await tester.tap(find.text(failed));
+      await tester.pumpAndSettle();
+
+      expect(find.text('rule $autoRuleId'), findsOneWidget);
+    });
+
+    testWidgets('a pause and the limit open the rules list', (tester) async {
+      for (final text in [paused, limit]) {
+        await pump(tester, automationFeedApp());
+        await reveal(tester, find.text(text));
+        await tester.tap(find.text(text));
+        await tester.pumpAndSettle();
+
+        expect(find.text('the rules'), findsOneWidget, reason: text);
+      }
+    });
+
+    testWidgets('a link that is not the app\'s opens nothing', (tester) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(markup));
+      await tester.tap(find.text(markup));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+      expect(find.textContaining('deal '), findsNothing);
+    });
+
+    testWidgets('data of the wrong type says a rule sent something', (
+      tester,
+    ) async {
+      const fallback = 'An automation rule sent a notification.';
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(fallback));
+
+      expect(find.text(fallback), findsWidgets);
+      expect(find.textContaining('The system failed'), findsNothing);
+      expect(
+        find.textContaining('a ticket that no longer has a name'),
+        findsNothing,
+      );
+      await tester.tap(find.text(fallback).first);
+      await tester.pumpAndSettle();
+      expect(find.text('the rules'), findsOneWidget);
+    });
+
+    testWidgets('an automation verb with no copy yet says a rule sent it', (
+      tester,
+    ) async {
+      const fallback = 'An automation rule sent a notification.';
+      final note = find.text('automation.digest has no producer');
+      await pump(tester, automationFeedApp());
+      await reveal(tester, note);
+
+      for (final matching in [
+        find.text(fallback),
+        find.byIcon(LucideIcons.bell),
+        find.text('The system'),
+      ]) {
+        expect(
+          find.descendant(of: rowOf(note), matching: matching),
+          findsOneWidget,
+          reason: '$matching',
+        );
+      }
+      expect(find.textContaining('The system digest'), findsNothing);
+    });
+
+    testWidgets('the empty feed names automation rules as a source', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ProviderScope(
+          overrides: [
+            notificationsProvider.overrideWith(_FakeEmptyNotifications.new),
+          ],
+          child: routed(const NotificationsScreen()),
+        ),
+      );
+
+      expect(
+        find.text(
+          'Notifications arrive for CRM ticket activity, automation rules, '
+          'and updates from BottleCRM Support.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no entity name follows the sentence', (tester) async {
+      await pump(tester, automationFeedApp());
+
+      expect(find.text(longRecordName), findsNothing);
+      expect(find.textContaining(longRecordName), findsNothing);
+      for (final text in [failed, paused]) {
+        await reveal(tester, find.text(text));
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining('New lead: rotate owners'),
+          ),
+          text == paused ? findsOneWidget : findsNothing,
+          reason: text,
+        );
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining(longRuleName),
+          ),
+          findsOneWidget,
+          reason: text,
+        );
+      }
+    });
+
+    testWidgets('the sentence takes the link colour only where it opens', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+
+      expect(
+        tester.widget<Text>(find.text(message)).style?.color,
+        AppColors.primary600,
+      );
+      await reveal(tester, find.text(markup));
+      expect(
+        tester.widget<Text>(find.text(markup)).style?.color,
+        isNot(AppColors.primary600),
+      );
     });
   });
 
@@ -1157,6 +1617,22 @@ void main() {
       await pump(tester, settingsHubApp());
       expect(find.text('Custom fields'), findsOneWidget);
       expect(find.text('Tags'), findsOneWidget);
+    });
+
+    testWidgets('the hub shows the Objects row only when offered', (
+      tester,
+    ) async {
+      await pump(tester, settingsHubApp());
+      expect(find.text('Objects'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await pump(
+        tester,
+        settingsHubApp(answer: _objAnswer(writes: true), isAdmin: true),
+        textScale: 1.5,
+      );
+      expect(find.text('Objects'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('custom fields render without overflowing', (tester) async {
@@ -3154,6 +3630,380 @@ void main() {
       expect(find.textContaining('not shown or counted'), findsOneWidget);
     });
   });
+  group('custom objects at 390px', () {
+    for (final scale in [1.0, 1.3, 1.5]) {
+      final at = 'text scale $scale';
+
+      testWidgets('the records list, $at', (tester) async {
+        await pump(tester, objRecordsApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('Harbourfront'), findsWidgets);
+      });
+
+      testWidgets('the records list without writes, $at', (tester) async {
+        await pump(tester, objRecordsApp(writes: false), textScale: scale);
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining('New '), findsNothing);
+      });
+
+      testWidgets('the record detail with every section, $at', (tester) async {
+        await pump(tester, objDetailApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record detail, read only, $at', (tester) async {
+        await pump(
+          tester,
+          objDetailApp(canEdit: false, canDelete: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record form, editing, $at', (tester) async {
+        await pump(tester, objFormApp(recordId: _objId), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the record form, creating, $at', (tester) async {
+        await pump(tester, objFormApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the objects settings list, admin with writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: true, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the objects settings list, admin without writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: true, writes: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text(
+            'Creating and editing is turned off for this organization.',
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the objects settings list, member, $at', (tester) async {
+        await pump(
+          tester,
+          objSettingsListApp(admin: false, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one object settings, admin with writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one object settings, admin without writes, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: false),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('one archived object settings, $at', (tester) async {
+        await pump(
+          tester,
+          objSettingsApp(admin: true, writes: true, archived: true),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet on a link field, $at', (tester) async {
+        await pump(
+          tester,
+          objFieldSheetApp(_objFields.firstWhere((f) => f.key == 'agent')),
+          textScale: scale,
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet on a dropdown field, $at', (tester) async {
+        await pump(
+          tester,
+          objFieldSheetApp(_objFields.firstWhere((f) => f.key == 'kind')),
+          textScale: scale,
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the field sheet adding a field, $at', (tester) async {
+        await pump(tester, objFieldSheetApp(null), textScale: scale);
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a lead detail carrying Related, $at', (tester) async {
+        await pump(tester, objLeadApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Related'), findsOneWidget);
+      });
+    }
+  });
+
+  group('automation at 390px', () {
+    Widget screenApp(Widget screen) => ProviderScope(
+      key: UniqueKey(),
+      overrides: automationOverrides(),
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        routerConfig: GoRouter(
+          initialLocation: '/here',
+          routes: [GoRoute(path: '/here', builder: (_, _) => screen)],
+        ),
+      ),
+    );
+
+    Widget sheetApp(Future<void> Function(BuildContext context) open) =>
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: automationOverrides(),
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Center(
+                  child: ElevatedButton(
+                    onPressed: () => open(context),
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    final deal = autoCatalogue.objects.first;
+
+    Future<void> dragThrough(WidgetTester tester, Finder scrollable) async {
+      for (var i = 0; i < 8; i++) {
+        await tester.drag(scrollable, const Offset(0, -400));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    }
+
+    Future<void> openSheet(
+      WidgetTester tester,
+      Future<void> Function(BuildContext context) open,
+      double scale,
+    ) async {
+      await pump(tester, sheetApp(open), textScale: scale);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await dragThrough(tester, find.byType(ListView).last);
+    }
+
+    void expectThumbSized(WidgetTester tester, Finder target) {
+      final size = tester.getSize(target);
+      expect(size.width, greaterThanOrEqualTo(44), reason: '$target');
+      expect(size.height, greaterThanOrEqualTo(44), reason: '$target');
+    }
+
+    final sheetActions = <String, ActionDraft>{
+      'create a task for someone no longer active': autoActions[0],
+      'notify recipients and people': autoActions[1],
+      'assign in turn': autoActions[2],
+      'set a grouped stage': ActionDraft(
+        type: 'set_field',
+        values: {'target': 'record', 'field': 'stage', 'value': 's-ent-won'},
+      ),
+      'send to an endpoint': ActionDraft(
+        type: 'webhook',
+        values: {'endpoint': 'e-1'},
+      ),
+    };
+
+    test('the long name is the name field limit', () {
+      expect(longRuleName.length, 120);
+    });
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      final at = 'text scale $scale';
+
+      testWidgets('the rules list, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRulesScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text(longRuleName), findsOneWidget);
+        expectThumbSized(tester, find.byTooltip('Move down').first);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a new rule, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRuleScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await dragThrough(tester, find.byType(SingleChildScrollView).first);
+      });
+
+      testWidgets('a rule with three actions and a long name, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRuleScreen(ruleId: autoRuleId)),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text(longRuleName), findsWidgets);
+        expectThumbSized(tester, find.byTooltip('Remove condition 1'));
+        await dragThrough(tester, find.byType(SingleChildScrollView).first);
+        expect(find.textContaining('3. Assign in turn to'), findsOneWidget);
+        expectThumbSized(tester, find.byTooltip('Move action 3 up'));
+        expectThumbSized(tester, find.widgetWithText(FilledButton, 'Save'));
+      });
+
+      testWidgets('the trigger sheet on a grouped stage, $at', (tester) async {
+        await openSheet(
+          tester,
+          (context) => showTriggerSheet(
+            context,
+            catalogue: autoCatalogue,
+            object: deal,
+            draft: autoTrigger.copy(),
+          ),
+          scale,
+        );
+      });
+
+      for (final (i, name) in [
+        (1, 'grouped stages'),
+        (2, 'a person no longer active'),
+      ]) {
+        testWidgets('the condition sheet on $name, $at', (tester) async {
+          await openSheet(
+            tester,
+            (context) => showConditionSheet(
+              context,
+              catalogue: autoCatalogue,
+              object: deal,
+              event: 'updated',
+              draft: autoConditions[i].copy(),
+            ),
+            scale,
+          );
+        });
+      }
+
+      for (final e in sheetActions.entries) {
+        testWidgets('the action sheet to ${e.key}, $at', (tester) async {
+          await openSheet(
+            tester,
+            (context) => showActionSheet(
+              context,
+              catalogue: autoCatalogue,
+              object: deal,
+              draft: e.value.copy(),
+            ),
+            scale,
+          );
+          expectThumbSized(tester, find.widgetWithText(FilledButton, 'Done'));
+        });
+      }
+
+      testWidgets('the try results, $at', (tester) async {
+        await openSheet(
+          tester,
+          (context) => showTryResults(
+            context,
+            recordName: longRecordName,
+            steps: autoTrySteps,
+          ),
+          scale,
+        );
+        expect(find.text('Would fail'), findsOneWidget);
+      });
+
+      testWidgets('the run history with every run opened, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRunsScreen(ruleId: autoRuleId)),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        for (final status in ['Done', 'Failed']) {
+          await tester.scrollUntilVisible(
+            find.text(status),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          final pill = find.text(status).first;
+          await tester.ensureVisible(pill);
+          await tester.pumpAndSettle();
+          await tester.tap(pill);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(
+            find.text(status == 'Done' ? 'Undone' : 'Skipped'),
+            findsWidgets,
+          );
+        }
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.text('<b>Bold</b> [open](javascript:x)'), findsOneWidget);
+        expectThumbSized(tester, find.widgetWithText(OutlinedButton, 'Older'));
+      });
+    }
+  });
 }
 
 /// A working week with one holiday, which is what most orgs look like.
@@ -3717,6 +4567,26 @@ class _FakeMixedInvoices extends InvoicesNotifier {
       ),
     ],
   );
+}
+
+class _FakeEmptyNotifications extends NotificationsNotifier {
+  @override
+  Future<NotificationFeed> build() async => const NotificationFeed();
+}
+
+class _FakeAutomationNotifications extends NotificationsNotifier {
+  @override
+  Future<NotificationFeed> build() async {
+    final items = [
+      for (final n in automationNotificationsJson())
+        AppNotification.fromJson(n),
+    ];
+    return NotificationFeed(
+      items: items,
+      unreadCount: items.length,
+      total: items.length,
+    );
+  }
 }
 
 class _FakeNotifications extends NotificationsNotifier {
@@ -4383,3 +5253,310 @@ int _editableRows(WidgetTester tester) =>
 /// fourth downloadable row.
 int _downloadableRows(WidgetTester tester) =>
     tester.widgetList(find.byIcon(LucideIcons.download)).length;
+
+const _objKey = 'property';
+const _objId = '11111111-1111-1111-1111-111111111111';
+const _objLeadId = '55555555-5555-5555-5555-555555555555';
+
+/// 60 and 64 characters, the longest an object or field label may be.
+final _objLong60 = ('Harbourfront residential ' * 3).substring(0, 60);
+final _objLong64 = ('Estimated annual rental yield percentage ' * 2).substring(
+  0,
+  64,
+);
+const _objAddress =
+    '12 Harbour Road, Old Town Quarter, Northern District, Greater Metropolitan Area, Postcode 12345';
+
+final _objSummary = ObjectSummary(
+  key: _objKey,
+  label: _objLong60,
+  labelPlural: _objLong60,
+  nameLabel: 'Address',
+  description: 'Every property we list, sell or manage for an owner.',
+);
+
+final _objSummaryArchived = ObjectSummary(
+  key: _objKey,
+  label: _objLong60,
+  labelPlural: _objLong60,
+  nameLabel: 'Address',
+  isActive: false,
+);
+
+final _objFields = [
+  ObjectField(
+    key: 'beds',
+    label: _objLong64,
+    fieldType: 'number',
+    displayOrder: 1,
+    isRequired: true,
+  ),
+  const ObjectField(
+    key: 'baths',
+    label: 'Baths',
+    fieldType: 'number',
+    displayOrder: 2,
+  ),
+  const ObjectField(
+    key: 'listed',
+    label: 'Listed',
+    fieldType: 'checkbox',
+    displayOrder: 3,
+  ),
+  ObjectField(
+    key: 'kind',
+    label: 'Kind',
+    fieldType: 'dropdown',
+    displayOrder: 4,
+    options: [
+      const CustomFieldOption(value: 'flat', label: 'Flat'),
+      CustomFieldOption(value: 'house', label: _objLong64),
+    ],
+  ),
+  const ObjectField(
+    key: 'price',
+    label: 'Price',
+    fieldType: 'number',
+    displayOrder: 5,
+  ),
+  const ObjectField(
+    key: 'built',
+    label: 'Built on',
+    fieldType: 'date',
+    displayOrder: 6,
+  ),
+  const ObjectField(
+    key: 'city',
+    label: 'City',
+    fieldType: 'text',
+    displayOrder: 7,
+  ),
+  const ObjectField(
+    key: 'notes',
+    label: 'Notes',
+    fieldType: 'textarea',
+    displayOrder: 8,
+  ),
+  ObjectField(
+    key: 'agent',
+    label: _objLong64,
+    fieldType: 'link',
+    displayOrder: 9,
+    target: 'lead',
+    many: true,
+  ),
+  const ObjectField(
+    key: 'buyers',
+    label: 'Buyers',
+    fieldType: 'link',
+    displayOrder: 10,
+    target: 'contact',
+    many: true,
+  ),
+  const ObjectField(
+    key: 'seller',
+    label: 'Seller',
+    fieldType: 'link',
+    displayOrder: 11,
+    target: 'account',
+    many: false,
+  ),
+  const ObjectField(
+    key: 'twin',
+    label: 'Twin property',
+    fieldType: 'link',
+    displayOrder: 12,
+    target: 'obj:property',
+    many: false,
+  ),
+  const ObjectField(
+    key: 'old',
+    label: 'Old note',
+    fieldType: 'text',
+    displayOrder: 13,
+    isActive: false,
+  ),
+];
+
+final _objDefinition = ObjectDefinition(
+  summary: _objSummary,
+  fields: _objFields,
+);
+
+CustomObjectsAnswer _objAnswer({required bool writes}) => CustomObjectsAnswer(
+  hasCustomObjects: writes,
+  objects: [
+    _objSummary,
+    const ObjectSummary(
+      key: 'vehicle',
+      label: 'Vehicle',
+      labelPlural: 'Vehicles',
+      isActive: false,
+    ),
+  ],
+  linkTargets: const [
+    LinkTarget(key: 'lead', label: 'Lead', labelPlural: 'Leads'),
+    LinkTarget(key: 'contact', label: 'Contact', labelPlural: 'Contacts'),
+    LinkTarget(key: 'account', label: 'Account', labelPlural: 'Accounts'),
+    LinkTarget(
+      key: 'obj:property',
+      label: 'Property',
+      labelPlural: 'Properties',
+    ),
+  ],
+);
+
+final _objRecordsData = ObjectRecordsData(
+  count: 3,
+  records: [
+    ObjectRecord(
+      id: _objId,
+      name: _objAddress,
+      customFields: const {
+        'beds': 3,
+        'baths': 2,
+        'city': 'Greater Metropolitan Area',
+      },
+      assignedTo: const [
+        PersonRef(id: 'p1'),
+        PersonRef(id: 'p2'),
+      ],
+    ),
+    const ObjectRecord(id: '2', name: '4 Mill Road', customFields: {'beds': 1}),
+    const ObjectRecord(id: '3', name: 'Untitled'),
+  ],
+);
+
+Map<String, dynamic> _objAttachment(String id, String name, bool image) => {
+  'id': id,
+  'file_name': name,
+  'is_image': image,
+  'can_delete': true,
+  'created_by': {'id': 'p2', 'name': 'Meera', 'email': 'meera@example.com'},
+  'created_at': '2026-10-01T10:00:00Z',
+};
+
+Map<String, dynamic> _objRecordJson(bool canEdit, bool canDelete) => {
+  'id': _objId,
+  'name': _objAddress,
+  'custom_fields': {
+    'beds': 3,
+    'baths': 2,
+    'listed': true,
+    'kind': 'house',
+    'price': 1250000,
+    'built': '1998-04-12',
+    'city': 'Greater Metropolitan Area',
+    'notes':
+        'A long note about the property that wraps across several lines on a phone, mentioning the garden, the harbour view, and the history of the building.',
+  },
+  'assigned_to': [
+    {
+      'id': 'p1',
+      'name': 'Ravi Shankar Venkataraghavan',
+      'email': 'ravi@example.com',
+    },
+    {'id': 'gone', 'name': 'Old Hand', 'email': 'old@example.com'},
+  ],
+  'created_by': {'id': 'p2', 'name': 'Meera', 'email': 'meera@example.com'},
+  'created_at': '2026-10-01T10:00:00Z',
+  'updated_at': '2026-10-02T10:00:00Z',
+  'links': {
+    'agent': {
+      'many': true,
+      'records': [
+        {
+          'id': _objLeadId,
+          'object': 'lead',
+          'name': 'Asha Raman-Venkataraghavan',
+        },
+      ],
+      'hidden': 2,
+    },
+    'buyers': {
+      'many': true,
+      'records': [
+        {'id': 'c1', 'object': 'contact', 'name': 'Bela Nagy'},
+        {'id': 'c2', 'object': 'contact', 'name': 'Chen Wei'},
+      ],
+      'hidden': 0,
+    },
+    'seller': {'many': false, 'records': const [], 'hidden': 1},
+    'twin': {
+      'many': false,
+      'records': [
+        {'id': _objId, 'object': 'obj:property', 'name': '4 Mill Road'},
+      ],
+      'hidden': 0,
+    },
+  },
+  'can_edit': canEdit,
+  'can_delete': canDelete,
+  'attachments': [
+    _objAttachment('a1', 'front-of-the-house-from-the-harbour-side.jpg', true),
+    _objAttachment('a2', 'kitchen.png', true),
+    _objAttachment('a3', 'garden-in-spring-with-the-old-oak-tree.webp', true),
+    _objAttachment(
+      'a4',
+      'survey-report-and-structural-assessment-final-signed-version.pdf',
+      false,
+    ),
+    _objAttachment('a5', 'floor-plan.pdf', false),
+  ],
+};
+
+class _FakeObjectsAnswer extends CustomObjectsNotifier {
+  _FakeObjectsAnswer(this.answer);
+
+  final CustomObjectsAnswer? answer;
+
+  @override
+  Future<CustomObjectsAnswer?> build() async => answer;
+}
+
+class _FakeObjectRecords extends ObjectRecordsNotifier {
+  _FakeObjectRecords(super.key, this.data);
+
+  final ObjectRecordsData data;
+
+  @override
+  Future<ObjectRecordsData> build() async => data;
+}
+
+class _FakeObjectsApi extends CustomObjectsApi {
+  _FakeObjectsApi(this.record);
+
+  final Map<String, dynamic> record;
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> fetchRecord(
+    String key,
+    String id,
+  ) async => ApiResponse(success: true, data: record, statusCode: 200);
+}
+
+class _NoObjectDuplicates extends DuplicatesApi {
+  @override
+  Future<RecordDuplicates> forRecord(DuplicateModule module, String id) async =>
+      const RecordDuplicates();
+}
+
+class _FakeObjectLead extends LeadsNotifier {
+  @override
+  Future<LeadsListData> build() async => const LeadsListData();
+
+  @override
+  Future<LeadDetail?> getLeadDetail(
+    String id, {
+    void Function()? onNotFound,
+  }) async => LeadDetail(
+    lead: Lead.fromJson({
+      'id': id,
+      'first_name': 'Asha',
+      'last_name': 'Raman',
+      'status': 'assigned',
+      'created_by': {'email': 'me@example.com'},
+    }),
+    canDelete: true,
+  );
+}

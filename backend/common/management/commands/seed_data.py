@@ -24,6 +24,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 from faker import Faker
 
+from automation.capture import suppress_rules
 from common.models import Org, Profile, Tags, Teams, User
 from common.org_time import activate_org_timezone
 from common.rls import get_set_context_sql
@@ -548,7 +549,7 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                with impersonate(self.admin_user):
+                with impersonate(self.admin_user), suppress_rules():
                     self.seed_all(options)
         except Exception as e:
             raise CommandError(f"Seeding failed: {e}") from e
