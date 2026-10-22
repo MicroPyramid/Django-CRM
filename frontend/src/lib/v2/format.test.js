@@ -6,7 +6,8 @@ import {
   relativeDays,
   relativeTime,
   hoursMinutes,
-  sumByCurrency
+  sumByCurrency,
+  runTime
 } from '#lib/v2/format.js';
 
 /**
@@ -128,5 +129,33 @@ describe('amounts are added up per currency, never across', () => {
     ];
     expect(sumByCurrency(rows, 'total_amount')).toEqual([{ currency: 'GBP', amount: 20 }]);
     expect(sumByCurrency([])).toEqual([]);
+  });
+});
+
+describe('runTime', () => {
+  const now = new Date('2026-10-22T05:00:00Z');
+  const kolkata = (/** @type {string} */ iso) => runTime(iso, 'Asia/Kolkata', now);
+
+  it('formats run times in the org timezone', () => {
+    expect(kolkata('2026-10-22T05:12:00Z')).toBe('Today 10:42');
+    expect(kolkata('2026-10-21T12:33:00Z')).toBe('Yesterday 18:03');
+    expect(kolkata('2026-09-21T12:33:00Z')).toBe('21 Sep 18:03');
+    expect(kolkata('2025-10-21T12:33:00Z')).toBe('21 Oct 2025 18:03');
+  });
+
+  it('counts a UTC instant just after Kolkata midnight as that Kolkata day', () => {
+    // 2026-10-21T18:45Z is 00:15 on the 22nd in Kolkata, still "Today".
+    expect(kolkata('2026-10-21T18:45:00Z')).toBe('Today 00:15');
+    // 2026-10-21T18:15Z is 23:45 on the 21st in Kolkata.
+    expect(kolkata('2026-10-21T18:15:00Z')).toBe('Yesterday 23:45');
+  });
+
+  it('answers the neighbours placeholder for nothing', () => {
+    expect(runTime(null, 'Asia/Kolkata', now)).toBe(shortDate(null));
+  });
+
+  it('falls back to UTC for a timezone it does not know', () => {
+    expect(runTime('2026-10-22T05:12:00Z', 'Not/AZone', now)).toBe('Today 05:12');
+    expect(runTime('2026-10-22T05:12:00Z', '', now)).toBe('Today 05:12');
   });
 });

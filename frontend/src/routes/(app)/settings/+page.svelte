@@ -27,6 +27,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { count, shortDate } from '#lib/v2/format.js';
   import { isOrgAdmin } from '#lib/admin.js';
+  import { hubValue } from '#lib/v2/automation.js';
   import { showObjectsSetting } from '#lib/v2/custom-objects.js';
   import { ChevronRight, ShieldAlert } from '@lucide/svelte';
 
@@ -252,6 +253,16 @@
                 body: 'Record types this organisation defined.',
                 value: `${data.customObjects.objects.length} active`,
                 warn: false
+              }
+            ]
+          : []),
+        ...(isOrgAdmin(data)
+          ? [
+              {
+                href: '/settings/automation',
+                title: 'Automation',
+                body: 'Rules that act when records are created or change',
+                ...hubValue(data.automation)
               }
             ]
           : []),

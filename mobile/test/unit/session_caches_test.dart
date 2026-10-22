@@ -136,6 +136,9 @@ const Map<String, String> _notSessionScoped = {
   'customObjectsProvider':
       'derived from the selected org id, which sign-out and every org switch '
       'change, so it rebuilds with them (pinned by its own test below)',
+  'automationRulesProvider':
+      'derived from the selected org id, so it rebuilds with every org switch '
+      'and sign-out (pinned by automation_provider_test.dart)',
 };
 
 class _OrgSwitch extends Notifier<Organization?> {

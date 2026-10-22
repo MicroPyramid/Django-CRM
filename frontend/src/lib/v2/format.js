@@ -172,3 +172,71 @@ export function shortAge(iso, now = new Date()) {
   if (hrs < 24) return `${hrs}h`;
   return `${Math.floor(hrs / 24)}d`;
 }
+
+const RUN_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+];
+
+/**
+ * A run's instant in the org's timezone, 24-hour: "Today 10:42",
+ * "Yesterday 18:03", "21 Oct 18:03", "21 Oct 2025 18:03".
+ *
+ * @param {string | null | undefined} iso
+ * @param {string} timeZone
+ * @param {Date} [now]
+ */
+export function runTime(iso, timeZone, now = new Date()) {
+  const d = parseIso(iso);
+  if (!d) return shortDate(null);
+  let zone = timeZone;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+  } catch {
+    zone = 'UTC';
+  }
+  /** @returns {Record<string, any>} */
+  const parts = (/** @type {Date} */ date) => {
+    /** @type {Record<string, any>} */
+    const out = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: zone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      })
+        .formatToParts(date)
+        .map((p) => [p.type, p.value])
+    );
+    const monthIndex = Number(out.month) - 1;
+    return {
+      ...out,
+      day: Number(out.day),
+      year: Number(out.year),
+      monthIndex,
+      month: RUN_MONTHS[monthIndex]
+    };
+  };
+  const at = parts(d);
+  const today = parts(now);
+  const dayNumber = (/** @type {any} */ p) => Date.UTC(p.year, p.monthIndex, p.day) / 86400000;
+  const clock = `${at.hour}:${at.minute}`;
+  const gap = dayNumber(today) - dayNumber(at);
+  if (gap === 0) return `Today ${clock}`;
+  if (gap === 1) return `Yesterday ${clock}`;
+  const date = `${at.day} ${at.month}`;
+  return at.year === today.year ? `${date} ${clock}` : `${date} ${at.year} ${clock}`;
+}

@@ -157,6 +157,17 @@ class SettingsHubScreen extends StatelessWidget {
                     )
                   : const SizedBox.shrink(),
             ),
+            Consumer(
+              builder: (context, ref, _) => ref.watch(isOrgAdminProvider)
+                  ? MenuRow(
+                      icon: LucideIcons.zap,
+                      label: 'Automation',
+                      description:
+                          'Rules that act when a record is created or changes',
+                      onTap: () => context.push(AppRoutes.settingsAutomation),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             // Admins only, as on the web: the audit log answers a member 403.
             Consumer(
               builder: (context, ref, _) => ref.watch(isOrgAdminProvider)

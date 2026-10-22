@@ -79,11 +79,22 @@ import 'package:bottle_crm/screens/objects/object_records_screen.dart';
 import 'package:bottle_crm/screens/settings/object_field_sheet.dart';
 import 'package:bottle_crm/screens/settings/object_settings_screen.dart';
 import 'package:bottle_crm/screens/settings/objects_settings_screen.dart';
+import 'package:bottle_crm/core/theme/theme.dart';
+import 'package:bottle_crm/data/models/automation.dart';
+import 'package:bottle_crm/screens/settings/automation/action_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_rule_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_rules_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/automation_runs_screen.dart';
+import 'package:bottle_crm/screens/settings/automation/condition_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/trigger_sheet.dart';
+import 'package:bottle_crm/screens/settings/automation/try_rule_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+
+import '../support/automation_fixtures.dart';
 
 /// The newest screens, rendered at a real phone.
 ///
@@ -512,6 +523,37 @@ void main() {
     child: routed(const NotificationsScreen()),
   );
 
+  /// The four automation verbs, plus one whose `data` has the wrong type, under
+  /// a router that answers the destinations they resolve to.
+  Widget automationFeedApp() => ProviderScope(
+    overrides: [
+      notificationsProvider.overrideWith(_FakeAutomationNotifications.new),
+    ],
+    child: MaterialApp.router(
+      routerConfig: GoRouter(
+        initialLocation: '/here',
+        routes: [
+          GoRoute(
+            path: '/here',
+            builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/deals/:id',
+            builder: (_, s) => Text('deal ${s.pathParameters['id']}'),
+          ),
+          GoRoute(
+            path: '/more/settings/automation',
+            builder: (_, _) => const Text('the rules'),
+          ),
+          GoRoute(
+            path: '/more/settings/automation/:ruleId',
+            builder: (_, s) => Text('rule ${s.pathParameters['ruleId']}'),
+          ),
+        ],
+      ),
+    ),
+  );
+
   Widget invoicesApp({bool mixedCurrency = false}) => ProviderScope(
     overrides: [
       invoicesProvider.overrideWith(
@@ -893,6 +935,246 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ticket case-9'), findsOneWidget);
+    });
+  });
+
+  group('automation notifications at 390px', () {
+    Future<void> reveal(WidgetTester tester, Finder target) async {
+      await tester.scrollUntilVisible(
+        target,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(target.first);
+      await tester.pumpAndSettle();
+    }
+
+    Finder rowOf(Finder text) =>
+        find.ancestor(of: text, matching: find.byType(InkWell)).first;
+
+    const message =
+        'Harbour Lane Logistics is won. Please review the handover notes and '
+        'confirm the kickoff date with the customer today.';
+    const markup = '<img src=x onerror=alert(1)> [open](javascript:x)';
+    const failed =
+        'The rule "$longRuleName" failed: '
+        "That is not a stage of this deal's pipeline.";
+    const paused =
+        'Paused because the admin who switched it on left the organization. '
+        'Paused: New lead: rotate owners, $longRuleName.';
+    const limit =
+        'Automation reached its limit of 1,000 runs in the hour from '
+        "15 Jan 2025 14:00. The rest of that hour's runs were skipped.";
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      testWidgets('every verb fits, text scale $scale', (tester) async {
+        await pump(tester, automationFeedApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('each row says who, what happened and which rule', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+
+      expect(
+        find.descendant(
+          of: rowOf(find.text(message)),
+          matching: find.text('asha.rao@example.com'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(message), findsOneWidget);
+      expect(find.text('From the rule "$longRuleName"'), findsOneWidget);
+      for (final text in [failed, paused, limit]) {
+        await reveal(tester, find.text(text));
+        expect(find.text(text), findsOneWidget, reason: text);
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining('The system'),
+          ),
+          findsOneWidget,
+          reason: text,
+        );
+      }
+    });
+
+    testWidgets('markup in a message and a rule name shows as typed', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(markup));
+
+      expect(find.text(markup), findsOneWidget);
+      expect(find.text('From the rule "<b>Rule</b>"'), findsOneWidget);
+    });
+
+    testWidgets('each verb carries its icon', (tester) async {
+      await pump(tester, automationFeedApp());
+      final icons = {
+        message: LucideIcons.zap,
+        markup: LucideIcons.zap,
+        failed: LucideIcons.triangleAlert,
+        paused: LucideIcons.circlePause,
+        limit: LucideIcons.triangleAlert,
+      };
+      for (final e in icons.entries) {
+        await reveal(tester, find.text(e.key));
+        expect(
+          find.descendant(
+            of: rowOf(find.text(e.key)),
+            matching: find.byIcon(e.value),
+          ),
+          findsOneWidget,
+          reason: e.key,
+        );
+      }
+    });
+
+    testWidgets('a message opens its deal', (tester) async {
+      await pump(tester, automationFeedApp());
+      await tester.tap(find.text(message));
+      await tester.pumpAndSettle();
+
+      expect(find.text('deal $autoDealId'), findsOneWidget);
+    });
+
+    testWidgets('a failed rule opens that rule', (tester) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(failed));
+      await tester.tap(find.text(failed));
+      await tester.pumpAndSettle();
+
+      expect(find.text('rule $autoRuleId'), findsOneWidget);
+    });
+
+    testWidgets('a pause and the limit open the rules list', (tester) async {
+      for (final text in [paused, limit]) {
+        await pump(tester, automationFeedApp());
+        await reveal(tester, find.text(text));
+        await tester.tap(find.text(text));
+        await tester.pumpAndSettle();
+
+        expect(find.text('the rules'), findsOneWidget, reason: text);
+      }
+    });
+
+    testWidgets('a link that is not the app\'s opens nothing', (tester) async {
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(markup));
+      await tester.tap(find.text(markup));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+      expect(find.textContaining('deal '), findsNothing);
+    });
+
+    testWidgets('data of the wrong type says a rule sent something', (
+      tester,
+    ) async {
+      const fallback = 'An automation rule sent a notification.';
+      await pump(tester, automationFeedApp());
+      await reveal(tester, find.text(fallback));
+
+      expect(find.text(fallback), findsWidgets);
+      expect(find.textContaining('The system failed'), findsNothing);
+      expect(
+        find.textContaining('a ticket that no longer has a name'),
+        findsNothing,
+      );
+      await tester.tap(find.text(fallback).first);
+      await tester.pumpAndSettle();
+      expect(find.text('the rules'), findsOneWidget);
+    });
+
+    testWidgets('an automation verb with no copy yet says a rule sent it', (
+      tester,
+    ) async {
+      const fallback = 'An automation rule sent a notification.';
+      final note = find.text('automation.digest has no producer');
+      await pump(tester, automationFeedApp());
+      await reveal(tester, note);
+
+      for (final matching in [
+        find.text(fallback),
+        find.byIcon(LucideIcons.bell),
+        find.text('The system'),
+      ]) {
+        expect(
+          find.descendant(of: rowOf(note), matching: matching),
+          findsOneWidget,
+          reason: '$matching',
+        );
+      }
+      expect(find.textContaining('The system digest'), findsNothing);
+    });
+
+    testWidgets('the empty feed names automation rules as a source', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ProviderScope(
+          overrides: [
+            notificationsProvider.overrideWith(_FakeEmptyNotifications.new),
+          ],
+          child: routed(const NotificationsScreen()),
+        ),
+      );
+
+      expect(
+        find.text(
+          'Notifications arrive for CRM ticket activity, automation rules, '
+          'and updates from BottleCRM Support.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no entity name follows the sentence', (tester) async {
+      await pump(tester, automationFeedApp());
+
+      expect(find.text(longRecordName), findsNothing);
+      expect(find.textContaining(longRecordName), findsNothing);
+      for (final text in [failed, paused]) {
+        await reveal(tester, find.text(text));
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining('New lead: rotate owners'),
+          ),
+          text == paused ? findsOneWidget : findsNothing,
+          reason: text,
+        );
+        expect(
+          find.descendant(
+            of: rowOf(find.text(text)),
+            matching: find.textContaining(longRuleName),
+          ),
+          findsOneWidget,
+          reason: text,
+        );
+      }
+    });
+
+    testWidgets('the sentence takes the link colour only where it opens', (
+      tester,
+    ) async {
+      await pump(tester, automationFeedApp());
+
+      expect(
+        tester.widget<Text>(find.text(message)).style?.color,
+        AppColors.primary600,
+      );
+      await reveal(tester, find.text(markup));
+      expect(
+        tester.widget<Text>(find.text(markup)).style?.color,
+        isNot(AppColors.primary600),
+      );
     });
   });
 
@@ -3508,6 +3790,220 @@ void main() {
       });
     }
   });
+
+  group('automation at 390px', () {
+    Widget screenApp(Widget screen) => ProviderScope(
+      key: UniqueKey(),
+      overrides: automationOverrides(),
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        routerConfig: GoRouter(
+          initialLocation: '/here',
+          routes: [GoRoute(path: '/here', builder: (_, _) => screen)],
+        ),
+      ),
+    );
+
+    Widget sheetApp(Future<void> Function(BuildContext context) open) =>
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: automationOverrides(),
+          child: MaterialApp(
+            theme: AppTheme.light,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Center(
+                  child: ElevatedButton(
+                    onPressed: () => open(context),
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    final deal = autoCatalogue.objects.first;
+
+    Future<void> dragThrough(WidgetTester tester, Finder scrollable) async {
+      for (var i = 0; i < 8; i++) {
+        await tester.drag(scrollable, const Offset(0, -400));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    }
+
+    Future<void> openSheet(
+      WidgetTester tester,
+      Future<void> Function(BuildContext context) open,
+      double scale,
+    ) async {
+      await pump(tester, sheetApp(open), textScale: scale);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await dragThrough(tester, find.byType(ListView).last);
+    }
+
+    void expectThumbSized(WidgetTester tester, Finder target) {
+      final size = tester.getSize(target);
+      expect(size.width, greaterThanOrEqualTo(44), reason: '$target');
+      expect(size.height, greaterThanOrEqualTo(44), reason: '$target');
+    }
+
+    final sheetActions = <String, ActionDraft>{
+      'create a task for someone no longer active': autoActions[0],
+      'notify recipients and people': autoActions[1],
+      'assign in turn': autoActions[2],
+      'set a grouped stage': ActionDraft(
+        type: 'set_field',
+        values: {'target': 'record', 'field': 'stage', 'value': 's-ent-won'},
+      ),
+      'send to an endpoint': ActionDraft(
+        type: 'webhook',
+        values: {'endpoint': 'e-1'},
+      ),
+    };
+
+    test('the long name is the name field limit', () {
+      expect(longRuleName.length, 120);
+    });
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      final at = 'text scale $scale';
+
+      testWidgets('the rules list, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRulesScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text(longRuleName), findsOneWidget);
+        expectThumbSized(tester, find.byTooltip('Move down').first);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a new rule, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRuleScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        await dragThrough(tester, find.byType(SingleChildScrollView).first);
+      });
+
+      testWidgets('a rule with three actions and a long name, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRuleScreen(ruleId: autoRuleId)),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text(longRuleName), findsWidgets);
+        expectThumbSized(tester, find.byTooltip('Remove condition 1'));
+        await dragThrough(tester, find.byType(SingleChildScrollView).first);
+        expect(find.textContaining('3. Assign in turn to'), findsOneWidget);
+        expectThumbSized(tester, find.byTooltip('Move action 3 up'));
+        expectThumbSized(tester, find.widgetWithText(FilledButton, 'Save'));
+      });
+
+      testWidgets('the trigger sheet on a grouped stage, $at', (tester) async {
+        await openSheet(
+          tester,
+          (context) => showTriggerSheet(
+            context,
+            catalogue: autoCatalogue,
+            object: deal,
+            draft: autoTrigger.copy(),
+          ),
+          scale,
+        );
+      });
+
+      for (final (i, name) in [
+        (1, 'grouped stages'),
+        (2, 'a person no longer active'),
+      ]) {
+        testWidgets('the condition sheet on $name, $at', (tester) async {
+          await openSheet(
+            tester,
+            (context) => showConditionSheet(
+              context,
+              catalogue: autoCatalogue,
+              object: deal,
+              event: 'updated',
+              draft: autoConditions[i].copy(),
+            ),
+            scale,
+          );
+        });
+      }
+
+      for (final e in sheetActions.entries) {
+        testWidgets('the action sheet to ${e.key}, $at', (tester) async {
+          await openSheet(
+            tester,
+            (context) => showActionSheet(
+              context,
+              catalogue: autoCatalogue,
+              object: deal,
+              draft: e.value.copy(),
+            ),
+            scale,
+          );
+          expectThumbSized(tester, find.widgetWithText(FilledButton, 'Done'));
+        });
+      }
+
+      testWidgets('the try results, $at', (tester) async {
+        await openSheet(
+          tester,
+          (context) => showTryResults(
+            context,
+            recordName: longRecordName,
+            steps: autoTrySteps,
+          ),
+          scale,
+        );
+        expect(find.text('Would fail'), findsOneWidget);
+      });
+
+      testWidgets('the run history with every run opened, $at', (tester) async {
+        await pump(
+          tester,
+          screenApp(const AutomationRunsScreen(ruleId: autoRuleId)),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        for (final status in ['Done', 'Failed']) {
+          await tester.scrollUntilVisible(
+            find.text(status),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          final pill = find.text(status).first;
+          await tester.ensureVisible(pill);
+          await tester.pumpAndSettle();
+          await tester.tap(pill);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(
+            find.text(status == 'Done' ? 'Undone' : 'Skipped'),
+            findsWidgets,
+          );
+        }
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.text('<b>Bold</b> [open](javascript:x)'), findsOneWidget);
+        expectThumbSized(tester, find.widgetWithText(OutlinedButton, 'Older'));
+      });
+    }
+  });
 }
 
 /// A working week with one holiday, which is what most orgs look like.
@@ -4071,6 +4567,26 @@ class _FakeMixedInvoices extends InvoicesNotifier {
       ),
     ],
   );
+}
+
+class _FakeEmptyNotifications extends NotificationsNotifier {
+  @override
+  Future<NotificationFeed> build() async => const NotificationFeed();
+}
+
+class _FakeAutomationNotifications extends NotificationsNotifier {
+  @override
+  Future<NotificationFeed> build() async {
+    final items = [
+      for (final n in automationNotificationsJson())
+        AppNotification.fromJson(n),
+    ];
+    return NotificationFeed(
+      items: items,
+      unreadCount: items.length,
+      total: items.length,
+    );
+  }
 }
 
 class _FakeNotifications extends NotificationsNotifier {

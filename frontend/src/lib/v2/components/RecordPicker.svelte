@@ -9,10 +9,17 @@
   import { asInternalPath } from '#lib/utils/paths.js';
   import { X } from '@lucide/svelte';
 
-  /** @type {{ name: string, target: string, multiple?: boolean, selected?: { id: string, name: string }[], label: string, picked?: number }} */
-  let { name, target, multiple = false, selected = [], label, picked = $bindable(0) } = $props();
-
-  let chosen = $state(untrack(() => selected.map((r) => ({ id: r.id, name: r.name }))));
+  /** @type {{ name: string, target: string, multiple?: boolean, selected?: { id: string, name: string }[], label: string, picked?: number, chosen?: { id: string, name: string }[], placeholder?: string }} */
+  let {
+    name,
+    target,
+    multiple = false,
+    selected = [],
+    label,
+    placeholder = undefined,
+    picked = $bindable(0),
+    chosen = $bindable(untrack(() => selected.map((r) => ({ id: r.id, name: r.name }))))
+  } = $props();
   let text = $state('');
   let matches = $state(/** @type {{ id: string, name: string }[]} */ ([]));
   let searched = $state(false);
@@ -93,7 +100,7 @@
       class="v2-input"
       type="search"
       autocomplete="off"
-      placeholder="Search {label.toLowerCase()}"
+      placeholder={placeholder ?? `Search ${label.toLowerCase()}`}
       aria-label="Search {label}"
       value={text}
       oninput={typed}

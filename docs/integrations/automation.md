@@ -387,6 +387,32 @@ A record of another object or another org answers `404`. A rule nobody has switc
 planned as the admin trying it. A rule that no longer validates answers each step as `failed`, with
 the reason.
 
+## Building rules in the apps
+
+Admins build rules in the web app and in the phone app, under **Settings, Automation** in each. The
+row is hidden from members, and a member who reaches the page anyway is told that only an
+organization admin can see automation rules.
+
+- **The list** shows every rule in order with its status (on, off, paused, not running, or needs
+  attention), the reason beneath when there is one, and its runs and failures over the last seven
+  days. Each rule has up and down arrows to change its place. **New rule** starts a rule: pick a name
+  and the kind of record to watch, then save. A rule is switched on or off in the editor (**Save
+  and switch on**, **Switch off**). On a paused rule the button reads **Save and take over**:
+  switching it on makes you its owner.
+- **The editor** reads as the rule does: **When**, **Only if**, **Then**. Fields, options, people and
+  endpoints come from the catalogue, so only what the org offers can be chosen. A value that was
+  valid when saved and no longer is stays visible, marked "(no longer available)", and the server
+  names the row if you save it unchanged. A refused save leaves the editor as you left it and shows
+  the server's words. The kind of record is fixed once the rule exists; a different kind is a new
+  rule.
+- **Try it on a record** picks a record of the rule's object and shows what a run would do, writing
+  nothing. It uses the saved rule, so it is disabled while the editor has unsaved changes. It does
+  not check the trigger or the conditions: it shows what the actions would do.
+- **Run history** lists the rule's runs, newest first, 20 at a time. Each run opens to its steps.
+
+Rules send four kinds of in-app notification, which appear on the notifications page with a link to
+the rule or record they concern.
+
 ## API
 
 All under `/api/automation/`, admin only, from a signed-in session:

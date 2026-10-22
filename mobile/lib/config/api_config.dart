@@ -389,6 +389,8 @@ class ApiConfig {
     caseSensitive: false,
   );
 
+  static bool isUuid(String id) => _uuid.hasMatch(id);
+
   static String _checked(RegExp pattern, String value, String what) {
     if (!pattern.hasMatch(value)) throw ArgumentError.value(value, what);
     return value;
@@ -421,6 +423,20 @@ class ApiConfig {
       '${_checked(_uuid, attachmentId, 'attachmentId')}/';
 
   static String get objectsRelated => '$apiBaseUrl/objects/related/';
+
+  static String get automationCatalogue => '$apiBaseUrl/automation/catalogue/';
+
+  static String get automationRules => '$apiBaseUrl/automation/rules/';
+
+  static String get automationReorder => '${automationRules}reorder/';
+
+  static String automationRule(String id) =>
+      '$automationRules${_checked(_uuid, id, 'id')}/';
+
+  static String automationRuleTry(String id) => '${automationRule(id)}try/';
+
+  static String automationRuleRuns(String id, {int offset = 0}) =>
+      '${automationRule(id)}runs/?limit=20&offset=$offset';
 
   /// Tasks management
   static String get tasks => '$apiBaseUrl/tasks/';
