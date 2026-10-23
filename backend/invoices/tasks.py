@@ -10,6 +10,8 @@ Tasks include:
 """
 
 import logging
+import math
+from datetime import date, timedelta
 
 from celery import shared_task
 from django.conf import settings
@@ -20,10 +22,29 @@ from django.utils import timezone
 
 from common.links import frontend_url
 from common.models import Org, Profile
+from common.modules import module_is_available, module_on_since
 from common.org_time import activate_org_timezone, org_timezone
 from common.tasks import clear_rls_context, set_rls_context
 
 logger = logging.getLogger(__name__)
+
+
+def overdue_candidates(org, today):
+    """The invoices ``check_overdue_invoices`` marks Overdue on ``today``."""
+    from invoices.models import Invoice
+
+    return Invoice.objects.filter(
+        org=org, due_date__lt=today, status__in=["Sent", "Viewed", "Partially_Paid"]
+    )
+
+
+def expiry_candidates(org, today):
+    """The estimates ``check_expired_estimates`` marks Expired on ``today``."""
+    from invoices.models import Estimate
+
+    return Estimate.objects.filter(
+        org=org, expiry_date__lt=today, status__in=["Draft", "Sent", "Viewed"]
+    )
 
 
 @shared_task
@@ -107,6 +128,14 @@ def send_invoice_to_client(
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
         logger.warning("Invoice %s not found", invoice_id)
+        return
+
+    # Queued while Invoices was on; once it is off, the link in the email no
+    # longer opens, so nothing is sent.
+    if not module_is_available(invoice.org, "invoices"):
+        logger.info(
+            "Invoices is off for org %s; invoice %s not sent", org_id, invoice_id
+        )
         return
 
     if not invoice.client_email:
@@ -241,6 +270,10 @@ def generate_recurring_invoices():
 
     try:
         for org in Org.objects.all():
+            # Switching Invoices back on moves every schedule past that day
+            # (`invoices.schedules.start_fresh`), so nothing here looks back.
+            if not module_is_available(org, "invoices"):
+                continue
             # Set before any org-scoped query: `recurring_invoice` is
             # org-scoped and a worker runs no middleware, so under an RLS-bound
             # role a lookup made with no context matches nothing.
@@ -372,13 +405,13 @@ def check_overdue_invoices():
     Mark invoices as overdue if past due date.
     Should be scheduled to run daily.
     """
-    from invoices.models import Invoice
-
     logger.info("Checking for overdue invoices")
 
     count = 0
     try:
         for org in Org.objects.all():
+            if not module_is_available(org, "invoices"):
+                continue
             # Set before any org-scoped query: `invoice` is org-scoped and a
             # worker runs no middleware, so under an RLS-bound role a lookup
             # made with no context matches nothing.
@@ -388,11 +421,7 @@ def check_overdue_invoices():
             # invoice overdue four hours before their day ends is the kind of
             # thing they email about.
             activate_org_timezone(org)
-            overdue_invoices = Invoice.objects.filter(
-                org=org,
-                due_date__lt=timezone.localdate(),
-                status__in=["Sent", "Viewed", "Partially_Paid"],
-            )
+            overdue_invoices = overdue_candidates(org, timezone.localdate())
             for pk in overdue_invoices.values_list("pk", flat=True):
                 # Re-checked under a row lock: an invoice paid, cancelled or
                 # given a later due date since the list was read is skipped,
@@ -436,6 +465,12 @@ def send_payment_reminder(invoice_id, org_id, domain="localhost", protocol="http
     invoice = Invoice.objects.filter(id=invoice_id).first()
     if not invoice:
         logger.warning("Invoice %s not found", invoice_id)
+        return
+
+    if not module_is_available(invoice.org, "invoices"):
+        logger.info(
+            "Invoices is off for org %s; no reminder for %s", org_id, invoice_id
+        )
         return
 
     if not invoice.client_email:
@@ -505,6 +540,8 @@ def process_payment_reminders():
 
     try:
         for org in Org.objects.all():
+            if not module_is_available(org, "invoices"):
+                continue
             # Set before any org-scoped query: `invoice` is org-scoped and a
             # worker runs no middleware, so under an RLS-bound role a lookup
             # made with no context matches nothing.
@@ -513,6 +550,8 @@ def process_payment_reminders():
             # customer's calendar, not the server's.
             activate_org_timezone(org)
             today = timezone.localdate()
+            since = module_on_since(org, "invoices")
+            back_on = timezone.localdate(since) if since else None
 
             # Get invoices with reminders enabled
             invoices = (
@@ -538,6 +577,11 @@ def process_payment_reminders():
                     reminder_interval_days = 9999  # effectively only once
                 elif invoice.reminder_frequency == "WEEKLY":
                     reminder_interval_days = 7
+                last_sent = (
+                    timezone.localdate(invoice.last_reminder_sent)
+                    if invoice.last_reminder_sent
+                    else None
+                )
 
                 # Before due date reminder
                 if days_until_due is not None and days_until_due > 0:
@@ -545,14 +589,12 @@ def process_payment_reminders():
                         invoice.reminder_days_before
                         and days_until_due <= invoice.reminder_days_before
                     ):
-                        # Check if we haven't sent a reminder recently
-                        if not invoice.last_reminder_sent or (
-                            (
-                                today - timezone.localdate(invoice.last_reminder_sent)
-                            ).days
-                            >= reminder_interval_days
-                        ):
-                            should_send = True
+                        first_day = invoice.due_date - timedelta(
+                            days=invoice.reminder_days_before
+                        )
+                        should_send = today >= _reminder_day(
+                            first_day, last_sent, reminder_interval_days, back_on
+                        )
 
                 # After due date reminder
                 elif days_until_due is not None and days_until_due < 0:
@@ -561,14 +603,12 @@ def process_payment_reminders():
                         invoice.reminder_days_after
                         and days_overdue >= invoice.reminder_days_after
                     ):
-                        # Check reminder frequency
-                        if not invoice.last_reminder_sent or (
-                            (
-                                today - timezone.localdate(invoice.last_reminder_sent)
-                            ).days
-                            >= reminder_interval_days
-                        ):
-                            should_send = True
+                        first_day = invoice.due_date + timedelta(
+                            days=invoice.reminder_days_after
+                        )
+                        should_send = today >= _reminder_day(
+                            first_day, last_sent, reminder_interval_days, back_on
+                        )
 
                 if should_send:
                     send_payment_reminder.delay(
@@ -588,28 +628,37 @@ def process_payment_reminders():
     logger.info("Finished processing payment reminders")
 
 
+def _reminder_day(
+    first_day: date, last_sent: date | None, interval: int, since: date | None
+) -> date:
+    """The day the next reminder is due: ``interval`` days after the last one
+    sent, else ``first_day``. A day before ``since`` (the day Invoices came back
+    on) moves forward by whole intervals, so a reminder that fell due while it
+    was off is skipped and the cadence keeps its days."""
+    day = last_sent + timedelta(days=interval) if last_sent else first_day
+    if since is not None and day < since:
+        day += timedelta(days=math.ceil((since - day).days / interval) * interval)
+    return day
+
+
 @shared_task
 def check_expired_estimates():
     """
     Mark estimates as expired if past valid_until date.
     Should be scheduled to run daily.
     """
-    from invoices.models import Estimate
-
     logger.info("Checking for expired estimates")
 
     count = 0
     try:
         for org in Org.objects.all():
+            if not module_is_available(org, "invoices"):
+                continue
             # Set before any org-scoped query, same as `check_overdue_invoices`.
             set_rls_context(org.id)
             # Expired on the org's calendar, not the server's.
             activate_org_timezone(org)
-            expired_estimates = Estimate.objects.filter(
-                org=org,
-                expiry_date__lt=timezone.localdate(),
-                status__in=["Draft", "Sent", "Viewed"],
-            )
+            expired_estimates = expiry_candidates(org, timezone.localdate())
             for pk in expired_estimates.values_list("pk", flat=True):
                 # Re-checked under a row lock, as in check_overdue_invoices: an
                 # estimate accepted, declined or given a later expiry date
@@ -656,6 +705,12 @@ def send_estimate_to_client(
     estimate = Estimate.objects.filter(id=estimate_id).first()
     if not estimate:
         logger.warning("Estimate %s not found", estimate_id)
+        return
+
+    if not module_is_available(estimate.org, "invoices"):
+        logger.info(
+            "Invoices is off for org %s; estimate %s not sent", org_id, estimate_id
+        )
         return
 
     if not estimate.client_email:

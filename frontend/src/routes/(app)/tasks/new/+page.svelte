@@ -12,6 +12,7 @@
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { ChevronRight } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -19,10 +20,11 @@
   const KINDS = [
     { key: '', label: 'Nothing' },
     { key: 'account', label: 'An account' },
-    { key: 'opportunity', label: 'A deal' },
-    { key: 'case', label: 'A ticket' },
-    { key: 'lead', label: 'A lead' }
+    { key: 'opportunity', label: 'A deal', module: 'deals' },
+    { key: 'case', label: 'A ticket', module: 'tickets' },
+    { key: 'lead', label: 'A lead', module: 'leads' }
   ];
+  let kinds = $derived(KINDS.filter((k) => !k.module || isOn(data.modules, k.module)));
 
   let values = $derived(form?.values ?? {});
   let kind = $state(untrack(() => form?.values?.parent_kind ?? ''));
@@ -91,7 +93,7 @@
     <label class="v2-field">
       <span class="v2-label">Attached to</span>
       <select class="v2-input" name="parent_kind" bind:value={kind}>
-        {#each KINDS as k (k.key)}
+        {#each kinds as k (k.key)}
           <option value={k.key}>{k.label}</option>
         {/each}
       </select>

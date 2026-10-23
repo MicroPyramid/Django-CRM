@@ -27,6 +27,7 @@ from cases.portal_serializers import (
 )
 from cases.signals import route_after_relations
 from common.models import Comment
+from common.modules import module_is_available
 from common.portal_auth import IsPortalContact, PortalContactAuthentication
 from common.utils import STATUS_CHOICE
 
@@ -88,6 +89,15 @@ class PortalBaseView(APIView):
     # because that setting applies to every view in the project.
     authentication_classes = (PortalContactAuthentication,)
     permission_classes = (IsPortalContact,)
+    module: str
+
+    def closed(self, request):
+        """None while the org has this view's module on, else the answer the
+        view gives a record that does not exist. Every handler asks first: the
+        middleware gate never sees the portal, which carries no profile."""
+        if module_is_available(request.org, self.module):
+            return None
+        return self._not_found()
 
     def _my_cases(self, request):
         """The only definition of "my cases" in the portal.
@@ -116,7 +126,11 @@ class PortalBaseView(APIView):
 
 
 class PortalCaseListView(PortalBaseView, LimitOffsetPagination):
+    module = "tickets"
+
     def get(self, request):
+        if closed := self.closed(request):
+            return closed
         queryset = self._my_cases(request)
 
         requested_status = request.query_params.get("status")
@@ -137,6 +151,8 @@ class PortalCaseListView(PortalBaseView, LimitOffsetPagination):
         )
 
     def post(self, request):
+        if closed := self.closed(request):
+            return closed
         payload = PortalCaseCreateSerializer(data=request.data)
         if not payload.is_valid():
             return Response(payload.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -159,7 +175,11 @@ class PortalCaseListView(PortalBaseView, LimitOffsetPagination):
 
 
 class PortalCaseDetailView(PortalBaseView):
+    module = "tickets"
+
     def get(self, request, pk):
+        if closed := self.closed(request):
+            return closed
         case = self._case_or_none(request, pk)
         if case is None:
             return self._not_found()
@@ -186,8 +206,22 @@ class PortalCaseDetailView(PortalBaseView):
         )
 
 
-class PortalArticleListView(PortalBaseView, LimitOffsetPagination):
+class PortalArticleView(PortalBaseView):
+    module = "knowledge_base"
+
+    def _not_found(self):
+        # Same response for "no such article" and "not published yet", for
+        # the reason `PortalBaseView._not_found` gives about cases: telling
+        # them apart confirms that a draft with this id exists.
+        return Response(
+            {"error": "Article not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+class PortalArticleListView(PortalArticleView, LimitOffsetPagination):
     def get(self, request):
+        if closed := self.closed(request):
+            return closed
         queryset = self._published_articles(request)
 
         # Narrowed from the visible set, never applied to Solution.objects. A
@@ -209,16 +243,13 @@ class PortalArticleListView(PortalBaseView, LimitOffsetPagination):
         )
 
 
-class PortalArticleDetailView(PortalBaseView):
+class PortalArticleDetailView(PortalArticleView):
     def get(self, request, pk):
+        if closed := self.closed(request):
+            return closed
         article = self._published_articles(request).filter(pk=pk).first()
         if article is None:
-            # Same response for "no such article" and "not published yet", for
-            # the reason `_not_found` gives about cases: telling them apart
-            # confirms that a draft with this id exists.
-            return Response(
-                {"error": "Article not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return self._not_found()
         return Response(
             {
                 "article": PortalSolutionDetailSerializer(article).data,
@@ -230,7 +261,7 @@ class PortalArticleDetailView(PortalBaseView):
         return related_articles(request.org, article)
 
 
-class PortalArticleSuggestView(PortalBaseView):
+class PortalArticleSuggestView(PortalArticleView):
     """Deflection, at the moment the customer is about to file a request.
 
     Query-driven rather than case-driven: the agent suggester hangs off an
@@ -238,7 +269,15 @@ class PortalArticleSuggestView(PortalBaseView):
     is a separate endpoint rather than a reuse of `SolutionSuggestionsView`.
     """
 
+    def closed(self, request):
+        # Off answers as an empty query does: a panel with nothing in it.
+        if super().closed(request) is None:
+            return None
+        return Response({"articles": []})
+
     def get(self, request):
+        if closed := self.closed(request):
+            return closed
         q = (request.query_params.get("q") or "").strip()
         if not q:
             # No seeding from recent articles, unlike the agent side. An agent
@@ -266,7 +305,11 @@ class PortalArticleSuggestView(PortalBaseView):
 
 
 class PortalCaseCommentView(PortalBaseView):
+    module = "tickets"
+
     def post(self, request, pk):
+        if closed := self.closed(request):
+            return closed
         case = self._case_or_none(request, pk)
         if case is None:
             return self._not_found()

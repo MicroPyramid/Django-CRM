@@ -20,6 +20,12 @@
 {:else}
   <!-- Keyed: moving between two rules reuses this page, and the draft is built once. -->
   {#key data.rule.id}
-    <RuleEditor catalogue={data.catalogue} rule={data.rule} row={data.row} {form} />
+    <RuleEditor
+      catalogue={data.catalogue}
+      rule={data.rule}
+      row={data.row}
+      modules={data.modules}
+      {form}
+    />
   {/key}
 {/if}

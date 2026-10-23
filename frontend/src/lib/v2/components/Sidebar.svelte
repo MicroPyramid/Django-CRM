@@ -25,7 +25,7 @@
     Boxes,
     LogOut
   } from '@lucide/svelte';
-  import { t } from '#lib/terminology.js';
+  import { sidebarGroups } from '#lib/v2/nav.js';
 
   /**
    * One flat tree, grouped by what the person is doing rather than by which
@@ -54,6 +54,7 @@
    *   org?: { name: string },
    *   isAdmin?: boolean,
    *   terminology?: Record<string, string> | null,
+   *   modules?: import('#lib/v2/modules.js').ModuleRow[] | null,
    *   objects?: { href: string, label: string }[],
    *   onsearch?: () => void
    * }}
@@ -63,80 +64,38 @@
     org = { name: 'BottleCRM' },
     isAdmin = false,
     terminology = undefined,
+    modules = null,
     objects = [],
     onsearch = () => {}
   } = $props();
 
-  const GROUPS = [
-    {
-      label: 'Sell',
-      items: [
-        { href: '/', label: 'Today', icon: Sun, exact: true },
-        {
-          href: '/pipeline',
-          label: 'Pipeline',
-          icon: Columns3,
-          count: 'pipeline',
-          termKey: 'opportunity.plural'
-        },
-        { href: '/leads', label: 'Leads', icon: Target, count: 'leads', termKey: 'lead.plural' },
-        { href: '/accounts', label: 'Accounts', icon: Building2, termKey: 'account.plural' },
-        { href: '/contacts', label: 'Contacts', icon: Users, termKey: 'contact.plural' },
-        { href: '/goals', label: 'Goals', icon: Trophy }
-      ]
-    },
-    {
-      label: 'Serve',
-      items: [
-        { href: '/tasks', label: 'Tasks', icon: CircleCheck, count: 'tasks' },
-        // Approvals and Analytics live under Tickets as section tabs. They are
-        // not separate destinations, so they do not get separate nav entries,
-        // one level of navigation, and the tab strip carries the rest.
-        { href: '/tickets', label: 'Tickets', icon: LifeBuoy, count: 'tickets' },
-        { href: '/solutions', label: 'Knowledge base', icon: BookOpen },
-        { href: '/documents', label: 'Documents', icon: FileText }
-      ]
-    },
-    {
-      label: 'Bill',
-      items: [
-        {
-          href: '/invoices',
-          label: 'Invoices',
-          icon: Receipt,
-          count: 'invoices',
-          termKey: 'invoice.plural'
-        },
-        { href: '/timesheet', label: 'Timesheet', icon: Clock }
-      ]
-    },
-    {
-      // Administration, kept apart from the work. Someone who never touches
-      // these should not read past them four times a day.
-      //
-      // Team is admin-only. A member reaches it only to be told so. Settings
-      // is not: the hub is readable by any member (it just omits admin-only
-      // counts), so it stays for everyone.
-      label: 'Run',
-      items: [
-        { href: '/team', label: 'Team and access', icon: UserCog, admin: true },
-        { href: '/settings', label: 'Settings', icon: SlidersHorizontal }
-      ]
-    }
-  ];
+  const ICONS = {
+    Sun,
+    Columns3,
+    Target,
+    Building2,
+    Users,
+    CircleCheck,
+    LifeBuoy,
+    BookOpen,
+    Receipt,
+    Trophy,
+    Clock,
+    UserCog,
+    FileText,
+    SlidersHorizontal,
+    Boxes
+  };
 
-  // Drop admin-only items for members, resolve any relabelled entity through
-  // the terminology map, then drop any group left with nothing.
+  // The groups come from `sidebarGroups`: admin-only items dropped for
+  // members, relabelled entities resolved through `terminology`, items of
+  // switched-off modules left out. Custom objects join as their own group.
   let groups = $derived(
-    GROUPS.map((group) => ({
-      ...group,
-      items: group.items
-        .filter((item) => isAdmin || !item.admin)
-        .map((item) =>
-          item.termKey ? { ...item, label: t(terminology, item.termKey, item.label) } : item
-        )
-    }))
-      .filter((group) => group.items.length > 0)
+    sidebarGroups(modules, { isAdmin, terminology })
+      .map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({ ...item, icon: ICONS[item.icon] }))
+      }))
       .concat(
         objects.length
           ? [{ label: 'Objects', items: objects.map((o) => ({ ...o, icon: Boxes })) }]

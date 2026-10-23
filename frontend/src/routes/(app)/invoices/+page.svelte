@@ -12,6 +12,7 @@
   import { INVOICE_STATUS_TONE, invoiceStatusLabel } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { Download, Plus, Receipt } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -127,12 +128,16 @@
   {#if invoices.length === 0}
     <EmptyState
       title="Nothing billed yet"
-      body="Invoices show up here once you raise one. A won deal is usually the place to start. The amount and the account are already there."
+      body={isOn(data.modules, 'deals')
+        ? 'Invoices show up here once you raise one. A won deal is usually the place to start. The amount and the account are already there.'
+        : 'Invoices show up here once you raise one.'}
     >
       {#snippet icon()}<Receipt size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('invoices/new')}>New invoice</a>
-        <a class="v2-btn" href={resolve('pipeline')}>Go to pipeline</a>
+        {#if isOn(data.modules, 'deals')}
+          <a class="v2-btn" href={resolve('pipeline')}>Go to pipeline</a>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}

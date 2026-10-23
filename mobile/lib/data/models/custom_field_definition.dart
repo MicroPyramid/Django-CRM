@@ -126,6 +126,18 @@ const Map<String, String> customFieldTargets = {
   'Task': 'Tasks',
 };
 
+/// The module that serves each target; Account and Contact are always on.
+/// Twin of `TARGET_MODULES` in `frontend/src/lib/v2/modules.js`.
+const Map<String, String> customFieldTargetModules = {
+  'Lead': 'leads',
+  'Opportunity': 'deals',
+  'Case': 'tickets',
+  'Task': 'tasks',
+  'Invoice': 'invoices',
+  'Estimate': 'invoices',
+  'RecurringInvoice': 'invoices',
+};
+
 String customFieldTargetLabel(String targetModel) =>
     customFieldTargets[targetModel] ?? targetModel;
 

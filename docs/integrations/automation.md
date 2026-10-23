@@ -439,6 +439,14 @@ already on keeps its owner. An installation can register a plan hook
 `summary` line on the list. The community edition registers none: every rule may be switched on and
 every switched-on rule runs.
 
+A rule whose object belongs to a module the org has switched off (see [Modules](../api/modules.md))
+lists as `paused` with the text `Paused: <Module> is switched off`, and does not run. It can still
+be switched on, and it resumes when the module does. Creating a rule on such an object, or
+changing a rule's object, trigger, conditions, actions or match, is a `400` with the module
+message. While Tasks is off, the catalogue's `actions` leaves out `create_task` and a new Create a
+task step is a `400` with the module message; a step the rule already has is kept, and skipped when
+the rule runs.
+
 The list's `status` is `on`, `off`, `paused` (with the reason as `status_text`), `needs_attention`
 (with the first problem), or `over_limit` when a plan hook says so.
 

@@ -9,6 +9,7 @@ import '../../data/models/deal.dart' show Currency;
 import '../../data/models/product.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/invoice_extras_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../widgets/common/badge.dart';
 import 'invoice_format.dart';
 import 'invoice_shell.dart';
@@ -68,7 +69,9 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
       builder: (context) => AlertDialog(
         title: Text('Delete ${product.name}?'),
         content: Text(
-          product.usedOn > 0
+          !ref.read(moduleOnProvider('invoices'))
+              ? 'Deleting it cannot be undone.'
+              : product.usedOn > 0
               // Line items denormalise their own name and price, and the FK is
               // SET_NULL, so history survives. Saying so stops a needless
               // hesitation, and deactivating is usually what was wanted.
@@ -166,6 +169,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
                     itemBuilder: (context, i) => _ProductRow(
                       product: products[i],
                       canEdit: isAdmin,
+                      showUsage: ref.watch(moduleOnProvider('invoices')),
                       onEdit: () => _edit(products[i]),
                       onDelete: () => _delete(products[i]),
                     ),
@@ -184,12 +188,14 @@ class _ProductRow extends StatelessWidget {
   const _ProductRow({
     required this.product,
     required this.canEdit,
+    required this.showUsage,
     required this.onEdit,
     required this.onDelete,
   });
 
   final Product product;
   final bool canEdit;
+  final bool showUsage;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -250,14 +256,15 @@ class _ProductRow extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-              Text(
-                product.usedOn == 0
-                    ? 'not billed yet'
-                    : 'on ${product.usedOn} invoice${product.usedOn == 1 ? '' : 's'}',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textTertiary,
+              if (showUsage)
+                Text(
+                  product.usedOn == 0
+                      ? 'not billed yet'
+                      : 'on ${product.usedOn} invoice${product.usedOn == 1 ? '' : 's'}',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
                 ),
-              ),
             ],
           ),
           if (canEdit) ...[

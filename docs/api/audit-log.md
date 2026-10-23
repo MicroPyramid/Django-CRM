@@ -97,6 +97,10 @@ What each row returns is chosen field by field rather than copied from the table
 - **An API token row also names the token** (`EVENT_DETAILS`): `API_TOKEN_CREATED` and
   `API_TOKEN_REVOKED` rows add `token_id`, `token_prefix`, `token_name`, `scopes`, `owner_id` and
   `owner_name`. See [Credential changes](#credential-changes). Allowed on those two events only.
+- **A module change also carries its keys** (`EVENT_DETAILS`): a `MODULES_CHANGED` row adds
+  `switched_off` and `switched_on` (lists of module keys) and `reordered` (a boolean). See
+  [Module changes](#module-changes). Allowed on that event
+  only.
 - **Paths under `/api/public/` are cut to that prefix.** Some public links carry a token in the URL
   (a satisfaction-survey link, for one), and the log should not repeat it.
 
@@ -131,6 +135,18 @@ that is already off, or revoking a token that is already revoked (on either endp
 member on `/api/org/tokens/`, a `404` token that is not yours or not in your org) writes nothing
 either. If the audit row cannot be written the action still succeeds; the failure goes to the
 `security.audit` logger, as for every other event.
+
+## Module changes
+
+`PUT /api/org/modules/` writes a `MODULES_CHANGED` row (label Modules Changed) when an admin
+switches a module off or on, or reorders the modules, with the admin as `actor`. A request that
+changes nothing, or is refused, writes nothing. See [Modules](modules.md).
+
+| Key | Value |
+| --- | --- |
+| `switched_off` | Keys of the modules this change switched off |
+| `switched_on` | Keys of the modules this change switched on |
+| `reordered` | `true` when the order changed |
 
 ## Failed sign-ins
 

@@ -5,8 +5,10 @@ field or option its edit form would refuse, or name a person, endpoint or
 link outside its org. Every id is looked up with the rule's org.
 """
 
+import json
 import re
 import uuid
+from collections import Counter
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
@@ -15,8 +17,9 @@ from automation.conditions import OPERATORS, UPDATE_ONLY
 from automation.limits import MAX_ACTIONS, MAX_CONDITIONS
 from automation.links import link_specs
 from automation.models import ALL, ANY
-from automation.objects import adapter_for
+from automation.objects import adapter_for, switched_off_module
 from common.models import Profile
+from common.modules import module_is_available, module_off_message
 from tasks.models import Task
 from webhooks.models import JSON, WebhookEndpoint
 
@@ -51,6 +54,43 @@ _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 def active_people(org):
     """The org's members a rule may name: active profiles of active users."""
     return Profile.objects.filter(org=org, is_active=True, user__is_active=True)
+
+
+def offered_actions(org):
+    """The action types a new step may take: Create a task only while Tasks is on."""
+    if module_is_available(org, "tasks"):
+        return list(ACTION_KEYS)
+    return [kind for kind in ACTION_KEYS if kind != "create_task"]
+
+
+def _task_step_key(action):
+    """A Create a task step by its content: a missing key reads as null."""
+    return tuple(
+        json.dumps(action.get(key), sort_keys=True)
+        for key in sorted(ACTION_KEYS["create_task"])
+    )
+
+
+def new_task_step_errors(org, actions, stored) -> dict[str, list[str]]:
+    """While Tasks is off, a Create a task step the stored rule lacks is refused.
+    A stored step covers one sent step, whatever its position; the rest are new."""
+    if module_is_available(org, "tasks") or not isinstance(actions, list):
+        return {}
+    kept = Counter(
+        _task_step_key(step)
+        for step in (stored if isinstance(stored, list) else [])
+        if isinstance(step, dict) and step.get("type") == "create_task"
+    )
+    errors = {}
+    for index, action in enumerate(actions):
+        if not isinstance(action, dict) or action.get("type") != "create_task":
+            continue
+        key = _task_step_key(action)
+        if kept[key] > 0:
+            kept[key] -= 1
+        else:
+            errors[f"actions[{index}].type"] = [module_off_message(org, "tasks")]
+    return errors
 
 
 def validate_rule(org, data: dict) -> dict[str, list[str]]:
@@ -115,7 +155,11 @@ class _Check:
         key = data.get("object_key")
         adapter = adapter_for(self.org, key) if isinstance(key, str) else None
         if adapter is None:
-            self.add("object_key", "Rules cannot be built on this object.")
+            module = switched_off_module(self.org, key)
+            if module is not None:
+                self.add("object_key", module_off_message(self.org, module))
+            else:
+                self.add("object_key", "Rules cannot be built on this object.")
             return self.errors
         self.key, self.adapter = key, adapter
         self._catalogues[key] = {spec.key: spec for spec in adapter.fields(self.org)}

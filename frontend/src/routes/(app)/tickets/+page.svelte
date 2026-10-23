@@ -14,6 +14,7 @@
   import { PRIORITY_TONE, CASE_STATUS_TONE } from '#lib/v2/enums.js';
   import TicketImportDrawer from '#lib/components/tickets/TicketImportDrawer.svelte';
   import { Download, Plus, LifeBuoy, Upload } from '@lucide/svelte';
+  import { isOn, labelOf } from '#lib/v2/modules.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -193,7 +194,10 @@
         {#if !data.showAll}
           <a class="v2-btn" href={resolve('tickets?all=1')}>Show closed too</a>
         {/if}
-        <a class="v2-btn" href={resolve('solutions')}>Knowledge base</a>
+        {#if isOn(data.modules, 'knowledge_base')}
+          <a class="v2-btn" href={resolve('solutions')}>{labelOf(data.modules, 'knowledge_base')}</a
+          >
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}

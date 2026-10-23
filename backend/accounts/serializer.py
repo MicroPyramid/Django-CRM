@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from accounts.models import Account, AccountEmail, AccountEmailLog
 from cases.access import visible_cases_qs
+from common.modules import only_available
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
@@ -90,13 +91,19 @@ class AccountSerializer(serializers.ModelSerializer):
     @extend_schema_field(list)
     def get_cases(self, obj):
         """Cases on this account that the viewer may open."""
-        cases = visible_cases_qs(self.context["profile"]).filter(account=obj)
+        profile = self.context["profile"]
+        cases = only_available(
+            profile.org, "tickets", visible_cases_qs(profile).filter(account=obj)
+        )
         return [{"id": str(c.id), "name": c.name} for c in cases]
 
     @extend_schema_field(list)
     def get_tasks(self, obj):
         """Tasks on this account that the viewer may open."""
-        tasks = visible_tasks_qs(self.context["profile"]).filter(account=obj)
+        profile = self.context["profile"]
+        tasks = only_available(
+            profile.org, "tasks", visible_tasks_qs(profile).filter(account=obj)
+        )
         return [{"id": str(t.id), "title": t.title} for t in tasks]
 
     @extend_schema_field(list)
@@ -108,7 +115,11 @@ class AccountSerializer(serializers.ModelSerializer):
         One read of the org's stages serves every row.
         """
         profile = self.context["profile"]
-        deals = list(visible_deals_qs(profile).filter(account=obj))
+        deals = list(
+            only_available(
+                profile.org, "deals", visible_deals_qs(profile).filter(account=obj)
+            )
+        )
         stages = stage_index(obj.org_id) if deals else {}
         rows = []
         for o in deals:

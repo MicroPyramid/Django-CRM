@@ -13,15 +13,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import CustomFieldDefinition
-from common.object_registry import BUILT_IN, all_objects
+from common.object_registry import all_objects, built_in_objects
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import CustomFieldDefinitionSerializer
 
 
-def _built_in_definitions(**filters):
-    """Rows on non-built-in targets are never exposed here."""
+def _built_in_definitions(org, **filters):
+    """Rows on custom-object targets, and on targets whose module is off for
+    `org`, are never exposed here."""
     return CustomFieldDefinition.objects.filter(
-        target_model__in=[e.custom_field_target for e in BUILT_IN], **filters
+        target_model__in=[e.custom_field_target for e in built_in_objects(org)],
+        org=org,
+        **filters,
     )
 
 
@@ -86,7 +89,7 @@ class CustomFieldDefinitionListCreateView(APIView):
     )
     def get(self, request, *args, **kwargs):
         org = request.profile.org
-        qs = _built_in_definitions(org=org)
+        qs = _built_in_definitions(org)
         target_model = request.query_params.get("target_model")
         if target_model:
             qs = qs.filter(target_model=target_model)
@@ -108,7 +111,7 @@ class CustomFieldDefinitionListCreateView(APIView):
         # records_missing_value + totals are computed over the org's FULL
         # definition set (independent of the target_model/active_only filters)
         # so the stat cards stay correct when the list is filtered.
-        all_defs = list(_built_in_definitions(org=org))
+        all_defs = list(_built_in_definitions(org))
         missing_by_id = _records_missing_map(org, all_defs)
 
         for row in rows:
@@ -148,7 +151,7 @@ class CustomFieldDefinitionDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def _get_object(self, pk, org):
-        return _built_in_definitions(pk=pk, org=org).first()
+        return _built_in_definitions(org, pk=pk).first()
 
     @extend_schema(
         tags=["CustomFields"], responses={200: CustomFieldDefinitionSerializer}

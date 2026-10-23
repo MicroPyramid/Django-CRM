@@ -12,6 +12,7 @@
    * meaning the same thing, and the work splits silently across them.
    */
   import { enhance } from '$app/forms';
+  import { isOn, wordsOn } from '#lib/v2/modules.js';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import SettingsCrumb from '#lib/v2/components/SettingsCrumb.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
@@ -37,6 +38,14 @@
   let busy = $state(false);
 
   let totals = $derived(data.totals);
+  let taggedKinds = $derived(
+    wordsOn(data.modules, [
+      [null, 'accounts'],
+      ['leads', 'leads'],
+      ['deals', 'deals'],
+      ['tickets', 'tickets']
+    ])
+  );
 
   /**
    * Total usage across every model a tag can be applied to.
@@ -109,7 +118,7 @@
 <PageHeader title="Tags">
   {#snippet crumb()}<SettingsCrumb />{/snippet}
   {#snippet sub()}
-    <span class="v2-num">{count(totals.active)}</span> in use across accounts, leads, deals and tickets
+    <span class="v2-num">{count(totals.active)}</span> in use across {taggedKinds}
   {/snippet}
   {#snippet actions()}
     {#if data.can_edit}
@@ -164,7 +173,7 @@
       label="Applied to nothing"
       value={count(totals.unused)}
       tone={totals.unused > 0 ? 'clay' : 'slate'}
-      detail="Counts accounts, leads, deals and tickets only"
+      detail="Counts every record type"
     />
     <StatCard label="Turned off" value={count(totals.count - totals.active)} tone="slate" />
   </div>
@@ -231,10 +240,10 @@
             <th>Tag</th>
             <th style="text-align:right">Accounts</th>
             <th style="text-align:right">Contacts</th>
-            <th style="text-align:right">Leads</th>
-            <th style="text-align:right">Deals</th>
-            <th style="text-align:right">Tickets</th>
-            <th style="text-align:right">Tasks</th>
+            {#if isOn(data.modules, 'leads')}<th style="text-align:right">Leads</th>{/if}
+            {#if isOn(data.modules, 'deals')}<th style="text-align:right">Deals</th>{/if}
+            {#if isOn(data.modules, 'tickets')}<th style="text-align:right">Tickets</th>{/if}
+            {#if isOn(data.modules, 'tasks')}<th style="text-align:right">Tasks</th>{/if}
             <th style="text-align:right">Total</th>
             <th></th>
             {#if data.can_edit}<th></th>{/if}
@@ -253,10 +262,18 @@
               </td>
               <td class="v2-num" style="text-align:right">{t.usage.accounts || '—'}</td>
               <td class="v2-num" style="text-align:right">{t.usage.contacts || '—'}</td>
-              <td class="v2-num" style="text-align:right">{t.usage.leads || '—'}</td>
-              <td class="v2-num" style="text-align:right">{t.usage.opportunities || '—'}</td>
-              <td class="v2-num" style="text-align:right">{t.usage.cases || '—'}</td>
-              <td class="v2-num" style="text-align:right">{t.usage.tasks || '—'}</td>
+              {#if isOn(data.modules, 'leads')}<td class="v2-num" style="text-align:right"
+                  >{t.usage.leads || '—'}</td
+                >{/if}
+              {#if isOn(data.modules, 'deals')}<td class="v2-num" style="text-align:right"
+                  >{t.usage.opportunities || '—'}</td
+                >{/if}
+              {#if isOn(data.modules, 'tickets')}<td class="v2-num" style="text-align:right"
+                  >{t.usage.cases || '—'}</td
+                >{/if}
+              {#if isOn(data.modules, 'tasks')}<td class="v2-num" style="text-align:right"
+                  >{t.usage.tasks || '—'}</td
+                >{/if}
               <td class="v2-num" style="text-align:right;font-weight:600">{used(t) || '—'}</td>
               <td style="text-align:right">
                 {#if !t.is_active}

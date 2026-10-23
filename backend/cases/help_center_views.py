@@ -34,6 +34,7 @@ from cases.portal_serializers import (
 )
 from cases.portal_views import published_articles, related_articles
 from common.models import Org
+from common.modules import module_is_available
 from common.request_meta import client_ip
 from common.tasks import set_rls_context
 from common.throttles import FirstRefusalThrottleMixin
@@ -41,8 +42,9 @@ from common.throttles import FirstRefusalThrottleMixin
 # A search term longer than this is not a question anybody typed.
 SEARCH_MAX = 200
 
-# One body for every miss: no such slug, a help center switched off, an
-# inactive org, and an article that is a draft, unpublished, or another org's.
+# One body for every miss: no such slug, a help center or knowledge base
+# switched off, an inactive org, and an article that is a draft, unpublished,
+# or another org's.
 # Telling any two of those apart would let a stranger probe which orgs use the
 # product and which article ids exist behind the published set.
 NOT_FOUND = {"error": "Not found"}
@@ -105,8 +107,9 @@ class PublicHelpCenterView(FirstRefusalThrottleMixin, APIView):
         org = Org.objects.filter(
             help_center_slug=slug, help_center_enabled=True, is_active=True
         ).first()
-        if org is not None:
-            set_rls_context(org.id)
+        if org is None or not module_is_available(org, "knowledge_base"):
+            return None
+        set_rls_context(org.id)
         return org
 
     def _not_found(self):

@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import * as env from '$app/env/public';
+import { moduleOffDetail } from '#lib/server/v2/modules.js';
 
 /**
  * Stream an invoice PDF from the API.
@@ -22,6 +23,8 @@ export async function GET({ params, cookies }) {
   });
 
   if (!upstream.ok) {
+    const moduleOff = await moduleOffDetail(upstream);
+    if (moduleOff) return new Response(moduleOff, { status: 404 });
     // 403/404 collapse to 404: do not confirm an invoice exists to someone who
     // may not read it. 503 means WeasyPrint is missing on the server.
     if (upstream.status === 403 || upstream.status === 404) {

@@ -5,12 +5,17 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// What Sentry captured: its wrapper captures, then calls the app's handler.
+const captured = vi.hoisted(() => /** @type {unknown[]} */ ([]));
 vi.mock('@sentry/sveltekit', () => ({
   sentryHandle:
     () =>
     (/** @type {any} */ { event, resolve }) =>
       resolve(event),
-  handleErrorWithSentry: () => () => {}
+  handleErrorWithSentry: (/** @type {any} */ handler) => (/** @type {any} */ input) => {
+    captured.push(input.error);
+    return handler(input);
+  }
 }));
 // `sequence` needs SvelteKit's request store, which only a running server has.
 // Sentry's handle is a pass-through here, so the app's own handle is the last.
@@ -23,7 +28,7 @@ const axios = (await import('axios')).default;
 // The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code
 // under test reads. Imported by path because only the stub has a setter.
 const { setRelaySecret } = await import('../test/stubs/app-env-private.js');
-const { handle } = await import('./hooks.server.js');
+const { handle, handleError } = await import('./hooks.server.js');
 
 const SECRET = 'r'.repeat(48);
 const VISITOR = '198.51.100.7';
@@ -123,5 +128,53 @@ describe('hooks.server.js relays the visitor', () => {
     expect(/** @type {any[]} */ (callTo('/auth/refresh-token/'))[2].headers).toEqual({
       'X-Forwarded-For': VISITOR
     });
+  });
+});
+
+describe('hooks.server.js handleError', () => {
+  beforeEach(() => {
+    captured.length = 0;
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('keeps a switched-off module out of Sentry, and still reports any other error', () => {
+    const detail = 'Tickets is switched off for this organization.';
+    const moduleOff = Object.assign(new Error(detail), {
+      status: 404,
+      body: { detail, code: 'module_off', module: 'tickets' }
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    handleError(/** @type {any} */ ({ kind: 'unknown', error: moduleOff }));
+    expect(captured).toEqual([]);
+    const other = new Error('boom');
+    handleError(/** @type {any} */ ({ kind: 'unknown', error: other }));
+    expect(captured).toEqual([other]);
+  });
+
+  it('shows a module the API calls switched off as the module page', () => {
+    const detail = 'Tickets is switched off for this organization.';
+    const error = Object.assign(new Error(detail), {
+      status: 404,
+      body: { detail, code: 'module_off', module: 'tickets' }
+    });
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(handleError(/** @type {any} */ ({ kind: 'unknown', error }))).toEqual({
+      status: 404,
+      message: detail,
+      code: 'module_off',
+      module: 'tickets'
+    });
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('still prints the stack of any other unexpected error, and only the stack', () => {
+    const error = Object.assign(new Error('boom'), { config: { headers: { Authorization: 'x' } } });
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(handleError(/** @type {any} */ ({ kind: 'unknown', error }))).toBeUndefined();
+    expect(log).toHaveBeenCalledWith(error.stack);
+    expect(
+      handleError(/** @type {any} */ ({ kind: 'app', error: { status: 404 } }))
+    ).toBeUndefined();
+    expect(log).toHaveBeenCalledTimes(1);
   });
 });

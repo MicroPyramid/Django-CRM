@@ -45,6 +45,12 @@ An org can have up to 10 webhooks.
   the stage is called in your pipeline. Saving a deal that is already won does not fire again.
 - `invoice.paid` fires when an invoice's status becomes Paid.
 - `ticket.comment_added` fires for **public** replies only. Internal notes are never sent anywhere.
+- An org can switch the Leads, Pipeline, Tickets, Invoices and Tasks modules off (see
+  [Modules](../api/modules.md#records-that-mention-an-off-module)). Nothing is sent for an off
+  module, the catalogue leaves its events out, and an endpoint keeps the events it already
+  subscribed to; subscribing to a new event of an off module is a `400` under `events`. Deliveries
+  already queued are still sent. A task event still carries the bare ids of the task's deal,
+  ticket or lead.
 - `ping` is sent only by **Send test** and cannot be subscribed to.
 
 Events are collected per request and sent once the request has finished, so creating a record and

@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/solution.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/solutions_provider.dart';
 import '../../widgets/common/common.dart';
 
@@ -189,13 +190,14 @@ class _SolutionsListScreenState extends ConsumerState<SolutionsListScreen> {
   }
 }
 
-class _SolutionTile extends StatelessWidget {
+class _SolutionTile extends ConsumerWidget {
   final Solution solution;
   final VoidCallback onTap;
   const _SolutionTile({required this.solution, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ticketsOn = ref.watch(moduleOnProvider('tickets'));
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
@@ -258,19 +260,21 @@ class _SolutionTile extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(LucideIcons.link, size: 12, color: AppColors.gray400),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${solution.caseCount} linked',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textTertiary,
+              if (ticketsOn) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(LucideIcons.link, size: 12, color: AppColors.gray400),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${solution.caseCount} linked',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

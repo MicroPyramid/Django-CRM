@@ -26,6 +26,9 @@ class TimeEntry {
   final String? invoiceId;
   final String? invoiceNumber;
 
+  /// True once billed, even while Invoices is off and `invoice` is null.
+  final bool invoiced;
+
   /// The rate as it stood when this entry was logged, and the currency it was
   /// logged in. Both are snapshotted per entry precisely so a rate change next
   /// month does not rewrite what last month was worth. Sent as a decimal
@@ -52,6 +55,7 @@ class TimeEntry {
     this.description,
     this.invoiceId,
     this.invoiceNumber,
+    this.invoiced = false,
     this.hourlyRate,
     this.currency,
     this.liveDurationMinutes,
@@ -59,7 +63,7 @@ class TimeEntry {
 
   bool get isRunning => endedAt == null;
 
-  bool get isBilled => invoiceId != null;
+  bool get isBilled => invoiced || invoiceId != null;
 
   /// Live duration, including currently-running timers.
   Duration get liveDuration {
@@ -115,6 +119,7 @@ class TimeEntry {
       invoiceNumber: invoice is Map<String, dynamic>
           ? invoice['invoice_number'] as String?
           : null,
+      invoiced: json['invoiced'] == true,
       hourlyRate: double.tryParse(json['hourly_rate']?.toString() ?? ''),
       currency: json['currency'] as String?,
       liveDurationMinutes: json['live_duration_minutes'] as int?,

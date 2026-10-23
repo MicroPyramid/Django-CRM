@@ -105,6 +105,7 @@ class SecurityAuditLog(BaseModel):
         ("API_TOKEN_CREATED", "API Token Created"),
         ("API_TOKEN_REVOKED", "API Token Revoked"),
         ("FEATURE_GRANT_CHANGED", "Feature Grant Changed"),
+        ("MODULES_CHANGED", "Modules Changed"),
     )
 
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, db_index=True)
@@ -462,6 +463,37 @@ class AuditLogger:
                 "expires_at": expires_at.isoformat() if expires_at else None,
                 "note": note,
             },
+        )
+
+    def modules_changed(
+        self, user, org, switched_off, switched_on, reordered, request=None
+    ):
+        """Log an admin switching modules off or on, or reordering them."""
+        from common.modules import KEYS, module_label
+
+        def named(keys):
+            return ", ".join(module_label(org, k) for k in keys)
+
+        off = [k for k in KEYS if k in switched_off]
+        on = [k for k in KEYS if k in switched_on]
+        parts = []
+        if off:
+            parts.append(f"Switched off {named(off)}")
+        if on:
+            parts.append(f"Switched on {named(on)}")
+        if reordered:
+            parts.append("Reordered modules")
+        self._log(
+            "MODULES_CHANGED",
+            user=user,
+            org=org,
+            description="; ".join(parts),
+            metadata={
+                "switched_off": off,
+                "switched_on": on,
+                "reordered": bool(reordered),
+            },
+            request=request,
         )
 
     def calendar_feed(self, event_type, user, org, request=None):

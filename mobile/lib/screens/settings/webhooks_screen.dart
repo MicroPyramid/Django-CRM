@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/webhook.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/webhooks_provider.dart';
 import '../../routes/app_router.dart';
 import 'webhook_form_sheet.dart';
@@ -307,11 +308,32 @@ class WebhookStatePill extends StatelessWidget {
   }
 }
 
-class _Empty extends StatelessWidget {
+class _Empty extends ConsumerWidget {
   const _Empty();
 
+  /// "a lead, deal, ticket or other record", naming only modules that are on.
+  static String changed({
+    required bool leads,
+    required bool deals,
+    required bool tickets,
+  }) {
+    final kinds = [
+      if (leads) 'lead',
+      if (deals) 'deal',
+      if (tickets) 'ticket',
+      'other record',
+    ];
+    if (kinds.length == 1) return 'record';
+    return '${kinds.sublist(0, kinds.length - 1).join(', ')} or ${kinds.last}';
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kinds = changed(
+      leads: ref.watch(moduleOnProvider('leads')),
+      deals: ref.watch(moduleOnProvider('deals')),
+      tickets: ref.watch(moduleOnProvider('tickets')),
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
       child: Column(
@@ -325,8 +347,8 @@ class _Empty extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'A webhook posts to a URL whenever a lead, deal, ticket or other '
-            'record changes. Point one at Zapier, n8n, Slack or your own code.',
+            'A webhook posts to a URL whenever a $kinds changes. Point one at '
+            'Zapier, n8n, Slack or your own code.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),

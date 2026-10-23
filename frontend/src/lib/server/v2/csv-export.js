@@ -13,6 +13,7 @@
  * may see, the same way the list views do.
  */
 import * as env from '$app/env/public';
+import { moduleOffDetail } from '#lib/server/v2/modules.js';
 
 /**
  * @param {{ cookies: import('@sveltejs/kit').Cookies, request: Request }} event
@@ -37,7 +38,7 @@ export async function forwardCsvExport({ cookies, request }, path, params) {
   });
 
   if (!upstream.ok || !upstream.body) {
-    return new Response(`Upstream error: ${upstream.status}`, {
+    return new Response((await moduleOffDetail(upstream)) ?? `Upstream error: ${upstream.status}`, {
       status: upstream.status || 502
     });
   }

@@ -12,6 +12,7 @@ import '../../data/models/lookup_models.dart';
 import '../../data/models/ticket.dart';
 import '../../providers/csv_import_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/saved_views_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../routes/app_router.dart';
@@ -192,23 +193,24 @@ class _TicketsListScreenState extends ConsumerState<TicketsListScreen> {
                   icon: const Icon(LucideIcons.ellipsisVertical),
                   tooltip: 'More ticket pages',
                   onSelected: (route) => context.push(route),
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
                       value: AppRoutes.ticketBoard,
                       child: Text('Board'),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: AppRoutes.ticketAnalytics,
                       child: Text('Analytics'),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: AppRoutes.approvalsInbox,
                       child: Text('Approvals'),
                     ),
-                    PopupMenuItem(
-                      value: AppRoutes.solutions,
-                      child: Text('Knowledge base'),
-                    ),
+                    if (ref.read(moduleOnProvider('knowledge_base')))
+                      const PopupMenuItem(
+                        value: AppRoutes.solutions,
+                        child: Text('Knowledge base'),
+                      ),
                   ],
                 ),
                 // Offered to every member, as on the web; the import views

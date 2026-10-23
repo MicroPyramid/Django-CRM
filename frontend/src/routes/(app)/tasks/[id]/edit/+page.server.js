@@ -4,23 +4,38 @@ import { readableError } from '#lib/server/v2/form-errors.js';
 import { listTickets } from '#lib/server/v2/tickets.js';
 import { listDeals } from '#lib/server/v2/deals.js';
 import { listLeads } from '#lib/server/v2/leads.js';
+import { getModules } from '#lib/server/v2/modules.js';
+import { isOn } from '#lib/v2/modules.js';
+
+/** @type {any} */
+const NONE = { results: [] };
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  const { task } = await getTask(event, event.params.id);
-
+  // Asked directly: `parent()` would rerun the whole shell load.
+  const modulesP = getModules(event);
+  /** @param {string} key */
+  const when = (key) => modulesP.then((m) => isOn(m?.modules ?? null, key));
+  const [{ task }, answer] = await Promise.all([getTask(event, event.params.id), modulesP]);
   const [options, tickets, deals, leads] = await Promise.allSettled([
     getTaskFormOptions(event),
-    listTickets(event, new URLSearchParams({ limit: '100' })),
+    when('tickets').then((on) =>
+      on ? listTickets(event, new URLSearchParams({ limit: '100' })) : NONE
+    ),
     // Open deals only, matching what this picker offered before `listDeals`
     // stopped assuming it: attaching a task to a deal you already closed is
     // an edge case the picker does not need to carry by default.
-    listDeals(event, new URLSearchParams({ open: 'true', limit: '100' })),
-    listLeads(event, new URLSearchParams({ limit: '100' }))
+    when('deals').then((on) =>
+      on ? listDeals(event, new URLSearchParams({ open: 'true', limit: '100' })) : NONE
+    ),
+    when('leads').then((on) =>
+      on ? listLeads(event, new URLSearchParams({ limit: '100' })) : NONE
+    )
   ]);
   const settled = options.status === 'fulfilled' ? options.value : { owners: [], accounts: [] };
 
   return {
+    modules: answer?.modules ?? null,
     task,
     owners: settled.owners,
     parents: {

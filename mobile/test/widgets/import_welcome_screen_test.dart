@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../helpers/fake_platform_file.dart';
+import '../support/modules_fixtures.dart';
 
 /// The first screen after creating a workspace (the web's `/welcome`).
 class _QueueClient extends http.BaseClient {
@@ -132,6 +133,7 @@ void main() {
     Size size = const Size(390, 844),
     double textScale = 1.0,
     String fileName = 'people.xlsx',
+    List<String> off = const [],
   }) async {
     useSize(tester, size, textScale: textScale);
     final bytes = Uint8List.fromList(utf8.encode('Name\nPlato\n'));
@@ -167,6 +169,9 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        ...modulesOverrides(
+          FakeOrgModules(() async => modulesAnswer(off: off)),
+        ),
         contactsProvider.overrideWith(_Contacts.new),
         leadsProvider.overrideWith(_Leads.new),
         dashboardProvider.overrideWith(_Dashboard.new),
@@ -210,6 +215,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Import leads'), findsOneWidget);
     expect(find.text('Import contacts'), findsNothing);
+  });
+
+  testWidgets('Leads off leaves out the leads choice and the switch to leads', (
+    tester,
+  ) async {
+    await pumpWelcome(tester, off: ['leads']);
+    expect(find.text(contactsChoice), findsOneWidget);
+    expect(find.text(leadsChoice), findsNothing);
+    expect(find.text('Import them as leads to follow up.'), findsNothing);
+
+    client.replies.add((
+      200,
+      _mappedBody(
+        valid: 0,
+        skipped: [
+          {
+            'row': 1,
+            'field': 'last_name',
+            'message': 'A contact needs a first and a last name.',
+            'cells': ['Plato'],
+            'kind': 'row',
+          },
+        ],
+      ),
+    ));
+    await tester.tap(find.text(contactsChoice));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose a spreadsheet'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import as leads instead'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Skip for now goes to the dashboard', (tester) async {

@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/forms/unsaved_changes.dart';
@@ -23,6 +24,14 @@ enum _RelatedKind {
   final String label;
   final IconData icon;
   const _RelatedKind(this.apiValue, this.label, this.icon);
+
+  /// The module that serves this parent; accounts are always on.
+  String? get module => switch (this) {
+    lead => 'leads',
+    opportunity => 'deals',
+    ticket => 'tickets',
+    account => null,
+  };
 }
 
 /// Task Form Screen - Reusable for both Create and Edit
@@ -761,6 +770,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   Future<void> _pickRelated() async {
+    final kinds = [
+      for (final k in _RelatedKind.values)
+        if (k.module == null || ref.read(moduleOnProvider(k.module!))) k,
+    ];
     final picked = await showModalBottomSheet<_RelatedKind>(
       context: context,
       backgroundColor: AppColors.surface,
@@ -784,7 +797,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
               padding: const EdgeInsets.all(16),
               child: Text('Link to…', style: AppTypography.h3),
             ),
-            for (final k in _RelatedKind.values)
+            for (final k in kinds)
               InkWell(
                 onTap: () => Navigator.pop(ctx, k),
                 child: Padding(

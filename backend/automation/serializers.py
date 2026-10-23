@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from automation.models import AutomationRule, AutomationRun
-from automation.validation import validate_rule
+from automation.objects import switched_off_module
+from automation.validation import new_task_step_errors, validate_rule
 
 # What `validate_rule` reads; a partial update is checked with the rest of the rule.
 RULE_KEYS = ("object_key", "trigger", "match", "conditions", "actions")
@@ -57,11 +58,31 @@ class RuleSerializer(serializers.ModelSerializer):
         ):
             return attrs
         current = self.instance or AutomationRule()
+        if self._parked_on_off_module(current, attrs):
+            return attrs
+        org = self.context["org"]
         rule = {key: attrs.get(key, getattr(current, key)) for key in RULE_KEYS}
-        errors = validate_rule(self.context["org"], rule)
+        errors = validate_rule(org, rule)
+        if "actions" in attrs:
+            refused = new_task_step_errors(org, attrs["actions"], current.actions)
+            for path, messages in refused.items():
+                errors.setdefault(path, []).extend(messages)
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
+
+    def _parked_on_off_module(self, current, attrs):
+        """A stored rule on an off module, saved with none of its rule fields.
+
+        Its fields cannot be checked while the module is off and it lists as
+        Paused, so a switch-on or a rename goes through. Any rule field in the
+        PATCH is validated and refused with the module message.
+        """
+        return (
+            self.instance is not None
+            and not set(RULE_KEYS) & set(attrs)
+            and switched_off_module(self.context["org"], current.object_key) is not None
+        )
 
     def create(self, validated_data):
         return super().create({**validated_data, "org": self.context["org"]})

@@ -10,6 +10,7 @@ import '../../data/models/deal_pipeline.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 
 /// Dashboard Screen
@@ -127,6 +128,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       decimalDigits: 1,
     );
 
+    final dealsOn = ref.watch(moduleOnProvider('deals'));
+    final leadsOn = ref.watch(moduleOnProvider('leads'));
+    final tasksOn = ref.watch(moduleOnProvider('tasks'));
+    final goalsOn = ref.watch(moduleOnProvider('goals'));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -136,18 +142,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (data.offersImport) const _ImportCard(),
 
         // KPI Cards
-        _buildKpiSection(data, currencyFormat),
-
-        const SizedBox(height: 16),
+        if (dealsOn || leadsOn) ...[
+          _buildKpiSection(data, currencyFormat, dealsOn, leadsOn),
+          const SizedBox(height: 16),
+        ],
 
         // Urgent Metrics
-        if (_hasUrgentItems(data.urgentCounts)) ...[
-          _buildUrgentSection(data.urgentCounts),
+        if (_hasUrgentItems(data.urgentCounts, tasksOn, leadsOn)) ...[
+          _buildUrgentSection(data.urgentCounts, tasksOn, leadsOn),
           const SizedBox(height: 16),
         ],
 
         // Pipeline Overview
-        if (data.pipelineByStage.isNotEmpty) ...[
+        if (dealsOn && data.pipelineByStage.isNotEmpty) ...[
           _buildPipelineSection(
             data.pipelineByStage,
             currencyFormat,
@@ -163,19 +170,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // away on every dashboard load. Hidden entirely when there are no
         // current goals, which is the common case for a member in an org that
         // does not set them.
-        if (data.goalSummary.isNotEmpty) ...[
+        if (goalsOn && data.goalSummary.isNotEmpty) ...[
           _buildGoalSection(data.goalSummary, currencyFormat),
           const SizedBox(height: 16),
         ],
 
         // Hot Leads
-        if (data.hotLeads.isNotEmpty) ...[
+        if (leadsOn && data.hotLeads.isNotEmpty) ...[
           _buildHotLeadsSection(data.hotLeads),
           const SizedBox(height: 16),
         ],
 
         // Today's Tasks
-        _buildTasksSection(data.tasks),
+        if (tasksOn) _buildTasksSection(data.tasks),
 
         // Bottom spacer so the floating action button doesn't cover content.
         const SizedBox(height: 96),
@@ -183,11 +190,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  bool _hasUrgentItems(UrgentCounts counts) {
-    return counts.overdueTasks > 0 ||
-        counts.tasksDueToday > 0 ||
-        counts.followupsToday > 0 ||
-        counts.hotLeads > 0;
+  bool _hasUrgentItems(UrgentCounts counts, bool tasksOn, bool leadsOn) {
+    return (tasksOn && (counts.overdueTasks > 0 || counts.tasksDueToday > 0)) ||
+        (leadsOn && (counts.followupsToday > 0 || counts.hotLeads > 0));
   }
 
   String _getGreeting() {
@@ -221,53 +226,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return first[0].toUpperCase() + first.substring(1).toLowerCase();
   }
 
-  Widget _buildKpiSection(DashboardData data, NumberFormat currencyFormat) {
+  Widget _buildKpiSection(
+    DashboardData data,
+    NumberFormat currencyFormat,
+    bool dealsOn,
+    bool leadsOn,
+  ) {
     final cards = [
-      _KpiCard(
-        title: 'Pipeline',
-        value: currencyFormat.format(data.revenueMetrics.pipelineValue),
-        icon: LucideIcons.dollarSign,
-        color: AppColors.success500,
-        destination: AppRoutes.deals,
-      ),
-      _KpiCard(
-        // Counted from the open stages, so this card agrees with the Pipeline
-        // card beside it. `opportunitiesCount` counts closed deals too, which
-        // is why this once read 4 next to a pipeline holding 2.
-        title: 'Open Deals',
-        value: data.revenueMetrics.openOpportunitiesCount.toString(),
-        icon: LucideIcons.briefcase,
-        color: AppColors.primary500,
-        destination: AppRoutes.deals,
-      ),
-      _KpiCard(
-        title: 'Leads',
-        value: data.leadsCount.toString(),
-        icon: LucideIcons.users,
-        color: AppColors.warning500,
-        destination: AppRoutes.leads,
-      ),
-      _KpiCard(
-        title: 'Conversion',
-        value: '${data.revenueMetrics.conversionRate.toStringAsFixed(0)}%',
-        icon: LucideIcons.target,
-        color: AppColors.purple500,
-      ),
+      if (dealsOn)
+        _KpiCard(
+          title: 'Pipeline',
+          value: currencyFormat.format(data.revenueMetrics.pipelineValue),
+          icon: LucideIcons.dollarSign,
+          color: AppColors.success500,
+          destination: AppRoutes.deals,
+        ),
+      if (dealsOn)
+        _KpiCard(
+          // Counted from the open stages, so this card agrees with the Pipeline
+          // card beside it. `opportunitiesCount` counts closed deals too, which
+          // is why this once read 4 next to a pipeline holding 2.
+          title: 'Open Deals',
+          value: data.revenueMetrics.openOpportunitiesCount.toString(),
+          icon: LucideIcons.briefcase,
+          color: AppColors.primary500,
+          destination: AppRoutes.deals,
+        ),
+      if (leadsOn)
+        _KpiCard(
+          title: 'Leads',
+          value: data.leadsCount.toString(),
+          icon: LucideIcons.users,
+          color: AppColors.warning500,
+          destination: AppRoutes.leads,
+        ),
+      if (dealsOn)
+        _KpiCard(
+          title: 'Conversion',
+          value: '${data.revenueMetrics.conversionRate.toStringAsFixed(0)}%',
+          icon: LucideIcons.target,
+          color: AppColors.purple500,
+        ),
       // Neither of these two summarises a list the app can open: one is a
       // month-and-stage slice, the other a forecast. Like Conversion, they
       // stay plain rather than link somewhere that shows something else.
-      _KpiCard(
-        title: 'Won This Month',
-        value: currencyFormat.format(data.revenueMetrics.wonThisMonth),
-        icon: LucideIcons.trophy,
-        color: AppColors.success500,
-      ),
-      _KpiCard(
-        title: 'Weighted',
-        value: currencyFormat.format(data.revenueMetrics.weightedPipeline),
-        icon: LucideIcons.scale,
-        color: AppColors.primary400,
-      ),
+      if (dealsOn)
+        _KpiCard(
+          title: 'Won This Month',
+          value: currencyFormat.format(data.revenueMetrics.wonThisMonth),
+          icon: LucideIcons.trophy,
+          color: AppColors.success500,
+        ),
+      if (dealsOn)
+        _KpiCard(
+          title: 'Weighted',
+          value: currencyFormat.format(data.revenueMetrics.weightedPipeline),
+          icon: LucideIcons.scale,
+          color: AppColors.primary400,
+        ),
     ];
 
     return Padding(
@@ -284,7 +300,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildUrgentSection(UrgentCounts counts) {
+  Widget _buildUrgentSection(UrgentCounts counts, bool tasksOn, bool leadsOn) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
@@ -318,28 +334,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               spacing: 12,
               runSpacing: 6,
               children: [
-                if (counts.overdueTasks > 0)
+                if (tasksOn && counts.overdueTasks > 0)
                   _UrgentBadge(
                     label: 'Overdue',
                     count: counts.overdueTasks,
                     color: AppColors.danger500,
                     route: '${AppRoutes.tasks}?view=${AppRoutes.viewOverdue}',
                   ),
-                if (counts.tasksDueToday > 0)
+                if (tasksOn && counts.tasksDueToday > 0)
                   _UrgentBadge(
                     label: 'Due Today',
                     count: counts.tasksDueToday,
                     color: AppColors.warning500,
                     route: '${AppRoutes.tasks}?view=${AppRoutes.viewDueToday}',
                   ),
-                if (counts.followupsToday > 0)
+                if (leadsOn && counts.followupsToday > 0)
                   _UrgentBadge(
                     label: 'Follow-ups',
                     count: counts.followupsToday,
                     color: AppColors.primary500,
                     route: '${AppRoutes.leads}?view=${AppRoutes.viewFollowUps}',
                   ),
-                if (counts.hotLeads > 0)
+                if (leadsOn && counts.hotLeads > 0)
                   _UrgentBadge(
                     label: 'Hot Leads',
                     count: counts.hotLeads,
@@ -691,7 +707,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Upcoming Tasks', style: AppTypography.labelSmall),
+              Expanded(
+                child: Text(
+                  'Upcoming Tasks',
+                  style: AppTypography.labelSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               GestureDetector(
                 onTap: () => context.go(AppRoutes.tasks),
                 child: Text(
@@ -753,85 +776,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildExpandableFAB(BuildContext context) {
+  Widget? _buildExpandableFAB(BuildContext context) {
+    final rows = <Widget>[
+      if (ref.watch(moduleOnProvider('leads')))
+        _quickAction(
+          icon: LucideIcons.userPlus,
+          background: AppColors.primary100,
+          color: AppColors.primary600,
+          title: 'Add Lead',
+          subtitle: 'Create a new lead',
+          route: AppRoutes.leadCreate,
+        ),
+      if (ref.watch(moduleOnProvider('deals')))
+        _quickAction(
+          icon: LucideIcons.plusCircle,
+          background: AppColors.success100,
+          color: AppColors.success600,
+          title: 'Add Deal',
+          subtitle: 'Create a new deal',
+          route: AppRoutes.dealCreate,
+        ),
+      if (ref.watch(moduleOnProvider('tasks')))
+        _quickAction(
+          icon: LucideIcons.checkSquare,
+          background: AppColors.warning100,
+          color: AppColors.warning600,
+          title: 'Add Task',
+          subtitle: 'Create a new task',
+          route: AppRoutes.taskCreate,
+        ),
+    ];
+    if (rows.isEmpty) return null;
     return FloatingActionButton(
       onPressed: () {
         showModalBottomSheet(
           context: context,
           builder: (context) => Container(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      LucideIcons.userPlus,
-                      color: AppColors.primary600,
-                      size: 20,
-                    ),
-                  ),
-                  title: const Text('Add Lead'),
-                  subtitle: const Text('Create a new lead'),
-                  onTap: () {
-                    context.pop();
-                    context.push(AppRoutes.leadCreate);
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.success100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      LucideIcons.plusCircle,
-                      color: AppColors.success600,
-                      size: 20,
-                    ),
-                  ),
-                  title: const Text('Add Deal'),
-                  subtitle: const Text('Create a new deal'),
-                  onTap: () {
-                    context.pop();
-                    // Navigate to deal create
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.warning100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      LucideIcons.checkSquare,
-                      color: AppColors.warning600,
-                      size: 20,
-                    ),
-                  ),
-                  title: const Text('Add Task'),
-                  subtitle: const Text('Create a new task'),
-                  onTap: () {
-                    context.pop();
-                    // Navigate to task create
-                  },
-                ),
-              ],
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: rows),
           ),
         );
       },
       child: const Icon(LucideIcons.plus),
+    );
+  }
+
+  Widget _quickAction({
+    required IconData icon,
+    required Color background,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required String route,
+  }) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      onTap: () {
+        context.pop();
+        context.push(route);
+      },
     );
   }
 }

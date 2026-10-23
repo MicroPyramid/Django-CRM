@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError
 from accounts.access import has_account_access
 from accounts.models import Account
 from common.models import Attachments, Comment
+from common.modules import module_is_available
 from contacts.access import has_contact_access, visible_contacts_qs
 from contacts.models import Contact
 from opportunity.models import Opportunity
@@ -174,8 +175,12 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
         )
     )
 
-    # Create Opportunity if requested and lead has opportunity data
+    # Create Opportunity if requested and lead has opportunity data. With Deals
+    # switched off the lead still converts; it just leaves no deal behind.
     opportunity = None
+    create_opportunity = create_opportunity and module_is_available(
+        request.profile.org, "deals"
+    )
     if create_opportunity and (
         lead_obj.opportunity_amount or lead_obj.first_name or lead_obj.company_name
     ):

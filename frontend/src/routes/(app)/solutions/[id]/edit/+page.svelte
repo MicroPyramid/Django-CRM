@@ -15,9 +15,12 @@
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
   import { ChevronLeft } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
 
   // `untrack` so a revalidation of the page data cannot overwrite what
   // somebody has typed. The initial value is read once, on purpose.
@@ -62,8 +65,10 @@
     >
   {/snippet}
   {#snippet sub()}
-    {data.article.author || 'Unknown author'} · used on
-    <span class="v2-num">{data.article.use_count}</span> tickets
+    {data.article.author || 'Unknown author'}
+    {#if ticketsOn}
+      · used on <span class="v2-num">{data.article.use_count}</span> tickets
+    {/if}
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn" href={resolve(`solutions/${data.article.id}`)}>Cancel</a>
@@ -101,8 +106,9 @@
 
       {#if data.article.is_published}
         <p class="notice">
-          This article is published, so anything saved here is what customers read in the portal and
-          what agents are offered on tickets.
+          {ticketsOn
+            ? 'This article is published, so anything saved here is what customers read in the portal and what agents are offered on tickets.'
+            : 'This article is published, so anything saved here is what customers read in the portal.'}
         </p>
       {/if}
 

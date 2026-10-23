@@ -61,3 +61,38 @@ describe('apiRequest expectedStatuses', () => {
     expect(logged).toHaveBeenCalled();
   });
 });
+
+describe('apiRequest and a switched-off module', () => {
+  /** @type {import('vitest').MockInstance} */
+  let logged;
+  beforeEach(() => {
+    logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    logged.mockRestore();
+  });
+
+  const refusal = {
+    detail: 'Tickets is switched off for this organization.',
+    code: 'module_off',
+    module: 'tickets'
+  };
+
+  it('throws a module_off refusal with its body and logs nothing', async () => {
+    for (const options of [{}, { quietErrors: true }]) {
+      answer(404, refusal);
+      await expect(apiRequest('/cases/', options, { cookies })).rejects.toMatchObject({
+        status: 404,
+        body: refusal
+      });
+    }
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it('still logs any other 404', async () => {
+    answer(404, { detail: 'Not found.', code: 'not_found' });
+    await expect(apiRequest('/cases/x/', {}, { cookies })).rejects.toMatchObject({ status: 404 });
+    expect(logged).toHaveBeenCalled();
+  });
+});

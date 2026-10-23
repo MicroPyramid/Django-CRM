@@ -8,6 +8,8 @@ import { countAwaitingApprovals } from '#lib/server/v2/approvals.js';
 import { countUnread } from '#lib/server/v2/notifications.js';
 import { getOrgTerminology } from '#lib/server/v2/organization.js';
 import { getCustomObjects } from '#lib/server/v2/custom-objects.js';
+import { getModules } from '#lib/server/v2/modules.js';
+import { isOn } from '#lib/v2/modules.js';
 
 /**
  * Counts for migrated modules, fetched for real and merged over the fixtures.
@@ -17,6 +19,7 @@ import { getCustomObjects } from '#lib/server/v2/custom-objects.js';
  * the page it links to is worse than no badge.
  *
  * Add a line here in the same change that adds a prefix to `migrated.js`.
+ * Each key's module (`COUNT_MODULES`) must be on for its count to be asked.
  */
 const LIVE_COUNTS = {
   /** @param {any} event */
@@ -99,12 +102,23 @@ const LIVE_COUNTS = {
    */
 };
 
+/** The module each count belongs to; `notifications` has none and is always asked. */
+const COUNT_MODULES = /** @type {Record<string, string | undefined>} */ ({
+  leads: 'leads',
+  pipeline: 'deals',
+  tickets: 'tickets',
+  approvals: 'tickets',
+  tasks: 'tasks',
+  invoices: 'invoices'
+});
+
 /**
  * The shell: nav counts, the org name, and vertical-pack terminology.
  *
  * The org name is display-only and comes from the JWT via `locals.org`, never
- * the client, never a fixture. Everything below runs concurrently (in sequence
- * it would add a round trip per module to every page) and starts empty: every
+ * the client, never a fixture. The module list, terminology and custom objects
+ * start together, then the counts of available modules only (an off module's
+ * list answers 404). Calls in a step run concurrently and start empty: every
  * badge the sidebar renders is in LIVE_COUNTS, so a count that fails just shows
  * no badge rather than a stale number. `terminology` joins the same fan-out.
  * A failed fetch there just leaves the sidebar's hard-coded labels in place
@@ -150,32 +164,44 @@ export async function load(event) {
     // control. The non-admin view when the claim is absent.
     is_organization_admin: isOrgAdmin(event.locals.profile),
     // The `/objects/` answer, or null on a self-hosted install or any failure.
-    customObjects: /** @type {any} */ (null)
+    customObjects: /** @type {any} */ (null),
+    // The `/org/modules/` rows, or null on an older API or any failure; read
+    // only through `isOn` and `labelOf` (`#lib/v2/modules.js`).
+    modules: /** @type {import('#lib/v2/modules.js').ModuleRow[] | null} */ (null)
   };
 
-  // countKeys' fetches and the terminology fetch are pushed into ONE
-  // Promise.allSettled call so they all fire in the same network wave. The
-  // terminology lookup is not a second round trip, it rides the wave that was
-  // already here for the badges. `results` is indexed by position: the count
-  // keys first (in `countKeys` order), then terminology, then custom objects.
-  const countKeys = Object.keys(LIVE_COUNTS);
-  const results = await Promise.allSettled([
-    ...countKeys.map((key) => LIVE_COUNTS[/** @type {keyof typeof LIVE_COUNTS} */ (key)](event)),
+  // The module list, terminology and custom objects start together; each count
+  // starts once the list answers, and only for a module that is on.
+  const modulesCall = getModules(event);
+  const countsCall = modulesCall.then((answer) => {
+    const modules = answer?.modules ?? null;
+    const keys = Object.keys(LIVE_COUNTS).filter((key) => {
+      const module = COUNT_MODULES[key];
+      return !module || isOn(modules, module);
+    });
+    return Promise.allSettled(
+      keys.map(async (key) => [
+        key,
+        await LIVE_COUNTS[/** @type {keyof typeof LIVE_COUNTS} */ (key)](event)
+      ])
+    );
+  });
+  const [modulesResult, terminologyResult, objectsResult, countsResult] = await Promise.allSettled([
+    modulesCall,
     getOrgTerminology(event),
-    getCustomObjects(event)
+    getCustomObjects(event),
+    countsCall
   ]);
 
-  countKeys.forEach((key, index) => {
-    const result = results[index];
-    if (result.status === 'fulfilled') shell.counts[key] = result.value;
-  });
-
-  const objectsResult = results[countKeys.length + 1];
+  if (modulesResult.status === 'fulfilled') shell.modules = modulesResult.value?.modules ?? null;
   if (objectsResult.status === 'fulfilled') shell.customObjects = objectsResult.value ?? null;
-
-  const terminologyResult = results[countKeys.length];
   if (terminologyResult.status === 'fulfilled') {
     shell.org.terminology = terminologyResult.value.terminology;
+  }
+  if (countsResult.status === 'fulfilled') {
+    for (const result of countsResult.value) {
+      if (result.status === 'fulfilled') shell.counts[result.value[0]] = result.value[1];
+    }
   }
 
   return shell;

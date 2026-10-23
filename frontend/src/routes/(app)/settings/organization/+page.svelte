@@ -53,11 +53,34 @@
   import { todayIn } from '#lib/v2/dates.js';
   import { FileText, ShieldAlert, Pencil, Trash2 } from '@lucide/svelte';
   import { enhance } from '$app/forms';
+  import { isOn, productsOn, wordsOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let org = $derived(data.org);
+  let invoicesOn = $derived(isOn(data.modules, 'invoices'));
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
+  // A pack skips what belongs to a switched-off module, so the sentence does too.
+  let packSamples = $derived(
+    wordsOn(data.modules, [
+      [null, 'accounts'],
+      [null, 'contacts'],
+      ['deals', 'deals'],
+      ['tickets', 'tickets'],
+      ['tasks', 'tasks'],
+      ['leads', 'leads']
+    ])
+  );
+  let packAdds = $derived(
+    wordsOn(data.modules, [
+      [null, 'starter pipelines'],
+      [null, 'tags'],
+      [null, 'custom fields'],
+      ...(productsOn(data.modules) ? /** @type {[null, string][]} */ ([[null, 'products']]) : []),
+      [null, `a set of sample records (${packSamples})`]
+    ])
+  );
   let packs = $derived(data.packs ?? []);
   /** The registry entry matching `org.vertical`, or null if unapplied / unknown. */
   let appliedPack = $derived(packs.find((/** @type {any} */ p) => p.id === org.vertical) ?? null);
@@ -153,17 +176,19 @@
           </dl>
         </div>
 
-        <div class="v2-card" style="padding:14px 16px">
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <FileText size={16} style="color:var(--v2-slate);flex:none;margin-top:2px" />
-            <p class="v2-sub" style="font-size:12.5px;margin:0;line-height:1.5">
-              These fields are printed on every invoice and estimate. Changing one changes documents
-              from that moment on; PDFs already sent keep what they were sent with. How they are
-              laid out is set in
-              <a href={resolve('invoices/templates')} style="color:inherit">invoice templates</a>.
-            </p>
+        {#if invoicesOn}
+          <div class="v2-card" style="padding:14px 16px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <FileText size={16} style="color:var(--v2-slate);flex:none;margin-top:2px" />
+              <p class="v2-sub" style="font-size:12.5px;margin:0;line-height:1.5">
+                These fields are printed on every invoice and estimate. Changing one changes
+                documents from that moment on; PDFs already sent keep what they were sent with. How
+                they are laid out is set in
+                <a href={resolve('invoices/templates')} style="color:inherit">invoice templates</a>.
+              </p>
+            </div>
           </div>
-        </div>
+        {/if}
       </div>
 
       <div>
@@ -173,7 +198,9 @@
             <div class="v2-setting-body">
               <b>Currency</b>
               <span class="v2-sub" style="font-size:11.5px">
-                Applied to new invoices and estimates. Existing ones keep theirs.
+                {invoicesOn
+                  ? 'Applied to new invoices and estimates. Existing ones keep theirs.'
+                  : 'The default for new records that carry an amount. Existing ones keep theirs.'}
               </span>
             </div>
             <span class="v2-num" style="font-size:13px">{org.default_currency || '—'}</span>
@@ -196,65 +223,70 @@
           </div>
         </div>
 
-        <div class="v2-label" style="margin-bottom:10px">Invoice numbers</div>
-        <div class="v2-card" style="overflow:hidden;margin-bottom:20px">
-          <div class="v2-setting">
-            <div class="v2-setting-body">
-              <b>New invoices</b>
-              <span class="v2-sub" style="font-size:11.5px">
-                {numbering}. Numbers already issued keep theirs.
-              </span>
+        {#if invoicesOn}
+          <div class="v2-label" style="margin-bottom:10px">Invoice numbers</div>
+          <div class="v2-card" style="overflow:hidden;margin-bottom:20px">
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>New invoices</b>
+                <span class="v2-sub" style="font-size:11.5px">
+                  {numbering}. Numbers already issued keep theirs.
+                </span>
+              </div>
+              <span class="v2-num" style="font-size:13px"
+                >{exampleNumber(org, 'invoice', today)}</span
+              >
             </div>
-            <span class="v2-num" style="font-size:13px">{exampleNumber(org, 'invoice', today)}</span
-            >
-          </div>
-          <div class="v2-setting">
-            <div class="v2-setting-body">
-              <b>New estimates</b>
-              <span class="v2-sub" style="font-size:11.5px">Same format, own prefix.</span>
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>New estimates</b>
+                <span class="v2-sub" style="font-size:11.5px">Same format, own prefix.</span>
+              </div>
+              <span class="v2-num" style="font-size:13px"
+                >{exampleNumber(org, 'estimate', today)}</span
+              >
             </div>
-            <span class="v2-num" style="font-size:13px"
-              >{exampleNumber(org, 'estimate', today)}</span
-            >
           </div>
-        </div>
+        {/if}
 
-        <div class="v2-label" style="margin-bottom:10px">Behaviour</div>
-        <div class="v2-card" style="overflow:hidden">
-          <div class="v2-setting">
-            <div class="v2-setting-body">
-              <b>Satisfaction surveys</b>
-              <!-- Org-level kill switch: the post-close signal short-circuits
-                   before any email is sent. Off is silent, everywhere. -->
-              <span class="v2-sub" style="font-size:11.5px">
-                Off stops every survey org-wide, with no per-team exception and no notice on the
-                ticket.
-              </span>
+        {#if ticketsOn}
+          <div class="v2-label" style="margin-bottom:10px">Behaviour</div>
+          <div class="v2-card" style="overflow:hidden">
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>Satisfaction surveys</b>
+                <!-- Org-level kill switch: the post-close signal short-circuits
+                     before any email is sent. Off is silent, everywhere. -->
+                <span class="v2-sub" style="font-size:11.5px">
+                  Off stops every survey org-wide, with no per-team exception and no notice on the
+                  ticket.
+                </span>
+              </div>
+              <Pill tone={org.csat_enabled ? 'moss' : 'slate'}>
+                {org.csat_enabled ? 'Sending' : 'Off'}
+              </Pill>
             </div>
-            <Pill tone={org.csat_enabled ? 'moss' : 'slate'}>
-              {org.csat_enabled ? 'Sending' : 'Off'}
-            </Pill>
-          </div>
-          <div class="v2-setting">
-            <div class="v2-setting-body">
-              <b>Close child tickets with the parent</b>
-              <!-- Only the DEFAULT state of the prompt; the person closing the
-                   ticket still confirms. This used to claim the prompt without
-                   saying where it is, and there is no such prompt on the web:
-                   `close-with-children` has no caller in `frontend/src`, so
-                   closing a parent here leaves its children open. The phone is
-                   the client that asks, and the one this setting reaches. -->
-              <span class="v2-sub" style="font-size:11.5px">
-                Sets how the close prompt starts on the mobile app, which offers to close a parent's
-                open children with it. On the web there is no such prompt yet: closing a parent
-                leaves its children open.
-              </span>
+            <div class="v2-setting">
+              <div class="v2-setting-body">
+                <b>Close child tickets with the parent</b>
+                <!-- Only the DEFAULT state of the prompt; the person closing the
+                     ticket still confirms. This used to claim the prompt without
+                     saying where it is, and there is no such prompt on the web:
+                     `close-with-children` has no caller in `frontend/src`, so
+                     closing a parent here leaves its children open. The phone is
+                     the client that asks, and the one this setting reaches. -->
+                <span class="v2-sub" style="font-size:11.5px">
+                  Sets how the close prompt starts on the mobile app, which offers to close a
+                  parent's open children with it. On the web there is no such prompt yet: closing a
+                  parent leaves its children open.
+                </span>
+              </div>
+              <Pill tone={org.auto_close_children_on_parent_close ? 'clay' : 'slate'}>
+                {org.auto_close_children_on_parent_close ? 'Offered on' : 'Offered off'}
+              </Pill>
             </div>
-            <Pill tone={org.auto_close_children_on_parent_close ? 'clay' : 'slate'}>
-              {org.auto_close_children_on_parent_close ? 'Offered on' : 'Offered off'}
-            </Pill>
           </div>
-        </div>
+        {/if}
 
         <div class="v2-card" style="padding:14px 16px;margin-top:20px">
           <div style="display:flex;gap:10px;align-items:flex-start">
@@ -277,10 +309,9 @@
       <div class="v2-label" style="margin-bottom:10px">Vertical pack</div>
       <div class="v2-card" style="padding:16px 18px">
         <p class="v2-sub" style="font-size:12.5px;margin:0 0 14px;line-height:1.5">
-          A pack adds starter pipelines, tags, custom fields, products and a set of sample records
-          (accounts, contacts, deals, tickets, tasks and leads) for one kind of business. Applying
-          one only fills in what this org is missing. Anything already set up is left exactly as it
-          is, and applying the same pack twice is safe.
+          A pack adds {packAdds} for one kind of business. Applying one only fills in what this org is
+          missing. Anything already set up is left exactly as it is, and applying the same pack twice
+          is safe.
         </p>
 
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">

@@ -38,9 +38,15 @@
   import { todayIn } from '#lib/v2/dates.js';
   import { COUNTRIES } from '#lib/constants/countries.js';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form: result } = $props();
+
+  // A switched-off module's fields are left out, and the save sends only what
+  // the form submits, so their stored values stay as they are.
+  let invoicesOn = $derived(isOn(data.modules, 'invoices'));
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
 
   // A supported currency is required (the column is non-blank with a default),
   // so the empty "Select Currency" placeholder is dropped from the options.
@@ -98,6 +104,7 @@
     // here saves a server round-trip; the serializer is the actual rule.
     if (form.website && !/^https?:\/\/.+\..+/.test(form.website))
       e.website = 'Include the full address, starting with http:// or https://.';
+    if (!invoicesOn) return e;
     for (const field of ['invoice_number_prefix', 'estimate_number_prefix']) {
       if (!NUMBER_PREFIX_PATTERN.test(form[field].trim()))
         e[field] = 'Use letters, numbers, hyphens and underscores only.';
@@ -196,10 +203,12 @@
       {/if}
 
       <div class="v2-label" style="margin-bottom:12px">What customers see</div>
-      <p class="v2-hint" style="margin-top:-4px;margin-bottom:14px">
-        Printed on every invoice and estimate. Changes apply from now on; documents already sent
-        keep what they were sent with.
-      </p>
+      {#if invoicesOn}
+        <p class="v2-hint" style="margin-top:-4px;margin-bottom:14px">
+          Printed on every invoice and estimate. Changes apply from now on; documents already sent
+          keep what they were sent with.
+        </p>
+      {/if}
 
       <div class="v2-field">
         <label for="f-company">Legal name</label>
@@ -333,7 +342,11 @@
               <option value={c.value}>{c.label}</option>
             {/each}
           </select>
-          <p class="v2-hint">Applied to new invoices and estimates. Existing ones keep theirs.</p>
+          <p class="v2-hint">
+            {invoicesOn
+              ? 'Applied to new invoices and estimates. Existing ones keep theirs.'
+              : 'The default for new records that carry an amount. Existing ones keep theirs.'}
+          </p>
         </div>
         <div class="v2-field">
           <label for="f-defcountry">Country default</label>
@@ -365,147 +378,151 @@
         </p>
       </div>
 
-      <div class="v2-label" style="margin:24px 0 12px">Invoice numbers</div>
-      <p class="v2-hint" style="margin-top:-4px;margin-bottom:14px">
-        How new invoice and estimate numbers look. Numbers already issued keep theirs.
-      </p>
+      {#if invoicesOn}
+        <div class="v2-label" style="margin:24px 0 12px">Invoice numbers</div>
+        <p class="v2-hint" style="margin-top:-4px;margin-bottom:14px">
+          How new invoice and estimate numbers look. Numbers already issued keep theirs.
+        </p>
 
-      <div class="pair">
-        <div class="v2-field">
-          <label for="f-inv-prefix">Invoice prefix</label>
-          <input
-            id="f-inv-prefix"
-            name="invoice_number_prefix"
-            class="v2-input"
-            maxlength="20"
-            autocapitalize="characters"
-            autocomplete="off"
-            spellcheck="false"
-            bind:value={form.invoice_number_prefix}
-            onblur={() => (touched.invoice_number_prefix = true)}
-            aria-invalid={show('invoice_number_prefix') ? 'true' : undefined}
-          />
-          {#if show('invoice_number_prefix')}
-            <p class="v2-error">{errors.invoice_number_prefix}</p>
-          {/if}
+        <div class="pair">
+          <div class="v2-field">
+            <label for="f-inv-prefix">Invoice prefix</label>
+            <input
+              id="f-inv-prefix"
+              name="invoice_number_prefix"
+              class="v2-input"
+              maxlength="20"
+              autocapitalize="characters"
+              autocomplete="off"
+              spellcheck="false"
+              bind:value={form.invoice_number_prefix}
+              onblur={() => (touched.invoice_number_prefix = true)}
+              aria-invalid={show('invoice_number_prefix') ? 'true' : undefined}
+            />
+            {#if show('invoice_number_prefix')}
+              <p class="v2-error">{errors.invoice_number_prefix}</p>
+            {/if}
+          </div>
+          <div class="v2-field">
+            <label for="f-est-prefix">Estimate prefix</label>
+            <input
+              id="f-est-prefix"
+              name="estimate_number_prefix"
+              class="v2-input"
+              maxlength="20"
+              autocapitalize="characters"
+              autocomplete="off"
+              spellcheck="false"
+              bind:value={form.estimate_number_prefix}
+              onblur={() => (touched.estimate_number_prefix = true)}
+              aria-invalid={show('estimate_number_prefix') ? 'true' : undefined}
+            />
+            {#if show('estimate_number_prefix')}
+              <p class="v2-error">{errors.estimate_number_prefix}</p>
+            {/if}
+          </div>
         </div>
-        <div class="v2-field">
-          <label for="f-est-prefix">Estimate prefix</label>
-          <input
-            id="f-est-prefix"
-            name="estimate_number_prefix"
-            class="v2-input"
-            maxlength="20"
-            autocapitalize="characters"
-            autocomplete="off"
-            spellcheck="false"
-            bind:value={form.estimate_number_prefix}
-            onblur={() => (touched.estimate_number_prefix = true)}
-            aria-invalid={show('estimate_number_prefix') ? 'true' : undefined}
-          />
-          {#if show('estimate_number_prefix')}
-            <p class="v2-error">{errors.estimate_number_prefix}</p>
-          {/if}
-        </div>
-      </div>
 
-      <div class="pair">
-        <div class="v2-field">
-          <label for="f-date-part">Date in the number</label>
-          <select
-            id="f-date-part"
-            name="number_date_part"
-            class="v2-input"
-            bind:value={form.number_date_part}
-          >
-            {#each NUMBER_DATE_PARTS as part (part.value)}
-              <option value={part.value}>{part.label}</option>
-            {/each}
-          </select>
+        <div class="pair">
+          <div class="v2-field">
+            <label for="f-date-part">Date in the number</label>
+            <select
+              id="f-date-part"
+              name="number_date_part"
+              class="v2-input"
+              bind:value={form.number_date_part}
+            >
+              {#each NUMBER_DATE_PARTS as part (part.value)}
+                <option value={part.value}>{part.label}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="v2-field">
+            <label for="f-padding">Counter digits</label>
+            <input
+              id="f-padding"
+              name="number_padding"
+              class="v2-input"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="10"
+              bind:value={form.number_padding}
+              onblur={() => (touched.number_padding = true)}
+              aria-invalid={show('number_padding') ? 'true' : undefined}
+            />
+            {#if show('number_padding')}<p class="v2-error">{errors.number_padding}</p>{/if}
+          </div>
         </div>
-        <div class="v2-field">
-          <label for="f-padding">Counter digits</label>
-          <input
-            id="f-padding"
-            name="number_padding"
-            class="v2-input"
-            type="number"
-            inputmode="numeric"
-            min="1"
-            max="10"
-            bind:value={form.number_padding}
-            onblur={() => (touched.number_padding = true)}
-            aria-invalid={show('number_padding') ? 'true' : undefined}
-          />
-          {#if show('number_padding')}<p class="v2-error">{errors.number_padding}</p>{/if}
-        </div>
-      </div>
 
-      {#if form.number_date_part === 'NONE'}
-        <div class="v2-field">
-          <label for="f-start">Start invoices at</label>
-          <input
-            id="f-start"
-            name="invoice_number_start"
-            class="v2-input"
-            type="number"
-            inputmode="numeric"
-            min="1"
-            max="999999999"
-            bind:value={form.invoice_number_start}
-            onblur={() => (touched.invoice_number_start = true)}
-            aria-invalid={show('invoice_number_start') ? 'true' : undefined}
-          />
-          {#if show('invoice_number_start')}
-            <p class="v2-error">{errors.invoice_number_start}</p>
-          {:else}
-            <p class="v2-hint">
-              To carry on a sequence from another system. If invoices here already go higher,
-              numbering carries on from the highest.
-            </p>
-          {/if}
-        </div>
-      {:else}
-        <input type="hidden" name="invoice_number_start" value="1" />
+        {#if form.number_date_part === 'NONE'}
+          <div class="v2-field">
+            <label for="f-start">Start invoices at</label>
+            <input
+              id="f-start"
+              name="invoice_number_start"
+              class="v2-input"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="999999999"
+              bind:value={form.invoice_number_start}
+              onblur={() => (touched.invoice_number_start = true)}
+              aria-invalid={show('invoice_number_start') ? 'true' : undefined}
+            />
+            {#if show('invoice_number_start')}
+              <p class="v2-error">{errors.invoice_number_start}</p>
+            {:else}
+              <p class="v2-hint">
+                To carry on a sequence from another system. If invoices here already go higher,
+                numbering carries on from the highest.
+              </p>
+            {/if}
+          </div>
+        {:else}
+          <input type="hidden" name="invoice_number_start" value="1" />
+        {/if}
+
+        <p class="v2-hint" style="margin-top:-4px">
+          New invoices look like
+          <b class="v2-num example">{exampleNumber(form, 'invoice', today)}</b>, estimates like
+          <b class="v2-num example">{exampleNumber(form, 'estimate', today)}</b>.
+        </p>
       {/if}
 
-      <p class="v2-hint" style="margin-top:-4px">
-        New invoices look like
-        <b class="v2-num example">{exampleNumber(form, 'invoice', today)}</b>, estimates like
-        <b class="v2-num example">{exampleNumber(form, 'estimate', today)}</b>.
-      </p>
+      {#if ticketsOn}
+        <div class="v2-label" style="margin:24px 0 12px">Behaviour</div>
 
-      <div class="v2-label" style="margin:24px 0 12px">Behaviour</div>
+        <div class="v2-field">
+          <label for="f-csat">Satisfaction surveys</label>
+          <select id="f-csat" name="csat_enabled" class="v2-input" bind:value={form.csat_enabled}>
+            <option value="true">Sending. A survey goes out after a ticket closes</option>
+            <option value="false">Off, no surveys, org-wide</option>
+          </select>
+          <p class="v2-hint">
+            Off stops every survey org-wide. There is no per-team exception and no notice on the
+            ticket.
+          </p>
+        </div>
 
-      <div class="v2-field">
-        <label for="f-csat">Satisfaction surveys</label>
-        <select id="f-csat" name="csat_enabled" class="v2-input" bind:value={form.csat_enabled}>
-          <option value="true">Sending. A survey goes out after a ticket closes</option>
-          <option value="false">Off, no surveys, org-wide</option>
-        </select>
-        <p class="v2-hint">
-          Off stops every survey org-wide. There is no per-team exception and no notice on the
-          ticket.
-        </p>
-      </div>
-
-      <div class="v2-field">
-        <label for="f-cascade">Close child tickets with the parent</label>
-        <select
-          id="f-cascade"
-          name="auto_close_children_on_parent_close"
-          class="v2-input"
-          bind:value={form.auto_close_children_on_parent_close}
-        >
-          <option value="true">Offer it on. The close prompt starts ticked</option>
-          <option value="false">Offer it off. The close prompt starts unticked</option>
-        </select>
-        <p class="v2-hint">
-          Only sets how the prompt starts, and only on the mobile app, which is where closing a
-          parent offers to close its open children. The person still confirms. Closing a parent on
-          the web leaves its children open, with no prompt.
-        </p>
-      </div>
+        <div class="v2-field">
+          <label for="f-cascade">Close child tickets with the parent</label>
+          <select
+            id="f-cascade"
+            name="auto_close_children_on_parent_close"
+            class="v2-input"
+            bind:value={form.auto_close_children_on_parent_close}
+          >
+            <option value="true">Offer it on. The close prompt starts ticked</option>
+            <option value="false">Offer it off. The close prompt starts unticked</option>
+          </select>
+          <p class="v2-hint">
+            Only sets how the prompt starts, and only on the mobile app, which is where closing a
+            parent offers to close its open children. The person still confirms. Closing a parent on
+            the web leaves its children open, with no prompt.
+          </p>
+        </div>
+      {/if}
 
       <div class="actions">
         <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>

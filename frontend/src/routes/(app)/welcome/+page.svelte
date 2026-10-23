@@ -6,9 +6,15 @@
   import { IMPORT_ENTITIES } from '#lib/import/entities.js';
   import { asInternalPath } from '#lib/utils/paths.js';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
+  import { isOn } from '#lib/v2/modules.js';
+
+  /** @type {{ data: any }} */
+  let { data } = $props();
 
   /** @type {'contacts' | 'leads'} */
   let chosen = $state('contacts');
+
+  let leadsOn = $derived(isOn(data.modules, 'leads'));
 
   // `ImportFlow` calls `onDone` even after this page is gone, so someone who
   // left mid-import is not pulled back to the list.
@@ -43,7 +49,7 @@
 <div class="v2-scroll">
   <div class="v2-pad" style="max-width:720px;margin:0 auto;padding-top:14px;padding-bottom:26px">
     <div class="welcome-choices" role="group" aria-label="What are you importing?">
-      {#each CHOICES as c (c.entity)}
+      {#each leadsOn ? CHOICES : CHOICES.filter((c) => c.entity !== 'leads') as c (c.entity)}
         <button
           type="button"
           class="v2-card welcome-choice"
@@ -58,7 +64,7 @@
 
     <ImportFlow
       entity={chosen}
-      onUseLeads={() => (chosen = 'leads')}
+      onUseLeads={leadsOn ? () => (chosen = 'leads') : undefined}
       onDone={() => {
         if (!destroyed) goto(resolve(asInternalPath(IMPORT_ENTITIES[chosen].listHref)));
       }}

@@ -216,6 +216,7 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/org/api-key/` | GET, POST |
 | `/api/org/audit-log/` | GET |
 | `/api/org/help-center/` | GET, PATCH |
+| `/api/org/modules/` | GET, PUT |
 | `/api/org/settings/` | GET, PATCH |
 | `/api/org/timezones/` | GET |
 | `/api/org/tokens/` | GET |

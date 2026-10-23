@@ -13,12 +13,15 @@ from common.object_registry import (
     BUILT_IN,
     RegistryConflict,
     all_objects,
+    built_in_objects,
     object_for_key,
     object_for_record,
     object_for_target,
+    object_module,
     register_hook,
 )
 from common.serializer import CustomFieldDefinitionSerializer
+from common.testing import set_modules_off
 from common.tests.object_records import make_record
 from conftest import rls_org
 
@@ -285,3 +288,81 @@ def test_the_custom_field_choices_carry_labels():
     assert dict(CustomFieldDefinitionSerializer().fields["target_model"].choices) == {
         e.custom_field_target: e.label_plural for e in BUILT_IN
     }
+
+
+def _keys(entries):
+    return {e.key for e in entries}
+
+
+def test_entry_module_follows_the_model_map():
+    assert {e.key: e.module for e in BUILT_IN} == {
+        "lead": "leads",
+        "contact": None,
+        "account": None,
+        "deal": "deals",
+        "ticket": "tickets",
+        "task": "tasks",
+        "invoice": "invoices",
+        "estimate": "invoices",
+        "recurring_invoice": "invoices",
+    }
+
+
+def test_all_objects_drops_off_module_entries(org_a):
+    set_modules_off(org_a, "tickets")
+    keys = _keys(all_objects(org_a))
+    assert "ticket" not in keys and "lead" in keys
+    set_modules_off(org_a, "invoices")
+    keys = _keys(all_objects(org_a))
+    assert not keys & {"invoice", "estimate", "recurring_invoice"}
+    assert {"contact", "account", "ticket"} <= keys
+    assert _keys(built_in_objects(org_a)) == keys
+    set_modules_off(org_a)
+    assert all_objects(org_a) == BUILT_IN == built_in_objects(org_a)
+
+
+def test_all_objects_without_an_org_is_the_full_list(org_a):
+    set_modules_off(org_a, "tickets", "invoices")
+    assert all_objects(None) == BUILT_IN
+
+
+def test_a_hook_entry_without_a_module_stays(monkeypatch, org_a):
+    fake = FakeEntry("obj:fake", custom_field_target="obj:fake")
+    monkeypatch.setattr(object_registry, "_HOOKS", [_hook_for(org_a, fake)])
+    set_modules_off(org_a, "tickets", "invoices", "deals")
+    assert all_objects(org_a)[-1] is fake
+    assert "obj:fake" not in {e.key for e in built_in_objects(org_a)}
+
+
+def test_object_module_ignores_the_filter(org_a):
+    set_modules_off(org_a, "tickets")
+    assert object_module("ticket") == "tickets"
+    assert object_module("contact") is None
+    assert object_module("ghost") is None
+    assert object_module(target="Case") == "tickets"
+    assert object_module(target="RecurringInvoice") == "invoices"
+    assert object_module(target="Contact") is None
+    assert object_module(target="ticket") is None
+
+
+def test_an_attachment_on_an_off_module_record_is_404(
+    admin_client, admin_profile, org_a
+):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from accounts.models import Account
+    from common.utils import create_attachment
+
+    case = Case.objects.create(name="Watched", org=org_a, status="New")
+    account = Account.objects.create(name="Acme", org=org_a)
+    on_case = create_attachment(SimpleUploadedFile("a.txt", b"x"), case, admin_profile)
+    on_account = create_attachment(
+        SimpleUploadedFile("b.txt", b"y"), account, admin_profile
+    )
+    url = "/api/attachments/{}/download/"
+    assert admin_client.get(url.format(on_case.pk)).status_code == 200
+    set_modules_off(org_a, "tickets")
+    assert admin_client.get(url.format(on_case.pk)).status_code == 404
+    assert admin_client.get(url.format(on_account.pk)).status_code == 200
+    set_modules_off(org_a)
+    assert admin_client.get(url.format(on_case.pk)).status_code == 200

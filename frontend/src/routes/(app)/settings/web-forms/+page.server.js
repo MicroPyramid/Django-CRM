@@ -44,12 +44,14 @@ export const actions = {
    * email field cannot be published at all, and asking for the whole field
    * list in a one-line create panel would put the field editor on two pages.
    * The target is chosen here because it decides which fields that editor
-   * offers; the API validates it against its own choices.
+   * offers; the API validates it against its own choices, and refuses one whose
+   * module is switched off. There is no default: a missing target is refused here.
    */
   async create(event) {
     const form = await event.request.formData();
     const name = form.get('name')?.toString() ?? '';
-    const target = form.get('target')?.toString() || 'lead';
+    const target = form.get('target')?.toString() ?? '';
+    if (!target) return fail(400, { create: { error: 'Choose what each submission creates.' } });
     /** @type {any} */
     let created;
     try {

@@ -24,6 +24,8 @@ import logging
 from django.db import connection
 from django.http import JsonResponse
 
+from common.modules import route_refusal
+
 logger = logging.getLogger(__name__)
 
 
@@ -191,6 +193,10 @@ class RequireOrgContext:
                     {"detail": "Organization context is required. Please login again."},
                     status=403,
                 )
+
+            refusal = route_refusal(request, match)
+            if refusal is not None:
+                return refusal
 
         # Set org context
         self._set_org_context(request)

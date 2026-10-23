@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../data/models/deal.dart' show Deal;
 import '../providers/auth_provider.dart';
 import '../providers/duplicates_provider.dart';
+import '../widgets/common/module_gate.dart';
 import 'app_routes.dart';
 
 export 'app_routes.dart';
@@ -53,6 +54,7 @@ import '../screens/settings/custom_fields_screen.dart';
 import '../screens/settings/macros_screen.dart';
 import '../screens/settings/object_settings_screen.dart';
 import '../screens/settings/objects_settings_screen.dart';
+import '../screens/settings/modules_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/api_tokens_screen.dart';
@@ -207,13 +209,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.solutions,
         name: 'solutions',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const SolutionsListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.solutions,
+          child: const SolutionsListScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.solutionNew,
         name: 'solutionNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const SolutionDetailScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.solutionNew,
+          child: const SolutionDetailScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.solutionDetail,
@@ -221,7 +229,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return SolutionDetailScreen(solutionId: id);
+          return ModuleGate(
+            path: AppRoutes.solutionDetail,
+            child: SolutionDetailScreen(solutionId: id),
+          );
         },
       ),
       GoRoute(
@@ -247,8 +258,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.accountStatement,
         name: 'accountStatement',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            AccountStatementScreen(accountId: state.pathParameters['id']!),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.accountStatement,
+          child: AccountStatementScreen(accountId: state.pathParameters['id']!),
+        ),
       ),
       // Registered after `create` and `:id/edit` so those literal segments are
       // not swallowed by the `:id` parameter.
@@ -295,41 +308,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 (state.uri.queryParameters['with'] ?? '').isEmpty
             ? AppRoutes.dashboard
             : null,
-        builder: (context, state) => MergeCompareScreen(
-          module: DuplicateModule.parse(state.pathParameters['module'])!,
-          recordId: state.pathParameters['id']!,
-          otherId: state.uri.queryParameters['with']!,
-        ),
+        builder: (context, state) {
+          final module = DuplicateModule.parse(state.pathParameters['module'])!;
+          final screen = MergeCompareScreen(
+            module: module,
+            recordId: state.pathParameters['id']!,
+            otherId: state.uri.queryParameters['with']!,
+          );
+          return module == DuplicateModule.leads
+              ? ModuleGate(path: AppRoutes.leads, child: screen)
+              : screen;
+        },
       ),
       GoRoute(
         path: AppRoutes.approvalsInbox,
         name: 'approvalsInbox',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ApprovalsInboxScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.approvalsInbox,
+          child: const ApprovalsInboxScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.ticketAnalytics,
         name: 'ticketAnalytics',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const TicketAnalyticsScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.ticketAnalytics,
+          child: const TicketAnalyticsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.ticketBoard,
         name: 'ticketBoard',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const TicketBoardScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.ticketBoard,
+          child: const TicketBoardScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.timesheet,
         name: 'timesheet',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const TimesheetScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.timesheet,
+          child: const TimesheetScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.timeReport,
         name: 'timeReport',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const TimeReportScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.timeReport,
+          child: const TimeReportScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.notifications,
@@ -341,7 +375,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.documents,
         name: 'documents',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const DocumentsListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.documents,
+          child: const DocumentsListScreen(),
+        ),
       ),
       // Literal `new` before the `:id` pattern, or `/documents/new` is read as
       // a document whose id is the word "new".
@@ -349,39 +386,53 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.documentNew,
         name: 'documentNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const DocumentFormScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.documentNew,
+          child: const DocumentFormScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.documentEdit,
         name: 'documentEdit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            DocumentFormScreen(documentId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.documentEdit,
+          child: DocumentFormScreen(
+            documentId: state.pathParameters['id'] ?? '',
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.goals,
         name: 'goals',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const GoalsScreen(),
+        builder: (context, state) =>
+            ModuleGate(path: AppRoutes.goals, child: const GoalsScreen()),
       ),
       GoRoute(
         path: AppRoutes.goalNew,
         name: 'goalNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const GoalFormScreen(),
+        builder: (context, state) =>
+            ModuleGate(path: AppRoutes.goalNew, child: const GoalFormScreen()),
       ),
       GoRoute(
         path: AppRoutes.goalHistory,
         name: 'goalHistory',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const GoalHistoryScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.goalHistory,
+          child: const GoalHistoryScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.goalEdit,
         name: 'goalEdit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            GoalFormScreen(goalId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.goalEdit,
+          child: GoalFormScreen(goalId: state.pathParameters['id'] ?? ''),
+        ),
       ),
       GoRoute(
         path: AppRoutes.help,
@@ -407,7 +458,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.invoices,
         name: 'invoices',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const InvoicesListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoices,
+          child: const InvoicesListScreen(),
+        ),
       ),
       // These five must stay above `invoiceDetail`. go_router matches in
       // declaration order, so `/invoices/:id` placed first would treat
@@ -417,71 +471,106 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.invoiceNew,
         name: 'invoiceNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const NewInvoiceScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceNew,
+          child: const NewInvoiceScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.recurringNew,
         name: 'recurringNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const NewRecurringScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.recurringNew,
+          child: const NewRecurringScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.estimates,
         name: 'estimates',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const EstimatesListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.estimates,
+          child: const EstimatesListScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.estimateNew,
         name: 'estimateNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => NewEstimateScreen(
-          fromDeal: state.extra is Deal ? state.extra as Deal : null,
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.estimateNew,
+          child: NewEstimateScreen(
+            fromDeal: state.extra is Deal ? state.extra as Deal : null,
+          ),
         ),
       ),
       GoRoute(
         path: AppRoutes.recurring,
         name: 'recurring',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const RecurringListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.recurring,
+          child: const RecurringListScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.products,
         name: 'products',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ProductsListScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.products,
+          child: const ProductsListScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.invoiceTemplates,
         name: 'invoiceTemplates',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const InvoiceTemplatesScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceTemplates,
+          child: const InvoiceTemplatesScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.invoiceTemplateNew,
         name: 'invoiceTemplateNew',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const InvoiceTemplateFormScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceTemplateNew,
+          child: const InvoiceTemplateFormScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.invoiceTemplateEdit,
         name: 'invoiceTemplateEdit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            InvoiceTemplateFormScreen(templateId: state.pathParameters['id']),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceTemplateEdit,
+          child: InvoiceTemplateFormScreen(
+            templateId: state.pathParameters['id'],
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.invoiceReports,
         name: 'invoiceReports',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const InvoiceReportsScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceReports,
+          child: const InvoiceReportsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.invoiceDetail,
         name: 'invoiceDetail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            InvoiceDetailScreen(invoiceId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.invoiceDetail,
+          child: InvoiceDetailScreen(
+            invoiceId: state.pathParameters['id'] ?? '',
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.profile,
@@ -511,7 +600,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.settingsMacros,
         name: 'settingsMacros',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const MacrosScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsMacros,
+          child: const MacrosScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsTags,
@@ -523,28 +615,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.settingsLeadPipelines,
         name: 'settingsLeadPipelines',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const LeadPipelinesScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsLeadPipelines,
+          child: const LeadPipelinesScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsLeadPipelineDetail,
         name: 'settingsLeadPipelineDetail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => LeadPipelineDetailScreen(
-          pipelineId: state.pathParameters['pipelineId'] ?? '',
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsLeadPipelineDetail,
+          child: LeadPipelineDetailScreen(
+            pipelineId: state.pathParameters['pipelineId'] ?? '',
+          ),
         ),
       ),
       GoRoute(
         path: AppRoutes.settingsDealPipelines,
         name: 'settingsDealPipelines',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const DealPipelinesScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsDealPipelines,
+          child: const DealPipelinesScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsDealPipelineDetail,
         name: 'settingsDealPipelineDetail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => DealPipelineDetailScreen(
-          pipelineId: state.pathParameters['pipelineId'] ?? '',
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsDealPipelineDetail,
+          child: DealPipelineDetailScreen(
+            pipelineId: state.pathParameters['pipelineId'] ?? '',
+          ),
         ),
       ),
       GoRoute(
@@ -614,25 +718,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.settingsRouting,
         name: 'settingsRouting',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const RoutingScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsRouting,
+          child: const RoutingScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsEscalation,
         name: 'settingsEscalation',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const EscalationScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsEscalation,
+          child: const EscalationScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsBusinessHours,
         name: 'settingsBusinessHours',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const BusinessHoursScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsBusinessHours,
+          child: const BusinessHoursScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsReopen,
         name: 'settingsReopen',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ReopenScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsReopen,
+          child: const ReopenScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.objectRecordsPattern,
@@ -694,19 +810,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.settingsHelpCenter,
         name: 'settingsHelpCenter',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const HelpCenterScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsHelpCenter,
+          child: const HelpCenterScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsInboundEmail,
         name: 'settingsInboundEmail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const InboundEmailScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsInboundEmail,
+          child: const InboundEmailScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsTicketApprovals,
         name: 'settingsTicketApprovals',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ApprovalRulesScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsTicketApprovals,
+          child: const ApprovalRulesScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settingsApiTokens,
@@ -724,7 +849,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.profileCalendarFeed,
         name: 'profileCalendarFeed',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const CalendarFeedScreen(),
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.profileCalendarFeed,
+          child: const CalendarFeedScreen(),
+        ),
       ),
       // The edit route is declared before the read one so `/organization/edit`
       // is never captured as a sub-path of `/organization`.
@@ -733,6 +861,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settingsOrganizationEdit',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const OrganizationEditScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsModules,
+        name: 'settingsModules',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ModulesScreen(),
       ),
       GoRoute(
         path: AppRoutes.settingsOrganization,
@@ -795,9 +929,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 // and the list opens unfiltered.
                 builder: (context, state) {
                   final view = state.uri.queryParameters['view'];
-                  return LeadsListScreen(
-                    key: ValueKey('leads-$view'),
-                    initialView: view,
+                  return ModuleGate(
+                    path: AppRoutes.leads,
+                    child: LeadsListScreen(
+                      key: ValueKey('leads-$view'),
+                      initialView: view,
+                    ),
                   );
                 },
                 routes: [
@@ -805,7 +942,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'create',
                     name: 'leadCreate',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const LeadCreateScreen(),
+                    builder: (context, state) => const ModuleGate(
+                      path: AppRoutes.leadCreate,
+                      child: LeadCreateScreen(),
+                    ),
                   ),
                   // Before `:id`, which would otherwise swallow "board" and
                   // ask the leads API for a lead with that id.
@@ -813,7 +953,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'board',
                     name: 'leadBoard',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const LeadBoardScreen(),
+                    builder: (context, state) => const ModuleGate(
+                      path: AppRoutes.leadBoard,
+                      child: LeadBoardScreen(),
+                    ),
                   ),
                   GoRoute(
                     path: ':id',
@@ -821,7 +964,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return LeadDetailScreen(leadId: id);
+                      return ModuleGate(
+                        path: AppRoutes.leadDetail,
+                        child: LeadDetailScreen(leadId: id),
+                      );
                     },
                     routes: [
                       GoRoute(
@@ -830,7 +976,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
                           final id = state.pathParameters['id']!;
-                          return LeadFormScreen(leadId: id);
+                          return ModuleGate(
+                            path: AppRoutes.leadEdit,
+                            child: LeadFormScreen(leadId: id),
+                          );
                         },
                       ),
                     ],
@@ -846,14 +995,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.deals,
                 name: 'deals',
-                builder: (context, state) => const DealsListScreen(),
+                builder: (context, state) => const ModuleGate(
+                  path: AppRoutes.deals,
+                  child: DealsListScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'create',
                     name: 'dealCreate',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => DealFormScreen(
-                      accountId: state.uri.queryParameters['accountId'],
+                    builder: (context, state) => ModuleGate(
+                      path: AppRoutes.dealCreate,
+                      child: DealFormScreen(
+                        accountId: state.uri.queryParameters['accountId'],
+                      ),
                     ),
                   ),
                   GoRoute(
@@ -862,7 +1017,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return DealDetailScreen(dealId: id);
+                      return ModuleGate(
+                        path: AppRoutes.dealDetail,
+                        child: DealDetailScreen(dealId: id),
+                      );
                     },
                     routes: [
                       GoRoute(
@@ -871,7 +1029,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
                           final id = state.pathParameters['id']!;
-                          return DealFormScreen(dealId: id);
+                          return ModuleGate(
+                            path: '/deals/:id/edit',
+                            child: DealFormScreen(dealId: id),
+                          );
                         },
                       ),
                     ],
@@ -887,13 +1048,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.tickets,
                 name: 'tickets',
-                builder: (context, state) => const TicketsListScreen(),
+                builder: (context, state) => const ModuleGate(
+                  path: AppRoutes.tickets,
+                  child: TicketsListScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'create',
                     name: 'ticketCreate',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const TicketCreateScreen(),
+                    builder: (context, state) => const ModuleGate(
+                      path: AppRoutes.ticketCreate,
+                      child: TicketCreateScreen(),
+                    ),
                   ),
                   GoRoute(
                     path: ':id',
@@ -901,7 +1068,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return TicketDetailScreen(ticketId: id);
+                      return ModuleGate(
+                        path: AppRoutes.ticketDetail,
+                        child: TicketDetailScreen(ticketId: id),
+                      );
                     },
                     routes: [
                       GoRoute(
@@ -910,7 +1080,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
                           final id = state.pathParameters['id']!;
-                          return TicketFormScreen(ticketId: id);
+                          return ModuleGate(
+                            path: AppRoutes.ticketEdit,
+                            child: TicketFormScreen(ticketId: id),
+                          );
                         },
                       ),
                     ],
@@ -929,9 +1102,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 // Keyed on `view` for the same reason as the leads branch.
                 builder: (context, state) {
                   final view = state.uri.queryParameters['view'];
-                  return TasksListScreen(
-                    key: ValueKey('tasks-$view'),
-                    initialView: view,
+                  return ModuleGate(
+                    path: AppRoutes.tasks,
+                    child: TasksListScreen(
+                      key: ValueKey('tasks-$view'),
+                      initialView: view,
+                    ),
                   );
                 },
                 routes: [
@@ -941,9 +1117,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     // `?due=YYYY-MM-DD` carries the day the user tapped in the
                     // calendar, which the form used to discard.
-                    builder: (context, state) => TaskFormScreen(
-                      initialDueDate: DateTime.tryParse(
-                        state.uri.queryParameters['due'] ?? '',
+                    builder: (context, state) => ModuleGate(
+                      path: AppRoutes.taskCreate,
+                      child: TaskFormScreen(
+                        initialDueDate: DateTime.tryParse(
+                          state.uri.queryParameters['due'] ?? '',
+                        ),
                       ),
                     ),
                   ),
@@ -953,7 +1132,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'board',
                     name: 'taskBoard',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const BoardScreen(),
+                    builder: (context, state) => const ModuleGate(
+                      path: AppRoutes.taskBoard,
+                      child: BoardScreen(),
+                    ),
                   ),
                   GoRoute(
                     path: ':id',
@@ -961,7 +1143,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return TaskDetailScreen(taskId: id);
+                      return ModuleGate(
+                        path: AppRoutes.taskDetail,
+                        child: TaskDetailScreen(taskId: id),
+                      );
                     },
                     routes: [
                       GoRoute(
@@ -970,7 +1155,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
                           final id = state.pathParameters['id']!;
-                          return TaskFormScreen(taskId: id);
+                          return ModuleGate(
+                            path: AppRoutes.taskEdit,
+                            child: TaskFormScreen(taskId: id),
+                          );
                         },
                       ),
                     ],

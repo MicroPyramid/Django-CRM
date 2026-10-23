@@ -13,7 +13,16 @@
   import AdminsOnly from '#lib/v2/components/automation/AdminsOnly.svelte';
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
-  import { triggerSentence, runsLabel, STATUS, objectOf, statusNote } from '#lib/v2/automation.js';
+  import {
+    triggerSentence,
+    runsLabel,
+    STATUS,
+    OBJECT_LABELS,
+    objectOf,
+    statusNote,
+    pausedByModule,
+    modulePausedNote
+  } from '#lib/v2/automation.js';
   import { ArrowUp, ArrowDown, Plus } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -58,13 +67,23 @@
 
       {#each paused as r (r.id)}
         <div style="margin-bottom:12px">
-          <NextAction
-            label="Paused"
-            tone="rust"
-            text={`"${r.name}": ${r.status_text} Switch it on again to take it over.`}
-            action="Open rule"
-            href={`/settings/automation/${r.id}`}
-          />
+          {#if pausedByModule(r, data.modules)}
+            <NextAction
+              label="Paused"
+              tone="rust"
+              text={modulePausedNote(r)}
+              action="Open Modules"
+              href="/settings/modules"
+            />
+          {:else}
+            <NextAction
+              label="Paused"
+              tone="rust"
+              text={`"${r.name}": ${r.status_text} Switch it on again to take it over.`}
+              action="Open rule"
+              href={`/settings/automation/${r.id}`}
+            />
+          {/if}
         </div>
       {/each}
 
@@ -97,7 +116,9 @@
                     >
                       <div class="v2-table-primary">{r.name}</div>
                       <div class="v2-table-secondary">
-                        {objectOf(data.catalogue, r.object_key)?.label ?? r.object_key}
+                        {objectOf(data.catalogue, r.object_key)?.label ??
+                          OBJECT_LABELS[r.object_key] ??
+                          r.object_key}
                       </div>
                       {#if note}
                         <div class="v2-table-secondary au-status-narrow">{note}</div>

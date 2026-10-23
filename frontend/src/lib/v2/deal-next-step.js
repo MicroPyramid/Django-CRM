@@ -13,10 +13,12 @@ import { daysSince, shortDate } from '#lib/v2/format.js';
  * `undefined` when the response did not compute it, which is not.
  *
  * @param {{ stage_kind?: string | null, next_activity?: any }} deal
+ * @param {boolean} [tasksOn] false while Tasks is switched off: the API sends no next step then, so nothing is flagged
  * @param {Date} [now]
  * @returns {{ text: string, late: boolean } | null}
  */
-export function dealNextStep(deal, now = new Date()) {
+export function dealNextStep(deal, tasksOn = true, now = new Date()) {
+  if (!tasksOn) return null;
   if (deal.stage_kind !== 'open') return null;
   const next = deal.next_activity;
   if (next === undefined) return null;

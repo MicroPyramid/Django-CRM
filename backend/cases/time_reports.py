@@ -167,11 +167,12 @@ def _row_name(group_by, row, fields):
     return row[fields[1]] or "No account"
 
 
-def csv_rows(entries):
+def csv_rows(entries, show_invoices=True):
     """Yield the header, then one list per entry, for ``csv.writer``.
 
     A generator over ``.iterator()`` so a year of entries streams instead of
     being built in memory: the caller wraps this in a ``StreamingHttpResponse``.
+    The Invoice column stays, blank, when ``show_invoices`` is false.
     """
     yield list(CSV_COLUMNS)
 
@@ -199,5 +200,5 @@ def csv_rows(entries):
             str(entry.hourly_rate) if entry.hourly_rate is not None else "",
             entry.currency,
             value,
-            entry.invoice.invoice_number if entry.invoice_id else "",
+            entry.invoice.invoice_number if entry.invoice_id and show_invoices else "",
         ]

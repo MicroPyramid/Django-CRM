@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../services/org_date.dart';
@@ -1593,9 +1594,14 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Convert Lead?'),
-        content: const Text(
-          'This creates an Account, Contact, and Opportunity from this lead, '
-          'then marks the lead as converted. This cannot be undone from the app.',
+        content: Text(
+          ref.read(moduleOnProvider('deals'))
+              ? 'This creates an Account, Contact, and Opportunity from this '
+                    'lead, then marks the lead as converted. This cannot be '
+                    'undone from the app.'
+              : 'This creates an Account and a Contact from this lead, then '
+                    'marks the lead as converted. This cannot be undone from '
+                    'the app.',
         ),
         actions: [
           TextButton(

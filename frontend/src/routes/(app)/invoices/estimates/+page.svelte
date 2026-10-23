@@ -20,6 +20,7 @@
   import { money, moneyEach, count, daysSince } from '#lib/v2/format.js';
   import { ESTIMATE_STATUS_TONE } from '#lib/v2/enums.js';
   import { Plus, FileText } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -106,12 +107,16 @@
   {#if data.estimates.length === 0}
     <EmptyState
       title="No estimates yet"
-      body="An estimate is a priced proposal you can turn into an invoice once the customer accepts it. Most start from a deal that already has the amount and the account."
+      body={isOn(data.modules, 'deals')
+        ? 'An estimate is a priced proposal you can turn into an invoice once the customer accepts it. Most start from a deal that already has the amount and the account.'
+        : 'An estimate is a priced proposal you can turn into an invoice once the customer accepts it.'}
     >
       {#snippet icon()}<FileText size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('invoices/estimates/new')}>New estimate</a>
-        <a class="v2-btn" href={resolve('pipeline')}>Start from a deal</a>
+        {#if isOn(data.modules, 'deals')}
+          <a class="v2-btn" href={resolve('pipeline')}>Start from a deal</a>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}

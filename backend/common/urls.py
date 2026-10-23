@@ -27,6 +27,7 @@ from common.views.document_views import (
     DocumentDownloadView,
     DocumentListView,
 )
+from common.views.module_views import OrgModulesView
 from common.views.notification_views import (
     NotificationDetailView,
     NotificationListView,
@@ -122,6 +123,7 @@ urlpatterns = [
         HelpCenterSettingsView.as_view(),
         name="help_center_settings",
     ),
+    path("org/modules/", OrgModulesView.as_view(), name="org_modules"),
     path("org/tokens/", OrgAccessTokenListView.as_view(), name="org_pat_list"),
     path("org/audit-log/", SecurityAuditLogListView.as_view(), name="org_audit_log"),
     path(

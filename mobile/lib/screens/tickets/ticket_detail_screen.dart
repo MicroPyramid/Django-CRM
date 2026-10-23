@@ -15,6 +15,7 @@ import '../../data/models/email_message.dart';
 import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../config/api_config.dart';
@@ -411,15 +412,18 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
             const SizedBox(height: 16),
             _buildTreeCard(c),
           ],
+          if (ref.watch(moduleOnProvider('timesheet'))) ...[
+            const SizedBox(height: 16),
+            TicketTimePanel(ticketId: c.id, canLogTime: _canWrite),
+          ],
           const SizedBox(height: 16),
-          TicketTimePanel(ticketId: c.id, canLogTime: _canWrite),
-          const SizedBox(height: 16),
-          TicketSolutionsPanel(
-            ticketId: c.id,
-            linked: _detail?.linkedSolutions ?? const [],
-            onChanged: _fetchDetail,
-            canEdit: _canWrite,
-          ),
+          if (ref.watch(moduleOnProvider('knowledge_base')))
+            TicketSolutionsPanel(
+              ticketId: c.id,
+              linked: _detail?.linkedSolutions ?? const [],
+              onChanged: _fetchDetail,
+              canEdit: _canWrite,
+            ),
           TicketApprovalPanel(
             ticketId: c.id,
             approvalRule: _detail?.approvalRule,

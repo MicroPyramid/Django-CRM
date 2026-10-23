@@ -2,7 +2,7 @@
   import { resolve } from '$app/paths';
   import { asInternalPath } from '#lib/utils/paths.js';
   import { page } from '$app/state';
-  import { TAB_SETS } from '#lib/v2/tabs.js';
+  import { visibleTabs } from '#lib/v2/tabs.js';
   import { isOrgAdmin } from '#lib/admin.js';
 
   /**
@@ -16,7 +16,7 @@
    * the sidebar entry above it can never disagree. A count of zero renders
    * nothing: a badge reading 0 is a badge you learn to stop reading.
    *
-   * @type {{ set: keyof typeof TAB_SETS }}
+   * @type {{ set: keyof typeof import('#lib/v2/tabs.js').TAB_SETS }}
    */
   let { set } = $props();
 
@@ -25,7 +25,7 @@
   // Drop admin-only tabs for a member so the strip does not offer a page that
   // only gate-cards them; the backend still enforces the gate, so this is UX only.
   let isAdmin = $derived(isOrgAdmin(page.data));
-  let tabs = $derived((TAB_SETS[set] ?? []).filter((tab) => isAdmin || !tab.admin));
+  let tabs = $derived(visibleTabs(set, { isAdmin, modules: page.data.modules ?? null }));
 
   const isActive = (href, exact) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);

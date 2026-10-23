@@ -8,12 +8,17 @@
   import { moneyEach, count } from '#lib/v2/format.js';
   import { activeChips, activePresetKey } from '#lib/v2/filters.js';
   import { Download, Plus, Building2 } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
 
   let accounts = $derived(data.accounts);
   let totals = $derived(data.totals);
+  let dealsOn = $derived(isOn(data.modules, 'deals'));
+  let invoicesOn = $derived(isOn(data.modules, 'invoices'));
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
+  let leadsOn = $derived(isOn(data.modules, 'leads'));
 
   /**
    * Whether the view is actually narrowed, rather than merely carrying a query
@@ -38,7 +43,7 @@
          when only one page is loaded states a smaller number as though it
          covered everything, so it is shown only when this page IS the whole
          set. A figure that disappears beats a figure that is wrong. -->
-    {#if (totals.shown ?? 0) >= (totals.count ?? 0)}
+    {#if dealsOn && (totals.shown ?? 0) >= (totals.count ?? 0)}
       · <span class="v2-num">{count(totals.customers)}</span> with a deal won
     {/if}
   {/snippet}
@@ -69,19 +74,23 @@
   tags={data.tags}
   meId={data.meId}
   saved={data.savedViews}
-  meta="Sorted by revenue won"
+  meta={dealsOn ? 'Sorted by revenue won' : null}
 />
 
 <div class="v2-scroll">
   {#if accounts.length === 0}
     <EmptyState
       title="No accounts yet"
-      body="An account is a company you sell to. One appears automatically the first time you convert a lead, or you can add one directly."
+      body={leadsOn
+        ? 'An account is a company you sell to. One appears automatically the first time you convert a lead, or you can add one directly.'
+        : 'An account is a company you sell to. Add the first one to get started.'}
     >
       {#snippet icon()}<Building2 size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('accounts/new')}>New account</a>
-        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {#if leadsOn}
+          <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}
@@ -91,10 +100,12 @@
           <tr>
             <th>Account</th>
             <th>Industry</th>
-            <th class="v2-r">Won</th>
-            <th class="v2-r">Open pipeline</th>
-            <th class="v2-r">Past due</th>
-            <th>Tickets</th>
+            {#if dealsOn}
+              <th class="v2-r">Won</th>
+              <th class="v2-r">Open pipeline</th>
+            {/if}
+            {#if invoicesOn}<th class="v2-r">Past due</th>{/if}
+            {#if ticketsOn}<th>Tickets</th>{/if}
           </tr>
         </thead>
         <tbody>
@@ -114,28 +125,36 @@
               <!-- All four figures are computed by the API over the whole
                    related set, never derived from the rows on screen. Money is
                    one amount per currency, never added across currencies. -->
-              <td class="v2-r v2-num" data-m="hide">
-                {a.won_by_currency?.length ? moneyEach(a.won_by_currency) : '—'}
-              </td>
-              <!-- Labelled on a phone: without the header row, two money
+              {#if dealsOn}
+                <td class="v2-r v2-num" data-m="hide">
+                  {a.won_by_currency?.length ? moneyEach(a.won_by_currency) : '—'}
+                </td>
+                <!-- Labelled on a phone: without the header row, two money
                    columns side by side are two unattributed numbers. -->
-              <td class="v2-r v2-num" data-l="Pipeline">
-                {a.pipeline_by_currency?.length ? moneyEach(a.pipeline_by_currency) : '—'}
-              </td>
-              <td
-                class="v2-r v2-num"
-                data-l="Past due"
-                style={a.overdue_by_currency?.length ? 'color:var(--v2-rust);font-weight:600' : ''}
-              >
-                {a.overdue_by_currency?.length ? moneyEach(a.overdue_by_currency) : '—'}
-              </td>
-              <td>
-                {#if a.open_tickets}
-                  <Pill tone="slate">{a.open_tickets} open</Pill>
-                {:else}
-                  <span class="v2-muted">—</span>
-                {/if}
-              </td>
+                <td class="v2-r v2-num" data-l="Pipeline">
+                  {a.pipeline_by_currency?.length ? moneyEach(a.pipeline_by_currency) : '—'}
+                </td>
+              {/if}
+              {#if invoicesOn}
+                <td
+                  class="v2-r v2-num"
+                  data-l="Past due"
+                  style={a.overdue_by_currency?.length
+                    ? 'color:var(--v2-rust);font-weight:600'
+                    : ''}
+                >
+                  {a.overdue_by_currency?.length ? moneyEach(a.overdue_by_currency) : '—'}
+                </td>
+              {/if}
+              {#if ticketsOn}
+                <td>
+                  {#if a.open_tickets}
+                    <Pill tone="slate">{a.open_tickets} open</Pill>
+                  {:else}
+                    <span class="v2-muted">—</span>
+                  {/if}
+                </td>
+              {/if}
             </tr>
           {/each}
         </tbody>

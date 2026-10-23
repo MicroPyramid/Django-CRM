@@ -422,6 +422,8 @@ class ApiConfig {
       '${objectRecordAttachments(key, id)}'
       '${_checked(_uuid, attachmentId, 'attachmentId')}/';
 
+  static String get orgModules => '$apiBaseUrl/org/modules/';
+
   static String get objectsRelated => '$apiBaseUrl/objects/related/';
 
   static String get automationCatalogue => '$apiBaseUrl/automation/catalogue/';

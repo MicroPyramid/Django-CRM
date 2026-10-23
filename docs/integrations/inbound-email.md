@@ -122,6 +122,13 @@ an inbound message through that mailbox (a reply to an older case doesn't count 
 address still received mail even if the pipeline discarded it. Neither field is present on
 `GET /api/cases/mailboxes/{id}/`, which returns only the plain serializer.
 
+### When Tickets is switched off
+
+Switching Tickets off is refused while any mailbox is active, so no email is lost: switch the
+mailbox off first. A notification for a mailbox in an org with Tickets off answers the same `404`
+an unknown or inactive mailbox does, and nothing is ingested. See
+[Modules](../api/modules.md#public-portal-and-inbound-entry-points).
+
 ## The SNS webhook
 
 Point an AWS SES receipt rule's SNS action at a topic, and subscribe the topic to:

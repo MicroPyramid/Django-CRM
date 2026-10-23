@@ -86,5 +86,6 @@ class PackSampleDataView(APIView):
                 "deleted": sum(result["deleted"].values()),
                 "deleted_by_type": result["deleted"],
                 "retained_by_type": result["retained"],
+                "switched_off_by_type": result["switched_off"],
             }
         )

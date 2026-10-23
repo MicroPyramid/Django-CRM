@@ -9,6 +9,7 @@ import '../../../core/theme/theme.dart';
 import '../../../data/models/automation.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/automation_provider.dart';
+import '../../../providers/org_modules_provider.dart';
 import '../../../routes/app_router.dart';
 import '../../../services/automation_text.dart';
 import '../../../widgets/forms/unsaved_changes.dart';
@@ -301,7 +302,9 @@ class _AutomationRuleScreenState extends ConsumerState<AutomationRuleScreen> {
     _firstErrorPlaced = false;
     final d = _draft!;
     final object = _objectOf(catalogue, d.objectKey);
-    final switchLabel = _switchLabel(status);
+    final held =
+        row != null && pausedByModule(row, ref.watch(shownModulesProvider));
+    final switchLabel = held ? null : _switchLabel(status);
     return UnsavedChangesGuard(
       hasUnsavedChanges: () => _dirty,
       isSaving: _saving || _busy,
@@ -329,40 +332,54 @@ class _AutomationRuleScreenState extends ConsumerState<AutomationRuleScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (!_isNew) ...[_statusStrip(row), const SizedBox(height: 12)],
-                TextField(
-                  controller: _name,
-                  readOnly: _saving,
-                  maxLength: 120,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: AppColors.surface,
+                if (!_isNew) ...[
+                  _statusStrip(row, held: held),
+                  const SizedBox(height: 12),
+                ],
+                // A rule held by its module opens to read, not to edit.
+                AbsorbPointer(
+                  absorbing: held,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _name,
+                        readOnly: _saving,
+                        maxLength: 120,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                        ),
+                        onChanged: (v) {
+                          // Rebuilds so Try reflects whether the draft still matches.
+                          setState(() {
+                            d.name = v;
+                            _errors.rows.remove('name');
+                          });
+                        },
+                      ),
+                      _errorLine(_errors.rows['name']),
+                      const SizedBox(height: 12),
+                      _whenCard(catalogue, object),
+                      _errorLine(_errors.rows['trigger']),
+                      const SizedBox(height: 12),
+                      _onlyIfCard(catalogue, object),
+                      _errorLine(_errors.rows['match']),
+                      _errorLine(_errors.rows['conditions']),
+                      const SizedBox(height: 12),
+                      _thenCard(catalogue, object),
+                      _errorLine(_errors.rows['actions']),
+                      const SizedBox(height: 12),
+                      if (!held) ...[
+                        _tryCard(object),
+                        const SizedBox(height: 20),
+                      ],
+                    ],
                   ),
-                  onChanged: (v) {
-                    // Rebuilds so Try reflects whether the draft still matches.
-                    setState(() {
-                      d.name = v;
-                      _errors.rows.remove('name');
-                    });
-                  },
                 ),
-                _errorLine(_errors.rows['name']),
-                const SizedBox(height: 12),
-                _whenCard(catalogue, object),
-                _errorLine(_errors.rows['trigger']),
-                const SizedBox(height: 12),
-                _onlyIfCard(catalogue, object),
-                _errorLine(_errors.rows['match']),
-                _errorLine(_errors.rows['conditions']),
-                const SizedBox(height: 12),
-                _thenCard(catalogue, object),
-                _errorLine(_errors.rows['actions']),
-                const SizedBox(height: 12),
-                _tryCard(object),
-                const SizedBox(height: 20),
                 if (_errors.general != null) ...[
                   _GeneralError(
                     key: _firstErrorPlaced ? null : _firstError,
@@ -370,22 +387,23 @@ class _AutomationRuleScreenState extends ConsumerState<AutomationRuleScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                SizedBox(
-                  height: 48,
-                  child: switchLabel == null
-                      ? FilledButton(
-                          onPressed: _saving
-                              ? null
-                              : () => _save(switchOn: false),
-                          child: const Text('Save'),
-                        )
-                      : OutlinedButton(
-                          onPressed: _saving
-                              ? null
-                              : () => _save(switchOn: false),
-                          child: const Text('Save'),
-                        ),
-                ),
+                if (!held)
+                  SizedBox(
+                    height: 48,
+                    child: switchLabel == null
+                        ? FilledButton(
+                            onPressed: _saving
+                                ? null
+                                : () => _save(switchOn: false),
+                            child: const Text('Save'),
+                          )
+                        : OutlinedButton(
+                            onPressed: _saving
+                                ? null
+                                : () => _save(switchOn: false),
+                            child: const Text('Save'),
+                          ),
+                  ),
                 if (switchLabel != null) ...[
                   const SizedBox(height: 8),
                   SizedBox(
@@ -417,7 +435,7 @@ class _AutomationRuleScreenState extends ConsumerState<AutomationRuleScreen> {
     );
   }
 
-  Widget _statusStrip(AutomationRuleRow? row) {
+  Widget _statusStrip(AutomationRuleRow? row, {bool held = false}) {
     final id = widget.ruleId!;
     final saved = ref.watch(automationRuleProvider(id)).value ?? _saved;
     final shown =
@@ -427,7 +445,7 @@ class _AutomationRuleScreenState extends ConsumerState<AutomationRuleScreen> {
           trigger: TriggerDraft(),
           status: ruleStatus(saved, null) ?? 'off',
         );
-    final text = statusText(shown);
+    final text = held ? modulePausedNote(shown) : statusText(shown);
     final owner = saved?.owner;
     final ownerName = owner?.name.trim() ?? '';
     return _Section(

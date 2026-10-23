@@ -142,6 +142,10 @@ class AppRoutes {
   /// Your own task calendar feed, beside your tokens under profile.
   static const String profileCalendarFeed = '/more/profile/calendar-feed';
   static const String settingsOrganization = '/more/settings/organization';
+
+  /// Which modules the organization uses. Admin only; the screen says so to a
+  /// member.
+  static const String settingsModules = '/more/settings/modules';
   static const String settingsOrganizationEdit =
       '/more/settings/organization/edit';
 

@@ -5,38 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/custom_objects_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import 'avatar.dart';
-
-/// Bottom-nav configuration. The "More" entry opens a bottom sheet instead of
-/// switching branches; it represents both the Tasks (branch 4) and full
-/// More/Settings (branch 5) destinations so the tab highlights when the user
-/// is on either of those screens.
-class _NavBranch {
-  final String label;
-  final IconData icon;
-  final List<int> branches;
-  final bool opensSheet;
-  const _NavBranch({
-    required this.label,
-    required this.icon,
-    required this.branches,
-    this.opensSheet = false,
-  });
-}
-
-const _navBranches = <_NavBranch>[
-  _NavBranch(label: 'Home', icon: LucideIcons.layoutDashboard, branches: [0]),
-  _NavBranch(label: 'Leads', icon: LucideIcons.users, branches: [1]),
-  _NavBranch(label: 'Deals', icon: LucideIcons.briefcase, branches: [2]),
-  _NavBranch(label: 'Tickets', icon: LucideIcons.ticket, branches: [3]),
-  _NavBranch(
-    label: 'More',
-    icon: LucideIcons.moreHorizontal,
-    branches: [5, 4],
-    opensSheet: true,
-  ),
-];
+import 'nav_entries.dart';
 
 const _moreBranch = 5;
 
@@ -70,8 +42,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// Every branch switch goes through here. More asks again for a failed
   /// objects answer on its first visit; after that, switching to it asks.
   void _goBranch(int branch, {bool initialLocation = false}) {
-    if (branch == _moreBranch && _shown.contains(branch)) {
-      retryFailedCustomObjects(ref);
+    if (branch == _moreBranch) {
+      reloadOrgModulesIfIdle(ref);
+      if (_shown.contains(branch)) retryFailedCustomObjects(ref);
     }
     widget.navigationShell.goBranch(branch, initialLocation: initialLocation);
   }
@@ -80,18 +53,20 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final navigationShell = widget.navigationShell;
     final currentBranch = navigationShell.currentIndex;
-    final selectedNavIndex = _navBranches.indexWhere(
+    final entries = navEntries(ref.watch(shownModulesProvider));
+    final selectedNavIndex = entries.indexWhere(
       (b) => b.branches.contains(currentBranch),
     );
 
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: _BottomNav(
+        entries: entries,
         currentIndex: selectedNavIndex,
         onTap: (navIndex) {
-          final entry = _navBranches[navIndex];
+          final entry = entries[navIndex];
           if (entry.opensSheet) {
-            _showMoreSheet(context, _goBranch);
+            _showMoreSheet(context, ref, _goBranch);
             return;
           }
           final target = entry.branches.first;
@@ -102,7 +77,12 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-void _showMoreSheet(BuildContext context, void Function(int branch) goBranch) {
+void _showMoreSheet(
+  BuildContext context,
+  WidgetRef ref,
+  void Function(int branch) goBranch,
+) {
+  reloadOrgModulesIfIdle(ref);
   showModalBottomSheet(
     context: context,
     backgroundColor: AppColors.surface,
@@ -121,6 +101,7 @@ class _MoreSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final modules = ref.watch(shownModulesProvider);
 
     return SafeArea(
       top: false,
@@ -173,14 +154,15 @@ class _MoreSheet extends ConsumerWidget {
               ),
             ),
           const Divider(height: 1),
-          _SheetItem(
-            icon: LucideIcons.checkSquare,
-            label: 'Tasks',
-            onTap: () {
-              Navigator.pop(context);
-              goBranch(4);
-            },
-          ),
+          if (tasksBehindMore(modules))
+            _SheetItem(
+              icon: LucideIcons.checkSquare,
+              label: 'Tasks',
+              onTap: () {
+                Navigator.pop(context);
+                goBranch(4);
+              },
+            ),
           _SheetItem(
             icon: LucideIcons.settings,
             label: 'Settings',
@@ -278,10 +260,15 @@ class _SheetItem extends StatelessWidget {
 
 /// Bottom Navigation Bar
 class _BottomNav extends StatelessWidget {
+  final List<NavEntry> entries;
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const _BottomNav({required this.currentIndex, required this.onTap});
+  const _BottomNav({
+    required this.entries,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -303,10 +290,10 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              for (var i = 0; i < _navBranches.length; i++)
+              for (var i = 0; i < entries.length; i++)
                 _NavItem(
-                  icon: _navBranches[i].icon,
-                  label: _navBranches[i].label,
+                  icon: entries[i].icon,
+                  label: entries[i].label,
                   isSelected: currentIndex == i,
                   onTap: () => onTap(i),
                 ),

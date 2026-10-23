@@ -69,7 +69,7 @@ class WebhookListCreateView(WebhookBaseView):
         return Response(
             {
                 "endpoints": WebhookEndpointSerializer(endpoints, many=True).data,
-                "event_catalogue": events.catalogue_json(),
+                "event_catalogue": events.catalogue_json(request.profile.org),
                 "limit": MAX_ENDPOINTS_PER_ORG,
             }
         )
@@ -85,7 +85,7 @@ class WebhookListCreateView(WebhookBaseView):
             return _error(
                 f"An organization can have at most {MAX_ENDPOINTS_PER_ORG} webhooks."
             )
-        serializer = WebhookEndpointSerializer(data=request.data)
+        serializer = WebhookEndpointSerializer(data=request.data, context={"org": org})
         serializer.is_valid(raise_exception=True)
         endpoint = serializer.save(org=org)
         # The one response that carries the full secret, besides a rotate.
@@ -109,7 +109,10 @@ class WebhookDetailView(WebhookBaseView):
         endpoint = self.get_endpoint(request, pk)
         was_active, previous_creator_id = endpoint.is_active, endpoint.created_by_id
         serializer = WebhookEndpointSerializer(
-            endpoint, data=request.data, partial=True
+            endpoint,
+            data=request.data,
+            partial=True,
+            context={"org": request.profile.org},
         )
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data

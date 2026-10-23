@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   actorName,
+  pausedByModule,
+  OBJECT_LABELS,
   notificationText,
   hubValue,
   showAutomationSetting,
@@ -1123,5 +1125,25 @@ describe('actorName', () => {
     expect(actorName({ actor: { id: '1', user_details: { email: 'a@x.io' } } })).toBe('a@x.io');
     expect(actorName({ actor: { id: '1', user_details: null } })).toBe('Someone');
     expect(actorName({ actor: null })).toBe('Someone');
+  });
+});
+
+describe('rules paused by a module', () => {
+  const off = /** @type {any[]} */ ([{ key: 'tickets', label: 'Tickets', available: false }]);
+
+  it('knows a rule paused by its module from one paused by its owner', () => {
+    const paused = { status: 'paused', object_key: 'ticket' };
+    expect(pausedByModule(paused, off)).toBe(true);
+    expect(pausedByModule(paused, null)).toBe(false);
+    expect(pausedByModule({ status: 'paused', object_key: 'lead' }, off)).toBe(false);
+    expect(pausedByModule({ status: 'paused', object_key: 'obj:invoice' }, off)).toBe(false);
+    expect(pausedByModule({ status: 'on', object_key: 'ticket' }, off)).toBe(false);
+  });
+
+  it('names an object the catalogue no longer lists', () => {
+    expect(OBJECT_LABELS.ticket).toBe('Ticket');
+    expect(Object.keys(OBJECT_LABELS)).toEqual(
+      expect.arrayContaining(['lead', 'contact', 'account', 'deal', 'ticket', 'task'])
+    );
   });
 });

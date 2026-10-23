@@ -14,6 +14,7 @@
 import { error } from '@sveltejs/kit';
 import * as env from '$app/env/public';
 import { apiRequest } from '#lib/api-helpers.js';
+import { moduleOffDetail, rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 
 const num = (/** @type {any} */ value) => {
@@ -94,6 +95,7 @@ export async function getStatement({ cookies }, accountId, searchParams) {
     );
   } catch (/** @type {any} */ err) {
     if (err?.status === 403) return { can_view: false, statement: null, error: null };
+    rethrowModuleOff(err);
     if (err?.status === 404) {
       error(404, 'That account does not exist, or you do not have access to it.');
     }
@@ -142,7 +144,7 @@ export async function forwardStatementPdf({ cookies, params, url, request }) {
   );
 
   if (!upstream.ok || !upstream.body) {
-    return new Response(`Upstream error: ${upstream.status}`, {
+    return new Response((await moduleOffDetail(upstream)) ?? `Upstream error: ${upstream.status}`, {
       status: upstream.status || 502
     });
   }

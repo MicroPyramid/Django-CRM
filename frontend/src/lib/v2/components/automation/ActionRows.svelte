@@ -1,7 +1,7 @@
 <script>
   import { tick } from 'svelte';
   import { ArrowDown, ArrowUp, Plus, X } from '@lucide/svelte';
-  import { actionOptions, blankAction, moveItem } from '#lib/v2/automation.js';
+  import { actionOptions, actionTypes, blankAction, moveItem } from '#lib/v2/automation.js';
   import ActionFields from './ActionFields.svelte';
 
   /**
@@ -31,7 +31,9 @@
   }
 
   async function add() {
-    actions = [...actions, blankAction('create_task')];
+    const types = actionTypes(catalogue, object);
+    if (!types.length) return;
+    actions = [...actions, blankAction(types.includes('create_task') ? 'create_task' : types[0])];
     await tick();
     document.getElementById(`act-${actions.length - 1}-type`)?.focus();
   }

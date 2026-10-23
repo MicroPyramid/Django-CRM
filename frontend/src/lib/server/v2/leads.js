@@ -24,6 +24,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 import { recordDuplicates } from '#lib/server/v2/duplicates.js';
 import {
@@ -406,6 +407,7 @@ async function fetchDetail(cookies, id) {
   try {
     return await apiRequest(`/leads/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
     // On the status, not on the wording. This read `message.includes('404')`,
     // and Django's message for a missing lead is "No Lead matches the given
     // query.", so opening a deleted lead answered 500. See `api-helpers.js`.

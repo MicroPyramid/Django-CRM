@@ -37,6 +37,7 @@
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import { relativeTime } from '#lib/v2/format.js';
+  import { isOn, notificationsEmptyText } from '#lib/v2/modules.js';
   import { notificationText, actorName, AUTOMATION_FALLBACK } from '#lib/v2/automation.js';
   import {
     BellOff,
@@ -52,6 +53,8 @@
 
   /** @type {{ data: any }} */
   let { data } = $props();
+
+  let emptyText = $derived(notificationsEmptyText(data.modules));
 
   /* Local copy: marking read is a real state change in this page's terms even
      though nothing is persisted yet. It is not derived from `data`, or every
@@ -163,9 +166,7 @@
     {#if visible.length === 0}
       <EmptyState
         title={filter === 'unread' ? 'Nothing unread' : 'No notifications'}
-        body={filter === 'unread'
-          ? 'Everything here has been read. Notifications arrive for CRM ticket activity, automation rules, and updates from BottleCRM Support.'
-          : 'Notifications arrive for CRM ticket activity, automation rules, and updates from BottleCRM Support.'}
+        body={filter === 'unread' ? `Everything here has been read. ${emptyText}` : emptyText}
       >
         {#snippet icon()}<BellOff size={21} />{/snippet}
         {#snippet actions()}
@@ -174,7 +175,9 @@
               Show read too
             </button>
           {/if}
-          <a class="v2-btn" href={resolve('tickets')}>Go to tickets</a>
+          {#if isOn(data.modules, 'tickets')}
+            <a class="v2-btn" href={resolve('tickets')}>Go to tickets</a>
+          {/if}
           <a class="v2-btn" href={resolve('help')}>Get help</a>
         {/snippet}
       </EmptyState>

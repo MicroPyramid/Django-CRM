@@ -10,6 +10,7 @@ import '../../data/models/deal.dart' show Currency;
 import '../../providers/accounts_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
 import '../../widgets/objects/related_objects_section.dart';
@@ -77,8 +78,8 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Delete this account?'),
         content: Text(
-          'Deleting ${account.name} cannot be undone. Contacts and deals '
-          'linked to it stay, but they lose the link.',
+          'Deleting ${account.name} cannot be undone. Its deals and tickets '
+          'are deleted with it, and its contacts lose the link.',
         ),
         actions: [
           TextButton(
@@ -127,7 +128,9 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
         actions: [
           // Statements are admin-only on the server; a member would only be
           // told so.
-          if (account != null && ref.watch(isOrgAdminProvider))
+          if (account != null &&
+              ref.watch(isOrgAdminProvider) &&
+              ref.watch(moduleOnProvider('invoices')))
             IconButton(
               icon: const Icon(LucideIcons.receiptText, size: 20),
               tooltip: 'Statement',
@@ -189,13 +192,16 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
           _rollups(account),
           _details(account),
           _relationSection('Contacts', LucideIcons.users, account.contacts),
-          _relationSection(
-            'Deals',
-            LucideIcons.trendingUp,
-            account.opportunities,
-          ),
-          _relationSection('Tickets', LucideIcons.lifeBuoy, account.cases),
-          _relationSection('Tasks', LucideIcons.checkCheck, account.tasks),
+          if (ref.watch(moduleOnProvider('deals')))
+            _relationSection(
+              'Deals',
+              LucideIcons.trendingUp,
+              account.opportunities,
+            ),
+          if (ref.watch(moduleOnProvider('tickets')))
+            _relationSection('Tickets', LucideIcons.lifeBuoy, account.cases),
+          if (ref.watch(moduleOnProvider('tasks')))
+            _relationSection('Tasks', LucideIcons.checkCheck, account.tasks),
           RelatedObjectsSection(to: 'account', recordId: account.id),
         ],
       ),
@@ -208,16 +214,21 @@ class _AccountDetailScreenState extends ConsumerState<AccountDetailScreen> {
   Widget _rollups(Account account) {
     final rollups = account.rollups;
     if (rollups == null || rollups.isEmpty) return const SizedBox.shrink();
+    final dealsOn = ref.watch(moduleOnProvider('deals'));
+    final ticketsOn = ref.watch(moduleOnProvider('tickets'));
+    if (!dealsOn && !ticketsOn) return const SizedBox.shrink();
     return _card(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _metric(
-            'Open pipeline',
-            _perCurrency(account, rollups, (m) => m.openPipeline),
-          ),
-          _metric('Won', _perCurrency(account, rollups, (m) => m.wonAmount)),
-          _metric('Open tickets', '${rollups.openTickets ?? 0}'),
+          if (dealsOn) ...[
+            _metric(
+              'Open pipeline',
+              _perCurrency(account, rollups, (m) => m.openPipeline),
+            ),
+            _metric('Won', _perCurrency(account, rollups, (m) => m.wonAmount)),
+          ],
+          if (ticketsOn) _metric('Open tickets', '${rollups.openTickets ?? 0}'),
         ],
       ),
     );

@@ -32,6 +32,10 @@ import { listTeam } from './team.js';
 import { getApprovalRules } from './ticket-approvals.js';
 import { listOrgTokens } from './tokens.js';
 import { getWebForms } from './web-forms.js';
+import { moduleOffError } from './modules.js';
+import { isOn } from '#lib/v2/modules.js';
+
+/** @typedef {import('#lib/v2/modules.js').ModuleRow[] | null} ModuleList */
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -94,9 +98,30 @@ async function reopenOrNull(promise) {
 }
 
 /**
+ * The hub's numbers. A switched-off module's pages answer 404, so its calls
+ * are skipped and its keys are null; the page hides those rows. Only those
+ * calls wait for the list; the rest start at once.
+ *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {ModuleList | Promise<ModuleList>} [modules] the served list, or null
  */
-export async function getSettingsHub(event) {
+export async function getSettingsHub(event, modules = null) {
+  const listP = Promise.resolve(modules);
+  /**
+   * A module's call, run only while it is on. A `module_off` answer (the
+   * list could not be read, or it went stale) is null too, not a hub error.
+   *
+   * @template T @param {string} key @param {() => Promise<T>} call @returns {Promise<T | null>}
+   */
+  const ifOn = (key, call) =>
+    listP.then((list) =>
+      isOn(list, key)
+        ? call().catch((/** @type {unknown} */ err) => {
+            if (moduleOffError(err)) return null;
+            throw err;
+          })
+        : null
+    );
   const [
     org,
     calendar,
@@ -115,19 +140,19 @@ export async function getSettingsHub(event) {
     automation
   ] = await Promise.all([
     getOrgSettings(event),
-    getBusinessHours(event),
+    ifOn('tickets', () => getBusinessHours(event)),
     listOrgTokens(event),
     listTeam(event),
-    getRoutingRules(event),
-    getEscalationPolicies(event),
-    getMailboxes(event),
-    reopenOrNull(getReopenPolicy(event)),
-    getApprovalRules(event),
-    getMacros(event),
+    ifOn('tickets', () => getRoutingRules(event)),
+    ifOn('tickets', () => getEscalationPolicies(event)),
+    ifOn('tickets', () => getMailboxes(event)),
+    ifOn('tickets', () => reopenOrNull(getReopenPolicy(event))),
+    ifOn('tickets', () => getApprovalRules(event)),
+    ifOn('tickets', () => getMacros(event)),
     getTags(event),
     getCustomFields(event),
     getWebForms(event),
-    getHelpCenterSettings(event),
+    ifOn('knowledge_base', () => getHelpCenterSettings(event)),
     // Never throws: null when the rules cannot be read, so the hub still loads.
     automationSummary(event)
   ]);
@@ -135,21 +160,20 @@ export async function getSettingsHub(event) {
   const now = Date.now();
   return {
     org: org.org,
-    calendar: calendar.calendar,
+    calendar: calendar ? calendar.calendar : null,
     // Admin-only oversight: null for a member (endpoint 403'd), so the hub
     // shows the destination without a value it is not allowed to compute.
     tokenTotals: tokens.forbidden ? null : tokens.totals,
     peopleTotals: team.forbidden ? null : team.totals,
-    routingTotals: routing.totals,
-    escalationTotals: escalationRollup(escalation.policies),
-    mailboxTotals: {
-      ...mailbox.totals,
-      silently_dropping: silentlyDropping(mailbox.mailboxes, now)
-    },
+    routingTotals: routing ? routing.totals : null,
+    escalationTotals: escalation ? escalationRollup(escalation.policies) : null,
+    mailboxTotals: mailbox
+      ? { ...mailbox.totals, silently_dropping: silentlyDropping(mailbox.mailboxes, now) }
+      : null,
     reopen: reopenPolicy,
-    approvalRules: approval.rules,
-    approvalTotals: approval.totals,
-    macroTotals: macro.totals,
+    approvalRules: approval ? approval.rules : null,
+    approvalTotals: approval ? approval.totals : null,
+    macroTotals: macro ? macro.totals : null,
     tagTotals: tag.totals,
     fieldTotals: field.totals,
     webFormTotals: webForm.totals,

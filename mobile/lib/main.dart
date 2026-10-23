@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/theme.dart';
 import 'firebase_options.dart';
+import 'providers/org_modules_provider.dart';
 import 'routes/app_router.dart';
 import 'services/auth_service.dart';
 import 'services/crash_reporting.dart';
@@ -75,6 +76,7 @@ class BottleCRMApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    ref.watch(moduleOffListenerProvider);
 
     return MaterialApp.router(
       title: 'BottleCRM',

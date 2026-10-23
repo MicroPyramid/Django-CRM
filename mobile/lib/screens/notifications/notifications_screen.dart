@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/app_notification.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../widgets/common/common.dart';
 
 /// The notification feed.
@@ -132,8 +133,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Notifications arrive for CRM ticket activity, automation rules, '
-            'and updates from BottleCRM Support.',
+            ref.watch(moduleOnProvider('tickets'))
+                ? 'Notifications arrive for CRM ticket activity, automation '
+                      'rules, and updates from BottleCRM Support.'
+                : 'Notifications arrive for automation rules and updates from '
+                      'BottleCRM Support.',
             textAlign: TextAlign.center,
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
           ),

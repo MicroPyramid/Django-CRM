@@ -30,6 +30,7 @@ from cases.workflow import (
     merged_status_refusal,
 )
 from common.models import Profile, Teams
+from common.modules import module_is_available, org_of
 from common.permissions import is_org_admin
 from common.serializer import (
     OrganizationSerializer,
@@ -163,10 +164,18 @@ class CaseRowsListSerializer(SharedCalendarListSerializer):
                 .order_by()
                 .values_list("parent_id", "n")
             )
-            summaries = time_summaries(cases)
+            timed = {}
+            for case in cases:
+                if case.org_id not in timed:
+                    timed[case.org_id] = module_is_available(org_of(case), "timesheet")
+            summaries = time_summaries([c for c in cases if timed[c.org_id]])
             for case in cases:
                 case._child_count = counts.get(case.pk, 0)
-                case._time_summary = summaries.get(case.pk) or _no_time()
+                case._time_summary = (
+                    (summaries.get(case.pk) or _no_time())
+                    if timed[case.org_id]
+                    else None
+                )
         return super().to_representation(cases)
 
 
@@ -233,9 +242,11 @@ class CaseSerializer(serializers.ModelSerializer):
 
     def get_time_summary(self, obj):
         # Set for a whole page by `CaseRowsListSerializer`; one ticket asks
-        # the same function for itself.
+        # the same function for itself. Null while the timesheet is off.
         if hasattr(obj, "_time_summary"):
             return obj._time_summary
+        if not module_is_available(org_of(obj), "timesheet"):
+            return None
         return time_summaries([obj]).get(obj.pk) or _no_time()
 
     class Meta:
@@ -1079,9 +1090,25 @@ class RoutingRuleSerializer(serializers.ModelSerializer):
 
 
 class TimeEntrySerializer(serializers.ModelSerializer):
-    """Read shape for time entries. See docs/cases/tier3/time-tracking.md."""
+    """Read shape for time entries. See docs/cases/tier3/time-tracking.md.
+
+    ``invoice`` is null while Invoices is off; ``invoiced`` still says the
+    entry is billed, and so locked against edits.
+    """
 
     profile = ProfileSerializer(read_only=True)
+    invoiced = serializers.SerializerMethodField()
+
+    def get_invoiced(self, obj) -> bool:
+        return obj.invoice_id is not None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.invoice_id and not module_is_available(
+            org_of(instance), "invoices"
+        ):
+            data["invoice"] = None
+        return data
 
     class Meta:
         model = TimeEntry
@@ -1097,6 +1124,7 @@ class TimeEntrySerializer(serializers.ModelSerializer):
             "hourly_rate",
             "currency",
             "invoice",
+            "invoiced",
             "auto_stopped",
             "created_at",
             "updated_at",

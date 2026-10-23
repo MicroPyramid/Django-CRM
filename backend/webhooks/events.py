@@ -10,30 +10,63 @@ import json
 
 from django.core.serializers.json import DjangoJSONEncoder
 
+from common.modules import available_modules, model_module
+
 PING = "ping"
 
-# Grouped the way both settings screens draw their checkboxes.
+# Grouped the way both settings screens draw their checkboxes. Each group names
+# the model its events describe, whose module the group follows.
 CATALOGUE = (
-    ("lead", "Leads", ("lead.created", "lead.updated", "lead.deleted")),
-    ("contact", "Contacts", ("contact.created", "contact.updated", "contact.deleted")),
-    ("account", "Accounts", ("account.created", "account.updated", "account.deleted")),
+    ("lead", "Leads", "leads.Lead", ("lead.created", "lead.updated", "lead.deleted")),
+    (
+        "contact",
+        "Contacts",
+        "contacts.Contact",
+        ("contact.created", "contact.updated", "contact.deleted"),
+    ),
+    (
+        "account",
+        "Accounts",
+        "accounts.Account",
+        ("account.created", "account.updated", "account.deleted"),
+    ),
     (
         "deal",
         "Deals",
+        "opportunity.Opportunity",
         ("deal.created", "deal.updated", "deal.deleted", "deal.won", "deal.lost"),
     ),
-    ("ticket", "Tickets", ("ticket.created", "ticket.updated", "ticket.comment_added")),
-    ("invoice", "Invoices", ("invoice.created", "invoice.updated", "invoice.paid")),
-    ("task", "Tasks", ("task.created", "task.updated", "task.deleted")),
+    (
+        "ticket",
+        "Tickets",
+        "cases.Case",
+        ("ticket.created", "ticket.updated", "ticket.comment_added"),
+    ),
+    (
+        "invoice",
+        "Invoices",
+        "invoices.Invoice",
+        ("invoice.created", "invoice.updated", "invoice.paid"),
+    ),
+    ("task", "Tasks", "tasks.Task", ("task.created", "task.updated", "task.deleted")),
 )
 
-EVENT_NAMES = tuple(name for _, _, names in CATALOGUE for name in names)
+EVENT_NAMES = tuple(name for *_, names in CATALOGUE for name in names)
+
+# Event prefix to the module it belongs to; None for a core one.
+EVENT_MODULES = {prefix: model_module(model) for prefix, _, model, _ in CATALOGUE}
 
 
-def catalogue_json():
+def event_module(event):
+    return EVENT_MODULES.get(event.partition(".")[0])
+
+
+def catalogue_json(org=None):
+    shown = None if org is None else {None, *available_modules(org)}
     return [
-        {"module": module, "label": label, "events": list(names)}
-        for module, label, names in CATALOGUE
+        {"module": prefix, "label": label, "events": list(names)}
+        for prefix, label, _, names in CATALOGUE
+        if shown is None or EVENT_MODULES[prefix] in shown
     ]
 
 

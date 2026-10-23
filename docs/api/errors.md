@@ -18,8 +18,10 @@ token creation, for instance, returns `201` (`backend/common/views/pat_views.py:
 "more correct" than the other here, check the endpoint.
 
 Beyond that: `400` for a request the server understood but rejected (validation, or a
-request-shaped error like a missing required field); `401` for a request with no valid credentials
-at all; `403` for a request that authenticated fine but isn't allowed to do this; `404` for a
+request-shaped error like a missing required field); `401` only where a view says so itself (an
+expired or malformed refresh token on the token refresh endpoint); `403` for a
+request with no credentials or invalid ones, and for one that authenticated fine but isn't allowed
+to do this; `404` for a
 resource that doesn't exist, or that exists but the caller must not be able to distinguish from not
 existing. See [Not found versus forbidden](#not-found-versus-forbidden); `502` where a view depends
 on an external service and that service is unreachable, for example the Google token exchange in
@@ -93,11 +95,36 @@ permission classes almost every org-scoped view lists: `permission_classes = (Is
 HasOrgContext)`, and often a role check on top such as `IsOrgAdmin`
 (`backend/common/permissions.py:44-59`, `"You must be an organization administrator to perform this
 action."`). Whether a failure comes back as `401` or `403` is not decided by which permission class
-failed. DRF's `APIView.permission_denied()` raises `NotAuthenticated` (`401`) whenever no
-authenticator on the request actually succeeded, and `PermissionDenied` (`403`, carrying the failing
-permission class's `message`) whenever one did but the permission check itself failed. In practice:
-no credentials, or invalid ones → `401`; a valid, authenticated session that isn't allowed to do
-this → `403`.
+failed. DRF's `APIView.permission_denied()` raises `NotAuthenticated` whenever no authenticator on
+the request actually succeeded, and `PermissionDenied` (`403`, carrying the failing permission
+class's `message`) whenever one did but the permission check itself failed. DRF answers
+`NotAuthenticated` with `401` only when the view's first authentication class defines
+`authenticate_header`, and none of the staff classes (`PATAuthentication`, `JWTAuthentication`,
+`APIKeyAuthentication`) does, so it comes back as `403`. In practice: no credentials, or invalid
+ones → `403`; a valid, authenticated session that isn't allowed to do this → `403`.
+
+## Switched-off modules
+
+An org admin can switch parts of the CRM off (see [Modules](modules.md)). A signed-in request to
+a route of an off module is a `404` for every method, with a body that says why:
+
+```json
+{"detail": "Tickets is switched off for this organization.", "code": "module_off", "module": "tickets"}
+```
+
+`code` is always `module_off` and `module` is the module's key, so a client can tell this `404`
+from a missing record. Public links, the customer portal and inbound email do not use this body:
+they answer what they give an unknown link.
+
+A delete that would destroy, or be blocked by, records of an off module is refused with `409`
+and the same two fields:
+
+```json
+{"error": true, "errors": "This account has 3 tickets. Tickets is switched off, so switch it on to review them before deleting.", "code": "module_off", "module": "tickets"}
+```
+
+Writes that name an off module's record, such as a webhook event, a saved view or a web form
+target, are `400` on that field with the sentence `<Label> is switched off for this organization.`
 
 ## Not found versus forbidden
 

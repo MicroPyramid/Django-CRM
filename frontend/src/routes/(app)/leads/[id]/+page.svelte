@@ -41,9 +41,11 @@
   } from '@lucide/svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+  let dealsOn = $derived(isOn(data.modules, 'deals'));
   let related = $derived(relatedView(data.related));
 
   let { lead, activity, duplicates, customFields } = $derived(data);
@@ -244,19 +246,29 @@
           {#if isConverted}
             <div class="v2-label" style="margin-bottom:8px">Already converted</div>
             <p class="v2-sub" style="margin:0;font-size:12.5px;line-height:1.55">
-              The account, contact and deal this lead became carry the work now. Converting again
-              would build a second deal against the same account, and the API refuses it.
+              {#if dealsOn}
+                The account, contact and deal this lead became carry the work now. Converting again
+                would build a second deal against the same account, and the API refuses it.
+              {:else}
+                The account and contact this lead became carry the work now.
+              {/if}
             </p>
           {:else}
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
               <div style="flex:1;min-width:210px">
                 <div class="v2-label" style="margin-bottom:6px">Convert</div>
                 <p class="v2-sub" style="margin:0;font-size:12.5px;line-height:1.55">
-                  Creates an <b style="color:var(--v2-ink)">account</b>, a
-                  <b style="color:var(--v2-ink)">contact</b> and one
-                  <b style="color:var(--v2-ink)">deal</b>{lead.opportunity_amount
-                    ? ` worth ${money(lead.opportunity_amount, lead.currency)}`
-                    : ''}. The lead stays linked, and there is no endpoint that undoes it.
+                  {#if dealsOn}
+                    Creates an <b style="color:var(--v2-ink)">account</b>, a
+                    <b style="color:var(--v2-ink)">contact</b> and one
+                    <b style="color:var(--v2-ink)">deal</b>{lead.opportunity_amount
+                      ? ` worth ${money(lead.opportunity_amount, lead.currency)}`
+                      : ''}. The lead stays linked, and there is no endpoint that undoes it.
+                  {:else}
+                    Creates an <b style="color:var(--v2-ink)">account</b> and a
+                    <b style="color:var(--v2-ink)">contact</b>. The lead stays linked, and there is
+                    no endpoint that undoes it.
+                  {/if}
                 </p>
               </div>
               <form method="POST" action="?/convert" use:enhance>
@@ -272,7 +284,9 @@
                   type="submit"
                   disabled={!lead.email}
                   title={lead.email
-                    ? 'Creates an account, a contact and an opportunity from this lead'
+                    ? dealsOn
+                      ? 'Creates an account, a contact and an opportunity from this lead'
+                      : 'Creates an account and a contact from this lead'
                     : 'Add an email address to this lead first. The contact record is created from it.'}
                 >
                   Convert lead
@@ -291,7 +305,9 @@
           <div class="v2-card" role="status" style="margin-top:12px;padding:15px 16px">
             <div class="v2-label" style="margin-bottom:6px">Converted</div>
             <p class="v2-sub" style="margin:0 0 8px;font-size:12.5px;line-height:1.55">
-              The account, contact and deal are ready.
+              {dealsOn
+                ? 'The account, contact and deal are ready.'
+                : 'The account and contact are ready.'}
             </p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <a class="v2-btn" href={resolve(`accounts/${form.account_id}`)}>View account</a>

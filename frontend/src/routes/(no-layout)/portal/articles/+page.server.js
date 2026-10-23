@@ -6,7 +6,7 @@
  * anything this page sends, so there is no parameter here worth tampering with.
  */
 
-import { redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import {
   ACCESS_COOKIE,
   ORG_COOKIE,
@@ -36,6 +36,9 @@ export async function load({ cookies, url }) {
   } catch (err) {
     if (err instanceof PortalError && (err.status === 401 || err.status === 403)) {
       toLogin(cookies);
+    }
+    if (err instanceof PortalError && err.status === 404) {
+      error(404, 'There is nothing to show here right now.');
     }
     throw err;
   }

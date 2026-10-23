@@ -7,6 +7,11 @@ const { getLead } = await import('#lib/server/v2/leads.js');
 const { getAccount } = await import('#lib/server/v2/accounts.js');
 const { getContact } = await import('#lib/server/v2/contacts.js');
 const { getDeal } = await import('#lib/server/v2/deals.js');
+const { getTicket } = await import('#lib/server/v2/tickets.js');
+const { getInvoice } = await import('#lib/server/v2/invoices.js');
+const { getArticle } = await import('#lib/server/v2/solutions.js');
+const { getStatement } = await import('#lib/server/v2/statements.js');
+const { getTask } = await import('#lib/server/v2/tasks.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 
@@ -33,5 +38,41 @@ describe.each([
       body: { message: expect.stringContaining('do not have access') }
     });
     expect(apiRequest.mock.calls.some(([path]) => String(path).includes('id-1'))).toBe(true);
+  });
+});
+
+/**
+ * A module switched off after the page was loaded answers its own 404. The
+ * page shows that module's message, not the missing-record sentence.
+ */
+describe.each([
+  ['lead', getLead],
+  ['deal', getDeal],
+  ['ticket', getTicket],
+  ['invoice', getInvoice],
+  ['article', getArticle],
+  ['task', getTask],
+  [
+    'statement',
+    (/** @type {any} */ e, /** @type {string} */ id) => getStatement(e, id, new URLSearchParams())
+  ]
+])('%s detail of an off module', (_kind, load) => {
+  const detail = 'Enquiries is switched off for this organization.';
+
+  beforeEach(() => {
+    apiRequest.mockReset();
+    apiRequest.mockRejectedValue(
+      Object.assign(new Error(detail), {
+        status: 404,
+        body: { detail, code: 'module_off', module: 'leads' }
+      })
+    );
+  });
+
+  it('keeps the module message when a detail lookup answers module_off', async () => {
+    await expect(load(event, 'id-1')).rejects.toMatchObject({
+      status: 404,
+      body: { message: detail, code: 'module_off', module: 'leads' }
+    });
   });
 });

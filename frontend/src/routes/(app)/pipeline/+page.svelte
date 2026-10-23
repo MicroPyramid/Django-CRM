@@ -12,6 +12,7 @@
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import { money, moneyEach, sumByCurrency, count, shortDate } from '#lib/v2/format.js';
   import { dealNextStep } from '#lib/v2/deal-next-step.js';
+  import { isOn } from '#lib/v2/modules.js';
   import { AGING_TONE, AGING_LABEL } from '#lib/v2/enums.js';
   import { activeChips, activePresetKey, withoutParam } from '#lib/v2/filters.js';
   import { CalendarClock, Columns3, Download, List, Plus, TriangleAlert } from '@lucide/svelte';
@@ -27,6 +28,8 @@
   const FLIP_MS = 160;
 
   let deals = $derived(data.deals);
+  // With Tasks off the API sends no next step, so the column goes too.
+  let tasksOn = $derived(isOn(data.modules, 'tasks'));
   let totals = $derived(data.totals);
   let view = $derived(data.view);
 
@@ -283,7 +286,7 @@
           onkeydowncapture={holdLockedCard}
         >
           {#each lane.rows as d (d.id)}
-            {@const step = dealNextStep(d)}
+            {@const step = dealNextStep(d, tasksOn)}
             <!-- A div, not an anchor: dragging a link fights the browser's own
                  link-drag, so the card is the drag handle and the name inside
                  it is the way in. Matches the tasks board. `data-locked` marks
@@ -331,12 +334,16 @@
   <div class="v2-scroll">
     <EmptyState
       title="No deals here"
-      body="Nothing matches this view. Start a deal from an account you are already talking to, convert a lead that is ready, or clear a filter to see more."
+      body={isOn(data.modules, 'leads')
+        ? 'Nothing matches this view. Start a deal from an account you are already talking to, convert a lead that is ready, or clear a filter to see more.'
+        : 'Nothing matches this view. Start a deal from an account you are already talking to, or clear a filter to see more.'}
     >
       {#snippet icon()}<Columns3 size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('pipeline/new')}>New deal</a>
-        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {#if isOn(data.modules, 'leads')}
+          <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {/if}
       {/snippet}
     </EmptyState>
   </div>
@@ -349,7 +356,7 @@
             <th>Deal</th>
             <th>Stage</th>
             <th>Health</th>
-            <th>Next step</th>
+            {#if tasksOn}<th>Next step</th>{/if}
             <th class="v2-r">Value</th>
             <th>Closing</th>
             <th class="v2-r">In stage</th>
@@ -358,7 +365,7 @@
         </thead>
         <tbody>
           {#each deals as d (d.id)}
-            {@const step = dealNextStep(d)}
+            {@const step = dealNextStep(d, tasksOn)}
             <tr>
               <td>
                 <a class="v2-row-link" href={resolve(`pipeline/${d.id}`)}>
@@ -377,14 +384,16 @@
               <td data-m="tag">
                 <Pill tone={AGING_TONE[d.aging_status]} dot>{AGING_LABEL[d.aging_status]}</Pill>
               </td>
-              <td>
-                {#if step}
-                  <span class="v2-next-step" class:late={step.late}>
-                    <CalendarClock size={12} style="flex:none" aria-hidden="true" />
-                    <span>{step.text}</span>
-                  </span>
-                {/if}
-              </td>
+              {#if tasksOn}
+                <td>
+                  {#if step}
+                    <span class="v2-next-step" class:late={step.late}>
+                      <CalendarClock size={12} style="flex:none" aria-hidden="true" />
+                      <span>{step.text}</span>
+                    </span>
+                  {/if}
+                </td>
+              {/if}
               <td class="v2-r v2-num" style="font-weight:600">{money(d.amount, d.currency)}</td>
               <td>{shortDate(d.closed_on)}</td>
               <!-- Hidden on a phone: the Health pill beside the title is computed

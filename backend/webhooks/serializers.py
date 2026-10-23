@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from common.modules import available_modules, module_off_message
 from webhooks import events, ssrf
 from webhooks.models import WebhookDelivery, WebhookEndpoint
 
@@ -57,6 +58,26 @@ class WebhookEndpointSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_events(self, value):
+        org = self.context.get("org")
+        off = {}
+        kept = []
+        if org is not None:
+            available = available_modules(org)
+            off = {
+                name: events.event_module(name)
+                for name in events.EVENT_NAMES
+                if events.event_module(name) not in (None, *available)
+            }
+            stored = self.instance.events if self.instance is not None else []
+            kept = [e for e in stored if e in off]
+        if isinstance(value, list):
+            named = [v for v in value if isinstance(v, str) and v in off]
+            for name in dict.fromkeys(named):
+                if name not in kept:
+                    raise serializers.ValidationError(
+                        module_off_message(org, off[name])
+                    )
+            value = value + [e for e in kept if e not in value]
         if not isinstance(value, list) or not value:
             raise serializers.ValidationError("Choose at least one event.")
         unknown = [

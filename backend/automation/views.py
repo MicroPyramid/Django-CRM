@@ -38,12 +38,13 @@ from automation.engine import _may_act, try_rule
 from automation.limits import MAX_ACTIONS, MAX_CONDITIONS
 from automation.links import link_specs
 from automation.models import DONE, FAILED, AutomationRule, AutomationRun
-from automation.objects import adapter_for, automatable
+from automation.objects import adapter_for, automatable, switched_off_module
 from automation.ownership import SENTENCES, owner_problem
 from automation.plan import may_switch_on, runnable
 from automation.serializers import RULE_KEYS, RuleSerializer, RunSerializer
-from automation.validation import ACTION_KEYS, active_people, validate_rule
+from automation.validation import active_people, offered_actions, validate_rule
 from common.lookups import get_scoped_or_404
+from common.modules import module_label
 from common.permissions import HasOrgContext, IsOrgAdmin
 from webhooks.models import JSON, WebhookEndpoint
 
@@ -123,6 +124,11 @@ def _status(org, rule, plan):
     # An owner changed by a path that skips the pausing signals.
     if not _may_act(rule):
         return "paused", SENTENCES.get(owner_problem(rule), PAUSED)
+    # The rule stays in the active-rule list passed to `runnable`; only its
+    # status changes, and `is_active` is left alone so it resumes on its own.
+    module = switched_off_module(org, rule.object_key)
+    if module is not None:
+        return "paused", f"Paused: {module_label(org, module)} is switched off"
     if rule.id not in plan.rule_ids:
         return "over_limit", plan.statuses.get(rule.id, OVER_LIMIT)
     errors = validate_rule(org, {key: getattr(rule, key) for key in RULE_KEYS})
@@ -253,7 +259,7 @@ class CatalogueView(AutomationView):
                 ],
                 "operators": OPERATORS,
                 "update_only_operators": UPDATE_ONLY,
-                "actions": list(ACTION_KEYS),
+                "actions": offered_actions(org),
                 "people": [
                     {"id": str(p.id), "name": p.user.name or p.user.email}
                     for p in people

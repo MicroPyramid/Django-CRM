@@ -29,21 +29,27 @@
   import { ChevronRight, Mail, Phone } from '@lucide/svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
   let related = $derived(relatedView(data.related));
+  let dealsOn = $derived(isOn(data.modules, 'deals'));
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
+  let invoicesOn = $derived(isOn(data.modules, 'invoices'));
 
   let { account, deals, contacts, tickets, invoices, owners } = $derived(data);
 
   let openDeals = $derived(
     deals.filter((/** @type {any} */ d) => !CLOSED_KINDS.includes(d.stage_kind))
   );
-  let stalled = $derived(openDeals.filter((/** @type {any} */ d) => d.aging_status === 'red'));
+  let stalled = $derived(
+    dealsOn ? openDeals.filter((/** @type {any} */ d) => d.aging_status === 'red') : []
+  );
   // `past_due` is decided by the same rule as the header figure. See
   // `isPastDue` in the data layer. The invoice's own `is_overdue` flag counts
   // drafts, and a rail that disagrees with its header discredits both.
-  let pastDue = $derived(invoices.filter((/** @type {any} */ i) => i.past_due));
+  let pastDue = $derived(invoicesOn ? invoices.filter((/** @type {any} */ i) => i.past_due) : []);
 
   /** One sentence that connects problems across objects. Every clause is a
       fact on this page: a stalled deal, or an invoice past its due date. */
@@ -70,16 +76,18 @@
       account.number_of_employees ? `${account.number_of_employees} staff` : null,
       /* Derived: the close date of the first deal won here. There is no
          contract model, so this is what "customer since" can honestly mean. */
-      account.first_won_on
-        ? `customer since ${longDate(account.first_won_on)}`
-        : 'No deals won yet',
+      !dealsOn
+        ? null
+        : account.first_won_on
+          ? `customer since ${longDate(account.first_won_on)}`
+          : 'No deals won yet',
       owners.length ? `owned by ${owners[0]}` : null
     ]
       .filter(Boolean)
       .join(' · ')}
   {/snippet}
   {#snippet actions()}
-    {#if isOrgAdmin(data)}
+    {#if invoicesOn && isOrgAdmin(data)}
       <!-- Statements are admin-only on the API; a member would only be told so. -->
       <a class="v2-btn" href={resolve(`accounts/${account.id}/statement`)}>Statement</a>
     {/if}
@@ -100,35 +108,43 @@
 <div class="v2-scroll">
   <div class="v2-pad" style="padding-bottom:32px">
     <div class="v2-stats" style="margin-bottom:16px">
-      <StatCard
-        label="Revenue won"
-        value={account.won_by_currency?.length ? moneyEach(account.won_by_currency) : '—'}
-        tone={account.won_by_currency?.length ? 'moss' : 'slate'}
-        detail={account.won_count
-          ? `${account.won_count} deal${account.won_count === 1 ? '' : 's'} won`
-          : 'Nothing won yet'}
-      />
-      <StatCard
-        label="Open pipeline"
-        value={account.pipeline_by_currency?.length ? moneyEach(account.pipeline_by_currency) : '—'}
-        detail={account.open_deal_count
-          ? `${account.open_deal_count} open deal${account.open_deal_count === 1 ? '' : 's'}`
-          : 'No open deals'}
-      />
-      <StatCard
-        label="Past due"
-        value={account.overdue_by_currency?.length ? moneyEach(account.overdue_by_currency) : '—'}
-        tone={account.overdue_by_currency?.length ? 'rust' : 'slate'}
-        detail={pastDue.length
-          ? pastDue.map((/** @type {any} */ i) => i.invoice_number).join(', ')
-          : 'Nothing past due'}
-      />
-      <StatCard
-        label="Open tickets"
-        value={String(account.open_tickets ?? 0)}
-        tone={tickets.some((/** @type {any} */ t) => t.priority === 'Urgent') ? 'rust' : 'slate'}
-        detail={tickets.length ? `${tickets[0].name} · ${tickets[0].priority}` : 'None open'}
-      />
+      {#if dealsOn}
+        <StatCard
+          label="Revenue won"
+          value={account.won_by_currency?.length ? moneyEach(account.won_by_currency) : '—'}
+          tone={account.won_by_currency?.length ? 'moss' : 'slate'}
+          detail={account.won_count
+            ? `${account.won_count} deal${account.won_count === 1 ? '' : 's'} won`
+            : 'Nothing won yet'}
+        />
+        <StatCard
+          label="Open pipeline"
+          value={account.pipeline_by_currency?.length
+            ? moneyEach(account.pipeline_by_currency)
+            : '—'}
+          detail={account.open_deal_count
+            ? `${account.open_deal_count} open deal${account.open_deal_count === 1 ? '' : 's'}`
+            : 'No open deals'}
+        />
+      {/if}
+      {#if invoicesOn}
+        <StatCard
+          label="Past due"
+          value={account.overdue_by_currency?.length ? moneyEach(account.overdue_by_currency) : '—'}
+          tone={account.overdue_by_currency?.length ? 'rust' : 'slate'}
+          detail={pastDue.length
+            ? pastDue.map((/** @type {any} */ i) => i.invoice_number).join(', ')
+            : 'Nothing past due'}
+        />
+      {/if}
+      {#if ticketsOn}
+        <StatCard
+          label="Open tickets"
+          value={String(account.open_tickets ?? 0)}
+          tone={tickets.some((/** @type {any} */ t) => t.priority === 'Urgent') ? 'rust' : 'slate'}
+          detail={tickets.length ? `${tickets[0].name} · ${tickets[0].priority}` : 'None open'}
+        />
+      {/if}
     </div>
 
     {#if headline}
@@ -173,42 +189,44 @@
       class="v2-account-grid"
     >
       <!-- Deals -->
-      <section class="v2-card" style="overflow:hidden">
-        <div class="v2-card-head">
-          <span class="v2-label">Deals</span>
-          <a href={resolve('pipeline')}>View all</a>
-        </div>
-        {#each deals as d (d.id)}
-          <a
-            href={resolve(`pipeline/${d.id}`)}
-            style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-          >
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:550;font-size:13px">{d.name}</div>
-              <!-- `closed_on` is labelled "Expected Close Date" on the model
+      {#if dealsOn}
+        <section class="v2-card" style="overflow:hidden">
+          <div class="v2-card-head">
+            <span class="v2-label">Deals</span>
+            <a href={resolve('pipeline')}>View all</a>
+          </div>
+          {#each deals as d (d.id)}
+            <a
+              href={resolve(`pipeline/${d.id}`)}
+              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+            >
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:550;font-size:13px">{d.name}</div>
+                <!-- `closed_on` is labelled "Expected Close Date" on the model
                    and means two different things depending on the stage. Bare,
                    it reads as though an open deal already closed. -->
-              <div class="v2-sub" style="font-size:11.5px">
-                {d.stage_label}{d.closed_on
-                  ? CLOSED_KINDS.includes(d.stage_kind)
-                    ? ` · closed ${shortDate(d.closed_on)}`
-                    : ` · due ${shortDate(d.closed_on)}`
-                  : ''}
+                <div class="v2-sub" style="font-size:11.5px">
+                  {d.stage_label}{d.closed_on
+                    ? CLOSED_KINDS.includes(d.stage_kind)
+                      ? ` · closed ${shortDate(d.closed_on)}`
+                      : ` · due ${shortDate(d.closed_on)}`
+                    : ''}
+                </div>
               </div>
-            </div>
-            {#if d.aging_status === 'red' && !CLOSED_KINDS.includes(d.stage_kind)}
-              <Pill tone="rust">{d.days_in_current_stage}d</Pill>
-            {/if}
-            <span class="v2-num" style="font-weight:600;font-size:13px"
-              >{money(d.amount, d.currency)}</span
-            >
-          </a>
-        {:else}
-          <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            No deals yet. Create one when there is something real to sell.
-          </p>
-        {/each}
-      </section>
+              {#if d.aging_status === 'red' && !CLOSED_KINDS.includes(d.stage_kind)}
+                <Pill tone="rust">{d.days_in_current_stage}d</Pill>
+              {/if}
+              <span class="v2-num" style="font-weight:600;font-size:13px"
+                >{money(d.amount, d.currency)}</span
+              >
+            </a>
+          {:else}
+            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
+              No deals yet. Create one when there is something real to sell.
+            </p>
+          {/each}
+        </section>
+      {/if}
 
       <!-- People -->
       <section class="v2-card" style="overflow:hidden">
@@ -256,55 +274,59 @@
       </section>
 
       <!-- Tickets -->
-      <section class="v2-card" style="overflow:hidden">
-        <div class="v2-card-head">
-          <span class="v2-label">Tickets</span>
-          <a href={resolve('tickets')}>View all</a>
-        </div>
-        {#each tickets as t (t.id)}
-          <!-- A link again: tickets is wired, so a real id sent to
+      {#if ticketsOn}
+        <section class="v2-card" style="overflow:hidden">
+          <div class="v2-card-head">
+            <span class="v2-label">Tickets</span>
+            <a href={resolve('tickets')}>View all</a>
+          </div>
+          {#each tickets as t (t.id)}
+            <!-- A link again: tickets is wired, so a real id sent to
                `/tickets/<uuid>` opens the ticket. -->
-          <a
-            href={resolve(`tickets/${t.id}`)}
-            style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-          >
-            <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
-            <span class="v2-sub" style="font-size:11.5px">{t.status}</span>
-            <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
-          </a>
-        {:else}
-          <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-            No tickets. <a href={resolve(`tickets/new?account=${account.id}`)}>Raise one</a> if something
-            is wrong.
-          </p>
-        {/each}
-      </section>
+            <a
+              href={resolve(`tickets/${t.id}`)}
+              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+            >
+              <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
+              <span class="v2-sub" style="font-size:11.5px">{t.status}</span>
+              <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
+            </a>
+          {:else}
+            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
+              No tickets. <a href={resolve(`tickets/new?account=${account.id}`)}>Raise one</a> if something
+              is wrong.
+            </p>
+          {/each}
+        </section>
+      {/if}
 
       <!-- Invoices -->
-      <section class="v2-card" style="overflow:hidden">
-        <div class="v2-card-head">
-          <span class="v2-label">Invoices</span>
-          <a href={resolve('invoices')}>View all</a>
-        </div>
-        {#each invoices as inv (inv.id)}
-          <!-- A link now: invoices is wired, so a real id sent to
+      {#if invoicesOn}
+        <section class="v2-card" style="overflow:hidden">
+          <div class="v2-card-head">
+            <span class="v2-label">Invoices</span>
+            <a href={resolve('invoices')}>View all</a>
+          </div>
+          {#each invoices as inv (inv.id)}
+            <!-- A link now: invoices is wired, so a real id sent to
                `/invoices/<uuid>` opens the invoice. -->
-          <a
-            href={resolve(`invoices/${inv.id}`)}
-            style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-          >
-            <span class="v2-num" style="font-size:12.5px">{inv.invoice_number}</span>
-            <Pill tone={inv.past_due ? 'rust' : INVOICE_STATUS_TONE[inv.status]}>
-              {inv.past_due ? 'Past due' : invoiceStatusLabel(inv.status)}
-            </Pill>
-            <span class="v2-num" style="margin-left:auto;font-weight:600;font-size:13px">
-              {money(inv.past_due ? inv.amount_due : inv.total_amount, inv.currency)}
-            </span>
-          </a>
-        {:else}
-          <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">Nothing billed yet.</p>
-        {/each}
-      </section>
+            <a
+              href={resolve(`invoices/${inv.id}`)}
+              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+            >
+              <span class="v2-num" style="font-size:12.5px">{inv.invoice_number}</span>
+              <Pill tone={inv.past_due ? 'rust' : INVOICE_STATUS_TONE[inv.status]}>
+                {inv.past_due ? 'Past due' : invoiceStatusLabel(inv.status)}
+              </Pill>
+              <span class="v2-num" style="margin-left:auto;font-weight:600;font-size:13px">
+                {money(inv.past_due ? inv.amount_due : inv.total_amount, inv.currency)}
+              </span>
+            </a>
+          {:else}
+            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">Nothing billed yet.</p>
+          {/each}
+        </section>
+      {/if}
       <RelatedRecords {related} error={form?.related?.error} flush />
     </div>
   </div>

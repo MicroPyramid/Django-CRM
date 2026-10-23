@@ -47,6 +47,8 @@
   } from '@lucide/svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
+  import { isOn } from '#lib/v2/modules.js';
+  import { isBilled } from '#lib/v2/time-entry.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -277,6 +279,8 @@
     })
   );
   let entries = $derived(time.entries);
+  let timesheetOn = $derived(isOn(data.modules, 'timesheet'));
+  let knowledgeOn = $derived(isOn(data.modules, 'knowledge_base'));
   let timeSummary = $derived(ticket.time_summary);
 
   /** Minutes since this page loaded, added to the server's own measurement. */
@@ -1029,233 +1033,251 @@
           post, so the panel works by keyboard and, apart from the delete
           confirm, without JavaScript at all; `enhance` only saves the reload.
         -->
-        <section class="v2-card time-panel">
-          <div class="time-head">
-            <div class="time-title">
-              <div class="v2-label">Time</div>
-              <div class="v2-sub time-total">
-                {#if timeSummary?.total_minutes}
-                  <b class="v2-num">{hm(timeSummary.total_minutes)}</b> logged
-                  {#if timeSummary.billable_minutes}
-                    · {hm(timeSummary.billable_minutes)} billable
+        {#if timesheetOn}
+          <section class="v2-card time-panel">
+            <div class="time-head">
+              <div class="time-title">
+                <div class="v2-label">Time</div>
+                <div class="v2-sub time-total">
+                  {#if timeSummary?.total_minutes}
+                    <b class="v2-num">{hm(timeSummary.total_minutes)}</b> logged
+                    {#if timeSummary.billable_minutes}
+                      · {hm(timeSummary.billable_minutes)} billable
+                    {/if}
+                  {:else}
+                    Nothing logged yet
                   {/if}
-                {:else}
-                  Nothing logged yet
-                {/if}
+                </div>
               </div>
-            </div>
 
-            <!-- The person's own timer, and only theirs. An admin sees the
+              <!-- The person's own timer, and only theirs. An admin sees the
                  team's rows here, and stopping someone else's clock from a
                  button labelled "Stop" with no name on it is not something to
                  do by accident; that one is on its row. -->
-            {#if myTimer}
-              <form method="POST" action="?/stopTimer" use:enhance={timeSubmit} class="time-timer">
-                <input type="hidden" name="entry_id" value={myTimer.id} />
-                <button class="v2-btn v2-btn-primary" disabled={timeBusy}>
-                  <Square size={12} />Stop {hm(runningMinutes(myTimer))}
-                </button>
-              </form>
-            {:else if canReply}
-              <!-- Starting a timer and logging time are work on the ticket, so
-                   they take the rule replying takes (`comment_permission`);
-                   the API answers anyone else 403. Stopping stays above. -->
-              <form method="POST" action="?/startTimer" use:enhance={timeSubmit} class="time-timer">
-                <button class="v2-btn" disabled={timeBusy}><Play size={12} />Start timer</button>
-              </form>
-            {/if}
-
-            <!-- Native disclosure, so the form opens without JavaScript. Open,
-                 it takes a row of its own rather than the button's column. -->
-            {#if canReply}
-              <details class="time-log">
-                <summary class="v2-btn"><Plus size={12} />Log time</summary>
+              {#if myTimer}
                 <form
                   method="POST"
-                  action="?/logTime"
+                  action="?/stopTimer"
                   use:enhance={timeSubmit}
-                  class="time-log-form"
+                  class="time-timer"
                 >
-                  <div class="v2-field">
-                    <label for="time-minutes">Minutes</label>
-                    <input
-                      id="time-minutes"
-                      class="v2-input"
-                      name="minutes"
-                      type="number"
-                      inputmode="numeric"
-                      min="1"
-                      max="1440"
-                      step="1"
-                      value="30"
-                      required
-                    />
-                  </div>
-                  <div class="v2-field">
-                    <label for="time-rate">Rate per hour</label>
-                    <input
-                      id="time-rate"
-                      class="v2-input"
-                      name="hourly_rate"
-                      type="number"
-                      inputmode="decimal"
-                      min="0"
-                      step="0.01"
-                      placeholder="Optional"
-                    />
-                  </div>
-                  <div class="v2-field time-wide">
-                    <label for="time-what">What was done</label>
-                    <input
-                      id="time-what"
-                      class="v2-input"
-                      name="description"
-                      placeholder="Traced the failed import to the CSV encoding"
-                      required
-                    />
-                  </div>
-                  <div class="time-wide time-log-foot">
-                    <label class="time-check">
-                      <input type="checkbox" name="billable" />
-                      Billable
-                    </label>
-                    <button class="v2-btn v2-btn-primary" disabled={timeBusy}>Log time</button>
-                  </div>
-                  <p class="v2-hint time-wide">
-                    Counted back from now. To record a session from an earlier day, start and stop
-                    the timer on it.
-                  </p>
+                  <input type="hidden" name="entry_id" value={myTimer.id} />
+                  <button class="v2-btn v2-btn-primary" disabled={timeBusy}>
+                    <Square size={12} />Stop {hm(runningMinutes(myTimer))}
+                  </button>
                 </form>
-              </details>
-            {/if}
-          </div>
-
-          {#if form?.timeError}
-            <p class="v2-error time-error">
-              <span>{form.timeError}</span>
-              {#if form.runningTicketId}
-                <a href={resolve(`tickets/${form.runningTicketId}`)}>Open that ticket</a>
+              {:else if canReply}
+                <!-- Starting a timer and logging time are work on the ticket, so
+                   they take the rule replying takes (`comment_permission`);
+                   the API answers anyone else 403. Stopping stays above. -->
+                <form
+                  method="POST"
+                  action="?/startTimer"
+                  use:enhance={timeSubmit}
+                  class="time-timer"
+                >
+                  <button class="v2-btn" disabled={timeBusy}><Play size={12} />Start timer</button>
+                </form>
               {/if}
-            </p>
-          {/if}
 
-          {#if entries === null}
-            <p class="v2-sub time-empty">
-              The time entries could not be loaded. Nothing else on this ticket is affected.
-            </p>
-          {:else if entries.length === 0}
-            <p class="v2-sub time-empty">
-              {canReply
-                ? 'No time logged yet. Start the timer, or log a session you have already worked.'
-                : 'No time logged yet.'}
-            </p>
-          {:else}
-            <div class="v2-table-wrap">
-              <table class="v2-table">
-                <thead>
-                  <tr>
-                    <th>What was done</th>
-                    <th>Who</th>
-                    <th>When</th>
-                    <th class="v2-r">Logged</th>
-                    <th class="v2-r">Billing</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each entries as e (e.id)}
+              <!-- Native disclosure, so the form opens without JavaScript. Open,
+                 it takes a row of its own rather than the button's column. -->
+              {#if canReply}
+                <details class="time-log">
+                  <summary class="v2-btn"><Plus size={12} />Log time</summary>
+                  <form
+                    method="POST"
+                    action="?/logTime"
+                    use:enhance={timeSubmit}
+                    class="time-log-form"
+                  >
+                    <div class="v2-field">
+                      <label for="time-minutes">Minutes</label>
+                      <input
+                        id="time-minutes"
+                        class="v2-input"
+                        name="minutes"
+                        type="number"
+                        inputmode="numeric"
+                        min="1"
+                        max="1440"
+                        step="1"
+                        value="30"
+                        required
+                      />
+                    </div>
+                    <div class="v2-field">
+                      <label for="time-rate">Rate per hour</label>
+                      <input
+                        id="time-rate"
+                        class="v2-input"
+                        name="hourly_rate"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        step="0.01"
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div class="v2-field time-wide">
+                      <label for="time-what">What was done</label>
+                      <input
+                        id="time-what"
+                        class="v2-input"
+                        name="description"
+                        placeholder="Traced the failed import to the CSV encoding"
+                        required
+                      />
+                    </div>
+                    <div class="time-wide time-log-foot">
+                      <label class="time-check">
+                        <input type="checkbox" name="billable" />
+                        Billable
+                      </label>
+                      <button class="v2-btn v2-btn-primary" disabled={timeBusy}>Log time</button>
+                    </div>
+                    <p class="v2-hint time-wide">
+                      Counted back from now. To record a session from an earlier day, start and stop
+                      the timer on it.
+                    </p>
+                  </form>
+                </details>
+              {/if}
+            </div>
+
+            {#if form?.timeError}
+              <p class="v2-error time-error">
+                <span>{form.timeError}</span>
+                {#if form.runningTicketId}
+                  <a href={resolve(`tickets/${form.runningTicketId}`)}>Open that ticket</a>
+                {/if}
+              </p>
+            {/if}
+
+            {#if entries === null}
+              <p class="v2-sub time-empty">
+                The time entries could not be loaded. Nothing else on this ticket is affected.
+              </p>
+            {:else if entries.length === 0}
+              <p class="v2-sub time-empty">
+                {canReply
+                  ? 'No time logged yet. Start the timer, or log a session you have already worked.'
+                  : 'No time logged yet.'}
+              </p>
+            {:else}
+              <div class="v2-table-wrap">
+                <table class="v2-table">
+                  <thead>
                     <tr>
-                      <td data-m="title">
-                        {e.description || 'No description'}
-                        {#if !e.ended_at}<span class="time-running">Running</span>{/if}
-                        {#if e.auto_stopped}
-                          <span class="v2-sub" title="Stopped automatically after running overnight"
-                            >auto-stopped</span
-                          >
-                        {/if}
-                      </td>
-                      <td data-m="meta">
-                        {e.profile?.user_details?.name ||
-                          e.profile?.user_details?.email ||
-                          'Someone'}
-                      </td>
-                      <td data-m="meta">{shortAge(e.started_at)} ago</td>
-                      <td class="v2-num v2-r" data-m="tag">
-                        {e.ended_at ? hm(e.duration_minutes) : hm(runningMinutes(e))}
-                      </td>
-                      <td class="v2-r time-row-actions">
-                        {#if !e.ended_at}
-                          <form method="POST" action="?/stopTimer" use:enhance={timeSubmit}>
-                            <input type="hidden" name="entry_id" value={e.id} />
-                            <button class="v2-btn v2-btn-sm" disabled={timeBusy}>
-                              <Square size={11} />Stop
-                            </button>
-                          </form>
-                        {:else if e.invoice}
-                          <!-- Billed. The toggle and the delete are both gone:
+                      <th>What was done</th>
+                      <th>Who</th>
+                      <th>When</th>
+                      <th class="v2-r">Logged</th>
+                      <th class="v2-r">Billing</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each entries as e (e.id)}
+                      <tr>
+                        <td data-m="title">
+                          {e.description || 'No description'}
+                          {#if !e.ended_at}<span class="time-running">Running</span>{/if}
+                          {#if e.auto_stopped}
+                            <span
+                              class="v2-sub"
+                              title="Stopped automatically after running overnight"
+                              >auto-stopped</span
+                            >
+                          {/if}
+                        </td>
+                        <td data-m="meta">
+                          {e.profile?.user_details?.name ||
+                            e.profile?.user_details?.email ||
+                            'Someone'}
+                        </td>
+                        <td data-m="meta">{shortAge(e.started_at)} ago</td>
+                        <td class="v2-num v2-r" data-m="tag">
+                          {e.ended_at ? hm(e.duration_minutes) : hm(runningMinutes(e))}
+                        </td>
+                        <td class="v2-r time-row-actions">
+                          {#if !e.ended_at}
+                            <form method="POST" action="?/stopTimer" use:enhance={timeSubmit}>
+                              <input type="hidden" name="entry_id" value={e.id} />
+                              <button class="v2-btn v2-btn-sm" disabled={timeBusy}>
+                                <Square size={11} />Stop
+                              </button>
+                            </form>
+                          {:else if isBilled(e)}
+                            <!-- Billed. The toggle and the delete are both gone:
                                the API refuses to delete an invoiced entry, and
                                flipping one to non-billable after it has been
                                charged for would leave the invoice standing. -->
-                          <a class="v2-sub" href={resolve(`invoices/${e.invoice}`)}>Invoiced</a>
-                        {:else if confirmDelete === e.id}
-                          <form method="POST" action="?/deleteTime" use:enhance={timeSubmit}>
-                            <input type="hidden" name="entry_id" value={e.id} />
-                            <button class="v2-btn v2-btn-sm time-danger" disabled={timeBusy}>
-                              Delete
+                            {#if e.invoice}
+                              <a class="v2-sub" href={resolve(`invoices/${e.invoice}`)}>Invoiced</a>
+                            {:else}
+                              <span class="v2-sub">Invoiced</span>
+                            {/if}
+                          {:else if confirmDelete === e.id}
+                            <form method="POST" action="?/deleteTime" use:enhance={timeSubmit}>
+                              <input type="hidden" name="entry_id" value={e.id} />
+                              <button class="v2-btn v2-btn-sm time-danger" disabled={timeBusy}>
+                                Delete
+                              </button>
+                            </form>
+                            <button
+                              type="button"
+                              class="v2-btn v2-btn-sm"
+                              onclick={() => (confirmDelete = '')}
+                            >
+                              Keep
                             </button>
-                          </form>
-                          <button
-                            type="button"
-                            class="v2-btn v2-btn-sm"
-                            onclick={() => (confirmDelete = '')}
-                          >
-                            Keep
-                          </button>
-                        {:else}
-                          <form method="POST" action="?/setBillable" use:enhance={timeSubmit}>
-                            <input type="hidden" name="entry_id" value={e.id} />
-                            <!-- The value to move to, decided when the row was
+                          {:else}
+                            <form method="POST" action="?/setBillable" use:enhance={timeSubmit}>
+                              <input type="hidden" name="entry_id" value={e.id} />
+                              <!-- The value to move to, decided when the row was
                                  rendered, so two quick clicks cannot both send
                                  "make it billable". -->
-                            <input
-                              type="hidden"
-                              name="billable"
-                              value={e.billable ? 'false' : 'true'}
-                            />
+                              <input
+                                type="hidden"
+                                name="billable"
+                                value={e.billable ? 'false' : 'true'}
+                              />
+                              <button
+                                class="v2-btn v2-btn-sm"
+                                class:time-billable={e.billable}
+                                disabled={timeBusy}
+                                title={e.billable ? 'Mark as non-billable' : 'Mark as billable'}
+                              >
+                                {#if e.billable}
+                                  {e.hourly_rate
+                                    ? money(e.hourly_rate, e.currency) + '/hr'
+                                    : 'Billable'}
+                                {:else}
+                                  Not billable
+                                {/if}
+                              </button>
+                            </form>
                             <button
+                              type="button"
                               class="v2-btn v2-btn-sm"
-                              class:time-billable={e.billable}
-                              disabled={timeBusy}
-                              title={e.billable ? 'Mark as non-billable' : 'Mark as billable'}
+                              aria-label="Delete this entry"
+                              title="Delete this entry"
+                              onclick={() => (confirmDelete = e.id)}
                             >
-                              {#if e.billable}
-                                {e.hourly_rate
-                                  ? money(e.hourly_rate, e.currency) + '/hr'
-                                  : 'Billable'}
-                              {:else}
-                                Not billable
-                              {/if}
+                              <Trash2 size={11} />
                             </button>
-                          </form>
-                          <button
-                            type="button"
-                            class="v2-btn v2-btn-sm"
-                            aria-label="Delete this entry"
-                            title="Delete this entry"
-                            onclick={() => (confirmDelete = e.id)}
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        {/if}
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-          {/if}
-        </section>
+                          {/if}
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {/if}
+          </section>
+        {/if}
 
-        {#if articles.length || canReply}
+        {#if knowledgeOn && (articles.length || canReply)}
           <!-- Knowledge-base articles filed against this ticket. In the main
                column rather than the rail, which is hidden below 1180px, so a
                phone sees them too. Linking and unlinking take the ticket's

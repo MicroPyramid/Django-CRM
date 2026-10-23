@@ -29,6 +29,7 @@ from rest_framework.views import APIView
 from accounts.access import visible_accounts_qs
 from cases.access import visible_cases_qs
 from cases.models import Solution
+from common.modules import only_available
 from common.permissions import HasOrgContext
 from contacts.access import visible_contacts_qs
 from invoices.permissions import visible_invoices_qs
@@ -58,7 +59,7 @@ class GlobalSearchView(APIView):
         results = []
 
         # Leads
-        leads = visible_leads_qs(profile).filter(
+        leads = only_available(org, "leads", visible_leads_qs(profile)).filter(
             Q(title__icontains=q)
             | Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
@@ -78,7 +79,7 @@ class GlobalSearchView(APIView):
 
         # Deals (Opportunity)
         deals = (
-            visible_deals_qs(profile)
+            only_available(org, "deals", visible_deals_qs(profile))
             .select_related("account")
             .filter(
                 Q(name__icontains=q)
@@ -140,7 +141,7 @@ class GlobalSearchView(APIView):
 
         # Tickets (Case): the module's own read-visibility helper
         cases = (
-            visible_cases_qs(profile)
+            only_available(org, "tickets", visible_cases_qs(profile))
             .select_related("account")
             .filter(
                 Q(name__icontains=q)
@@ -162,7 +163,7 @@ class GlobalSearchView(APIView):
 
         # Invoices
         invoices = (
-            visible_invoices_qs(profile)
+            only_available(org, "invoices", visible_invoices_qs(profile))
             .select_related("account")
             .filter(
                 Q(invoice_number__icontains=q)
@@ -187,9 +188,9 @@ class GlobalSearchView(APIView):
             )
 
         # Knowledge base (Solution): org-wide, every member reads
-        solutions = Solution.objects.filter(org=org).filter(
-            Q(title__icontains=q) | Q(description__icontains=q)
-        )[:PER_TYPE]
+        solutions = only_available(
+            org, "knowledge_base", Solution.objects.filter(org=org)
+        ).filter(Q(title__icontains=q) | Q(description__icontains=q))[:PER_TYPE]
         for solution in solutions:
             results.append(
                 {

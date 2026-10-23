@@ -27,6 +27,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
 
+from common.models import Org
+from common.modules import module_is_available
 from webhooks import events
 from webhooks.models import WebhookDelivery, WebhookEndpoint
 from webhooks.tasks import deliver_webhook
@@ -100,9 +102,10 @@ def flush(request):
 
 def publish_entries(entries):
     endpoints_by_org = {}
+    orgs = {}
     for entry in entries:
         try:
-            _publish_entry(entry, endpoints_by_org)
+            _publish_entry(entry, endpoints_by_org, orgs)
         except Exception:
             # A failure to queue a webhook must not turn a saved record into a
             # failed request. Logged without the payload.
@@ -111,7 +114,7 @@ def publish_entries(entries):
             )
 
 
-def _publish_entry(entry, endpoints_by_org):
+def _publish_entry(entry, endpoints_by_org, orgs):
     if entry.org_id not in endpoints_by_org:
         endpoints_by_org[entry.org_id] = list(
             WebhookEndpoint.objects.filter(org_id=entry.org_id, is_active=True)
@@ -120,6 +123,13 @@ def _publish_entry(entry, endpoints_by_org):
     if not endpoints:
         return
     prefix, build = SPECS[entry.model._meta.label_lower]
+    key = events.EVENT_MODULES.get(prefix)
+    if key is not None:
+        if entry.org_id not in orgs:
+            orgs[entry.org_id] = Org.objects.filter(pk=entry.org_id).first()
+        org = orgs[entry.org_id]
+        if org is None or not module_is_available(org, key):
+            return
     exists = entry.model._base_manager.filter(pk=entry.pk)
 
     if DELETED in entry.actions:
