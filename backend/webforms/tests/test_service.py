@@ -12,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from common.models import Comment, CustomFieldDefinition, Tags
 from leads.models import Lead
+from webforms import service
 from webforms.models import WebForm, WebFormField, WebFormSubmission
 from webforms.service import submit_form
 
@@ -164,6 +165,25 @@ class TestDuplicateEmail:
         first = submit_form(form, {"email": "pat@example.com"})
         second = submit_form(form, {"email": "pat@example.com"})
         assert first.lead_id == second.lead_id
+
+    def test_a_lost_race_to_the_constraint_merges_instead_of_failing(
+        self, form, org_a, monkeypatch
+    ):
+        """The loser of a concurrent post checked before the winner committed,
+        so its first lookup finds nothing and the insert hits the constraint."""
+        first = submit_form(form, {"email": "Pat@example.com"})
+        real = service._existing_lead
+        calls = []
+
+        def stale_first_lookup(form, email):
+            calls.append(email)
+            return None if len(calls) == 1 else real(form, email)
+
+        monkeypatch.setattr(service, "_existing_lead", stale_first_lookup)
+        second = submit_form(form, {"email": "pat@example.com", "first_name": "Pat"})
+        assert second.status == WebFormSubmission.ACCEPTED_DUPLICATE
+        assert second.lead_id == first.lead_id
+        assert Lead.objects.filter(org=org_a).count() == 1
 
     def test_a_lead_in_another_org_with_the_same_address_is_not_matched(
         self, form, org_b, admin_profile

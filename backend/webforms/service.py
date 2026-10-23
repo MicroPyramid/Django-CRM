@@ -370,8 +370,19 @@ def submit_form(
             lead = _merge_lead(form, existing, values, custom_fields)
             status = WebFormSubmission.ACCEPTED_DUPLICATE
         else:
-            lead = _create_lead(form, values, custom_fields)
-            status = WebFormSubmission.ACCEPTED
+            try:
+                # A savepoint: a concurrent submission for the same address
+                # can win the race to `unique_lead_email_per_org`, and its
+                # IntegrityError must not poison the submission's transaction.
+                with transaction.atomic():
+                    lead = _create_lead(form, values, custom_fields)
+                status = WebFormSubmission.ACCEPTED
+            except IntegrityError:
+                existing = _existing_lead(form, values.get("email"))
+                if existing is None:
+                    raise
+                lead = _merge_lead(form, existing, values, custom_fields)
+                status = WebFormSubmission.ACCEPTED_DUPLICATE
 
     payload = dict(values)
     if custom_fields:
