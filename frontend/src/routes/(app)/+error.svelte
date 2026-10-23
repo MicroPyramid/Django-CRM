@@ -2,10 +2,13 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
-  import { FileQuestion, Lock, TriangleAlert } from '@lucide/svelte';
+  import { isOrgAdmin } from '#lib/admin.js';
+  import { labelOf } from '#lib/v2/modules.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
+  import { FileQuestion, Lock, ToggleLeft, TriangleAlert } from '@lucide/svelte';
 
   /**
-   * Every failed load in /v2 lands here. Three cases, three different things
+   * Every failed load in /v2 lands here. Four cases, four different things
    * to do next, which is the point: "Something went wrong" tells you nothing
    * and leaves you on a dead page.
    *
@@ -14,29 +17,40 @@
    * the copy talks about access, never about the record.
    */
   let status = $derived(page.status);
+  let moduleOff = $derived(page.error?.code === 'module_off');
+  // The API's refusal names the module but not its label, which follows terminology.
+  let moduleLabel = $derived(
+    page.error?.label || (page.error?.module ? labelOf(page.data.modules, page.error.module) : '')
+  );
 
   let shape = $derived(
-    status === 404
+    moduleOff
       ? {
-          icon: FileQuestion,
-          title: 'That record is not here',
-          body:
-            page.error?.message ||
-            'It may have been deleted, or it belongs to a team you are not part of.'
+          icon: ToggleLeft,
+          title: moduleLabel ? `${moduleLabel} is switched off` : 'This is switched off',
+          body: page.error?.message ?? ''
         }
-      : status === 403
+      : status === 404
         ? {
-            icon: Lock,
-            title: 'You do not have access to this',
-            body: 'Ask an admin in your organisation to give you access, or head back to Today.'
-          }
-        : {
-            icon: TriangleAlert,
-            title: 'That did not load',
+            icon: FileQuestion,
+            title: 'That record is not here',
             body:
               page.error?.message ||
-              'The server did not answer. Nothing you did caused this, and nothing was saved or lost.'
+              'It may have been deleted, or it belongs to a team you are not part of.'
           }
+        : status === 403
+          ? {
+              icon: Lock,
+              title: 'You do not have access to this',
+              body: 'Ask an admin in your organisation to give you access, or head back to Today.'
+            }
+          : {
+              icon: TriangleAlert,
+              title: 'That did not load',
+              body:
+                page.error?.message ||
+                'The server did not answer. Nothing you did caused this, and nothing was saved or lost.'
+            }
   );
 </script>
 
@@ -46,10 +60,15 @@
       <shape.icon size={21} />
     {/snippet}
     {#snippet actions()}
-      {#if status >= 500}
+      {#if status >= 500 && !moduleOff}
         <button class="v2-btn v2-btn-primary" onclick={() => location.reload()}>Try again</button>
       {/if}
       <a class="v2-btn" href={resolve('')}>Back to Today</a>
+      {#if moduleOff && isOrgAdmin(page.data)}
+        <a class="v2-btn" href={resolve(asInternalPath('/settings/modules'))}
+          >Open Settings › Modules</a
+        >
+      {/if}
     {/snippet}
   </EmptyState>
 

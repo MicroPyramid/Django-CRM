@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from automation.models import AutomationRule, AutomationRun
+from automation.validation import new_task_step_errors
 from common.models import Notification
 from common.testing import set_modules_off
 from leads.models import Lead
@@ -140,3 +141,45 @@ def test_a_stored_create_task_step_is_kept_while_tasks_is_off(admin_client, org_
     ]
     [listed] = admin_client.get(RULES).json()["results"]
     assert listed["status"] == "on"
+
+
+def _task(title="Call {name}", **extra):
+    return {"type": "create_task", "title": title, **extra}
+
+
+def _refused(org, sent, stored):
+    return new_task_step_errors(org, sent, stored)
+
+
+def test_a_stored_task_step_without_person_matches_one_sent_with_person_null(org_a):
+    set_modules_off(org_a, "tasks")
+    stored = [_task(priority="High")]
+    sent = [_task(priority="High", person=None, due_in_days=None)]
+
+    assert _refused(org_a, sent, stored) == {}
+
+
+def test_a_second_copy_of_a_stored_task_step_is_refused_at_its_index(org_a):
+    set_modules_off(org_a, "tasks")
+    step = _task()
+
+    assert _refused(org_a, [step, step], [step]) == {"actions[1].type": [OFF]}
+
+
+def test_stored_task_steps_may_change_places(org_a):
+    set_modules_off(org_a, "tasks")
+    first, second = _task("A"), _task("B")
+
+    assert _refused(org_a, [second, first], [first, second]) == {}
+
+
+def test_a_changed_title_is_a_new_step(org_a):
+    set_modules_off(org_a, "tasks")
+
+    assert _refused(org_a, [_task("Email")], [_task("Call")]) == {
+        "actions[0].type": [OFF]
+    }
+
+
+def test_nothing_is_refused_while_tasks_is_on(org_a):
+    assert _refused(org_a, [_task(), _task()], []) == {}

@@ -22,9 +22,25 @@
   import { Plus, ShieldAlert } from '@lucide/svelte';
   import WebhookFields from './WebhookFields.svelte';
   import SecretOnce from './SecretOnce.svelte';
+  import { wordsOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+
+  // "a lead, deal, ticket or other record", naming only the modules that are on.
+  let changedKinds = $derived.by(() => {
+    const kinds = wordsOn(
+      data.modules,
+      [
+        ['leads', 'lead'],
+        ['deals', 'deal'],
+        ['tickets', 'ticket'],
+        [null, 'other record']
+      ],
+      'or'
+    );
+    return kinds === 'other record' ? 'record' : kinds;
+  });
 
   let creating = $state(false);
   let busy = $state(false);
@@ -142,7 +158,7 @@
       {#if !data.endpoints.length}
         <EmptyState
           title="No webhooks yet"
-          body="A webhook posts to a URL whenever a lead, deal, ticket or other record changes. Point one at Zapier, n8n, Slack or your own code."
+          body={`A webhook posts to a URL whenever a ${changedKinds} changes. Point one at Zapier, n8n, Slack or your own code.`}
         >
           {#snippet actions()}
             <button class="v2-btn v2-btn-primary" onclick={() => (creating = true)}>

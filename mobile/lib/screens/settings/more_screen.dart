@@ -7,6 +7,8 @@ import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/custom_objects_provider.dart';
+import '../../data/models/org_module.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -26,7 +28,9 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     // The first visit asks again after a failure. The shell keeps this screen
     // alive, so later visits ask from its branch switch instead.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) retryFailedCustomObjects(ref);
+      if (!mounted) return;
+      reloadOrgModulesIfIdle(ref);
+      retryFailedCustomObjects(ref);
     });
   }
 
@@ -50,12 +54,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             // Workspace Section. Destinations that aren't on the bottom nav.
             _buildSectionHeader('Workspace'),
             MenuRow(
-              icon: LucideIcons.checkSquare,
-              label: 'Tasks',
-              description: 'Your to-dos across leads, deals and tickets',
-              onTap: () => context.go(AppRoutes.tasks),
-            ),
-            MenuRow(
               icon: LucideIcons.building2,
               label: 'Accounts',
               description: 'The companies you sell to',
@@ -68,39 +66,15 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               onTap: () => context.push(AppRoutes.contacts),
             ),
             MenuRow(
-              icon: LucideIcons.clock,
-              label: 'Timesheet',
-              description: 'The hours you logged this week',
-              onTap: () => context.push(AppRoutes.timesheet),
-            ),
-            MenuRow(
               icon: LucideIcons.bell,
               label: 'Notifications',
               description: 'Mentions and comments on your tickets',
               onTap: () => context.push(AppRoutes.notifications),
             ),
-            MenuRow(
-              icon: LucideIcons.receipt,
-              label: 'Invoices',
-              description: 'What is owed, and what has been paid',
-              onTap: () => context.push(AppRoutes.invoices),
-            ),
-            MenuRow(
-              icon: LucideIcons.folder,
-              label: 'Documents',
-              description: 'Files shared with you and your teams',
-              onTap: () => context.push(AppRoutes.documents),
-            ),
-            // Not admin-gated. The list is open to any member and the API
-            // narrows it to the goals set for them and their teams; only
-            // creating and editing are admin-only, and those live behind this
-            // screen rather than on it.
-            MenuRow(
-              icon: LucideIcons.target,
-              label: 'Goals',
-              description: 'Targets for you and your teams, and how far along',
-              onTap: () => context.push(AppRoutes.goals),
-            ),
+            for (final key in _workspaceModuleKeys(
+              ref.watch(shownModulesProvider),
+            ))
+              _moduleRow(key),
 
             Consumer(
               builder: (context, ref, _) {
@@ -220,6 +194,74 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       ),
     );
   }
+
+  /// The module rows in the org's order; a module the answer has no row for
+  /// reads as on and follows in the default order.
+  List<String> _workspaceModuleKeys(OrgModulesAnswer? answer) {
+    const known = [
+      'tasks',
+      'goals',
+      'knowledge_base',
+      'documents',
+      'invoices',
+      'timesheet',
+    ];
+    final ordered = <String>[
+      if (answer != null)
+        for (final m in answer.modules)
+          if (known.contains(m.key)) m.key,
+    ];
+    return [
+      for (final key in [
+        ...ordered,
+        for (final k in known)
+          if (!ordered.contains(k)) k,
+      ])
+        if (answer == null || answer.isOn(key)) key,
+    ];
+  }
+
+  Widget _moduleRow(String key) => switch (key) {
+    'tasks' => MenuRow(
+      icon: LucideIcons.checkSquare,
+      label: 'Tasks',
+      description: 'Your to-dos across leads, deals and tickets',
+      onTap: () => context.go(AppRoutes.tasks),
+    ),
+    // Not admin-gated. The list is open to any member and the API narrows it
+    // to the goals set for them and their teams; creating and editing are
+    // admin-only and live behind the screen.
+    'goals' => MenuRow(
+      icon: LucideIcons.target,
+      label: 'Goals',
+      description: 'Targets for you and your teams, and how far along',
+      onTap: () => context.push(AppRoutes.goals),
+    ),
+    'knowledge_base' => MenuRow(
+      icon: LucideIcons.bookOpen,
+      label: 'Knowledge base',
+      description: 'Articles for your team and your customers',
+      onTap: () => context.push(AppRoutes.solutions),
+    ),
+    'documents' => MenuRow(
+      icon: LucideIcons.folder,
+      label: 'Documents',
+      description: 'Files shared with you and your teams',
+      onTap: () => context.push(AppRoutes.documents),
+    ),
+    'invoices' => MenuRow(
+      icon: LucideIcons.receipt,
+      label: 'Invoices',
+      description: 'What is owed, and what has been paid',
+      onTap: () => context.push(AppRoutes.invoices),
+    ),
+    _ => MenuRow(
+      icon: LucideIcons.clock,
+      label: 'Timesheet',
+      description: 'The hours you logged this week',
+      onTap: () => context.push(AppRoutes.timesheet),
+    ),
+  };
 
   Widget _buildProfileSection() {
     final authState = ref.watch(authProvider);

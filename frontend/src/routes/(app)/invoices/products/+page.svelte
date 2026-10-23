@@ -17,6 +17,7 @@
   import EmptyState from '#lib/v2/components/EmptyState.svelte';
   import { money, count } from '#lib/v2/format.js';
   import { Plus, Package, Pencil } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -85,8 +86,10 @@
                 <b>{p.name}</b>
                 <span class="v2-sub" style="font-size:11.5px">
                   <span class="v2-num">{p.sku}</span>
-                  · on <span class="v2-num">{p.used_on}</span>
-                  {p.used_on === 1 ? 'invoice' : 'invoices'}
+                  {#if isOn(data.modules, 'invoices')}
+                    · on <span class="v2-num">{p.used_on}</span>
+                    {p.used_on === 1 ? 'invoice' : 'invoices'}
+                  {/if}
                 </span>
               </div>
               {#if !p.is_active}

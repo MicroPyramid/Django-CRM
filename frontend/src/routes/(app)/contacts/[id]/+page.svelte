@@ -48,10 +48,14 @@
   } from '@lucide/svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
   let related = $derived(relatedView(data.related));
+  let dealsOn = $derived(isOn(data.modules, 'deals'));
+  let tasksOn = $derived(isOn(data.modules, 'tasks'));
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
 
   let { contact, deals, tickets, tasks, colleagues, owners, activity } = $derived(data);
 
@@ -170,9 +174,9 @@
       ? `${contact.first_name} is marked inactive${contact.account ? ` at ${contact.account.name}` : ''}. Find out who replaced them before the next conversation.`
       : !contact.email && (!contact.phone || contact.do_not_call)
         ? `There is no way to reach ${contact.first_name} on this record: no email${contact.do_not_call ? ', and they asked not to be called' : ' and no phone'}.`
-        : openCount && !contact.owner
+        : dealsOn && openCount && !contact.owner
           ? `${contact.first_name} is on ${onlyOpenDeal ? onlyOpenDeal.name : `${openCount} open deal${openCount === 1 ? '' : 's'}`} worth ${openPipeline}, and nobody owns this record.`
-          : overdueTasks.length
+          : tasksOn && overdueTasks.length
             ? `${overdueTasks.length === 1 ? 'A task' : `${overdueTasks.length} tasks`} naming ${contact.first_name} ${overdueTasks.length === 1 ? 'is' : 'are'} past due.`
             : null
   );
@@ -253,110 +257,116 @@
           duplicates={data.duplicates.duplicates}
         />
 
-        <div class="v2-label" style="margin-bottom:10px">
-          Deals they are named on
-          {#if openCount}
-            <span class="v2-num" style="margin-left:6px">{openPipeline}</span> open
-          {/if}
-        </div>
-        <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
-          {#each deals as d (d.id)}
-            <a
-              href={resolve(`pipeline/${d.id}`)}
-              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-            >
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:550;font-size:13px">{d.name}</div>
-                <!-- `closed_on` is an expectation while the deal is open and a
+        {#if dealsOn}
+          <div class="v2-label" style="margin-bottom:10px">
+            Deals they are named on
+            {#if openCount}
+              <span class="v2-num" style="margin-left:6px">{openPipeline}</span> open
+            {/if}
+          </div>
+          <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
+            {#each deals as d (d.id)}
+              <a
+                href={resolve(`pipeline/${d.id}`)}
+                style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+              >
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:550;font-size:13px">{d.name}</div>
+                  <!-- `closed_on` is an expectation while the deal is open and a
                      fact once it is not. A won deal that "closes 22 Aug" reads
                      as still running. -->
-                <div class="v2-sub" style="font-size:11.5px">
-                  {d.stage_label}{d.closed_on
-                    ? CLOSED_KINDS.includes(d.stage_kind)
-                      ? ` · closed ${shortDate(d.closed_on)}`
-                      : ` · due ${shortDate(d.closed_on)}`
-                    : ''}
+                  <div class="v2-sub" style="font-size:11.5px">
+                    {d.stage_label}{d.closed_on
+                      ? CLOSED_KINDS.includes(d.stage_kind)
+                        ? ` · closed ${shortDate(d.closed_on)}`
+                        : ` · due ${shortDate(d.closed_on)}`
+                      : ''}
+                  </div>
                 </div>
-              </div>
-              <span class="v2-num" style="font-weight:600;font-size:13px"
-                >{money(d.amount, d.currency)}</span
-              >
-            </a>
-          {:else}
-            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-              No deals name this person. Add them to the deal they are actually involved in. The
-              account having deals is a different fact.
-            </p>
-          {/each}
-        </div>
+                <span class="v2-num" style="font-weight:600;font-size:13px"
+                  >{money(d.amount, d.currency)}</span
+                >
+              </a>
+            {:else}
+              <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
+                No deals name this person. Add them to the deal they are actually involved in. The
+                account having deals is a different fact.
+              </p>
+            {/each}
+          </div>
+        {/if}
 
-        <div class="v2-label" style="margin-bottom:10px">
-          Tasks
-          {#if overdueTasks.length}
-            <span style="margin-left:6px;color:var(--v2-rust);font-weight:600"
-              >· {overdueTasks.length} overdue</span
-            >
-          {/if}
-        </div>
-        <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
-          {#each tasks as t (t.id)}
-            <!-- Overdue reads the same here as it does on the Tasks page. A
+        {#if tasksOn}
+          <div class="v2-label" style="margin-bottom:10px">
+            Tasks
+            {#if overdueTasks.length}
+              <span style="margin-left:6px;color:var(--v2-rust);font-weight:600"
+                >· {overdueTasks.length} overdue</span
+              >
+            {/if}
+          </div>
+          <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
+            {#each tasks as t (t.id)}
+              <!-- Overdue reads the same here as it does on the Tasks page. A
                  task that is six days late should not look calmer because you
                  happened to arrive from a contact. -->
-            {@const late = t.due_date ? Math.max(0, daysSince(t.due_date) ?? 0) : 0}
-            <!-- A link now. These rows have been real since contacts were
+              {@const late = t.due_date ? Math.max(0, daysSince(t.due_date) ?? 0) : 0}
+              <!-- A link now. These rows have been real since contacts were
                  wired and had nowhere to go, which is what made tasks the
                  module to do next. -->
-            <a
-              href={resolve(`tasks/${t.id}`)}
-              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-            >
-              <span style="flex:1;font-size:13px;min-width:0">{t.title}</span>
-              <Pill tone={TASK_PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
-              <span
-                class="v2-sub"
-                style={late && t.status !== 'Completed'
-                  ? 'font-size:11.5px;white-space:nowrap;color:var(--v2-rust);font-weight:600'
-                  : 'font-size:11.5px;white-space:nowrap'}
+              <a
+                href={resolve(`tasks/${t.id}`)}
+                style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
               >
-                {t.status === 'Completed'
-                  ? 'done'
-                  : late
-                    ? `${late}d late`
-                    : t.due_date
-                      ? relativeDays(t.due_date)
-                      : 'no due date'}
-              </span>
-            </a>
-          {:else}
-            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
-              Nothing outstanding that names this person.
-            </p>
-          {/each}
-        </div>
+                <span style="flex:1;font-size:13px;min-width:0">{t.title}</span>
+                <Pill tone={TASK_PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
+                <span
+                  class="v2-sub"
+                  style={late && t.status !== 'Completed'
+                    ? 'font-size:11.5px;white-space:nowrap;color:var(--v2-rust);font-weight:600'
+                    : 'font-size:11.5px;white-space:nowrap'}
+                >
+                  {t.status === 'Completed'
+                    ? 'done'
+                    : late
+                      ? `${late}d late`
+                      : t.due_date
+                        ? relativeDays(t.due_date)
+                        : 'no due date'}
+                </span>
+              </a>
+            {:else}
+              <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">
+                Nothing outstanding that names this person.
+              </p>
+            {/each}
+          </div>
+        {/if}
 
-        <div class="v2-label" style="margin-bottom:10px">
-          Tickets
-          {#if openTickets.length}
-            <span class="v2-num" style="margin-left:6px">{openTickets.length}</span> open
-          {/if}
-        </div>
-        <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
-          {#each tickets as t (t.id)}
-            <!-- A link again: tickets is wired, so a real id sent to
+        {#if ticketsOn}
+          <div class="v2-label" style="margin-bottom:10px">
+            Tickets
+            {#if openTickets.length}
+              <span class="v2-num" style="margin-left:6px">{openTickets.length}</span> open
+            {/if}
+          </div>
+          <div class="v2-card" style="overflow:hidden;margin-bottom:22px">
+            {#each tickets as t (t.id)}
+              <!-- A link again: tickets is wired, so a real id sent to
                  `/tickets/<uuid>` opens the ticket. -->
-            <a
-              href={resolve(`tickets/${t.id}`)}
-              style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-            >
-              <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
-              <Pill tone={CASE_STATUS_TONE[t.status]}>{t.status}</Pill>
-              <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
-            </a>
-          {:else}
-            <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">No tickets.</p>
-          {/each}
-        </div>
+              <a
+                href={resolve(`tickets/${t.id}`)}
+                style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+              >
+                <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
+                <Pill tone={CASE_STATUS_TONE[t.status]}>{t.status}</Pill>
+                <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
+              </a>
+            {:else}
+              <p class="v2-sub" style="padding:14px 15px;font-size:12.5px">No tickets.</p>
+            {/each}
+          </div>
+        {/if}
 
         {#if contact.description}
           <div class="v2-label" style="margin:0 0 10px">About</div>

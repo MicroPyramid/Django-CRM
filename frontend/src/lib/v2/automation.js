@@ -3,6 +3,7 @@
  * render from these helpers, and the catalogue is the only source of labels.
  */
 import { runTime } from '#lib/v2/format.js';
+import { isOn, OBJECT_MODULES } from '#lib/v2/modules.js';
 
 /** @typedef {{ key: string, label: string, type: string, choices: any[], settable: boolean }} Field */
 
@@ -412,6 +413,39 @@ export function runsLabel(row) {
   if (!runs) return 'No runs';
   const text = `${runs} ${runs === 1 ? 'run' : 'runs'}`;
   return row.failures_7d ? `${text}, ${row.failures_7d} failed` : text;
+}
+
+/** Names for a rule's object when the catalogue no longer lists it. */
+export const OBJECT_LABELS = /** @type {Record<string, string>} */ ({
+  lead: 'Lead',
+  contact: 'Contact',
+  account: 'Account',
+  deal: 'Deal',
+  ticket: 'Ticket',
+  task: 'Task'
+});
+
+/**
+ * A rule the server paused because its object's module is switched off.
+ * It resumes by itself when the module is back on.
+ *
+ * @param {{ status?: string, object_key?: string } | null | undefined} row
+ * @param {import('#lib/v2/modules.js').ModuleRow[] | null | undefined} modules
+ * @returns {boolean}
+ */
+export function pausedByModule(row, modules) {
+  const key = OBJECT_MODULES[row?.object_key ?? ''];
+  return row?.status === 'paused' && Boolean(key) && !isOn(modules, key);
+}
+
+/**
+ * The note for a rule paused by its module.
+ *
+ * @param {{ name?: string, status_text?: string }} row
+ * @returns {string}
+ */
+export function modulePausedNote(row) {
+  return `"${row.name}": ${row.status_text}. It runs again once that module is switched back on.`;
 }
 
 export const STATUS = {

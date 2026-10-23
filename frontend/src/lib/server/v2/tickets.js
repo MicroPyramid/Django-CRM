@@ -45,6 +45,7 @@
  */
 import { error, redirect } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
 
@@ -818,6 +819,7 @@ async function fetchDetail(cookies, id) {
   try {
     response = await apiRequest(`/cases/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
     // On the status, not on the wording.
     if (err?.status === 404) {
       error(404, 'That ticket does not exist, or you do not have access to it.');

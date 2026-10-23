@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/support_ticket.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/support_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/menu_row.dart';
@@ -202,7 +203,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 /// What Help is on a deployment with no BottleCRM support queue.
-class _SelfServeHelp extends StatelessWidget {
+class _SelfServeHelp extends ConsumerWidget {
   const _SelfServeHelp();
 
   static const _issues = 'https://github.com/django-crm/Django-CRM/issues';
@@ -222,83 +223,91 @@ class _SelfServeHelp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.only(bottom: 32),
-    children: [
-      _header('Start here'),
-      MenuRow(
-        icon: LucideIcons.bookOpen,
-        label: 'Knowledge base',
-        description: 'The answers your team has already written down',
-        onTap: () => context.push(AppRoutes.solutions),
-      ),
-      MenuRow(
-        icon: LucideIcons.lifeBuoy,
-        label: 'Your tickets',
-        description: 'Everything open, and who it is waiting on',
-        onTap: () => context.push(AppRoutes.tickets),
-      ),
-      MenuRow(
-        icon: LucideIcons.clipboardList,
-        label: 'Settings',
-        description: 'Routing, escalation, business hours and inbound email',
-        onTap: () => context.push(AppRoutes.settings),
-      ),
-      _header('If that did not do it'),
-      MenuRow(
-        icon: LucideIcons.bug,
-        label: 'Report a bug',
-        description:
-            'Public issue tracker, fastest route for anything '
-            'reproducible',
-        onTap: () => _open(context, _issues),
-      ),
-      MenuRow(
-        icon: LucideIcons.mail,
-        label: 'Email support@bottlecrm.io',
-        description:
-            'For anything involving your data, billing or an account '
-            'you cannot get into',
-        onTap: () => _open(context, _email),
-      ),
-      _header('What to include when you write'),
-      Container(
-        color: AppColors.surface,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Two things turn a two-day exchange into one message.',
-              style: AppTypography.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _fact(
-              'What you expected',
-              'The thing you were trying to do, in one sentence.',
-            ),
-            const SizedBox(height: 10),
-            _fact(
-              'What happened instead',
-              'The exact wording of any error. "It did not work" and '
-                  '"Something went wrong" are the same message to us.',
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Please do not attach screenshots containing an invoice link, an '
-              'API token or a survey URL. Each of those is a working '
-              'credential for whoever ends up holding it.',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kbOn = ref.watch(moduleOnProvider('knowledge_base'));
+    final ticketsOn = ref.watch(moduleOnProvider('tickets'));
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 32),
+      children: [
+        if (kbOn || ticketsOn) _header('Start here'),
+        if (kbOn)
+          MenuRow(
+            icon: LucideIcons.bookOpen,
+            label: 'Knowledge base',
+            description: 'The answers your team has already written down',
+            onTap: () => context.push(AppRoutes.solutions),
+          ),
+        if (ticketsOn)
+          MenuRow(
+            icon: LucideIcons.lifeBuoy,
+            label: 'Your tickets',
+            description: 'Everything open, and who it is waiting on',
+            onTap: () => context.push(AppRoutes.tickets),
+          ),
+        if (ticketsOn)
+          MenuRow(
+            icon: LucideIcons.clipboardList,
+            label: 'Settings',
+            description:
+                'Routing, escalation, business hours and inbound email',
+            onTap: () => context.push(AppRoutes.settings),
+          ),
+        _header('If that did not do it'),
+        MenuRow(
+          icon: LucideIcons.bug,
+          label: 'Report a bug',
+          description:
+              'Public issue tracker, fastest route for anything '
+              'reproducible',
+          onTap: () => _open(context, _issues),
         ),
-      ),
-    ],
-  );
+        MenuRow(
+          icon: LucideIcons.mail,
+          label: 'Email support@bottlecrm.io',
+          description:
+              'For anything involving your data, billing or an account '
+              'you cannot get into',
+          onTap: () => _open(context, _email),
+        ),
+        _header('What to include when you write'),
+        Container(
+          color: AppColors.surface,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Two things turn a two-day exchange into one message.',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _fact(
+                'What you expected',
+                'The thing you were trying to do, in one sentence.',
+              ),
+              const SizedBox(height: 10),
+              _fact(
+                'What happened instead',
+                'The exact wording of any error. "It did not work" and '
+                    '"Something went wrong" are the same message to us.',
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Please do not attach screenshots containing an invoice link, an '
+                'API token or a survey URL. Each of those is a working '
+                'credential for whoever ends up holding it.',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   static Widget _header(String text) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),

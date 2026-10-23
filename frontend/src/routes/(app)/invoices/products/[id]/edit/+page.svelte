@@ -13,11 +13,13 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';
   import { ChevronRight, Lock, Trash2 } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let values = $derived(form?.values ?? data.product ?? {});
+  let invoicesOn = $derived(isOn(data.modules, 'invoices'));
   let usedOn = $derived(data.product?.used_on ?? 0);
   let confirming = $state(false);
 </script>
@@ -109,7 +111,7 @@
           <option value="true">Sellable, appears in the line-item picker</option>
           <option value="false">Retired, kept for history, hidden from the picker</option>
         </select>
-        {#if usedOn > 0}
+        {#if invoicesOn && usedOn > 0}
           <span class="v2-sub" style="font-size:11.5px">
             On <span class="v2-num">{usedOn}</span>
             {usedOn === 1 ? 'invoice' : 'invoices'} already. Retiring keeps those intact.
@@ -138,11 +140,13 @@
           <button class="v2-btn danger-btn" type="button" onclick={() => (confirming = true)}>
             <Trash2 size={14} /> Delete permanently
           </button>
-          <span class="v2-sub" style="font-size:11.5px">
-            {usedOn > 0
-              ? 'This product is on invoices already. Prefer Retire above.'
-              : 'Never invoiced, so it is safe to remove.'}
-          </span>
+          {#if invoicesOn}
+            <span class="v2-sub" style="font-size:11.5px">
+              {usedOn > 0
+                ? 'This product is on invoices already. Prefer Retire above.'
+                : 'Never invoiced, so it is safe to remove.'}
+            </span>
+          {/if}
         {:else}
           <form
             method="POST"

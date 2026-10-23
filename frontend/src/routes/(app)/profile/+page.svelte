@@ -21,11 +21,22 @@
   import { relativeDays, shortDate, count } from '#lib/v2/format.js';
   import { ROLE_LABEL, ROLE_TONE } from '#lib/v2/enums.js';
   import { KeyRound, Lock, ArrowLeftRight, CalendarDays } from '@lucide/svelte';
+  import { isOn, labelOf } from '#lib/v2/modules.js';
+  import { asInternalPath } from '#lib/utils/paths.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let p = $derived(data.profile);
+
+  // Only the modules that are on: each row opens its module's page.
+  let workRows = $derived(
+    [
+      { key: 'goals', path: '/goals', body: 'Your quota and how it is pacing' },
+      { key: 'timesheet', path: '/timesheet', body: 'Hours you have logged this week' },
+      { key: 'tasks', path: '/tasks', body: 'What is assigned to you' }
+    ].filter((row) => isOn(data.modules, row.key))
+  );
   let name = $derived(`${p.user_details.first_name} ${p.user_details.last_name}`.trim());
 
   // Editing name + phone. The backend stores one `name` on User, so the form
@@ -203,15 +214,17 @@
               {count(p.active_token_count)}
             </span>
           </a>
-          <a class="v2-setting" href={resolve('profile/calendar-feed')}>
-            <div class="v2-setting-body">
-              <b>Calendar feed</b>
-              <span class="v2-sub" style="font-size:11.5px">
-                Your open tasks in Google Calendar, Outlook or Apple Calendar.
-              </span>
-            </div>
-            <CalendarDays size={14} style="color:var(--v2-slate);flex:none" />
-          </a>
+          {#if isOn(data.modules, 'tasks')}
+            <a class="v2-setting" href={resolve('profile/calendar-feed')}>
+              <div class="v2-setting-body">
+                <b>Calendar feed</b>
+                <span class="v2-sub" style="font-size:11.5px">
+                  Your open tasks in Google Calendar, Outlook or Apple Calendar.
+                </span>
+              </div>
+              <CalendarDays size={14} style="color:var(--v2-slate);flex:none" />
+            </a>
+          {/if}
           <div class="v2-setting">
             <div class="v2-setting-body">
               <b>Sign-in method</b>
@@ -227,27 +240,19 @@
           </div>
         </div>
 
-        <div class="v2-label" style="margin-bottom:10px">Where your work shows up</div>
-        <div class="v2-card" style="overflow:hidden">
-          <a class="v2-setting" href={resolve('goals')}>
-            <div class="v2-setting-body">
-              <b>Goals</b>
-              <span class="v2-sub" style="font-size:11.5px">Your quota and how it is pacing</span>
-            </div>
-          </a>
-          <a class="v2-setting" href={resolve('timesheet')}>
-            <div class="v2-setting-body">
-              <b>Timesheet</b>
-              <span class="v2-sub" style="font-size:11.5px">Hours you have logged this week</span>
-            </div>
-          </a>
-          <a class="v2-setting" href={resolve('tasks')}>
-            <div class="v2-setting-body">
-              <b>Tasks</b>
-              <span class="v2-sub" style="font-size:11.5px">What is assigned to you</span>
-            </div>
-          </a>
-        </div>
+        {#if workRows.length}
+          <div class="v2-label" style="margin-bottom:10px">Where your work shows up</div>
+          <div class="v2-card" style="overflow:hidden">
+            {#each workRows as row (row.key)}
+              <a class="v2-setting" href={resolve(asInternalPath(row.path))}>
+                <div class="v2-setting-body">
+                  <b>{labelOf(data.modules, row.key)}</b>
+                  <span class="v2-sub" style="font-size:11.5px">{row.body}</span>
+                </div>
+              </a>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </div>

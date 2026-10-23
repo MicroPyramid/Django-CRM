@@ -40,12 +40,17 @@
   import { enhance } from '$app/forms';
   import { Plus, ShieldAlert } from '@lucide/svelte';
   import { WEBFORM_TARGETS } from '#lib/v2/webform-fields.js';
+  import { isOn, OBJECT_MODULES } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let totals = $derived(data.totals);
   let drafts = $derived(Math.max(totals.count - totals.published, 0));
+
+  let targets = $derived(
+    WEBFORM_TARGETS.filter((t) => isOn(data.modules, OBJECT_MODULES[t.value]))
+  );
 
   let creating = $state(false);
   let busy = $state(false);
@@ -115,7 +120,14 @@
       </div>
     {/if}
 
-    {#if creating}
+    {#if creating && !targets.length}
+      <div style="margin-bottom:18px">
+        <NextAction
+          label="Nothing to create"
+          text="Web forms create leads or tickets, and both are switched off. An admin can switch one on in Settings › Modules."
+        />
+      </div>
+    {:else if creating}
       <!-- A name and a target. The fields are chosen on the form's own
            page: a form with no email field cannot be published at all, so
            asking for the field list from a one-line panel would put the
@@ -148,7 +160,7 @@
             Each submission creates
           </label>
           <select id="form-target" name="target" class="v2-input" style="width:100%">
-            {#each WEBFORM_TARGETS as t (t.value)}
+            {#each targets as t (t.value)}
               <option value={t.value}>A {t.label.toLowerCase()}</option>
             {/each}
           </select>

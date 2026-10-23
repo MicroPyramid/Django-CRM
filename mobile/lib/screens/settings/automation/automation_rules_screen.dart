@@ -7,6 +7,7 @@ import '../../../core/theme/theme.dart';
 import '../../../data/models/automation.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/automation_provider.dart';
+import '../../../providers/org_modules_provider.dart';
 import '../../../routes/app_router.dart';
 import '../../../services/automation_text.dart';
 import 'status_pill.dart';
@@ -90,6 +91,7 @@ class _Body extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
     final rules = answer.rules;
+    final modules = ref.watch(shownModulesProvider);
     final paused = [
       for (final r in rules)
         if (r.status == 'paused') r,
@@ -101,7 +103,8 @@ class _Body extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 48),
         children: [
           if (rules.isEmpty) const _Empty(),
-          for (final r in paused) _PausedNote(row: r),
+          for (final r in paused)
+            _PausedNote(row: r, byModule: pausedByModule(r, modules)),
           for (var i = 0; i < rules.length; i++)
             _RuleCard(
               row: rules[i],
@@ -117,9 +120,10 @@ class _Body extends ConsumerWidget {
 }
 
 class _PausedNote extends StatelessWidget {
-  const _PausedNote({required this.row});
+  const _PausedNote({required this.row, required this.byModule});
 
   final AutomationRuleRow row;
+  final bool byModule;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +137,9 @@ class _PausedNote extends StatelessWidget {
         border: Border.all(color: AppColors.warning100),
       ),
       child: Text(
-        '"${row.name}": $why Switch it on again to take it over.',
+        byModule
+            ? modulePausedNote(row)
+            : '"${row.name}": $why Switch it on again to take it over.',
         style: AppTypography.caption.copyWith(color: AppColors.textPrimary),
       ),
     );

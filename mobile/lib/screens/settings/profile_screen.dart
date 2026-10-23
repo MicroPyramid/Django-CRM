@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/profile.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
@@ -253,6 +254,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildReadOnly(Profile profile) {
+    final workLinks = [
+      'goals',
+      'timesheet',
+      'tasks',
+    ].any((key) => ref.watch(moduleOnProvider(key)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,32 +338,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           trailing: _tokenCount(),
           onTap: () => context.push(AppRoutes.profileTokens),
         ),
-        _LinkRow(
-          icon: LucideIcons.calendarDays,
-          label: 'Calendar feed',
-          detail:
-              'Your open tasks in Google Calendar, Outlook or Apple Calendar',
-          onTap: () => context.push(AppRoutes.profileCalendarFeed),
-        ),
-        _sectionHeader('Where your work shows up'),
-        _LinkRow(
-          icon: LucideIcons.target,
-          label: 'Goals',
-          detail: 'Your quota and how it is pacing',
-          onTap: () => context.push(AppRoutes.goals),
-        ),
-        _LinkRow(
-          icon: LucideIcons.clock,
-          label: 'Timesheet',
-          detail: 'Hours you have logged this week',
-          onTap: () => context.push(AppRoutes.timesheet),
-        ),
-        _LinkRow(
-          icon: LucideIcons.circleCheck,
-          label: 'Tasks',
-          detail: 'What is assigned to you',
-          onTap: () => context.push(AppRoutes.tasks),
-        ),
+        if (ref.watch(moduleOnProvider('tasks')))
+          _LinkRow(
+            icon: LucideIcons.calendarDays,
+            label: 'Calendar feed',
+            detail:
+                'Your open tasks in Google Calendar, Outlook or Apple Calendar',
+            onTap: () => context.push(AppRoutes.profileCalendarFeed),
+          ),
+        if (workLinks) _sectionHeader('Where your work shows up'),
+        if (ref.watch(moduleOnProvider('goals')))
+          _LinkRow(
+            icon: LucideIcons.target,
+            label: 'Goals',
+            detail: 'Your quota and how it is pacing',
+            onTap: () => context.push(AppRoutes.goals),
+          ),
+        if (ref.watch(moduleOnProvider('timesheet')))
+          _LinkRow(
+            icon: LucideIcons.clock,
+            label: 'Timesheet',
+            detail: 'Hours you have logged this week',
+            onTap: () => context.push(AppRoutes.timesheet),
+          ),
+        if (ref.watch(moduleOnProvider('tasks')))
+          _LinkRow(
+            icon: LucideIcons.circleCheck,
+            label: 'Tasks',
+            detail: 'What is assigned to you',
+            onTap: () => context.push(AppRoutes.tasks),
+          ),
       ],
     );
   }

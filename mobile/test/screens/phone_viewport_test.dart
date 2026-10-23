@@ -1,4 +1,9 @@
 import 'package:bottle_crm/data/models/access_token.dart';
+import 'package:bottle_crm/data/models/auth_response.dart';
+import 'package:bottle_crm/data/models/dashboard_data.dart';
+import 'package:bottle_crm/providers/dashboard_provider.dart';
+import 'package:bottle_crm/screens/dashboard/dashboard_screen.dart';
+import 'package:bottle_crm/screens/settings/more_screen.dart';
 import 'package:bottle_crm/data/models/approval_rule.dart';
 import 'package:bottle_crm/data/models/app_notification.dart';
 import 'package:bottle_crm/data/models/business_calendar.dart';
@@ -77,9 +82,17 @@ import 'package:bottle_crm/screens/objects/object_record_detail_screen.dart';
 import 'package:bottle_crm/screens/objects/object_record_form_screen.dart';
 import 'package:bottle_crm/screens/objects/object_records_screen.dart';
 import 'package:bottle_crm/screens/settings/object_field_sheet.dart';
+import 'package:bottle_crm/data/models/account.dart';
+import 'package:bottle_crm/providers/accounts_provider.dart';
+import 'package:bottle_crm/screens/accounts/account_detail_screen.dart';
+import 'package:bottle_crm/screens/settings/modules_screen.dart';
 import 'package:bottle_crm/screens/settings/object_settings_screen.dart';
 import 'package:bottle_crm/screens/settings/objects_settings_screen.dart';
 import 'package:bottle_crm/core/theme/theme.dart';
+import 'package:bottle_crm/widgets/common/buttons.dart';
+import 'package:bottle_crm/widgets/common/menu_row.dart';
+import 'package:bottle_crm/widgets/common/module_gate.dart';
+import '../support/modules_fixtures.dart';
 import 'package:bottle_crm/data/models/automation.dart';
 import 'package:bottle_crm/screens/settings/automation/action_sheet.dart';
 import 'package:bottle_crm/screens/settings/automation/automation_rule_screen.dart';
@@ -4004,6 +4017,399 @@ void main() {
       });
     }
   });
+
+  group('modules screen', () {
+    Widget modulesApp({bool refuse = false}) => ProviderScope(
+      key: UniqueKey(),
+      overrides: modulesOverrides(
+        FakeOrgModules(
+          () async => modulesAnswer(
+            off: ['deals', 'tasks'],
+            labels: {'deals': _orgTerm40},
+          ),
+          refusals: refuse
+              ? [
+                  'Tickets still receives submissions from 2 published web '
+                      'forms: "Billing help", "Zed help". Unpublish them '
+                      'first, so no submission is lost.',
+                  'Tickets still has a mailbox that creates tickets from '
+                      'inbound email: "support@example.com". Switch it off '
+                      'first.',
+                  'Leads still receives submissions from 1 published web '
+                      'form: "Contact us". Unpublish it first.',
+                ]
+              : const [],
+        ),
+      ),
+      child: MaterialApp(theme: AppTheme.light, home: const ModulesScreen()),
+    );
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      testWidgets('the list with a refusal, text scale $scale', (tester) async {
+        await pump(tester, modulesApp(refuse: true), textScale: scale);
+        await tester.tap(find.byType(Switch).at(1));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Switch off').last);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(_orgTerm40.length, 40);
+        expect(find.textContaining('Billing help'), findsOneWidget);
+        expect(find.textContaining('inbound email'), findsOneWidget);
+        expect(find.textContaining('Contact us'), findsOneWidget);
+        expect(find.text('Web forms'), findsOneWidget);
+        // Three messages push the cards below the fold at large text.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 800));
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -380));
+        await tester.pumpAndSettle();
+        for (final tip in ['Move up', 'Move down']) {
+          final size = tester.getSize(
+            find
+                .byWidgetPredicate((w) => w is IconButton && w.tooltip == tip)
+                .first,
+          );
+          expect(size.width, greaterThanOrEqualTo(44));
+          expect(size.height, greaterThanOrEqualTo(44));
+        }
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('the list on a tablet, text scale 1.3', (tester) async {
+      tester.view.devicePixelRatio = 2.0;
+      tester.view.physicalSize = const Size(834 * 2, 1112 * 2);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(modulesApp());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await scrollToEnd(tester);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('module off view', () {
+    for (final scale in [1.0, 1.3, 1.5]) {
+      for (final admin in [true, false]) {
+        testWidgets('a long label, admin $admin, text scale $scale', (
+          tester,
+        ) async {
+          await pump(
+            tester,
+            ProviderScope(
+              key: UniqueKey(),
+              overrides: modulesOverrides(
+                FakeOrgModules(() async => modulesAnswer()),
+                admin: admin,
+              ),
+              child: MaterialApp(
+                theme: AppTheme.light,
+                home: const ModuleOffView(
+                  label: 'Opportunities and quotes for every account',
+                ),
+              ),
+            ),
+            textScale: scale,
+          );
+          expect(tester.takeException(), isNull);
+          for (final button in [
+            find.byType(PrimaryButton),
+            if (admin) find.byType(OutlinedButton),
+          ]) {
+            final size = tester.getSize(button);
+            expect(size.height, greaterThanOrEqualTo(44));
+            expect(size.width, greaterThanOrEqualTo(44));
+          }
+        });
+      }
+    }
+  });
+
+  group('account with modules switched off', () {
+    for (final scale in [1.0, 1.3, 1.5]) {
+      for (final (name, off) in [
+        ('all on', <String>[]),
+        ('three off', ['deals', 'tickets', 'invoices']),
+      ]) {
+        testWidgets('account, text $scale, $name', (tester) async {
+          await pump(
+            tester,
+            ProviderScope(
+              key: UniqueKey(),
+              overrides: [
+                ...modulesOverrides(
+                  FakeOrgModules(() async => modulesAnswer(off: off)),
+                ),
+                accountsProvider.overrideWith(_ModulesFakeAccounts.new),
+                duplicatesApiProvider.overrideWithValue(_NoObjectDuplicates()),
+                customObjectsProvider.overrideWith(
+                  () => _FakeObjectsAnswer(null),
+                ),
+              ],
+              child: MaterialApp(
+                theme: AppTheme.light,
+                home: const AccountDetailScreen(accountId: 'a1'),
+              ),
+            ),
+            textScale: scale,
+          );
+          expect(tester.takeException(), isNull);
+          final shown = off.isEmpty ? findsOneWidget : findsNothing;
+          expect(find.textContaining('Deals ('), shown);
+          expect(find.textContaining('Tickets ('), shown);
+          expect(find.text('Open tickets'), shown);
+          expect(find.byTooltip('Statement'), shown);
+          expect(find.textContaining('Contacts ('), findsOneWidget);
+          expect(find.byTooltip('Edit account'), findsOneWidget);
+          expect(find.byTooltip('Delete account'), findsOneWidget);
+          _expectTappablesThumbSized(tester);
+          await scrollToEnd(tester);
+          expect(tester.takeException(), isNull);
+          expect(find.textContaining('Tickets ('), shown);
+          _expectTappablesThumbSized(tester);
+        });
+      }
+    }
+  });
+
+  group('home and More with modules switched off', () {
+    for (final scale in [1.0, 1.3, 1.5]) {
+      for (final (name, off) in [
+        ('all on', <String>[]),
+        ('some off', ['deals', 'leads', 'tasks']),
+        ('all off', ['deals', 'leads', 'tasks', 'goals', 'invoices']),
+      ]) {
+        final at = 'text $scale, $name';
+        testWidgets('home, $at', (tester) async {
+          await pump(
+            tester,
+            ProviderScope(
+              key: UniqueKey(),
+              overrides: [
+                ...modulesOverrides(
+                  FakeOrgModules(() async => modulesAnswer(off: off)),
+                ),
+                authProvider.overrideWith(_ModulesFakeAuth.new),
+                dashboardProvider.overrideWith(_ModulesFakeDashboard.new),
+                notificationsProvider.overrideWith(_FakeEmptyNotifications.new),
+              ],
+              child: MaterialApp(
+                theme: AppTheme.light,
+                home: const DashboardScreen(),
+              ),
+            ),
+            textScale: scale,
+          );
+          expect(tester.takeException(), isNull);
+          final dealsAndLeadsOff =
+              off.contains('deals') && off.contains('leads');
+          final tasksOff = off.contains('tasks');
+          expect(
+            find.text('Open Deals'),
+            off.contains('deals') ? findsNothing : findsOneWidget,
+          );
+          expect(
+            find.text('Pipeline Overview'),
+            off.contains('deals') ? findsNothing : findsOneWidget,
+          );
+          expect(
+            find.text('Hot Leads'),
+            off.contains('leads') ? findsNothing : findsWidgets,
+          );
+          expect(
+            find.text('Upcoming Tasks'),
+            tasksOff ? findsNothing : findsOneWidget,
+          );
+          await scrollToEnd(tester);
+          _expectTappablesThumbSized(tester);
+          await tester.drag(
+            find.byType(Scrollable).first,
+            const Offset(0, 4000),
+          );
+          await tester.pumpAndSettle();
+          _expectTappablesThumbSized(tester);
+          final fab = find.byType(FloatingActionButton);
+          if (dealsAndLeadsOff && tasksOff) {
+            expect(fab, findsNothing);
+            return;
+          }
+          await tester.tap(fab);
+          await tester.pumpAndSettle();
+          final tooled = off.isEmpty ? findsOneWidget : findsNothing;
+          expect(find.text('Add Lead'), tooled);
+          expect(find.text('Add Deal'), tooled);
+          expect(find.text('Add Task'), tooled);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('More, $at', (tester) async {
+          await pump(
+            tester,
+            ProviderScope(
+              key: UniqueKey(),
+              overrides: [
+                ...modulesOverrides(
+                  FakeOrgModules(() async => modulesAnswer(off: off)),
+                ),
+                customObjectsProvider.overrideWith(
+                  () => _FakeObjectsAnswer(null),
+                ),
+                notificationsProvider.overrideWith(_FakeEmptyNotifications.new),
+              ],
+              child: MaterialApp(
+                theme: AppTheme.light,
+                home: const MoreScreen(),
+              ),
+            ),
+            textScale: scale,
+          );
+          expect(tester.takeException(), isNull);
+          final tasksRow = find.widgetWithText(MenuRow, 'Tasks');
+          final goalsRow = find.widgetWithText(MenuRow, 'Goals');
+          final taskAndGoals = off.contains('deals') && off.contains('tasks');
+          for (final row in [tasksRow, goalsRow]) {
+            expect(row, taskAndGoals ? findsNothing : findsOneWidget);
+          }
+          for (var i = 0; i < 8; i++) {
+            for (final row in find.byType(MenuRow).evaluate()) {
+              final size = tester.getSize(find.byWidget(row.widget));
+              expect(size.height, greaterThanOrEqualTo(44));
+            }
+            await tester.drag(
+              find.byType(Scrollable).first,
+              const Offset(0, -500),
+            );
+            await tester.pumpAndSettle();
+          }
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+  });
+}
+
+/// The home screen's urgent badges and "See All" links were 15 to 23px tall
+/// before the modules work and are not part of it, so they are excluded here
+/// rather than fixed in passing.
+bool _isOlderSmallLink(Element element) {
+  var badge = false;
+  var insideButton = false;
+  element.visitAncestorElements((e) {
+    final w = e.widget;
+    if (w.runtimeType.toString() == '_UrgentBadge') badge = true;
+    // A button's own InkWell is its visual size; the button pads the hit area.
+    if (w is IconButton || w is ButtonStyleButton) insideButton = true;
+    return !badge;
+  });
+  if (badge || insideButton) return true;
+  var seeAll = false;
+  void walk(Element e) {
+    final w = e.widget;
+    if (w is Text && w.data == 'See All') seeAll = true;
+    if (!seeAll) e.visitChildren(walk);
+  }
+
+  walk(element);
+  return seeAll;
+}
+
+/// Every tappable on screen, measured as drawn. Only what is hit-testable
+/// counts: a widget scrolled out of the viewport is not built or not on screen.
+void _expectTappablesThumbSized(WidgetTester tester) {
+  final tappables = <Finder>[
+    find.byType(InkWell),
+    find.byType(IconButton),
+    find.byType(ButtonStyleButton),
+    find.byType(FloatingActionButton),
+    find.byWidgetPredicate((w) => w is GestureDetector && w.onTap != null),
+  ];
+  for (final finder in tappables) {
+    for (final element in finder.evaluate()) {
+      final box = element.renderObject! as RenderBox;
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      if (rect.bottom < 0 || rect.top > 844) continue;
+      if (_isOlderSmallLink(element)) continue;
+      expect(
+        box.size.height,
+        greaterThanOrEqualTo(44),
+        reason: '${element.widget} at $rect',
+      );
+    }
+  }
+}
+
+const _orgTerm40 = 'Opportunities, quotes and renewals pipes';
+
+class _ModulesFakeAccounts extends AccountsNotifier {
+  @override
+  Future<AccountsListData> build() async => const AccountsListData();
+
+  @override
+  Future<Account?> getAccount(String id, {void Function()? onNotFound}) async =>
+      Account.fromJson(canDelete: true, {
+        'id': id,
+        'name': 'Northwind Traders International Holdings',
+        'currency': 'USD',
+        'contacts': [
+          {'id': 'c1', 'first_name': 'Ada', 'last_name': 'Lovelace'},
+        ],
+        'opportunities': [
+          {'id': 'd1', 'name': 'Renewal'},
+        ],
+        'cases': [
+          {'id': 't1', 'name': 'Printer'},
+        ],
+        'tasks': [
+          {'id': 'k1', 'title': 'Call'},
+        ],
+        'rollups': {
+          'won_amount': '500.00',
+          'won_count': 1,
+          'open_pipeline': '10.00',
+          'open_deal_count': 1,
+          'overdue_amount': '0',
+          'open_tickets': 2,
+          'by_currency': [
+            {
+              'currency': 'USD',
+              'won_amount': '500.00',
+              'open_pipeline': '10.00',
+              'overdue_amount': '0',
+            },
+          ],
+        },
+      });
+}
+
+class _ModulesFakeDashboard extends DashboardNotifier {
+  @override
+  Future<DashboardData> build() async => const DashboardData(
+    urgentCounts: UrgentCounts(overdueTasks: 2, followupsToday: 1, hotLeads: 1),
+    pipelineByStage: [
+      PipelineStage(code: 'qualified', label: 'Qualified', count: 2, value: 40),
+    ],
+    hotLeads: [HotLead(id: 'l1', firstName: 'Ada', lastName: 'Lovelace')],
+    tasks: [DashboardTask(id: 't1', title: 'Call Ada')],
+  );
+
+  @override
+  Future<void> refresh() async {}
+}
+
+class _ModulesFakeAuth extends AuthNotifier {
+  @override
+  AuthState build() {
+    const org = Organization(id: 'org-1', name: 'Test Org');
+    return AuthState(
+      user: const AuthUser(id: 'user-1', email: 'user@example.com'),
+      organizations: [org],
+      selectedOrganization: org,
+      isAuthenticated: true,
+    );
+  }
 }
 
 /// A working week with one holiday, which is what most orgs look like.

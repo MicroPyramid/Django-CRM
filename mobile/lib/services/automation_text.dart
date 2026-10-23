@@ -1,5 +1,6 @@
 import '../config/api_config.dart';
 import '../data/models/automation.dart';
+import '../data/models/org_module.dart';
 import '../routes/record_routes.dart';
 import 'api_service.dart';
 
@@ -466,6 +467,28 @@ String? statusText(AutomationRuleRow row) {
   }
   return null;
 }
+
+/// The module that serves each rule object. Any other object is never
+/// paused by a module.
+const objectModules = {
+  'lead': 'leads',
+  'deal': 'deals',
+  'ticket': 'tickets',
+  'task': 'tasks',
+};
+
+/// A rule the server paused because its object's module is switched off.
+/// [modules] null means every module is on.
+bool pausedByModule(AutomationRuleRow row, OrgModulesAnswer? modules) {
+  final key = objectModules[row.objectKey];
+  return row.status == 'paused' &&
+      key != null &&
+      modules != null &&
+      !modules.isOn(key);
+}
+
+String modulePausedNote(AutomationRuleRow row) =>
+    '"${row.name}": ${row.statusText}. It runs again once that module is switched back on.';
 
 const _noValueOps = ['empty', 'not_empty', 'true', 'false'];
 

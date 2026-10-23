@@ -40,6 +40,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 
 /** `invoices.models.INVOICE_STATUS`. Underscore on the wire; never shown raw. */
 export const INVOICE_STATUSES = [
@@ -237,6 +238,7 @@ export async function getInvoice({ cookies }, id) {
   try {
     response = await apiRequest(`/invoices/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
     if (err?.status === 404) {
       error(404, 'That invoice does not exist, or you do not have access to it.');
     }

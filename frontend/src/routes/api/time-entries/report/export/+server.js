@@ -13,6 +13,7 @@
  */
 
 import * as env from '$app/env/public';
+import { moduleOffDetail } from '#lib/server/v2/modules.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
@@ -32,7 +33,7 @@ export async function GET({ cookies, request, url }) {
   });
 
   if (!upstream.ok || !upstream.body) {
-    return new Response(`Upstream error: ${upstream.status}`, {
+    return new Response((await moduleOffDetail(upstream)) ?? `Upstream error: ${upstream.status}`, {
       status: upstream.status || 502
     });
   }

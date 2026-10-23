@@ -21,11 +21,18 @@
   import SettingsFormPanel from '#lib/v2/components/SettingsFormPanel.svelte';
   import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
   import { count } from '#lib/v2/format.js';
+  import { isOn, TARGET_MODULES } from '#lib/v2/modules.js';
   import { FIELD_TYPE_LABEL, TARGET_MODEL_LABEL } from '#lib/v2/enums.js';
   import { Plus, TriangleAlert, Filter } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
+
+  let targetOptions = $derived(
+    Object.entries(TARGET_MODEL_LABEL).filter(
+      ([value]) => !TARGET_MODULES[value] || isOn(data.modules, TARGET_MODULES[value])
+    )
+  );
 
   // `null` when the panel is closed, `'new'` when adding, or the field object
   // when editing that row. One panel, two modes, so two rows can never be
@@ -157,7 +164,7 @@
             <label for="f-target">On record type</label>
             {#if editing === 'new'}
               <select id="f-target" class="v2-input" name="target_model" required>
-                {#each Object.entries(TARGET_MODEL_LABEL) as [value, label] (value)}
+                {#each targetOptions as [value, label] (value)}
                   <option {value}>{label}</option>
                 {/each}
               </select>

@@ -22,6 +22,8 @@ import {
   keptActions,
   applySummary
 } from '#lib/server/v2/macros.js';
+import { getModules } from '#lib/server/v2/modules.js';
+import { isOn } from '#lib/v2/modules.js';
 import { getOrgSettings } from '#lib/server/v2/organization.js';
 import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
 import { mentionPeople } from '#lib/v2/mentions.js';
@@ -89,9 +91,15 @@ import { treeRows, subtreeIds, parentCandidates, linkRefusal } from './tree.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, params, locals, url }) {
+  // Asked directly: `parent()` would rerun the whole shell load.
+  const modulesP = getModules({ cookies, locals });
   const [data, timeEntries, approvals, watchers, orgPeople, related] = await Promise.all([
     getTicket({ cookies }, params.id),
-    listTicketTime({ cookies }, params.id).catch(() => null),
+    modulesP.then((m) =>
+      isOn(m?.modules ?? null, 'timesheet')
+        ? listTicketTime({ cookies }, params.id).catch(() => null)
+        : null
+    ),
     listTicketApprovals({ cookies }, params.id).catch(() => null),
     getTicketWatchers({ cookies }, params.id).catch(() => null),
     getOrgPeopleAndTeams(cookies),
@@ -128,12 +136,14 @@ export async function load({ cookies, params, locals, url }) {
   const hasChildren = Boolean(data.ticket?.child_count);
   const inTree = hasChildren || Boolean(data.ticket?.parent);
 
+  const modules = (await modulesP)?.modules ?? null;
+  const knowledgeOn = isOn(modules, 'knowledge_base');
   const articleQuery = (url.searchParams.get('aq') ?? '').trim().slice(0, 200);
   const [tree, settings, macros, candidates] = await Promise.all([
     inTree ? getTicketTree({ cookies }, params.id).catch(() => null) : null,
     hasChildren ? getOrgSettings({ cookies }).catch(() => null) : null,
     data.canReply ? listUsableMacros({ cookies }).catch(() => []) : [],
-    data.canReply
+    data.canReply && knowledgeOn
       ? suggestTicketArticles({ cookies }, params.id, articleQuery).catch(() => null)
       : null
   ]);
@@ -169,6 +179,7 @@ export async function load({ cookies, params, locals, url }) {
 
   // Who an @handle can name, for the composer and the chips in the thread.
   const extras = {
+    modules,
     time,
     approvals,
     watchers,

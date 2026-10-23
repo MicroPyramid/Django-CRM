@@ -17,6 +17,8 @@
     sentRows,
     ruleStatus,
     switchLabel,
+    pausedByModule,
+    modulePausedNote,
     STATUS
   } from '#lib/v2/automation.js';
   import TriggerSection from './TriggerSection.svelte';
@@ -28,9 +30,9 @@
    * is one `$state` draft, posted whole as the `rule` field; it outlives a
    * refused save, so nothing the admin typed is lost.
    *
-   * @type {{ catalogue: any, rule?: any, row?: any, form: any }}
+   * @type {{ catalogue: any, rule?: any, row?: any, modules?: any, form: any }}
    */
-  let { catalogue, rule = null, row = null, form } = $props();
+  let { catalogue, rule = null, row = null, modules = null, form } = $props();
 
   let draft = $state(untrack(() => editorState(rule, catalogue?.objects?.[0]?.key ?? '')));
   let busy = $state(false);
@@ -46,6 +48,7 @@
       ruleStatus(rule, row) ?? ''
     ] ?? null
   );
+  let held = $derived(Boolean(row) && pausedByModule(row, modules));
   let dirty = $derived(rule ? isDirty(draft, rule) : false);
   let ownerName = $derived(rule?.owner ? String(rule.owner.name ?? '').trim() : '');
   let saved = $derived(Boolean(form?.saved) && rule && !isDirty(draft, rule));
@@ -100,7 +103,17 @@
             </form>
           {/if}
         </div>
-        {#if row?.status_text && row.status_text !== status.label}
+        {#if held}
+          <div class="au-held">
+            <NextAction
+              label="Paused"
+              tone="rust"
+              text={modulePausedNote({ name: rule.name, status_text: row.status_text })}
+              action="Open Modules"
+              href="/settings/modules"
+            />
+          </div>
+        {:else if row?.status_text && row.status_text !== status.label}
           <p class="v2-sub au-strip-text">{row.status_text}</p>
         {/if}
         {#if form?.switchOff?.general}
@@ -110,55 +123,57 @@
     {/if}
 
     <form method="POST" action="?/save" use:enhance={save}>
-      <div class="v2-field">
-        <label for="rule-name">Name</label>
-        <input
-          id="rule-name"
-          class="v2-input"
-          maxlength="120"
-          autocomplete="off"
-          bind:value={draft.name}
-          aria-invalid={errors.rows.name ? 'true' : undefined}
-          aria-describedby={errors.rows.name ? 'rule-name-error' : undefined}
-        />
-        {#if errors.rows.name}<p class="v2-error" id="rule-name-error">{errors.rows.name}</p>{/if}
-      </div>
+      <fieldset class="au-fields" disabled={held}>
+        <div class="v2-field">
+          <label for="rule-name">Name</label>
+          <input
+            id="rule-name"
+            class="v2-input"
+            maxlength="120"
+            autocomplete="off"
+            bind:value={draft.name}
+            aria-invalid={errors.rows.name ? 'true' : undefined}
+            aria-describedby={errors.rows.name ? 'rule-name-error' : undefined}
+          />
+          {#if errors.rows.name}<p class="v2-error" id="rule-name-error">{errors.rows.name}</p>{/if}
+        </div>
 
-      <section class="v2-card au-sec" aria-labelledby="au-when">
-        <h2 class="v2-label" id="au-when">When</h2>
-        <TriggerSection
-          {catalogue}
-          bind:draft
-          fixed={Boolean(rule)}
-          error={errors.rows.trigger ?? null}
-        />
-      </section>
+        <section class="v2-card au-sec" aria-labelledby="au-when">
+          <h2 class="v2-label" id="au-when">When</h2>
+          <TriggerSection
+            {catalogue}
+            bind:draft
+            fixed={Boolean(rule)}
+            error={errors.rows.trigger ?? null}
+          />
+        </section>
 
-      <section class="v2-card au-sec" aria-labelledby="au-if">
-        <h2 class="v2-label" id="au-if">Only if</h2>
-        <ConditionRows
-          {catalogue}
-          {object}
-          event={draft.trigger.event}
-          bind:match={draft.match}
-          bind:conditions={draft.conditions}
-          errors={{
-            match: errors.rows.match ?? null,
-            list: errors.rows.conditions ?? null,
-            rows: errors.conditions
-          }}
-        />
-      </section>
+        <section class="v2-card au-sec" aria-labelledby="au-if">
+          <h2 class="v2-label" id="au-if">Only if</h2>
+          <ConditionRows
+            {catalogue}
+            {object}
+            event={draft.trigger.event}
+            bind:match={draft.match}
+            bind:conditions={draft.conditions}
+            errors={{
+              match: errors.rows.match ?? null,
+              list: errors.rows.conditions ?? null,
+              rows: errors.conditions
+            }}
+          />
+        </section>
 
-      <section class="v2-card au-sec" aria-labelledby="au-then">
-        <h2 class="v2-label" id="au-then">Then</h2>
-        <ActionRows
-          {catalogue}
-          {object}
-          bind:actions={draft.actions}
-          errors={{ list: errors.rows.actions ?? null, rows: errors.actions }}
-        />
-      </section>
+        <section class="v2-card au-sec" aria-labelledby="au-then">
+          <h2 class="v2-label" id="au-then">Then</h2>
+          <ActionRows
+            {catalogue}
+            {object}
+            bind:actions={draft.actions}
+            errors={{ list: errors.rows.actions ?? null, rows: errors.actions }}
+          />
+        </section>
+      </fieldset>
 
       <input type="hidden" name="rule" value={JSON.stringify(draft)} />
 
@@ -168,27 +183,33 @@
         </div>
       {/if}
 
-      <div class="au-buttons">
-        <button type="submit" class={switchTo ? 'v2-btn' : 'v2-btn v2-btn-primary'} disabled={busy}>
-          Save
-        </button>
-        {#if switchTo}
+      {#if !held}
+        <div class="au-buttons">
           <button
             type="submit"
-            name="switch_on"
-            value="true"
-            class="v2-btn v2-btn-primary"
+            class={switchTo ? 'v2-btn' : 'v2-btn v2-btn-primary'}
             disabled={busy}
           >
-            {switchTo}
+            Save
           </button>
-        {/if}
-        {#if saved}<span class="v2-sub" role="status">Saved.</span>{/if}
-      </div>
+          {#if switchTo}
+            <button
+              type="submit"
+              name="switch_on"
+              value="true"
+              class="v2-btn v2-btn-primary"
+              disabled={busy}
+            >
+              {switchTo}
+            </button>
+          {/if}
+          {#if saved}<span class="v2-sub" role="status">Saved.</span>{/if}
+        </div>
+      {/if}
     </form>
 
     {#if rule}
-      <TryPanel {rule} {dirty} {form} />
+      {#if !held}<TryPanel {rule} {dirty} {form} />{/if}
       <div class="au-delete">
         {#if form?.remove?.general}
           <p class="v2-error" role="alert">{form.remove.general}</p>
@@ -221,6 +242,15 @@
   }
   .au-strip {
     margin-bottom: 14px;
+  }
+  .au-held {
+    margin-top: 10px;
+  }
+  .au-fields {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
   }
   .au-strip-main {
     display: flex;

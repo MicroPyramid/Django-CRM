@@ -25,6 +25,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { sumByCurrency } from '#lib/v2/format.js';
 import { canMoveCard } from '#lib/v2/board-drag.js';
 
@@ -682,6 +683,7 @@ async function fetchDetail(cookies, id) {
   try {
     return await apiRequest(`/opportunities/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
     // On the status, not on the wording. See `api-helpers.js`.
     if (err?.status === 404) {
       error(404, 'That deal does not exist, or you do not have access to it.');

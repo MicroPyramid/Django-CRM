@@ -25,6 +25,7 @@
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import { count, shortDate } from '#lib/v2/format.js';
   import { Clock } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
@@ -220,7 +221,7 @@
             </div>
           {/each}
 
-          {#if data.byType.find((t) => t.case_type === 'Question')}
+          {#if isOn(data.modules, 'knowledge_base') && data.byType.find((t) => t.case_type === 'Question')}
             <p class="v2-sub" style="font-size:11.5px;margin:16px 0 0">
               <a href={resolve('solutions')} style="color:inherit">
                 {data.byType.find((t) => t.case_type === 'Question').count} questions in this window

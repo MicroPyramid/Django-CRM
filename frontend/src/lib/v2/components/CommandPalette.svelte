@@ -14,6 +14,7 @@
     Plus,
     CornerDownLeft
   } from '@lucide/svelte';
+  import { paletteActions, searchPlaceholder, noHitsText } from '#lib/v2/nav.js';
 
   /**
    * One search across every record type, opened with ⌘K.
@@ -25,44 +26,15 @@
    * start a new deal is ⌘K, "new", Enter, and that only works if the actions
    * are there before you type.
    *
-   * @type {{ open: boolean, onclose: () => void }}
+   * @type {{ open: boolean, onclose: () => void, modules?: import('#lib/v2/modules.js').ModuleRow[] | null }}
    */
-  let { open = false, onclose } = $props();
+  let { open = false, onclose, modules = null } = $props();
 
-  const ACTIONS = [
-    {
-      kind: 'Actions',
-      id: 'act-deal',
-      title: 'New deal',
-      meta: 'Pipeline',
-      href: '/pipeline/new',
-      icon: Plus
-    },
-    {
-      kind: 'Actions',
-      id: 'act-today',
-      title: 'Go to Today',
-      meta: '',
-      href: '/',
-      icon: Columns3
-    },
-    {
-      kind: 'Actions',
-      id: 'act-tasks',
-      title: 'Go to Tasks',
-      meta: '',
-      href: '/tasks',
-      icon: Columns3
-    },
-    {
-      kind: 'Actions',
-      id: 'act-invoices',
-      title: 'Go to Invoices',
-      meta: '',
-      href: '/invoices',
-      icon: Receipt
-    }
-  ];
+  let actions = $derived(
+    paletteActions(modules).map((a) => ({ ...a, icon: ACTION_ICONS[a.icon] }))
+  );
+
+  const ACTION_ICONS = { Plus, Columns3, Receipt };
 
   const ICON = {
     Deals: Columns3,
@@ -81,7 +53,7 @@
   /** @type {HTMLInputElement | undefined} */
   let input = $state();
 
-  let rows = $derived(query.trim() ? hits : ACTIONS);
+  let rows = $derived(query.trim() ? hits : actions);
 
   /** Grouped for display, but `rows` stays flat so ↑/↓ crosses group borders. */
   let groups = $derived(
@@ -175,7 +147,7 @@
           bind:this={input}
           bind:value={query}
           type="text"
-          placeholder="Search deals, accounts, people, tickets, invoices…"
+          placeholder={searchPlaceholder(modules)}
           aria-label="Search"
           aria-autocomplete="list"
           autocomplete="off"
@@ -207,7 +179,7 @@
           {/each}
         {:else}
           <p class="v2-sub" style="padding:22px 15px;text-align:center;margin:0">
-            Nothing matches “{query}”. Try an account name, a deal, or an invoice number.
+            {noHitsText(query, modules)}
           </p>
         {/each}
       </div>

@@ -9,6 +9,7 @@ import '../../data/models/lookup_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/invoice_extras_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../services/org_date.dart';
 import 'document_adjustments.dart';
 import 'invoice_format.dart';
@@ -126,16 +127,22 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
   Widget build(BuildContext context) {
     final accounts = ref.watch(accountsLookupProvider).value ?? const [];
     final contacts = ref.watch(contactsLookupProvider).value ?? const [];
-    final deals = _dealOptions(
-      ref.watch(opportunityEntityOptionsProvider).value ?? const [],
-    );
+    // An off module's list is never asked for: the API would refuse it.
+    final dealsOn = ref.watch(moduleOnProvider('deals'));
+    final deals = dealsOn
+        ? _dealOptions(
+            ref.watch(opportunityEntityOptionsProvider).value ?? const [],
+          )
+        : const <EntityLookup>[];
 
     final accountId = _account(accounts);
     final contactOptions = accountId == null
         ? const <ContactLookup>[]
         : contacts.where((c) => c.billableFor(accountId)).toList();
     final contactId = _contact(contactOptions);
-    final dealId = deals.any((d) => d.id == _dealId) ? _dealId : null;
+    final dealId = dealsOn && deals.any((d) => d.id == _dealId)
+        ? _dealId
+        : null;
 
     final usable = _items
         .where((i) => i.name.trim().isNotEmpty && i.quantity > 0)
@@ -222,24 +229,29 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
                             _dealContactIds = const [];
                           }),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: dealId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Deal (optional)',
-                      border: OutlineInputBorder(),
+                  if (dealsOn) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: dealId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Deal (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String>(child: Text('No deal')),
+                        for (final d in deals)
+                          DropdownMenuItem(
+                            value: d.id,
+                            child: Text(
+                              d.label,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) => setState(() => _dealId = value),
                     ),
-                    items: [
-                      const DropdownMenuItem<String>(child: Text('No deal')),
-                      for (final d in deals)
-                        DropdownMenuItem(
-                          value: d.id,
-                          child: Text(d.label, overflow: TextOverflow.ellipsis),
-                        ),
-                    ],
-                    onChanged: (value) => setState(() => _dealId = value),
-                  ),
+                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: _title,

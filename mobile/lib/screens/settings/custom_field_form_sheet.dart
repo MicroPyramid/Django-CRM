@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/custom_field_definition.dart';
+import '../../providers/org_modules_provider.dart';
 import 'options_editor.dart';
 
 /// Add or edit a custom field definition.
@@ -28,16 +30,17 @@ Future<Map<String, dynamic>?> showCustomFieldFormSheet(
   );
 }
 
-class _CustomFieldFormSheet extends StatefulWidget {
+class _CustomFieldFormSheet extends ConsumerStatefulWidget {
   const _CustomFieldFormSheet({this.existing});
 
   final CustomFieldDefinition? existing;
 
   @override
-  State<_CustomFieldFormSheet> createState() => _CustomFieldFormSheetState();
+  ConsumerState<_CustomFieldFormSheet> createState() =>
+      _CustomFieldFormSheetState();
 }
 
-class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
+class _CustomFieldFormSheetState extends ConsumerState<_CustomFieldFormSheet> {
   late final TextEditingController _label;
   late final TextEditingController _key;
   late final TextEditingController _order;
@@ -60,6 +63,30 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
   String? _error;
 
   bool get _isCreate => widget.existing == null;
+
+  /// Build watches, so a flip redraws the sheet; a tap only reads.
+  bool _targetOn(String target, {bool watch = true}) {
+    final module = customFieldTargets.containsKey(target)
+        ? customFieldTargetModules[target]
+        : null;
+    if (module == null) return true;
+    return watch
+        ? ref.watch(moduleOnProvider(module))
+        : ref.read(moduleOnProvider(module));
+  }
+
+  /// The chosen target while its module is on, else the first one that is,
+  /// as the web forms dialog does when a module goes off under it. An
+  /// existing field keeps its own target, which cannot change.
+  String _target({bool watch = true}) {
+    if (!_isCreate || _targetOn(_targetModel, watch: watch)) {
+      return _targetModel;
+    }
+    return customFieldTargets.keys.firstWhere(
+      (t) => _targetOn(t, watch: watch),
+      orElse: () => _targetModel,
+    );
+  }
 
   @override
   void initState() {
@@ -116,7 +143,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
       isCreate: _isCreate,
       label: _label.text,
       key: _key.text,
-      targetModel: _targetModel,
+      targetModel: _target(watch: false),
       fieldType: _fieldType,
       options: options,
     );
@@ -129,7 +156,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
     Navigator.of(context).pop(
       _isCreate
           ? customFieldCreatePayload(
-              targetModel: _targetModel,
+              targetModel: _target(watch: false),
               key: _key.text,
               label: _label.text,
               fieldType: _fieldType,
@@ -210,7 +237,7 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
             const SizedBox(height: 12),
             if (_isCreate)
               DropdownButtonFormField<String>(
-                initialValue: _targetModel,
+                initialValue: _target(),
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'On record type',
@@ -218,10 +245,11 @@ class _CustomFieldFormSheetState extends State<_CustomFieldFormSheet> {
                 ),
                 items: [
                   for (final entry in customFieldTargets.entries)
-                    DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    ),
+                    if (_targetOn(entry.key))
+                      DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
                 ],
                 onChanged: (v) =>
                     setState(() => _targetModel = v ?? _targetModel),

@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/automation_provider.dart';
 import '../../providers/custom_objects_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
 
@@ -75,60 +76,90 @@ class SettingsHubScreen extends StatelessWidget {
               description: 'The labels shared across every record type',
               onTap: () => context.push(AppRoutes.settingsTags),
             ),
-            MenuRow(
-              icon: LucideIcons.squareKanban,
-              label: 'Lead pipelines',
-              description: 'The stages leads move through on the board',
-              onTap: () => context.push(AppRoutes.settingsLeadPipelines),
+            _ModuleGate(
+              module: 'leads',
+              child: MenuRow(
+                icon: LucideIcons.squareKanban,
+                label: 'Lead pipelines',
+                description: 'The stages leads move through on the board',
+                onTap: () => context.push(AppRoutes.settingsLeadPipelines),
+              ),
             ),
-            MenuRow(
-              icon: LucideIcons.chartNoAxesColumn,
-              label: 'Deal pipelines',
-              description: 'The stages deals move through, and when they stall',
-              onTap: () => context.push(AppRoutes.settingsDealPipelines),
+            _ModuleGate(
+              module: 'deals',
+              child: MenuRow(
+                icon: LucideIcons.chartNoAxesColumn,
+                label: 'Deal pipelines',
+                description:
+                    'The stages deals move through, and when they stall',
+                onTap: () => context.push(AppRoutes.settingsDealPipelines),
+              ),
             ),
-            const _SectionHeader('Tickets'),
-            MenuRow(
-              icon: LucideIcons.gitBranch,
-              label: 'Routing',
-              description: 'Who a new ticket is assigned to',
-              onTap: () => context.push(AppRoutes.settingsRouting),
+            Consumer(
+              builder: (context, ref, _) => ref.watch(productsOnProvider)
+                  ? MenuRow(
+                      icon: LucideIcons.package,
+                      label: 'Products',
+                      description:
+                          'The products and prices invoices and estimates use',
+                      onTap: () => context.push(AppRoutes.products),
+                    )
+                  : const SizedBox.shrink(),
             ),
-            MenuRow(
-              icon: LucideIcons.bellOff,
-              label: 'Escalation',
-              description: 'What happens when a ticket misses its SLA target',
-              onTap: () => context.push(AppRoutes.settingsEscalation),
-            ),
-            MenuRow(
-              icon: LucideIcons.clock,
-              label: 'Business hours',
-              description: 'The week every response target is measured against',
-              onTap: () => context.push(AppRoutes.settingsBusinessHours),
-            ),
-            MenuRow(
-              icon: LucideIcons.rotateCcw,
-              label: 'Reopen policy',
-              description: 'Whether a reply brings a closed ticket back',
-              onTap: () => context.push(AppRoutes.settingsReopen),
-            ),
-            MenuRow(
-              icon: LucideIcons.messageSquareQuote,
-              label: 'Saved replies',
-              description: 'Canned answers to insert into a ticket reply',
-              onTap: () => context.push(AppRoutes.settingsMacros),
-            ),
-            MenuRow(
-              icon: LucideIcons.mail,
-              label: 'Inbound email',
-              description: 'The addresses that turn mail into tickets',
-              onTap: () => context.push(AppRoutes.settingsInboundEmail),
-            ),
-            MenuRow(
-              icon: LucideIcons.circleCheckBig,
-              label: 'Approval rules',
-              description: 'What gates a ticket close, and who can clear it',
-              onTap: () => context.push(AppRoutes.settingsTicketApprovals),
+            _ModuleGate(
+              module: 'tickets',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionHeader('Tickets'),
+                  MenuRow(
+                    icon: LucideIcons.gitBranch,
+                    label: 'Routing',
+                    description: 'Who a new ticket is assigned to',
+                    onTap: () => context.push(AppRoutes.settingsRouting),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.bellOff,
+                    label: 'Escalation',
+                    description:
+                        'What happens when a ticket misses its SLA target',
+                    onTap: () => context.push(AppRoutes.settingsEscalation),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.clock,
+                    label: 'Business hours',
+                    description:
+                        'The week every response target is measured against',
+                    onTap: () => context.push(AppRoutes.settingsBusinessHours),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.rotateCcw,
+                    label: 'Reopen policy',
+                    description: 'Whether a reply brings a closed ticket back',
+                    onTap: () => context.push(AppRoutes.settingsReopen),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.messageSquareQuote,
+                    label: 'Saved replies',
+                    description: 'Canned answers to insert into a ticket reply',
+                    onTap: () => context.push(AppRoutes.settingsMacros),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.mail,
+                    label: 'Inbound email',
+                    description: 'The addresses that turn mail into tickets',
+                    onTap: () => context.push(AppRoutes.settingsInboundEmail),
+                  ),
+                  MenuRow(
+                    icon: LucideIcons.circleCheckBig,
+                    label: 'Approval rules',
+                    description:
+                        'What gates a ticket close, and who can clear it',
+                    onTap: () =>
+                        context.push(AppRoutes.settingsTicketApprovals),
+                  ),
+                ],
+              ),
             ),
             const _SectionHeader('Organization'),
             MenuRow(
@@ -136,6 +167,20 @@ class SettingsHubScreen extends StatelessWidget {
               label: 'Organization',
               description: 'Company details printed on documents, and defaults',
               onTap: () => context.push(AppRoutes.settingsOrganization),
+            ),
+            Consumer(
+              builder: (context, ref, _) =>
+                  ref.watch(isOrgAdminProvider) &&
+                      ref.watch(shownModulesProvider) != null
+                  ? MenuRow(
+                      icon: LucideIcons.layoutGrid,
+                      label: 'Modules',
+                      description:
+                          'Switch off the parts of BottleCRM this '
+                          'organization does not use',
+                      onTap: () => context.push(AppRoutes.settingsModules),
+                    )
+                  : const SizedBox.shrink(),
             ),
             MenuRow(
               icon: LucideIcons.keyRound,
@@ -203,13 +248,16 @@ class SettingsHubScreen extends StatelessWidget {
             // Beside web forms for the same reason: it is what a stranger with
             // no account can reach. The public pages are web-only; this is the
             // switch and the address.
-            MenuRow(
-              icon: LucideIcons.globe,
-              label: 'Help center',
-              description:
-                  'Your published articles, public for customers and '
-                  'search engines',
-              onTap: () => context.push(AppRoutes.settingsHelpCenter),
+            _ModuleGate(
+              module: 'knowledge_base',
+              child: MenuRow(
+                icon: LucideIcons.globe,
+                label: 'Help center',
+                description:
+                    'Your published articles, public for customers and '
+                    'search engines',
+                onTap: () => context.push(AppRoutes.settingsHelpCenter),
+              ),
             ),
             const SizedBox(height: 48),
           ],
@@ -237,4 +285,16 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shows its child while the module is on.
+class _ModuleGate extends ConsumerWidget {
+  const _ModuleGate({required this.module, required this.child});
+
+  final String module;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ref.watch(moduleOnProvider(module)) ? child : const SizedBox.shrink();
 }

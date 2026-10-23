@@ -27,11 +27,14 @@
   } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { ChevronRight, Eye, EyeOff } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let { article, tickets, hidden_ticket_count, canRelease, canEdit, canDelete } = $derived(data);
+  // With Tickets off the API empties the ticket figures, so none are shown.
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
 
   /**
    * What is standing between this article and being suggested on tickets,
@@ -48,9 +51,9 @@
         // Without the button, "publishing is the last step" leaves a reader
         // hunting for a control that is not theirs. Naming who does it is the
         // whole value of the sentence for everybody else.
-        text: canRelease
-          ? 'Approved, but not suggested on tickets yet. Publishing is the last step.'
-          : 'Approved, but not suggested on tickets yet. An admin has to publish it.',
+        text: `Approved, but ${ticketsOn ? 'not suggested on tickets' : 'not published'} yet. ${
+          canRelease ? 'Publishing is the last step.' : 'An admin has to publish it.'
+        }`,
         action: canRelease ? 'Publish' : null,
         form: 'setPublished',
         value: 'true'
@@ -85,9 +88,13 @@
     {[
       article.author || 'Unknown author',
       `edited ${relativeDays(article.updated_at)}`,
-      article.use_count
-        ? `filed on ${article.use_count} ticket${article.use_count === 1 ? '' : 's'}`
-        : 'not linked to a ticket yet'
+      ...(ticketsOn
+        ? [
+            article.use_count
+              ? `filed on ${article.use_count} ticket${article.use_count === 1 ? '' : 's'}`
+              : 'not linked to a ticket yet'
+          ]
+        : [])
     ].join(' · ')}
   {/snippet}
   {#snippet actions()}
@@ -150,41 +157,43 @@
           {article.description}
         </article>
 
-        <!-- The tickets this article was filed against. Real rows, and the
-             other direction of the link the ticket page already draws. -->
-        <div class="v2-label" style="margin:26px 0 10px">
-          {tickets.length || hidden_ticket_count ? 'Filed against' : 'Not used yet'}
-        </div>
-        {#if tickets.length}
-          <div class="v2-card" style="overflow:hidden;max-width:70ch">
-            {#each tickets as t (t.id)}
-              <a
-                href={resolve(`tickets/${t.id}`)}
-                style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
-              >
-                <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
-                <Pill tone={CASE_STATUS_TONE[t.status]}>{t.status}</Pill>
-                <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
-              </a>
-            {/each}
+        {#if ticketsOn}
+          <!-- The tickets this article was filed against. Real rows, and the
+               other direction of the link the ticket page already draws. -->
+          <div class="v2-label" style="margin:26px 0 10px">
+            {tickets.length || hidden_ticket_count ? 'Filed against' : 'Not used yet'}
           </div>
-        {:else if !hidden_ticket_count}
-          <p class="v2-sub" style="font-size:12.5px;max-width:70ch">
-            Nobody has attached this to a ticket. Either the question has stopped being asked, or
-            the article is hard to find while somebody is typing a reply.
-          </p>
-        {/if}
+          {#if tickets.length}
+            <div class="v2-card" style="overflow:hidden;max-width:70ch">
+              {#each tickets as t (t.id)}
+                <a
+                  href={resolve(`tickets/${t.id}`)}
+                  style="display:flex;gap:12px;align-items:center;padding:11px 15px;border-bottom:1px solid var(--v2-line-soft);color:inherit;text-decoration:none"
+                >
+                  <span style="flex:1;font-size:13px;min-width:0">{t.name}</span>
+                  <Pill tone={CASE_STATUS_TONE[t.status]}>{t.status}</Pill>
+                  <Pill tone={PRIORITY_TONE[t.priority]}>{t.priority}</Pill>
+                </a>
+              {/each}
+            </div>
+          {:else if !hidden_ticket_count}
+            <p class="v2-sub" style="font-size:12.5px;max-width:70ch">
+              Nobody has attached this to a ticket. Either the question has stopped being asked, or
+              the article is hard to find while somebody is typing a reply.
+            </p>
+          {/if}
 
-        {#if hidden_ticket_count}
-          <!-- The API filters this rail to tickets the reader may open, while
-               the count stays the article's real usage. Saying so is better
-               than a number that quietly means something different per
-               reader. -->
-          <p class="v2-sub" style="font-size:12px;margin-top:10px;max-width:70ch">
-            {hidden_ticket_count}
-            {hidden_ticket_count === 1 ? 'other ticket uses' : 'other tickets use'} this article and
-            {hidden_ticket_count === 1 ? 'is' : 'are'} not yours to open.
-          </p>
+          {#if hidden_ticket_count}
+            <!-- The API filters this rail to tickets the reader may open, while
+                 the count stays the article's real usage. Saying so is better
+                 than a number that quietly means something different per
+                 reader. -->
+            <p class="v2-sub" style="font-size:12px;margin-top:10px;max-width:70ch">
+              {hidden_ticket_count}
+              {hidden_ticket_count === 1 ? 'other ticket uses' : 'other tickets use'} this article and
+              {hidden_ticket_count === 1 ? 'is' : 'are'} not yours to open.
+            </p>
+          {/if}
         {/if}
       </div>
     </div>
@@ -216,18 +225,22 @@
       </dd>
       <dt>Author</dt>
       <dd>{article.author || '—'}</dd>
-      <dt>Used on</dt>
-      <dd class="v2-num">{article.use_count} tickets</dd>
+      {#if ticketsOn}
+        <dt>Used on</dt>
+        <dd class="v2-num">{article.use_count} tickets</dd>
+      {/if}
       <dt>Written</dt>
       <dd>{longDate(article.created_at)}</dd>
       <dt>Edited</dt>
       <dd>{longDate(article.updated_at)}</dd>
     </dl>
 
-    <div class="v2-label v2-rail-head">How this gets used</div>
-    <div class="v2-card" style="padding:11px 12px;font-size:12px;line-height:1.55">
-      Published articles are offered on the ticket screen while somebody is typing a reply. An
-      article nobody has linked to a ticket is usually one that answers a question nobody asked.
-    </div>
+    {#if ticketsOn}
+      <div class="v2-label v2-rail-head">How this gets used</div>
+      <div class="v2-card" style="padding:11px 12px;font-size:12px;line-height:1.55">
+        Published articles are offered on the ticket screen while somebody is typing a reply. An
+        article nobody has linked to a ticket is usually one that answers a question nobody asked.
+      </div>
+    {/if}
   </aside>
 </div>

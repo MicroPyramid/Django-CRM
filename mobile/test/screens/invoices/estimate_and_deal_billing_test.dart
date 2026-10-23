@@ -4,6 +4,7 @@ import 'package:bottle_crm/providers/deals_provider.dart';
 import 'package:bottle_crm/providers/invoice_extras_provider.dart';
 import 'package:bottle_crm/providers/invoices_provider.dart';
 import 'package:bottle_crm/providers/lookup_provider.dart';
+import 'package:bottle_crm/providers/org_modules_provider.dart';
 import 'package:bottle_crm/routes/app_router.dart';
 import 'package:bottle_crm/screens/deals/deal_detail_screen.dart';
 import 'package:bottle_crm/screens/invoices/new_estimate_screen.dart';
@@ -12,6 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../support/modules_fixtures.dart';
 
 /// Raising an estimate, blank or from a deal, and an invoice from a won deal.
 ///
@@ -93,6 +96,8 @@ void main() {
       WidgetTester tester, {
       Deal? fromDeal,
       double textScale = 1.0,
+      List<String> off = const [],
+      void Function()? onDealsRead,
     }) async {
       usePhone(tester, textScale);
       final router = GoRouter(
@@ -108,11 +113,17 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...modulesOverrides(
+              FakeOrgModules(() async => modulesAnswer(off: off)),
+            ),
             accountsLookupProvider.overrideWith(_FakeAccounts.new),
             contactsLookupProvider.overrideWith(_FakeContacts.new),
-            opportunityEntityOptionsProvider.overrideWithValue(
-              const AsyncValue.data([EntityLookup(id: 'd1', label: 'Renewal')]),
-            ),
+            opportunityEntityOptionsProvider.overrideWith((ref) {
+              onDealsRead?.call();
+              return const AsyncValue.data([
+                EntityLookup(id: 'd1', label: 'Renewal'),
+              ]);
+            }),
             productsProvider.overrideWith(_FakeProducts.new),
             estimatesProvider.overrideWith(() => estimates),
           ],
@@ -120,6 +131,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // The app has the module answer before any form opens; a form that
+      // starts during the first load reads every module as on.
+      await ProviderScope.containerOf(
+        tester.element(find.text('started')),
+      ).read(orgModulesProvider.future);
       router.push('/form');
       await tester.pumpAndSettle();
     }
@@ -138,6 +154,25 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('Pipeline off hides the Deal field and never reads deals', (
+      tester,
+    ) async {
+      var reads = 0;
+      await pumpForm(tester, off: ['deals'], onDealsRead: () => reads++);
+      expect(find.text('Deal (optional)'), findsNothing);
+      expect(reads, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Pipeline on shows the Deal field and reads deals', (
+      tester,
+    ) async {
+      var reads = 0;
+      await pumpForm(tester, onDealsRead: () => reads++);
+      expect(find.text('Deal (optional)'), findsOneWidget);
+      expect(reads, greaterThan(0));
+    });
 
     testWidgets('a blank form will not submit', (tester) async {
       await pumpForm(tester);

@@ -1,3 +1,5 @@
+import { isOn } from '#lib/v2/modules.js';
+
 /**
  * Section tab sets, defined once so a destination shows the same tabs from
  * whichever of its pages you arrive on. v1 defined them per page, which is how
@@ -14,9 +16,9 @@
  */
 export const TAB_SETS = {
   tickets: [
-    { href: '/tickets', label: 'Queue', exact: true, count: 'tickets' },
-    { href: '/tickets/approvals', label: 'Approvals', count: 'approvals' },
-    { href: '/tickets/analytics', label: 'Analytics', admin: true }
+    { href: '/tickets', label: 'Queue', exact: true, count: 'tickets', module: 'tickets' },
+    { href: '/tickets/approvals', label: 'Approvals', count: 'approvals', module: 'tickets' },
+    { href: '/tickets/analytics', label: 'Analytics', admin: true, module: 'tickets' }
   ],
   /**
    * These two are NOT two views of one list. `tasks.Task` and
@@ -26,17 +28,17 @@ export const TAB_SETS = {
    * says the rest out loud, because nothing about the word suggests it.
    */
   tasks: [
-    { href: '/tasks', label: 'Task list', exact: true, count: 'tasks' },
-    { href: '/tasks/board', label: 'Boards' },
-    { href: '/tasks/calendar', label: 'Calendar' }
+    { href: '/tasks', label: 'Task list', exact: true, count: 'tasks', module: 'tasks' },
+    { href: '/tasks/board', label: 'Boards', module: 'tasks' },
+    { href: '/tasks/calendar', label: 'Calendar', module: 'tasks' }
   ],
   invoices: [
-    { href: '/invoices', label: 'Invoices', exact: true, count: 'invoices' },
-    { href: '/invoices/estimates', label: 'Estimates' },
-    { href: '/invoices/recurring', label: 'Recurring' },
-    { href: '/invoices/products', label: 'Products' },
-    { href: '/invoices/reports', label: 'Reports', admin: true },
-    { href: '/invoices/templates', label: 'Templates' }
+    { href: '/invoices', label: 'Invoices', exact: true, count: 'invoices', module: 'invoices' },
+    { href: '/invoices/estimates', label: 'Estimates', module: 'invoices' },
+    { href: '/invoices/recurring', label: 'Recurring', module: 'invoices' },
+    { href: '/invoices/products', label: 'Products', anyOf: ['invoices', 'deals'] },
+    { href: '/invoices/reports', label: 'Reports', admin: true, module: 'invoices' },
+    { href: '/invoices/templates', label: 'Templates', module: 'invoices' }
   ]
 };
 
@@ -53,3 +55,20 @@ export const TAB_SETS = {
  * it on each page, which is also the shape that keeps working as the count
  * grows past twelve.
  */
+
+/**
+ * The tabs of a set that this person can use: admin tabs for admins, and only
+ * those whose module is on.
+ *
+ * @param {keyof typeof TAB_SETS} set
+ * @param {{ isAdmin?: boolean, modules?: import('#lib/v2/modules.js').ModuleRow[] | null }} [opts]
+ */
+export function visibleTabs(set, { isAdmin = false, modules = null } = {}) {
+  return (TAB_SETS[set] ?? []).filter((tab) => {
+    const t = /** @type {any} */ (tab);
+    if (t.admin && !isAdmin) return false;
+    if (t.module && !isOn(modules, t.module)) return false;
+    if (t.anyOf && !t.anyOf.some((/** @type {string} */ k) => isOn(modules, k))) return false;
+    return true;
+  });
+}

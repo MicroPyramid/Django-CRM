@@ -5,8 +5,10 @@ field or option its edit form would refuse, or name a person, endpoint or
 link outside its org. Every id is looked up with the rule's org.
 """
 
+import json
 import re
 import uuid
+from collections import Counter
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
@@ -61,19 +63,34 @@ def offered_actions(org):
     return [kind for kind in ACTION_KEYS if kind != "create_task"]
 
 
+def _task_step_key(action):
+    """A Create a task step by its content: a missing key reads as null."""
+    return tuple(
+        json.dumps(action.get(key), sort_keys=True)
+        for key in sorted(ACTION_KEYS["create_task"])
+    )
+
+
 def new_task_step_errors(org, actions, stored) -> dict[str, list[str]]:
     """While Tasks is off, a Create a task step the stored rule lacks is refused.
-    One it has is kept, and skipped when the rule runs."""
+    A stored step covers one sent step, whatever its position; the rest are new."""
     if module_is_available(org, "tasks") or not isinstance(actions, list):
         return {}
-    stored = stored if isinstance(stored, list) else []
-    return {
-        f"actions[{index}].type": [module_off_message(org, "tasks")]
-        for index, action in enumerate(actions)
-        if isinstance(action, dict)
-        and action.get("type") == "create_task"
-        and action not in stored
-    }
+    kept = Counter(
+        _task_step_key(step)
+        for step in (stored if isinstance(stored, list) else [])
+        if isinstance(step, dict) and step.get("type") == "create_task"
+    )
+    errors = {}
+    for index, action in enumerate(actions):
+        if not isinstance(action, dict) or action.get("type") != "create_task":
+            continue
+        key = _task_step_key(action)
+        if kept[key] > 0:
+            kept[key] -= 1
+        else:
+            errors[f"actions[{index}].type"] = [module_off_message(org, "tasks")]
+    return errors
 
 
 def validate_rule(org, data: dict) -> dict[str, list[str]]:

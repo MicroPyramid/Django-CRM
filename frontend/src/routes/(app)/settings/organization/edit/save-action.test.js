@@ -53,6 +53,16 @@ describe('organization save action', () => {
     expect(apiRequest.mock.calls[0][1].body).toEqual({ name: 'Acme' });
   });
 
+  it('leaves the numbering and both switches alone when the form omits them', async () => {
+    // The form with Invoices and Tickets switched off has none of those fields.
+    apiRequest.mockResolvedValue({});
+    await expect(
+      actions.save(saveEvent({ name: 'Acme', default_currency: 'EUR', timezone: 'UTC' }))
+    ).rejects.toMatchObject({ status: 303 });
+    const body = apiRequest.mock.calls[0][1].body;
+    expect(body).toEqual({ name: 'Acme', default_currency: 'EUR', timezone: 'UTC' });
+  });
+
   it("keeps the server's reason when it refuses", async () => {
     apiRequest.mockRejectedValue(
       Object.assign(new Error('A starting number only applies to numbers without a date.'), {

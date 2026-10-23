@@ -14,6 +14,7 @@
  * the record's own read predicate first.
  */
 import * as env from '$app/env/public';
+import { moduleOffDetail } from '#lib/server/v2/modules.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
 
@@ -65,7 +66,7 @@ export async function streamDownload({ cookies, request }, path) {
   });
 
   if (!upstream.ok || !upstream.body) {
-    return new Response('Could not download that file.', {
+    return new Response((await moduleOffDetail(upstream)) ?? 'Could not download that file.', {
       status: upstream.status || 502
     });
   }

@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../common/common.dart';
 import 'deal_aging_badge.dart';
 
@@ -144,7 +145,9 @@ class DealCard extends ConsumerWidget {
                     // Row 2c: next step, on open deals only (a won or lost
                     // deal has none to take) and only where the list
                     // computed it. `isClosed` reads the server's stage kind.
-                    if (deal.nextActivityKnown && !deal.isClosed) ...[
+                    if (deal.nextActivityKnown &&
+                        !deal.isClosed &&
+                        ref.watch(moduleOnProvider('tasks'))) ...[
                       const SizedBox(height: 6),
                       DealNextStep(activity: deal.nextActivity),
                     ],

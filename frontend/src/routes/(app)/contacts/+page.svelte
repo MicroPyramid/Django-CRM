@@ -9,11 +9,13 @@
   import { count, relativeDays } from '#lib/v2/format.js';
   import ContactImportDrawer from '#lib/components/contacts/ContactImportDrawer.svelte';
   import { Download, Users, PhoneOff, Plus, Upload } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any }} */
   let { data } = $props();
 
   let contacts = $derived(data.contacts);
+  let leadsOn = $derived(isOn(data.modules, 'leads'));
   let totals = $derived(data.totals);
   let importOpen = $state(false);
 </script>
@@ -62,13 +64,17 @@
   {#if contacts.length === 0}
     <EmptyState
       title="No contacts yet"
-      body="A contact is a person at an account. Convert a lead, or add one directly and attach them to the account they work for."
+      body={leadsOn
+        ? 'A contact is a person at an account. Convert a lead, or add one directly and attach them to the account they work for.'
+        : 'A contact is a person at an account. Add one and attach them to the account they work for.'}
     >
       {#snippet icon()}<Users size={21} />{/snippet}
       {#snippet actions()}
         <a class="v2-btn v2-btn-primary" href={resolve('contacts/new')}>New contact</a>
         <button class="v2-btn" onclick={() => (importOpen = true)}>Import</button>
-        <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {#if leadsOn}
+          <a class="v2-btn" href={resolve('leads')}>Go to leads</a>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}

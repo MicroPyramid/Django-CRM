@@ -20,6 +20,7 @@
   import Pill from '#lib/v2/components/Pill.svelte';
   import { money, count, shortDate, hoursMinutes as hm } from '#lib/v2/format.js';
   import { todayIn } from '#lib/v2/dates.js';
+  import { isBilled } from '#lib/v2/time-entry.js';
   import { ChevronLeft, ChevronRight, Square, Receipt } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -103,7 +104,7 @@
   );
 
   let unbilled = $derived(
-    week.days.reduce((a, d) => a + d.entries.filter((e) => e.billable && !e.invoice).length, 0)
+    week.days.reduce((a, d) => a + d.entries.filter((e) => e.billable && !isBilled(e)).length, 0)
   );
 </script>
 
@@ -212,18 +213,27 @@
                   <Pill tone="clay" dot>running</Pill>
                 {:else if !e.billable}
                   <span class="v2-sub" style="font-size:10.5px">internal</span>
-                {:else if e.invoice}
+                {:else if isBilled(e)}
                   <!-- Already billed. Links out rather than offering to bill
                        it again. Double-billing an hour is a refund, not an
                        edge case. -->
-                  <a
-                    href={resolve(`invoices/${e.invoice.id}`)}
-                    class="v2-sub"
-                    style="font-size:10.5px;display:inline-flex;gap:3px;align-items:center;color:var(--v2-moss)"
-                    title="Billed on {e.invoice.invoice_number}"
-                  >
-                    <Receipt size={10} />billed
-                  </a>
+                  {#if e.invoice}
+                    <a
+                      href={resolve(`invoices/${e.invoice.id}`)}
+                      class="v2-sub"
+                      style="font-size:10.5px;display:inline-flex;gap:3px;align-items:center;color:var(--v2-moss)"
+                      title="Billed on {e.invoice.invoice_number}"
+                    >
+                      <Receipt size={10} />billed {e.invoice.invoice_number}
+                    </a>
+                  {:else}
+                    <span
+                      class="v2-sub"
+                      style="font-size:10.5px;display:inline-flex;gap:3px;align-items:center;color:var(--v2-moss)"
+                    >
+                      <Receipt size={10} />billed
+                    </span>
+                  {/if}
                 {/if}
               </div>
               <a

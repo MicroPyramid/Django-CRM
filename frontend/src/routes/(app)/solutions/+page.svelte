@@ -25,12 +25,15 @@
   import { SOLUTION_STATUS_LABEL, SOLUTION_STATUS_TONE } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
   import { BookOpen, Eye, EyeOff, Plus } from '@lucide/svelte';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
 
   let articles = $derived(data.articles);
   let totals = $derived(data.totals);
+  // With Tickets off the API empties each article's ticket count.
+  let ticketsOn = $derived(isOn(data.modules, 'tickets'));
 </script>
 
 <PageHeader title="Knowledge base">
@@ -93,7 +96,9 @@
       title={page.url.search ? 'No articles match that' : 'No articles yet'}
       body={page.url.search
         ? 'Nothing in the knowledge base matches those filters. Clearing them shows everything.'
-        : 'Write the answer once, link it from the tickets that ask for it, and stop retyping it. The first one usually comes straight out of a ticket you just resolved.'}
+        : ticketsOn
+          ? 'Write the answer once, link it from the tickets that ask for it, and stop retyping it. The first one usually comes straight out of a ticket you just resolved.'
+          : 'Write the answer once and stop retyping it. A published article is what customers read in the portal, and in the public help center once it is switched on.'}
     >
       {#snippet icon()}<BookOpen size={21} />{/snippet}
       {#snippet actions()}
@@ -101,7 +106,9 @@
           <a class="v2-btn" href={resolve('solutions')}>Clear filters</a>
         {/if}
         <a class="v2-btn v2-btn-primary" href={resolve('solutions/new')}>New article</a>
-        <a class="v2-btn" href={resolve('tickets')}>Go to tickets</a>
+        {#if ticketsOn}
+          <a class="v2-btn" href={resolve('tickets')}>Go to tickets</a>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}
@@ -112,7 +119,7 @@
             <th>Article</th>
             <th>Status</th>
             <th>Visibility</th>
-            <th class="v2-r">Tickets solved</th>
+            {#if ticketsOn}<th class="v2-r">Tickets solved</th>{/if}
             <th>Author</th>
             <th class="v2-r">Edited</th>
             <th style="width:110px"></th>
@@ -149,9 +156,11 @@
               </td>
               <!-- The unit lives in the header, so the cell stays a bare
                    number and the column reads as a column. -->
-              <td class="v2-r v2-num" class:v2-muted={!s.use_count} data-m="meta">
-                {s.use_count || '—'}
-              </td>
+              {#if ticketsOn}
+                <td class="v2-r v2-num" class:v2-muted={!s.use_count} data-m="meta">
+                  {s.use_count || '—'}
+                </td>
+              {/if}
               <td data-m="hide">{s.author || '—'}</td>
               <td class="v2-r v2-muted" data-m="hide">{relativeDays(s.updated_at)}</td>
               <td>

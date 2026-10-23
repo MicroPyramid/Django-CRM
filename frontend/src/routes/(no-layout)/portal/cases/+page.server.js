@@ -38,6 +38,8 @@ export async function load({ cookies, url }) {
     if (err instanceof PortalError && (err.status === 401 || err.status === 403)) {
       toLogin(cookies);
     }
+    // The ticket list answers 404 when the org has switched tickets off.
+    if (err instanceof PortalError && err.status === 404) throw redirect(303, '/portal/articles');
     throw err;
   }
 }

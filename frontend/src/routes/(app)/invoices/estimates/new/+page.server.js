@@ -6,6 +6,8 @@ import { listProducts } from '#lib/server/v2/products.js';
 import { createEstimate, estimateFromDeal } from '#lib/server/v2/estimates.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { getNumbering } from '#lib/server/v2/organization.js';
+import { getModules } from '#lib/server/v2/modules.js';
+import { isOn } from '#lib/v2/modules.js';
 
 /**
  * The estimate builder's pickers, the same list layers the invoice builder
@@ -18,19 +20,31 @@ import { getNumbering } from '#lib/server/v2/organization.js';
  *
  * @type {import('./$types').PageServerLoad}
  */
-export async function load({ cookies, url }) {
-  const dealId = url.searchParams.get('opportunity');
+export async function load({ cookies, locals, url }) {
+  // Asked directly: `parent()` would rerun the whole shell load.
+  const modulesP = getModules({ cookies, locals });
+  const dealsOnP = modulesP.then((m) => isOn(m?.modules ?? null, 'deals'));
+  const requested = url.searchParams.get('opportunity');
   const [accounts, contacts, products, deals, prefill, numbering] = await Promise.all([
     listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listProducts({ cookies }),
     // A failed deal list costs the optional deal picker, not the form.
-    listDeals({ cookies }, new URLSearchParams({ limit: '1000' })).catch(() => ({ results: [] })),
-    dealId ? estimateFromDeal({ cookies }, dealId) : null,
+    dealsOnP.then((on) =>
+      on
+        ? listDeals({ cookies }, new URLSearchParams({ limit: '1000' })).catch(() => ({
+            results: []
+          }))
+        : { results: [] }
+    ),
+    requested
+      ? dealsOnP.then((on) => (on ? estimateFromDeal({ cookies }, requested) : null))
+      : null,
     getNumbering({ cookies })
   ]);
 
   return {
+    modules: (await modulesP)?.modules ?? null,
     accounts: accounts.results.map((a) => ({ id: a.id, name: a.name || 'Unnamed account' })),
     contacts: contacts.results.map((c) => ({
       id: c.id,

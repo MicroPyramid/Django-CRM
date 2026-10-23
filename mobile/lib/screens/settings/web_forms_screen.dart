@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/web_form.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/web_forms_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/badge.dart';
@@ -116,16 +117,28 @@ class WebFormsScreen extends ConsumerWidget {
 /// A name and a target. The target is asked here, not in the editor, because
 /// it decides which fields the editor offers and the server fixes it once the
 /// form has submissions.
-class _CreateDialog extends StatefulWidget {
+class _CreateDialog extends ConsumerStatefulWidget {
   const _CreateDialog();
 
   @override
-  State<_CreateDialog> createState() => _CreateDialogState();
+  ConsumerState<_CreateDialog> createState() => _CreateDialogState();
 }
 
-class _CreateDialogState extends State<_CreateDialog> {
+class _CreateDialogState extends ConsumerState<_CreateDialog> {
   final _controller = TextEditingController();
-  String _target = WebForm.targetLead;
+  String? _chosen;
+
+  /// The targets whose module is on, in the order offered.
+  List<String> get _targets => [
+    if (ref.read(moduleOnProvider('leads'))) WebForm.targetLead,
+    if (ref.read(moduleOnProvider('tickets'))) WebForm.targetTicket,
+  ];
+
+  String? get _target {
+    final targets = _targets;
+    if (targets.isEmpty) return null;
+    return targets.contains(_chosen) ? _chosen : targets.first;
+  }
 
   @override
   void dispose() {
@@ -133,11 +146,33 @@ class _CreateDialogState extends State<_CreateDialog> {
     super.dispose();
   }
 
-  void _submit() =>
-      Navigator.of(context).pop((name: _controller.text, target: _target));
+  void _submit() {
+    final target = _target;
+    if (target == null) return;
+    Navigator.of(context).pop((name: _controller.text, target: target));
+  }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(moduleOnProvider('leads'));
+    ref.watch(moduleOnProvider('tickets'));
+    final target = _target;
+    if (target == null) {
+      return AlertDialog(
+        title: const Text('New web form'),
+        content: const Text(
+          'Web forms create leads or tickets, and both are switched off. '
+          'An admin can switch one on in Modules settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      );
+    }
+    final targets = _targets;
     return AlertDialog(
       title: const Text('New web form'),
       content: SingleChildScrollView(
@@ -162,16 +197,21 @@ class _CreateDialogState extends State<_CreateDialog> {
             Text('Each submission creates', style: AppTypography.label),
             const SizedBox(height: 8),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: WebForm.targetLead, label: Text('A lead')),
-                ButtonSegment(
-                  value: WebForm.targetTicket,
-                  label: Text('A ticket'),
-                ),
+              segments: [
+                if (targets.contains(WebForm.targetLead))
+                  const ButtonSegment(
+                    value: WebForm.targetLead,
+                    label: Text('A lead'),
+                  ),
+                if (targets.contains(WebForm.targetTicket))
+                  const ButtonSegment(
+                    value: WebForm.targetTicket,
+                    label: Text('A ticket'),
+                  ),
               ],
-              selected: {_target},
+              selected: {target},
               onSelectionChanged: (selection) =>
-                  setState(() => _target = selection.first),
+                  setState(() => _chosen = selection.first),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/deal_pipelines_provider.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/invoices_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
@@ -1280,7 +1281,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                     ],
                   ),
                 ),
-                if (isWon) ...[
+                if (isWon && ref.watch(moduleOnProvider('invoices'))) ...[
                   const SizedBox(height: 12),
                   PrimaryButton(
                     label: 'Create invoice',
@@ -1449,6 +1450,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     // Read and edit are wider (assignees too), which is why Edit stays
     // unconditional and Delete does not.
     final canDelete = _canDelete;
+    final invoicesOn = ref.read(moduleOnProvider('invoices'));
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1476,15 +1478,19 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
                 _navigateToEdit();
               },
             ),
-            ListTile(
-              leading: Icon(LucideIcons.fileText, color: AppColors.primary600),
-              title: const Text('Create estimate'),
-              onTap: () {
-                Navigator.pop(context);
-                _createEstimate();
-              },
-            ),
-            if (_deal?.isWon ?? false)
+            if (invoicesOn)
+              ListTile(
+                leading: Icon(
+                  LucideIcons.fileText,
+                  color: AppColors.primary600,
+                ),
+                title: const Text('Create estimate'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _createEstimate();
+                },
+              ),
+            if (invoicesOn && (_deal?.isWon ?? false))
               ListTile(
                 leading: Icon(LucideIcons.receipt, color: AppColors.primary600),
                 title: const Text('Create invoice'),

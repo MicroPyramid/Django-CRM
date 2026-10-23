@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/deal.dart' show Currency;
 import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/org_date.dart';
 
@@ -156,18 +157,22 @@ class _FormState extends ConsumerState<_Form> {
   String _value(String key) => _text[key]!.text;
 
   Future<void> _save() async {
+    // Hidden numbering fields hold what is stored, so a check on them would
+    // block the save with nothing on screen to fix.
     final problem =
         orgSettingsProblem(
           email: _value('email'),
           website: _value('website'),
         ) ??
-        numberingProblem(
-          invoicePrefix: _value('invoice_number_prefix'),
-          estimatePrefix: _value('estimate_number_prefix'),
-          datePart: _datePart,
-          padding: _value('number_padding'),
-          start: _value('invoice_number_start'),
-        );
+        (ref.read(moduleOnProvider('invoices'))
+            ? numberingProblem(
+                invoicePrefix: _value('invoice_number_prefix'),
+                estimatePrefix: _value('estimate_number_prefix'),
+                datePart: _datePart,
+                padding: _value('number_padding'),
+                start: _value('invoice_number_start'),
+              )
+            : null);
     if (problem != null) {
       setState(() => _error = problem);
       return;
@@ -221,6 +226,8 @@ class _FormState extends ConsumerState<_Form> {
   @override
   Widget build(BuildContext context) {
     final zones = ref.watch(orgTimezonesProvider);
+    final invoicesOn = ref.watch(moduleOnProvider('invoices'));
+    final ticketsOn = ref.watch(moduleOnProvider('tickets'));
     final currencies = [
       for (final currency in Currency.values)
         (value: currency.value, label: '${currency.label} ${currency.symbol}'),
@@ -229,12 +236,16 @@ class _FormState extends ConsumerState<_Form> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       children: [
-        Text(
-          'Printed on every invoice and estimate. Changes apply from now on; '
-          'documents already sent keep what they were sent with.',
-          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 16),
+        if (invoicesOn) ...[
+          Text(
+            'Printed on every invoice and estimate. Changes apply from now on; '
+            'documents already sent keep what they were sent with.',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         _field('company_name', 'Legal name', maxLength: 255),
         _field('name', 'Trading name', maxLength: 100),
         _field('tax_id', 'Tax ID', maxLength: 50),
@@ -260,8 +271,11 @@ class _FormState extends ConsumerState<_Form> {
         _picker(
           label: 'Currency',
           value: _currency,
-          helper:
-              'Applied to new invoices and estimates. Existing ones keep theirs.',
+          helper: invoicesOn
+              ? 'Applied to new invoices and estimates. Existing ones keep '
+                    'theirs.'
+              : 'The default for new records that carry an amount. Existing '
+                    'ones keep theirs.',
           options: withCurrent(currencies, _currency),
           onChanged: (v) => setState(() => _currency = v),
         ),
@@ -289,101 +303,113 @@ class _FormState extends ConsumerState<_Form> {
           ], _timezone),
           onChanged: (v) => setState(() => _timezone = v),
         ),
-        const _SectionLabel('Invoice numbers'),
-        Text(
-          'How new invoice and estimate numbers look. Numbers already issued '
-          'keep theirs.',
-          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 14),
-        _field(
-          'invoice_number_prefix',
-          'Invoice prefix',
-          maxLength: 20,
-          capitalization: TextCapitalization.characters,
-        ),
-        _field(
-          'estimate_number_prefix',
-          'Estimate prefix',
-          maxLength: 20,
-          capitalization: TextCapitalization.characters,
-        ),
-        _picker(
-          label: 'Date in the number',
-          value: _datePart,
-          options: withCurrent(numberDatePartOptions, _datePart),
-          onChanged: (v) => setState(() => _datePart = v),
-        ),
-        _field('number_padding', 'Counter digits', maxLength: 2, digits: true),
-        // A dated count restarts each period, so the start only exists for
-        // undated numbers; the payload sends 1 otherwise.
-        if (_datePart == 'NONE')
-          _field(
-            'invoice_number_start',
-            'Start invoices at',
-            maxLength: 9,
-            digits: true,
-            helper:
-                'To carry on a sequence from another system. If invoices here '
-                'already go higher, numbering carries on from the highest.',
-          ),
-        ListenableBuilder(
-          listenable: Listenable.merge([
-            _text['invoice_number_prefix'],
-            _text['estimate_number_prefix'],
-            _text['number_padding'],
-            _text['invoice_number_start'],
-          ]),
-          builder: (context, _) {
-            final today = orgToday();
-            final padding = int.tryParse(_value('number_padding').trim()) ?? 1;
-            String example(String prefix, {int start = 1}) => exampleNumber(
-              prefix: _value(prefix).trim(),
-              datePart: _datePart,
-              padding: padding,
-              start: start,
-              today: today,
-            );
-            final start =
-                int.tryParse(_value('invoice_number_start').trim()) ?? 1;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Text(
-                'New invoices look like '
-                '${example('invoice_number_prefix', start: start)}, estimates '
-                'like ${example('estimate_number_prefix')}.',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            );
-          },
-        ),
-        const _SectionLabel('Behaviour'),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _csat,
-          onChanged: (v) => setState(() => _csat = v),
-          title: const Text('Satisfaction surveys'),
-          subtitle: Text(
-            csatExplanation(_csat),
-            style: AppTypography.caption.copyWith(
-              color: _csat ? AppColors.textSecondary : AppColors.warning600,
-            ),
-          ),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _cascade,
-          onChanged: (v) => setState(() => _cascade = v),
-          title: const Text('Close child tickets with the parent'),
-          subtitle: Text(
-            '${cascadeDefaultExplanation(_cascade)} $cascadeWebGapNote',
+        if (invoicesOn) ...[
+          const _SectionLabel('Invoice numbers'),
+          Text(
+            'How new invoice and estimate numbers look. Numbers already issued '
+            'keep theirs.',
             style: AppTypography.caption.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
-        ),
+          const SizedBox(height: 14),
+          _field(
+            'invoice_number_prefix',
+            'Invoice prefix',
+            maxLength: 20,
+            capitalization: TextCapitalization.characters,
+          ),
+          _field(
+            'estimate_number_prefix',
+            'Estimate prefix',
+            maxLength: 20,
+            capitalization: TextCapitalization.characters,
+          ),
+          _picker(
+            label: 'Date in the number',
+            value: _datePart,
+            options: withCurrent(numberDatePartOptions, _datePart),
+            onChanged: (v) => setState(() => _datePart = v),
+          ),
+          _field(
+            'number_padding',
+            'Counter digits',
+            maxLength: 2,
+            digits: true,
+          ),
+          // A dated count restarts each period, so the start only exists for
+          // undated numbers; the payload sends 1 otherwise.
+          if (_datePart == 'NONE')
+            _field(
+              'invoice_number_start',
+              'Start invoices at',
+              maxLength: 9,
+              digits: true,
+              helper:
+                  'To carry on a sequence from another system. If invoices here '
+                  'already go higher, numbering carries on from the highest.',
+            ),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              _text['invoice_number_prefix'],
+              _text['estimate_number_prefix'],
+              _text['number_padding'],
+              _text['invoice_number_start'],
+            ]),
+            builder: (context, _) {
+              final today = orgToday();
+              final padding =
+                  int.tryParse(_value('number_padding').trim()) ?? 1;
+              String example(String prefix, {int start = 1}) => exampleNumber(
+                prefix: _value(prefix).trim(),
+                datePart: _datePart,
+                padding: padding,
+                start: start,
+                today: today,
+              );
+              final start =
+                  int.tryParse(_value('invoice_number_start').trim()) ?? 1;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Text(
+                  'New invoices look like '
+                  '${example('invoice_number_prefix', start: start)}, estimates '
+                  'like ${example('estimate_number_prefix')}.',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+        if (ticketsOn) ...[
+          const _SectionLabel('Behaviour'),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _csat,
+            onChanged: (v) => setState(() => _csat = v),
+            title: const Text('Satisfaction surveys'),
+            subtitle: Text(
+              csatExplanation(_csat),
+              style: AppTypography.caption.copyWith(
+                color: _csat ? AppColors.textSecondary : AppColors.warning600,
+              ),
+            ),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _cascade,
+            onChanged: (v) => setState(() => _cascade = v),
+            title: const Text('Close child tickets with the parent'),
+            subtitle: Text(
+              '${cascadeDefaultExplanation(_cascade)} $cascadeWebGapNote',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(

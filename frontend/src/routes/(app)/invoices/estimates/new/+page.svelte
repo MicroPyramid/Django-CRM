@@ -38,6 +38,7 @@
   } from '#lib/v2/line-items.js';
   import { addDays, todayIn } from '#lib/v2/dates.js';
   import { numberPattern } from '#lib/v2/document-numbers.js';
+  import { isOn } from '#lib/v2/modules.js';
 
   /** @type {{ data: any, form: any }} */
   let { data, form } = $props();
@@ -236,15 +237,17 @@
               <input bind:value={title} placeholder="What this estimate covers" required />
             </label>
 
-            <label class="f">
-              <span>Deal <span class="opt">(optional)</span></span>
-              <select bind:value={dealId} disabled={!accountId}>
-                <option value="">No deal</option>
-                {#each dealOptions as d (d.id)}
-                  <option value={d.id}>{d.name}</option>
-                {/each}
-              </select>
-            </label>
+            {#if isOn(data.modules, 'deals')}
+              <label class="f">
+                <span>Deal <span class="opt">(optional)</span></span>
+                <select bind:value={dealId} disabled={!accountId}>
+                  <option value="">No deal</option>
+                  {#each dealOptions as d (d.id)}
+                    <option value={d.id}>{d.name}</option>
+                  {/each}
+                </select>
+              </label>
+            {/if}
 
             <label class="f">
               <span>Issue date</span>

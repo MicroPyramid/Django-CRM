@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
 import '../../services/org_date.dart';
@@ -32,6 +33,8 @@ class OrganizationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAdmin = ref.watch(isOrgAdminProvider);
     final async = ref.watch(orgSettingsProvider);
+    final invoicesOn = ref.watch(moduleOnProvider('invoices'));
+    final ticketsOn = ref.watch(moduleOnProvider('tickets'));
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
@@ -71,14 +74,16 @@ class OrganizationScreen extends ConsumerWidget {
               _Field(label: 'Email', value: org.email),
               _Field(label: 'Phone', value: org.phone),
               _Field(label: 'Website', value: org.website),
-              const _PrintedNote(),
+              if (invoicesOn) const _PrintedNote(),
               const _SectionHeader('Defaults'),
               _Field(
                 label: 'Currency',
                 value: '${org.defaultCurrency} ${org.currencySymbol}',
-                detail:
-                    'Applied to new invoices and estimates. Existing ones '
-                    'keep theirs.',
+                detail: invoicesOn
+                    ? 'Applied to new invoices and estimates. Existing ones '
+                          'keep theirs.'
+                    : 'The default for new records that carry an amount. '
+                          'Existing ones keep theirs.',
               ),
               _Field(
                 label: 'Country',
@@ -92,45 +97,49 @@ class OrganizationScreen extends ConsumerWidget {
                     'When a day starts here, so "due today" and "overdue" '
                     'mean what your team expects.',
               ),
-              const _SectionHeader('Invoice numbers'),
-              _Field(
-                label: 'New invoices',
-                value: exampleNumber(
-                  prefix: org.invoiceNumberPrefix,
-                  datePart: org.numberDatePart,
-                  padding: org.numberPadding,
-                  start: org.invoiceNumberStart,
-                  today: orgToday(),
+              if (invoicesOn) ...[
+                const _SectionHeader('Invoice numbers'),
+                _Field(
+                  label: 'New invoices',
+                  value: exampleNumber(
+                    prefix: org.invoiceNumberPrefix,
+                    datePart: org.numberDatePart,
+                    padding: org.numberPadding,
+                    start: org.invoiceNumberStart,
+                    today: orgToday(),
+                  ),
+                  detail:
+                      '${_datePartLabel(org.numberDatePart)}. Numbers already '
+                      'issued keep theirs.',
                 ),
-                detail:
-                    '${_datePartLabel(org.numberDatePart)}. Numbers already '
-                    'issued keep theirs.',
-              ),
-              _Field(
-                label: 'New estimates',
-                value: exampleNumber(
-                  prefix: org.estimateNumberPrefix,
-                  datePart: org.numberDatePart,
-                  padding: org.numberPadding,
-                  today: orgToday(),
+                _Field(
+                  label: 'New estimates',
+                  value: exampleNumber(
+                    prefix: org.estimateNumberPrefix,
+                    datePart: org.numberDatePart,
+                    padding: org.numberPadding,
+                    today: orgToday(),
+                  ),
+                  detail: 'Same format, own prefix.',
                 ),
-                detail: 'Same format, own prefix.',
-              ),
-              const _SectionHeader('Behaviour'),
-              _Field(
-                label: 'Satisfaction surveys',
-                value: org.csatEnabled ? 'Sending' : 'Off',
-                detail: csatExplanation(org.csatEnabled),
-              ),
-              _Field(
-                label: 'Close child tickets with the parent',
-                value: org.autoCloseChildren
-                    ? 'Starts ticked'
-                    : 'Starts unticked',
-                detail:
-                    '${cascadeDefaultExplanation(org.autoCloseChildren)} '
-                    '$cascadeWebGapNote',
-              ),
+              ],
+              if (ticketsOn) ...[
+                const _SectionHeader('Behaviour'),
+                _Field(
+                  label: 'Satisfaction surveys',
+                  value: org.csatEnabled ? 'Sending' : 'Off',
+                  detail: csatExplanation(org.csatEnabled),
+                ),
+                _Field(
+                  label: 'Close child tickets with the parent',
+                  value: org.autoCloseChildren
+                      ? 'Starts ticked'
+                      : 'Starts unticked',
+                  detail:
+                      '${cascadeDefaultExplanation(org.autoCloseChildren)} '
+                      '$cascadeWebGapNote',
+                ),
+              ],
               const _ApiKeyNote(),
               const _SectionHeader('Vertical pack'),
               _PackSection(org: org, isAdmin: isAdmin),
@@ -141,6 +150,10 @@ class OrganizationScreen extends ConsumerWidget {
     );
   }
 }
+
+/// "custom fields, products" while products are in use, else "custom fields".
+String _customFields(bool productsOn) =>
+    productsOn ? 'custom fields, products' : 'custom fields';
 
 /// "Year, count restarts each year" for a stored date part.
 String _datePartLabel(String datePart) => numberDatePartOptions
@@ -301,10 +314,10 @@ class _PackSectionState extends ConsumerState<_PackSection> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Apply "${pack.name}"?'),
-        content: const Text(
-          'This adds starter pipelines, tags, custom fields, products and a '
-          'set of sample records. Anything already set up is left exactly as '
-          'it is.',
+        content: Text(
+          'This adds starter pipelines, tags, '
+          '${_customFields(ref.read(productsOnProvider))} and a set of sample '
+          'records. Anything already set up is left exactly as it is.',
         ),
         actions: [
           TextButton(
@@ -379,6 +392,7 @@ class _PackSectionState extends ConsumerState<_PackSection> {
   Widget build(BuildContext context) {
     final org = widget.org;
     final packs = ref.watch(orgPacksProvider).value ?? const <VerticalPack>[];
+    final fieldsAndProducts = _customFields(ref.watch(productsOnProvider));
     // The registry entry matching `org.vertical`, or null when no pack has been
     // applied or the id is one this build does not know.
     final applied = packs.where((pack) => pack.id == org.vertical).firstOrNull;
@@ -407,7 +421,7 @@ class _PackSectionState extends ConsumerState<_PackSection> {
               ),
               const SizedBox(height: 6),
               Text(
-                'A pack adds starter pipelines, tags, custom fields, products '
+                'A pack adds starter pipelines, tags, $fieldsAndProducts '
                 'and sample records for one kind of business. Applying one '
                 'only fills in what this organization is missing.',
                 style: AppTypography.caption.copyWith(

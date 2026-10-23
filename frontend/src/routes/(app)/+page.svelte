@@ -5,6 +5,7 @@
   import Pill from '#lib/v2/components/Pill.svelte';
   import { money, count } from '#lib/v2/format.js';
   import { todayLayout } from '#lib/v2/today-layout.js';
+  import { todayClearText } from '#lib/v2/modules.js';
   import { Target } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -134,7 +135,7 @@
         <div class="v2-pad" style="padding:20px;text-align:center">
           <div style="font-weight:640;letter-spacing:-0.012em">Inbox zero for today</div>
           <div class="v2-sub" style="margin-top:3px">
-            No overdue tickets, invoices, quiet deals or tasks. Anything coming up is below.
+            {todayClearText(data.modules)}{later.length ? ' Anything coming up is below.' : ''}
           </div>
         </div>
       </div>

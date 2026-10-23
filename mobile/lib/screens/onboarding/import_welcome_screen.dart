@@ -9,6 +9,7 @@ import '../../providers/contacts_provider.dart';
 import '../../providers/csv_import_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/leads_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/forms/csv_import_sheet.dart';
 
@@ -36,13 +37,13 @@ class _ImportWelcomeScreenState extends ConsumerState<ImportWelcomeScreen> {
   /// moves a contacts import here, as the web page's `onUseLeads` does.
   CsvImportTarget _chosen = CsvImportTarget.contacts;
 
-  Future<void> _open(CsvImportTarget target) {
+  Future<void> _open(CsvImportTarget target, {required bool leadsOn}) {
     _chosen = target;
     return showCsvImportSheet(
       context,
       target,
       onImported: _imported,
-      onUseLeads: () => _chosen = CsvImportTarget.leads,
+      onUseLeads: leadsOn ? () => _chosen = CsvImportTarget.leads : null,
       pickFile: widget.pickFile,
       saveFile: widget.saveFile,
     );
@@ -67,6 +68,7 @@ class _ImportWelcomeScreenState extends ConsumerState<ImportWelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final leadsOn = ref.watch(moduleOnProvider('leads'));
     return Scaffold(
       backgroundColor: AppColors.surfaceDim,
       appBar: AppBar(backgroundColor: AppColors.surface, elevation: 0),
@@ -96,15 +98,18 @@ class _ImportWelcomeScreenState extends ConsumerState<ImportWelcomeScreen> {
                     icon: LucideIcons.users,
                     title: 'Customers and people you work with',
                     line: 'Import them as contacts.',
-                    onTap: () => _open(CsvImportTarget.contacts),
+                    onTap: () =>
+                        _open(CsvImportTarget.contacts, leadsOn: leadsOn),
                   ),
-                  const SizedBox(height: 10),
-                  _Choice(
-                    icon: LucideIcons.target,
-                    title: "People you're trying to sell to",
-                    line: 'Import them as leads to follow up.',
-                    onTap: () => _open(CsvImportTarget.leads),
-                  ),
+                  if (leadsOn) ...[
+                    const SizedBox(height: 10),
+                    _Choice(
+                      icon: LucideIcons.target,
+                      title: "People you're trying to sell to",
+                      line: 'Import them as leads to follow up.',
+                      onTap: () => _open(CsvImportTarget.leads, leadsOn: true),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TextButton(
                     style: TextButton.styleFrom(

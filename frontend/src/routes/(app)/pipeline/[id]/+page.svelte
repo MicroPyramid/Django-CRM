@@ -8,6 +8,7 @@
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
+  import { isOn } from '#lib/v2/modules.js';
   import { money, longDate } from '#lib/v2/format.js';
   import { AGING_TONE, AGING_LABEL, OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
   import { Check, ChevronRight } from '@lucide/svelte';
@@ -52,10 +53,12 @@
          the form below, where the page can show what moving it costs, the
          aging clock resets, instead of moving it in one anonymous click. -->
     <a class="v2-btn" href={resolve(`pipeline/${deal.id}/edit`)}>Edit</a>
-    <a class="v2-btn" href="{resolve('invoices/estimates/new')}?opportunity={deal.id}"
-      >Create estimate</a
-    >
-    {#if deal.stage_kind === 'won'}
+    {#if isOn(data.modules, 'invoices')}
+      <a class="v2-btn" href="{resolve('invoices/estimates/new')}?opportunity={deal.id}"
+        >Create estimate</a
+      >
+    {/if}
+    {#if deal.stage_kind === 'won' && isOn(data.modules, 'invoices')}
       <form
         method="POST"
         action="?/invoice"

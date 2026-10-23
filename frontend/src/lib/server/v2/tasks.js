@@ -40,6 +40,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 
 /** `Task.STATUS_CHOICES`. Note `Task` priority is Low/Medium/High. A Case's is not. */
@@ -219,6 +220,7 @@ export async function getTask({ cookies }, id) {
   try {
     response = await apiRequest(`/tasks/${id}/`, {}, { cookies });
   } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
     if (err?.status === 404) {
       error(404, 'That task does not exist, or it belongs to another team.');
     }

@@ -11,7 +11,10 @@ import 'package:bottle_crm/screens/invoices/new_recurring_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:go_router/go_router.dart';
+
+import '../../support/modules_fixtures.dart';
 
 /// Document discount, tax and shipping on the invoice, estimate and schedule
 /// forms (PARITY B5), the server's discount bounds mirrored on the phone, and
@@ -153,6 +156,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...modulesOverrides(FakeOrgModules(() async => modulesAnswer())),
           accountsLookupProvider.overrideWith(_FakeAccounts.new),
           contactsLookupProvider.overrideWith(_FakeContacts.new),
           opportunityEntityOptionsProvider.overrideWithValue(

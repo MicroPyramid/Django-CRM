@@ -15,6 +15,7 @@ import axios from 'axios';
 import * as env from '$app/env/public';
 import { isOrgAdmin } from '#lib/admin.js';
 import { describeError } from '#lib/server/log-safe.js';
+import { moduleOffError } from '#lib/server/v2/modules.js';
 import { relayHeaders } from '#lib/server/relay.js';
 
 const API_BASE_URL = `${env.PUBLIC_DJANGO_API_URL}/api`;
@@ -185,7 +186,27 @@ async function switchOrg(accessToken, orgId, refreshToken, event) {
   }
 }
 
-export const handleError = Sentry.handleErrorWithSentry();
+/**
+ * A handler of our own replaces SvelteKit's default, so this keeps printing
+ * what it printed for an unexpected error: the stack only, never the error object.
+ */
+const reportError = Sentry.handleErrorWithSentry(
+  /** @param {{ kind?: string, error: unknown }} input */
+  ({ kind, error }) => {
+    if (kind !== 'unknown') return;
+    for (let e = error; e; e = e instanceof Error ? e.cause : undefined) {
+      console.error(e instanceof Error ? e.stack : String(e));
+    }
+  }
+);
+
+/**
+ * A module the API calls switched off renders as the module page. It is an
+ * answer, not a fault, so it is checked before Sentry captures anything.
+ *
+ * @param {Parameters<typeof reportError>[0]} input
+ */
+export const handleError = (input) => moduleOffError(input.error) ?? reportError(input);
 
 export const handle = sequence(Sentry.sentryHandle(), async function _handle({ event, resolve }) {
   // Get tokens from cookies

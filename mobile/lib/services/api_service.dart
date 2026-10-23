@@ -47,6 +47,34 @@ class ApiService {
     _client = client;
   }
 
+  void Function(String module)? _moduleOffCallback;
+
+  /// Called with the module key when any request is answered 404 or 409 with
+  /// `code: module_off`, so the app can reload its module list.
+  void setModuleOffCallback(void Function(String module)? callback) {
+    _moduleOffCallback = callback;
+  }
+
+  @visibleForTesting
+  bool get hasModuleOffCallback => _moduleOffCallback != null;
+
+  void _notifyIfModuleOff(http.Response response) {
+    final callback = _moduleOffCallback;
+    if (callback == null ||
+        (response.statusCode != 404 && response.statusCode != 409)) {
+      return;
+    }
+    // The modules route itself never answers module_off; never reload from it.
+    final path = response.request?.url.path;
+    if (path != null && path == Uri.parse(ApiConfig.orgModules).path) return;
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map && body['code'] == 'module_off') {
+        callback(body['module']?.toString() ?? '');
+      }
+    } catch (_) {}
+  }
+
   // Token and org getters - will be set by AuthService
   String? _accessToken;
   String? _organizationId;
@@ -160,6 +188,7 @@ class ApiService {
         ).timeout(deadline);
       }
     }
+    _notifyIfModuleOff(response);
     return response;
   }
 

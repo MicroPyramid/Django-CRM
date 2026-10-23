@@ -1,6 +1,7 @@
 <script>
   import { untrack } from 'svelte';
   import {
+    OBJECT_LABELS,
     objectOf,
     fieldOf,
     triggerFields,
@@ -30,7 +31,9 @@
       draft.trigger.field
     )
   );
-  let noun = $derived(object?.label ?? `${draft.object_key} (no longer available)`);
+  let noun = $derived(
+    object?.label ?? `${OBJECT_LABELS[draft.object_key] ?? draft.object_key} (no longer available)`
+  );
   let hint = $derived(changeHint(field, draft.trigger.to));
   // The box can be ticked before a value is chosen; the draft holds `to` only once there is one.
   let limited = $state(untrack(() => draft.trigger.to !== undefined && draft.trigger.to !== null));

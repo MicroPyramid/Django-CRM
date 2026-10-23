@@ -7,6 +7,7 @@ import '../../data/models/models.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
+import '../../providers/org_modules_provider.dart';
 import '../../providers/tasks_provider.dart';
 import '../../providers/tickets_provider.dart';
 import '../../config/api_config.dart';
@@ -504,7 +505,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
     if (t.leadId != null) {
       String label = 'Selected lead';
-      for (final l in ref.watch(leadsListProvider)) {
+      // Reading the list fetches it, so skip it while its module is off.
+      for (final l
+          in ref.watch(moduleOnProvider('leads'))
+              ? ref.watch(leadsListProvider)
+              : const []) {
         if (l.id == t.leadId) {
           final n = '${l.firstName} ${l.lastName}'.trim();
           label = n.isEmpty ? (l.email) : n;
@@ -520,7 +525,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
     if (t.opportunityId != null) {
       String label = 'Selected deal';
-      for (final d in ref.watch(dealsListProvider)) {
+      // Reading the list fetches it, so skip it while its module is off.
+      for (final d
+          in ref.watch(moduleOnProvider('deals'))
+              ? ref.watch(dealsListProvider)
+              : const []) {
         if (d.id == t.opportunityId) {
           label = d.title;
           break;
@@ -535,7 +544,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
     if (t.caseId != null) {
       String label = 'Selected ticket';
-      for (final c in ref.watch(ticketsListProvider)) {
+      // Reading the list fetches it, so skip it while its module is off.
+      for (final c
+          in ref.watch(moduleOnProvider('tickets'))
+              ? ref.watch(ticketsListProvider)
+              : const []) {
         if (c.id == t.caseId) {
           label = c.name;
           break;

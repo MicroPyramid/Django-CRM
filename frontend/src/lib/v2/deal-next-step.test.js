@@ -6,37 +6,44 @@ const task = { id: 't1', title: 'Send proposal', due_date: '2026-10-01' };
 
 describe('dealNextStep', () => {
   it('flags an open deal with no next step', () => {
-    expect(dealNextStep({ stage_kind: 'open', next_activity: null }, now)).toEqual({
+    expect(dealNextStep({ stage_kind: 'open', next_activity: null }, true, now)).toEqual({
       text: 'No next step',
       late: true
     });
   });
 
   it('shows the task on an open deal, late only when overdue', () => {
-    expect(dealNextStep({ stage_kind: 'open', next_activity: task }, now)).toEqual({
+    expect(dealNextStep({ stage_kind: 'open', next_activity: task }, true, now)).toEqual({
       text: 'Send proposal · 1 Oct',
       late: false
     });
     const overdue = { ...task, due_date: '2026-09-20' };
-    expect(dealNextStep({ stage_kind: 'open', next_activity: overdue }, now)?.late).toBe(true);
+    expect(dealNextStep({ stage_kind: 'open', next_activity: overdue }, true, now)?.late).toBe(
+      true
+    );
     const undated = { ...task, due_date: null };
-    expect(dealNextStep({ stage_kind: 'open', next_activity: undated }, now)).toEqual({
+    expect(dealNextStep({ stage_kind: 'open', next_activity: undated }, true, now)).toEqual({
       text: 'Send proposal · no date',
       late: false
     });
   });
 
   it.each(['won', 'lost'])('shows nothing on a %s deal, flag or task', (kind) => {
-    expect(dealNextStep({ stage_kind: kind, next_activity: null }, now)).toBeNull();
-    expect(dealNextStep({ stage_kind: kind, next_activity: task }, now)).toBeNull();
+    expect(dealNextStep({ stage_kind: kind, next_activity: null }, true, now)).toBeNull();
+    expect(dealNextStep({ stage_kind: kind, next_activity: task }, true, now)).toBeNull();
   });
 
   it('reads the kind, not the code: a won stage named anything is still won', () => {
     const deal = { stage: 'SIGNED', stage_kind: 'won', next_activity: null };
-    expect(dealNextStep(deal, now)).toBeNull();
+    expect(dealNextStep(deal, true, now)).toBeNull();
   });
 
   it('shows nothing when the response did not compute it', () => {
-    expect(dealNextStep({ stage_kind: 'open' }, now)).toBeNull();
+    expect(dealNextStep({ stage_kind: 'open' }, true, now)).toBeNull();
+  });
+
+  it('shows no next-step flag while Tasks is off', () => {
+    expect(dealNextStep({ stage_kind: 'open', next_activity: null }, false, now)).toBeNull();
+    expect(dealNextStep({ stage_kind: 'open', next_activity: task }, false, now)).toBeNull();
   });
 });

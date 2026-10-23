@@ -125,7 +125,9 @@ export async function apiRequest(endpoint, options = {}, locals) {
         }
       }
 
-      if (expectedStatuses.includes(response.status)) {
+      // A switched-off module's refusal is an answer: the page that asked
+      // becomes the module page, so it is not logged as a failure.
+      if (expectedStatuses.includes(response.status) || errorData?.code === 'module_off') {
         // Thrown below, not logged.
       } else if (quietErrors) {
         console.error(
@@ -161,8 +163,13 @@ export async function apiRequest(endpoint, options = {}, locals) {
     // Return JSON response
     return await response.json();
   } catch (error) {
-    const status = /** @type {{ status?: number }} */ (error).status;
-    if (status !== undefined && expectedStatuses.includes(status)) {
+    const { status, body: failedBody } = /** @type {{ status?: number, body?: any }} */ (
+      error ?? {}
+    );
+    if (
+      (status !== undefined && expectedStatuses.includes(status)) ||
+      failedBody?.code === 'module_off'
+    ) {
       // An expected answer, already left unlogged above.
     } else if (!quietErrors) {
       console.error(`API request failed: ${method} ${endpoint}`, error);

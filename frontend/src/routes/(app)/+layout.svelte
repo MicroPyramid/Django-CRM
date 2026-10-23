@@ -9,9 +9,20 @@
   import { isOrgAdmin } from '#lib/admin.js';
   import { objectNavItems } from '#lib/v2/custom-objects.js';
   import CommandPalette from '#lib/v2/components/CommandPalette.svelte';
-  import { Search, Sun, Columns3, LifeBuoy, Receipt, Plus, Menu } from '@lucide/svelte';
+  import {
+    Search,
+    Sun,
+    Columns3,
+    LifeBuoy,
+    Receipt,
+    Target,
+    CircleCheck,
+    Plus,
+    Menu
+  } from '@lucide/svelte';
+  import { tabBar, fabAction } from '#lib/v2/nav.js';
 
-  /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, is_organization_admin: boolean, customObjects: any }, children: import('svelte').Snippet }} */
+  /** @type {{ data: { counts: Record<string, number>, org: { name: string, terminology?: Record<string, string> | null }, is_organization_admin: boolean, modules: import('#lib/v2/modules.js').ModuleRow[] | null, customObjects: any }, children: import('svelte').Snippet }} */
   let { data, children } = $props();
 
   let paletteOpen = $state(false);
@@ -28,16 +39,13 @@
     node.focus();
   }
 
-  /**
-   * The five things worth a thumb on a phone. Fewer than the sidebar on
-   * purpose. A tab bar that scrolls is a menu wearing a tab bar's clothes.
-   */
-  const TABS = [
-    { href: '/', label: 'Today', icon: Sun, exact: true },
-    { href: '/pipeline', label: 'Pipeline', icon: Columns3 },
-    { href: '/tickets', label: 'Tickets', icon: LifeBuoy },
-    { href: '/invoices', label: 'Invoices', icon: Receipt }
-  ];
+  const ICONS = { Sun, Columns3, LifeBuoy, Receipt, Target, CircleCheck, Plus };
+
+  /** The tab bar and the button follow the org's switched-on modules. */
+  let tabs = $derived(
+    tabBar(data.modules, data.org.terminology).map((tab) => ({ ...tab, icon: ICONS[tab.icon] }))
+  );
+  let fab = $derived(fabAction(data.modules));
 
   const isActive = (href, exact) =>
     exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
@@ -65,6 +73,7 @@
     org={data.org}
     isAdmin={isOrgAdmin(data)}
     terminology={data.org.terminology}
+    modules={data.modules}
     objects={objectNavItems(data.customObjects)}
     onsearch={() => (paletteOpen = true)}
   />
@@ -97,7 +106,7 @@
     {@render children()}
 
     <nav class="v2-tabbar" aria-label="Sections">
-      {#each TABS as tab (tab.href)}
+      {#each tabs as tab (tab.href)}
         <a
           href={resolve(asInternalPath(tab.href))}
           aria-current={isActive(tab.href, tab.exact) ? 'page' : undefined}
@@ -111,7 +120,11 @@
 
   <!-- Both live inside .v2-root so they inherit the scoped tokens; both are
        position:fixed, so the shell's overflow:hidden does not clip them. -->
-  <a class="v2-fab" href={resolve('pipeline/new')} aria-label="New deal"><Plus size={21} /></a>
+  {#if fab}
+    <a class="v2-fab" href={resolve(asInternalPath(fab.href))} aria-label={fab.label}
+      ><Plus size={21} /></a
+    >
+  {/if}
 
   <!-- Mobile navigation drawer. Only openable from the mobile top bar, so it
        never surfaces on desktop; a backdrop click, Escape, or navigating all
@@ -143,6 +156,7 @@
           org={data.org}
           isAdmin={isOrgAdmin(data)}
           terminology={data.org.terminology}
+          modules={data.modules}
           objects={objectNavItems(data.customObjects)}
           onsearch={() => {
             menuOpen = false;
@@ -153,5 +167,5 @@
     </div>
   {/if}
 
-  <CommandPalette open={paletteOpen} onclose={() => (paletteOpen = false)} />
+  <CommandPalette open={paletteOpen} modules={data.modules} onclose={() => (paletteOpen = false)} />
 </div>
