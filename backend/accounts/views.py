@@ -53,6 +53,8 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.module_deletes import delete_refusal
+from common.modules import module_is_available, only_available
 from common.money import currency_block, deal_currency
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
@@ -163,10 +165,11 @@ def annotate_rollups(queryset, profile):
     the loaded rows afterwards by `attach_money_rollups`.
 
     Counted over the deals and tickets `profile` may open, the same rows the
-    account page lists under the figures. An admin may open all of them.
+    account page lists under the figures. An admin may open all of them. An
+    off module's rows count as none.
     """
-    deals = visible_deals_qs(profile)
-    cases = visible_cases_qs(profile)
+    deals = only_available(profile.org, "deals", visible_deals_qs(profile))
+    cases = only_available(profile.org, "tickets", visible_cases_qs(profile))
     return queryset.annotate(
         won_count=Coalesce(
             _per_account(
@@ -218,11 +221,15 @@ def attach_money_rollups(accounts, profile):
     """
     org = profile.org
     groups = {account.pk: {} for account in accounts}
-    deals = Opportunity.objects.filter(
-        org=org,
-        id__in=visible_deals_qs(profile).values("id"),
-        account__in=list(groups),
-        amount__isnull=False,
+    deals = only_available(
+        org,
+        "deals",
+        Opportunity.objects.filter(
+            org=org,
+            id__in=visible_deals_qs(profile).values("id"),
+            account__in=list(groups),
+            amount__isnull=False,
+        ),
     )
     sources = (
         ("won_amount", deals.filter(stage_kind_q(WON)), "amount", deal_currency(org)),
@@ -234,13 +241,17 @@ def attach_money_rollups(accounts, profile):
         ),
         (
             "overdue_amount",
-            Invoice.objects.filter(
-                org=org,
-                id__in=visible_invoices_qs(profile).values("id"),
-                account__in=list(groups),
-                status__in=UNPAID_STATUSES,
-                due_date__lt=timezone.localdate(),
-                amount_due__gt=0,
+            only_available(
+                org,
+                "invoices",
+                Invoice.objects.filter(
+                    org=org,
+                    id__in=visible_invoices_qs(profile).values("id"),
+                    account__in=list(groups),
+                    status__in=UNPAID_STATUSES,
+                    due_date__lt=timezone.localdate(),
+                    amount_due__gt=0,
+                ),
             ),
             "amount_due",
             F("currency"),
@@ -389,8 +400,12 @@ class AccountsListView(APIView, LimitOffsetPagination):
         context["users"] = users
         # The lead read rule itself, so the picker offers exactly the leads
         # `/api/leads/<id>/` would open for this caller, and only a label each.
-        leads = visible_leads_qs(self.request.profile).exclude(
-            Q(status="converted") | Q(status="closed")
+        leads = only_available(
+            self.request.profile.org,
+            "leads",
+            visible_leads_qs(self.request.profile).exclude(
+                Q(status="converted") | Q(status="closed")
+            ),
         )
         context["leads"] = LeadPickerSerializer(leads, many=True).data
         context["status"] = ["active", "inactive"]  # Maps to is_active field
@@ -640,6 +655,9 @@ class AccountDetailView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
+        refusal = delete_refusal(self.object, "This account")
+        if refusal:
+            return Response(refusal, status=status.HTTP_409_CONFLICT)
         try:
             self.object.delete()
         except ProtectedError:
@@ -713,7 +731,10 @@ class AccountDetailView(APIView):
             object_id=self.account.id,
             org=self.request.profile.org,
         ).order_by("-id")
-        account_cases = visible_cases_qs(profile).filter(account=self.account)
+        org = profile.org
+        account_cases = only_available(
+            org, "tickets", visible_cases_qs(profile).filter(account=self.account)
+        )
         context.update(
             {
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
@@ -725,7 +746,11 @@ class AccountDetailView(APIView):
                     many=True,
                 ).data,
                 "opportunity_list": OpportunitySerializer(
-                    visible_deals_qs(profile).filter(account=self.account),
+                    only_available(
+                        org,
+                        "deals",
+                        visible_deals_qs(profile).filter(account=self.account),
+                    ),
                     many=True,
                 ).data,
                 "users": ProfileSerializer(
@@ -742,8 +767,13 @@ class AccountDetailView(APIView):
                 "teams": TeamsSerializer(
                     Teams.objects.filter(org=self.request.profile.org), many=True
                 ).data,
-                # The default pipeline's stages, as `[code, label]`.
-                "stages": stage_choices(DealPipeline.default_for(profile.org)),
+                # The default pipeline's stages, as `[code, label]`. Not read,
+                # nor created by `default_for`, while Pipeline is off.
+                "stages": (
+                    stage_choices(DealPipeline.default_for(org))
+                    if module_is_available(org, "deals")
+                    else []
+                ),
                 "sources": SOURCES,
                 "countries": COUNTRIES,
                 "currencies": CURRENCY_CODES,
@@ -752,10 +782,19 @@ class AccountDetailView(APIView):
                 "case_status": STATUS_CHOICE,
                 "comment_permission": comment_permission,
                 "tasks": TaskSerializer(
-                    visible_tasks_qs(profile).filter(account=self.account), many=True
+                    only_available(
+                        org,
+                        "tasks",
+                        visible_tasks_qs(profile).filter(account=self.account),
+                    ),
+                    many=True,
                 ).data,
                 "invoices": InvoiceListSerializer(
-                    visible_invoices_qs(profile).filter(account=self.account),
+                    only_available(
+                        org,
+                        "invoices",
+                        visible_invoices_qs(profile).filter(account=self.account),
+                    ),
                     many=True,
                 ).data,
                 "users_mention": users_mention,

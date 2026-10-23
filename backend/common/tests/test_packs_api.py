@@ -79,6 +79,24 @@ class TestPackAPI:
         res = admin_client.delete("/api/packs/sample-data/")
         assert res.status_code == 200
         assert res.json()["deleted"] >= 8
+        assert res.json()["switched_off_by_type"] == {}
+
+    def test_clearing_reports_the_sample_rows_an_off_module_kept(
+        self, admin_client, org_a
+    ):
+        from cases.models import Case
+        from common.testing import set_modules_off
+
+        admin_client.post("/api/packs/real-estate/apply/")
+        kept = Case.objects.filter(org=org_a, is_sample=True).count()
+        assert kept
+        set_modules_off(org_a, "tickets")
+
+        res = admin_client.delete("/api/packs/sample-data/")
+
+        assert res.status_code == 200
+        assert res.json()["switched_off_by_type"] == {"sample_ticket": kept}
+        assert Case.objects.filter(org=org_a, is_sample=True).count() == kept
 
     def test_clear_sample_data_does_not_touch_another_org(
         self, admin_client, org_b_client, org_a, org_b

@@ -14,6 +14,8 @@ from cases.models import Case
 from cases.serializer import CaseSerializer, parent_access_context
 from common import swagger_params
 from common.models import Comment, PersonalAccessToken, Profile, Teams, User
+from common.module_deletes import delete_refusal
+from common.modules import MODEL_MODULES, available_modules, only_available
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
     BillingAddressSerializer,
@@ -48,6 +50,19 @@ def _valid_token_counts_by_profile(org):
         .annotate(n=Count("id"))
     )
     return {str(r["profile_id"]): r["n"] for r in rows}
+
+
+def _comments_on_off_modules(org):
+    """Matches a comment on a record of a module that is off for ``org``."""
+    available = available_modules(org)
+    matches = Q(pk__in=[])
+    for label, key in MODEL_MODULES.items():
+        if key not in available:
+            app_label, model = label.split(".")
+            matches |= Q(
+                content_type__app_label=app_label, content_type__model=model.lower()
+            )
+    return matches
 
 
 class GetTeamsAndUsersView(APIView):
@@ -323,9 +338,10 @@ class UserDetailView(APIView):
         ).values("id", "user__email")
         context = {}
         context["profile_obj"] = ProfileSerializer(profile_obj).data
+        org = request.profile.org
         # Security fix: Add org filter to prevent cross-org data leakage
-        opportunity_list = Opportunity.objects.filter(
-            assigned_to=profile_obj, org=request.profile.org
+        opportunity_list = only_available(
+            org, "deals", Opportunity.objects.filter(assigned_to=profile_obj, org=org)
         )
         context["opportunity_list"] = OpportunitySerializer(
             opportunity_list, many=True
@@ -334,13 +350,15 @@ class UserDetailView(APIView):
             assigned_to=profile_obj, org=request.profile.org
         )
         context["contacts"] = ContactSerializer(contacts, many=True).data
-        cases = Case.objects.filter(assigned_to=profile_obj, org=request.profile.org)
+        cases = only_available(
+            org, "tickets", Case.objects.filter(assigned_to=profile_obj, org=org)
+        )
         context["cases"] = CaseSerializer(
             cases, many=True, context=parent_access_context(request.profile, cases)
         ).data
         context["assigned_data"] = assigned_data
-        comments = Comment.objects.filter(
-            commented_by=profile_obj, org=request.profile.org
+        comments = Comment.objects.filter(commented_by=profile_obj, org=org).exclude(
+            _comments_on_off_modules(org)
         )
         context["comments"] = CommentSerializer(comments, many=True).data
         context["countries"] = COUNTRIES
@@ -518,6 +536,9 @@ class UserDetailView(APIView):
                 {"error": True, "errors": "Permission Denied"},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        refusal = delete_refusal(self.object, "This person")
+        if refusal:
+            return Response(refusal, status=status.HTTP_409_CONFLICT)
         deleted_by = self.request.profile.user.email
         recipient = self.object.user.email
         try:

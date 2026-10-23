@@ -57,6 +57,8 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.module_deletes import delete_refusal
+from common.modules import only_available
 from common.permissions import HasOrgContext
 from common.serializer import (
     ActivitySerializer,
@@ -550,6 +552,9 @@ class CaseDetailView(APIView):
     def delete(self, request, pk, format=None):
         self.object = self.get_object(pk)
         assert_case_delete_access(request.profile, self.object)
+        refusal = delete_refusal(self.object, "This ticket")
+        if refusal:
+            return Response(refusal, status=status.HTTP_409_CONFLICT)
         self.object.delete()
         return Response(
             {"error": False, "message": "Case Deleted Successfully."},
@@ -646,7 +651,11 @@ class CaseDetailView(APIView):
         public_comments = comments_qs.filter(is_internal=False)
         internal_notes = comments_qs.filter(is_internal=True)
 
-        linked_solutions = self.cases.solutions.filter(org=self.request.profile.org)
+        linked_solutions = only_available(
+            request.profile.org,
+            "knowledge_base",
+            self.cases.solutions.filter(org=request.profile.org),
+        )
 
         recent_activities = Activity.objects.filter(
             entity_type="Case",

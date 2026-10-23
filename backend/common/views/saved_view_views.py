@@ -14,6 +14,7 @@ checked in ``common/saved_views.py``.
 """
 
 from django.db.models.functions import Lower
+from django.http import Http404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -24,7 +25,12 @@ from rest_framework.views import APIView
 from common.lookups import get_scoped_or_404
 from common.models import SavedView
 from common.permissions import HasOrgContext
-from common.saved_views import LISTS, MAX_VIEWS_PER_LIST, SavedViewSerializer
+from common.saved_views import (
+    LISTS,
+    MAX_VIEWS_PER_LIST,
+    SavedViewSerializer,
+    off_lists,
+)
 
 
 class SavedViewListView(APIView):
@@ -42,7 +48,9 @@ class SavedViewListView(APIView):
     )
     def get(self, request):
         profile = request.profile
-        views = SavedView.objects.filter(org=profile.org, profile=profile)
+        views = SavedView.objects.filter(org=profile.org, profile=profile).exclude(
+            module__in=off_lists(profile.org)
+        )
         module = request.query_params.get("module")
         if module is not None:
             if module not in LISTS:
@@ -77,9 +85,12 @@ class SavedViewDetailView(APIView):
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def get_view(self, request, pk):
-        return get_scoped_or_404(
+        view = get_scoped_or_404(
             SavedView, pk, request.profile.org, profile=request.profile
         )
+        if view.module in off_lists(request.profile.org):
+            raise Http404("No such saved view.")
+        return view
 
     @extend_schema(tags=["Saved views"], responses=SavedViewSerializer)
     def get(self, request, pk):

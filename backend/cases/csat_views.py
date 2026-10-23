@@ -32,6 +32,7 @@ from cases.tasks import (
     csat_signer,
     hash_csat_token,
 )
+from common.modules import module_is_available
 from common.permissions import HasOrgContext
 from common.portal_tokens import resolve_portal_org_by_hash
 from common.tasks import set_rls_context
@@ -69,8 +70,14 @@ def _load_survey(token: str) -> tuple[CsatSurvey | None, int | None, str | None]
     if org_id is None:
         return None, 410, "Survey link is no longer valid."
     set_rls_context(org_id)
-    survey = CsatSurvey.objects.filter(token_hash=token_hash, org_id=org_id).first()
-    if survey is None:
+    survey = (
+        CsatSurvey.objects.select_related("org")
+        .filter(token_hash=token_hash, org_id=org_id)
+        .first()
+    )
+    # Checked before expiry, so a link in an org with Tickets off answers
+    # exactly as an unknown one does.
+    if survey is None or not module_is_available(survey.org, "tickets"):
         return None, 410, "Survey link is no longer valid."
     if timezone.now() >= survey.expires_at:
         return None, 410, "Survey link has expired."

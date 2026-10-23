@@ -30,6 +30,7 @@ Postgres.
 from django.db.models import DateField, F, OuterRef, Subquery, UUIDField
 from rest_framework import serializers
 
+from common.modules import module_is_available
 from opportunity.models import Opportunity
 from tasks.access import visible_tasks_qs
 from tasks.models import Task
@@ -65,18 +66,23 @@ def attach_next_activity(deals, profile):
 
     ``deals`` is an evaluated page or board, not a queryset: one query for all
     of them, keyed by id, so the serializer reads the same attributes as it
-    would from an annotated row and nothing was counted with them.
+    would from an annotated row and nothing was counted with them. None while
+    Tasks is off, with no query.
     """
     deals = list(deals)
-    rows = {
-        row["pk"]: row
-        for row in annotate_next_activity(
-            Opportunity.objects.filter(
-                org=profile.org, pk__in=[deal.pk for deal in deals]
-            ),
-            profile,
-        ).values("pk", "next_activity_id", "next_activity_title", "next_activity_due")
-    }
+    rows = {}
+    if module_is_available(profile.org, "tasks"):
+        rows = {
+            row["pk"]: row
+            for row in annotate_next_activity(
+                Opportunity.objects.filter(
+                    org=profile.org, pk__in=[deal.pk for deal in deals]
+                ),
+                profile,
+            ).values(
+                "pk", "next_activity_id", "next_activity_title", "next_activity_due"
+            )
+        }
     for deal in deals:
         row = rows.get(deal.pk, {})
         deal.next_activity_id = row.get("next_activity_id")

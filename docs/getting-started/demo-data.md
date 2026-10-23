@@ -105,4 +105,6 @@ deals, contacts, accounts). It never removes anything else. A real record you cr
 untouched even if it happens to reference a sample record, and a sample row is **retained rather
 than deleted** if a non-sample record still depends on it (for example, a real invoice raised
 against a demo account). Retained rows are reported back, not silently skipped, so the caller
-knows some sample data was intentionally kept rather than assuming the clear was incomplete.
+knows some sample data was intentionally kept rather than assuming the clear was incomplete. Sample
+rows that belong to a module the org has switched off (see [Modules](modules.md)) are kept too, and
+the response counts them under `switched_off_by_type`.

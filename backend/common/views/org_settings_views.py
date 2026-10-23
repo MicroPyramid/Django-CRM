@@ -1,10 +1,12 @@
 from django.db import IntegrityError, transaction
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.modules import module_is_available, module_off_body
 from common.org_time import selectable_timezones
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
@@ -70,6 +72,14 @@ class HelpCenterSettingsView(APIView):
     """
 
     permission_classes = (IsAuthenticated, HasOrgContext)
+
+    def initial(self, request, *args, **kwargs):
+        # `/api/org/` is exempt from the middleware's module gate, so the
+        # knowledge base's own refusal is here, after auth, for every method.
+        super().initial(request, *args, **kwargs)
+        org = request.profile.org
+        if not module_is_available(org, "knowledge_base"):
+            raise NotFound(module_off_body(org, "knowledge_base"))
 
     def _can_edit(self, request):
         return is_org_admin(request.profile)

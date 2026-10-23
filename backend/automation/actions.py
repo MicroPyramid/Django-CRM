@@ -28,6 +28,7 @@ from automation.validation import LINKED, UNKNOWN_FIELD, active_people
 from common import notifications
 from common.links import frontend_url
 from common.models import Org, Profile
+from common.modules import module_is_available, module_off_message
 from common.org_time import org_timezone
 from common.permissions import is_org_admin
 from tasks.models import Task
@@ -344,6 +345,9 @@ def _task_people(ctx, record, action):
 
 
 def _plan_create_task(ctx, index, action):
+    if not module_is_available(ctx.org, "tasks"):
+        raise StepSkipped(module_off_message(ctx.org, "tasks"))
+
     def resolve(record):
         name = ctx.adapter.name(record)
         title = _clipped(render(action.get("title") or "", name), TITLE_LENGTH)

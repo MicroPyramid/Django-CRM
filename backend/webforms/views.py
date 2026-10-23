@@ -29,6 +29,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.lookups import get_scoped_or_404
+from common.modules import module_is_available, module_off_message
 from common.permissions import HasOrgContext, is_org_admin
 from webforms.constants import REQUIRED_LEAD_FIELD, REQUIRED_TICKET_FIELD
 from webforms.models import WebForm, WebFormDailyStat, WebFormSubmission
@@ -214,6 +215,19 @@ class WebFormPublishView(WebFormBaseView):
                     "error": True,
                     "errors": (
                         "This form redirects on success but has no redirect URL set."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        org = request.profile.org
+        if not module_is_available(org, form.target_module):
+            return Response(
+                {
+                    "error": True,
+                    "errors": (
+                        f"{module_off_message(org, form.target_module)} "
+                        "Switch it on before publishing this form."
                     ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,

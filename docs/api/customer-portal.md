@@ -101,6 +101,15 @@ middleware before any view runs:
 with status `403`. Deactivating the contact invalidates the token on the next request, because the
 authentication class re-reads `is_active` every time rather than trusting the claim.
 
+## Switched-off modules
+
+An org can switch Tickets or the Knowledge base off (see [Modules](modules.md)). The portal then
+answers what it already answers for something that does not exist, and never names the module:
+every portal case endpoint, list and create included, answers `404` `{"error": "Case not found"}`
+while Tickets is off, and the article list and detail answer `404` `{"error": "Article not found"}`
+while the Knowledge base is off. Article suggestions answer `200` `{"articles": []}`, as an empty
+query does. Signing in is unaffected, and so is the rest of the portal.
+
 ## Cases
 
 All four endpoints below require a portal token. Every query is filtered by both the org from the

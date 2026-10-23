@@ -25,7 +25,8 @@ from common.models import (
     Teams,
     User,
 )
-from common.object_registry import BUILT_IN
+from common.modules import module_is_available, module_off_message
+from common.object_registry import BUILT_IN, object_module
 from common.permissions import is_org_admin
 from common.utils import CURRENCY_SYMBOLS, validate_upload_size
 from common.validators import flexible_phone_validator, validate_help_center_slug
@@ -506,6 +507,13 @@ class CustomFieldDefinitionSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_target_model(self, value):
+        org = self.context.get("org")
+        module = object_module(target=value)
+        if org is not None and module and not module_is_available(org, module):
+            raise serializers.ValidationError(module_off_message(org, module))
+        return value
 
     def validate_key(self, value):
         if not value:

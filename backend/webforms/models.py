@@ -55,6 +55,7 @@ class WebForm(BaseOrgModel):
         (TARGET_LEAD, "Lead"),
         (TARGET_TICKET, "Ticket"),
     ]
+    TARGET_MODULES = {TARGET_LEAD: "leads", TARGET_TICKET: "tickets"}
 
     CAPTCHA_NONE = ""
     CAPTCHA_TURNSTILE = "turnstile"
@@ -182,6 +183,10 @@ class WebForm(BaseOrgModel):
         db_table = "web_form"
         ordering = ("-created_at",)
         indexes = [_org_index()]
+
+    @property
+    def target_module(self) -> str:
+        return self.TARGET_MODULES[self.target]
 
     def __str__(self):
         return self.name

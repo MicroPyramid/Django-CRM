@@ -22,6 +22,7 @@ from cases.notifications import case_link
 from cases.workflow import TERMINAL_STATUSES
 from common.links import frontend_url
 from common.models import Activity, Comment, Org, Profile
+from common.modules import module_is_available, module_on_since
 from common.tasks import clear_rls_context, set_rls_context
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,10 @@ def _dispatch_breach(case, action, target_profile, team, org_id):
 
 def _scan_org(org):
     """Run the breach scan for one org. Returns count of cases escalated."""
+    if not module_is_available(org, "tickets"):
+        return 0
+    # A deadline that passed while Tickets was off never escalates.
+    since = module_on_since(org, "tickets")
     now = timezone.now()
     cooldown_cutoff = now - timezone.timedelta(minutes=ESCALATION_COOLDOWN_MINUTES)
 
@@ -139,8 +144,12 @@ def _scan_org(org):
         return 0
 
     for case in candidate_qs.iterator():
-        first_breach = case.is_sla_first_response_breached
-        resolution_breach = case.is_sla_resolution_breached
+        first_breach = case.is_sla_first_response_breached and (
+            since is None or case.first_response_sla_deadline >= since
+        )
+        resolution_breach = case.is_sla_resolution_breached and (
+            since is None or case.resolution_sla_deadline >= since
+        )
         if not (first_breach or resolution_breach):
             continue
 
@@ -220,11 +229,12 @@ def scan_for_breached_cases():
 
     Walks every org through the unscoped `organization` table and sets the RLS
     context before any org-scoped query; `_scan_org` returns early for an org
-    with no active policy. The previous version found its orgs by querying
-    `escalation_policy` first, with no context set. That table is org-scoped
-    and a worker runs no middleware, so under an RLS-bound role the lookup
-    matched nothing and no case was ever escalated. The context is cleared in
-    a ``finally`` so the last org's id is not left on a pooled connection.
+    with Tickets off or no active policy. The previous version found its orgs
+    by querying `escalation_policy` first, with no context set. That table is
+    org-scoped and a worker runs no middleware, so under an RLS-bound role the
+    lookup matched nothing and no case was ever escalated. The context is
+    cleared in a ``finally`` so the last org's id is not left on a pooled
+    connection.
     """
     total = 0
     try:
@@ -273,6 +283,7 @@ def send_csat_survey(case_id, org_id):
     """Send a CSAT survey for a freshly-closed case.
 
     Skips when:
+      - Tickets is switched off for the org (the survey page answers 410).
       - The org has flipped `csat_enabled` off.
       - The case has no contact with an email (logged, not raised).
       - The case has been reopened in the meantime (status no longer
@@ -290,6 +301,9 @@ def send_csat_survey(case_id, org_id):
             case_id,
             case.status,
         )
+        return None
+    if not module_is_available(case.org, "tickets"):
+        logger.info("send_csat_survey: org=%s has Tickets off, skipping", org_id)
         return None
     if not case.org.csat_enabled:
         logger.info("send_csat_survey: org=%s has csat disabled, skipping", org_id)
@@ -553,6 +567,11 @@ def notify_portal_contacts(
     if case is None:
         logger.info("notify_portal_contacts: case=%s not found, skipping", case_id)
         return None
+    # Queued while Tickets was on; once it is off, the portal page the email
+    # links to answers not found.
+    if not module_is_available(case.org, "tickets"):
+        logger.info("notify_portal_contacts: org=%s has Tickets off, skipping", org_id)
+        return 0
 
     comment = None
     if kind == "reply":
@@ -693,7 +712,8 @@ TIME_ENTRY_AUTO_STOP_HOURS = 12
 def auto_stop_stale_timers(threshold_hours=TIME_ENTRY_AUTO_STOP_HOURS):
     """Stop running TimeEntry rows whose started_at is older than
     ``threshold_hours``. Sets ``auto_stopped=True`` and recomputes
-    ``duration_minutes`` via the model save() path.
+    ``duration_minutes`` via the model save() path. Skips an org with Timesheet
+    off, and leaves running a timer that went stale while it was off.
 
     Returns the number of timers stopped. Walks every org through the
     unscoped `organization` table and sets the RLS context before touching
@@ -706,21 +726,26 @@ def auto_stop_stale_timers(threshold_hours=TIME_ENTRY_AUTO_STOP_HOURS):
 
     stopped = 0
     try:
-        for org_id in Org.objects.values_list("id", flat=True):
-            set_rls_context(org_id)
+        for org in Org.objects.all():
+            if not module_is_available(org, "timesheet"):
+                continue
+            set_rls_context(org.id)
             try:
-                stale = list(
-                    TimeEntry.objects.filter(
-                        org_id=org_id, ended_at__isnull=True, started_at__lt=cutoff
-                    )
+                stale = TimeEntry.objects.filter(
+                    org_id=org.id, ended_at__isnull=True, started_at__lt=cutoff
                 )
-                for entry in stale:
+                since = module_on_since(org, "timesheet")
+                if since is not None:
+                    stale = stale.filter(
+                        started_at__gte=since - timedelta(hours=threshold_hours)
+                    )
+                for entry in list(stale):
                     entry.ended_at = now
                     entry.auto_stopped = True
                     entry.save()
                     stopped += 1
             except Exception:  # pragma: no cover
-                logger.exception("auto_stop_stale_timers failed for org=%s", org_id)
+                logger.exception("auto_stop_stale_timers failed for org=%s", org.id)
     finally:
         clear_rls_context()
     return stopped

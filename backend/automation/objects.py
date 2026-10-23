@@ -18,7 +18,8 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from common.models import CustomFieldDefinition, Profile
-from common.object_registry import all_objects, object_for_key
+from common.modules import module_is_available
+from common.object_registry import all_objects, object_for_key, object_module
 
 FIELD_TYPES = ("text", "number", "date", "choice", "person", "people", "boolean")
 
@@ -257,6 +258,14 @@ def _adapter_of(entry):
 def adapter_for(org, key) -> Adapter | None:
     entry = object_for_key(org, key)
     return _adapter_of(entry) if entry is not None else None
+
+
+def switched_off_module(org, key) -> str | None:
+    """The module of the built-in object `key` when it is off for `org`."""
+    module = object_module(key)
+    if module is None or module_is_available(org, module):
+        return None
+    return module
 
 
 def automatable(org) -> list[tuple[Any, Adapter]]:

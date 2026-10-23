@@ -10,7 +10,8 @@ from django.utils import timezone
 
 from common.links import frontend_url
 from common.models import Org, Profile
-from common.org_time import activate_org_timezone
+from common.modules import module_is_available, module_on_since
+from common.org_time import activate_org_timezone, org_timezone
 from opportunity.models import Opportunity, SalesGoal
 
 logger = logging.getLogger(__name__)
@@ -58,12 +59,20 @@ def check_stale_opportunities():
     orgs = Org.objects.filter(is_active=True)
 
     for org in orgs:
+        if not module_is_available(org, "deals"):
+            continue
         try:
             _set_rls_context_safe(str(org.id))
 
             stages = stage_index(org.id)
+            rotten_q = aging_q(stages.values(), "red")
+            since = module_on_since(org, "deals")
+            if since is not None:
+                # Already rotten when Pipeline came back on: it went stale
+                # while nobody could see it, so it is never alerted.
+                rotten_q &= ~aging_q(stages.values(), "red", since)
             rotten = Opportunity.objects.filter(
-                aging_q(stages.values(), "red"), org=org, is_active=True
+                rotten_q, org=org, is_active=True
             ).select_related("org")
 
             stale_opps = []
@@ -130,6 +139,57 @@ def send_stale_deals_alert(org, stale_opps):
             )
 
 
+def _current_goals(org):
+    """``org``'s active goals whose period covers today. Call with the org's
+    timezone active."""
+    today = timezone.localdate()
+    return SalesGoal.objects.filter(
+        org=org, is_active=True, period_start__lte=today, period_end__gte=today
+    )
+
+
+def _mark_milestones(goal):
+    """Set the milestone flags ``goal``'s progress has newly reached, and
+    return the milestone to announce, if any."""
+    progress_value = goal.compute_progress()
+    if goal.target_value and goal.target_value != 0:
+        percent = min(int(progress_value / goal.target_value * 100), 100)
+    else:
+        percent = 0
+    notifications = []
+
+    if percent >= 100 and not goal.milestone_100_notified:
+        goal.milestone_100_notified = True
+        goal.milestone_90_notified = True
+        goal.milestone_50_notified = True
+        notifications.append(("100%", percent, progress_value))
+    elif percent >= 90 and not goal.milestone_90_notified:
+        goal.milestone_90_notified = True
+        goal.milestone_50_notified = True
+        notifications.append(("90%", percent, progress_value))
+    elif percent >= 50 and not goal.milestone_50_notified:
+        goal.milestone_50_notified = True
+        notifications.append(("50%", percent, progress_value))
+
+    if notifications:
+        goal.save(
+            update_fields=[
+                "milestone_50_notified",
+                "milestone_90_notified",
+                "milestone_100_notified",
+            ]
+        )
+    return notifications
+
+
+def settle_goal_milestones(org) -> None:
+    """Goals is back on: mark the milestones already reached as announced,
+    sending nothing, so only those reached from now on send an email."""
+    with org_timezone(org):
+        for goal in _current_goals(org):
+            _mark_milestones(goal)
+
+
 @shared_task
 def check_goal_milestones():
     """Daily: check goal progress milestones and send notifications."""
@@ -137,52 +197,17 @@ def check_goal_milestones():
 
     try:
         for org in orgs:
+            if not module_is_available(org, "goals"):
+                continue
             try:
                 _set_rls_context_safe(str(org.id))
                 # A quarter ends when it ends where the org is, so the window is
                 # resolved per org rather than once for the whole sweep.
                 activate_org_timezone(org)
-                today = timezone.localdate()
 
-                goals = SalesGoal.objects.filter(
-                    org=org,
-                    is_active=True,
-                    period_start__lte=today,
-                    period_end__gte=today,
-                )
-
-                for goal in goals:
-                    progress_value = goal.compute_progress()
-                    if goal.target_value and goal.target_value != 0:
-                        percent = min(
-                            int(progress_value / goal.target_value * 100), 100
-                        )
-                    else:
-                        percent = 0
-                    notifications = []
-
-                    if percent >= 100 and not goal.milestone_100_notified:
-                        goal.milestone_100_notified = True
-                        goal.milestone_90_notified = True
-                        goal.milestone_50_notified = True
-                        notifications.append(("100%", percent, progress_value))
-                    elif percent >= 90 and not goal.milestone_90_notified:
-                        goal.milestone_90_notified = True
-                        goal.milestone_50_notified = True
-                        notifications.append(("90%", percent, progress_value))
-                    elif percent >= 50 and not goal.milestone_50_notified:
-                        goal.milestone_50_notified = True
-                        notifications.append(("50%", percent, progress_value))
-
+                for goal in _current_goals(org):
+                    notifications = _mark_milestones(goal)
                     if notifications:
-                        goal.save(
-                            update_fields=[
-                                "milestone_50_notified",
-                                "milestone_90_notified",
-                                "milestone_100_notified",
-                            ]
-                        )
-
                         recipients = []
                         if goal.assigned_to:
                             recipients.append(goal.assigned_to)

@@ -22,10 +22,10 @@ What leaves the server is chosen field by field rather than dumped:
 * `description` is not returned. An ORG_SWITCH row's text names the org the
   user switched from, which is another tenant.
 * `metadata` is cut down to `SAFE_DETAILS`, keys whose values are ids, counts
-  or sentences the server wrote, plus `EVENT_DETAILS` for the one event that
-  wrote them (a merge's two record names, an API token's name, prefix, scopes
-  and owner). Other keys can hold what a caller supplied:
-  `suspicious_activity(details=...)`, the email a failed login tried, an API
+  or sentences the server wrote, plus `EVENT_DETAILS` for the events that
+  write them (a merge's two record names, an API token's name, prefix, scopes
+  and owner, a module change's switched off and on keys). Other keys can hold
+  what a caller supplied: `suspicious_activity(details=...)`, the email a failed login tried, an API
   key prefix.
 * A path under `/api/public/` can carry a bearer token in the URL (the CSAT
   link does), so only that prefix is shown.
@@ -75,6 +75,7 @@ EVENT_DETAILS = {
     "RECORD_MERGED": ("entity", "kept_id", "kept_name", "merged_id", "merged_name"),
     "API_TOKEN_CREATED": _API_TOKEN_DETAILS,
     "API_TOKEN_REVOKED": _API_TOKEN_DETAILS,
+    "MODULES_CHANGED": ("switched_off", "switched_on", "reordered"),
 }
 
 PUBLIC_PREFIX = "/api/public/"

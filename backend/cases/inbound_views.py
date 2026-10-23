@@ -59,6 +59,7 @@ from cases.inbound.sns import (
 from cases.models import EmailMessage, InboundMailbox
 from cases.serializer import InboundMailboxSerializer
 from common.models import PortalAccessToken
+from common.modules import module_is_available
 from common.org_time import activate_org_timezone
 from common.permissions import HasOrgContext, is_org_admin
 from common.portal_tokens import resolve_portal_org
@@ -214,7 +215,7 @@ class InboundMailboxWebhookView(APIView):
     )
     def post(self, request, mailbox_id, *args, **kwargs):
         # Don't leak which UUIDs exist: an unknown id, one whose mailbox is
-        # inactive and one whose mailbox is gone all get this same 404.
+        # inactive or gone, and one in an org with Tickets off all get this 404.
         not_found = Response(
             {"error": True, "errors": "Mailbox not found"},
             status=status.HTTP_404_NOT_FOUND,
@@ -233,7 +234,7 @@ class InboundMailboxWebhookView(APIView):
             .select_related("org")
             .first()
         )
-        if mailbox is None:
+        if mailbox is None or not module_is_available(mailbox.org, "tickets"):
             return not_found
 
         # Likewise the org's day: the reopen window a reply is judged against

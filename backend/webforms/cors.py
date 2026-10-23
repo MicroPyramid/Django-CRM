@@ -4,7 +4,7 @@ Uses django-cors-headers' `check_request_enabled` signal rather than a bespoke
 middleware, so there is one CORS implementation in the project and the global
 `CORS_ALLOWED_ORIGINS` and `CORS_ORIGIN_ALLOW_ALL` settings stay untouched.
 
-Three deliberate narrowings, each with a test:
+Four deliberate narrowings, each with a test:
 
 * Only the `/submit/` route. The embed routes are plain GETs of a document and
   a script, neither of which CORS applies to, so widening to them would grant
@@ -17,12 +17,13 @@ Three deliberate narrowings, each with a test:
   iframe embed and for server-side callers. Reflecting an arbitrary `Origin`
   header back as CORS-allowed is a much larger promise on a production API, and
   an org that wants the script embed can list its origins.
+* Only a form the public endpoints serve, decided by their own `live_form`, so
+  a form they answer 404 for (its module switched off, say) gets no CORS
+  headers either, and the headers cannot tell an outsider which it was.
 """
 
 import logging
 import re
-
-from webforms.models import WebForm
 
 logger = logging.getLogger(__name__)
 
@@ -48,18 +49,13 @@ def allow_webform_origin(sender, request, **kwargs):
     # Imported here rather than at module scope to keep this module importable
     # from AppConfig.ready() without pulling the ORM in too early.
     from common.tasks import set_rls_context
+    from webforms.public_views import live_form
 
     org_id = match.group("org_id")
     set_rls_context(org_id)
 
     try:
-        allowed = (
-            WebForm.objects.filter(
-                id=match.group("form_id"), org_id=org_id, is_published=True
-            )
-            .values_list("allowed_origins", flat=True)
-            .first()
-        )
+        form = live_form(org_id, match.group("form_id"))
     except Exception:
         # A malformed id reaches the database as a bad UUID and raises. Refusing
         # is the safe answer: this decides whether to relax a cross-origin
@@ -67,4 +63,4 @@ def allow_webform_origin(sender, request, **kwargs):
         logger.warning("CORS lookup failed for %s", request.path, exc_info=True)
         return False
 
-    return bool(allowed) and origin in allowed
+    return form is not None and origin in (form.allowed_origins or [])

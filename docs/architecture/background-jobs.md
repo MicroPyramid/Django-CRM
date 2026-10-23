@@ -30,6 +30,17 @@ answer requests:
 See [Email and Celery](../self-hosting/email-and-celery.md#running-a-worker) for the actual run
 commands and what each scheduled entry does operationally.
 
+## Jobs and switched-off modules
+
+An org admin can switch parts of the CRM off (see [Modules](../api/modules.md#scheduled-jobs)).
+A job that sweeps every org checks `common.modules.module_is_available(org, key)` for the module
+it serves and skips the org when it is off; a job queued for one record checks before it sends.
+A module that comes back on starts fresh: the date-driven sweeps ignore dates before
+`module_on_since(org, key)`, and `change_modules` runs the two start-fresh hooks listed in
+`START_FRESH` (`backend/common/module_settings.py`) when a module becomes available again. A new
+job that acts on dates, or emails a customer, belongs in the same pattern, with a test that a
+date from the off period does nothing.
+
 ## Writing a task
 
 Celery workers never go through Django's HTTP middleware stack. `GetProfileAndOrg` and

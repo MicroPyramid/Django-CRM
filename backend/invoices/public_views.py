@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.models import Org
+from common.modules import module_is_available
 from common.org_time import activate_org_timezone
 from common.portal_tokens import resolve_portal_org
 from common.request_meta import client_ip, user_agent
@@ -74,7 +75,7 @@ class PublicInvoiceView(APIView):
             public_token=token, public_link_enabled=True
         ).first()
 
-        if not invoice:
+        if not invoice or not module_is_available(invoice.org, "invoices"):
             return Response(
                 {"error": True, "message": "Invoice not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -186,7 +187,7 @@ class PublicInvoicePDFView(APIView):
             public_token=token, public_link_enabled=True
         ).first()
 
-        if not invoice:
+        if not invoice or not module_is_available(invoice.org, "invoices"):
             return Response(
                 {"error": True, "message": "Invoice not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -229,7 +230,7 @@ class PublicEstimateView(APIView):
             public_token=token, public_link_enabled=True
         ).first()
 
-        if not estimate:
+        if not estimate or not module_is_available(estimate.org, "invoices"):
             return Response(
                 {"error": True, "message": "Estimate not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -329,7 +330,7 @@ class PublicEstimatePDFView(APIView):
             public_token=token, public_link_enabled=True
         ).first()
 
-        if not estimate:
+        if not estimate or not module_is_available(estimate.org, "invoices"):
             return Response(
                 {"error": True, "message": "Estimate not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -386,7 +387,7 @@ class PublicEstimateAcceptView(APIView):
             .first()
         )
 
-        if not estimate:
+        if not estimate or not module_is_available(estimate.org, "invoices"):
             return Response(
                 {"error": True, "message": "Estimate not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -476,7 +477,7 @@ class PublicEstimateDeclineView(APIView):
             .first()
         )
 
-        if not estimate:
+        if not estimate or not module_is_available(estimate.org, "invoices"):
             return Response(
                 {"error": True, "message": "Estimate not found or link expired"},
                 status=status.HTTP_404_NOT_FOUND,

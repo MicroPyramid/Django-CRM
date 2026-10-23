@@ -50,6 +50,7 @@ from cases.serializer import (
 from cases.time_reports import TimeReportParamError
 from common.csv_export import csv_response
 from common.models import Profile
+from common.modules import module_is_available
 from common.permissions import HasOrgContext, is_org_admin
 from common.renderers import CSV_RENDERERS
 from common.validators import uuid_param
@@ -415,6 +416,7 @@ class TimesheetView(APIView):
 
         now = timezone.now()
         running_count = 0
+        show_invoices = module_is_available(request.profile.org, "invoices")
         for entry in qs:
             day_key = timezone.localdate(entry.started_at).isoformat()
             bucket = days.get(day_key)
@@ -433,7 +435,7 @@ class TimesheetView(APIView):
                     "id": str(entry.invoice_id),
                     "invoice_number": entry.invoice.invoice_number,
                 }
-                if entry.invoice_id
+                if entry.invoice_id and show_invoices
                 else None
             )
             if entry.ended_at is None:
@@ -545,7 +547,9 @@ class TimeReportExportView(APIView):
             return Response({"detail": exc.detail}, status=exc.status_code)
 
         return csv_response(
-            time_reports.csv_rows(entries),
+            time_reports.csv_rows(
+                entries, module_is_available(request.profile.org, "invoices")
+            ),
             f"time-{start.isoformat()}-to-{end.isoformat()}.csv",
             request.profile.org,
         )

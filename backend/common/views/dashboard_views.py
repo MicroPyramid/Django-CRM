@@ -15,6 +15,12 @@ from cases.access import visible_cases_qs, writable_cases_qs
 from cases.models import Case
 from common import serializer, swagger_params
 from common.models import Activity
+from common.modules import (
+    MODEL_MODULES,
+    available_modules,
+    module_is_available,
+    only_available,
+)
 from common.object_registry import all_objects
 from common.permissions import HasOrgContext, can_mass_import, is_org_admin
 from contacts.access import visible_contacts_qs
@@ -63,7 +69,9 @@ def import_prompt_facts(profile):
     """
     has_records = (
         visible_contacts_qs(profile).filter(is_sample=False).exists()
-        or visible_leads_qs(profile).filter(is_sample=False).exists()
+        or only_available(
+            profile.org, "leads", visible_leads_qs(profile).filter(is_sample=False)
+        ).exists()
     )
     return {
         "empty_workspace": not has_records,
@@ -100,6 +108,10 @@ def _readable(queryset, visible):
     return queryset.filter(pk__in=visible.values("pk"))
 
 
+# Activity rows store the bare model name, not the registry label.
+_MODEL_NAME_MODULES = {label.split(".")[1]: key for label, key in MODEL_MODULES.items()}
+
+
 def _readable_activities(profile):
     """The org's activities that ``profile`` may see: one query, whatever the size.
 
@@ -114,7 +126,9 @@ def _readable_activities(profile):
     """
     qs = Activity.objects.filter(org=profile.org)
     if is_org_admin(profile):
-        return qs
+        available = available_modules(profile.org)
+        off = [n for n, key in _MODEL_NAME_MODULES.items() if key not in available]
+        return qs.exclude(entity_type__in=off) if off else qs
     readable = Q()
     for entry in all_objects(profile.org):
         if entry.activity_feed:
@@ -171,12 +185,19 @@ class ApiHomeView(APIView):
         )
         # Kept separate from `leads` because the conversion rate below needs
         # converted leads, which `leads` deliberately excludes.
-        all_leads = _readable(Lead.objects.filter(org=org), visible_leads_qs(profile))
+        all_leads = _readable(
+            only_available(org, "leads", Lead.objects.filter(org=org)),
+            visible_leads_qs(profile),
+        )
         leads = all_leads.exclude(Q(status="converted") | Q(status="closed"))
         opportunities = _readable(
-            Opportunity.objects.filter(org=org), visible_deals_qs(profile)
+            only_available(org, "deals", Opportunity.objects.filter(org=org)),
+            visible_deals_qs(profile),
         )
-        tasks = _readable(Task.objects.filter(org=org), visible_tasks_qs(profile))
+        tasks = _readable(
+            only_available(org, "tasks", Task.objects.filter(org=org)),
+            visible_tasks_qs(profile),
+        )
 
         # Decides only whether the goal summary below includes org-wide goals.
         is_admin = is_org_admin(profile)
@@ -225,32 +246,35 @@ class ApiHomeView(APIView):
         in_org_currency = (
             Q(currency=org_currency) | Q(currency__isnull=True) | Q(currency="")
         )
-        default_pipeline = DealPipeline.default_for(org)
-        grouped = {
-            row["stage"]: row
-            for row in opportunities.filter(pipeline=default_pipeline)
-            .values("stage")
-            .annotate(
-                count=Count("id"),
-                # Value only for deals in the org's currency.
-                value=Coalesce(
-                    Sum("amount", filter=in_org_currency),
-                    0,
-                    output_field=DecimalField(),
-                ),
-            )
-            .order_by()
-        }
-        context["pipeline_by_stage"] = {
-            stage.code: {
-                "count": grouped.get(stage.code, {}).get("count", 0),
-                "value": float(grouped.get(stage.code, {}).get("value") or 0),
-                "label": stage.label,
-                "kind": stage.kind,
-                "order": stage.order,
+        context["pipeline_by_stage"] = {}
+        # Skipped while Pipeline is off, so `default_for` creates no pipeline.
+        if module_is_available(org, "deals"):
+            default_pipeline = DealPipeline.default_for(org)
+            grouped = {
+                row["stage"]: row
+                for row in opportunities.filter(pipeline=default_pipeline)
+                .values("stage")
+                .annotate(
+                    count=Count("id"),
+                    # Value only for deals in the org's currency.
+                    value=Coalesce(
+                        Sum("amount", filter=in_org_currency),
+                        0,
+                        output_field=DecimalField(),
+                    ),
+                )
+                .order_by()
             }
-            for stage in default_pipeline.stages.all()
-        }
+            context["pipeline_by_stage"] = {
+                stage.code: {
+                    "count": grouped.get(stage.code, {}).get("count", 0),
+                    "value": float(grouped.get(stage.code, {}).get("value") or 0),
+                    "label": stage.label,
+                    "kind": stage.kind,
+                    "order": stage.order,
+                }
+                for stage in default_pipeline.stages.all()
+            }
 
         # Revenue metrics (filtered by org's default currency), across every
         # pipeline: open and won are the stage's kind, whatever it is called.
@@ -348,11 +372,15 @@ class ApiHomeView(APIView):
             goal_filter |= Q(assigned_to__isnull=True, team__isnull=True)
 
         active_goals = SalesGoal.attach_progress(
-            SalesGoal.objects.filter(
-                org=org,
-                is_active=True,
-                period_start__lte=today,
-                period_end__gte=today,
+            only_available(
+                org,
+                "goals",
+                SalesGoal.objects.filter(
+                    org=org,
+                    is_active=True,
+                    period_start__lte=today,
+                    period_end__gte=today,
+                ),
             )
             .filter(goal_filter)
             .select_related("assigned_to", "team")
@@ -463,23 +491,38 @@ class ApiTodayView(APIView):
 
         # ── base, org-scoped querysets ──────────────────────────────────────
         opportunities = _readable(
-            Opportunity.objects.filter(stage_kind_q(OPEN), org=org), visible_deals
+            only_available(
+                org, "deals", Opportunity.objects.filter(stage_kind_q(OPEN), org=org)
+            ),
+            visible_deals,
         )
         # The one source whose action needs more than reading: "Reply" is a
         # write, so a ticket the caller only watches would be a dead button.
         cases = _readable(
-            Case.objects.filter(org=org, status__in=OPEN_CASE_STATUSES),
+            only_available(
+                org,
+                "tickets",
+                Case.objects.filter(org=org, status__in=OPEN_CASE_STATUSES),
+            ),
             writable_cases_qs(profile),
         )
         invoices = _readable(
-            Invoice.objects.filter(
-                org=org, status__in=UNPAID_STATUSES, due_date__lt=today
+            only_available(
+                org,
+                "invoices",
+                Invoice.objects.filter(
+                    org=org, status__in=UNPAID_STATUSES, due_date__lt=today
+                ),
             ),
             visible_invoices,
         )
         tasks = _readable(
-            Task.objects.filter(
-                org=org, status__in=["New", "In Progress"], due_date__lte=today
+            only_available(
+                org,
+                "tasks",
+                Task.objects.filter(
+                    org=org, status__in=["New", "In Progress"], due_date__lte=today
+                ),
             ),
             visible_tasks,
         )
@@ -615,13 +658,21 @@ class ApiTodayView(APIView):
         # Tasks have no completed_at, so proxy with "marked Completed and last
         # touched yesterday"; cases carry a real closed_on date.
         cleared_tasks = _readable(
-            Task.objects.filter(
-                org=org, status="Completed", updated_at__date=yesterday
+            only_available(
+                org,
+                "tasks",
+                Task.objects.filter(
+                    org=org, status="Completed", updated_at__date=yesterday
+                ),
             ),
             visible_tasks,
         )
         cleared_cases = _readable(
-            Case.objects.filter(org=org, status="Closed", closed_on=yesterday),
+            only_available(
+                org,
+                "tickets",
+                Case.objects.filter(org=org, status="Closed", closed_on=yesterday),
+            ),
             visible_cases,
         )
 
@@ -638,26 +689,36 @@ class ApiTodayView(APIView):
         # ── "later this week" (due tomorrow … +7 days) ──────────────────────
         soon = Q(due_date__gt=today, due_date__lte=week_end)
         later_tasks = _readable(
-            Task.objects.filter(org=org, status__in=["New", "In Progress"]).filter(
-                soon
-            ),
+            only_available(
+                org,
+                "tasks",
+                Task.objects.filter(org=org, status__in=["New", "In Progress"]),
+            ).filter(soon),
             visible_tasks,
         )
         later_opps = _readable(
-            Opportunity.objects.filter(
-                stage_kind_q(OPEN),
-                org=org,
-                closed_on__gt=today,
-                closed_on__lte=week_end,
+            only_available(
+                org,
+                "deals",
+                Opportunity.objects.filter(
+                    stage_kind_q(OPEN),
+                    org=org,
+                    closed_on__gt=today,
+                    closed_on__lte=week_end,
+                ),
             ),
             visible_deals,
         )
         later_invoices = _readable(
-            Invoice.objects.filter(
-                org=org,
-                status__in=UNPAID_STATUSES,
-                due_date__gt=today,
-                due_date__lte=week_end,
+            only_available(
+                org,
+                "invoices",
+                Invoice.objects.filter(
+                    org=org,
+                    status__in=UNPAID_STATUSES,
+                    due_date__gt=today,
+                    due_date__lte=week_end,
+                ),
             ),
             visible_invoices,
         )

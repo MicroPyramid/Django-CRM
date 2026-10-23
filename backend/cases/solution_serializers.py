@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from cases.kb_access import has_solution_delete_access, has_solution_write_access
 from cases.models import Solution
+from common.modules import module_is_available, org_of
 from common.serializer import OrganizationSerializer, TagsSerializer
 
 
@@ -66,6 +67,8 @@ class SolutionSerializer(serializers.ModelSerializer):
         # `SolutionListView` annotates this so a list of N articles costs one
         # query rather than N. The fallback keeps the serializer usable on a
         # single un-annotated instance: the create and publish responses.
+        if not module_is_available(org_of(obj), "tickets"):
+            return 0
         annotated = getattr(obj, "linked_case_count", None)
         if annotated is not None:
             return annotated
@@ -216,6 +219,8 @@ class SolutionDetailSerializer(serializers.ModelSerializer):
             # An empty list is the safe answer; the alternative is the leak
             # this method existed as.
             return []
+        if not module_is_available(profile.org, "tickets"):
+            return []
 
         cases = obj.cases.filter(pk__in=visible_cases_qs(profile).values("pk"))
 
@@ -232,6 +237,8 @@ class SolutionDetailSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(int)
     def get_case_count(self, obj):
+        if not module_is_available(org_of(obj), "tickets"):
+            return 0
         return obj.cases.count()
 
     @extend_schema_field(str)

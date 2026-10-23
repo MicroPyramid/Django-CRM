@@ -18,6 +18,8 @@ from django.utils import timezone
 from automation.capture import suppress_rules
 from cases.models import CasePipeline, CaseStage
 from common.models import CustomFieldDefinition, Org, PackApplication, Tags
+from common.modules import model_module, module_is_available, module_off_message
+from common.object_registry import object_module
 from common.packs.schema import (
     SAMPLE_DATES_KEY,
     SAMPLE_ENTITY_KEYS,
@@ -63,6 +65,10 @@ def _apply_pipelines(org, pack: dict, report: _Report) -> None:
         if not spec:
             continue
         name = spec["name"]
+        module = model_module(PipelineModel._meta.label)
+        if module is not None and not module_is_available(org, module):
+            report.add_skipped(key, name, reason=module_off_message(org, module))
+            continue
         if PipelineModel.objects.filter(org=org, name=name).exists():
             # Stages are only created beneath a pipeline we just created, so a
             # skipped pipeline takes its stages with it. This avoids
@@ -99,6 +105,12 @@ def _apply_pipelines(org, pack: dict, report: _Report) -> None:
 
 def _apply_custom_fields(org, pack: dict, report: _Report) -> None:
     for field in pack.get("custom_fields") or []:
+        module = object_module(target=field["target"])
+        if module is not None and not module_is_available(org, module):
+            report.add_skipped(
+                "custom_field", field["key"], reason=module_off_message(org, module)
+            )
+            continue
         exists = CustomFieldDefinition.objects.filter(
             org=org, target_model=field["target"], key=field["key"]
         ).exists()
@@ -135,7 +147,16 @@ def _apply_tags(org, pack: dict, report: _Report) -> None:
 
 
 def _apply_products(org, pack: dict, report: _Report) -> None:
+    # Products follow deals or invoices; with both off the message names invoices.
+    off = not (
+        module_is_available(org, "invoices") or module_is_available(org, "deals")
+    )
     for product in pack.get("products") or []:
+        if off:
+            report.add_skipped(
+                "product", product["name"], reason=module_off_message(org, "invoices")
+            )
+            continue
         # sku is mandatory in a manifest. See schema._validate_product.
         if Product.objects.filter(org=org, sku=product["sku"]).exists():
             report.add_skipped("product", product["name"])
@@ -246,6 +267,18 @@ def _create_sample(report, type_: str, name: str, build):
         return None
     report.add_created(type_, name)
     return obj
+
+
+def _skip_off_module(report, org, type_: str, name: str, *needs: str) -> bool:
+    """Report a sample row as skipped when its module, or a module its links
+    need, is off. ``needs`` are further sample types the row points at."""
+    models = dict(_sample_models())
+    for kind in (type_, *needs):
+        key = model_module(models[kind]._meta.label)
+        if key is not None and not module_is_available(org, key):
+            report.add_skipped(type_, name, reason=module_off_message(org, key))
+            return True
+    return False
 
 
 def _sample_moved_to_today(pack: dict) -> dict:
@@ -385,6 +418,8 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
                 obj.account.contacts.add(obj)
 
     for spec in sample.get("deals") or []:
+        if _skip_off_module(report, org, "sample_deal", spec["name"]):
+            continue
         obj = _create_sample(
             report,
             "sample_deal",
@@ -413,6 +448,8 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
 
     case_stages = {s.name: s for s in CaseStage.objects.filter(org=org)}
     for spec in sample.get("tickets") or []:
+        if _skip_off_module(report, org, "sample_ticket", spec["name"]):
+            continue
         obj = _create_sample(
             report,
             "sample_ticket",
@@ -441,6 +478,8 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     lead_stages = {s.name: s for s in LeadStage.objects.filter(org=org)}
     leads: dict[str, Lead] = {}
     for spec in sample.get("leads") or []:
+        if _skip_off_module(report, org, "sample_lead", spec["title"]):
+            continue
         obj = _create_sample(
             report,
             "sample_lead",
@@ -468,7 +507,15 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     # Tasks last: they are the only entity that can point at any of the others,
     # so every parent map is fully populated by the time this runs.
     task_stages = {s.name: s for s in TaskStage.objects.filter(org=org)}
+    parent_types = {
+        "deal": "sample_deal",
+        "ticket": "sample_ticket",
+        "lead": "sample_lead",
+    }
     for spec in sample.get("tasks") or []:
+        named = tuple(t for k, t in parent_types.items() if spec.get(k))
+        if _skip_off_module(report, org, "sample_task", spec["title"], *named):
+            continue
         obj = _create_sample(
             report,
             "sample_task",
@@ -577,8 +624,10 @@ def clear_sample_data(org, actor=None) -> dict:
        would raise ProtectedError and abort the entire clear. Any sample row
        still referenced by a non-sample row is kept and reported as retained.
 
-    Returns {"deleted": {type: n}, "retained": {type: n}}. Retained is a normal
-    outcome, not an error, and the UI is expected to say so.
+    Returns {"deleted": {type: n}, "retained": {type: n}, "switched_off":
+    {type: n}}. Retained is a normal outcome, not an error, and the UI is
+    expected to say so. Rows of a module that is switched off are never deleted
+    and are counted under switched_off instead.
 
     `actor` is optional (mirrors apply_pack's PackApplication.applied_by) and is
     used only to attribute the audit record. It plays no part in the delete,
@@ -588,6 +637,7 @@ def clear_sample_data(org, actor=None) -> dict:
 
     deleted: dict[str, int] = {}
     retained: dict[str, int] = {}
+    switched_off: dict[str, int] = {}
     # Accumulated across models so a kept child keeps its parent. See
     # _ids_with_foreign_children.
     retained_pks: set = set()
@@ -596,6 +646,14 @@ def clear_sample_data(org, actor=None) -> dict:
         for type_, model in reversed(_sample_models()):
             rows = model.objects.filter(org=org, is_sample=True)
             ids = list(rows.values_list("pk", flat=True))
+            module = model_module(model._meta.label)
+            if module is not None and not module_is_available(org, module):
+                # An off module's rows are never deleted; keeping them in
+                # retained_pks keeps the sample accounts they point at.
+                if ids:
+                    switched_off[type_] = len(ids)
+                    retained_pks.update(ids)
+                continue
             blocked = _ids_with_foreign_children(model, ids, retained_pks)
             if blocked:
                 retained[type_] = len(blocked)
@@ -622,7 +680,7 @@ def clear_sample_data(org, actor=None) -> dict:
         actor.user if actor is not None else None, org, sum(deleted.values())
     )
 
-    return {"deleted": deleted, "retained": retained}
+    return {"deleted": deleted, "retained": retained, "switched_off": switched_off}
 
 
 @transaction.atomic

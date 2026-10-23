@@ -24,6 +24,7 @@ from common.models import (
     Tags,
     Teams,
 )
+from common.modules import only_available
 from common.money import currency_block, deal_currency, group_by_currency
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import (
@@ -320,14 +321,11 @@ class ContactDetailView(APIView):
         open are listed, as on every related list on this page.
         """
         org = self.request.profile.org
+        deals = list(self._deals(contact).order_by("-created_at")[:10])
         # Label and kind from the deal's own pipeline, read once for the list.
-        stages = stage_index(org.id)
+        stages = stage_index(org.id) if deals else {}
         rows = []
-        for deal in (
-            visible_deals_qs(self.request.profile)
-            .filter(contacts=contact)
-            .order_by("-created_at")[:10]
-        ):
+        for deal in deals:
             stage = deal.current_stage(stages)
             rows.append(
                 {
@@ -352,10 +350,7 @@ class ContactDetailView(APIView):
         """
         org = self.request.profile.org
         visible_ids = (
-            visible_deals_qs(self.request.profile)
-            .filter(contacts=contact)
-            .exclude(stage_kind_q(*CLOSED_KINDS))
-            .values("id")
+            self._deals(contact).exclude(stage_kind_q(*CLOSED_KINDS)).values("id")
         )
         groups = group_by_currency(
             Opportunity.objects.filter(org=org, id__in=visible_ids),
@@ -365,7 +360,18 @@ class ContactDetailView(APIView):
         )
         return currency_block(groups, money=("amount",), counts=("count",))
 
+    def _deals(self, contact):
+        """Deals naming this contact that the viewer may open, while Deals is on."""
+        profile = self.request.profile
+        return only_available(
+            profile.org, "deals", visible_deals_qs(profile).filter(contacts=contact)
+        )
+
     def related_cases(self, contact):
+        profile = self.request.profile
+        cases = only_available(
+            profile.org, "tickets", visible_cases_qs(profile).filter(contacts=contact)
+        )
         return [
             {
                 "id": str(case.id),
@@ -374,9 +380,7 @@ class ContactDetailView(APIView):
                 "priority": case.priority,
                 "created_at": case.created_at,
             }
-            for case in visible_cases_qs(self.request.profile)
-            .filter(contacts=contact)
-            .order_by("-created_at")[:10]
+            for case in cases.order_by("-created_at")[:10]
         ]
 
     def related_colleagues(self, contact):
@@ -577,7 +581,11 @@ class ContactDetailView(APIView):
                 "attachments": AttachmentsSerializer(attachments, many=True).data,
                 "assigned_data": assigned_data,
                 "tasks": TaskSerializer(
-                    visible_tasks_qs(self.request.profile).filter(contacts=contact_obj),
+                    only_available(
+                        request.profile.org,
+                        "tasks",
+                        visible_tasks_qs(request.profile).filter(contacts=contact_obj),
+                    ),
                     many=True,
                 ).data,
                 "users_mention": users_mention,
@@ -595,9 +603,7 @@ class ContactDetailView(APIView):
                 "open_deals": self.open_deal_summary(contact_obj),
                 # Uncapped, unlike `opportunities`: the edit form says how many
                 # deals it is not editing.
-                "opportunity_count": visible_deals_qs(self.request.profile)
-                .filter(contacts=contact_obj)
-                .count(),
+                "opportunity_count": self._deals(contact_obj).count(),
                 "cases": self.related_cases(contact_obj),
                 "colleagues": self.related_colleagues(contact_obj),
             }

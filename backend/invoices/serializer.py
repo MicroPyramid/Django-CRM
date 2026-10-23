@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from accounts.access import visible_accounts_qs
 from accounts.serializer import AccountPickerSerializer
+from common.modules import module_is_available, module_off_message, org_of
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -39,7 +40,15 @@ from opportunity.models import Opportunity
 
 
 class OpportunityMinimalSerializer(serializers.ModelSerializer):
-    """Minimal Opportunity serializer for invoice context - avoids circular import"""
+    """A document's deal, defined here to avoid a circular import.
+
+    Null while Deals is off; `keep_hidden_deal` keeps that null from erasing it.
+    """
+
+    def to_representation(self, instance):
+        if not module_is_available(org_of(instance), "deals"):
+            return None
+        return super().to_representation(instance)
 
     class Meta:
         model = Opportunity
@@ -87,8 +96,10 @@ class ProductSerializer(serializers.ModelSerializer):
         SET_NULL); this count is why a retired product is still worth listing.
         `ProductListView` annotates `used_on_count` to avoid an N+1 across the
         list, so read that when present and fall back to a query on the single
-        detail views.
+        detail views. Zero while Invoices is off.
         """
+        if not module_is_available(org_of(obj), "invoices"):
+            return 0
         annotated = getattr(obj, "used_on_count", None)
         if annotated is not None:
             return annotated
@@ -649,8 +660,30 @@ def validate_document_account(account_id, profile, instance):
     )
 
 
+def keep_hidden_deal(value, org, instance):
+    """A null deal, while Deals is off, keeps the stored one.
+
+    A client that sends back what it loaded sees the deal as null, so honouring
+    that null would erase a link the admin only hid.
+    """
+    if (
+        value is None
+        and instance is not None
+        and org is not None
+        and not module_is_available(org, "deals")
+    ):
+        return instance.opportunity_id
+    return value
+
+
 def validate_document_opportunity(opportunity_id, profile, instance):
-    """The deal an invoice, estimate or recurring invoice is raised against."""
+    """The deal an invoice, estimate or recurring invoice is raised against.
+
+    With Deals off, the stored deal may be resent but no other can be named.
+    """
+    stored = instance.opportunity_id if instance is not None else None
+    if opportunity_id != stored and not module_is_available(profile.org, "deals"):
+        raise serializers.ValidationError(module_off_message(profile.org, "deals"))
     return _validate_document_link(
         opportunity_id,
         visible_deals_qs(profile),
@@ -988,7 +1021,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     def validate_opportunity_id(self, value):
         """Validate the deal (if provided) is one the caller may open"""
         if value is None:
-            return value
+            return keep_hidden_deal(value, self.org, self.instance)
         if not self.org:
             raise serializers.ValidationError("Organization context required")
         return validate_document_opportunity(value, self.profile, self.instance)
@@ -1188,7 +1221,7 @@ class EstimateListSerializer(serializers.ModelSerializer):
         return None
 
     def get_opportunity(self, obj):
-        if obj.opportunity_id:
+        if obj.opportunity_id and module_is_available(org_of(obj), "deals"):
             return {"id": str(obj.opportunity_id), "name": obj.opportunity.name}
         return None
 
@@ -1298,7 +1331,7 @@ class EstimateCreateSerializer(serializers.ModelSerializer):
     def validate_opportunity_id(self, value):
         """Validate the deal (if provided) is one the caller may open"""
         if value is None:
-            return value
+            return keep_hidden_deal(value, self.org, self.instance)
         if not self.org:
             raise serializers.ValidationError("Organization context required")
         return validate_document_opportunity(value, self.profile, self.instance)
@@ -1521,7 +1554,7 @@ class RecurringInvoiceCreateSerializer(serializers.ModelSerializer):
     def validate_opportunity_id(self, value):
         """Validate the deal (if provided) is one the caller may open"""
         if value is None:
-            return value
+            return keep_hidden_deal(value, self.org, self.instance)
         if not self.org:
             raise serializers.ValidationError("Organization context required")
         return validate_document_opportunity(value, self.profile, self.instance)

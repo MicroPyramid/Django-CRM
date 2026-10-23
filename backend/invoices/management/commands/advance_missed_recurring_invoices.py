@@ -24,13 +24,12 @@ works under the non-superuser role production connects as.
 """
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.utils import timezone
 
 from common.models import Org
 from common.org_time import activate_org_timezone
 from common.tasks import clear_rls_context, set_rls_context
-from invoices.models import RecurringInvoice
+from invoices.schedules import advance_missed
 
 
 class Command(BaseCommand):
@@ -56,7 +55,7 @@ class Command(BaseCommand):
                 set_rls_context(org.id)
                 activate_org_timezone(org)
                 today = timezone.localdate()
-                moved = self._advance_org(org, today, dry_run)
+                moved = advance_missed(org, today, dry_run=dry_run)
                 if moved:
                     self.stdout.write(
                         f"Org {org.id} ({org.name}): {len(moved)} template(s) {verb}"
@@ -69,28 +68,3 @@ class Command(BaseCommand):
             clear_rls_context()
         prefix = "DRY RUN, nothing changed. " if dry_run else ""
         self.stdout.write(f"{prefix}Total: {total} template(s) {verb}")
-
-    def _advance_org(self, org, today, dry_run):
-        moved = []
-        with transaction.atomic():
-            templates = RecurringInvoice.objects.filter(
-                org=org, is_active=True, next_generation_date__lt=today
-            ).order_by("next_generation_date", "id")
-            for recurring in templates:
-                if recurring.end_date and recurring.end_date < today:
-                    continue
-                old = recurring.next_generation_date
-                while recurring.next_generation_date < today:
-                    recurring.next_generation_date = recurring.calculate_next_date()
-                new = recurring.next_generation_date
-                if not dry_run:
-                    # One column, matched on the value just read, so a run
-                    # racing the task cannot move a template twice. update()
-                    # skips save(), so no audit stamps or signals fire.
-                    updated = RecurringInvoice.objects.filter(
-                        pk=recurring.pk, org=org, next_generation_date=old
-                    ).update(next_generation_date=new)
-                    if not updated:
-                        continue
-                moved.append((recurring.pk, old, new))
-        return moved

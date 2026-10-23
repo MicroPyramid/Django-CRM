@@ -178,6 +178,12 @@ class Org(BaseModel):
         help_text="Label overrides, e.g. {'lead.plural': 'Enquiries'}.",
     )
 
+    # Modules: written only by `common.module_settings.change_modules`, and no
+    # serializer exposes them.
+    modules_off = models.JSONField(default=list, blank=True)
+    module_order = models.JSONField(default=list, blank=True)
+    modules_on_at = models.JSONField(default=dict, blank=True)
+
     # Public help center at `/help-center/<slug>` on the app frontend. Off by default:
     # it publishes the org's approved, published articles to anyone, search
     # engines included, so an admin opts in. The slug is NULL until chosen

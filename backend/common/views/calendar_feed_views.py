@@ -43,6 +43,7 @@ from common.audit_log import audit_log
 from common.calendar_feed import FEED_PATH_PREFIX, render_calendar
 from common.links import api_url, frontend_url
 from common.models import CalendarFeedToken, Profile
+from common.modules import module_is_available
 from common.org_time import activate_org_timezone
 from common.permissions import HasOrgContext
 from common.request_meta import client_ip
@@ -64,9 +65,9 @@ MAX_EVENTS = 1000
 TOUCH_INTERVAL = timedelta(hours=1)
 
 # One body for every miss: a malformed token, an unknown one, a regenerated or
-# disabled one, and one whose member, user or org is no longer active. Telling
-# any two apart would tell a stranger holding an old URL something about the
-# account behind it.
+# disabled one, one whose member, user or org is no longer active, and one in
+# an org with Tasks switched off. Telling any two apart would tell a stranger
+# holding an old URL something about the account behind it.
 NOT_FOUND = {"error": "Not found"}
 
 
@@ -193,6 +194,8 @@ class PublicCalendarFeedView(FirstRefusalThrottleMixin, APIView):
             return None
         profile = feed.profile
         if not (profile.is_active and profile.user.is_active and profile.org.is_active):
+            return None
+        if not module_is_available(profile.org, "tasks"):
             return None
         return feed
 

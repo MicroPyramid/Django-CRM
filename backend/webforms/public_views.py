@@ -33,6 +33,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.links import api_url
+from common.modules import module_is_available
 from common.org_time import activate_org_timezone
 from common.request_meta import client_ip, referer
 from common.tasks import set_rls_context
@@ -50,16 +51,31 @@ logger = logging.getLogger(__name__)
 CAPTCHA_TOKEN_FIELD = "cf-turnstile-response"
 
 
+def live_form(org_id, form_id):
+    """The published form these endpoints serve, read in one query, or None.
+
+    Missing, unpublished, another org's, and writing into a module the org has
+    switched off are deliberately indistinguishable, so the id space cannot be
+    used to enumerate forms. The CORS receiver asks the same question, so its
+    headers cannot tell them apart either. Set the RLS context first.
+    """
+    form = (
+        WebForm.objects.select_related("org")
+        .filter(id=form_id, org_id=org_id, is_published=True)
+        .first()
+    )
+    if form is None or not module_is_available(form.org, form.target_module):
+        return None
+    return form
+
+
 class PublicWebFormMixin:
     permission_classes = (AllowAny,)
     authentication_classes: list = []
 
     def load_form(self, org_id, form_id):
-        """The published form, or None.
-
-        Sets the RLS context first. Every caller answers 404 for None: missing,
-        unpublished, and belonging to another org are deliberately
-        indistinguishable, so the id space cannot be used to enumerate forms.
+        """`live_form` under the RLS context of `org_id`. Every caller answers
+        404 for None.
 
         A found form's org timezone is activated, so the daily view counter and
         anything the submission writes use the org's day rather than the UTC
@@ -67,11 +83,7 @@ class PublicWebFormMixin:
         when the request ends.
         """
         set_rls_context(org_id)
-        form = (
-            WebForm.objects.select_related("org")
-            .filter(id=form_id, org_id=org_id, is_published=True)
-            .first()
-        )
+        form = live_form(org_id, form_id)
         if form is not None:
             activate_org_timezone(form.org)
         return form

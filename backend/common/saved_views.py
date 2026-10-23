@@ -31,11 +31,20 @@ from rest_framework import serializers
 from accounts.views import account_list_queryset
 from cases.views import case_list_queryset
 from common.models import SavedView
+from common.modules import available_modules, module_off_message
 from contacts.views import contact_list_queryset
 from invoices.api_views import filter_invoices
 from invoices.permissions import visible_invoices_qs
 from leads.views.lead_views import lead_list_queryset
 from opportunity.views.opportunity_views import deal_list_queryset
+
+# The lists that belong to a module an admin can switch off.
+SAVED_VIEW_MODULES = {
+    "leads": "leads",
+    "opportunities": "deals",
+    "cases": "tickets",
+    "invoices": "invoices",
+}
 
 MAX_VIEWS_PER_LIST = 25
 MAX_PARAMS = 30
@@ -166,6 +175,12 @@ LISTS = {
 }
 
 
+def off_lists(org):
+    """The saved-view lists whose module is switched off for ``org``."""
+    available = available_modules(org)
+    return [name for name, key in SAVED_VIEW_MODULES.items() if key not in available]
+
+
 def _clean_filters(module, value):
     """``value`` as ``{param: [text, ...]}``, or raise with what is wrong.
 
@@ -263,6 +278,19 @@ class SavedViewSerializer(serializers.ModelSerializer):
                 {"module": "A saved view cannot move to another list."}
             )
         module = attrs.get("module") or instance.module
+        if instance is None and module in off_lists(
+            self.context["request"].profile.org
+        ):
+            raise serializers.ValidationError(
+                {
+                    "module": [
+                        module_off_message(
+                            self.context["request"].profile.org,
+                            SAVED_VIEW_MODULES[module],
+                        )
+                    ]
+                }
+            )
         if "filters" in attrs:
             try:
                 attrs["filters"] = _clean_filters(module, attrs["filters"])

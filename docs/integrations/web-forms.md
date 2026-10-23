@@ -57,6 +57,15 @@ validates the form's shape rather than just flipping a flag:
 site: an embed you have removed from the page is not the same thing as an endpoint that has
 stopped accepting posts.
 
+### When the module is switched off
+
+A form writes into Leads or Tickets by its target. A form whose target module is switched off
+cannot be published, and a new form with no `target` is refused while Leads is off (the default
+target is a lead). Switching Leads or Tickets off is itself refused while a published form
+targets it, so unpublish the form first. If the module is switched off some other way, the form
+page, its definition and its submit endpoint answer `404` as an unknown form does, and its CORS
+headers match an unknown form's. See [Modules](../api/modules.md#web-forms).
+
 ## Assigning new leads
 
 From django-crm 1.13.0 a lead form assigns each new lead in one of two ways, set by

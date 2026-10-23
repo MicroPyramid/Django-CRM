@@ -201,6 +201,12 @@ def rls_org(org):
         _apply_rls_context(previous)
 
 
+def set_modules_off(org, *keys) -> None:
+    """Switch the named modules off for ``org``, touching nothing else."""
+    org.modules_off = list(keys)
+    org.save(update_fields=["modules_off"])
+
+
 @pytest.fixture(autouse=True)
 def _use_db(db):
     """Ensure all tests have database access."""

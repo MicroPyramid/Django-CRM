@@ -13,6 +13,7 @@ from cases.models import Case, Solution
 from common import swagger_params
 from common.lookups import get_scoped_or_404
 from common.models import APISettings, Tags
+from common.modules import available_modules, model_module
 from common.permissions import HasOrgContext, is_org_admin
 from common.serializer import TagsSerializer
 from contacts.models import Contact
@@ -50,6 +51,15 @@ _TAGGABLE = (
     # it, and a merge must move the macro onto the surviving tag.
     ("macros", Macro),
 )
+
+
+def _usage_map(tag, org):
+    shown = {None, *available_modules(org)}
+    return {
+        key: getattr(tag, f"_u_{key}")
+        for key, model in _TAGGABLE
+        if model_module(model._meta.label) in shown
+    }
 
 
 def _usage_subquery(model, org):
@@ -160,7 +170,7 @@ class TagsListView(APIView, LimitOffsetPagination):
         rows = TagsSerializer(tags_qs, many=True).data
         # Attach usage from the annotations (serializer order matches the qs).
         for row, obj in zip(rows, tags_qs):
-            row["usage"] = {key: getattr(obj, f"_u_{key}") for key, _ in _TAGGABLE}
+            row["usage"] = _usage_map(obj, request.profile.org)
         return Response(
             {
                 "tags_count": len(rows),

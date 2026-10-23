@@ -57,6 +57,7 @@ nav:
       - Manual setup: getting-started/manual-setup.md
       - First sign-in: getting-started/first-sign-in.md
       - Demo data and packs: getting-started/demo-data.md
+      - Modules: getting-started/modules.md
   - Self-hosting:
       - Requirements: self-hosting/requirements.md
       - Docker: self-hosting/docker.md
@@ -80,6 +81,7 @@ nav:
       - Authentication: api/authentication.md
       - Errors: api/errors.md
       - Tokens and API keys: api/tokens-and-api-keys.md
+      - Modules: api/modules.md
       - Leads: api/leads.md
       - Accounts: api/accounts.md
       - Contacts: api/contacts.md

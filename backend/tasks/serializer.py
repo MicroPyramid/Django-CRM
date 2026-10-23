@@ -2,6 +2,13 @@ from django.db.models import Count, Q
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.modules import (
+    available_modules,
+    model_module,
+    module_is_available,
+    module_off_message,
+    org_of,
+)
 from common.serializer import (
     AttachmentsSerializer,
     CommentSerializer,
@@ -81,6 +88,14 @@ class BoardTaskSerializer(serializers.ModelSerializer):
             "contact",
             "opportunity",
         )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.opportunity_id and not module_is_available(
+            org_of(instance), "deals"
+        ):
+            data["opportunity"] = None
+        return data
 
     @extend_schema_field(dict)
     def get_account(self, obj):
@@ -228,22 +243,35 @@ class _MinimalAccountField(serializers.RelatedField):
         return {"id": str(value.pk), "name": getattr(value, "name", "") or ""}
 
 
-class _MinimalOpportunityField(serializers.RelatedField):
+class _ModuleLinkField(serializers.RelatedField):
+    """A parent from another module: null while that module is off."""
+
+    module = None
+
     def to_representation(self, value):
-        return {"id": str(value.pk), "name": getattr(value, "name", "") or ""}
+        if not module_is_available(org_of(value), self.module):
+            return None
+        return {"id": str(value.pk), "name": self.name_of(value)}
+
+    def name_of(self, value):
+        return getattr(value, "name", "") or ""
 
 
-class _MinimalCaseField(serializers.RelatedField):
-    def to_representation(self, value):
-        return {"id": str(value.pk), "name": getattr(value, "name", "") or ""}
+class _MinimalOpportunityField(_ModuleLinkField):
+    module = "deals"
 
 
-class _MinimalLeadField(serializers.RelatedField):
-    def to_representation(self, value):
+class _MinimalCaseField(_ModuleLinkField):
+    module = "tickets"
+
+
+class _MinimalLeadField(_ModuleLinkField):
+    module = "leads"
+
+    def name_of(self, value):
         first = getattr(value, "first_name", "") or ""
         last = getattr(value, "last_name", "") or ""
-        name = f"{first} {last}".strip() or (getattr(value, "email", "") or "")
-        return {"id": str(value.pk), "name": name}
+        return f"{first} {last}".strip() or (getattr(value, "email", "") or "")
 
 
 class TaskListSerializer(serializers.ModelSerializer):
@@ -349,6 +377,20 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         past the rule.
         """
         attrs = super().validate(attrs)
+        stored = self.instance
+        for name in PARENT_FIELDS:
+            key = model_module(self.fields[name].queryset.model._meta.label)
+            if key is None or module_is_available(self.org, key) or name not in attrs:
+                continue
+            if attrs[name] is None:
+                # An off module's link reads as null, so a client sending the
+                # task back sends null: that keeps the stored link.
+                if stored is not None:
+                    del attrs[name]
+            elif attrs[name].pk != getattr(stored, f"{name}_id", None):
+                raise serializers.ValidationError(
+                    {name: module_off_message(self.org, key)}
+                )
         resolved = {}
         for name in PARENT_FIELDS:
             if name in attrs:
@@ -611,18 +653,20 @@ class TaskKanbanCardSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(RelatedEntitySerializer(allow_null=True))
     def get_related_entity(self, obj):
-        """Return the related entity (account, lead, opportunity, or case) if any."""
+        """Return the related entity (account, lead, opportunity, or case) if
+        any; null when its module is off."""
         if obj.account_id:
             return {"id": obj.account_id, "name": obj.account.name, "type": "account"}
-        if obj.lead_id:
+        available = available_modules(org_of(obj))
+        if obj.lead_id and "leads" in available:
             return {"id": obj.lead_id, "name": str(obj.lead), "type": "lead"}
-        if obj.opportunity_id:
+        if obj.opportunity_id and "deals" in available:
             return {
                 "id": obj.opportunity_id,
                 "name": obj.opportunity.name,
                 "type": "opportunity",
             }
-        if obj.case_id:
+        if obj.case_id and "tickets" in available:
             return {"id": obj.case_id, "name": obj.case.name, "type": "case"}
         return None
 

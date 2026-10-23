@@ -19,6 +19,12 @@ from rest_framework import serializers
 
 from common.links import api_url
 from common.models import CustomFieldDefinition, Profile, Tags
+from common.modules import (
+    available_modules,
+    module_is_available,
+    module_off_message,
+    org_of,
+)
 from webforms.constants import LEAD_FIELD_VALUES
 from webforms.dynamic_serializer import CUSTOM_FIELD_TARGET
 from webforms.models import WebForm, WebFormField, WebFormSubmission
@@ -408,6 +414,9 @@ class WebFormDetailSerializer(serializers.ModelSerializer):
         for the old target. Before that it is allowed, but the field list has
         to move with it, because rows written for one target mean nothing to
         the other and the embed would render inputs that write nowhere.
+
+        A target newly chosen, on create or by a change, is refused while its
+        module is off. A form already on that target keeps taking other edits.
         """
         stored = getattr(self.instance, "target", None)
         target = attrs.get("target", stored or WebForm.TARGET_LEAD)
@@ -432,6 +441,12 @@ class WebFormDetailSerializer(serializers.ModelSerializer):
                         "cannot change. Create a new form instead."
                     )
                 }
+            )
+        org = self.context["org"]
+        module = WebForm.TARGET_MODULES[target]
+        if (stored is None or changed) and not module_is_available(org, module):
+            raise serializers.ValidationError(
+                {"target": module_off_message(org, module)}
             )
 
         rows = attrs.get("fields")
@@ -571,6 +586,15 @@ class WebFormSubmissionSerializer(serializers.ModelSerializer):
         # `reject_reason` is absent on purpose. It is internal triage detail
         # and naming the control that caught a bot is how the next bot gets
         # past it. Agents see the status, which is what they act on.
+
+    def to_representation(self, instance):
+        """The lead or ticket a submission made is null while its module is off."""
+        data = super().to_representation(instance)
+        available = available_modules(org_of(instance))
+        for field, key in (("lead", "leads"), ("case", "tickets")):
+            if key not in available:
+                data[field] = data[f"{field}_name"] = None
+        return data
 
     def get_lead_name(self, obj):
         if obj.lead is None:

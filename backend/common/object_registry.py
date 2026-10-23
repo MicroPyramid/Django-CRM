@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from django.apps import apps
 from django.utils.module_loading import import_string
 
+from common.modules import model_module, module_is_available
+
 
 @dataclass(frozen=True)
 class ObjectEntry:
@@ -38,6 +40,10 @@ class ObjectEntry:
     @property
     def model(self):
         return apps.get_model(self.model_label)
+
+    @property
+    def module(self):
+        return model_module(self.model_label)
 
     def records(self, org):
         return self.model.objects.filter(org=org)
@@ -182,8 +188,19 @@ BUILT_IN = (
 )
 
 
+def built_in_objects(org):
+    """BUILT_IN less the entries whose module is not available to `org`."""
+    return tuple(
+        e for e in BUILT_IN if e.module is None or module_is_available(org, e.module)
+    )
+
+
 def all_objects(org):
-    """BUILT_IN, then each hook's entries for `org`; no hook runs when org is None."""
+    """BUILT_IN, then each hook's entries for `org`, less off-module entries.
+
+    No hook runs when org is None, and nothing is dropped. Conflicts are checked
+    over every entry. A hook entry with no `module` (a custom object) stays.
+    """
     entries = BUILT_IN
     if org is not None:
         extra = [e for hook in _HOOKS for e in hook(org)]
@@ -197,7 +214,20 @@ def all_objects(org):
             if value in seen:
                 raise RegistryConflict(f"{value!r} is registered twice")
             seen.add(value)
-    return entries
+    if org is None:
+        return entries
+    return tuple(
+        e
+        for e in entries
+        if getattr(e, "module", None) is None or module_is_available(org, e.module)
+    )
+
+
+def object_module(key=None, *, target=None):
+    """The module of the built-in entry with this key, or with this custom-field
+    target, read from the unfiltered list."""
+    field, value = ("key", key) if target is None else ("custom_field_target", target)
+    return next((e.module for e in BUILT_IN if getattr(e, field) == value), None)
 
 
 def register_hook(hook: Callable[[object], Iterable]) -> None:
