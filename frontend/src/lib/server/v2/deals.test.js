@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { listDeals, listBoard, getDealFormOptions } = await import('#lib/server/v2/deals.js');
+const { listDeals, listBoard, getDealFormOptions, createDeal, updateDeal } =
+  await import('#lib/server/v2/deals.js');
 
 const event = /** @type {any} */ ({ cookies: { get: () => 'token' } });
 
@@ -209,5 +210,22 @@ describe('next activity', () => {
     const { results } = await listDeals(event);
 
     expect(results[0].next_activity).toBeUndefined();
+  });
+});
+
+describe('lead source', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+    apiRequest.mockResolvedValue({ id: 'd1' });
+  });
+
+  it('sends a key as chosen and "none" as an empty string, not null', async () => {
+    await createDeal(event, { name: 'Renewal', lead_source: 'google ads', description: '' });
+    const first = apiRequest.mock.calls[0][1].body;
+    expect(first.lead_source).toBe('google ads');
+    expect(first.description).toBeNull();
+
+    await updateDeal(event, 'd1', { lead_source: '' });
+    expect(apiRequest.mock.calls[1][1].body).toEqual({ lead_source: '' });
   });
 });

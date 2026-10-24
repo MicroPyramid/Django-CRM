@@ -165,7 +165,7 @@ class TestOpportunityListView:
             "amount": "50000.00",
             "currency": "USD",
             "probability": 75,
-            "lead_source": "CALL",
+            "lead_source": "call",
             "description": "A large enterprise deal",
             "closed_on": "2025-12-31",
         }
@@ -1142,6 +1142,27 @@ class TestOpportunityListFilters:
         assert response.status_code == status.HTTP_200_OK
         names = [o["name"] for o in response.data["opportunities"]]
         assert "Call Opp" in names
+
+    def test_the_lead_source_filter_is_an_exact_key(
+        self, admin_client, admin_user, org_a
+    ):
+        _set_rls(org_a)
+        for name, key in (("Form", "web form"), ("Web", "web")):
+            Opportunity.objects.create(
+                name=name,
+                stage="QUALIFICATION",
+                lead_source=key,
+                org=org_a,
+                created_by=admin_user,
+            )
+
+        def names(key):
+            response = admin_client.get(OPPORTUNITIES_LIST_URL, {"lead_source": key})
+            return sorted(o["name"] for o in response.data["opportunities"])
+
+        assert names("web") == ["Web"]
+        assert names("web form") == ["Form"]
+        assert names("form") == []
 
     def test_filter_by_assigned_to(
         self, admin_client, admin_user, admin_profile, org_a

@@ -54,13 +54,16 @@ LEAD_STATUS = (
 )
 
 
+# Lead sources are per org now (leads.models.LeadSource, defaults in
+# leads.sources). These two are the old fixed lists, moved into that key space
+# for the code that still imports them.
 LEAD_SOURCE = (
     ("call", "Call"),
     ("email", "Email"),
     ("existing customer", "Existing Customer"),
     ("partner", "Partner"),
     ("public relations", "Public Relations"),
-    ("compaign", "Campaign"),
+    ("campaign", "Campaign"),
     ("other", "Other"),
 )
 
@@ -100,15 +103,14 @@ OPPORTUNITY_TYPES = (
 )
 
 SOURCES = (
-    ("NONE", "NONE"),
-    ("CALL", "CALL"),
-    ("EMAIL", " EMAIL"),
-    ("EXISTING CUSTOMER", "EXISTING CUSTOMER"),
-    ("PARTNER", "PARTNER"),
-    ("PUBLIC RELATIONS", "PUBLIC RELATIONS"),
-    ("CAMPAIGN", "CAMPAIGN"),
-    ("WEBSITE", "WEBSITE"),
-    ("OTHER", "OTHER"),
+    ("call", "Call"),
+    ("email", "Email"),
+    ("existing customer", "Existing customer"),
+    ("partner", "Partner"),
+    ("public relations", "Public relations"),
+    ("campaign", "Campaign"),
+    ("web form", "Web form"),
+    ("other", "Other"),
 )
 
 EVENT_PARENT_TYPE = ((10, "Account"), (13, "Lead"), (14, "Opportunity"), (11, "Case"))

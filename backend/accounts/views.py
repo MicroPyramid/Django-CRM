@@ -70,6 +70,7 @@ from common.utils import (
     CURRENCY_CODES,
     INDCHOICES,
     PRIORITY_CHOICE,
+    SOURCES,
     STATUS_CHOICE,
     create_attachment,
     handle_m2m_assignment,
@@ -85,7 +86,7 @@ from invoices.serializer import InvoiceListSerializer
 from leads.access import visible_leads_qs
 from leads.serializer import LeadPickerSerializer
 from opportunity.access import visible_deals_qs
-from opportunity.models import SOURCES, DealPipeline, Opportunity, stage_kind_q
+from opportunity.models import DealPipeline, Opportunity, stage_kind_q
 from opportunity.serializer import OpportunitySerializer
 from opportunity.stages import stage_choices
 from opportunity.workflow import OPEN, WON

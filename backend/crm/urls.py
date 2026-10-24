@@ -51,6 +51,13 @@ urlpatterns = [
         "api/public/forms/",
         include("webforms.public_urls", namespace="public_webforms"),
     ),
+    # Public lead webhook. Anonymous: a sender holds a key, not a session. The
+    # view resolves the org from the intake id before any org-scoped read; see
+    # leads/views/intake_public_views.py.
+    path(
+        "api/public/leads/",
+        include("leads.public_urls", namespace="public_leads"),
+    ),
     # Customer self-service portal. Its own credential realm: sign-in under
     # /api/portal/login/ is anonymous, everything else needs a portal token
     # that GetProfileAndOrg refuses anywhere outside this prefix.

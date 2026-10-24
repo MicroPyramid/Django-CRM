@@ -19,6 +19,7 @@ settings load, so it must not need Django.
 
 import logging
 import re
+from urllib.parse import unquote_plus
 
 from common.calendar_feed import FEED_PATH_PREFIX
 
@@ -34,11 +35,29 @@ _TOKEN = re.compile(
     r"[^/?#\s\"']+"
 )
 
+# A lead webhook takes its key as `?key=` from senders that only accept a URL.
+# The name is matched however it is written (`KEY`, `%6Bey`), not only as the
+# form the view reads.
+INTAKE_PATH_PREFIX = "/api/public/leads/"
+_INTAKE_QUERY = re.compile(re.escape(INTAKE_PATH_PREFIX) + r"[^?#\s\"']*\?[^#\s\"']*")
+_QUERY_PARAM = re.compile(r"([?&;])([^=&;]*)=([^&;]*)")
+
+
+def _hide_key(param):
+    separator, name, value = param.groups()
+    if value and unquote_plus(name).strip().lower() == "key":
+        return f"{separator}{name}=[Filtered]"
+    return param.group(0)
+
+
+def _cut_intake_key(match):
+    return _QUERY_PARAM.sub(_hide_key, match.group(0))
+
 
 def redact(value):
     """``value`` with every public token cut from it, walking containers."""
     if isinstance(value, str):
-        return _TOKEN.sub(r"\1[Filtered]", value)
+        return _INTAKE_QUERY.sub(_cut_intake_key, _TOKEN.sub(r"\1[Filtered]", value))
     if isinstance(value, dict):
         return {key: redact(item) for key, item in value.items()}
     if isinstance(value, list):
@@ -52,8 +71,13 @@ def scrub_public_tokens(event, hint):
     """Sentry ``before_send`` / ``before_send_transaction``: drop the tokens.
 
     Walks the whole event rather than naming the fields a URL can appear in,
-    because that list belongs to the SDK and grows between releases.
+    because that list belongs to the SDK and grows between releases. A lead
+    webhook's query string and body are dropped whole: either can hold its key.
     """
+    request = event.get("request") if isinstance(event, dict) else None
+    if isinstance(request, dict) and INTAKE_PATH_PREFIX in str(request.get("url")):
+        request.pop("query_string", None)
+        request.pop("data", None)
     return redact(event)
 
 

@@ -3,8 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createMailbox, updateMailbox, deleteMailbox, getMailboxes, topicArnEdit } =
-  await import('./inbound-email.js');
+const {
+  createMailbox,
+  updateMailbox,
+  deleteMailbox,
+  getMailboxes,
+  topicArnEdit,
+  webhookSecretEdit
+} = await import('./inbound-email.js');
 
 const ARN = 'arn:aws:sns:us-east-1:123456789012:inbound';
 
@@ -47,11 +53,18 @@ describe('createMailbox', () => {
     expect(opts.body.created_by).toBeUndefined();
   });
 
-  it('never sends a webhook_secret, even when handed one', async () => {
+  it('sends a typed webhook_secret, trimmed, and nothing when it is blank', async () => {
     apiRequest.mockResolvedValue({});
-    await createMailbox(event, { ...base, webhook_secret: 'ATTACKER-CHOSEN' });
-    const [, opts] = apiRequest.mock.calls[0];
-    expect(opts.body.webhook_secret).toBeUndefined();
+    await createMailbox(event, { ...base, provider: 'postmark', webhook_secret: ' s3cret ' });
+    expect(apiRequest.mock.calls[0][1].body.webhook_secret).toBe('s3cret');
+    await createMailbox(event, { ...base, provider: 'postmark', webhook_secret: '  ' });
+    expect('webhook_secret' in apiRequest.mock.calls[1][1].body).toBe(false);
+  });
+
+  it('drops a webhook_secret when the server generates the address', async () => {
+    apiRequest.mockResolvedValue({});
+    await createMailbox(event, { generate_address: true, webhook_secret: 'x' });
+    expect('webhook_secret' in apiRequest.mock.calls[0][1].body).toBe(false);
   });
 
   it('sends an admin-entered topic_arn, trimmed', async () => {
@@ -138,11 +151,12 @@ describe('updateMailbox', () => {
     expect(body.created_by).toBeUndefined();
   });
 
-  it('never sends a webhook_secret, even when handed one', async () => {
+  it('sends a typed webhook_secret and leaves it out when none was given', async () => {
     apiRequest.mockResolvedValue({});
-    await updateMailbox(event, 'm1', { ...base, webhook_secret: 'ATTACKER-CHOSEN' });
-    const { body } = apiRequest.mock.calls[0][1];
-    expect(body.webhook_secret).toBeUndefined();
+    await updateMailbox(event, 'm1', { ...base, webhook_secret: 'abc' });
+    expect(apiRequest.mock.calls[0][1].body.webhook_secret).toBe('abc');
+    await updateMailbox(event, 'm1', { ...base });
+    expect('webhook_secret' in apiRequest.mock.calls[1][1].body).toBe(false);
   });
 
   it('sends a changed topic_arn, and an empty one clears it', async () => {
@@ -256,5 +270,116 @@ describe('getMailboxes', () => {
     const { mailboxes } = await getMailboxes(event);
     expect(mailboxes[0].topic_arn).toBeNull();
     expect(mailboxes[0].has_topic_arn).toBe(true);
+  });
+});
+
+describe('lead addresses', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+    apiRequest.mockResolvedValue({});
+  });
+
+  it('sends creates, the lead source and the sub-source on create', async () => {
+    await createMailbox(event, {
+      ...base,
+      creates: 'leads',
+      lead_source: ' email ',
+      lead_source_detail: ' Zillow '
+    });
+    const { body } = apiRequest.mock.calls[0][1];
+    expect(body.creates).toBe('leads');
+    expect(body.lead_source).toBe('email');
+    expect(body.lead_source_detail).toBe('Zillow');
+  });
+
+  it('sends creates on an edit, and reads anything but leads as tickets', async () => {
+    await updateMailbox(event, 'm1', { creates: 'leads' });
+    expect(apiRequest.mock.calls[0][1]).toEqual({ method: 'PUT', body: { creates: 'leads' } });
+    await updateMailbox(event, 'm1', { creates: 'cases' });
+    expect(apiRequest.mock.calls[1][1].body).toEqual({ creates: 'tickets' });
+  });
+
+  it('asks the server to generate the address, sending nothing typed for it', async () => {
+    await createMailbox(event, {
+      ...base,
+      address: '',
+      topic_arn: ARN,
+      provider: 'mailgun',
+      creates: 'leads',
+      generate_address: true
+    });
+    const { body } = apiRequest.mock.calls[0][1];
+    expect(body.generate_address).toBe(true);
+    expect(body.provider).toBe('ses');
+    expect('address' in body).toBe(false);
+    expect('topic_arn' in body).toBe(false);
+  });
+
+  it('still needs an address when not generating one, and never generates on an edit', async () => {
+    await expect(createMailbox(event, { ...base, address: '' })).rejects.toThrow(
+      'A mailbox needs an address.'
+    );
+    await updateMailbox(event, 'm1', { generate_address: true, is_active: true });
+    expect(apiRequest.mock.calls[0][1].body).toEqual({ is_active: true });
+  });
+
+  it('reads the new fields, the generated domain and whether leads are on offer', async () => {
+    apiRequest.mockResolvedValueOnce({
+      generated_domain: 'in.example.io',
+      mailboxes: [
+        { id: 'm1', address: 'acme-x1y2z3@in.example.io', creates: 'leads', lead_source: 'email' },
+        { id: 'm2', address: 'help@acme.io', creates: 'tickets', is_generated: false }
+      ]
+    });
+    const answer = await getMailboxes(event);
+    expect(answer.generated_domain).toBe('in.example.io');
+    expect(answer.can_create_leads).toBe(true);
+    expect(answer.mailboxes[0]).toMatchObject({
+      creates: 'leads',
+      lead_source: 'email',
+      lead_source_detail: '',
+      is_generated: true
+    });
+    expect(answer.mailboxes[1].is_generated).toBe(false);
+  });
+
+  it('offers tickets only on an older API', async () => {
+    apiRequest.mockResolvedValueOnce({ mailboxes: [{ id: 'm1', address: 'a@b.io' }] });
+    const answer = await getMailboxes(event);
+    expect(answer.can_create_leads).toBe(false);
+    expect(answer.generated_domain).toBeNull();
+    expect(answer.mailboxes[0].creates).toBe('tickets');
+  });
+});
+
+describe('webhookSecretEdit', () => {
+  it('is undefined when nothing was typed, so a stored secret is kept', () => {
+    expect(webhookSecretEdit(null)).toBeUndefined();
+    expect(webhookSecretEdit('')).toBeUndefined();
+    expect(webhookSecretEdit('   ')).toBeUndefined();
+  });
+
+  it('is the typed value, trimmed', () => {
+    expect(webhookSecretEdit(' abc ')).toBe('abc');
+  });
+});
+
+describe('getMailboxes secrets', () => {
+  it('carries has_webhook_secret and never a secret', async () => {
+    apiRequest.mockResolvedValue({
+      mailboxes: [
+        { id: 'm1', provider: 'postmark', has_webhook_secret: true, webhook_secret: 'leak' }
+      ],
+      totals: {}
+    });
+    const { mailboxes } = await getMailboxes(event);
+    expect(mailboxes[0].has_webhook_secret).toBe(true);
+    expect('webhook_secret' in mailboxes[0]).toBe(false);
+  });
+
+  it('reads a row with no flag as having no secret', async () => {
+    apiRequest.mockResolvedValue({ mailboxes: [{ id: 'm1', provider: 'mailgun' }], totals: {} });
+    const { mailboxes } = await getMailboxes(event);
+    expect(mailboxes[0].has_webhook_secret).toBe(false);
   });
 });

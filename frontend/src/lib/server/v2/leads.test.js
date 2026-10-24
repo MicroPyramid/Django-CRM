@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createLead, convertLead } = await import('#lib/server/v2/leads.js');
+const { createLead, convertLead, updateLead, getLeadForEdit } =
+  await import('#lib/server/v2/leads.js');
 // Cast rather than shaping a full Cookies mock: createLead only ever calls
 // `cookies.get`, and `apiRequest` itself is mocked above, so nothing here
 // touches `getAll`/`set`/`delete`/`serialize`. Without the cast svelte-check
@@ -88,5 +89,58 @@ describe('convertLead', () => {
     });
     apiRequest.mockRejectedValue(rejection);
     await expect(convertLead(event, 'lead-1')).rejects.toBe(rejection);
+  });
+});
+
+describe('the source fields', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('sends source, sub-source and reference as typed, and empty ones as empty strings', async () => {
+    apiRequest.mockResolvedValue({});
+    await createLead(event, {
+      first_name: 'Ada',
+      source: 'google ads',
+      source_detail: 'Spring open day',
+      source_ref: ''
+    });
+    const { body } = apiRequest.mock.calls[0][1];
+    expect(body.source).toBe('google ads');
+    expect(body.source_detail).toBe('Spring open day');
+    expect(body.source_ref).toBe('');
+    expect(body.job_title).toBeNull();
+
+    await createLead(event, { first_name: 'Ada' });
+    const second = apiRequest.mock.calls[1][1].body;
+    expect([second.source, second.source_detail, second.source_ref]).toEqual(['', '', '']);
+  });
+
+  it('clears a sub-source on edit with an empty string, and leaves absent ones out', async () => {
+    apiRequest.mockResolvedValue({});
+    await updateLead(event, 'lead-1', { source_detail: '', source: 'walk-in' });
+    expect(apiRequest.mock.calls[0][1].body).toEqual({ source_detail: '', source: 'walk-in' });
+  });
+
+  it('prefills the edit form with the stored sub-source and reference', async () => {
+    apiRequest.mockImplementation(async (/** @type {string} */ path) => {
+      if (path === '/leads/lead-1/') {
+        return {
+          lead_obj: {
+            id: 'lead-1',
+            first_name: 'Ada',
+            source: 'fax',
+            source_detail: 'Zillow',
+            source_ref: 'L-42',
+            assigned_to: [],
+            custom_fields: {}
+          }
+        };
+      }
+      return {};
+    });
+    const { form, lead } = await getLeadForEdit(event, 'lead-1');
+    expect(form).toMatchObject({ source: 'fax', source_detail: 'Zillow', source_ref: 'L-42' });
+    expect(lead.source_detail).toBe('Zillow');
   });
 });

@@ -139,10 +139,10 @@ no view uses `django_filters`. Each list view reads `request.query_params` direc
 | `cf_<key>` | custom field `<key>` equals the given value (`custom_fields__contains`) |
 
 For example, `GET /api/leads/?status=assigned&source=partner&search=acme`; `status` and `source`
-are exact matches against `LEAD_STATUS` and `LEAD_SOURCE` (`backend/common/utils.py:50-67`:
-statuses are `assigned`, `in process`, `converted`, `recycled`, `closed`; sources are `call`,
-`email`, `existing customer`, `partner`, `public relations`, `compaign`, `other`), so a filter value
-outside those exact strings matches nothing rather than erroring. Other list endpoints define
+are exact matches against `LEAD_STATUS` (`backend/common/utils.py`: `assigned`, `in process`,
+`converted`, `recycled`, `closed`) and a source key from the org's
+[lead sources](leads.md#lead-sources), so a filter value outside those exact strings matches nothing
+rather than erroring. Other list endpoints define
 their own, generally smaller, filter sets in the same style. There is no single reference for
 "every filter the API supports"; read the view (or watch for a dedicated section on that resource's
 page, where one exists) rather than assuming this table applies elsewhere.

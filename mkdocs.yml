@@ -98,6 +98,7 @@ nav:
   - Integrations:
       - AI agents: integrations/ai-agents.md
       - Web forms: integrations/web-forms.md
+      - Lead capture: features/lead-capture.md
       - Inbound email: integrations/inbound-email.md
       - Webhooks: integrations/webhooks.md
       - Automation rules: integrations/automation.md

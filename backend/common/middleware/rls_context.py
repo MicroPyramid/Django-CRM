@@ -93,6 +93,12 @@ class RequireOrgContext:
         # `/api/public/forms/` and nothing else. The org id sits AFTER the
         # fixed prefix for that reason; see webforms/public_urls.py.
         "/api/public/forms/",
+        # Public lead webhook. Anonymous by design: a sender holds the
+        # intake's key, not a session. The view resolves the org from the
+        # intake id (`PortalAccessToken`) and sets the RLS context before any
+        # org-scoped read. Prefix-matched: `leads/public_urls.py` must hold
+        # only anonymous routes.
+        "/api/public/leads/",
         # Public help center (G6). Anonymous by design: search engines and
         # visitors read it with no credential. The views take the org from the
         # slug after this prefix and set the RLS context before any org-scoped
@@ -169,7 +175,14 @@ class RequireOrgContext:
     # EXEMPT_PATHS would reach further than this one route as soon as anything
     # else is mounted there, and the admin mailbox endpoints under /api/cases/
     # must keep requiring org context like everything else.
-    EXEMPT_VIEW_NAMES = frozenset({"common_urls:api_cases:inbound_webhook"})
+    # The generated-address catch-all (`/api/cases/inbound/email/`) is the same
+    # case: SNS posts it anonymously, and the view resolves each recipient's org.
+    EXEMPT_VIEW_NAMES = frozenset(
+        {
+            "common_urls:api_cases:inbound_webhook",
+            "common_urls:api_cases:inbound_catch_all",
+        }
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response

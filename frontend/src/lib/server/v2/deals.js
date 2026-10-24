@@ -589,7 +589,8 @@ function toBody(values) {
   for (const field of EDITABLE_FIELDS) {
     if (!(field in values)) continue;
     const value = values[field];
-    body[field] = value === '' ? null : value;
+    // A source key is a blank-only string column, so "none" is '', not null.
+    body[field] = value === '' && field !== 'lead_source' ? null : value;
   }
   if ('amount' in body && body.amount !== null) body.amount = Number(body.amount);
   if ('probability' in body && body.probability !== null) {

@@ -531,12 +531,13 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
 
   /// Create a new deal, list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> createDeal(
-    Deal deal,
-  ) async {
+    Deal deal, {
+    bool withLeadSource = false,
+  }) async {
     try {
       final response = await _apiService.post(
         ApiConfig.opportunities,
-        deal.toJson(),
+        deal.toJson(withLeadSource: withLeadSource),
       );
 
       if (response.success && response.data != null) {
@@ -566,11 +567,15 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
   /// Update an existing deal, list refreshes on success.
   Future<({bool success, String? error, Deal? deal})> updateDeal(
     String id,
-    Deal deal,
-  ) async {
+    Deal deal, {
+    bool withLeadSource = false,
+  }) async {
     try {
       final url = '${ApiConfig.opportunities}$id/';
-      final response = await _apiService.put(url, deal.toJson());
+      final response = await _apiService.put(
+        url,
+        deal.toJson(withLeadSource: withLeadSource),
+      );
 
       if (response.success && response.data != null) {
         final isError = response.data!['error'] as bool? ?? true;

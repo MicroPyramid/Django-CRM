@@ -443,10 +443,14 @@ def _reply_to_mailbox(case):
     The one the case's latest inbound email came through; else the org's only
     mailbox. Only a mailbox that can take mail counts: active, and an SES one
     with its topic pinned, since the webhook refuses everything else and a
-    reply sent there would be lost. Always this case's org.
+    reply sent there would be lost. A lead address never counts: a reply sent
+    there would become a lead. Always this case's org.
     """
     receiving = InboundMailbox.objects.filter(
-        org_id=case.org_id, is_active=True, provider="ses"
+        org_id=case.org_id,
+        is_active=True,
+        provider="ses",
+        creates=InboundMailbox.CREATES_TICKETS,
     ).exclude(topic_arn="")
     last_mailbox_id = (
         EmailMessageRecord.objects.filter(

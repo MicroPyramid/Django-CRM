@@ -7,7 +7,8 @@ import {
   deliveryExplanation,
   deliveringCount,
   silentMailboxes,
-  providerChoiceLabel
+  providerChoiceLabel,
+  webhookSetupUrl
 } from './delivery.js';
 
 /** @param {any} over */
@@ -32,9 +33,7 @@ describe('deliveryState', () => {
   });
 
   it('is unsupported for a provider the webhook answers 501 for', () => {
-    for (const provider of ['mailgun', 'postmark', 'imap']) {
-      expect(deliveryState(mailbox({ provider }))).toBe('unsupported');
-    }
+    expect(deliveryState(mailbox({ provider: 'imap' }))).toBe('unsupported');
   });
 
   it('is unconfirmed for an SES address with no topic pin', () => {
@@ -47,9 +46,7 @@ describe('deliveryState', () => {
     // `is_active` is the mailbox lookup's own filter, so an off Mailgun row
     // fails there before the provider is ever consulted.
     expect(deliveryState(mailbox({ is_active: false, provider: 'mailgun' }))).toBe('off');
-    expect(deliveryState(mailbox({ provider: 'mailgun', has_topic_arn: false }))).toBe(
-      'unsupported'
-    );
+    expect(deliveryState(mailbox({ provider: 'imap', has_topic_arn: false }))).toBe('unsupported');
   });
 
   it('treats a row with no pin field as unconfirmed rather than live', () => {
@@ -87,10 +84,18 @@ describe('deliveryExplanation', () => {
     expect(text).toContain('no ticket is opened');
   });
 
-  it('names the provider and says only SES is wired up', () => {
-    const text = deliveryExplanation('unsupported', 'Mailgun');
-    expect(text).toContain('Mailgun');
-    expect(text).toContain('SES');
+  it('names the provider and no longer says only SES is wired up', () => {
+    const text = deliveryExplanation('unsupported', 'IMAP');
+    expect(text).toContain('IMAP');
+    expect(text).not.toContain('Only AWS SES');
+  });
+
+  it('asks for the webhook secret, not a topic, on Postmark and Mailgun', () => {
+    for (const provider of ['postmark', 'mailgun']) {
+      const text = deliveryExplanation('unconfirmed', provider, 'tickets', provider);
+      expect(text).toContain('webhook secret');
+      expect(text).not.toContain('Topic ARN');
+    }
   });
 
   it('says an unconfirmed address refuses mail and names both ways to pin it', () => {
@@ -111,7 +116,7 @@ describe('deliveringCount', () => {
     // tickets". Two of these three are on and open nothing.
     const rows = [
       mailbox({ id: 'a' }),
-      mailbox({ id: 'b', provider: 'mailgun' }),
+      mailbox({ id: 'b', provider: 'imap' }),
       mailbox({ id: 'c', has_topic_arn: false })
     ];
     expect(deliveringCount(rows)).toBe(1);
@@ -141,20 +146,86 @@ describe('silentMailboxes', () => {
 });
 
 describe('providerChoiceLabel', () => {
-  it('leaves the one implemented provider alone', () => {
+  it('leaves the implemented providers alone', () => {
     expect(providerChoiceLabel('ses', 'AWS SES')).toBe('AWS SES');
+    expect(providerChoiceLabel('mailgun', 'Mailgun')).toBe('Mailgun');
+    expect(providerChoiceLabel('postmark', 'Postmark')).toBe('Postmark');
   });
 
-  it('marks the three that are not', () => {
-    expect(providerChoiceLabel('mailgun', 'Mailgun')).toBe('Mailgun (not wired up yet)');
+  it('marks the one that is not', () => {
+    expect(providerChoiceLabel('imap', 'IMAP')).toBe('IMAP (not wired up yet)');
   });
 
   it('keeps every model choice selectable, marked rather than hidden', () => {
     // Hiding them would silently rewrite a mailbox already set to one.
     const values = ['ses', 'mailgun', 'postmark', 'imap'];
-    expect(values.filter((v) => SUPPORTED_PROVIDERS.includes(v))).toEqual(['ses']);
+    expect(values.filter((v) => SUPPORTED_PROVIDERS.includes(v))).toEqual([
+      'ses',
+      'mailgun',
+      'postmark'
+    ]);
     for (const value of values) {
       expect(providerChoiceLabel(value, value)).toContain(value);
     }
+  });
+});
+
+describe('lead and generated addresses', () => {
+  it('reads a generated address as live without a pin of its own', () => {
+    expect(deliveryState(mailbox({ has_topic_arn: false, is_generated: true }))).toBe('live');
+    expect(deliveryState(mailbox({ has_topic_arn: false, is_generated: false }))).toBe(
+      'unconfirmed'
+    );
+    expect(deliveryState(mailbox({ is_active: false, is_generated: true }))).toBe('off');
+  });
+
+  it('says leads for a lead address', () => {
+    expect(deliveryLabel('live', 'leads')).toBe('Creating leads');
+    expect(deliveryLabel('off', 'leads')).toBe('Creating nothing');
+    expect(deliveryExplanation('off', 'AWS SES', 'leads')).toContain('no lead is made');
+    expect(deliveryExplanation('off', 'AWS SES')).toContain('no ticket is opened');
+  });
+});
+
+describe('connected state per provider', () => {
+  it('is live for Postmark and Mailgun only when a secret is stored', () => {
+    for (const provider of ['postmark', 'mailgun']) {
+      const base = { provider, has_topic_arn: false };
+      expect(deliveryState(mailbox({ ...base, has_webhook_secret: true }))).toBe('live');
+      expect(deliveryState(mailbox({ ...base, has_webhook_secret: false }))).toBe('unconfirmed');
+      expect(deliveryState(mailbox(base))).toBe('unconfirmed');
+    }
+  });
+
+  it('does not let a topic pin stand in for a secret', () => {
+    expect(deliveryState(mailbox({ provider: 'postmark', has_topic_arn: true }))).toBe(
+      'unconfirmed'
+    );
+  });
+
+  it('does not let a stored secret stand in for an SES pin', () => {
+    expect(deliveryState(mailbox({ has_topic_arn: false, has_webhook_secret: true }))).toBe(
+      'unconfirmed'
+    );
+  });
+});
+
+describe('webhookSetupUrl', () => {
+  it('gives Postmark a basic-auth URL with a placeholder, never a secret', () => {
+    expect(webhookSetupUrl('postmark', 'm1', 'https://api.acme.io')).toBe(
+      'https://postmark:<secret>@api.acme.io/api/cases/inbound/m1/'
+    );
+  });
+
+  it('wraps the Mailgun URL in forward()', () => {
+    expect(webhookSetupUrl('mailgun', 'm1', 'https://api.acme.io/')).toBe(
+      'forward("https://api.acme.io/api/cases/inbound/m1/")'
+    );
+  });
+
+  it('has none for SES, IMAP or an unknown host', () => {
+    expect(webhookSetupUrl('ses', 'm1', 'https://api.acme.io')).toBeNull();
+    expect(webhookSetupUrl('imap', 'm1', 'https://api.acme.io')).toBeNull();
+    expect(webhookSetupUrl('postmark', 'm1', '')).toBeNull();
   });
 });

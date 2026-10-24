@@ -129,7 +129,14 @@ MODULES = (
 KEYS = tuple(m.key for m in MODULES)
 _BY_KEY = {m.key: m for m in MODULES}
 
-_LEADS = ("Lead", "LeadPipeline", "LeadStage")
+# LeadSource is left unplaced: deals and contacts carry its keys too.
+_LEADS = (
+    "Lead",
+    "LeadPipeline",
+    "LeadStage",
+    "LeadIntake",
+    "LeadIntakeEvent",
+)
 _DEALS = ("DealPipeline", "DealStage", "Opportunity", "OpportunityLineItem")
 _TASKS = (
     "Board",
@@ -291,6 +298,7 @@ NAMESPACE_MODULES: dict[str, Requires] = {
     "api_invoices": Requires(("invoices",)),
     "public_help": Requires(("knowledge_base",)),
     "public_invoices": Requires(("invoices",)),
+    "public_leads": Requires(("leads",)),
     "api_accounts": CORE,
     "api_contacts": CORE,
     "api_webforms": CORE,
@@ -310,9 +318,13 @@ ROUTE_MODULES: dict[str, Requires] = {
     "api/cases/<uid:pk>/solution-suggestions/": Requires(("tickets", "knowledge_base")),
     "api/cases/<uid:pk>/time-entries/": Requires(("tickets", "timesheet")),
     "api/cases/<uid:pk>/time-summary/": Requires(("tickets", "timesheet")),
+    # A mailbox makes tickets or leads; each webhook checks its own in the view.
+    "api/cases/mailboxes/": Requires(any_of=("tickets", "leads")),
+    "api/cases/inbound/": Requires(any_of=("tickets", "leads")),
     "api/invoices/products/": Requires(any_of=("invoices", "deals")),
     "api/invoices/from-opportunity/": Requires(("invoices", "deals")),
     "api/invoices/from-time-entries/": Requires(("invoices", "tickets", "timesheet")),
+    "api/leads/sources/": CORE,
     "api/documents/": Requires(("documents",)),
     "api/profile/calendar-feed/": Requires(("tasks",)),
     "api/public/calendar/": Requires(("tasks",)),
@@ -376,6 +388,8 @@ VIEW_CHECKED_ROUTES: frozenset[str] = frozenset(
         "api/portal/cases/<uid:pk>/",
         "api/portal/cases/<uid:pk>/comment/",
         "api/cases/inbound/<uid:mailbox_id>/",
+        "api/cases/inbound/email/",
+        "api/public/leads/<uid:intake_id>/",
     }
 )
 

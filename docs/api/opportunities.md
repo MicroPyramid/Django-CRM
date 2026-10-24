@@ -29,7 +29,7 @@ just the current page (`get_totals`, `:73-110`):
   "contacts_list": [ { "...": "ContactSerializer" } ],
   "tags": [ { "...": "..." } ],
   "stage": [["PROSPECTING", "Prospecting"], ["QUALIFICATION", "Qualification"]],
-  "lead_source": [["NONE", "NONE"], ["CALL", "CALL"], ["WEBSITE", "WEBSITE"]],
+  "lead_source": [["call", "Call"], ["web form", "Web form"]],
   "currency": [["USD", "USD, Dollar"]]
 }
 ```
@@ -44,8 +44,9 @@ by code. A deal with no currency counts in the org's default currency. `stalled_
 created or are assigned to (`:119-131`).
 
 Filters: `name`, `search` (both `icontains` against `name` only; `search` here does **not** OR
-across multiple fields the way it does on [Leads](leads.md#list-leads)); `account` (exact); `stage`,
-`lead_source` (**`__contains`, not exact**. See [Stages](#stages) for why this matters); `tags`,
+across multiple fields the way it does on [Leads](leads.md#list-leads)); `account` (exact); `stage`
+(**`__contains`, not exact**. See [Stages](#stages) for why this matters); `lead_source` (an exact
+key, like a lead's `source`; a substring match before django-crm 1.26.0); `tags`,
 `assigned_to` (repeatable, id lists); `created_at__gte/lte`, `closed_on__gte/lte`,
 `amount__gte/lte`; `cf_<key>`; `pipeline` (a pipeline id, exact); and two boolean flags,
 `open=true` (excludes won and lost stages) and `rotten=true` (stalled deals only). See
@@ -117,9 +118,9 @@ or lost stage requires `closed_on`; entering a won stage also requires `amount`.
 auto-filled when it is `0` or unset: 100 for a won stage, 0 for a lost one, and a per-code default
 for the seeded open stages (`stage_probability`, `opportunity/workflow.py`).
 
-**Filtering by stage is a substring match, not an exact one**: `?stage=` and `?lead_source=` both
-compile to `__contains`, unlike `Lead.status`/`Lead.source`, which are exact matches (see
-[Leads](leads.md#list-leads)). `?stage=CLOSED` therefore matches both `CLOSED_WON` and
+**Filtering by stage is a substring match, not an exact one**: `?stage=` compiles to `__contains`,
+unlike `Lead.status`, which is an exact match (see [Leads](leads.md#list-leads)).
+`?stage=CLOSED` therefore matches both `CLOSED_WON` and
 `CLOSED_LOST`; `?stage=closed` (lowercase) matches neither, because `__contains` on a `CharField` is
 case-sensitive.
 
@@ -218,7 +219,9 @@ accept. Only `name` is required at the model level (`opportunity/models.py:46`, 
 | `amount` | decimal | **required for a won stage** | Otherwise optional; non-negative (DB constraint) |
 | `probability` | integer, 0-100 | optional | Auto-filled from `stage` if `0`/unset. See [Stages](#stages) |
 | `closed_on` | date | **required for a won or lost stage** | Otherwise optional |
-| `lead_source` | one of `SOURCES` | optional | Uppercase, `NONE`, `CALL`, `EMAIL`, `EXISTING CUSTOMER`, `PARTNER`, `PUBLIC RELATIONS`, `CAMPAIGN`, `WEBSITE`, `OTHER`. **Not** `Lead.source`'s `LEAD_SOURCE`. See [Leads](leads.md#list-leads) |
+| `lead_source` | a key of the org's [lead sources](leads.md#lead-sources) | optional | The same list and rule as a lead's `source`: unknown, other-org and retired keys are `400`, the key already stored is always accepted. The old uppercase values were migrated (`WEBSITE` is `web form`, `NONE` is empty) |
+| `source_detail` | string, at most 100 | optional | Copied from the lead at conversion |
+| `source_ref` | string, at most 255 | optional | Copied from the lead at conversion |
 | `description` | text | optional | |
 | `is_active` | boolean | optional | Defaults `true` |
 

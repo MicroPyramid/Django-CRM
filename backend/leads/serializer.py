@@ -1,6 +1,7 @@
 from django.db.models import Count, Q
 from rest_framework import serializers
 
+from common.client_version import is_legacy_phone
 from common.serializer import (
     AttachmentsSerializer,
     LeadCommentSerializer,
@@ -13,6 +14,7 @@ from common.utils import LEAD_STATUS
 from contacts.serializer import ContactPickerSerializer
 from leads.access import has_lead_access, visible_leads_qs
 from leads.models import Lead, LeadPipeline, LeadStage
+from leads.source_rules import check_source
 from leads.workflow import IRREVERSIBLE_STATUSES
 
 
@@ -43,6 +45,8 @@ class LeadSerializer(serializers.ModelSerializer):
             # Sales Pipeline
             "status",
             "source",
+            "source_detail",
+            "source_ref",
             "industry",
             "rating",
             "opportunity_amount",
@@ -79,13 +83,24 @@ class LeadSerializer(serializers.ModelSerializer):
             "kanban_order",
             # Per-org custom fields (validated via common.custom_fields)
             "custom_fields",
+            # Set by the server (phone) or by an intake (the rest)
+            "phone_e164",
+            "external_source",
+            "external_id",
+            "last_enquiry_at",
         )
         # is_sample is server-set only (see leads/models.py). Read-only here
         # even though this serializer is a read/list path today (writes go
         # through LeadCreateSerializer, which never lists this field at all).
         # Defense in depth: a future write path added to this serializer
         # without checking Meta.fields first still can't make it writable.
-        read_only_fields = ("is_sample",)
+        read_only_fields = (
+            "is_sample",
+            "phone_e164",
+            "external_source",
+            "external_id",
+            "last_enquiry_at",
+        )
 
 
 class LeadPickerSerializer(serializers.ModelSerializer):
@@ -126,6 +141,18 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         self.fields["last_name"].required = False
         self.fields["salutation"].required = False
         self.org = request_obj.profile.org
+        self.legacy_phone = is_legacy_phone(request_obj)
+
+    def validate_source(self, value):
+        try:
+            return check_source(
+                value,
+                self.org,
+                getattr(self.instance, "source", None),
+                self.legacy_phone,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
 
     def validate_email(self, value):
         """One lead per address per org, matching the DB constraint exactly.
@@ -214,6 +241,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             # Sales Pipeline
             "status",
             "source",
+            "source_detail",
+            "source_ref",
             "industry",
             "rating",
             "opportunity_amount",
@@ -263,6 +292,8 @@ class LeadCreateSwaggerSerializer(serializers.ModelSerializer):
             # Sales Pipeline
             "status",
             "source",
+            "source_detail",
+            "source_ref",
             "industry",
             "rating",
             "opportunity_amount",

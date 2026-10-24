@@ -107,6 +107,10 @@ function toRow(contact) {
     address_line: contact.address_line ?? '',
     postcode: contact.postcode ?? '',
     description: contact.description ?? '',
+    // Where the person first came from, copied from their lead at conversion.
+    source: contact.source ?? '',
+    source_detail: contact.source_detail ?? '',
+    source_ref: contact.source_ref ?? '',
     is_active: contact.is_active !== false,
     owner: owners.length ? profileName(owners[0]) : null,
     owner_count: owners.length,

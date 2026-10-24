@@ -9,6 +9,7 @@ import '../../data/models/models.dart';
 import '../../data/models/lead_board.dart' show LeadStageRef;
 import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/org_modules_provider.dart';
@@ -645,9 +646,33 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       _InfoRow(
         icon: LucideIcons.compass,
         label: 'SOURCE',
-        value: lead.source.displayName,
+        value: lead.source.isEmpty
+            ? 'None'
+            : leadSourceLabel(
+                lead.source,
+                shownLeadSources(ref.watch(leadSourcesProvider))?.sources ??
+                    const [],
+              ),
       ),
     );
+    if (lead.sourceDetail.isNotEmpty) {
+      addRow(
+        _InfoRow(
+          icon: LucideIcons.signpost,
+          label: 'SUB-SOURCE',
+          value: lead.sourceDetail,
+        ),
+      );
+    }
+    if (lead.sourceRef.isNotEmpty) {
+      addRow(
+        _InfoRow(
+          icon: LucideIcons.hash,
+          label: 'REFERENCE',
+          value: lead.sourceRef,
+        ),
+      );
+    }
     if (lead.industry != null && lead.industry!.trim().isNotEmpty) {
       addRow(
         _InfoRow(

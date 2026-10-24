@@ -28,6 +28,9 @@ class Contact {
     this.tagNames = const [],
     this.createdAt,
     this.canDelete = false,
+    this.source = '',
+    this.sourceDetail = '',
+    this.sourceRef = '',
   });
 
   final String id;
@@ -73,6 +76,13 @@ class Contact {
   /// detail record. False wherever it was not sent, such as a list row, so
   /// Delete is never offered on a guess.
   final bool canDelete;
+
+  /// Where the person came from, copied from their lead at conversion. A
+  /// source key as the server sent it. None of the three is in [toPayload],
+  /// so an edit here never touches them.
+  final String source;
+  final String sourceDetail;
+  final String sourceRef;
 
   String get fullName {
     final name = '${firstName.trim()} ${lastName.trim()}'.trim();
@@ -132,6 +142,9 @@ class Contact {
           ? null
           : DateTime.tryParse(json['created_at'].toString()),
       canDelete: canDelete,
+      source: json['source']?.toString() ?? '',
+      sourceDetail: json['source_detail']?.toString() ?? '',
+      sourceRef: json['source_ref']?.toString() ?? '',
     );
   }
 
@@ -205,6 +218,9 @@ class Contact {
       tagNames: tagNames,
       createdAt: createdAt,
       canDelete: canDelete,
+      source: source,
+      sourceDetail: sourceDetail,
+      sourceRef: sourceRef,
     );
   }
 }

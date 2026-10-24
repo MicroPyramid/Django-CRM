@@ -5,8 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/contact.dart';
+import '../../data/models/lead_source.dart';
 import '../../providers/contacts_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
 import '../../widgets/objects/related_objects_section.dart';
@@ -222,6 +224,18 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
             : contact.assignedToNames.join(', '),
       ),
       ('Tags', contact.tagNames.isEmpty ? null : contact.tagNames.join(', ')),
+      (
+        'Source',
+        contact.source.isEmpty
+            ? null
+            : leadSourceLabel(
+                contact.source,
+                shownLeadSources(ref.watch(leadSourcesProvider))?.sources ??
+                    const [],
+              ),
+      ),
+      ('Sub-source', contact.sourceDetail),
+      ('Reference', contact.sourceRef),
       ('Notes', contact.description),
     ].where((row) => row.$2 != null && row.$2!.trim().isNotEmpty).toList();
 

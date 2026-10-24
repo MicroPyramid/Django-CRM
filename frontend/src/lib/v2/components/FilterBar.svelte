@@ -25,6 +25,7 @@
    *   tags?: {id: string, name: string}[],
    *   accounts?: {id: string, name: string}[],
    *   stages?: {id: string, name: string}[],
+   *   sources?: {id: string, name: string}[],
    *   meId?: string | null,
    *   meta?: string | null,
    *   onlyFields?: string[],
@@ -44,6 +45,7 @@
     tags = [],
     accounts = [],
     stages = [],
+    sources = [],
     meId = null,
     meta = null,
     onlyFields = undefined,
@@ -66,15 +68,20 @@
    * did not filter, while a header total computed with the full param set
    * would disagree with what the rows show.
    */
+  // A source field with no list to offer (an API without lead sources) is
+  // left out rather than drawn as a select holding only "Any".
   let visibleFields = $derived(
-    onlyFields ? descriptor.fields.filter((f) => onlyFields.includes(f.key)) : descriptor.fields
+    (onlyFields
+      ? descriptor.fields.filter((f) => onlyFields.includes(f.key))
+      : descriptor.fields
+    ).filter((f) => f.type !== 'source' || sources.length > 0)
   );
   let visiblePresets = $derived(
     onlyPresets ? descriptor.presets.filter((p) => onlyPresets.includes(p.key)) : descriptor.presets
   );
 
   let chips = $derived(
-    activeChips(page, url, { people, tags, accounts, stages }).filter(
+    activeChips(page, url, { people, tags, accounts, stages, sources }).filter(
       (chip) => !onlyFields || onlyFields.includes(chip.key)
     )
   );
@@ -120,6 +127,7 @@
     if (field.type === 'tag') return tags;
     if (field.type === 'account') return accounts;
     if (field.type === 'stage') return stages;
+    if (field.type === 'source') return sources;
     return (field.options ?? []).map((/** @type {string} */ v) => ({
       id: v,
       name: field.labelFor ? field.labelFor(v) : invoiceStatusLabel(v)

@@ -9,6 +9,7 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 from common.custom_fields import is_supported_target, validate_definition_options
+from leads.sources import derive_key
 
 TOP_LEVEL_KEYS = {
     "id",
@@ -21,6 +22,7 @@ TOP_LEVEL_KEYS = {
     "task_pipeline",
     "custom_fields",
     "tags",
+    "lead_sources",
     "products",
     "sample_data",
     "sample_dates_written_on",
@@ -95,6 +97,7 @@ CUSTOM_FIELD_KEYS = {
 FIELD_TYPES = {"text", "textarea", "number", "dropdown", "date", "checkbox"}
 
 TAG_KEYS = {"name", "color", "description"}
+LEAD_SOURCE_KEYS = {"key", "label"}
 PRODUCT_KEYS = {"name", "sku", "price", "currency", "category", "description"}
 
 SAMPLE_LEAD_KEYS = {
@@ -364,6 +367,44 @@ def _validate_tag(where: str, tag: dict) -> None:
         raise PackValidationError(f"{where}: color {color!r} is not a valid tag colour")
 
 
+def pack_source_keys(raw: dict) -> set[str]:
+    """The sources a pack's sample leads may use: the defaults every org has,
+    and the ones the pack adds."""
+    from leads.sources import DEFAULT_SOURCES
+
+    keys = {key for key, _label in DEFAULT_SOURCES}
+    keys.update(
+        s["key"]
+        for s in raw.get("lead_sources") or []
+        if isinstance(s, dict) and isinstance(s.get("key"), str)
+    )
+    return keys
+
+
+def _validate_lead_sources(where: str, sources) -> None:
+    if not isinstance(sources, list):
+        raise PackValidationError(f"{where}: expected a list")
+    seen: set[str] = set()
+    for i, source in enumerate(sources):
+        at = f"{where}[{i}]"
+        if not isinstance(source, dict):
+            raise PackValidationError(f"{at}: expected an object")
+        _reject_unknown(at, source, LEAD_SOURCE_KEYS)
+        _require(at, source, "key", "label")
+        key, label = source["key"], source["label"]
+        if not isinstance(key, str) or not isinstance(label, str):
+            raise PackValidationError(f"{at}: key and label must be strings")
+        if key != derive_key(key) or not 0 < len(key) <= 64:
+            raise PackValidationError(
+                f"{at}: key must be lowercase, single-spaced, at most 64 characters"
+            )
+        if not 0 < len(label) <= 100:
+            raise PackValidationError(f"{at}: label must be 1 to 100 characters")
+        if key in seen:
+            raise PackValidationError(f"{at}: key {key!r} is listed twice")
+        seen.add(key)
+
+
 def _validate_product(where: str, product: dict) -> None:
     _reject_unknown(where, product, PRODUCT_KEYS)
     if not product.get("name"):
@@ -464,7 +505,6 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         COUNTRIES,
         CURRENCY_CODES,
         INDCHOICES,
-        LEAD_SOURCE,
         LEAD_STATUS,
         PRIORITY_CHOICE,
         SOURCES,
@@ -592,13 +632,14 @@ def _validate_sample_data(where: str, sample: dict, raw: dict) -> None:
         _reject_unknown(at, row, SAMPLE_LEAD_KEYS)
         _require(at, row, "title")
         _validate_choice(at, row.get("stage"), "stage", lead_stages)
-        # Lead.source and Lead.status carry `choices` the applier never checks.
-        # Both were unvalidated here until three shipped packs were found writing
-        # source="website". A value LEAD_SOURCE does not contain, so the demo row
+        # Lead.status carries `choices` the applier never checks, and a source
+        # is a key the applier never checks either. Both were unvalidated here
+        # until three shipped packs were found writing
+        # source="website". A key the org's list does not hold, so the demo row
         # rendered as a blank dropdown and no source filter could reach it. The
         # row looked fine in the database, which is precisely why this needs a
         # schema check rather than trust.
-        _validate_choice(at, row.get("source"), "source", {c for c, _l in LEAD_SOURCE})
+        _validate_choice(at, row.get("source"), "source", pack_source_keys(raw))
         _validate_choice(at, row.get("status"), "status", {c for c, _l in LEAD_STATUS})
         _validate_choice(at, row.get("currency"), "currency", currencies)
 
@@ -639,6 +680,8 @@ def validate_manifest(raw: dict) -> dict:
         _validate_custom_field(f"manifest.custom_fields[{i}]", field)
     for i, tag in enumerate(raw.get("tags") or []):
         _validate_tag(f"manifest.tags[{i}]", tag)
+    if "lead_sources" in raw:
+        _validate_lead_sources("manifest.lead_sources", raw["lead_sources"])
     for i, product in enumerate(raw.get("products") or []):
         _validate_product(f"manifest.products[{i}]", product)
 

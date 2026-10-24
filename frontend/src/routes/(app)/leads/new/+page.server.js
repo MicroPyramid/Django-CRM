@@ -1,10 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, createLead, getLeadFormOptions } from '#lib/server/v2/leads.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  return await getLeadFormOptions(event);
+  const [options, { sources }] = await Promise.all([
+    getLeadFormOptions(event),
+    getLeadSources(event)
+  ]);
+  return { ...options, sources };
 }
 
 /** @type {import('./$types').Actions} */

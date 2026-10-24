@@ -85,6 +85,13 @@ class SettingsHubScreen extends StatelessWidget {
                 onTap: () => context.push(AppRoutes.settingsLeadPipelines),
               ),
             ),
+            // Not gated on Leads: deals pick from the same list.
+            MenuRow(
+              icon: LucideIcons.compass,
+              label: 'Lead sources',
+              description: 'Where leads come from, as the pickers list it',
+              onTap: () => context.push(AppRoutes.settingsLeadSources),
+            ),
             _ModuleGate(
               module: 'deals',
               child: MenuRow(
@@ -231,6 +238,19 @@ class SettingsHubScreen extends StatelessWidget {
                       onTap: () => context.push(AppRoutes.settingsAuditLog),
                     )
                   : const SizedBox.shrink(),
+            ),
+            // Beside web forms, which it also lists: each is a way in for
+            // someone with no account.
+            _ModuleGate(
+              module: 'leads',
+              child: MenuRow(
+                icon: LucideIcons.inbox,
+                label: 'Lead capture',
+                description:
+                    'Web forms, webhooks and email addresses that bring '
+                    'leads in',
+                onTap: () => context.push(AppRoutes.settingsLeadCapture),
+              ),
             ),
             // Filed with the organization cluster rather than with records,
             // beside API tokens. What a published form grants is the ability

@@ -90,6 +90,17 @@ export function productsOn(modules) {
 }
 
 /**
+ * Inbound mailboxes are served while tickets or leads is on, since an address
+ * makes one or the other.
+ *
+ * @param {ModuleRow[] | null | undefined} modules
+ * @returns {boolean}
+ */
+export function mailboxesOn(modules) {
+  return isOn(modules, 'tickets') || isOn(modules, 'leads');
+}
+
+/**
  * @param {ModuleRow[] | null | undefined} modules
  * @param {string} key
  * @returns {string}
@@ -103,6 +114,7 @@ export function labelOf(modules, key) {
 const ROUTES = {
   '/leads': { all: ['leads'] },
   '/settings/lead-pipelines': { all: ['leads'] },
+  '/settings/lead-capture': { all: ['leads'] },
   '/pipeline': { all: ['deals'] },
   '/settings/deal-pipelines': { all: ['deals'] },
   '/goals': { all: ['goals'] },
@@ -114,7 +126,7 @@ const ROUTES = {
   '/settings/business-hours': { all: ['tickets'] },
   '/settings/ticket-approvals': { all: ['tickets'] },
   '/settings/reopen': { all: ['tickets'] },
-  '/settings/inbound-email': { all: ['tickets'] },
+  '/settings/inbound-email': { any: ['tickets', 'leads'] },
   '/settings/macros': { all: ['tickets'] },
   '/solutions': { all: ['knowledge_base'] },
   '/settings/help-center': { all: ['knowledge_base'] },

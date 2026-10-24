@@ -92,6 +92,8 @@ function isValid(field, value) {
   if (field.type === 'boolean') return BOOLEANS.includes(value);
   if (ID_TYPES.includes(field.type)) return UUID.test(value);
   if (field.type === 'stage') return STAGE_CODE.test(value);
+  // A source key, as long as the column that stores it.
+  if (field.type === 'source') return value.length <= 255;
   return true;
 }
 

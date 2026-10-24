@@ -33,8 +33,6 @@ import {
   INVOICE_STATUSES,
   LEAD_LIST_STATUSES,
   LEAD_STATUS_LABEL,
-  LEAD_SOURCES,
-  LEAD_SOURCE_LABEL,
   SOLUTION_STATUS,
   SOLUTION_STATUS_LABEL,
   TASK_PRIORITY,
@@ -82,13 +80,9 @@ export const FILTERS = {
         labelFor: (v) => LEAD_STATUS_LABEL[v] ?? v,
         multi: true
       },
-      {
-        key: 'source',
-        label: 'Source',
-        type: 'select',
-        options: LEAD_SOURCES,
-        labelFor: (v) => LEAD_SOURCE_LABEL[v] ?? v
-      },
+      // The org edits its sources, so the options arrive from the API
+      // (FilterBar's `sources` prop), as stages do on the pipeline.
+      { key: 'source', label: 'Source', type: 'source' },
       { key: 'tags', label: 'Tag', type: 'tag', multi: true }
     ]
   },
@@ -118,13 +112,7 @@ export const FILTERS = {
       // Stages are per pipeline and configured by the org, so the options
       // arrive from the API (FilterBar's `stages` prop), not from an enum.
       { key: 'stage', label: 'Stage', type: 'stage' },
-      {
-        key: 'lead_source',
-        label: 'Source',
-        type: 'select',
-        options: LEAD_SOURCES,
-        labelFor: (v) => LEAD_SOURCE_LABEL[v] ?? v
-      },
+      { key: 'lead_source', label: 'Source', type: 'source' },
       {
         key: 'amount',
         label: 'Value',
@@ -349,14 +337,14 @@ export function activePresetKey(
  * implicit defaults, and their X had nothing to remove, so it did nothing. An
  * implicit default belongs in the preset name, not in a chip.
  *
- * `lookups` resolves opaque ids and stage codes to names: `{ people: [{id,name}],
- * tags, accounts, stages }`. A missing lookup falls back to the raw value rather than
- * rendering an empty chip.
+ * `lookups` resolves opaque ids, stage codes and source keys to names:
+ * `{ people: [{id,name}], tags, accounts, stages, sources }`. A missing lookup
+ * falls back to the raw value rather than rendering an empty chip.
  */
 export function activeChips(
   /** @type {string} */ pageKey,
   /** @type {import('$app/state').ReadonlyURL} */ url,
-  /** @type {{people?: any[], tags?: any[], accounts?: any[], stages?: any[]}} */ lookups = {}
+  /** @type {{people?: any[], tags?: any[], accounts?: any[], stages?: any[], sources?: any[]}} */ lookups = {}
 ) {
   const descriptor = FILTERS[pageKey];
   if (!descriptor) return [];
@@ -404,6 +392,7 @@ export function activeChips(
       if (field.type === 'tag') return nameFrom(lookups.tags ?? [], raw);
       if (field.type === 'account') return nameFrom(lookups.accounts ?? [], raw);
       if (field.type === 'stage') return nameFrom(lookups.stages ?? [], raw);
+      if (field.type === 'source') return nameFrom(lookups.sources ?? [], raw);
       if (field.type === 'boolean') return raw === 'true' ? 'Yes' : 'No';
       return field.labelFor ? field.labelFor(raw) : raw;
     };

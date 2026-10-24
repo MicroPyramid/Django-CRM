@@ -14,18 +14,6 @@ export const LEAD_STATUSES = [
 ];
 
 /** @type {{ value: string, label: string }[]} */
-export const LEAD_SOURCES = [
-  { value: 'ALL', label: 'All Sources' },
-  { value: 'call', label: 'Call' },
-  { value: 'email', label: 'Email' },
-  { value: 'existing customer', label: 'Existing Customer' },
-  { value: 'partner', label: 'Partner' },
-  { value: 'public relations', label: 'Public Relations' },
-  { value: 'compaign', label: 'Campaign' },
-  { value: 'other', label: 'Other' }
-];
-
-/** @type {{ value: string, label: string }[]} */
 export const LEAD_RATINGS = [
   { value: 'ALL', label: 'All Ratings' },
   { value: 'HOT', label: 'Hot' },
@@ -76,20 +64,6 @@ export const OPPORTUNITY_TYPES = [
   { value: 'RENEWAL', label: 'Renewal' },
   { value: 'UPSELL', label: 'Upsell' },
   { value: 'CROSS_SELL', label: 'Cross-sell' }
-];
-
-/** @type {{ value: string, label: string }[]} */
-export const OPPORTUNITY_SOURCES = [
-  { value: '', label: 'Select Source' },
-  { value: 'NONE', label: 'None' },
-  { value: 'CALL', label: 'Call' },
-  { value: 'EMAIL', label: 'Email' },
-  { value: 'EXISTING CUSTOMER', label: 'Existing Customer' },
-  { value: 'PARTNER', label: 'Partner' },
-  { value: 'PUBLIC RELATIONS', label: 'Public Relations' },
-  { value: 'CAMPAIGN', label: 'Campaign' },
-  { value: 'WEBSITE', label: 'Website' },
-  { value: 'OTHER', label: 'Other' }
 ];
 
 /** @type {{ value: string, label: string }[]} */

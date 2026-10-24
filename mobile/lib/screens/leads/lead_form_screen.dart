@@ -9,6 +9,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../services/org_date.dart';
@@ -164,7 +165,12 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
 
   // --- Classification & Deal ---
   LeadStatus _status = LeadStatus.assigned;
-  LeadSource? _source; // nullable; backend accepts blank, not empty string
+  // A source key, empty for none. Each of the three goes on an edit only
+  // when it changed, so a source this build does not know is never
+  // overwritten: the server guards older builds that cannot promise that.
+  String _source = '';
+  final _sourceDetailController = TextEditingController();
+  final _sourceRefController = TextEditingController();
   // Nullable to mirror the backend (rating column is blank=True). Form starts
   // unset; user explicitly picks Cold/Warm/Hot or leaves it.
   LeadRating? _rating;
@@ -307,6 +313,8 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     _postcodeController.dispose();
     _countryController.dispose();
     _notesController.dispose();
+    _sourceDetailController.dispose();
+    _sourceRefController.dispose();
     for (final c in _customFieldControllers.values) {
       c.dispose();
     }
@@ -353,7 +361,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     _websiteController.text = lead.website ?? '';
     _industryController.text = lead.industry ?? '';
     _status = lead.status;
-    _source = lead.source == LeadSource.none ? null : lead.source;
+    _source = lead.source;
+    _sourceDetailController.text = lead.sourceDetail;
+    _sourceRefController.text = lead.sourceRef;
     _rating = lead.rating;
     _opportunityAmountController.text = lead.opportunityAmount != null
         ? _formatAmount(lead.opportunityAmount!)
@@ -441,12 +451,22 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       payload['rating'] = null;
     }
 
-    // Source is optional. Send only when set; backend's source column is
-    // nullable and rejects the empty string ''.
-    if (_source != null) {
-      payload['source'] = _source!.value;
-    } else if (widget.isEditMode) {
-      payload['source'] = null;
+    final loaded = _existingLead;
+    if (widget.isEditMode && loaded != null) {
+      // Cleared, the source travels as null: the column refuses ''.
+      if (_source != loaded.source) {
+        payload['source'] = _source.isEmpty ? null : _source;
+      }
+      final detail = _sourceDetailController.text.trim();
+      if (detail != loaded.sourceDetail) payload['source_detail'] = detail;
+      final reference = _sourceRefController.text.trim();
+      if (reference != loaded.sourceRef) payload['source_ref'] = reference;
+    } else if (!widget.isEditMode) {
+      if (_source.isNotEmpty) payload['source'] = _source;
+      final detail = _sourceDetailController.text.trim();
+      if (detail.isNotEmpty) payload['source_detail'] = detail;
+      final reference = _sourceRefController.text.trim();
+      if (reference.isNotEmpty) payload['source_ref'] = reference;
     }
 
     void putOptionalString(String key, String value) {
@@ -624,7 +644,9 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
       _websiteController.clear();
       _industryController.clear();
       _status = LeadStatus.assigned;
-      _source = null;
+      _source = '';
+      _sourceDetailController.clear();
+      _sourceRefController.clear();
       _rating = null;
       _opportunityAmountController.clear();
       _probabilityController.clear();
@@ -1210,15 +1232,33 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         const SizedBox(height: 16),
         _PickerField(
           label: 'Source',
-          value: _source?.displayName ?? 'None',
+          value: _source.isEmpty ? 'None' : _sourceLabel,
           leading: Icon(
-            _source?.icon ?? LucideIcons.helpCircle,
+            LucideIcons.compass,
             size: 20,
             color: AppColors.textSecondary,
           ),
           onTap: _isLoading ? null : _showSourcePicker,
         ),
         const SizedBox(height: 16),
+        if (_showsSourceDetail) ...[
+          FloatingLabelInput(
+            label: 'Sub-source (Optional)',
+            hint: 'Spring open day',
+            controller: _sourceDetailController,
+            maxLength: 100,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 16),
+          FloatingLabelInput(
+            label: 'Reference (Optional)',
+            hint: 'An ad or listing id',
+            controller: _sourceRefController,
+            maxLength: 255,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 16),
+        ],
         Text(
           'Rating',
           style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
@@ -1839,10 +1879,33 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
     );
   }
 
-  void _showSourcePicker() {
-    final sources = LeadSource.values
-        .where((s) => s != LeadSource.none)
-        .toList();
+  String get _sourceLabel => leadSourceLabel(
+    _source,
+    shownLeadSources(ref.watch(leadSourcesProvider))?.sources ?? const [],
+  );
+
+  /// An older API keeps no sub-source or reference, and silently drops them.
+  bool get _showsSourceDetail {
+    final answer = shownLeadSources(ref.watch(leadSourcesProvider));
+    final lead = _existingLead;
+    return (answer?.offered ?? false) ||
+        (lead != null &&
+            (lead.sourceDetail.isNotEmpty || lead.sourceRef.isNotEmpty));
+  }
+
+  Future<void> _showSourcePicker() async {
+    final answer = await leadSourcesForPicker(ref);
+    if (!mounted) return;
+    if (answer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load the lead sources. Try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    final sources = answer.pickable(_source);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1854,19 +1917,18 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
         options: [
           _PickerOption(
             label: 'None',
-            isSelected: _source == null,
+            isSelected: _source.isEmpty,
             onTap: () {
-              setState(() => _source = null);
+              setState(() => _source = '');
               Navigator.pop(context);
             },
           ),
           for (final source in sources)
             _PickerOption(
-              label: source.displayName,
-              isSelected: _source == source,
-              icon: source.icon,
+              label: source.pickerLabel,
+              isSelected: _source == source.key,
               onTap: () {
-                setState(() => _source = source);
+                setState(() => _source = source.key);
                 Navigator.pop(context);
               },
             ),

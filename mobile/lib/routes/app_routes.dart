@@ -65,6 +65,17 @@ class AppRoutes {
   static String settingsLeadPipeline(String id) =>
       '/more/settings/lead-pipelines/$id';
 
+  /// Lead sources and lead capture, both under the Leads module. Lead
+  /// capture's webhook pages are admin-only to read; the screen says so to a
+  /// member.
+  static const String settingsLeadSources = '/more/settings/lead-sources';
+  static const String settingsLeadCapture = '/more/settings/lead-capture';
+  static const String settingsLeadCaptureWebhookDetail =
+      '/more/settings/lead-capture/webhooks/:intakeId';
+
+  static String settingsLeadCaptureWebhook(String id) =>
+      '/more/settings/lead-capture/webhooks/$id';
+
   static const String settingsDealPipelines = '/more/settings/deal-pipelines';
   static const String settingsDealPipelineDetail =
       '/more/settings/deal-pipelines/:pipelineId';

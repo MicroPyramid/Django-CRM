@@ -265,6 +265,28 @@ class ApiConfig {
   /// One lead stage. PUT edits, DELETE removes it (refused while it has leads).
   static String leadStage(String id) => '$apiBaseUrl/leads/stages/$id/';
 
+  /// The org's lead sources under `sources`, retired ones included. Any member
+  /// reads; POST `{"label"}` adds one and is admin-only. An older API answers
+  /// 404, where the seven fixed sources apply.
+  static String get leadSources => '$apiBaseUrl/leads/sources/';
+
+  /// PATCH `{"label"?, "is_active"?}`. Admin-only; there is no delete.
+  static String leadSource(String id) => '$apiBaseUrl/leads/sources/$id/';
+
+  /// POST `{"keys": [...]}`, every key in the new order. Admin-only.
+  static String get leadSourcesOrder => '$apiBaseUrl/leads/sources/order/';
+
+  /// Lead webhooks. Admin-only on every route, reads included. A create or a
+  /// key replace answers the full key, once; later reads carry `key_hint`.
+  static String get leadIntakes => '$apiBaseUrl/leads/intakes/';
+  static String leadIntake(String id) => '$apiBaseUrl/leads/intakes/$id/';
+  static String leadIntakeKey(String id) =>
+      '$apiBaseUrl/leads/intakes/$id/key/';
+
+  /// The newest 50 deliveries, newest first.
+  static String leadIntakeDeliveries(String id) =>
+      '$apiBaseUrl/leads/intakes/$id/deliveries/';
+
   /// Contacts management
   static String get contacts => '$apiBaseUrl/contacts/';
 

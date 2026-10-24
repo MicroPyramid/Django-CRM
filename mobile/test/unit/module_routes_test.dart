@@ -51,6 +51,7 @@ const corePaths = {
   '/more/settings/organization',
   '/more/settings/organization/edit',
   '/more/settings/modules',
+  '/more/settings/lead-sources',
   '/more/objects/:key',
   '/more/objects/:key/new',
   '/more/objects/:key/:id',
@@ -114,6 +115,7 @@ void main() {
     expect(needFor('/accounts/:id/edit'), isNull);
     expect(needFor('/more/settings/web-forms'), isNull);
     expect(needFor('/more/settings/modules'), isNull);
+    expect(needFor('/more/settings/lead-sources'), isNull);
     expect(needFor('/dashboard'), isNull);
     expect(needFor('/leadsx'), isNull);
     expect(needFor('/invoices/products')!.any, isTrue);

@@ -34,6 +34,7 @@
     CASE_STATUS_TONE,
     TASK_PRIORITY_TONE
   } from '#lib/v2/enums.js';
+  import { sourceLabel } from '#lib/v2/lead-sources.js';
   import { enhance } from '$app/forms';
   import {
     ChevronRight,
@@ -560,6 +561,18 @@
           {/if}
         </span>
       </dd>
+      {#if contact.source}
+        <dt>Source</dt>
+        <dd>{sourceLabel(data.sources, contact.source)}</dd>
+      {/if}
+      {#if contact.source_detail}
+        <dt>Sub-source</dt>
+        <dd>{contact.source_detail}</dd>
+      {/if}
+      {#if contact.source_ref}
+        <dt>Reference</dt>
+        <dd class="v2-num" style="font-size:12px;overflow-wrap:anywhere">{contact.source_ref}</dd>
+      {/if}
       <dt>Added</dt>
       <dd>{shortDate(contact.created_at)}</dd>
       <dt>Updated</dt>

@@ -78,3 +78,50 @@ def send_email_to_assigned_user(recipients, lead_id, org_id, source=""):
                     profile.user.email,
                     e,
                 )
+
+
+@shared_task
+def send_enquired_again_email(org_id, lead_id=None, contact_id=None, channel_label=""):
+    """Tell a lead's active owners, or the owners of the contact a converted
+    lead became, that the person enquired again.
+
+    The mail names the person and links to the record. What they wrote is on
+    the record as a comment, so it never travels through the task queue.
+    """
+    from contacts.models import Contact
+
+    set_rls_context(org_id)
+    if lead_id:
+        record = Lead.objects.filter(id=lead_id, org_id=org_id).first()
+        path = f"/leads/{lead_id}"
+    else:
+        record = Contact.objects.filter(id=contact_id, org_id=org_id).first()
+        path = f"/contacts/{contact_id}"
+    if record is None:
+        return
+    owners = record.assigned_to.filter(org_id=org_id, is_active=True).select_related(
+        "user"
+    )
+    recipients = sorted({p.user.email for p in owners if p.user and p.user.email})
+    if not recipients:
+        return
+    # Collapsed to one line: a name with a newline in it would make the
+    # subject an invalid header and the mail would never go.
+    name = " ".join(
+        " ".join(filter(None, [record.first_name, record.last_name])).split()
+    )[:100]
+    name = name or "Someone"
+    html_content = render_to_string(
+        "leads/enquired_again_email.html",
+        {
+            "name": name,
+            "channel_label": channel_label,
+            "record_url": frontend_url(path),
+            "is_contact": not lead_id,
+        },
+    )
+    send_email(
+        subject=f"{name} enquired again",
+        html_content=html_content,
+        recipients=recipients,
+    )

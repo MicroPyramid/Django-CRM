@@ -68,6 +68,7 @@ def _merge(client, module, keeper, loser_id):
 # without an IntegrityError, and a credential must not be).
 EXPECTED_RELATIONS = {
     Lead: {
+        "leads.LeadIntakeEvent.lead",
         "tasks.Task.lead",
         "webforms.WebFormSubmission.lead",
     },

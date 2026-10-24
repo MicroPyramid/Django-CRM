@@ -464,6 +464,10 @@ REST_FRAMEWORK = {
         "portal_login_org": os.environ.get("PORTAL_LOGIN_THROTTLE_ORG", "100/hour"),
         # Contact and lead spreadsheet import (preview and commit), per user.
         "csv_import": os.getenv("IMPORT_THROTTLE", "30/minute"),
+        # Lead webhook posts, per webhook across every caller
+        # (`leads.views.intake_public_views`).
+        "lead_intake_minute": os.environ.get("LEAD_INTAKE_THROTTLE_MINUTE", "120/min"),
+        "lead_intake_day": os.environ.get("LEAD_INTAKE_THROTTLE_DAY", "5000/day"),
     },
 }
 
@@ -538,6 +542,14 @@ if _bad_account_ids:
         "which is not a 12-digit AWS account id. List account ids separated by "
         "commas, for example 123456789012,210987654321, or leave it unset."
     )
+
+# Generated lead and ticket addresses (`cases.inbound.generated`). With a domain
+# set, admins can have an address made under it, and every generated address
+# is received through one SES receipt rule whose SNS topic posts to the
+# catch-all webhook, which accepts only this topic. Both empty: admins type
+# their own addresses, and the catch-all answers 404.
+INBOUND_EMAIL_DOMAIN = os.environ.get("INBOUND_EMAIL_DOMAIN", "").strip().lower()
+INBOUND_EMAIL_TOPIC_ARN = os.environ.get("INBOUND_EMAIL_TOPIC_ARN", "").strip()
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BottleCRM API",

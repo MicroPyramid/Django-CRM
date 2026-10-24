@@ -195,6 +195,7 @@ class TestTagsUsageAndTotals:
             "api_settings": 0,
             "solutions": 0,
             "web_forms": 0,
+            "lead_intakes": 0,
             "macros": 0,
         }
 
@@ -211,6 +212,7 @@ class TestTagsUsageAndTotals:
             "api_settings": 0,
             "solutions": 0,
             "web_forms": 0,
+            "lead_intakes": 0,
             "macros": 0,
         }
 

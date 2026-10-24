@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
 from common.models import Org, Profile, Tags, Teams
+from common.phones import set_phone_e164
 from common.utils import COUNTRIES
 from common.validators import flexible_phone_validator
 
@@ -26,6 +27,7 @@ class Contact(AssignableMixin, BaseModel):
         blank=True,
         validators=[flexible_phone_validator],
     )
+    phone_e164 = models.CharField(max_length=32, blank=True, default="", db_index=True)
 
     # Professional Information
     organization = models.CharField(_("Company"), max_length=255, blank=True, null=True)
@@ -56,6 +58,16 @@ class Contact(AssignableMixin, BaseModel):
 
     # Notes
     description = models.TextField(_("Notes"), blank=True, null=True)
+
+    # Where the person came from, copied from the lead at conversion. `source`
+    # is a key from the org's LeadSource list.
+    source = models.CharField(_("Source"), max_length=255, blank=True, default="")
+    source_detail = models.CharField(
+        _("Sub-source"), max_length=100, blank=True, default=""
+    )
+    source_ref = models.CharField(
+        _("Reference"), max_length=255, blank=True, default=""
+    )
 
     # System Fields
     is_active = models.BooleanField(default=True)
@@ -103,3 +115,7 @@ class Contact(AssignableMixin, BaseModel):
 
     def __str__(self):
         return self.first_name
+
+    def save(self, *args, **kwargs):
+        set_phone_e164(self, kwargs)
+        super().save(*args, **kwargs)

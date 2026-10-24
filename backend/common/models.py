@@ -1280,11 +1280,13 @@ class PortalAccessToken(models.Model):
     ESTIMATE = "estimate"
     CSAT = "csat"
     INBOUND_MAILBOX = "inbound_mailbox"
+    LEAD_INTAKE = "lead_intake"
     RESOURCE_CHOICES = (
         (INVOICE, "Invoice"),
         (ESTIMATE, "Estimate"),
         (CSAT, "CSAT survey"),
         (INBOUND_MAILBOX, "Inbound mailbox"),
+        (LEAD_INTAKE, "Lead webhook"),
     )
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)

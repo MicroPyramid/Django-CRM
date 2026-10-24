@@ -15,6 +15,7 @@
   import { isOn } from '#lib/v2/modules.js';
   import { AGING_TONE, AGING_LABEL } from '#lib/v2/enums.js';
   import { activeChips, activePresetKey, withoutParam } from '#lib/v2/filters.js';
+  import { sourceFilterOptions } from '#lib/v2/lead-sources.js';
   import { CalendarClock, Columns3, Download, List, Plus, TriangleAlert } from '@lucide/svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
@@ -240,6 +241,7 @@
   people={data.people}
   tags={data.tags}
   stages={stageOptions}
+  sources={sourceFilterOptions(data.sources)}
   meId={data.meId}
   saved={data.savedViews}
   onlyFields={data.onlyFields}

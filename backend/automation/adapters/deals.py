@@ -3,6 +3,7 @@ from dataclasses import replace
 from django.core.exceptions import ValidationError
 
 from automation.adapters import same_org
+from automation.adapters.leads import source_choices
 from automation.objects import Adapter, Choice, FieldSpec, model_choices
 from opportunity.models import DealStage, Opportunity
 from opportunity.updates import update_deal
@@ -35,9 +36,7 @@ class DealAdapter(Adapter):
             "choice",
             model_choices(Opportunity, "opportunity_type"),
         ),
-        FieldSpec(
-            "lead_source", "Source", "choice", model_choices(Opportunity, "lead_source")
-        ),
+        FieldSpec("lead_source", "Source", "choice"),
         FieldSpec("amount", "Amount", "number"),
         FieldSpec("probability", "Probability", "number"),
         FieldSpec("closed_on", "Close date", "date"),
@@ -51,8 +50,10 @@ class DealAdapter(Adapter):
             .select_related("pipeline")
             .order_by("-pipeline__is_default", "pipeline__name", "order", "created_at")
         )
+        choices = {"stage": stages, "lead_source": source_choices(org)}
         return [
-            replace(s, choices=stages) if s.key == "stage" else s for s in self.FIELDS
+            replace(s, choices=choices[s.key]) if s.key in choices else s
+            for s in self.FIELDS
         ]
 
     def read(self, record, key):

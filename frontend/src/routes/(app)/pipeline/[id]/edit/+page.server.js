@@ -1,9 +1,14 @@
 import { fail } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getDealForEdit, updateDeal } from '#lib/server/v2/deals.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  return await getDealForEdit(event, event.params.id);
+  const [deal, sources] = await Promise.all([
+    getDealForEdit(event, event.params.id),
+    getLeadSources(event)
+  ]);
+  return { ...deal, sources: sources.sources, sourcesLive: sources.live };
 }
 
 /** @type {import('./$types').Actions} */

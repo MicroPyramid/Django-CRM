@@ -264,32 +264,3 @@ class CountBadge extends StatelessWidget {
     );
   }
 }
-
-/// Source Badge - Lead source indicator
-class SourceBadge extends StatelessWidget {
-  final LeadSource source;
-
-  const SourceBadge({super.key, required this.source});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.gray100,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(source.icon, size: 12, color: AppColors.gray500),
-          const SizedBox(width: 4),
-          Text(
-            source.label,
-            style: AppTypography.labelSmall.copyWith(color: AppColors.gray600),
-          ),
-        ],
-      ),
-    );
-  }
-}

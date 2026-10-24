@@ -21,6 +21,10 @@ Matching rules, and why they are this narrow:
   whatever the separators. Matched by a regular expression in the database, so
   "+1 (202) 555-0147" finds "202.555.0147" without reading any row into Python.
   Fewer than seven digits is not a phone number worth matching on.
+* Phone, leads and contacts, as well: the same E.164 number (`phone_e164`,
+  parsed with the org's country), so "+65 6123 4567" finds "6123 4567" in a
+  Singapore org. This only adds matches: a suggestion costs a glance, so
+  nothing the digit rule found is dropped.
 * Person name (leads, contacts): first AND last name, case-insensitive. One
   half alone matches every "John".
 * Lead company: exact, and only when the lead has no person name. Two people at
@@ -39,6 +43,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import BooleanField, Q
 
+from common.phones import to_e164
 from common.signals import pre_merge
 from common.validators import normalize_phone
 
@@ -127,18 +132,26 @@ def _clean(value):
     return (value or "").strip()
 
 
-def duplicate_query(model_name, criteria):
+# Models that carry `phone_e164`.
+E164_MODELS = ("lead", "contact")
+
+
+def duplicate_query(model_name, criteria, region=None):
     """The OR of every rule `criteria` supports, or None when it supports none.
 
     ``criteria`` holds the fields a create form has typed so far, or a saved
     record's own values: ``email``, ``phone``, ``first_name``, ``last_name``,
-    ``company_name`` (leads), ``name`` and ``website`` (accounts).
+    ``company_name`` (leads), ``name`` and ``website`` (accounts). ``region``
+    is the org's country, for a phone typed without a country code.
     """
     q = Q()
     email = _clean(criteria.get("email"))
     if email:
         q |= Q(email__iexact=email)
     phone = _phone_regex(criteria.get("phone"))
+    e164 = to_e164(criteria.get("phone"), region) if model_name in E164_MODELS else ""
+    if e164:
+        q |= Q(phone_e164=e164)
     if phone:
         q |= Q(phone__regex=phone)
 
@@ -163,14 +176,22 @@ def duplicate_query(model_name, criteria):
     return q or None
 
 
-def matched_on(model_name, criteria, record):
+def _phone_matches(model_name, criteria, record, region):
+    if model_name in E164_MODELS:
+        e164 = to_e164(criteria.get("phone"), region)
+        if e164 and e164 == record.phone_e164:
+            return True
+    phone = normalize_phone(criteria.get("phone"))
+    return len(phone) >= MIN_PHONE_DIGITS and normalize_phone(record.phone) == phone
+
+
+def matched_on(model_name, criteria, record, region=None):
     """Which rules paired ``record`` with ``criteria``, for the reader."""
     reasons = []
     email = _clean(criteria.get("email")).lower()
     if email and (record.email or "").lower() == email:
         reasons.append("email")
-    phone = normalize_phone(criteria.get("phone"))
-    if len(phone) >= MIN_PHONE_DIGITS and normalize_phone(record.phone) == phone:
+    if _phone_matches(model_name, criteria, record, region):
         reasons.append("phone")
     if model_name in ("lead", "contact"):
         first = _clean(criteria.get("first_name")).lower()
@@ -199,16 +220,16 @@ def matched_on(model_name, criteria, record):
     return reasons
 
 
-def find_duplicates(visible, criteria, exclude_id=None):
+def find_duplicates(visible, criteria, exclude_id=None, region=None):
     """Up to `MAX_RESULTS` active records in ``visible`` that look like
     ``criteria``, newest first, each with the rules it matched on.
 
     ``visible`` is the caller's read-rule queryset, already scoped to their
     org, and is the only source of rows: a record the caller may not open can
-    neither appear nor be counted.
+    neither appear nor be counted. ``region`` is that org's `default_country`.
     """
     model_name = visible.model._meta.model_name
-    q = duplicate_query(model_name, criteria)
+    q = duplicate_query(model_name, criteria, region)
     if q is None:
         return []
     qs = visible.filter(q, is_active=True)
@@ -218,7 +239,9 @@ def find_duplicates(visible, criteria, exclude_id=None):
     if exclude_id is not None:
         qs = qs.exclude(pk=exclude_id)
     rows = qs.order_by("-created_at")[:MAX_RESULTS]
-    return [(record, matched_on(model_name, criteria, record)) for record in rows]
+    return [
+        (record, matched_on(model_name, criteria, record, region)) for record in rows
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +303,8 @@ def _generic_keyed_models():
 FIELD_GROUPS = (
     ("address_line", "city", "state", "postcode", "country"),
     ("salutation", "first_name", "last_name"),
+    ("source", "source_detail", "source_ref"),
+    ("external_source", "external_id"),
 )
 
 # An amount is a number in a currency. The loser's amount is taken only when

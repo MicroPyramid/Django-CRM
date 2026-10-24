@@ -11,6 +11,7 @@
   import { isOn } from '#lib/v2/modules.js';
   import { money, longDate } from '#lib/v2/format.js';
   import { AGING_TONE, AGING_LABEL, OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
+  import { sourceLabel } from '#lib/v2/lead-sources.js';
   import { Check, ChevronRight } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -200,7 +201,7 @@
       <dt>Type</dt>
       <dd>{OPPORTUNITY_TYPE_LABEL[deal.opportunity_type]}</dd>
       <dt>Source</dt>
-      <dd style="text-transform:lowercase">{deal.lead_source || '—'}</dd>
+      <dd>{sourceLabel(data.sources, deal.lead_source) || 'Not recorded'}</dd>
       <dt>Owner</dt>
       <dd>{deal.assigned_to || 'Unassigned'}</dd>
       <!--

@@ -6,9 +6,11 @@ point: the legacy endpoint had six separate defects in its own copy of this
 logic, and one shared implementation is what stops them being fixed once and
 reintroduced next to it.
 
-A lead form creates or merges a Lead. A ticket form creates a Case the way a
-new inbound email does (`cases/inbound/pipeline.py`), so routing and SLA
-stamping run through the same Case signals rather than a shortcut of their own.
+A lead form hands its submission to `leads.intake.receive_lead`, the service
+the lead webhooks and the lead address use too, so matching and merging cannot
+drift between them. A ticket form creates a Case the way a new inbound email
+does (`cases/inbound/pipeline.py`), so routing and SLA stamping run through the
+same Case signals rather than a shortcut of their own.
 
 Everything this module writes is derived from the form row or from values a
 serializer has already validated. Nothing is read from a request.
@@ -16,15 +18,14 @@ serializer has already validated. Nothing is read from a request.
 
 import logging
 
-from django.contrib.contenttypes.models import ContentType
+from crum import get_current_user
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
-from django.db.models.functions import Lower
 
 from cases.models import Case
 from cases.signals import route_after_relations
-from common.models import Comment
 from contacts.models import Contact
+from leads.intake import IncomingLead, receive_lead
 from leads.models import Lead
 from webforms.constants import TICKET_SUBJECT_MAX_LENGTH
 from webforms.models import WebForm, WebFormSubmission
@@ -34,48 +35,6 @@ logger = logging.getLogger(__name__)
 # Lead statuses that end a lead's life as somebody's open work. What is left
 # (assigned, in process, recycled) counts against a rotation member's cap.
 CLOSED_LEAD_STATUSES = ("converted", "closed")
-
-# The Lead columns the merge path may fill in on a repeat submission.
-# Assignment, status, source and the pipeline columns are absent on purpose:
-# those belong to whoever owns the lead now, not to a stranger who happens to
-# know their email address.
-MERGEABLE_FIELDS = [
-    "salutation",
-    "first_name",
-    "last_name",
-    "phone",
-    "company_name",
-    "job_title",
-    "website",
-    "title",
-    "city",
-    "state",
-    "country",
-    "postcode",
-    "industry",
-]
-
-
-def _existing_lead(form, email):
-    """The org's lead with this address, if there is one.
-
-    Case-insensitive, because `Lead` enforces uniqueness on `Lower("email")`.
-    Matching case-sensitively here would find nothing and then hit the
-    constraint on insert, which is exactly the 500 this function exists to
-    avoid.
-
-    Scoped to the form's org. A lead in another tenant with the same address is
-    a different person, and merging across that boundary would leak one org's
-    record into another's form.
-    """
-    if not email:
-        return None
-    return (
-        Lead.objects.filter(org=form.org)
-        .annotate(email_lower=Lower("email"))
-        .filter(email_lower=email.lower())
-        .first()
-    )
 
 
 def active_assignee(form):
@@ -149,18 +108,6 @@ def rotation_assignee(form):
     return chosen
 
 
-def _owner(form):
-    """The Profile credited with the submission's comment, or None.
-
-    A web form submission has no request user, so this is the form's configured
-    assignee. There is deliberately no fallback to `form.created_by`: that is a
-    User and `Comment.commented_by` is a Profile, so the two are not
-    interchangeable. `commented_by` is nullable, and a comment with no author
-    is the honest record of a form nobody is assigned to.
-    """
-    return active_assignee(form)
-
-
 def _created_by_user(form, assignee):
     """The User stamped on the created Lead's or Case's `created_by`.
 
@@ -174,70 +121,46 @@ def _created_by_user(form, assignee):
     return form.created_by
 
 
-def _create_lead(form, values, custom_fields):
+def _receive_lead(form, values, custom_fields):
+    """Hand a lead form's submission to `receive_lead` and return its result.
+
+    Only a new lead takes a rotation turn, so the turn is taken once the
+    service has created one, in the same transaction and under the form's
+    row lock. Outside a signed-in request (the public form) a new lead is
+    credited to its assignee, else to the form's creator; inside one,
+    `BaseModel.save` has already credited the caller.
+    """
+    person = active_assignee(form)
+    result = receive_lead(
+        form.org,
+        IncomingLead(
+            values=values,
+            custom_fields=dict(custom_fields or {}),
+            source=form.lead_source,
+            external_source=f"webform:{form.id}",
+            tags=tuple(form.tags.all()),
+            assignee=person,
+            enquiry_text=values.get("description") or "",
+            channel_label=f"web form {form.name}",
+        ),
+        # `webforms.tasks` mails the form's notify list and the lead's owners
+        # in one message, so the service sends nothing of its own.
+        notify=False,
+    )
+    if result.result != "created":
+        return result
+    lead = result.lead
+    assignee = person
     if form.assignment_mode == WebForm.ASSIGN_ROTATION:
         assignee = rotation_assignee(form)
-    else:
-        assignee = active_assignee(form)
-    lead = Lead(
-        org=form.org,
-        # Server-derived, never from the submission.
-        status="assigned",
-        source=form.lead_source,
-        is_active=True,
-        created_by=_created_by_user(form, assignee),
-        custom_fields=dict(custom_fields or {}),
-    )
-    for key, value in values.items():
-        setattr(lead, key, value)
-    lead.save()
-
-    if assignee is not None:
-        lead.assigned_to.add(assignee)
-    tags = list(form.tags.all())
-    if tags:
-        lead.tags.add(*tags)
-    return lead
-
-
-def _merge_lead(form, lead, values, custom_fields):
-    """Fill blanks only, then record the new message as a comment.
-
-    Overwriting a populated field is deliberately excluded. Anyone who knows a
-    prospect's email address can post this form, so allowing an overwrite would
-    let a stranger rewrite that prospect's record.
-    """
-    changed = []
-    for key in MERGEABLE_FIELDS:
-        incoming = values.get(key)
-        if not incoming:
-            continue
-        if getattr(lead, key, None):
-            continue
-        setattr(lead, key, incoming)
-        changed.append(key)
-
-    custom_changed = False
-    for key, value in (custom_fields or {}).items():
-        if lead.custom_fields.get(key) in (None, "", []):
-            lead.custom_fields[key] = value
-            custom_changed = True
-    if custom_changed:
-        changed.append("custom_fields")
-
-    if changed:
-        lead.save(update_fields=sorted(set(changed)) + ["updated_at"])
-
-    message = values.get("description") or ""
-    if message:
-        Comment.objects.create(
-            org=form.org,
-            content_type=ContentType.objects.get_for_model(Lead),
-            object_id=lead.id,
-            comment=f"Web form submission ({form.name}):\n{message}",
-            commented_by=_owner(form),
-        )
-    return lead
+        if assignee is not None:
+            lead.assigned_to.add(assignee)
+    user = get_current_user()
+    creator = _created_by_user(form, assignee)
+    if (user is None or user.is_anonymous) and lead.created_by != creator:
+        Lead.objects.filter(pk=lead.pk).update(created_by=creator)
+        lead.created_by = creator
+    return result
 
 
 def _ticket_contact(form, values):
@@ -365,13 +288,13 @@ def submit_form(
         case = _create_ticket(form, values, custom_fields)
         status = WebFormSubmission.ACCEPTED
     else:
-        existing = _existing_lead(form, values.get("email"))
-        if existing is not None:
-            lead = _merge_lead(form, existing, values, custom_fields)
-            status = WebFormSubmission.ACCEPTED_DUPLICATE
-        else:
-            lead = _create_lead(form, values, custom_fields)
-            status = WebFormSubmission.ACCEPTED
+        result = _receive_lead(form, values, custom_fields)
+        lead = result.lead
+        status = (
+            WebFormSubmission.ACCEPTED
+            if result.result == "created"
+            else WebFormSubmission.ACCEPTED_DUPLICATE
+        )
 
     payload = dict(values)
     if custom_fields:

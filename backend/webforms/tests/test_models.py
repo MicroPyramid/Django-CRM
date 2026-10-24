@@ -12,7 +12,7 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from common.models import CustomFieldDefinition
-from common.utils import LEAD_SOURCE
+from leads.sources import DEFAULT_SOURCES
 from webforms.models import WebForm, WebFormDailyStat, WebFormField
 
 
@@ -121,12 +121,13 @@ class TestWebFormDailyStat:
 
 
 @pytest.mark.django_db
-def test_lead_source_default_is_a_valid_lead_source_choice(org_a):
-    """`Lead.source` declares choices=LEAD_SOURCE. Writing anything else into
+def test_lead_source_defaults_to_the_web_form_source(org_a):
+    """A lead's source is a key from the org's list. Writing anything else into
     it, as the legacy view does with a website URL, makes the row invisible to
     every source-based filter and report."""
     form = WebForm.objects.create(name="Contact us", org=org_a)
-    assert form.lead_source in dict(LEAD_SOURCE)
+    assert form.lead_source == "web form"
+    assert form.lead_source in dict(DEFAULT_SOURCES)
 
 
 @pytest.mark.django_db

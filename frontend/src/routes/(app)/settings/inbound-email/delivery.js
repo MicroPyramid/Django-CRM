@@ -8,16 +8,19 @@
  * second, both silently, because inbound mail has no user watching it fail:
  *
  * 1. **An unimplemented provider.** `InboundMailbox.PROVIDER_CHOICES` offers
- *    four, and `InboundMailboxWebhookView.post` answers 501 for every one that
- *    is not `ses`. A Mailgun address marked active accepts mail and opens
- *    nothing, forever, and the form offered the four as equals.
- * 2. **An unpinned SES address.** The webhook needs both a valid SNS signature
- *    and a `topic_arn` that matches this mailbox, because a signature alone
- *    only proves the message came from *some* topic in *some* AWS account. A
- *    mailbox gets its pin one of two ways: an admin enters the Topic ARN, or a
- *    signature-verified SubscriptionConfirmation arrives from a topic in an AWS
- *    account the server allows (`INBOUND_SNS_ACCOUNT_IDS`). Until one of those
- *    happens it rejects everything.
+ *    four, and `InboundMailboxWebhookView.post` answers 501 for `imap`. An IMAP
+ *    address marked active accepts mail and opens nothing, forever.
+ * 2. **An unconnected address.** An SES address needs both a valid SNS
+ *    signature and a `topic_arn` that matches this mailbox, because a signature
+ *    alone only proves the message came from *some* topic in *some* AWS
+ *    account. A mailbox gets its pin one of two ways: an admin enters the Topic
+ *    ARN, or a signature-verified SubscriptionConfirmation arrives from a topic
+ *    in an AWS account the server allows (`INBOUND_SNS_ACCOUNT_IDS`). A Postmark
+ *    or Mailgun address needs a stored `webhook_secret` (`has_webhook_secret`,
+ *    which only admins are sent); with none, every post is refused.
+ *
+ * A generated address (`is_generated`) has no pin of its own: the server's
+ * catch-all webhook checks its one topic for every generated address.
  *
  * The states are ordered as the webhook itself checks them, so `deliveryState`
  * answers "which gate does a delivery fail first", and an address that clears
@@ -28,19 +31,27 @@
  * `mobile/lib/data/models/mailbox.dart` carries the same rules.
  */
 
-/** The providers the webhook actually handles. Everything else 501s. */
-export const SUPPORTED_PROVIDERS = ['ses'];
+/** The providers the webhook actually handles. `imap` 501s. */
+export const SUPPORTED_PROVIDERS = ['ses', 'mailgun', 'postmark'];
+
+/** Providers whose deliveries are proved by a stored `webhook_secret`. */
+export const SECRET_PROVIDERS = ['mailgun', 'postmark'];
 
 /**
  * The first gate mail to this address would fail, or `'live'`.
  *
- * @param {{ is_active?: boolean, provider?: string, has_topic_arn?: boolean }} mailbox
+ * @param {{ is_active?: boolean, provider?: string, has_topic_arn?: boolean, has_webhook_secret?: boolean, is_generated?: boolean }} mailbox
  * @returns {'off' | 'unsupported' | 'unconfirmed' | 'live'}
  */
 export function deliveryState(mailbox) {
   if (!mailbox?.is_active) return 'off';
   if (!SUPPORTED_PROVIDERS.includes(mailbox.provider)) return 'unsupported';
-  if (!mailbox.has_topic_arn) return 'unconfirmed';
+  // Fails closed: a row that does not say (a member is not sent
+  // `has_webhook_secret`) reads as not connected.
+  if (SECRET_PROVIDERS.includes(mailbox.provider)) {
+    return mailbox.has_webhook_secret === true ? 'live' : 'unconfirmed';
+  }
+  if (!mailbox.has_topic_arn && !mailbox.is_generated) return 'unconfirmed';
   return 'live';
 }
 
@@ -51,17 +62,21 @@ const LABEL = {
   live: 'Creating tickets'
 };
 
+/**
+ * @param {string} state
+ * @param {string} [creates] the mailbox's `creates`: `tickets` or `leads`
+ */
+export function deliveryLabel(state, creates = 'tickets') {
+  if (state === 'live' && creates === 'leads') return 'Creating leads';
+  return LABEL[state] ?? LABEL.off;
+}
+
 const TONE = {
   off: 'clay',
   unsupported: 'rust',
   unconfirmed: 'clay',
   live: 'moss'
 };
-
-/** @param {string} state */
-export function deliveryLabel(state) {
-  return LABEL[state] ?? LABEL.off;
-}
 
 /** @param {string} state */
 export function deliveryTone(state) {
@@ -76,15 +91,22 @@ export function deliveryTone(state) {
  *
  * @param {string} state
  * @param {string} providerLabel
+ * @param {string} [creates] the mailbox's `creates`: `tickets` or `leads`
+ * @param {string} [provider] the mailbox's provider value
  */
-export function deliveryExplanation(state, providerLabel) {
+export function deliveryExplanation(state, providerLabel, creates = 'tickets', provider = 'ses') {
   if (state === 'off') {
-    return 'Mail still arrives here and no ticket is opened. Nothing bounces, so whoever wrote gets silence rather than an error.';
+    return creates === 'leads'
+      ? 'Mail still arrives here and no lead is made. Nothing bounces, so a portal or a person writing here gets no error and the enquiry is lost.'
+      : 'Mail still arrives here and no ticket is opened. Nothing bounces, so whoever wrote gets silence rather than an error.';
   }
   if (state === 'unsupported') {
-    return `${providerLabel} deliveries are not implemented. The webhook refuses them, so mail to this address becomes nothing whatever else is set here. Only AWS SES is wired up.`;
+    return `${providerLabel} deliveries are not implemented. The webhook refuses them, so mail to this address becomes nothing whatever else is set here.`;
   }
   if (state === 'unconfirmed') {
+    if (SECRET_PROVIDERS.includes(provider)) {
+      return `Waiting for its ${provider === 'postmark' ? 'basic-auth password' : 'signing key'}. Every post is refused until an admin stores the webhook secret on this address.`;
+    }
     return 'Waiting for its SNS topic. Every message is refused until this address has a Topic ARN: an admin can enter it here, or it is set when AWS confirms a subscription from an AWS account this server allows.';
   }
   return null;
@@ -122,13 +144,34 @@ export function silentMailboxes(mailboxes) {
 /**
  * The provider select's label for one choice.
  *
- * The unimplemented three stay selectable: the column accepts them, an admin
- * may be recording an address before the integration exists, and hiding them
- * would silently rewrite a mailbox already set to one. They say so instead.
+ * `imap` stays selectable: the column accepts it, and hiding it would silently
+ * rewrite a mailbox already set to it. It says so instead.
  *
  * @param {string} value
  * @param {string} label
  */
 export function providerChoiceLabel(value, label) {
   return SUPPORTED_PROVIDERS.includes(value) ? label : `${label} (not wired up yet)`;
+}
+
+/**
+ * The URL to give the provider for one mailbox, built from the API host.
+ *
+ * Postmark carries the secret as the basic-auth password, so the URL shows a
+ * `<secret>` placeholder, never the stored value (which the client never has).
+ * Mailgun's route action wraps the URL in `forward()`. Null for SES and IMAP.
+ *
+ * @param {string} provider
+ * @param {string} id the mailbox id
+ * @param {string} apiBase the API origin, e.g. `https://api.example.com`
+ * @returns {string | null}
+ */
+export function webhookSetupUrl(provider, id, apiBase) {
+  if (!SECRET_PROVIDERS.includes(provider) || !id || !apiBase) return null;
+  const base = apiBase.replace(/\/+$/, '');
+  const path = `/api/cases/inbound/${id}/`;
+  if (provider === 'postmark') {
+    return base.replace(/^(https?:\/\/)/, '$1postmark:<secret>@') + path;
+  }
+  return `forward("${base}${path}")`;
 }

@@ -587,7 +587,7 @@ def _delete_url(target, org, admin_user, admin_profile, regular_user, user_profi
 
 @pytest.mark.parametrize(
     ("target", "sqlite", "postgresql"),
-    [("account", 58, 58), ("ticket", 21, 21), ("person", 58, 64)],
+    [("account", 58, 58), ("ticket", 21, 21), ("person", 59, 65)],
 )
 def test_with_every_module_on_the_guard_adds_no_query(
     admin_client,

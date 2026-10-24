@@ -260,6 +260,9 @@ The response is `{"error": false, "message": "...", "id": "<kept id>"}`.
 
 ## Fields
 
+The contact payload also carries `source`, `source_detail` and `source_ref`, and a read-only
+`phone_e164` (the phone normalised for matching).
+
 `CreateContactSerializer.Meta.fields` (`contacts/serializer.py:147-174`) is what
 `POST /api/contacts/`, `PUT /api/contacts/{id}/` and `PATCH /api/contacts/{id}/` accept. Unlike
 `Lead.first_name`/`last_name`, `Contact.first_name` and `Contact.last_name` have neither
@@ -272,6 +275,9 @@ required**.
 | `last_name` | string | **required** | |
 | `email` | string | optional | Unique per org, case-insensitive, when supplied |
 | `phone` | string | optional | |
+| `source` | a key of the org's [lead sources](leads.md#lead-sources) | optional | Same rule as a lead's `source`. Set at lead conversion from the lead |
+| `source_detail` | string, at most 100 | optional | |
+| `source_ref` | string, at most 255 | optional | |
 | `organization` | string | optional | Free text, may name a different company than `account` links to |
 | `title` | string | optional | |
 | `department` | string | optional | |

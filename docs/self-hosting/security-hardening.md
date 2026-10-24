@@ -100,7 +100,8 @@ Three different credential types exist, with different blast radii if one leaks:
 
 ## Public-link tokens in logs
 
-Four kinds of link carry their credential as a path segment. Whoever holds the URL can use it
+Four kinds of link carry their credential as a path segment, and a lead webhook can take its key as
+a `?key=` query parameter. Whoever holds the URL can use it
 without signing in, so a log line that records the path hands the credential to anyone who can
 read that log, or to wherever the log is shipped.
 
@@ -110,6 +111,7 @@ read that log, or to wherever the log is shipped.
 | Satisfaction survey | `/api/public/csat/<token>/` | `/csat/<token>` |
 | Invoice | `/api/public/invoice/<token>/`, `.../pdf/` | `/portal/invoice/<token>` |
 | Estimate | `/api/public/estimate/<token>/`, `.../pdf/`, `.../accept/`, `.../decline/` | `/portal/estimate/<token>` |
+| Lead webhook key, when a sender can only take a URL | `/api/public/leads/<id>/?key=<key>` | none |
 
 From django-crm 1.13.0 the application writes `[Filtered]` in place of the token everywhere it logs
 a path: Django's request log (`Not Found: <path>`, `Too Many Requests: <path>`), Sentry events, and
@@ -128,6 +130,7 @@ this in the `http {}` context (on Debian and Ubuntu, a new file under `/etc/ngin
 # BottleCRM: public-link tokens are credentials; log them as [Filtered].
 map $request_uri $bottlecrm_log_uri {
     "~^((?:/api/public/(?:calendar|csat|invoice|estimate)|/portal/(?:invoice|estimate)|/csat)/)[^/?]+(.*)$" "$1[Filtered]$2";
+    "~^(/api/public/leads/[^?]*\?(?:[^#]*&)?key=)[^&#]*(.*)$" "$1[Filtered]$2";
     default $request_uri;
 }
 

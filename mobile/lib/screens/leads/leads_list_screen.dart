@@ -9,6 +9,7 @@ import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
 import '../../data/models/models.dart';
 import '../../providers/csv_import_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -244,6 +245,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     if (leads.isEmpty) return _buildEmptyState();
 
     final hasMore = data?.hasMore ?? false;
+    // Read here, in build: the item builder runs later, during layout.
+    final sources =
+        shownLeadSources(ref.watch(leadSourcesProvider))?.sources ?? const [];
 
     return RefreshIndicator(
       onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
@@ -261,6 +265,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
           final lead = leads[index];
           return LeadCard(
             lead: lead,
+            sourceLabel: leadSourceLabel(lead.source, sources),
             onTap: () => context.push('/leads/${lead.id}'),
             onTagTap: (tagId, tagLabel) =>
                 _applyFilters(_filters.withTag(id: tagId, label: tagLabel)),
@@ -376,7 +381,9 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
             const SizedBox(width: 6),
             _FilterChip(
-              label: _filters.source?.displayName ?? 'Source',
+              label: _filters.source == null
+                  ? 'Source'
+                  : _sourceLabel(_filters.source!),
               isActive: _filters.source != null,
               onTap: _showSourceFilter,
             ),
@@ -590,7 +597,15 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     );
   }
 
-  void _showSourceFilter() {
+  String _sourceLabel(String key) => leadSourceLabel(
+    key,
+    shownLeadSources(ref.watch(leadSourcesProvider))?.sources ?? const [],
+  );
+
+  Future<void> _showSourceFilter() async {
+    // Retired sources stay on their leads, so they stay filterable.
+    final sources = (await leadSourcesForPicker(ref))?.sources ?? const [];
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -608,18 +623,15 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               Navigator.pop(context);
             },
           ),
-          ...LeadSource.values
-              .where((s) => s != LeadSource.none)
-              .map(
-                (source) => _FilterOption(
-                  label: source.displayName,
-                  isSelected: _filters.source == source,
-                  onTap: () {
-                    _applyFilters(_filters.withSource(source));
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
+          for (final source in sources)
+            _FilterOption(
+              label: source.pickerLabel,
+              isSelected: _filters.source == source.key,
+              onTap: () {
+                _applyFilters(_filters.withSource(source.key));
+                Navigator.pop(context);
+              },
+            ),
         ],
       ),
     );

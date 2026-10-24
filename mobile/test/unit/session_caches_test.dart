@@ -20,7 +20,9 @@ import 'package:bottle_crm/providers/help_center_provider.dart';
 import 'package:bottle_crm/providers/invoice_extras_provider.dart';
 import 'package:bottle_crm/providers/invoices_provider.dart';
 import 'package:bottle_crm/providers/lead_board_provider.dart';
+import 'package:bottle_crm/providers/lead_intakes_provider.dart';
 import 'package:bottle_crm/providers/lead_pipelines_provider.dart';
+import 'package:bottle_crm/providers/lead_sources_provider.dart';
 import 'package:bottle_crm/providers/leads_provider.dart';
 import 'package:bottle_crm/providers/lookup_provider.dart';
 import 'package:bottle_crm/providers/notifications_provider.dart';
@@ -82,6 +84,8 @@ final Map<String, ProviderListenable<Object?>> _sessionScoped = {
   'invoicesProvider': invoicesProvider,
   'leadBoardProvider': leadBoardProvider,
   'leadPipelinesProvider': leadPipelinesProvider,
+  'leadSourcesProvider': leadSourcesProvider,
+  'leadIntakesProvider': leadIntakesProvider,
   'leadsProvider': leadsProvider,
   'accountsLookupProvider': accountsLookupProvider,
   'contactsLookupProvider': contactsLookupProvider,

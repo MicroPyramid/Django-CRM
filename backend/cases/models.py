@@ -765,11 +765,11 @@ class EscalationPolicy(BaseModel):
 
 
 class InboundMailbox(BaseModel):
-    """Per-org inbound email address configuration. See docs/cases/tier1/email-to-ticket.md.
+    """Per-org inbound email address configuration. See
+    docs/integrations/inbound-email.md.
 
-    Tier 1 ships only the SES (SNS direct delivery) provider; the model carries
-    the IMAP fields nullable so a follow-up can wire in IMAP without a schema
-    migration.
+    SES, Postmark and Mailgun deliver to the mailbox's webhook. The IMAP fields
+    are nullable so IMAP can be wired in later without a schema migration.
     """
 
     PROVIDER_CHOICES = [
@@ -788,11 +788,11 @@ class InboundMailbox(BaseModel):
         max_length=128,
         blank=True,
         default="",
-        help_text="Reserved for providers that sign deliveries with a shared "
-        "secret, none of which are implemented yet. Nothing compares this "
-        "value today: the SES webhook is authenticated by the SNS signature "
-        "and the topic_arn pin below. Admin-writable so a provider-issued key "
-        "can be stored, and write-only, so it is never returned by the API.",
+        help_text="Postmark's basic-auth password or Mailgun's HTTP webhook "
+        "signing key, which the webhook checks on every delivery; a Postmark "
+        "or Mailgun mailbox without one accepts nothing. Unused for SES, which "
+        "is proven by the SNS signature and the topic_arn pin below. "
+        "Write-only: the API never returns it.",
     )
     topic_arn = models.CharField(
         max_length=256,
@@ -835,6 +835,18 @@ class InboundMailbox(BaseModel):
     )
     is_active = models.BooleanField(default=True)
 
+    CREATES_TICKETS = "tickets"
+    CREATES_LEADS = "leads"
+    CREATES_CHOICES = [(CREATES_TICKETS, "Tickets"), (CREATES_LEADS, "Leads")]
+    creates = models.CharField(
+        max_length=16, choices=CREATES_CHOICES, default=CREATES_TICKETS
+    )
+    # A leads mailbox's source key and sub-source for the leads it makes.
+    lead_source = models.CharField(max_length=64, blank=True, default="email")
+    lead_source_detail = models.CharField(max_length=100, blank=True, default="")
+    # Made from INBOUND_EMAIL_DOMAIN rather than typed by an admin.
+    is_generated = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = "Inbound Mailbox"
         verbose_name_plural = "Inbound Mailboxes"
@@ -844,6 +856,14 @@ class InboundMailbox(BaseModel):
             models.UniqueConstraint(
                 fields=["org", "address"],
                 name="uniq_inbound_mailbox_per_org_address",
+            ),
+            # A generated address routes mail across orgs, so it names one
+            # mailbox in the whole database. RLS hides other orgs' rows from a
+            # lookup; a unique index still sees them.
+            models.UniqueConstraint(
+                fields=["address"],
+                condition=models.Q(is_generated=True),
+                name="uniq_generated_inbound_address",
             ),
         ]
         indexes = [

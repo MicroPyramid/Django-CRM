@@ -26,7 +26,13 @@ class InboundEmailScreen extends ConsumerWidget {
     WidgetRef ref,
     Mailbox? existing,
   ) async {
-    final payload = await showMailboxFormSheet(context, existing: existing);
+    final state = ref.read(mailboxesProvider).value;
+    final payload = await showMailboxFormSheet(
+      context,
+      existing: existing,
+      leadsOffered: state?.leadsOffered ?? false,
+      generatedDomain: state?.generatedDomain,
+    );
     if (payload == null || !context.mounted) return;
     final notifier = ref.read(mailboxesProvider.notifier);
     final error = existing == null
@@ -201,6 +207,11 @@ class _Summary extends StatelessWidget {
                 value: '${state.casesLast30d}',
                 label: 'tickets in 30 days',
               ),
+              if (state.deliveringLeads > 0)
+                _Stat(
+                  value: '${state.deliveringLeads}',
+                  label: 'creating leads',
+                ),
             ],
           ),
           if (silent.isNotEmpty) ...[
@@ -326,7 +337,7 @@ class _MailboxRow extends StatelessWidget {
             runSpacing: 6,
             children: [
               StatusBadge(
-                label: delivery.label,
+                label: mailbox.deliveryLabel,
                 color: delivery.isLive
                     ? AppColors.success600
                     : AppColors.gray500,
@@ -336,15 +347,18 @@ class _MailboxRow extends StatelessWidget {
                     mailboxProviderLabels[mailbox.provider] ?? mailbox.provider,
                 color: AppColors.gray500,
               ),
-              StatusBadge(
-                label: '${mailbox.casesLast30d} in 30 days',
-                color: AppColors.gray500,
-              ),
+              if (!mailbox.createsLeads)
+                StatusBadge(
+                  label: '${mailbox.casesLast30d} in 30 days',
+                  color: AppColors.gray500,
+                ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Opens as ${mailbox.opensAs}',
+            mailbox.createsLeads
+                ? mailbox.opensAs
+                : 'Opens as ${mailbox.opensAs}',
             style: AppTypography.caption.copyWith(
               color: AppColors.textSecondary,
             ),

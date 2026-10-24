@@ -31,6 +31,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from cases.approvals import closing_date
+from cases.inbound.generated import lookup_token
 from cases.models import Case, InboundMailbox, ReopenPolicy, Solution, TimeEntry
 from cases.workflow import resolve_sla_targets
 from common.actor import current_actor
@@ -857,6 +858,15 @@ def inbound_mailbox_register_lookup(sender, instance, created, raw=False, **kwar
             PortalAccessToken.INBOUND_MAILBOX,
             instance.pk,
         )
+        # The catch-all finds a generated address's org by the address itself,
+        # which cannot change after create; delete below removes both rows.
+        if instance.is_generated:
+            register_portal_token(
+                lookup_token(instance.address),
+                instance.org_id,
+                PortalAccessToken.INBOUND_MAILBOX,
+                instance.pk,
+            )
 
 
 @receiver(post_delete, sender=InboundMailbox)

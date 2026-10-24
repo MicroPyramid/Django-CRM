@@ -8,6 +8,7 @@ from common.csv_export import (
     people,
 )
 from leads.models import Lead
+from leads.sources import source_labels
 from leads.views.lead_views import lead_list_queryset
 
 
@@ -22,6 +23,7 @@ class LeadExportView(RecordExportView):
         )
 
     def columns(self, request):
+        labels = source_labels(request.profile.org)
         return (
             ("ID", lambda lead: str(lead.id)),
             ("First name", lambda lead: lead.first_name),
@@ -31,7 +33,7 @@ class LeadExportView(RecordExportView):
             ("Email", lambda lead: lead.email),
             ("Phone", lambda lead: lead.phone),
             ("Status", Lead.get_status_display),
-            ("Source", Lead.get_source_display),
+            ("Source", lambda lead: labels.get(lead.source, lead.source)),
             ("Rating", Lead.get_rating_display),
             ("Industry", Lead.get_industry_display),
             ("Amount", lambda lead: lead.opportunity_amount),

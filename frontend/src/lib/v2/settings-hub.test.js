@@ -119,3 +119,55 @@ describe('hubGroups', () => {
     expect(titles(data({ modules: [row('invoices', false)] }))).toContain('Products');
   });
 });
+
+describe('the lead rows', () => {
+  it('lists lead capture and sources while Leads is on', () => {
+    const d = data({
+      leadSources: { active: 14, count: 15 },
+      leadIntakes: { count: 2, active: 1 }
+    });
+    expect(item(d, 'Lead capture')?.value).toBe('1 of 2 webhooks on');
+    expect(item(d, 'Lead sources')?.value).toBe('14 in use');
+  });
+
+  it('keeps lead capture without numbers for a member, and hides sources on an older API', () => {
+    const d = data({ is_organization_admin: false, leadSources: false, leadIntakes: null });
+    expect(item(d, 'Lead capture')?.value).toBeNull();
+    expect(titles(d)).not.toContain('Lead sources');
+  });
+
+  it('leaves the group out while Leads is off, and keeps the sources deals use', () => {
+    const d = data({
+      modules: [row('leads', false)],
+      leadSources: { active: 14, count: 15 },
+      leadIntakes: null
+    });
+    expect(hubGroups(d).map((g) => g.label)).not.toContain('How leads arrive');
+    expect(item(d, 'Lead sources')?.value).toBe('14 in use');
+  });
+
+  it('files lead sources with the shared lists, after the lead pipelines', () => {
+    const d = data({ leadSources: { active: 3, count: 3 } });
+    const shared = hubGroups(d).find((g) => g.label === 'Shared words and fields');
+    const names = (shared?.items ?? []).map((i) => i.title);
+    expect(names.indexOf('Lead sources')).toBe(names.indexOf('Lead pipelines') + 1);
+  });
+
+  it('lists inbound email with the lead rows while Tickets is off', () => {
+    const d = data({ modules: [row('tickets', false)], ...NULL_TICKETS, mailboxLeads: true });
+    d.mailboxTotals = { active: 1, count: 2, silently_dropping: 0 };
+    const leads = hubGroups(d).find((g) => g.label === 'How leads arrive');
+    const inbound = leads?.items.find((i) => i.title === 'Inbound email');
+    expect(inbound?.body).toBe('The addresses that turn email into leads.');
+    expect(inbound?.value).toBe('1 of 2 active');
+    expect(titles(d).filter((t) => t === 'Inbound email')).toHaveLength(1);
+
+    const noLeadAddresses = data({ modules: [row('tickets', false)], ...NULL_TICKETS });
+    expect(titles(noLeadAddresses)).not.toContain('Inbound email');
+  });
+
+  it('says inbound email makes leads only where it can', () => {
+    expect(item(data({ mailboxLeads: true }), 'Inbound email')?.body).toContain('or leads');
+    expect(item(data({ mailboxLeads: false }), 'Inbound email')?.body).not.toContain('leads');
+  });
+});

@@ -108,7 +108,13 @@ urlpatterns = [
         routing_views.RoutingRuleTestView.as_view(),
         name="routing_rule_test",
     ),
-    # Inbound email: public webhook (SNS-signed) + admin mailbox CRUD.
+    # Inbound email: public webhooks + admin mailbox CRUD. The catch-all takes
+    # every generated address's mail from one SNS topic.
+    path(
+        "inbound/email/",
+        inbound_views.InboundCatchAllView.as_view(),
+        name="inbound_catch_all",
+    ),
     path(
         "inbound/<uid:mailbox_id>/",
         inbound_views.InboundMailboxWebhookView.as_view(),

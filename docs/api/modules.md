@@ -113,9 +113,10 @@ carries the problems under `off` and `order`:
 
 `off` can carry several messages at once. Lists of forms or mailboxes name at most five and then
 say `and N more`. The form and mailbox checks apply only to a module the change makes
-unavailable, so an admin can still reorder while a module is already off. Forms for leads count
-against Leads, and forms for tickets and active inbound mailboxes count against Tickets; because
-Timesheet needs Tickets, switching Tickets off is refused for the same reasons.
+unavailable, so an admin can still reorder while a module is already off. Forms for leads and
+active lead addresses count against Leads, and forms for tickets and active ticket mailboxes count
+against Tickets; because Timesheet needs Tickets, switching Tickets off is refused for the same
+reasons.
 
 A body that is not valid JSON answers DRF's own `400`, `{"detail": "JSON parse error ..."}`.
 
@@ -136,7 +137,9 @@ named is the one that is actually off: with Goals on and Pipeline off, a goals r
 `deals`. A personal access token's own scope refusal (`403`) still comes first, and the
 organization API key is read-only, so a write with it is refused as it always was.
 
-Some routes need more than one module. The time entry routes need Tickets and Timesheet; invoice
+The inbound mailbox routes (`/api/cases/mailboxes/`) belong to Tickets or Leads and stay
+reachable while either is on, since a mailbox makes tickets or leads. Some routes need more than
+one module. The time entry routes need Tickets and Timesheet; invoice
 creation from a deal needs Invoices and Pipeline; invoice creation from time entries needs
 Invoices, Tickets and Timesheet. Products belong to Pipeline or Invoices and stay reachable while
 either is on. `GET /api/org/help-center/` is the Knowledge base's settings route and answers the
@@ -148,19 +151,22 @@ the dashboard and the rest of `/api/org/`) is always reachable.
 ### Public, portal and inbound entry points
 
 These are not signed-in requests, so they answer what they already answer for a link that does
-not exist, and never name the module:
+not exist, and never name the module. The lead webhook is the one exception: a post that carries
+its key already proves it is the org's own sender, so it is told why nothing was made.
 
 | Entry point | Module | Answer while off |
 | --- | --- | --- |
 | Public invoice and estimate links (view, PDF, accept, decline) | Invoices | `404` `{"error": true, "message": "Invoice not found or link expired"}` (the same body for an estimate link) |
 | CSAT survey link | Tickets | `410` `{"error": "Survey link is no longer valid."}` |
-| Inbound email webhook for a mailbox | Tickets | `404` `{"error": true, "errors": "Mailbox not found"}` |
+| Inbound email webhook for a mailbox | Tickets, or Leads for a lead address | `404` `{"error": true, "errors": "Mailbox not found"}` |
+| Generated-address catch-all | Tickets or Leads, by each recipient's mailbox | `200`, and that recipient's mail is dropped |
 | Portal tickets (list, create, detail, comment) | Tickets | `404` `{"error": "Case not found"}` |
 | Portal articles (list, detail) | Knowledge base | `404` `{"error": "Article not found"}` |
 | Portal article suggestions | Knowledge base | `200` `{"articles": []}`, as an empty query answers |
 | Public help center | Knowledge base | `404` `{"error": "Not found"}` |
 | Calendar feed link | Tasks | `404` `{"error": "Not found"}` |
 | Web form page, definition and submit | Leads or Tickets, by the form's target | `404`, as for an unknown form |
+| Lead webhook (`POST /api/public/leads/<intake_id>/`) | Leads | `403` `{"detail": "Leads are switched off for this organization."}` to a post with the webhook's key, logged as a refused delivery; without the key, the `401` any wrong key gets |
 
 A web form's CORS response headers follow the same rule: while the form's target module is off
 they match an unknown form's, so nothing tells an outsider which case it was. Sign-in to the

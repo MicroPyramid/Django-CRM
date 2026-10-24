@@ -3,14 +3,16 @@ import { deleteDeal, getDeal } from '#lib/server/v2/deals.js';
 import { invoiceFromDeal } from '#lib/server/v2/invoices.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  const [deal, related] = await Promise.all([
+  const [deal, related, { sources }] = await Promise.all([
     getDeal(event, event.params.id),
-    loadRelated(event, 'deal', event.params.id)
+    loadRelated(event, 'deal', event.params.id),
+    getLeadSources(event)
   ]);
-  return { ...deal, related };
+  return { ...deal, related, sources };
 }
 
 /** @type {import('./$types').Actions} */

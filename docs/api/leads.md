@@ -51,15 +51,13 @@ leads in the filtered, org-scoped `open` queryset whose `last_contacted` (or, ab
 date) is more than 7 days old (`UNWORKED_AFTER_DAYS`, `lead_views.py:58,60-86`), not a stored status,
 just a computed staleness signal.
 
-**`source` accepts only the values in `LEAD_SOURCE`** (`backend/common/utils.py:59-67`): `call`,
-`email`, `existing customer`, `partner`, `public relations`, `compaign`, `other`. There is no
-`website` value in this enum: that spelling belongs to a completely different, uppercase vocabulary
-(`Opportunity.lead_source`, using `SOURCES`; see [Opportunities](opportunities.md#stages)). Note also
-that `compaign` is not a typo in this documentation. It is the literal stored value for "Campaign"
-leads. A client that sends `source=campaign` (the correctly-spelled word) gets zero rows back, not an
-error, because `?source=` is an exact match (`lead_views.py:115-116`), and a client that tries to
-*create* a lead with `source: "campaign"` gets a validation error, because `campaign` is not one of
-the choices `Lead.source` accepts (`leads/models.py:75-77`).
+**`source` is a key from the organisation's lead sources** (see [Lead sources](#lead-sources)).
+Every org starts with 15 (`call`, `email`, `existing customer`, `partner`, `public relations`,
+`campaign`, `other`, `web form`, `meta ads`, `google ads`, `linkedin ads`,
+`directory or marketplace`, `whatsapp`, `referral`, `walk-in`) and admins add more. The old
+misspelt key `compaign` is now `campaign`. The list response's `source` pairs above still carry the
+original seven; read `GET /api/leads/sources/` for the org's own list. `?source=` is an exact match
+on the key, so a key no lead holds matches nothing rather than erroring.
 
 Filters beyond `source` and `status`, `name`, `salutation`, `assigned_to`, `tags`, `city`, `email`,
 `rating`, `search`, `created_at__gte/lte`, `close_date__gte/lte`, `cf_<key>`, are documented in full,
@@ -233,6 +231,29 @@ transaction:
 
 The response is `{"error": false, "message": "...", "id": "<kept id>"}`.
 
+## Lead sources
+
+Where a lead came from is a key from a per-org list. The endpoints are not tied to the Leads
+module switch, because contacts and deals read the same list.
+
+| Endpoint | Who | Body | Answer |
+| --- | --- | --- | --- |
+| `GET /api/leads/sources/` | any member | | `{"sources": [{"id", "key", "label", "is_active", "order"}]}`, by `order`, retired ones included. The defaults are created on first use |
+| `POST /api/leads/sources/` | admin | `{"label"}` | `201` with the new source. The key is the label lowercased with spaces collapsed; a label whose key already exists in the org (retired or not) is `400`. At most 64 characters |
+| `PATCH /api/leads/sources/{id}/` | admin | `{"label"?, "is_active"?}` | The source. The key never changes, so existing records keep pointing at it. Another org's id is `404` |
+| `POST /api/leads/sources/order/` | admin | `{"keys": [...]}` | `{"sources": [...]}` in the new order. Each key at most once and all must be the org's; keys left out follow the listed ones |
+
+There is no delete: retire a source instead. A retired source stays on the records that hold it,
+and cannot be chosen for a new one. A non-admin write is `403`.
+
+**Phone builds before 1.13.0** send no `X-BottleCRM-App` header (they identify as Dart's HTTP
+client) and cannot show a source they were never shipped. For those requests only, a blank value or
+`other` sent over a stored key the old build cannot read back is ignored (the stored key stays).
+A lead's readable keys are `call`, `email`, `existing customer`, `partner`, `public relations`
+and `other` (it read `campaign` as Other); a deal's are the same plus `campaign` (it read `web form`
+as None and sent `NONE`). `compaign` is read as `campaign`, and a deal's uppercase values as their
+keys.
+
 ## Fields
 
 `LeadCreateSerializer.Meta.fields` (`leads/serializer.py:178-213`) is what `POST /api/leads/`,
@@ -256,7 +277,9 @@ instead. See [Create a lead](#create-a-lead)).
 | `website` | string | optional | Free text, not validated as a URL |
 | `linkedin_url` | string | optional | Validated as a URL |
 | `status` | one of `LEAD_STATUS` | optional | `assigned`, `in process`, `converted`, `recycled`, `closed` |
-| `source` | one of `LEAD_SOURCE` | optional | `call`, `email`, `existing customer`, `partner`, `public relations`, `compaign`, `other`, no `website` |
+| `source` | a key of the org's [lead sources](#lead-sources) | optional | An unknown, other-org or retired key is `400` ("Choose one of your lead sources."). The key a lead already holds is always accepted, even once retired, so editing other fields never trips on it |
+| `source_detail` | string, at most 100 | optional | The sub-source, e.g. a campaign name |
+| `source_ref` | string, at most 255 | optional | A reference from the source, e.g. an ad click id |
 | `industry` | one of `INDCHOICES` | optional | e.g. `SOFTWARE` |
 | `rating` | `HOT` \| `WARM` \| `COLD` | optional | |
 | `opportunity_amount` | decimal | optional | Non-negative (DB constraint) |
@@ -269,6 +292,9 @@ instead. See [Create a lead](#create-a-lead)).
 | `description` | text | optional | |
 | `company_name` | string | optional | |
 | `is_active` | boolean | optional | Defaults `true` |
+
+Read-only on the lead payload: `phone_e164` (the phone normalised for matching), `external_source`,
+`external_id` and `last_enquiry_at` (set when an intake delivers the lead).
 
 Not part of the serializer, but accepted in the same request body and resolved by the view on
 `POST`/`PUT`/`PATCH` (each a list of ids, org-scoped): `tags`, `contacts`, `teams`, `assigned_to`; plus

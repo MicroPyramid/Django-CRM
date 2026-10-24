@@ -77,6 +77,7 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/cases/export/` | GET |
 | `/api/cases/import/commit/` | POST |
 | `/api/cases/import/preview/` | POST |
+| `/api/cases/inbound/email/` | POST |
 | `/api/cases/inbound/{mailbox_id}/` | POST |
 | `/api/cases/kanban/` | GET |
 | `/api/cases/mailboxes/` | GET, POST |
@@ -174,11 +175,19 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/leads/export/` | GET |
 | `/api/leads/import/commit/` | POST |
 | `/api/leads/import/preview/` | POST |
+| `/api/leads/intakes/` | GET, POST |
+| `/api/leads/intakes/{id}/` | DELETE, GET, PATCH |
+| `/api/leads/intakes/{id}/deliveries/` | GET |
+| `/api/leads/intakes/{id}/key/` | POST |
+| `/api/leads/intakes/{id}/test/` | POST |
 | `/api/leads/kanban/` | GET |
 | `/api/leads/pipelines/` | GET, POST |
 | `/api/leads/pipelines/{id}/` | DELETE, GET, PUT |
 | `/api/leads/pipelines/{pipeline_pk}/stages/` | POST |
 | `/api/leads/pipelines/{pipeline_pk}/stages/reorder/` | POST |
+| `/api/leads/sources/` | GET, POST |
+| `/api/leads/sources/order/` | POST |
+| `/api/leads/sources/{id}/` | PATCH |
 | `/api/leads/stages/{id}/` | DELETE, PUT |
 | `/api/leads/upload/` | POST (deprecated; use `import/preview/` + `import/commit/`) |
 | `/api/leads/{id}/` | DELETE, GET, PATCH, POST, PUT |
@@ -250,6 +259,7 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/public/help/{slug}/articles/{id}/` | GET |
 | `/api/public/invoice/{token}/` | GET |
 | `/api/public/invoice/{token}/pdf/` | GET |
+| `/api/public/leads/{intake_id}/` | POST |
 | `/api/saved-views/` | GET, POST |
 | `/api/saved-views/{id}/` | DELETE, GET, PATCH |
 | `/api/search/` | GET |

@@ -879,11 +879,17 @@ class TestMigration:
 
             self._migrate("0021_pipeline_required_drop_stage_aging")
 
+            # The schema stops at 0021, so read only columns it already has.
+            def pipeline_of(deal):
+                return Opportunity.objects.values_list("pipeline", flat=True).get(
+                    pk=deal.pk
+                )
+
             covered_default = DealPipeline.objects.get(org=covered, is_default=True)
-            assert Opportunity.objects.get(pk=late.pk).pipeline == covered_default
+            assert pipeline_of(late) == covered_default.pk
             assert DealPipeline.objects.filter(org=covered).count() == 1
             newcomer_default = DealPipeline.objects.get(org=newcomer, is_default=True)
-            assert Opportunity.objects.get(pk=fresh.pk).pipeline == newcomer_default
+            assert pipeline_of(fresh) == newcomer_default.pk
         finally:
             call_command("migrate", verbosity=0)
             Org.objects.filter(name__in=["Covered Co", "Newcomer Co"]).delete()

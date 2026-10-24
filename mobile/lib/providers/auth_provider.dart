@@ -17,7 +17,9 @@ import 'help_center_provider.dart';
 import 'invoice_extras_provider.dart';
 import 'invoices_provider.dart';
 import 'lead_board_provider.dart';
+import 'lead_intakes_provider.dart';
 import 'lead_pipelines_provider.dart';
+import 'lead_sources_provider.dart';
 import 'leads_provider.dart';
 import 'lookup_provider.dart';
 import 'notifications_provider.dart';
@@ -326,6 +328,7 @@ class AuthNotifier extends Notifier<AuthState> {
     ref.invalidate(leadsProvider);
     ref.invalidate(leadBoardProvider);
     ref.invalidate(leadPipelinesProvider);
+    ref.invalidate(leadSourcesProvider);
     ref.invalidate(dealsProvider);
     ref.invalidate(dealBoardProvider);
     ref.invalidate(dealPipelinesProvider);
@@ -385,6 +388,7 @@ class AuthNotifier extends Notifier<AuthState> {
     ref.invalidate(webFormDetailProvider);
     ref.invalidate(webhooksProvider);
     ref.invalidate(webhookDeliveriesProvider);
+    ref.invalidate(leadIntakesProvider);
   }
 
   /// Clear any error message

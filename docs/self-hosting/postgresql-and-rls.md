@@ -221,7 +221,8 @@ silent, the task reports success having done nothing at all.
   `/api/public/estimate/` and `/api/public/csat/` (among the other anonymous prefixes listed there)
   from requiring org context, because these are genuinely anonymous requests (a customer clicking
   an emailed link) authorized by a possession token rather than a JWT. The inbound email webhook
-  (`/api/cases/inbound/<mailbox_id>/`) is exempt the same way, by URL name in
+  (`/api/cases/inbound/<mailbox_id>/`) and the generated-address catch-all
+  (`/api/cases/inbound/email/`) are exempt the same way, by URL name in
   `EXEMPT_VIEW_NAMES` rather than by prefix. See `backend/docs/PORTAL_RLS.md`. Exemption from *requiring* context
   is not the same as *setting* one: `_set_org_context` returns early when `request.org` is `None`,
   so these requests run with `app.current_org` empty, which, per the fail-safe design above,

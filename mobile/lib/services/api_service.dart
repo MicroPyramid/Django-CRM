@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../config/api_config.dart';
+import '../core/app_info.dart';
 
 /// Callback invoked when the access token has aged out (or, as a fallback, when
 /// a request comes back 401). Should hit the refresh endpoint and update the
@@ -195,6 +196,9 @@ class ApiService {
   /// Build request headers
   Map<String, String> _buildHeaders({bool requiresAuth = true}) {
     final headers = Map<String, String>.from(ApiConfig.defaultHeaders);
+    // A phone request without it is an older build, whose lead and deal writes
+    // the server guards (it may send `other` over a source it never knew).
+    headers['X-BottleCRM-App'] = appVersion;
 
     if (requiresAuth && _accessToken != null) {
       headers['Authorization'] = 'Bearer $_accessToken';

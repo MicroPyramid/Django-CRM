@@ -47,7 +47,8 @@
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
   import { count, relativeTime, shortDate } from '#lib/v2/format.js';
-  import { LEAD_SOURCES, LEAD_SOURCE_LABEL, CASE_PRIORITIES, CASE_TYPES } from '#lib/v2/enums.js';
+  import { CASE_PRIORITIES, CASE_TYPES } from '#lib/v2/enums.js';
+  import { sourceOptions } from '#lib/v2/lead-sources.js';
   import { inactiveOptionLabel } from '#lib/v2/pickers.js';
   import {
     moveField,
@@ -726,8 +727,8 @@
                 disabled={!canManage}
                 value={wf.lead_source}
               >
-                {#each LEAD_SOURCES as s (s)}
-                  <option value={s}>{LEAD_SOURCE_LABEL[s] ?? s}</option>
+                {#each sourceOptions(data.sources, wf.lead_source) as s (s.key)}
+                  <option value={s.key}>{s.label}</option>
                 {/each}
               </select>
               <p class="v2-hint">

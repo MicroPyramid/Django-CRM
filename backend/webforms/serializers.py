@@ -25,6 +25,7 @@ from common.modules import (
     module_off_message,
     org_of,
 )
+from leads.source_rules import check_source
 from webforms.constants import LEAD_FIELD_VALUES
 from webforms.dynamic_serializer import CUSTOM_FIELD_TARGET
 from webforms.models import WebForm, WebFormField, WebFormSubmission
@@ -219,6 +220,7 @@ class WebFormDetailSerializer(serializers.ModelSerializer):
         if org is None:
             request = self.context.get("request")
             org = getattr(getattr(request, "profile", None), "org", None)
+        self._org = org
         self._scope("assign_to", Profile.objects.filter(org=org) if org else None)
         self._scope(
             "rotation_members", Profile.objects.filter(org=org) if org else None
@@ -236,6 +238,13 @@ class WebFormDetailSerializer(serializers.ModelSerializer):
         field = self.fields[name]
         target = getattr(field, "child_relation", field)
         target.queryset = queryset if queryset is not None else target.queryset.none()
+
+    def validate_lead_source(self, value):
+        stored = getattr(self.instance, "lead_source", None)
+        try:
+            return check_source(value, self._org, stored)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
 
     def validate_assign_to(self, value):
         """A deactivated member cannot be made the form's assignee.

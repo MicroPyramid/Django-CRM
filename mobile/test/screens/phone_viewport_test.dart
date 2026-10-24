@@ -52,6 +52,13 @@ import 'package:bottle_crm/screens/settings/custom_fields_screen.dart';
 import 'package:bottle_crm/screens/settings/escalation_policy_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/escalation_screen.dart';
 import 'package:bottle_crm/screens/settings/inbound_email_screen.dart';
+import 'package:bottle_crm/data/models/lead_intake.dart';
+import 'package:bottle_crm/data/models/lead_source.dart';
+import 'package:bottle_crm/providers/lead_intakes_provider.dart';
+import 'package:bottle_crm/providers/lead_sources_provider.dart';
+import 'package:bottle_crm/screens/settings/lead_capture_screen.dart';
+import 'package:bottle_crm/screens/settings/lead_intake_detail_screen.dart';
+import 'package:bottle_crm/screens/settings/lead_sources_screen.dart';
 import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/settings/mailbox_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/organization_edit_screen.dart';
@@ -2785,6 +2792,60 @@ void main() {
     });
   });
 
+  group('lead sources and lead capture at 390px', () {
+    Widget leadApp(Widget screen) => ProviderScope(
+      overrides: [
+        isOrgAdminProvider.overrideWithValue(true),
+        leadSourcesProvider.overrideWith(_FakeLeadSources.new),
+        leadIntakesProvider.overrideWith(_FakeLeadIntakes.new),
+        leadIntakeDeliveriesProvider.overrideWith(
+          (ref, id) async => [
+            IntakeDelivery.fromJson(const {
+              'id': 'e1',
+              'received_at': '2026-10-20T09:00:00Z',
+              'result': 'rejected',
+              'error': 'The post carried neither an email nor a phone number.',
+            }),
+          ],
+        ),
+        mailboxesProvider.overrideWith(_FakeLeadMailboxes.new),
+      ],
+      child: MaterialApp(home: screen),
+    );
+
+    for (final scale in [1.0, 1.5]) {
+      testWidgets('lead sources at ${scale}x text', (tester) async {
+        await pump(
+          tester,
+          leadApp(const LeadSourcesScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('Directory or marketplace'), findsOneWidget);
+      });
+
+      testWidgets('lead capture at ${scale}x text', (tester) async {
+        await pump(
+          tester,
+          leadApp(const LeadCaptureScreen()),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('Waiting'), findsOneWidget);
+      });
+
+      testWidgets('one lead webhook at ${scale}x text', (tester) async {
+        await pump(
+          tester,
+          leadApp(const LeadIntakeDetailScreen(intakeId: 'i1')),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('Replace key'), findsOneWidget);
+      });
+    }
+  });
+
   group('inbound email at 390px', () {
     testWidgets('renders without overflowing', (tester) async {
       await pump(tester, mailboxesApp(isAdmin: true));
@@ -2813,7 +2874,7 @@ void main() {
       await pump(tester, mailboxesApp(isAdmin: true));
 
       expect(find.text('Provider not wired up'), findsOneWidget);
-      expect(find.textContaining('Mailgun deliveries'), findsOneWidget);
+      expect(find.textContaining('IMAP deliveries'), findsOneWidget);
 
       // The third row sits below the fold at 390px.
       await tester.scrollUntilVisible(find.text('Not connected yet'), 200);
@@ -2866,7 +2927,7 @@ void main() {
       expect(find.textContaining('secret'), findsNothing);
     });
 
-    testWidgets('the provider picker marks the three that do nothing', (
+    testWidgets('the provider picker marks the one that does nothing', (
       tester,
     ) async {
       await pump(tester, mailboxFormApp());
@@ -2876,7 +2937,8 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<String>).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Mailgun (not wired up yet)'), findsWidgets);
+      expect(find.text('IMAP (not wired up yet)'), findsWidgets);
+      expect(find.text('Mailgun'), findsWidgets);
       expect(find.text('AWS SES'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
@@ -5304,7 +5366,7 @@ MailboxesState _mailboxState({bool allLive = false}) {
       _mailboxJson(
         id: 'm2',
         address: 'billing@acme.com',
-        provider: allLive ? 'ses' : 'mailgun',
+        provider: allLive ? 'ses' : 'imap',
       ),
     ),
     Mailbox.fromJson(
@@ -6017,5 +6079,62 @@ class _FakeObjectLead extends LeadsNotifier {
       'created_by': {'email': 'me@example.com'},
     }),
     canDelete: true,
+  );
+}
+
+class _FakeLeadSources extends LeadSourcesNotifier {
+  @override
+  Future<LeadSourcesAnswer> build() async => const LeadSourcesAnswer(
+    sources: [
+      LeadSource(id: 's1', key: 'email', label: 'Email', order: 1),
+      LeadSource(
+        id: 's2',
+        key: 'directory or marketplace',
+        label: 'Directory or marketplace',
+        order: 2,
+      ),
+      LeadSource(
+        id: 's3',
+        key: 'walk-in',
+        label: 'Walk-in',
+        isActive: false,
+        order: 3,
+      ),
+    ],
+  );
+}
+
+class _FakeLeadIntakes extends LeadIntakesNotifier {
+  @override
+  Future<List<LeadIntake>> build() async => [
+    LeadIntake.fromJson(const {
+      'id': 'i1',
+      'name': 'Gravity Forms on the old marketing site, contact page',
+      'preset': 'gravity_forms',
+      'url':
+          'https://api.example.com/api/public/leads/3f2b8c1e-5a4d-4e8b-9c3a-1d2e3f4a5b6c/',
+      'key_hint': 'zz99',
+      'default_source': 'email',
+      'source_detail': 'Contact page',
+      'is_active': true,
+    }),
+  ];
+}
+
+class _FakeLeadMailboxes extends MailboxesNotifier {
+  @override
+  Future<MailboxesState> build() async => MailboxesState(
+    leadsOffered: true,
+    generatedDomain: 'in.example.com',
+    mailboxes: [
+      Mailbox.fromJson(const {
+        'id': 'm1',
+        'address': 'a-rather-long-org-slug-k3j9x2@in.example.com',
+        'creates': 'leads',
+        'lead_source': 'email',
+        'is_active': false,
+        'is_generated': true,
+      }),
+    ],
   );
 }

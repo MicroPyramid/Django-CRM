@@ -8,6 +8,7 @@ from common.csv_export import (
     people,
 )
 from common.money import org_currency
+from leads.sources import source_labels
 from opportunity.models import Opportunity
 from opportunity.stages import stage_index
 from opportunity.views.opportunity_views import deal_list_queryset
@@ -28,6 +29,7 @@ class DealExportView(RecordExportView):
         # is looked up by both, from one read of the org's stages.
         stages = stage_index(request.profile.org_id)
         default_currency = org_currency(request.profile.org)
+        labels = source_labels(request.profile.org)
 
         def stage_label(deal):
             stage = deal.current_stage(stages)
@@ -45,7 +47,7 @@ class DealExportView(RecordExportView):
             ("Probability", lambda d: d.probability),
             ("Close date", lambda d: iso_date(d.closed_on)),
             ("Type", Opportunity.get_opportunity_type_display),
-            ("Lead source", Opportunity.get_lead_source_display),
+            ("Lead source", lambda d: labels.get(d.lead_source, d.lead_source)),
             ("Assigned to", lambda d: people(d.assigned_to.all())),
             ("Tags", lambda d: names(d.tags.all())),
             ("Created", lambda d: local_iso(d.created_at)),

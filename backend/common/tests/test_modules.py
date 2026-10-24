@@ -145,7 +145,7 @@ def test_every_model_of_a_module_app_is_placed():
     ):
         for model in apps.get_app_config(app).get_models():
             label = model._meta.label
-            if label == "invoices.Product":
+            if label in ("invoices.Product", "leads.LeadSource"):
                 assert model_module(label) is None
             else:
                 assert label in MODEL_MODULES, label

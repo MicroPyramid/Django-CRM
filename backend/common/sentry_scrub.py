@@ -23,7 +23,9 @@ IMPORT_MODULES: tuple[str, ...] = (
     "leads.views.import_views",
 )
 
-_IMPORT_PATH = re.compile(r"/api/(contacts|leads)/import/")
+# A lead webhook post is treated the same way: its body is a stranger's
+# personal data and, for some senders, carries the webhook's key.
+_IMPORT_PATH = re.compile(r"/api/(contacts|leads)/import/|/api/public/leads/")
 
 
 def _scrub_frames(container, every_frame):

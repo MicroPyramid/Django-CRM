@@ -18,14 +18,8 @@
   import { enhance } from '$app/forms';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import DuplicateNotice from '#lib/v2/components/DuplicateNotice.svelte';
-  import {
-    LEAD_STATUSES,
-    LEAD_STATUS_LABEL,
-    LEAD_SOURCES,
-    LEAD_SOURCE_LABEL,
-    INDUSTRIES,
-    industryLabel
-  } from '#lib/v2/enums.js';
+  import { LEAD_STATUSES, LEAD_STATUS_LABEL, INDUSTRIES, industryLabel } from '#lib/v2/enums.js';
+  import { sourceOptions } from '#lib/v2/lead-sources.js';
   import { money } from '#lib/v2/format.js';
   import { TriangleAlert } from '@lucide/svelte';
 
@@ -47,6 +41,8 @@
       website: '',
       status: data.defaults.status,
       source: '',
+      source_detail: '',
+      source_ref: '',
       industry: '',
       opportunity_amount: '',
       description: '',
@@ -261,10 +257,32 @@
       <label for="f-source">Source</label>
       <select id="f-source" name="source" class="v2-input" bind:value={form.source}>
         <option value="">Not specified</option>
-        {#each LEAD_SOURCES as s (s)}
-          <option value={s}>{LEAD_SOURCE_LABEL[s]}</option>
+        {#each sourceOptions(data.sources, form.source) as s (s.key)}
+          <option value={s.key}>{s.label}</option>
         {/each}
       </select>
+    </div>
+    <div class="v2-field">
+      <label for="f-source-detail">Sub-source</label>
+      <input
+        id="f-source-detail"
+        name="source_detail"
+        class="v2-input"
+        maxlength="100"
+        placeholder="e.g. Zillow, Spring open day"
+        bind:value={form.source_detail}
+      />
+    </div>
+    <div class="v2-field">
+      <label for="f-source-ref">Reference</label>
+      <input
+        id="f-source-ref"
+        name="source_ref"
+        class="v2-input"
+        maxlength="255"
+        bind:value={form.source_ref}
+      />
+      <p class="v2-hint">An ad, listing or campaign id, if the lead came with one.</p>
     </div>
     <div class="v2-field">
       <label for="f-industry">Industry</label>

@@ -81,7 +81,17 @@ times the configured one and resets on every restart. The public [web form](../i
 submit endpoint is the one thing today whose spam controls depend on it, so on any real deployment
 point `CACHE_URL` at the Redis you already run for Celery (a separate database, e.g.
 `redis://localhost:6379/1`). `WEBFORM_THROTTLE_IP` and `WEBFORM_THROTTLE_GLOBAL` set those limits
-and both have working defaults.
+and both have working defaults. The [lead webhooks](../features/lead-capture.md#limits-and-settings)
+depend on it the same way, through `LEAD_INTAKE_THROTTLE_MINUTE` and `LEAD_INTAKE_THROTTLE_DAY`, and
+so does a [Mailgun](../integrations/inbound-email.md#mailgun) mailbox, whose delivered tokens are
+remembered there.
+
+`INBOUND_EMAIL_DOMAIN` and `INBOUND_EMAIL_TOPIC_ARN` are empty by default, and admins then type
+their own inbound addresses. Set both to let admins generate addresses under your own inbound
+domain: verify the domain for Amazon SES receiving, point its MX record at SES, add one receipt rule
+for the domain whose SNS action publishes to that topic, and subscribe the topic to the catch-all
+webhook, `https://<your API host>/api/cases/inbound/email/`. The catch-all accepts only that
+topic. See [Generated addresses](../integrations/inbound-email.md#generated-addresses).
 
 ## Full reference
 

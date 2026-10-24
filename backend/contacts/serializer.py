@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.access import has_account_access
+from common.client_version import is_legacy_phone
 from common.serializer import (
     AttachmentsSerializer,
     OrganizationSerializer,
@@ -9,6 +10,7 @@ from common.serializer import (
     TeamsSerializer,
 )
 from contacts.models import Contact
+from leads.source_rules import check_source
 
 # Note: Removed unused serializer properties that were computed but never used by frontend:
 # - get_team_users, get_team_and_assigned_users, get_assigned_users_not_in_teams
@@ -64,6 +66,11 @@ class ContactSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "phone",
+            "phone_e164",
+            # Where the person came from
+            "source",
+            "source_detail",
+            "source_ref",
             # Professional Information
             "organization",
             "title",
@@ -97,6 +104,7 @@ class ContactSerializer(serializers.ModelSerializer):
             # Per-org custom fields (validated via common.custom_fields)
             "custom_fields",
         )
+        read_only_fields = ("phone_e164",)
 
 
 class ContactPickerSerializer(serializers.ModelSerializer):
@@ -140,9 +148,21 @@ class CreateContactSerializer(serializers.ModelSerializer):
         # compare against.
         self.org = request_obj.profile.org if request_obj else None
         self.profile = request_obj.profile if request_obj else None
+        self.legacy_phone = is_legacy_phone(request_obj)
         # An id that matches no account at all reads the same as one the
         # caller may not open; see `validate_account`.
         self.fields["account"].error_messages["does_not_exist"] = "No such account."
+
+    def validate_source(self, value):
+        try:
+            return check_source(
+                value,
+                self.org,
+                getattr(self.instance, "source", None),
+                self.legacy_phone,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
 
     def validate_account(self, account):
         """An account the caller may not open is not a valid link.
@@ -205,6 +225,9 @@ class CreateContactSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "phone",
+            "source",
+            "source_detail",
+            "source_ref",
             # Professional Information
             "organization",
             "title",

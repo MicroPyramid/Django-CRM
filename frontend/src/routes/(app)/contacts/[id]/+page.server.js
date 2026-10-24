@@ -3,15 +3,17 @@ import { addContactNote, deleteContact, getContact } from '#lib/server/v2/contac
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { recordDuplicates } from '#lib/server/v2/duplicates.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  const [contact, duplicates, related] = await Promise.all([
+  const [contact, duplicates, related, { sources }] = await Promise.all([
     getContact({ cookies }, params.id),
     recordDuplicates({ cookies }, 'contacts', params.id),
-    loadRelated({ cookies }, 'contact', params.id)
+    loadRelated({ cookies }, 'contact', params.id),
+    getLeadSources({ cookies })
   ]);
-  return { ...contact, duplicates, related };
+  return { ...contact, duplicates, related, sources };
 }
 
 /** @type {import('./$types').Actions} */
