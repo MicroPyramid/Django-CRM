@@ -139,7 +139,8 @@ class OrgSettingsSerializer(serializers.ModelSerializer):
     edited. `member_count` and `created_at` are read-only header context.
 
     `vertical` and `terminology` are read-only here too: they are written exclusively
-    by the vertical-pack applier (`common/packs/applier.py`), never by a client. A
+    by the vertical-pack applier (`common/packs/applier.py`) and by removing an
+    industry app (`common/apps_catalogue.py`), never by a client. A
     writable path would let any admin PATCH `terminology` to arbitrary tenant-supplied
     text (still safe to render -- see `$lib/terminology.js` on the frontend -- but not
     something this endpoint is meant to let anyone set by hand) or overwrite `vertical`,

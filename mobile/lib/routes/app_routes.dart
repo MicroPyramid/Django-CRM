@@ -154,9 +154,9 @@ class AppRoutes {
   static const String profileCalendarFeed = '/more/profile/calendar-feed';
   static const String settingsOrganization = '/more/settings/organization';
 
-  /// Which modules the organization uses. Admin only; the screen says so to a
-  /// member.
-  static const String settingsModules = '/more/settings/modules';
+  /// The industry apps, and which modules the organization uses. Admin only;
+  /// the screen says so to a member.
+  static const String settingsApps = '/more/settings/apps';
   static const String settingsOrganizationEdit =
       '/more/settings/organization/edit';
 

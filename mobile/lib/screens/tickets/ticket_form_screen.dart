@@ -402,7 +402,7 @@ class _TicketFormScreenState extends ConsumerState<TicketFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 32),
-            _section('Custom Fields'),
+            _section('Custom fields'),
             const SizedBox(height: 16),
             CustomFieldsForm(
               targetModel: 'Case',

@@ -21,6 +21,7 @@
    * a contact is recording that you spoke to them. Nothing is faked. Every
    * event kind is backed by a row that exists.
    */
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
@@ -411,6 +412,8 @@
           <div class="v2-label" style="margin:0 0 10px">About</div>
           <div class="v2-card about">{contact.description}</div>
         {/if}
+
+        <CustomFieldsCard fields={data.customFields ?? []} flush />
 
         <RelatedRecords {related} error={form?.related?.error} />
 

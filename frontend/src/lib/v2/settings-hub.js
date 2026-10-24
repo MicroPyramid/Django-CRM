@@ -175,15 +175,15 @@ export function hubGroups(data) {
         ...(isOrgAdmin(data)
           ? [
               {
-                href: '/settings/modules',
-                title: 'Modules',
-                body: 'Switch off the parts of BottleCRM this organization does not use.',
+                href: '/settings/apps',
+                title: 'Apps',
+                body: 'Industry apps to install, and the parts of BottleCRM this organization uses.',
                 value:
                   switchedOff === null
                     ? null
                     : switchedOff
-                      ? `${switchedOff} switched off`
-                      : 'All on',
+                      ? `${switchedOff} ${switchedOff === 1 ? 'module' : 'modules'} off`
+                      : 'All modules on',
                 warn: false
               }
             ]

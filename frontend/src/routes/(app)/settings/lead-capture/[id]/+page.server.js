@@ -9,7 +9,7 @@ import {
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
 import { getTags } from '#lib/server/v2/tags.js';
-import { leadFieldDefinitions } from '#lib/server/v2/lead-custom-fields.js';
+import { fieldDefinitions } from '#lib/server/v2/record-custom-fields.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 
 /**
@@ -29,7 +29,7 @@ export async function load(event) {
       (answer) => answer.tags,
       () => []
     ),
-    leadFieldDefinitions(event.cookies)
+    fieldDefinitions(event.cookies, 'Lead')
   ]);
   return {
     ...detail,

@@ -297,6 +297,10 @@ class ApiService {
         sentences.add('$capitalised: ${messages.first}');
       } else if (messages is String && messages.isNotEmpty) {
         sentences.add('$capitalised: $messages');
+      } else if (messages is Map) {
+        // `{"custom_fields": {"budget": "is required"}}`: name the inner field.
+        final inner = _fieldErrorSentences(messages);
+        if (inner != null) sentences.add(inner);
       }
     }
     return sentences.isEmpty ? null : sentences.join('\n');

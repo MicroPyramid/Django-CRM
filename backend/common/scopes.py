@@ -59,6 +59,8 @@ API_RESOURCES = frozenset(
         "accounts",
         "activities",
         "api-settings",
+        # Industry apps. Every write under it is admin-only in the view.
+        "apps",
         # Downloading a file attached to a record. Read-only in practice: the
         # only view under this root is the download, and it is gated by the
         # parent record's own read predicate.

@@ -499,13 +499,13 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
 
           const SizedBox(height: 16),
 
-          // Custom fields, org-defined schema, key/value pairs stored on the
-          // lead under `custom_fields`. Only shown when the org has at least
-          // one definition AND the lead has at least one value.
-          if (_hasRenderableCustomFields(lead)) ...[
+          if (CustomFieldsDisplay.shows(_customFieldDefinitions)) ...[
             _buildCard(
-              title: 'Custom Fields',
-              child: _buildCustomFieldsContent(lead),
+              title: 'Custom fields',
+              child: CustomFieldsDisplay(
+                definitions: _customFieldDefinitions,
+                values: lead.customFieldValues,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -824,69 +824,6 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
         ),
       ],
     );
-  }
-
-  bool _hasRenderableCustomFields(Lead lead) {
-    if (_customFieldDefinitions.isEmpty) return false;
-    for (final def in _customFieldDefinitions) {
-      final v = lead.customFieldValues[def.key];
-      if (v == null) continue;
-      if (v is String && v.trim().isEmpty) continue;
-      return true;
-    }
-    return false;
-  }
-
-  Widget _buildCustomFieldsContent(Lead lead) {
-    final rows = <Widget>[];
-    for (final def in _customFieldDefinitions) {
-      final raw = lead.customFieldValues[def.key];
-      if (raw == null) continue;
-      final display = _formatCustomFieldValue(def, raw);
-      if (display.isEmpty) continue;
-      if (rows.isNotEmpty) rows.add(const Divider(height: 24));
-      rows.add(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              def.label.toUpperCase(),
-              style: AppTypography.overline.copyWith(
-                color: AppColors.textTertiary,
-                fontSize: 10,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(display, style: AppTypography.body),
-          ],
-        ),
-      );
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
-  }
-
-  String _formatCustomFieldValue(CustomFieldDefinition def, Object? raw) {
-    if (raw == null) return '';
-    switch (def.fieldType) {
-      case CustomFieldType.checkbox:
-        return raw == true ? 'Yes' : 'No';
-      case CustomFieldType.dropdown:
-        final value = raw.toString();
-        final match = def.options
-            .firstWhere(
-              (o) => o.value == value,
-              orElse: () => CustomFieldOption(value: value, label: value),
-            )
-            .label;
-        return match;
-      case CustomFieldType.date:
-        final parsed = DateTime.tryParse(raw.toString());
-        return parsed != null ? _formatDate(parsed) : raw.toString();
-      case CustomFieldType.number:
-      case CustomFieldType.text:
-      case CustomFieldType.textarea:
-        return raw.toString().trim();
-    }
   }
 
   Widget _buildFilesTab() {

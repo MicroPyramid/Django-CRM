@@ -9,10 +9,12 @@ This page is for admins. The API behind it is in [Modules (API)](../api/modules.
 
 ## Switching a module off or on
 
-Only admins see Modules in the apps. On the web, open Settings, then Modules
-(`/settings/modules`); the settings hub lists it after Organization. On the phone, open
-organization settings, where the Modules row shows for admins only. Any member can read the list
-through the API; only admins can change it.
+Only admins see Modules in the apps. On the web, open Settings, then Apps (`/settings/apps`),
+where Modules sits below the industry apps; the settings hub lists Apps after Organization, and
+the old `/settings/modules` address redirects there. On the phone, open organization settings,
+then Apps, where Modules also sits below the industry apps; the row shows for admins only, and is
+named Modules on a server without industry apps. Any member can read the list through the API;
+only admins can change it.
 
 The modules are grouped as Sell, Serve and Bill. Each row shows what the module covers and whether
 it is on: the web shows an On or Off label, and the phone a switch.

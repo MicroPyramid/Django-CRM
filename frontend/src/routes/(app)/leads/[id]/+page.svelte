@@ -45,6 +45,7 @@
     X
   } from '@lucide/svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
   import { isOn } from '#lib/v2/modules.js';
 
@@ -367,22 +368,7 @@
           <div class="v2-card about">{lead.description}</div>
         {/if}
 
-        <!-- Per-org custom fields. Every active definition shows, filled or
-             not: on a real-estate org these ARE the record, and an unfilled
-             "Possession by" is worth seeing rather than silently omitted. -->
-        {#if customFields.length > 0}
-          <div class="v2-label" style="margin:22px 0 10px">Details</div>
-          <div class="v2-card cf">
-            {#each customFields as f (f.key)}
-              <div class="cf-row">
-                <span class="cf-label">{f.label}</span>
-                <span class="cf-value" class:v2-muted={!f.filled}>
-                  {f.filled ? f.value : '—'}
-                </span>
-              </div>
-            {/each}
-          </div>
-        {/if}
+        <CustomFieldsCard fields={customFields} />
 
         <RelatedRecords {related} error={form?.related?.error} />
 
@@ -655,39 +641,6 @@
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
-  }
-  .cf {
-    padding: 4px 16px;
-    font-size: 13px;
-  }
-  .cf-row {
-    display: flex;
-    gap: 16px;
-    align-items: baseline;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--v2-line);
-  }
-  .cf-row:last-child {
-    border-bottom: 0;
-  }
-  .cf-label {
-    flex: 0 0 40%;
-    color: var(--v2-ink-soft);
-  }
-  .cf-value {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-  /* Stack on narrow screens, matching the list's data-m card treatment. */
-  @media (max-width: 767px) {
-    .cf-row {
-      display: block;
-    }
-    .cf-label {
-      display: block;
-      margin-bottom: 2px;
-    }
   }
   .note-form {
     margin-bottom: 22px;

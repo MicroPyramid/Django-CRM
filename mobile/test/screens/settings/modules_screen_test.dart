@@ -4,7 +4,7 @@ import 'package:bottle_crm/data/models/org_module.dart';
 import 'package:bottle_crm/data/models/automation.dart';
 import 'package:bottle_crm/providers/automation_provider.dart';
 import 'package:bottle_crm/providers/custom_objects_provider.dart';
-import 'package:bottle_crm/screens/settings/modules_screen.dart';
+import 'package:bottle_crm/screens/settings/apps_screen.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,7 +31,7 @@ Future<FakeOrgModules> _pump(
   bool admin = true,
   bool fail = false,
   List<String> refusals = const [],
-  Widget home = const ModulesScreen(),
+  Widget home = const AppsScreen(),
 }) async {
   tester.view.devicePixelRatio = 3.0;
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
@@ -269,7 +269,7 @@ void main() {
     (tester) async {
       final fake = await _pump(tester, admin: false);
       expect(
-        find.text('Only an organization admin can switch modules on or off.'),
+        find.text('Only an organization admin can manage apps and modules.'),
         findsOneWidget,
       );
       expect(find.byType(Switch), findsNothing);

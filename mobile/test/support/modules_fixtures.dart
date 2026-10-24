@@ -1,7 +1,10 @@
 import 'package:bottle_crm/data/models/org_module.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
+import 'package:bottle_crm/providers/org_apps_provider.dart';
 import 'package:bottle_crm/providers/org_modules_provider.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+
+import 'apps_fixtures.dart';
 
 const _groups = {
   'deals': 'sell',
@@ -68,8 +71,14 @@ class FakeOrgModules extends OrgModulesNotifier {
   }
 }
 
-List<Override> modulesOverrides(FakeOrgModules fake, {bool admin = true}) => [
+/// [apps] defaults to an older server with no `/api/apps/`.
+List<Override> modulesOverrides(
+  FakeOrgModules fake, {
+  bool admin = true,
+  FakeOrgApps? apps,
+}) => [
   isOrgAdminProvider.overrideWithValue(admin),
   selectedOrgProvider.overrideWithValue(null),
   orgModulesProvider.overrideWith(() => fake),
+  orgAppsProvider.overrideWith(() => apps ?? FakeOrgApps(() async => null)),
 ];

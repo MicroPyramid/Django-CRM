@@ -1,3 +1,5 @@
+import 'custom_field_definition.dart';
+
 /// A contact: a person at an account.
 ///
 /// Like `Account`, this sits beside the four-field `ContactLookup` that the
@@ -32,6 +34,8 @@ class Contact {
     this.source = '',
     this.sourceDetail = '',
     this.sourceRef = '',
+    this.customFields = const {},
+    this.customFieldDefinitions = const [],
   });
 
   final String id;
@@ -89,6 +93,12 @@ class Contact {
   final String sourceDetail;
   final String sourceRef;
 
+  final Map<String, dynamic> customFields;
+
+  /// The org's active contact fields, sent beside the detail record like
+  /// [canDelete]. Empty wherever they were not sent, such as a list row.
+  final List<CustomFieldDefinition> customFieldDefinitions;
+
   String get fullName {
     final name = '${firstName.trim()} ${lastName.trim()}'.trim();
     return name.isEmpty ? (email ?? 'Unnamed contact') : name;
@@ -116,6 +126,7 @@ class Contact {
   factory Contact.fromJson(
     Map<String, dynamic> json, {
     bool canDelete = false,
+    List<CustomFieldDefinition> customFieldDefinitions = const [],
   }) {
     final account = json['account_detail'];
     return Contact(
@@ -151,6 +162,10 @@ class Contact {
       source: json['source']?.toString() ?? '',
       sourceDetail: json['source_detail']?.toString() ?? '',
       sourceRef: json['source_ref']?.toString() ?? '',
+      customFields: json['custom_fields'] is Map
+          ? Map<String, dynamic>.from(json['custom_fields'] as Map)
+          : const {},
+      customFieldDefinitions: customFieldDefinitions,
     );
   }
 
@@ -176,6 +191,7 @@ class Contact {
       'description': _orNull(description),
       'account': _orNull(accountId),
       'is_active': isActive,
+      'custom_fields': customFields,
     };
   }
 
@@ -198,6 +214,7 @@ class Contact {
     bool? isActive,
     String? accountId,
     bool clearAccount = false,
+    Map<String, dynamic>? customFields,
   }) {
     return Contact(
       id: id,
@@ -228,6 +245,8 @@ class Contact {
       source: source,
       sourceDetail: sourceDetail,
       sourceRef: sourceRef,
+      customFields: customFields ?? this.customFields,
+      customFieldDefinitions: customFieldDefinitions,
     );
   }
 }

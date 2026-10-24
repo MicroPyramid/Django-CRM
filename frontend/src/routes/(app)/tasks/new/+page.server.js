@@ -1,11 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { createTask, getTaskFormOptions } from '#lib/server/v2/tasks.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
 import { listTickets } from '#lib/server/v2/tickets.js';
 import { listDeals } from '#lib/server/v2/deals.js';
 import { listLeads } from '#lib/server/v2/leads.js';
 import { getModules } from '#lib/server/v2/modules.js';
 import { isOn } from '#lib/v2/modules.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {any} */
 const NONE = { results: [] };
@@ -27,7 +31,7 @@ export async function load(event) {
   const modulesP = getModules(event);
   /** @param {string} key */
   const when = (key) => modulesP.then((m) => isOn(m?.modules ?? null, key));
-  const [options, tickets, deals, leads] = await Promise.allSettled([
+  const [options, tickets, deals, leads, customFields] = await Promise.allSettled([
     getTaskFormOptions(event),
     when('tickets').then((on) =>
       on ? listTickets(event, new URLSearchParams({ limit: '100' })) : NONE
@@ -40,7 +44,8 @@ export async function load(event) {
     ),
     when('leads').then((on) =>
       on ? listLeads(event, new URLSearchParams({ limit: '100' })) : NONE
-    )
+    ),
+    fieldsForNew(event.cookies, 'Task')
   ]);
 
   const settled = options.status === 'fulfilled' ? options.value : { owners: [], accounts: [] };
@@ -48,6 +53,7 @@ export async function load(event) {
   return {
     modules: (await modulesP)?.modules ?? null,
     owners: settled.owners,
+    customFields: customFields.status === 'fulfilled' ? customFields.value : [],
     parents: {
       account: settled.accounts ?? [],
       opportunity:
@@ -108,6 +114,7 @@ export const actions = {
     const kind = form.get('parent_kind')?.toString() ?? '';
     const { parent, error: parentError } = readParent(form);
 
+    /** @type {Record<string, any>} */
     const values = {
       title: form.get('title')?.toString().trim() ?? '',
       status: form.get('status')?.toString() || 'New',
@@ -123,6 +130,11 @@ export const actions = {
       ...(parent ?? {})
     };
 
+    const custom = await readCustomFields(event.cookies, 'Task', form);
+    if (custom.refusal)
+      return fail(503, { values: { ...values, parent_kind: kind }, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     if (parentError) {
       return fail(400, { values: { ...values, parent_kind: kind }, error: parentError });
     }
@@ -132,7 +144,7 @@ export const actions = {
     } catch (/** @type {any} */ err) {
       return fail(400, {
         values: { ...values, parent_kind: kind },
-        error: readableError(err, 'Could not save this task.')
+        ...saveRefusal(err, custom.definitions, 'Could not save this task.')
       });
     }
 

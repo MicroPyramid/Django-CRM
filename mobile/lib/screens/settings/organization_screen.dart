@@ -23,9 +23,9 @@ import '../../services/org_date.dart';
 /// belongs behind its own audited action.
 ///
 /// The read is open to any member: the company profile is not a secret, and
-/// members legitimately see their org's address and currency. Editing, applying
-/// a pack and clearing sample data are admin-only, enforced server-side; hiding
-/// the buttons is UX.
+/// members legitimately see their org's address and currency. Editing is
+/// admin-only, enforced server-side; hiding the button is UX. Industry apps
+/// and sample data live on the Apps screen.
 class OrganizationScreen extends ConsumerWidget {
   const OrganizationScreen({super.key});
 
@@ -58,10 +58,7 @@ class OrganizationScreen extends ConsumerWidget {
           onRetry: () => ref.read(orgSettingsProvider.notifier).refresh(),
         ),
         data: (org) => RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(orgPacksProvider);
-            await ref.read(orgSettingsProvider.notifier).refresh();
-          },
+          onRefresh: () => ref.read(orgSettingsProvider.notifier).refresh(),
           child: ListView(
             padding: const EdgeInsets.only(bottom: 40),
             children: [
@@ -141,8 +138,6 @@ class OrganizationScreen extends ConsumerWidget {
                 ),
               ],
               const _ApiKeyNote(),
-              const _SectionHeader('Vertical pack'),
-              _PackSection(org: org, isAdmin: isAdmin),
             ],
           ),
         ),
@@ -150,10 +145,6 @@ class OrganizationScreen extends ConsumerWidget {
     );
   }
 }
-
-/// "custom fields, products" while products are in use, else "custom fields".
-String _customFields(bool productsOn) =>
-    productsOn ? 'custom fields, products' : 'custom fields';
 
 /// "Year, count restarts each year" for a stored date part.
 String _datePartLabel(String datePart) => numberDatePartOptions
@@ -284,281 +275,6 @@ class _ApiKeyNote extends StatelessWidget {
               style: AppTypography.caption.copyWith(
                 color: AppColors.textTertiary,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Packs: what is applied, what can be applied, and the sample data a pack
-/// creates.
-class _PackSection extends ConsumerStatefulWidget {
-  const _PackSection({required this.org, required this.isAdmin});
-
-  final OrgSettings org;
-  final bool isAdmin;
-
-  @override
-  ConsumerState<_PackSection> createState() => _PackSectionState();
-}
-
-class _PackSectionState extends ConsumerState<_PackSection> {
-  bool _busy = false;
-
-  Future<void> _apply(VerticalPack pack) async {
-    // Additive-only and safe to repeat, so re-applying the current pack is
-    // allowed rather than blocked. It reports everything skipped.
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Apply "${pack.name}"?'),
-        content: Text(
-          'This adds starter pipelines, tags, '
-          '${_customFields(ref.read(productsOnProvider))} and a set of sample '
-          'records. Anything already set up is left exactly as it is.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _busy = true);
-    final result = await ref
-        .read(orgSettingsProvider.notifier)
-        .applyPack(pack.id);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.error ?? result.report!.summary)),
-    );
-  }
-
-  Future<void> _clearSampleData() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear sample data?'),
-        content: const Text(
-          'Permanently deletes every sample record a pack created for this '
-          'organization. Your real records are never touched, and any sample '
-          'record you have since attached real work to is kept. This cannot '
-          'be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _busy = true);
-    final result = await ref
-        .read(orgSettingsProvider.notifier)
-        .clearSampleData();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result.error ??
-              sampleDataResult(
-                deleted: result.deleted,
-                retained: result.retained,
-              ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final org = widget.org;
-    final packs = ref.watch(orgPacksProvider).value ?? const <VerticalPack>[];
-    final fieldsAndProducts = _customFields(ref.watch(productsOnProvider));
-    // The registry entry matching `org.vertical`, or null when no pack has been
-    // applied or the id is one this build does not know.
-    final applied = packs.where((pack) => pack.id == org.vertical).firstOrNull;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          color: AppColors.surface,
-          margin: const EdgeInsets.only(bottom: 1),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'First pack applied',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                applied?.name ??
-                    (org.vertical.isEmpty ? 'None yet' : org.vertical),
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'A pack adds starter pipelines, tags, $fieldsAndProducts '
-                'and sample records for one kind of business. Applying one '
-                'only fills in what this organization is missing.',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (!widget.isAdmin)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              'Applying a pack or clearing sample data is limited to '
-              'administrators.',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          )
-        else ...[
-          for (final pack in packs)
-            _PackRow(
-              pack: pack,
-              isApplied: pack.id == org.vertical,
-              busy: _busy,
-              onApply: () => _apply(pack),
-            ),
-          if (packs.isEmpty)
-            Container(
-              color: AppColors.surface,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Text(
-                'No packs available right now.',
-                style: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _busy ? null : _clearSampleData,
-                icon: const Icon(LucideIcons.trash2, size: 16),
-                label: const Text('Clear sample data'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.danger600,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              'Removes only the records a pack created as samples. Your real '
-              'records are never touched.',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _PackRow extends StatelessWidget {
-  const _PackRow({
-    required this.pack,
-    required this.isApplied,
-    required this.busy,
-    required this.onApply,
-  });
-
-  final VerticalPack pack;
-  final bool isApplied;
-  final bool busy;
-  final VoidCallback onApply;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      margin: const EdgeInsets.only(bottom: 1),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  pack.name,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (isApplied)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.success50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.success200),
-                  ),
-                  child: Text(
-                    'Applied',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.success600,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (pack.description.isNotEmpty) ...[
-            const SizedBox(height: 3),
-            Text(
-              pack.description,
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: busy ? null : onApply,
-              child: Text(isApplied ? 'Apply again' : 'Apply'),
             ),
           ),
         ],

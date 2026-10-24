@@ -936,7 +936,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Custom Fields'),
+            _buildSectionTitle('Custom fields'),
             const SizedBox(height: 16),
             CustomFieldsForm(
               targetModel: 'Task',

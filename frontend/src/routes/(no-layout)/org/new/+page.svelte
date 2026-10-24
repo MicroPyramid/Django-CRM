@@ -105,8 +105,8 @@
           <fieldset class="v2-field pack-choice">
             <legend>What kind of business is this?</legend>
             <p class="v2-hint" style="margin-top:0">
-              Sets up a starter pipeline, tags and fields for your industry. You can change
-              everything later.
+              Installs an industry app: a starter pipeline, tags, fields and sample records. You can
+              change any of it, or remove the app, in Settings › Apps.
             </p>
 
             <label class="pack-opt">

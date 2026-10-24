@@ -15,6 +15,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import DuplicateNotice from '#lib/v2/components/DuplicateNotice.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
@@ -249,6 +250,13 @@
         rows="3"
         bind:value={form.description}></textarea>
     </div>
+
+    <RecordFieldInputs
+      fields={data.customFields ?? []}
+      typed={result?.values?.custom_fields}
+      errors={result?.fieldErrors}
+      heading="Details"
+    />
 
     <DuplicateNotice
       module="accounts"

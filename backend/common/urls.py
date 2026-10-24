@@ -1,5 +1,12 @@
 from django.urls import path
 
+from common.views.app_views import (
+    AppInstallView,
+    AppListView,
+    AppPreviewView,
+    AppRemoveView,
+    AppUpgradeView,
+)
 from common.views.attachment_views import AttachmentDownloadView
 from common.views.audit_log_views import SecurityAuditLogListView
 from common.views.auth_views import (
@@ -220,4 +227,11 @@ urlpatterns = [
     path("packs/", PackListView.as_view(), name="pack_list"),
     path("packs/sample-data/", PackSampleDataView.as_view(), name="pack_sample_data"),
     path("packs/<str:pack_id>/apply/", PackApplyView.as_view(), name="pack_apply"),
+    # Industry apps: any member lists; preview and the three actions are
+    # admin-only (common/views/app_views.py).
+    path("apps/", AppListView.as_view(), name="app_list"),
+    path("apps/<str:app_id>/preview/", AppPreviewView.as_view(), name="app_preview"),
+    path("apps/<str:app_id>/install/", AppInstallView.as_view(), name="app_install"),
+    path("apps/<str:app_id>/upgrade/", AppUpgradeView.as_view(), name="app_upgrade"),
+    path("apps/<str:app_id>/remove/", AppRemoveView.as_view(), name="app_remove"),
 ]

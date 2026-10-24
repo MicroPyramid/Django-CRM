@@ -1,6 +1,6 @@
 /**
  * Create an organization: `POST /api/org/`, which answers 201 with the new
- * org, then an optional vertical pack applied to it.
+ * org, then an optional industry app installed on it.
  */
 
 import * as env from '$app/env/private';
@@ -9,6 +9,7 @@ import axios from 'axios';
 import { describeError } from '#lib/server/log-safe.js';
 import { relayHeaders } from '#lib/server/relay.js';
 import { listPacks, applyPack } from '#lib/server/packs.js';
+import { installApp } from '#lib/server/v2/apps.js';
 import { SIGNUP_SOURCE_COOKIE, readSignupSource } from '#lib/server/signup-source.js';
 import { listTimezones } from '#lib/server/v2/organization.js';
 
@@ -35,6 +36,22 @@ export async function load({ cookies }) {
     })
   ]);
   return { packs, timezones };
+}
+
+/**
+ * Install the chosen app with its sample records, as applying a pack did. An
+ * API without apps answers 404, and then the pack is applied the old way.
+ *
+ * @param {{ get: (name: string) => string | undefined }} bearerOnly
+ * @param {string} appId
+ */
+async function installAtSignup(bearerOnly, appId) {
+  try {
+    await installApp(bearerOnly, appId, true);
+  } catch (/** @type {any} */ err) {
+    if (err?.status !== 404) throw err;
+    await applyPack(bearerOnly, appId);
+  }
 }
 
 /** @type {import('./$types').Actions} */
@@ -110,29 +127,29 @@ export const actions = {
         secure: env.NODE_ENV === 'production'
       });
 
-      // Optional vertical pack, chosen in the "What kind of business is this?"
+      // Optional industry app, chosen in the "What kind of business is this?"
       // group below. Empty string. The "Skip for now" option, and the
       // default when nothing is submitted. Means do nothing.
       const vertical = formData.get('vertical')?.toString();
       if (vertical) {
-        // POST /api/packs/<id>/apply/ is ADMIN-only and derives its org from
+        // POST /api/apps/<id>/install/ is ADMIN-only and derives its org from
         // request.profile.org, i.e. from the org_id claim on the JWT, never
         // from a body field. /api/org/ does not mint new tokens, so the
         // access token we are holding here still carries the PREVIOUS org's
         // claim (or no org claim at all, for a brand-new user's first org).
         // Mint one scoped to the org we just created, the same way `/org`'s
         // `selectOrg` action and the shell's own hooks.server.js do it, so
-        // the apply call lands on the right org as its ADMIN.
+        // the install lands on the right org as its ADMIN.
         //
         // This token is used ONLY as the bearer credential for the one
-        // applyPack() call below. It is never written to the jwt_access /
+        // install below. It is never written to the jwt_access /
         // jwt_refresh cookies. Doing so would silently rotate the caller's
         // session to the new org mid-request (e.g. a user already in org A
         // creating org B would suddenly be sitting in org B everywhere else
         // too), which is a change to the session/org-claim contract the
         // brief says must not move. The Skip path never touches these
         // cookies at all, and this path must behave identically apart from
-        // the pack application itself. The existing `org` cookie + the
+        // the install itself. The existing `org` cookie + the
         // shell's own hooks.server.js switch-org-on-mismatch logic already
         // handle rotating the *browser's* session correctly if and when the
         // user actually navigates into the new org.
@@ -143,7 +160,7 @@ export const actions = {
           // caller (hooks.server.js, /org, /settings/profile), which all
           // write the replacement token back to the jwt_access/jwt_refresh
           // cookies in the same request. This call mints a token used ONLY
-          // as the bearer credential for the one applyPack() call below (see
+          // as the bearer credential for the install below (see
           // the comment above) and never persists it, so blacklisting the
           // caller's real refresh token here would leave the browser holding
           // a dead one with nothing to replace it, and the user is signed
@@ -166,15 +183,15 @@ export const actions = {
 
           const { access_token } = switchResponse.data;
 
-          // A minimal cookies-shaped shim: applyPack()/apiRequest only ever
+          // A minimal cookies-shaped shim: the install and apiRequest only ever
           // call `.get('jwt_access')` on what they're given. Handing them
           // this instead of the real `cookies` object means the org-scoped
           // token is used for exactly this one outgoing request and never
           // reaches `cookies.set()`, so nothing is queued onto the response.
           const bearerOnly = { get: (name) => (name === 'jwt_access' ? access_token : undefined) };
-          await applyPack(bearerOnly, vertical);
+          await installAtSignup(bearerOnly, vertical);
         } catch (packErr) {
-          // A pack failing to apply must never fail org creation: the org
+          // An install failing must never fail org creation: the org
           // and its admin profile already exist, already committed by the
           // /api/org/ call above. Log it and let signup succeed anyway.
           //
@@ -183,7 +200,7 @@ export const actions = {
           // Node's default error formatting prints that in full. Log only
           // the message and status.
           console.error(
-            `Vertical pack "${vertical}" did not apply to new org ${newOrg.id} (org creation still succeeded):`,
+            `Industry app "${vertical}" did not install on new org ${newOrg.id} (org creation still succeeded):`,
             packErr?.message,
             packErr?.response?.status ?? packErr?.status
           );

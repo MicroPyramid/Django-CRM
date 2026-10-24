@@ -25,6 +25,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { sumByCurrency } from '#lib/v2/format.js';
 import { canMoveCard } from '#lib/v2/board-drag.js';
@@ -337,6 +338,7 @@ export async function getDeal({ cookies }, id) {
       // no such field and nothing infers one.
       department: contact.department ?? ''
     })),
+    customFields: fieldsForDetail(response, raw.custom_fields),
     // The API's delete rule for this caller (an admin or the deal's creator),
     // so Delete is offered only when it would work.
     canDelete: Boolean(response.can_delete)
@@ -539,6 +541,7 @@ export async function getDealForEdit({ cookies }, id) {
     accounts,
     owners,
     pipelines,
+    customFields: fieldsForEdit(response, raw.custom_fields),
     form: {
       name: deal.name,
       account: deal.account.id ?? '',
@@ -601,6 +604,7 @@ function toBody(values) {
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
   return body;
 }
 

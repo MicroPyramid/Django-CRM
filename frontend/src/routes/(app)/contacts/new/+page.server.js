@@ -1,6 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, createContact, getContactFormOptions } from '#lib/server/v2/contacts.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 
 /**
  * `?account=<id>` preselects the company, so "add somebody at this account"
@@ -11,7 +15,11 @@ import { readableError } from '#lib/server/v2/form-errors.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies, url }) {
-  return await getContactFormOptions({ cookies }, url.searchParams.get('account'));
+  const [options, customFields] = await Promise.all([
+    getContactFormOptions({ cookies }, url.searchParams.get('account')),
+    fieldsForNew(cookies, 'Contact')
+  ]);
+  return { ...options, customFields };
 }
 
 /** @type {import('./$types').Actions} */
@@ -30,12 +38,19 @@ export const actions = {
     // including empty, which is how a contact is deliberately left unowned.
     values.assigned_to = form.get('assigned_to')?.toString().trim() ?? '';
 
+    const custom = await readCustomFields(cookies, 'Contact', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     /** @type {any} */
     let created;
     try {
       created = await createContact({ cookies }, values);
     } catch (/** @type {any} */ err) {
-      return fail(400, { values, error: readableError(err, 'Could not create this contact.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not create this contact.')
+      });
     }
 
     // The API returns the new id. Landing on the person is the point of adding

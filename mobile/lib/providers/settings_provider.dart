@@ -1113,53 +1113,11 @@ class OrgSettingsNotifier extends AsyncNotifier<OrgSettings> {
     await refresh();
     return null;
   }
-
-  /// Apply a pack. Additive-only and safe to repeat, so there is deliberately
-  /// no guard against re-applying the one already applied.
-  ///
-  /// The refresh matters: applying writes `org.vertical`, which is what the
-  /// screen reads to mark a pack as applied.
-  Future<({String? error, PackApplyReport? report})> applyPack(
-    String packId,
-  ) async {
-    final response = await _api.post(ApiConfig.packApply(packId), const {});
-    if (!response.success || response.data == null) {
-      return (error: _orgMessage(response), report: null);
-    }
-    final report = PackApplyReport.fromJson(response.data!);
-    await refresh();
-    return (error: null, report: report);
-  }
-
-  /// Delete the demo records a pack created for this org.
-  ///
-  /// `retained` counts sample records kept because real work has since been
-  /// attached to them. That is a normal outcome, not a partial failure, and
-  /// reporting only `deleted` would show a smaller number than expected with
-  /// no explanation.
-  Future<({String? error, int deleted, int retained})> clearSampleData() async {
-    final response = await _api.delete(ApiConfig.packSampleData);
-    if (!response.success || response.data == null) {
-      return (error: _orgMessage(response), deleted: 0, retained: 0);
-    }
-    final retainedByType =
-        (response.data!['retained_by_type'] as Map?)?.values ?? const [];
-    var retained = 0;
-    for (final value in retainedByType) {
-      if (value is num) retained += value.round();
-    }
-    await refresh();
-    return (
-      error: null,
-      deleted: (response.data!['deleted'] as num?)?.round() ?? 0,
-      retained: retained,
-    );
-  }
 }
 
-/// These endpoints refuse with a bare `{"error": "..."}` (the pack views and
-/// `OrgSettingsView` both do) rather than the `errors` map `_message` reads, so
-/// the reason reaches the user instead of a generic failure.
+/// `OrgSettingsView` refuses with a bare `{"error": "..."}` rather than the
+/// `errors` map `_message` reads, so the reason reaches the user instead of a
+/// generic failure.
 String _orgMessage(dynamic response) {
   final error = response.data?['error'];
   if (error is String && error.trim().isNotEmpty) return error;
@@ -1171,11 +1129,10 @@ final orgSettingsProvider =
       OrgSettingsNotifier.new,
     );
 
-/// The vertical packs available to apply.
+/// The industry apps offered at signup, from `/api/packs/`, which needs no org.
 ///
-/// Its own provider, so the organization screen is the only thing that pays for
-/// it. A failure yields an empty list rather than propagating: a pack list that
-/// will not load must not be the reason the org details do not render, which is
+/// A failure yields an empty list rather than propagating: a list that will
+/// not load hides the industry question rather than blocking org creation,
 /// the fallback the web load already established for the identical call.
 final orgPacksProvider = FutureProvider<List<VerticalPack>>((ref) async {
   final response = await ApiService().get(ApiConfig.packs);

@@ -431,42 +431,6 @@ void main() {
     });
   });
 
-  group('PackApplyReport', () {
-    test('counts created and skipped from the report block', () {
-      final report = PackApplyReport.fromJson(const {
-        'report': {
-          'created': [
-            {'name': 'a'},
-            {'name': 'b'},
-          ],
-          'skipped': [
-            {'name': 'c'},
-          ],
-        },
-      });
-      expect(report.created, 2);
-      expect(report.skipped, 1);
-      expect(report.summary, 'Created 2 items, skipped 1 you already had.');
-    });
-
-    test('all-skipped reads as already having it, not as a failure', () {
-      final report = PackApplyReport.fromJson(const {
-        'report': {
-          'created': [],
-          'skipped': [
-            {'name': 'c'},
-          ],
-        },
-      });
-      expect(report.summary, contains('Already had everything'));
-    });
-
-    test('an empty report says so rather than claiming a create', () {
-      final report = PackApplyReport.fromJson(const {'report': {}});
-      expect(report.summary, contains('already has all of it'));
-    });
-  });
-
   group('sampleDataResult', () {
     test('reports the deletion', () {
       expect(

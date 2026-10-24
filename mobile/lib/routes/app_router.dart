@@ -54,7 +54,7 @@ import '../screens/settings/custom_fields_screen.dart';
 import '../screens/settings/macros_screen.dart';
 import '../screens/settings/object_settings_screen.dart';
 import '../screens/settings/objects_settings_screen.dart';
-import '../screens/settings/modules_screen.dart';
+import '../screens/settings/apps_screen.dart';
 import '../screens/settings/more_screen.dart';
 import '../screens/settings/profile_screen.dart';
 import '../screens/settings/api_tokens_screen.dart';
@@ -895,10 +895,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OrganizationEditScreen(),
       ),
       GoRoute(
-        path: AppRoutes.settingsModules,
-        name: 'settingsModules',
+        path: AppRoutes.settingsApps,
+        name: 'settingsApps',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const ModulesScreen(),
+        builder: (context, state) => const AppsScreen(),
       ),
       GoRoute(
         path: AppRoutes.settingsOrganization,

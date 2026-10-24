@@ -100,14 +100,14 @@ describe('hubGroups', () => {
     expect(item(d, 'Business hours')?.value).toBeNull();
   });
 
-  it('shows admins a Modules row after Organization, and members none', () => {
+  it('shows admins an Apps row after Organization, and members none', () => {
     const allOn = data({ modules: [row('tasks'), row('goals')] });
-    expect(item(allOn, 'Modules')?.value).toBe('All on');
+    expect(item(allOn, 'Apps')).toMatchObject({ href: '/settings/apps', value: 'All modules on' });
     const g = hubGroups(allOn)[0].items.map((i) => i.title);
-    expect(g.indexOf('Modules')).toBe(g.indexOf('Organization') + 1);
+    expect(g.indexOf('Apps')).toBe(g.indexOf('Organization') + 1);
     const two = data({ modules: [row('tasks', false), row('goals', false), row('leads')] });
-    expect(item(two, 'Modules')?.value).toBe('2 switched off');
-    expect(titles(data({ is_organization_admin: false }))).not.toContain('Modules');
+    expect(item(two, 'Apps')?.value).toBe('2 modules off');
+    expect(titles(data({ is_organization_admin: false }))).not.toContain('Apps');
   });
 
   it('puts Products after Invoice templates only while products are on', () => {

@@ -141,6 +141,82 @@ const Map<String, String> customFieldTargetModules = {
 String customFieldTargetLabel(String targetModel) =>
     customFieldTargets[targetModel] ?? targetModel;
 
+/// The `custom_field_definitions` a detail response carries beside its record:
+/// the active fields for that record type, in display order. Empty when the
+/// key is absent or malformed.
+List<CustomFieldDefinition> customFieldDefinitionsIn(
+  Map<String, dynamic>? body,
+) {
+  final rows = body?['custom_field_definitions'];
+  if (rows is! List) return const [];
+  return rows
+      .whereType<Map<String, dynamic>>()
+      .map(CustomFieldDefinition.fromJson)
+      .toList(growable: false);
+}
+
+/// The required fields in [definitions] that [values] leaves empty, keyed by
+/// field key, each with the sentence shown beside it.
+///
+/// `common.custom_fields.validate_payload` refuses the same saves; this only
+/// saves the round trip. A checkbox the user never touched counts as `false`,
+/// which is set; [sendableCustomFields] puts that `false` on the wire, as the
+/// web does.
+Map<String, String> missingRequiredCustomFields(
+  List<CustomFieldDefinition> definitions,
+  Map<String, dynamic> values,
+) {
+  return {
+    for (final def in definitions)
+      if (def.isRequired &&
+          def.fieldType != CustomFieldType.checkbox &&
+          _isBlank(values[def.key]))
+        def.key: '${def.label} is required',
+  };
+}
+
+/// The sentence for a number field holding text that is not a number, such
+/// as `1.2.3`, or null. The input keeps what was typed, so this is the only
+/// place the mistake shows before the server refuses it.
+String? customFieldNumberError(CustomFieldDefinition def, Object? value) {
+  if (def.fieldType != CustomFieldType.number) return null;
+  if (value is! String || value.trim().isEmpty) return null;
+  return num.tryParse(value.trim()) == null
+      ? '${def.label} must be a number'
+      : null;
+}
+
+/// Everything to flag beside a field before saving: unparseable numbers and
+/// missing required fields.
+Map<String, String> customFieldProblems(
+  List<CustomFieldDefinition> definitions,
+  Map<String, dynamic> values,
+) {
+  return {
+    for (final def in definitions)
+      def.key: ?customFieldNumberError(def, values[def.key]),
+    ...missingRequiredCustomFields(definitions, values),
+  };
+}
+
+/// [values] with an explicit `false` for each checkbox they leave unset. An
+/// unticked box sends nothing otherwise, and the server reads a required
+/// checkbox with no value as missing.
+Map<String, dynamic> sendableCustomFields(
+  List<CustomFieldDefinition> definitions,
+  Map<String, dynamic> values,
+) {
+  return {
+    ...values,
+    for (final def in definitions)
+      if (def.fieldType == CustomFieldType.checkbox && values[def.key] == null)
+        def.key: false,
+  };
+}
+
+bool _isBlank(Object? value) =>
+    value == null || (value is String && value.trim().isEmpty);
+
 /// Whether [key] is a key the server will accept.
 ///
 /// `CustomFieldDefinitionSerializer.validate_key` requires

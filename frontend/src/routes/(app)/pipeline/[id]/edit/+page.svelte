@@ -49,6 +49,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import { OPPORTUNITY_TYPE_LABEL, AGING_TONE, AGING_LABEL } from '#lib/v2/enums.js';
@@ -432,6 +433,13 @@
         rows="4"
         bind:value={form.description}></textarea>
     </div>
+
+    <RecordFieldInputs
+      fields={data.customFields ?? []}
+      typed={result?.values?.custom_fields}
+      errors={result?.fieldErrors}
+      heading="Details"
+    />
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Save changes</button>

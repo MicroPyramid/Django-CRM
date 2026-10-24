@@ -110,7 +110,7 @@
               tone="rust"
               text={modulePausedNote({ name: rule.name, status_text: row.status_text })}
               action="Open Modules"
-              href="/settings/modules"
+              href="/settings/apps"
             />
           </div>
         {:else if row?.status_text && row.status_text !== status.label}

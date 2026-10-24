@@ -101,6 +101,9 @@ What each row returns is chosen field by field rather than copied from the table
   `switched_off` and `switched_on` (lists of module keys) and `reordered` (a boolean). See
   [Module changes](#module-changes). Allowed on that event
   only.
+- **An app change names the app** (`EVENT_DETAILS`): `APP_INSTALLED`, `APP_UPGRADED` and
+  `APP_REMOVED` rows add `app_id` and `version`. See [App changes](#app-changes). Allowed on those
+  three events only.
 - **Paths under `/api/public/` are cut to that prefix.** Some public links carry a token in the URL
   (a satisfaction-survey link, for one), and the log should not repeat it.
 
@@ -147,6 +150,22 @@ changes nothing, or is refused, writes nothing. See [Modules](modules.md).
 | `switched_off` | Keys of the modules this change switched off |
 | `switched_on` | Keys of the modules this change switched on |
 | `reordered` | `true` when the order changed |
+
+## App changes
+
+Installing, updating and removing an [industry app](../features/industry-apps.md) each write a row,
+with the admin as `actor`. A refused call writes nothing.
+
+| `event_type` | Label | Written by |
+| --- | --- | --- |
+| `APP_INSTALLED` | App Installed | `POST /api/apps/<id>/install/`, and `POST /api/packs/<id>/apply/` when it installs |
+| `APP_UPGRADED` | App Updated | `POST /api/apps/<id>/upgrade/` |
+| `APP_REMOVED` | App Removed | `POST /api/apps/<id>/remove/` |
+
+| Key | Value |
+| --- | --- |
+| `app_id` | The app's id, such as `real-estate` |
+| `version` | The app's version after the change |
 
 ## Failed sign-ins
 

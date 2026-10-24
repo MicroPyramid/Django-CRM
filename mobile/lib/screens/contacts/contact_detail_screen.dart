@@ -15,6 +15,7 @@ import '../../providers/interactions_provider.dart';
 import '../../providers/lead_sources_provider.dart';
 import '../../routes/app_router.dart';
 import '../../services/after_tap.dart';
+import '../../widgets/common/custom_fields_display.dart';
 import '../../widgets/common/round_action_button.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
 import '../../widgets/interactions/after_tap_logging.dart';
@@ -188,6 +189,7 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen>
             recordId: contact.id,
           ),
           _details(contact),
+          _customFields(contact),
           _accounts(contact),
           _activity(),
           RelatedObjectsSection(to: 'contact', recordId: contact.id),
@@ -412,6 +414,39 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen>
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _customFields(Contact contact) {
+    final definitions = contact.customFieldDefinitions;
+    if (!CustomFieldsDisplay.shows(definitions)) return const SizedBox.shrink();
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                LucideIcons.listChecks,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Custom fields',
+                style: AppTypography.label.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          CustomFieldsDisplay(
+            definitions: definitions,
+            values: contact.customFields,
+          ),
         ],
       ),
     );

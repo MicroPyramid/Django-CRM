@@ -423,7 +423,8 @@ const String cascadeWebGapNote =
     'The web app has no close prompt yet, so closing a parent there leaves its '
     'children open whatever this is set to.';
 
-/// A vertical pack as `/api/packs/` lists it.
+/// A vertical pack, the signup face of an industry app, as `/api/packs/` lists
+/// it.
 class VerticalPack {
   const VerticalPack({
     required this.id,
@@ -443,38 +444,6 @@ class VerticalPack {
     description: json['description']?.toString() ?? '',
     version: json['version']?.toString() ?? '',
   );
-}
-
-/// What an apply actually did.
-///
-/// A pack applied to an org that already has some of this configured is the
-/// normal case, not a partial failure, so both halves are reported.
-class PackApplyReport {
-  const PackApplyReport({this.created = 0, this.skipped = 0});
-
-  final int created;
-  final int skipped;
-
-  factory PackApplyReport.fromJson(Map<String, dynamic> json) {
-    final report = (json['report'] as Map?)?.cast<String, dynamic>() ?? json;
-    return PackApplyReport(
-      created: (report['created'] as List?)?.length ?? 0,
-      skipped: (report['skipped'] as List?)?.length ?? 0,
-    );
-  }
-
-  String get summary {
-    if (created == 0 && skipped == 0) {
-      return 'Nothing to add. This org already has all of it.';
-    }
-    if (skipped == 0) return 'Created $created item${created == 1 ? '' : 's'}.';
-    if (created == 0) {
-      return 'Already had everything from this pack, skipped $skipped '
-          'item${skipped == 1 ? '' : 's'}.';
-    }
-    return 'Created $created item${created == 1 ? '' : 's'}, skipped $skipped '
-        'you already had.';
-  }
 }
 
 /// What a sample-data clear actually deleted, and what it kept.

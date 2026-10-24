@@ -11,7 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.packs.applier import apply_pack, clear_sample_data
+from common.apps_catalogue import AppConflict, install_app
+from common.models import PackApplication
+from common.packs.applier import clear_sample_data
 from common.packs.loader import get_pack, get_registry
 from common.permissions import HasOrgContext, is_org_admin
 
@@ -52,6 +54,10 @@ class PackListView(APIView):
 
 
 class PackApplyView(APIView):
+    """Installs the app with sample data, for phones in the stores that still
+    apply packs, and answers with the run's report as apply did. An app already
+    installed adds nothing; ``/api/apps/`` updates it."""
+
     permission_classes = (IsAuthenticated, HasOrgContext)
 
     def post(self, request, pack_id):
@@ -59,13 +65,18 @@ class PackApplyView(APIView):
         if denied:
             return denied
         # Registry lookup only. pack_id is a dict key, never a path segment.
-        pack = get_pack(pack_id)
-        if pack is None:
+        if get_pack(pack_id) is None:
             return Response(
                 {"error": True, "errors": "Unknown pack."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        report = apply_pack(request.profile.org, pack, request.profile)
+        org = request.profile.org
+        try:
+            install_app(org, pack_id, request.profile, True, request=request)
+        except AppConflict:
+            return Response({"report": {"created": [], "skipped": [], "failed": []}})
+        run = PackApplication.objects.filter(org=org, pack_id=pack_id).first()
+        report = {key: run.result[key] for key in ("created", "skipped", "failed")}
         return Response({"report": report})
 
 

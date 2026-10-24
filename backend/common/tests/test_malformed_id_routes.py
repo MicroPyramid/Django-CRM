@@ -13,9 +13,10 @@ sweep rather than a list: it walks the live URLconf, so a route added later
 with ``<str:pk>`` fails here instead of shipping the old bug back. That is the
 point of driving it from the resolver and not from a fixed list of paths.
 
-``pack_id`` and the public ``token`` are deliberately still ``<str:...>``: one
-is a registry key and the other a ``secrets.token_urlsafe`` string. Neither is
-a UUID, and neither reaches a UUID column.
+``pack_id``, ``app_id`` and the public ``token`` are deliberately still
+``<str:...>``: the first two are registry keys and the last a
+``secrets.token_urlsafe`` string. None is a UUID, and none reaches a UUID
+column.
 """
 
 import re
@@ -26,7 +27,7 @@ from django.urls import get_resolver
 MALFORMED = "not-a-uuid"
 
 # Path params that are legitimately not UUIDs. Anything else must be `<uid:>`.
-NON_UUID_PARAMS = {"token", "pack_id"}
+NON_UUID_PARAMS = {"token", "pack_id", "app_id"}
 
 
 def _routes():

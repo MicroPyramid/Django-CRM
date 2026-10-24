@@ -3,7 +3,11 @@ import { listAccounts } from '#lib/server/v2/accounts.js';
 import { listContacts } from '#lib/server/v2/contacts.js';
 import { listProducts } from '#lib/server/v2/products.js';
 import { createRecurringInvoice } from '#lib/server/v2/recurring.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 
 /**
  * Same three pickers as the one-off invoice builder: account and contact are
@@ -15,10 +19,11 @@ import { readableError } from '#lib/server/v2/form-errors.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies }) {
-  const [accounts, contacts, products] = await Promise.all([
+  const [accounts, contacts, products, customFields] = await Promise.all([
     listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
-    listProducts({ cookies })
+    listProducts({ cookies }),
+    fieldsForNew(cookies, 'RecurringInvoice')
   ]);
 
   return {
@@ -31,7 +36,8 @@ export async function load({ cookies }) {
     })),
     products: products.results
       .filter((p) => p.is_active)
-      .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price }))
+      .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price })),
+    customFields
   };
 }
 
@@ -53,11 +59,17 @@ export const actions = {
       return fail(400, { error: 'The schedule form could not be read. Please try again.' });
     }
 
+    // Custom fields come from their own inputs, never from the builder's payload.
+    delete values.custom_fields;
+    const custom = await readCustomFields(cookies, 'RecurringInvoice', form);
+    if (custom.refusal) return fail(503, custom.refusal);
+    if (custom.values) values.custom_fields = custom.values;
+
     try {
       await createRecurringInvoice({ cookies }, values);
     } catch (/** @type {any} */ err) {
       return fail(err?.status === 403 ? 403 : 400, {
-        error: readableError(err, 'Could not create the schedule.')
+        ...saveRefusal(err, custom.definitions, 'Could not create the schedule.')
       });
     }
 

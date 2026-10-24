@@ -131,6 +131,7 @@ ROUTE_CASES = [
     ("api/notifications/read-all/", (CU, "api_common"), CORE),
     ("api/org/modules/", (CU, "api_common"), CORE),
     ("api/packs/<str:pack_id>/apply/", (CU, "api_common"), CORE),
+    ("api/apps/<str:app_id>/install/", (CU, "api_common"), CORE),
     ("api/profile/tokens/<uuid:pk>/", (CU, "api_common"), CORE),
     ("api/saved-views/", (CU, "api_common"), CORE),
     ("api/search/", (CU,), CORE),

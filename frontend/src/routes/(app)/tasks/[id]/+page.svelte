@@ -18,6 +18,7 @@
    * is backed by a row that exists (`Task` has no history table, so there are no
    * invented status events beyond the record's own creation).
    */
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
@@ -219,6 +220,8 @@
             No note on this task. The title is all anyone else has to go on.
           </p>
         {/if}
+
+        <CustomFieldsCard fields={data.customFields ?? []} />
 
         <RelatedRecords {related} error={form?.related?.error} />
 

@@ -19,7 +19,7 @@ from automation.capture import suppress_rules
 from cases.models import CasePipeline, CaseStage
 from common.models import CustomFieldDefinition, Org, PackApplication, Tags
 from common.modules import model_module, module_is_available, module_off_message
-from common.object_registry import object_module
+from common.object_registry import BUILT_IN, object_module
 from common.packs.schema import (
     SAMPLE_DATES_KEY,
     SAMPLE_ENTITY_KEYS,
@@ -39,7 +39,79 @@ PIPELINES = {
     "task_pipeline": (TaskPipeline, TaskStage, False),
 }
 
+# Natural keys: how an industry app (common.apps_catalogue) names each part it
+# offers, as {type, target, key}. The record type a pipeline holds:
+PIPELINE_TARGETS = {
+    "lead_pipeline": "lead",
+    "case_pipeline": "ticket",
+    "task_pipeline": "task",
+}
+# The record type a terminology key renames, by its prefix.
+WORDING_TARGETS = {
+    "lead": "lead",
+    "opportunity": "deal",
+    "contact": "contact",
+    "account": "account",
+    "invoice": "invoice",
+}
+# Products follow deals or invoices; with both off the message names invoices.
+PRODUCT_MODULES = ("invoices", "deals")
+
 SAMPLE_TAG_NAME = "Sample data"
+
+
+def field_target(target_model: str) -> str:
+    """The record type ("lead") of a custom field target ("Lead")."""
+    return next(
+        (e.key for e in BUILT_IN if e.custom_field_target == target_model),
+        target_model.lower(),
+    )
+
+
+def wording_target(key: str) -> str | None:
+    return WORDING_TARGETS.get(key.partition(".")[0])
+
+
+def stage_key(pipeline: str, stage: str) -> str:
+    return f"{pipeline}/{stage}"
+
+
+def pipeline_modules(manifest_key: str) -> tuple[str, ...]:
+    module = model_module(PIPELINES[manifest_key][0]._meta.label)
+    return (module,) if module else ()
+
+
+def field_modules(target_model: str) -> tuple[str, ...]:
+    module = object_module(target=target_model)
+    return (module,) if module else ()
+
+
+def blocked_module(org, modules) -> str | None:
+    """The module to name when none of ``modules`` is available, else None."""
+    if not modules or any(module_is_available(org, m) for m in modules):
+        return None
+    return modules[0]
+
+
+# The existence checks, shared with the planner so a preview and the run after
+# it decide alike.
+def pipeline_exists(org, manifest_key: str, name: str) -> bool:
+    return PIPELINES[manifest_key][0].objects.filter(org=org, name=name).exists()
+
+
+def custom_field_exists(org, target_model: str, key: str) -> bool:
+    return CustomFieldDefinition.objects.filter(
+        org=org, target_model=target_model, key=key
+    ).exists()
+
+
+def tag_exists(org, name: str) -> bool:
+    # Tags.save() derives slug from name; (slug, org) is the unique key.
+    return Tags.objects.filter(org=org, slug=Tags.slug_for(name)).exists()
+
+
+def product_exists(org, sku: str) -> bool:
+    return Product.objects.filter(org=org, sku=sku).exists()
 
 
 class _Report:
@@ -47,6 +119,8 @@ class _Report:
         self.created: list[dict] = []
         self.skipped: list[dict] = []
         self.failed: list[dict] = []
+        # Every configuration part by natural key, created or not.
+        self.offered: list[dict] = []
 
     def add_created(self, type_: str, name: str) -> None:
         self.created.append({"type": type_, "name": name})
@@ -56,8 +130,29 @@ class _Report:
     ) -> None:
         self.skipped.append({"type": type_, "name": name, "reason": reason})
 
+    def offer(
+        self, type_, target, key, *, row=None, created=False, skipped_module=None
+    ) -> None:
+        """``row`` is what this run created; wording has none, so it passes
+        ``created``."""
+        self.offered.append(
+            {
+                "type": type_,
+                "target": target,
+                "key": key,
+                "created": created or row is not None,
+                "id": str(row.pk) if row is not None else None,
+                "skipped_module": skipped_module,
+            }
+        )
+
     def as_dict(self) -> dict:
-        return {"created": self.created, "skipped": self.skipped, "failed": self.failed}
+        return {
+            "created": self.created,
+            "skipped": self.skipped,
+            "failed": self.failed,
+            "offered": self.offered,
+        }
 
 
 def _apply_pipelines(org, pack: dict, report: _Report) -> None:
@@ -66,15 +161,26 @@ def _apply_pipelines(org, pack: dict, report: _Report) -> None:
         if not spec:
             continue
         name = spec["name"]
-        module = model_module(PipelineModel._meta.label)
-        if module is not None and not module_is_available(org, module):
-            report.add_skipped(key, name, reason=module_off_message(org, module))
-            continue
-        if PipelineModel.objects.filter(org=org, name=name).exists():
+        target = PIPELINE_TARGETS[key]
+        stages = spec.get("stages") or []
+        module = blocked_module(org, pipeline_modules(key))
+        exists = module is None and pipeline_exists(org, key, name)
+        if module is not None or exists:
             # Stages are only created beneath a pipeline we just created, so a
             # skipped pipeline takes its stages with it. This avoids
             # half-populated pipelines and keeps stage matching trivial.
-            report.add_skipped(key, name)
+            if module is not None:
+                report.add_skipped(key, name, reason=module_off_message(org, module))
+            else:
+                report.add_skipped(key, name)
+            report.offer("pipeline", target, name, skipped_module=module)
+            for stage in stages:
+                report.offer(
+                    "stage",
+                    target,
+                    stage_key(name, stage["name"]),
+                    skipped_module=module,
+                )
             continue
 
         # is_default is never set from a pack: all three pipeline models carry a
@@ -86,8 +192,9 @@ def _apply_pipelines(org, pack: dict, report: _Report) -> None:
             is_default=False,
         )
         report.add_created(key, name)
+        report.offer("pipeline", target, name, row=pipeline)
 
-        for order, stage in enumerate(spec.get("stages") or [], start=1):
+        for order, stage in enumerate(stages, start=1):
             fields = {
                 "pipeline": pipeline,
                 "org": org,
@@ -100,25 +207,26 @@ def _apply_pipelines(org, pack: dict, report: _Report) -> None:
             }
             if allow_wp and "win_probability" in stage:
                 fields["win_probability"] = stage["win_probability"]
-            StageModel.objects.create(**fields)
+            row = StageModel.objects.create(**fields)
             report.add_created(f"{key}_stage", stage["name"])
+            report.offer("stage", target, stage_key(name, stage["name"]), row=row)
 
 
 def _apply_custom_fields(org, pack: dict, report: _Report) -> None:
     for field in pack.get("custom_fields") or []:
-        module = object_module(target=field["target"])
-        if module is not None and not module_is_available(org, module):
+        target = field_target(field["target"])
+        module = blocked_module(org, field_modules(field["target"]))
+        if module is not None:
             report.add_skipped(
                 "custom_field", field["key"], reason=module_off_message(org, module)
             )
+            report.offer("field", target, field["key"], skipped_module=module)
             continue
-        exists = CustomFieldDefinition.objects.filter(
-            org=org, target_model=field["target"], key=field["key"]
-        ).exists()
-        if exists:
+        if custom_field_exists(org, field["target"], field["key"]):
             report.add_skipped("custom_field", field["key"])
+            report.offer("field", target, field["key"])
             continue
-        CustomFieldDefinition.objects.create(
+        row = CustomFieldDefinition.objects.create(
             org=org,
             target_model=field["target"],
             key=field["key"],
@@ -130,21 +238,24 @@ def _apply_custom_fields(org, pack: dict, report: _Report) -> None:
             display_order=field.get("display_order", 0),
         )
         report.add_created("custom_field", field["key"])
+        report.offer("field", target, field["key"], row=row)
 
 
 def _apply_tags(org, pack: dict, report: _Report) -> None:
     for tag in pack.get("tags") or []:
-        # Tags.save() derives slug from name; (slug, org) is the unique key.
-        if Tags.objects.filter(org=org, slug=Tags.slug_for(tag["name"])).exists():
+        slug = Tags.slug_for(tag["name"])
+        if tag_exists(org, tag["name"]):
             report.add_skipped("tag", tag["name"])
+            report.offer("tag", None, slug)
             continue
-        Tags.objects.create(
+        row = Tags.objects.create(
             org=org,
             name=tag["name"],
             color=tag.get("color", "blue"),
             description=tag.get("description", ""),
         )
         report.add_created("tag", tag["name"])
+        report.offer("tag", None, slug, row=row)
 
 
 def _apply_lead_sources(org, pack: dict, report: _Report) -> None:
@@ -158,31 +269,33 @@ def _apply_lead_sources(org, pack: dict, report: _Report) -> None:
     for source in sources:
         if source["key"] in have:
             report.add_skipped("lead_source", source["label"])
+            report.offer("source", None, source["key"])
             continue
-        LeadSource.objects.create(
+        row = LeadSource.objects.create(
             org=org, key=source["key"], label=source["label"], order=order
         )
         have.add(source["key"])
         order += 1
         report.add_created("lead_source", source["label"])
+        report.offer("source", None, source["key"], row=row)
 
 
 def _apply_products(org, pack: dict, report: _Report) -> None:
-    # Products follow deals or invoices; with both off the message names invoices.
-    off = not (
-        module_is_available(org, "invoices") or module_is_available(org, "deals")
-    )
+    module = blocked_module(org, PRODUCT_MODULES)
     for product in pack.get("products") or []:
-        if off:
-            report.add_skipped(
-                "product", product["name"], reason=module_off_message(org, "invoices")
-            )
-            continue
         # sku is mandatory in a manifest. See schema._validate_product.
-        if Product.objects.filter(org=org, sku=product["sku"]).exists():
-            report.add_skipped("product", product["name"])
+        sku = product["sku"]
+        if module is not None:
+            report.add_skipped(
+                "product", product["name"], reason=module_off_message(org, module)
+            )
+            report.offer("product", None, sku, skipped_module=module)
             continue
-        Product.objects.create(
+        if product_exists(org, sku):
+            report.add_skipped("product", product["name"])
+            report.offer("product", None, sku)
+            continue
+        row = Product.objects.create(
             org=org,
             name=product["name"],
             sku=product["sku"],
@@ -192,6 +305,7 @@ def _apply_products(org, pack: dict, report: _Report) -> None:
             category=product.get("category"),
         )
         report.add_created("product", product["name"])
+        report.offer("product", None, sku, row=row)
 
 
 def _apply_terminology(org, pack: dict, report: _Report) -> None:
@@ -210,8 +324,10 @@ def _apply_terminology(org, pack: dict, report: _Report) -> None:
     for key in terminology:
         if key in current:
             report.add_skipped("terminology", key)
+            report.offer("wording", wording_target(key), key)
         else:
             report.add_created("terminology", key)
+            report.offer("wording", wording_target(key), key, created=True)
 
     changed_fields = []
     if added:
@@ -231,7 +347,7 @@ def _apply_terminology(org, pack: dict, report: _Report) -> None:
         org.terminology, org.vertical = locked.terminology, locked.vertical
 
 
-def _sample_models():
+def sample_models():
     """The six models sample data is created in, keyed by report type.
 
     Ordered as the applier creates them and, reversed, as clear_sample_data
@@ -293,7 +409,7 @@ def _create_sample(report, type_: str, name: str, build):
 def _skip_off_module(report, org, type_: str, name: str, *needs: str) -> bool:
     """Report a sample row as skipped when its module, or a module its links
     need, is off. ``needs`` are further sample types the row points at."""
-    models = dict(_sample_models())
+    models = dict(sample_models())
     for kind in (type_, *needs):
         key = model_module(models[kind]._meta.label)
         if key is not None and not module_is_available(org, key):
@@ -343,7 +459,7 @@ def _apply_sample_data(org, pack: dict, actor, report: _Report) -> None:
     # rule. The guard spans every sample model, not just Lead: a pack whose
     # sample block is accounts-only must still be blocked from double-applying,
     # and a second pack must not layer its demo rows onto the first pack's.
-    for _type, model in _sample_models():
+    for _type, model in sample_models():
         if model.objects.filter(org=org, is_sample=True).exists():
             report.add_skipped("sample_data", pack["id"])
             return
@@ -632,7 +748,7 @@ def clear_sample_data(org, actor=None) -> dict:
 
     Two rules make this safe to hand to an admin as a single button:
 
-    1. **Children before parents.** _sample_models is reversed, so sample tasks
+    1. **Children before parents.** sample_models is reversed, so sample tasks
        and leads go before tickets, tickets before deals and contacts, and
        accounts last. A sample ticket is therefore already gone by the time its
        sample account is considered, and only the tenant's own rows are left to
@@ -664,7 +780,7 @@ def clear_sample_data(org, actor=None) -> dict:
     retained_pks: set = set()
 
     with transaction.atomic():
-        for type_, model in reversed(_sample_models()):
+        for type_, model in reversed(sample_models()):
             rows = model.objects.filter(org=org, is_sample=True)
             ids = list(rows.values_list("pk", flat=True))
             module = model_module(model._meta.label)
@@ -704,9 +820,33 @@ def clear_sample_data(org, actor=None) -> dict:
     return {"deleted": deleted, "retained": retained, "switched_off": switched_off}
 
 
+def lock_org(org) -> None:
+    """Serialize every pack and app write to one org until the transaction ends.
+
+    Keyed on org alone, not org+pack. Two of our match keys (pipeline name,
+    invoice template name) are conventions rather than DB constraints, so
+    without this two racing applies of the same pack could both pass the
+    existence check and both create. _apply_terminology also mutates the
+    single shared Org row, so applies of *different* packs must serialize too.
+
+    pg_advisory_xact_lock is Postgres-only; the SQLite test backend has no such
+    function, so it is skipped there, as `set_rls_context` does.
+    """
+    from django.db import connection
+
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [str(org.id)])
+
+
 @transaction.atomic
-def apply_pack(org, pack: dict, actor) -> dict:
-    """Apply `pack` to `org`. Additive-only. Returns the created/skipped report."""
+def apply_pack(org, pack: dict, actor, *, parts=None, sample_data=True) -> dict:
+    """Apply `pack` to `org`. Additive-only. Returns the created/skipped report.
+
+    ``parts`` is the manifest cut down to what an app install or update adds
+    (`common.apps_catalogue`); sample rows always come from ``pack``, whose
+    custom fields say which of their values are dates.
+    """
     # actor must belong to org. _apply_sample_data does
     # lead.assigned_to.add(actor) with no further org check of its own, so
     # without this guard a caller that passes a mismatched (org, actor) pair
@@ -720,39 +860,18 @@ def apply_pack(org, pack: dict, actor) -> dict:
     if actor is not None and actor.org_id != org.id:
         raise ValueError("actor must belong to the org the pack is being applied to")
 
-    # Serialize concurrent applies to the same org, keyed on org alone, not
-    # org+pack. Two of our match keys (pipeline name, invoice template name)
-    # are conventions rather than DB constraints, so without this two racing
-    # applies of the same pack could both pass the existence check and both
-    # create. But _apply_terminology also mutates the single shared Org row,
-    # and that row is not pack-scoped: two concurrent applies of *different*
-    # packs to the same org must serialize too, or one can clobber the
-    # other's terminology/vertical write. Locking on org id alone covers
-    # both cases.
-    #
-    # pg_advisory_xact_lock is Postgres-only. Production and every real
-    # deployment run Postgres (RLS requires it: see RLS_SETUP.md), but the
-    # test suite runs on SQLite (crm/test_settings.py), which has no such
-    # function and would raise OperationalError. Guard on connection.vendor,
-    # matching the existing pattern in common/tasks.py's set_rls_context and
-    # common/management/commands/manage_rls.py: skip the Postgres-only
-    # statement on other backends instead of trying to emulate it. This is a
-    # real no-op only on SQLite, which is test-only in this codebase. On
-    # every backend that ships to production, the lock is taken.
-    from django.db import connection
+    lock_org(org)
 
-    if connection.vendor == "postgresql":
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [str(org.id)])
-
+    config = pack if parts is None else parts
     report = _Report()
-    _apply_pipelines(org, pack, report)
-    _apply_custom_fields(org, pack, report)
-    _apply_tags(org, pack, report)
-    _apply_lead_sources(org, pack, report)
-    _apply_products(org, pack, report)
-    _apply_terminology(org, pack, report)
-    _apply_sample_data(org, pack, actor, report)
+    _apply_pipelines(org, config, report)
+    _apply_custom_fields(org, config, report)
+    _apply_tags(org, config, report)
+    _apply_lead_sources(org, config, report)
+    _apply_products(org, config, report)
+    _apply_terminology(org, config, report)
+    if sample_data:
+        _apply_sample_data(org, pack, actor, report)
 
     PackApplication.objects.create(
         org=org,

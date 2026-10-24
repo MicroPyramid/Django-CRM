@@ -416,7 +416,6 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
     final hasNotes = deal.notes != null && deal.notes!.trim().isNotEmpty;
     final hasProducts = deal.products.isNotEmpty;
     final hasContacts = deal.contactsList.isNotEmpty;
-    final hasCustomFields = _hasRenderableCustomFields(deal);
     final hasTeams = deal.teamNames.isNotEmpty;
     final hasTags = deal.labels.isNotEmpty;
 
@@ -502,12 +501,13 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Custom fields, org schema; only shown when the deal has at
-          // least one value populated.
-          if (hasCustomFields) ...[
+          if (CustomFieldsDisplay.shows(_customFieldDefinitions)) ...[
             _buildCard(
-              title: 'Custom Fields',
-              child: _buildCustomFieldsContent(deal),
+              title: 'Custom fields',
+              child: CustomFieldsDisplay(
+                definitions: _customFieldDefinitions,
+                values: deal.customFieldValues,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -751,69 +751,6 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
         ],
       ],
     );
-  }
-
-  bool _hasRenderableCustomFields(Deal deal) {
-    if (_customFieldDefinitions.isEmpty) return false;
-    for (final def in _customFieldDefinitions) {
-      final v = deal.customFieldValues[def.key];
-      if (v == null) continue;
-      if (v is String && v.trim().isEmpty) continue;
-      return true;
-    }
-    return false;
-  }
-
-  Widget _buildCustomFieldsContent(Deal deal) {
-    final rows = <Widget>[];
-    for (final def in _customFieldDefinitions) {
-      final raw = deal.customFieldValues[def.key];
-      if (raw == null) continue;
-      final display = _formatCustomFieldValue(def, raw);
-      if (display.isEmpty) continue;
-      if (rows.isNotEmpty) rows.add(const Divider(height: 24));
-      rows.add(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              def.label.toUpperCase(),
-              style: AppTypography.overline.copyWith(
-                color: AppColors.textTertiary,
-                fontSize: 10,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(display, style: AppTypography.body),
-          ],
-        ),
-      );
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
-  }
-
-  String _formatCustomFieldValue(CustomFieldDefinition def, Object? raw) {
-    if (raw == null) return '';
-    switch (def.fieldType) {
-      case CustomFieldType.checkbox:
-        return raw == true ? 'Yes' : 'No';
-      case CustomFieldType.dropdown:
-        final value = raw.toString();
-        final match = def.options
-            .firstWhere(
-              (o) => o.value == value,
-              orElse: () => CustomFieldOption(value: value, label: value),
-            )
-            .label;
-        return match;
-      case CustomFieldType.date:
-        final parsed = DateTime.tryParse(raw.toString());
-        return parsed != null ? _formatDate(parsed) : raw.toString();
-      case CustomFieldType.number:
-      case CustomFieldType.text:
-      case CustomFieldType.textarea:
-        return raw.toString().trim();
-    }
   }
 
   Widget _buildAssigneesContent(Deal deal) {

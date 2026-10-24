@@ -33,6 +33,7 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
   import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
@@ -54,7 +55,7 @@
   } from '#lib/v2/line-items.js';
   import { Info } from '@lucide/svelte';
 
-  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], numbering: Record<string, any> | null, org: { currency: string, timezone: string } }, form: any }} */
+  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], numbering: Record<string, any> | null, customFields: any[], org: { currency: string, timezone: string } }, form: any }} */
   let { data, form } = $props();
 
   /* The estimate builder's list. The org's default currency to start, read
@@ -362,6 +363,16 @@
           <div class="v2-label" style="margin-bottom:8px">Notes to the customer</div>
           <textarea rows="3" bind:value={notes} placeholder="Appears on the invoice"></textarea>
         </div>
+        {#if data.customFields?.length}
+          <div class="v2-card" style="padding:16px 18px;margin-top:14px">
+            <div class="v2-label" style="margin-bottom:12px">Details</div>
+            <RecordFieldInputs
+              fields={data.customFields}
+              errors={form?.fieldErrors}
+              form="invoice-form"
+            />
+          </div>
+        {/if}
       </div>
 
       <!-- ── what the customer will get ───────────────────────────────── -->

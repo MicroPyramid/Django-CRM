@@ -11,6 +11,7 @@
    * All four panels come from the single detail response, the API already
    * returned them, so this costs no extra round trips.
    */
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import StatCard from '#lib/v2/components/StatCard.svelte';
@@ -180,6 +181,12 @@
       canDelete={data.duplicates.can_delete}
       duplicates={data.duplicates.duplicates}
     />
+
+    {#if data.customFields?.length}
+      <div style="margin-bottom:16px">
+        <CustomFieldsCard fields={data.customFields} flush />
+      </div>
+    {/if}
 
     <!-- align-items:start so each card is its own height. Stretched to match
          its neighbour, a one-row panel ends in a tall blank area that reads as
