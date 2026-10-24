@@ -338,6 +338,7 @@ ROUTE_MODULES: dict[str, Requires] = {
     "api/schema/": CORE,
     "api/activities/": CORE,
     "api/api-settings/": CORE,
+    "api/apps/": CORE,
     "api/attachments/": CORE,
     "api/auth/": CORE,
     "api/custom-fields/": CORE,

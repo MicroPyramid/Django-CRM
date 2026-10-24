@@ -21,6 +21,7 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
   import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
@@ -332,6 +333,16 @@
             ></textarea>
           </label>
         </div>
+        {#if data.customFields?.length}
+          <div class="v2-card" style="padding:16px 18px;margin-top:14px">
+            <div class="v2-label" style="margin-bottom:12px">Details</div>
+            <RecordFieldInputs
+              fields={data.customFields}
+              errors={form?.fieldErrors}
+              form="estimate-form"
+            />
+          </div>
+        {/if}
       </div>
 
       <div>

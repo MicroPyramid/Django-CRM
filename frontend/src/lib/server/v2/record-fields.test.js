@@ -1,13 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  displayValue,
   pairForEdit,
-  pairForDisplay,
-  collectFromForm,
   linkFieldsForEdit,
   collectLinks,
   collectAssignees
 } from './record-fields.js';
-import * as lead from './lead-custom-fields.js';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -125,15 +123,9 @@ describe('collectAssignees', () => {
   });
 });
 
-describe('lead-custom-fields re-exports', () => {
-  it('still reads lead custom fields through the old module', () => {
-    expect(lead.pairForEdit).toBe(pairForEdit);
-    expect(lead.pairForDisplay).toBe(pairForDisplay);
-    expect(lead.collectFromForm).toBe(collectFromForm);
-    expect(typeof lead.displayValue).toBe('function');
-    expect(typeof lead.leadFieldDefinitions).toBe('function');
-    const form = new FormData();
-    form.append('cf_status', ' available ');
-    expect(lead.collectFromForm(form, statusDefs)).toEqual({ status: 'available' });
+describe('displayValue', () => {
+  it('writes a date field out, and keeps what it cannot parse', () => {
+    expect(displayValue({ field_type: 'date' }, '2026-10-04')).toBe('4 October 2026');
+    expect(displayValue({ field_type: 'date' }, 'soon')).toBe('soon');
   });
 });

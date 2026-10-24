@@ -25,6 +25,11 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/activities/` | GET |
 | `/api/api-settings/` | GET, POST |
 | `/api/api-settings/{id}/` | DELETE, GET, PATCH, PUT |
+| `/api/apps/` | GET |
+| `/api/apps/{app_id}/install/` | POST |
+| `/api/apps/{app_id}/preview/` | GET |
+| `/api/apps/{app_id}/remove/` | POST |
+| `/api/apps/{app_id}/upgrade/` | POST |
 | `/api/attachments/{id}/download/` | GET |
 | `/api/auth/google/` | POST |
 | `/api/auth/google/callback/` | POST |

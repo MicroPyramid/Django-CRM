@@ -404,11 +404,14 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             const SizedBox(height: 16),
           ],
 
-          if (defs.any((d) => _cfValueOf(d).isNotEmpty)) ...[
+          if (CustomFieldsDisplay.shows(defs)) ...[
             _buildCard(
-              title: 'Custom Fields',
+              title: 'Custom fields',
               icon: LucideIcons.listChecks,
-              child: Column(children: _buildCustomFieldRows(defs)),
+              child: CustomFieldsDisplay(
+                definitions: defs,
+                values: task.customFields,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -652,29 +655,6 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     if (name != null && name.isNotEmpty) return name;
     if (email != null && email.isNotEmpty) return email.split('@').first;
     return 'Unassigned';
-  }
-
-  /// Render the raw value stored under `custom_fields[def.key]` as a
-  /// display string. Empty / missing values return '' so the caller can
-  /// skip them.
-  String _cfValueOf(CustomFieldDefinition def) {
-    final raw = _task?.customFields[def.key];
-    if (raw == null) return '';
-    if (raw is bool) return raw ? 'Yes' : 'No';
-    if (raw is List) return raw.join(', ');
-    final s = raw.toString();
-    return s;
-  }
-
-  List<Widget> _buildCustomFieldRows(List<CustomFieldDefinition> defs) {
-    final rows = <Widget>[];
-    for (final def in defs) {
-      final value = _cfValueOf(def);
-      if (value.isEmpty) continue;
-      if (rows.isNotEmpty) rows.add(const Divider(height: 20));
-      rows.add(_buildInfoRow(def.label, value, LucideIcons.tag));
-    }
-    return rows;
   }
 
   Widget _buildCommentsCard(List<Comment> comments) {

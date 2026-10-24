@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getLeadForEdit, updateLead } from '#lib/server/v2/leads.js';
-import { collectFromForm, leadFieldDefinitions } from '#lib/server/v2/lead-custom-fields.js';
+import { readCustomFields, saveRefusal } from '#lib/server/v2/record-custom-fields.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -51,21 +51,10 @@ export const actions = {
     const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
     if (owner !== ownerWas) values.assigned_to = owner;
 
-    /*
-     * Custom fields are read against the org's own definitions, re-fetched
-     * here rather than trusted from the body: the keys come from the server's
-     * list, so a `cf_` input appended to the POST by hand names nothing and is
-     * never read. The API is still the authority; `validate_payload` drops
-     * unknown keys and coerces every value, but the form has no reason to
-     * forward something it did not offer.
-     *
-     * Only sent when the org actually defines Lead fields, so an org with none
-     * PATCHes exactly the body it did before.
-     */
-    const definitions = await leadFieldDefinitions(cookies);
-    if (definitions.length > 0) {
-      values.custom_fields = collectFromForm(form, definitions);
-    }
+    const custom = await readCustomFields(cookies, 'Lead', form);
+    if (custom.refusal)
+      return fail(503, { values, message: custom.refusal.error, fieldErrors: {} });
+    if (custom.values) values.custom_fields = custom.values;
 
     if (!values.first_name && !values.last_name) {
       return fail(400, {
@@ -79,10 +68,12 @@ export const actions = {
     try {
       result = await updateLead({ cookies }, params.id, values);
     } catch (/** @type {any} */ err) {
-      // `api-helpers` flattens DRF's field errors into one string. Surface it
-      // rather than a generic failure: "email: lead with this email already
-      // exists" tells somebody what to change; "Could not save" does not.
-      return fail(400, { values, message: String(err?.message ?? 'Could not save this lead.') });
+      const { error, fieldErrors } = saveRefusal(
+        err,
+        custom.definitions,
+        'Could not save this lead.'
+      );
+      return fail(400, { values, message: error, fieldErrors });
     }
 
     // A save that also converted the lead (status -> "converted") carries the

@@ -1,12 +1,12 @@
 import 'package:bottle_crm/core/theme/theme.dart';
-import 'package:bottle_crm/screens/settings/modules_screen.dart';
+import 'package:bottle_crm/screens/settings/apps_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/modules_fixtures.dart';
 
-/// The Modules screen at an 11-inch tablet in portrait, with the system font
+/// The modules half of the Apps screen at an 11-inch tablet in portrait, with the system font
 /// at 1.3: the other direction from the phone checks.
 void main() {
   Future<void> pumpTablet(WidgetTester tester, {bool refuse = false}) async {
@@ -35,7 +35,7 @@ void main() {
                 : const [],
           ),
         ),
-        child: MaterialApp(theme: AppTheme.light, home: const ModulesScreen()),
+        child: MaterialApp(theme: AppTheme.light, home: const AppsScreen()),
       ),
     );
     await tester.pumpAndSettle();

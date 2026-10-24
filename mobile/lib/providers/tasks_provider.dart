@@ -322,13 +322,7 @@ class TasksNotifier extends AsyncNotifier<TasksListData> {
       for (final a in (data['attachments'] as List<dynamic>? ?? [])) {
         if (a is Map<String, dynamic>) attachments.add(Attachment.fromJson(a));
       }
-      final defs = <CustomFieldDefinition>[];
-      for (final d
-          in (data['custom_field_definitions'] as List<dynamic>? ?? [])) {
-        if (d is Map<String, dynamic>) {
-          defs.add(CustomFieldDefinition.fromJson(d));
-        }
-      }
+      final defs = [...customFieldDefinitionsIn(data)];
       defs.sort((a, b) {
         final byOrder = a.displayOrder.compareTo(b.displayOrder);
         return byOrder != 0 ? byOrder : a.label.compareTo(b.label);

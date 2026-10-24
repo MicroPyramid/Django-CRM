@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../services/org_date.dart';
+import 'custom_field_definition.dart';
 import 'deal.dart' show Currency;
 
 /// The eight values `invoices.models.INVOICE_STATUS` accepts.
@@ -81,6 +82,8 @@ class Invoice {
     this.notes,
     this.terms,
     this.poNumber,
+    this.customFields = const {},
+    this.customFieldDefinitions = const [],
   });
 
   final String id;
@@ -130,6 +133,12 @@ class Invoice {
   final String? notes;
   final String? terms;
   final String? poNumber;
+
+  final Map<String, dynamic> customFields;
+
+  /// The org's active invoice fields, sent beside the detail record. Empty on
+  /// a list row.
+  final List<CustomFieldDefinition> customFieldDefinitions;
 
   String get statusLabel => status?.label ?? rawStatus;
 
@@ -186,7 +195,10 @@ class Invoice {
       status != InvoiceStatus.cancelled &&
       status != InvoiceStatus.paid;
 
-  factory Invoice.fromJson(Map<String, dynamic> json) {
+  factory Invoice.fromJson(
+    Map<String, dynamic> json, {
+    List<CustomFieldDefinition> customFieldDefinitions = const [],
+  }) {
     final account = json['account'];
     final contact = json['contact'];
     return Invoice(
@@ -225,6 +237,10 @@ class Invoice {
       notes: json['notes'] as String?,
       terms: json['terms'] as String?,
       poNumber: json['po_number'] as String?,
+      customFields: json['custom_fields'] is Map
+          ? Map<String, dynamic>.from(json['custom_fields'] as Map)
+          : const {},
+      customFieldDefinitions: customFieldDefinitions,
     );
   }
 }

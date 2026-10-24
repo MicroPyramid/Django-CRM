@@ -1,3 +1,5 @@
+import 'custom_field_definition.dart';
+
 /// An account: the company a contact works for and a deal is booked against.
 ///
 /// Mobile had no accounts module at all, while the deal form already fetched
@@ -35,6 +37,7 @@ class Account {
     this.tasks = const [],
     this.rollups,
     this.customFields = const {},
+    this.customFieldDefinitions = const [],
     this.canDelete = false,
     this.createdAt,
   });
@@ -86,6 +89,10 @@ class Account {
 
   final Map<String, dynamic> customFields;
 
+  /// The org's active account fields, sent beside the detail record like
+  /// [canDelete]. Empty wherever they were not sent, such as a list row.
+  final List<CustomFieldDefinition> customFieldDefinitions;
+
   final DateTime? createdAt;
 
   /// Whether the signed-in user may delete this account: the server's own delete
@@ -119,6 +126,7 @@ class Account {
   factory Account.fromJson(
     Map<String, dynamic> json, {
     bool canDelete = false,
+    List<CustomFieldDefinition> customFieldDefinitions = const [],
   }) {
     return Account(
       id: json['id']?.toString() ?? '',
@@ -161,6 +169,7 @@ class Account {
       customFields: json['custom_fields'] is Map<String, dynamic>
           ? Map<String, dynamic>.from(json['custom_fields'] as Map)
           : const {},
+      customFieldDefinitions: customFieldDefinitions,
       createdAt: _date(json['created_at']),
       canDelete: canDelete,
     );
@@ -244,6 +253,7 @@ class Account {
       tasks: tasks,
       rollups: rollups,
       customFields: customFields ?? this.customFields,
+      customFieldDefinitions: customFieldDefinitions,
       createdAt: createdAt,
       canDelete: canDelete,
     );

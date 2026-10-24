@@ -7,6 +7,7 @@ import '../../core/theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/automation_provider.dart';
 import '../../providers/custom_objects_provider.dart';
+import '../../providers/org_apps_provider.dart';
 import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/common/common.dart';
@@ -175,19 +176,28 @@ class SettingsHubScreen extends StatelessWidget {
               description: 'Company details printed on documents, and defaults',
               onTap: () => context.push(AppRoutes.settingsOrganization),
             ),
+            // Named for what the server offers: an API without industry apps
+            // (a 404) still has the modules page under its old name.
             Consumer(
-              builder: (context, ref, _) =>
-                  ref.watch(isOrgAdminProvider) &&
-                      ref.watch(shownModulesProvider) != null
-                  ? MenuRow(
-                      icon: LucideIcons.layoutGrid,
-                      label: 'Modules',
-                      description:
-                          'Switch off the parts of BottleCRM this '
-                          'organization does not use',
-                      onTap: () => context.push(AppRoutes.settingsModules),
-                    )
-                  : const SizedBox.shrink(),
+              builder: (context, ref, _) {
+                if (!ref.watch(isOrgAdminProvider)) {
+                  return const SizedBox.shrink();
+                }
+                final apps = ref.watch(shownAppsProvider) != null;
+                if (!apps && ref.watch(shownModulesProvider) == null) {
+                  return const SizedBox.shrink();
+                }
+                return MenuRow(
+                  icon: LucideIcons.layoutGrid,
+                  label: apps ? 'Apps' : 'Modules',
+                  description: apps
+                      ? 'Industry apps, and the parts of BottleCRM this '
+                            'organization uses'
+                      : 'Switch off the parts of BottleCRM this '
+                            'organization does not use',
+                  onTap: () => context.push(AppRoutes.settingsApps),
+                );
+              },
             ),
             MenuRow(
               icon: LucideIcons.keyRound,

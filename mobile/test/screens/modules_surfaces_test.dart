@@ -451,7 +451,7 @@ void main() {
       expect(
         find.text(
           'Web forms create leads or tickets, and both are switched off. '
-          'An admin can switch one on in Modules settings.',
+          'An admin can switch one on in Apps settings.',
         ),
         findsOneWidget,
       );

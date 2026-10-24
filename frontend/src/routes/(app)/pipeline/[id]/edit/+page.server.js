@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getDealForEdit, updateDeal } from '#lib/server/v2/deals.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
+import { readCustomFields, saveRefusal } from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
@@ -44,12 +45,19 @@ export const actions = {
     const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
     if (owner !== ownerWas) values.assigned_to = owner;
 
+    const custom = await readCustomFields(event.cookies, 'Opportunity', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     try {
       await updateDeal(event, event.params.id, values);
     } catch (/** @type {any} */ err) {
       // The API's field errors are the ones that count: this form's own
       // checks are a UX hint and the serializer is the rule.
-      return fail(400, { values, error: String(err?.message ?? 'Could not save the deal.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not save the deal.')
+      });
     }
 
     return { saved: true };

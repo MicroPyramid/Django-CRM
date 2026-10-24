@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/deal.dart' show Currency, Deal;
+import '../../data/models/custom_field_definition.dart';
 import '../../data/models/lookup_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/invoice_extras_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/org_modules_provider.dart';
 import '../../services/org_date.dart';
+import '../../widgets/forms/custom_fields_section.dart';
 import 'document_adjustments.dart';
 import 'invoice_format.dart';
 import 'line_item_sheet.dart';
@@ -59,6 +61,8 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
 
   final List<LineItemDraft> _items = [];
   DocumentAdjustments _adjustments = const DocumentAdjustments();
+  Map<String, dynamic> _customFields = {};
+  Map<String, String> _customFieldErrors = const {};
   bool _saving = false;
   String? _error;
 
@@ -127,6 +131,9 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
   Widget build(BuildContext context) {
     final accounts = ref.watch(accountsLookupProvider).value ?? const [];
     final contacts = ref.watch(contactsLookupProvider).value ?? const [];
+    final fieldDefs =
+        ref.watch(customFieldDefinitionsProvider('Estimate')).value ??
+        const <CustomFieldDefinition>[];
     // An off module's list is never asked for: the API would refuse it.
     final dealsOn = ref.watch(moduleOnProvider('deals'));
     final deals = dealsOn
@@ -342,6 +349,7 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
                     ),
                   ),
                 ]),
+                if (fieldDefs.isNotEmpty) _customFieldsCard(fieldDefs),
               ],
             ),
           ),
@@ -438,17 +446,22 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            SizedBox(
-              height: 46,
-              child: FilledButton(
-                onPressed: onSubmit,
-                child: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Create draft'),
+            Flexible(
+              child: SizedBox(
+                height: 46,
+                child: FilledButton(
+                  onPressed: onSubmit,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Create draft'),
+                        ),
+                ),
               ),
             ),
           ],
@@ -463,6 +476,10 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
     required String? dealId,
     required List<LineItemDraft> lines,
   }) async {
+    final fieldDefs =
+        ref.read(customFieldDefinitionsProvider('Estimate')).value ??
+        const <CustomFieldDefinition>[];
+    if (!_customFieldsReady(fieldDefs)) return;
     setState(() {
       _saving = true;
       _error = null;
@@ -483,6 +500,8 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
       if (_notes.text.trim().isNotEmpty) 'notes': _notes.text.trim(),
       if (_terms.text.trim().isNotEmpty) 'terms': _terms.text.trim(),
       ..._adjustments.toPayload(),
+      if (fieldDefs.isNotEmpty)
+        'custom_fields': sendableCustomFields(fieldDefs, _customFields),
     };
 
     final error = await ref.read(estimatesProvider.notifier).create(payload);
@@ -499,6 +518,35 @@ class _NewEstimateScreenState extends ConsumerState<NewEstimateScreen> {
     // Back to where it was started: the estimates list (which has just
     // refreshed and shows the draft with its Send button) or the deal.
     context.pop();
+  }
+
+  /// Shown only when the org has estimate fields. The server enforces
+  /// required ones too; checking here keeps a refusal off the whole form.
+  Widget _customFieldsCard(List<CustomFieldDefinition> definitions) {
+    return _card('Custom fields', [
+      CustomFieldsSection(
+        heading: false,
+        definitions: definitions,
+        values: _customFields,
+        errors: _customFieldErrors,
+        onChanged: (next, errors) => setState(() {
+          _customFields = next;
+          _customFieldErrors = errors;
+        }),
+      ),
+    ]);
+  }
+
+  /// False, with the fields marked, when a required one is empty or a number
+  /// is not one.
+  bool _customFieldsReady(List<CustomFieldDefinition> definitions) {
+    final missing = customFieldProblems(definitions, _customFields);
+    if (missing.isEmpty) return true;
+    setState(() {
+      _customFieldErrors = missing;
+      _error = 'Fill in the required custom fields.';
+    });
+    return false;
   }
 
   Widget _card(String title, List<Widget> children) {

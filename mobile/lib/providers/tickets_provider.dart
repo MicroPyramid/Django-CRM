@@ -5,6 +5,7 @@ import '../data/models/approval.dart';
 import '../data/models/attachment.dart';
 import '../data/models/ticket.dart';
 import '../data/models/comment.dart';
+import '../data/models/custom_field_definition.dart';
 import '../data/models/email_message.dart';
 import '../data/models/solution.dart';
 import '../data/models/time_entry.dart';
@@ -305,6 +306,7 @@ class TicketsNotifier extends AsyncNotifier<TicketsListData> {
             .where((t) => t.isInternal)
             .map((t) => t.comment.id)
             .toSet(),
+        customFieldDefinitions: customFieldDefinitionsIn(response.data),
       );
     } on TicketLoadFailure {
       rethrow;
@@ -731,6 +733,9 @@ class TicketDetailResult {
   final ApprovalRuleSummary? approvalRule;
   final Set<String> internalCommentIds;
 
+  /// The org's active ticket fields, from the same response.
+  final List<CustomFieldDefinition> customFieldDefinitions;
+
   const TicketDetailResult({
     required this.ticketObj,
     required this.activities,
@@ -742,6 +747,7 @@ class TicketDetailResult {
     this.canMerge = false,
     this.approvalRule,
     required this.internalCommentIds,
+    this.customFieldDefinitions = const [],
   });
 
   TicketDetailResult copyWith({List<Attachment>? attachments}) {
@@ -756,6 +762,7 @@ class TicketDetailResult {
       canMerge: canMerge,
       approvalRule: approvalRule,
       internalCommentIds: internalCommentIds,
+      customFieldDefinitions: customFieldDefinitions,
     );
   }
 }

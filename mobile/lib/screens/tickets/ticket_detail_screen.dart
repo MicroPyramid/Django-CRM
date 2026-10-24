@@ -8,6 +8,7 @@ import '../../core/theme/theme.dart';
 import '../../data/models/attachment.dart';
 import '../../data/models/ticket.dart';
 import '../../data/models/comment.dart';
+import '../../data/models/custom_field_definition.dart';
 import 'close_with_children_dialog.dart';
 import 'macro_picker_sheet.dart';
 import '../../data/models/macro.dart';
@@ -394,6 +395,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   }
 
   Widget _buildOverview(Ticket c) {
+    final customFieldDefinitions =
+        _detail?.customFieldDefinitions ?? const <CustomFieldDefinition>[];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -498,6 +501,16 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
                       ),
                     ),
                 ],
+              ),
+            ),
+          ],
+          if (CustomFieldsDisplay.shows(customFieldDefinitions)) ...[
+            const SizedBox(height: 16),
+            _card(
+              title: 'Custom fields',
+              child: CustomFieldsDisplay(
+                definitions: customFieldDefinitions,
+                values: c.customFields,
               ),
             ),
           ],
@@ -912,10 +925,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
           attachments: current.attachments,
           commentPermission: current.commentPermission,
           canMerge: current.canMerge,
+          approvalRule: current.approvalRule,
           internalCommentIds: tagged
               .where((t) => t.isInternal)
               .map((t) => t.comment.id)
               .toSet(),
+          customFieldDefinitions: current.customFieldDefinitions,
         );
       });
     } else {

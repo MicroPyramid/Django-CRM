@@ -58,6 +58,7 @@ nav:
       - First sign-in: getting-started/first-sign-in.md
       - Demo data and packs: getting-started/demo-data.md
       - Modules: getting-started/modules.md
+      - Industry apps: features/industry-apps.md
   - Self-hosting:
       - Requirements: self-hosting/requirements.md
       - Docker: self-hosting/docker.md

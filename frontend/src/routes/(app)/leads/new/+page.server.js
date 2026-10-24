@@ -1,15 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, createLead, getLeadFormOptions } from '#lib/server/v2/leads.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  const [options, { sources }] = await Promise.all([
+  const [options, { sources }, customFields] = await Promise.all([
     getLeadFormOptions(event),
-    getLeadSources(event)
+    getLeadSources(event),
+    fieldsForNew(event.cookies, 'Lead')
   ]);
-  return { ...options, sources };
+  return { ...options, sources, customFields };
 }
 
 /** @type {import('./$types').Actions} */
@@ -22,6 +27,9 @@ export const actions = {
     for (const field of [...EDITABLE_FIELDS, 'assigned_to']) {
       if (form.has(field)) values[field] = form.get(field)?.toString().trim() ?? '';
     }
+    const custom = await readCustomFields(event.cookies, 'Lead', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
 
     /** @type {any} */
     let created;
@@ -29,7 +37,10 @@ export const actions = {
       created = await createLead(event, values);
     } catch (/** @type {any} */ err) {
       // Values go back so a rejected form is not a blank form.
-      return fail(400, { values, error: readableError(err, 'Could not create the lead.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not create the lead.')
+      });
     }
 
     redirect(303, created?.id ? `/leads/${created.id}` : '/leads');

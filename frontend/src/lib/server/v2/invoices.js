@@ -40,6 +40,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 
 /** `invoices.models.INVOICE_STATUS`. Underscore on the wire; never shown raw. */
@@ -247,8 +248,26 @@ export async function getInvoice({ cookies }, id) {
   const invoice = response.invoice ?? {};
   return {
     invoice: toDetail(invoice),
-    lineItems: (invoice.line_items ?? []).map(toLineItem)
+    lineItems: (invoice.line_items ?? []).map(toLineItem),
+    customFields: fieldsForDetail(response, invoice.custom_fields),
+    customFieldInputs: fieldsForEdit(response, invoice.custom_fields)
   };
+}
+
+/**
+ * Save the invoice's custom fields and nothing else. The view's PUT is
+ * partial, and the issued-document lock covers lines and amounts, not fields.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {string} id
+ * @param {Record<string, any>} customFields
+ */
+export async function updateInvoiceFields({ cookies }, id, customFields) {
+  return apiRequest(
+    `/invoices/${id}/`,
+    { method: 'PUT', body: { custom_fields: customFields } },
+    { cookies }
+  );
 }
 
 /**

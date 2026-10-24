@@ -1,8 +1,9 @@
 /**
- * Field rendering and form collection shared by every page that edits
- * per-org custom fields (leads, custom object records). Server-only by
- * location, but imports only a browser-safe helper, so it is also safe to unit test in Node.
+ * Field rendering and form collection shared by every record page that shows
+ * or edits per-org custom fields. Imports only browser-safe helpers, so it is
+ * unit tested in Node.
  */
+import { longDate } from '#lib/v2/format.js';
 import { sameIds } from '#lib/v2/pickers.js';
 
 /**
@@ -24,6 +25,10 @@ export function displayValue(definition, value) {
   switch (definition.field_type) {
     case 'checkbox':
       return value ? 'Yes' : 'No';
+    case 'date': {
+      const text = longDate(value);
+      return text === '—' ? String(value) : text;
+    }
     case 'number':
       return typeof value === 'number' ? value.toLocaleString() : String(value);
     case 'dropdown': {

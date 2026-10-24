@@ -25,6 +25,7 @@ const CORE = [
 ];
 const CORE_SETTINGS = [
   'api-tokens',
+  'apps',
   'audit-log',
   'automation',
   'custom-fields',

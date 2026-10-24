@@ -1354,6 +1354,50 @@ class PackApplication(BaseOrgModel):
         return f"{self.pack_id} v{self.pack_version} → {self.org.name}"
 
 
+class InstalledApp(BaseOrgModel):
+    """One industry app on one org: its version, and what it has done there.
+
+    ``owned`` lists the parts the app created, ``{type, target, key, id}``, with
+    ``off`` on the ones removal switched off. ``offered`` lists every part it
+    has ever offered the org, ``{type, target, key, skipped_module}``. Written
+    only by ``common.apps_catalogue``; see docs/features/industry-apps.md.
+    """
+
+    INSTALLED = "installed"
+    REMOVED = "removed"
+    STATUS_CHOICES = ((INSTALLED, "Installed"), (REMOVED, "Removed"))
+
+    app_id = models.CharField(max_length=64)
+    installed_version = models.PositiveIntegerField()
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=INSTALLED)
+    installed_by = models.ForeignKey(
+        "common.Profile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="installed_apps",
+    )
+    installed_at = models.DateTimeField()
+    removed_at = models.DateTimeField(null=True, blank=True)
+    owned = models.JSONField(default=list, blank=True)
+    offered = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        verbose_name = "Installed App"
+        verbose_name_plural = "Installed Apps"
+        db_table = "installed_app"
+        ordering = ("created_at",)
+        indexes = [models.Index(fields=["org", "-created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "app_id"], name="unique_installed_app_per_org"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.app_id} v{self.installed_version} ({self.status})"
+
+
 class SavedView(BaseOrgModel):
     """A profile's named filters for one list, to put back with one tap (G29).
 

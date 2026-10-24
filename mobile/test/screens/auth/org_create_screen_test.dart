@@ -1,6 +1,8 @@
 import 'package:bottle_crm/data/models/auth_response.dart';
+import 'package:bottle_crm/data/models/org_app.dart';
 import 'package:bottle_crm/data/models/org_settings.dart';
 import 'package:bottle_crm/providers/auth_provider.dart';
+import 'package:bottle_crm/providers/org_apps_provider.dart';
 import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/routes/app_router.dart';
 import 'package:bottle_crm/screens/auth/org_create_screen.dart';
@@ -9,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/apps_fixtures.dart';
 
 /// Mobile could not create an organization at all, while the org picker's empty
 /// state told people to "create a new organization" and gave them nowhere to do
@@ -156,7 +160,7 @@ void main() {
     testWidgets('offers the packs the server lists, and a way to skip', (
       tester,
     ) async {
-      await tester.pumpWidget(_creating(org: _FakeOrgSettings()));
+      await tester.pumpWidget(_creating(apps: _apps()));
       await tester.pumpAndSettle();
 
       expect(find.text('What kind of business is this?'), findsOneWidget);
@@ -167,7 +171,7 @@ void main() {
 
     testWidgets('is left out when the pack list is empty', (tester) async {
       await tester.pumpWidget(
-        _creating(org: _FakeOrgSettings(), packs: () async => const []),
+        _creating(apps: _apps(), packs: () async => const []),
       );
       await tester.pumpAndSettle();
 
@@ -176,10 +180,7 @@ void main() {
 
     testWidgets('is left out when the pack list fails to load', (tester) async {
       await tester.pumpWidget(
-        _creating(
-          org: _FakeOrgSettings(),
-          packs: () async => throw Exception('offline'),
-        ),
+        _creating(apps: _apps(), packs: () async => throw Exception('offline')),
       );
       await tester.pumpAndSettle();
 
@@ -188,54 +189,54 @@ void main() {
       expect(find.text('Create organization'), findsOneWidget);
     });
 
-    testWidgets('the chosen pack is applied to the new organization', (
+    testWidgets('the chosen app is installed on the new organization', (
       tester,
     ) async {
-      final org = _FakeOrgSettings();
-      await tester.pumpWidget(_creating(org: org));
+      final apps = _apps();
+      await tester.pumpWidget(_creating(apps: apps));
       await tester.pumpAndSettle();
 
       await _create(tester, pick: 'Real estate');
 
-      expect(org.applied, ['real-estate']);
+      expect(apps.signupInstalls, ['real-estate']);
       expect(find.text('the welcome screen'), findsOneWidget);
     });
 
-    testWidgets('skipping applies nothing', (tester) async {
-      final org = _FakeOrgSettings();
-      await tester.pumpWidget(_creating(org: org));
+    testWidgets('skipping installs nothing', (tester) async {
+      final apps = _apps();
+      await tester.pumpWidget(_creating(apps: apps));
       await tester.pumpAndSettle();
 
       await _create(tester);
 
-      expect(org.applied, isEmpty);
+      expect(apps.signupInstalls, isEmpty);
       expect(find.text('the welcome screen'), findsOneWidget);
     });
 
-    testWidgets('a pack that will not apply still leaves the organization '
+    testWidgets('an app that will not install still leaves the organization '
         'created, and says so', (tester) async {
-      final org = _FakeOrgSettings(error: 'Only admins can apply a pack.');
-      await tester.pumpWidget(_creating(org: org));
+      final apps = _apps(error: 'Only admins can install an app.');
+      await tester.pumpWidget(_creating(apps: apps));
       await tester.pumpAndSettle();
 
       await _create(tester, pick: 'Professional services');
 
-      expect(org.applied, ['professional-services']);
+      expect(apps.signupInstalls, ['professional-services']);
       expect(find.text('the welcome screen'), findsOneWidget);
       expect(
-        find.textContaining('the industry setup did not apply'),
+        find.textContaining('the industry setup did not install'),
         findsOneWidget,
       );
     });
 
-    testWidgets('a create the server refuses applies no pack', (tester) async {
-      final org = _FakeOrgSettings();
-      await tester.pumpWidget(_creating(org: org, createFails: true));
+    testWidgets('a create the server refuses installs no app', (tester) async {
+      final apps = _apps();
+      await tester.pumpWidget(_creating(apps: apps, createFails: true));
       await tester.pumpAndSettle();
 
       await _create(tester, pick: 'Real estate');
 
-      expect(org.applied, isEmpty);
+      expect(apps.signupInstalls, isEmpty);
       expect(find.text('That name is taken.'), findsOneWidget);
       expect(find.text('the welcome screen'), findsNothing);
     });
@@ -261,9 +262,9 @@ const _packs = [
 ];
 
 /// The create screen under a router, so a finished create lands somewhere
-/// assertable. [org] records which packs were applied.
+/// assertable. [apps] records which apps were installed.
 Widget _creating({
-  required _FakeOrgSettings org,
+  required FakeOrgApps apps,
   Future<List<VerticalPack>> Function()? packs,
   bool createFails = false,
 }) {
@@ -290,7 +291,7 @@ Widget _creating({
       orgPacksProvider.overrideWith(
         (ref) => packs == null ? Future.value(_packs) : packs(),
       ),
-      orgSettingsProvider.overrideWith(() => org),
+      orgAppsProvider.overrideWith(() => apps),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -342,23 +343,6 @@ class _RefusingAuth extends _FakeAuth {
       'That name is taken.';
 }
 
-/// Records each pack applied. [error] makes every apply fail with it.
-class _FakeOrgSettings extends OrgSettingsNotifier {
-  _FakeOrgSettings({this.error});
-
-  final String? error;
-  final applied = <String>[];
-
-  @override
-  Future<OrgSettings> build() async =>
-      OrgSettings.fromJson(const {'id': 'org-1', 'name': 'Acme Inc.'});
-
-  @override
-  Future<({String? error, PackApplyReport? report})> applyPack(
-    String packId,
-  ) async {
-    applied.add(packId);
-    if (error != null) return (error: error, report: null);
-    return (error: null, report: const PackApplyReport(created: 3));
-  }
-}
+/// [error] makes every install fail with it.
+FakeOrgApps _apps({String? error}) =>
+    FakeOrgApps(() async => const OrgAppsAnswer(), error: error);

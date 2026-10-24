@@ -47,7 +47,7 @@ Future<void> _pump(
               builder: (_, _) => const Text('home page'),
             ),
             GoRoute(
-              path: AppRoutes.settingsModules,
+              path: AppRoutes.settingsApps,
               builder: (_, _) => const Text('modules page'),
             ),
           ],
@@ -107,8 +107,8 @@ void main() {
   ) async {
     _off = ['deals'];
     await _pump(tester);
-    expect(find.text('Open Modules settings'), findsOneWidget);
-    await tester.tap(find.text('Open Modules settings'));
+    expect(find.text('Open Apps settings'), findsOneWidget);
+    await tester.tap(find.text('Open Apps settings'));
     await tester.pumpAndSettle();
     expect(find.text('modules page'), findsOneWidget);
 
@@ -116,7 +116,7 @@ void main() {
     expect(find.text('Deals is switched off'), findsNothing);
     expect(find.text('Pipeline is switched off'), findsOneWidget);
     expect(find.text('Back to Home'), findsOneWidget);
-    expect(find.text('Open Modules settings'), findsNothing);
+    expect(find.text('Open Apps settings'), findsNothing);
   });
 
   testWidgets('products name invoices only when both modules are off', (

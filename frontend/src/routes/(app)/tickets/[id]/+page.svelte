@@ -45,6 +45,7 @@
     Unlink,
     X
   } from '@lucide/svelte';
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
   import { isOn } from '#lib/v2/modules.js';
@@ -679,6 +680,12 @@
             <div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">
               {ticket.description}
             </div>
+          </div>
+        {/if}
+
+        {#if data.customFields?.length}
+          <div style="margin-bottom:18px">
+            <CustomFieldsCard fields={data.customFields} flush />
           </div>
         {/if}
 

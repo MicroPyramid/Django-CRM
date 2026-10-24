@@ -98,6 +98,8 @@ import 'package:bottle_crm/providers/custom_objects_provider.dart';
 import 'package:bottle_crm/providers/duplicates_provider.dart';
 import 'package:bottle_crm/providers/leads_provider.dart';
 import 'package:bottle_crm/screens/leads/lead_detail_screen.dart';
+import 'package:bottle_crm/screens/deals/deal_detail_screen.dart';
+import 'package:bottle_crm/screens/tasks/task_detail_screen.dart';
 import 'package:bottle_crm/screens/objects/object_record_detail_screen.dart';
 import 'package:bottle_crm/screens/objects/object_record_form_screen.dart';
 import 'package:bottle_crm/screens/objects/object_records_screen.dart';
@@ -105,7 +107,15 @@ import 'package:bottle_crm/screens/settings/object_field_sheet.dart';
 import 'package:bottle_crm/data/models/account.dart';
 import 'package:bottle_crm/providers/accounts_provider.dart';
 import 'package:bottle_crm/screens/accounts/account_detail_screen.dart';
-import 'package:bottle_crm/screens/settings/modules_screen.dart';
+import 'package:bottle_crm/screens/settings/apps_screen.dart';
+import 'package:bottle_crm/screens/accounts/account_form_screen.dart';
+import 'package:bottle_crm/screens/contacts/contact_form_screen.dart';
+import 'package:bottle_crm/screens/invoices/invoice_detail_screen.dart';
+import 'package:bottle_crm/screens/invoices/new_estimate_screen.dart';
+import 'package:bottle_crm/screens/tickets/ticket_detail_screen.dart';
+import 'package:bottle_crm/widgets/common/custom_fields_display.dart';
+import 'package:bottle_crm/widgets/forms/custom_fields_form.dart';
+import '../support/apps_fixtures.dart';
 import 'package:bottle_crm/screens/settings/object_settings_screen.dart';
 import 'package:bottle_crm/screens/settings/objects_settings_screen.dart';
 import 'package:bottle_crm/core/theme/theme.dart';
@@ -156,7 +166,8 @@ void main() {
 
   /// The screen under a router that can answer a ticket push, so tapping a
   /// row lands somewhere assertable instead of throwing.
-  Widget routed(Widget screen) => MaterialApp.router(
+  Widget routed(Widget screen, {ThemeData? theme}) => MaterialApp.router(
+    theme: theme,
     routerConfig: GoRouter(
       initialLocation: '/here',
       routes: [
@@ -466,16 +477,6 @@ void main() {
         overrides: [
           orgSettingsProvider.overrideWith(
             cascadeOn ? _FakeOrgCascadeOn.new : _FakeOrg.new,
-          ),
-          orgPacksProvider.overrideWith(
-            (ref) async => [
-              VerticalPack.fromJson(const {
-                'id': 'real-estate',
-                'name': 'Real estate',
-                'description': 'Listings, viewings and offers',
-                'version': '1',
-              }),
-            ],
           ),
           isOrgAdminProvider.overrideWithValue(isAdmin),
         ],
@@ -3157,13 +3158,12 @@ void main() {
       // Twice: the header, and again as the trading name.
       expect(find.text('MicroPyramid'), findsNWidgets(2));
       expect(find.byTooltip('Edit details'), findsNothing);
-      expect(find.text('Clear sample data'), findsNothing);
       await tester.scrollUntilVisible(
-        find.textContaining('limited to administrators'),
+        find.textContaining('The organization API key is not here'),
         300,
       );
-      expect(find.textContaining('limited to administrators'), findsOneWidget);
-      // Still nothing to press once the pack section is on screen.
+      // Industry apps and sample data moved to the Apps screen.
+      expect(find.text('VERTICAL PACK'), findsNothing);
       expect(find.text('Apply'), findsNothing);
       expect(find.text('Clear sample data'), findsNothing);
     });
@@ -4168,7 +4168,7 @@ void main() {
               : const [],
         ),
       ),
-      child: MaterialApp(theme: AppTheme.light, home: const ModulesScreen()),
+      child: MaterialApp(theme: AppTheme.light, home: const AppsScreen()),
     );
 
     for (final scale in [1.0, 1.3, 1.5]) {
@@ -4411,6 +4411,308 @@ void main() {
             );
             await tester.pumpAndSettle();
           }
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+  });
+
+  group('custom fields and apps at 390px', () {
+    late Map<String, http.Response Function(http.Request)> routes;
+    String path(String url) => Uri.parse(url).path;
+
+    // Long labels and a long option, so the rows are at their widest.
+    List<Map<String, dynamic>> defs(String target) => [
+      {
+        'id': 'f1',
+        'target_model': target,
+        'key': 'possession',
+        'label': 'Preferred possession date for the whole family',
+        'field_type': 'date',
+        'is_required': true,
+      },
+      {
+        'id': 'f2',
+        'target_model': target,
+        'key': 'tier',
+        'label': 'Relationship tier',
+        'field_type': 'dropdown',
+        'options': [
+          {
+            'value': 'gold',
+            'label': 'Gold, with quarterly reviews and a named manager',
+          },
+        ],
+      },
+      {
+        'id': 'f3',
+        'target_model': target,
+        'key': 'budget',
+        'label': 'Budget ceiling',
+        'field_type': 'number',
+      },
+      {
+        'id': 'f4',
+        'target_model': target,
+        'key': 'agreed',
+        'label': 'Agreed to be contacted on weekends and public holidays',
+        'field_type': 'checkbox',
+      },
+    ];
+    const values = {'tier': 'gold', 'budget': 125000000.0, 'agreed': true};
+
+    setUp(() {
+      routes = {
+        'GET ${path('${ApiConfig.contacts}c1/')}': (_) => http.Response(
+          jsonEncode({
+            'contact_obj': {
+              'id': 'c1',
+              'first_name': 'Maximiliana',
+              'last_name': 'Montgomery-Okonkwo',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Contact'),
+          }),
+          200,
+        ),
+        'GET ${path('${ApiConfig.accounts}a1/')}': (_) => http.Response(
+          jsonEncode({
+            'account_obj': {
+              'id': 'a1',
+              'name': 'Northwind Traders International Holdings',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Account'),
+          }),
+          200,
+        ),
+        'GET ${path(ApiConfig.invoice('i1'))}': (_) => http.Response(
+          jsonEncode({
+            'invoice': {
+              'id': 'i1',
+              'invoice_number': 'INV-2026-0001',
+              'invoice_title': 'Quarterly retainer for the harbour project',
+              'status': 'Sent',
+              'currency': 'USD',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Invoice'),
+          }),
+          200,
+        ),
+        'GET ${path(ApiConfig.ticketDetail('k1'))}': (_) => http.Response(
+          jsonEncode({
+            'cases_obj': {
+              'id': 'k1',
+              'name': 'Printer on the third floor is on fire again',
+              'status': 'New',
+              'priority': 'Normal',
+              'created_at': '2026-10-01T09:00:00Z',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Case'),
+          }),
+          200,
+        ),
+        'GET ${path('${ApiConfig.leads}l1/')}': (_) => http.Response(
+          jsonEncode({
+            'lead_obj': {
+              'id': 'l1',
+              'first_name': 'Maximiliana',
+              'last_name': 'Montgomery-Okonkwo',
+              'title': 'Website enquiry about the two-bedroom flat',
+              'status': 'assigned',
+              'created_at': '2026-10-01T09:00:00Z',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Lead'),
+          }),
+          200,
+        ),
+        'GET ${path('${ApiConfig.opportunities}d1/')}': (_) => http.Response(
+          jsonEncode({
+            'opportunity_obj': {
+              'id': 'd1',
+              'name': 'Harbour Road flat with parking and a sea view',
+              'stage': 'QUALIFICATION',
+              'created_at': '2026-10-01T09:00:00Z',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Opportunity'),
+          }),
+          200,
+        ),
+        'GET ${path('${ApiConfig.tasks}t1/')}': (_) => http.Response(
+          jsonEncode({
+            'task_obj': {
+              'id': 't1',
+              'title': 'Call back about the second viewing and the floor plan',
+              'status': 'New',
+              'priority': 'Medium',
+              'created_at': '2026-10-01T09:00:00Z',
+              'custom_fields': values,
+            },
+            'custom_field_definitions': defs('Task'),
+          }),
+          200,
+        ),
+        'GET ${path(ApiConfig.customFieldDefinitions)}': (r) => http.Response(
+          jsonEncode({
+            'definitions': defs(r.url.queryParameters['target_model'] ?? ''),
+          }),
+          200,
+        ),
+      };
+      ApiService().setClientForTesting(
+        MockClient(
+          (r) async =>
+              routes['${r.method} ${r.url.path}']?.call(r) ??
+              http.Response('{}', 404),
+        ),
+      );
+    });
+
+    tearDown(() => ApiService().setClientForTesting(http.Client()));
+
+    Widget plain(Widget screen) => ProviderScope(
+      key: UniqueKey(),
+      child: MaterialApp(theme: AppTheme.light, home: screen),
+    );
+
+    /// The three New forms read their fields from the definitions call. Under
+    /// [routed], as their own cases above are.
+    Widget invoiceForm(Widget screen) => ProviderScope(
+      key: UniqueKey(),
+      overrides: [productsProvider.overrideWith(_FakeProducts.new)],
+      child: routed(screen, theme: AppTheme.light),
+    );
+
+    Widget appsApp({bool refuse = false}) => ProviderScope(
+      key: UniqueKey(),
+      overrides: modulesOverrides(
+        FakeOrgModules(
+          () async =>
+              modulesAnswer(off: ['invoices'], labels: {'deals': _orgTerm40}),
+        ),
+        apps: FakeOrgApps(() async => appsAnswer()),
+      ),
+      child: MaterialApp(theme: AppTheme.light, home: const AppsScreen()),
+    );
+
+    for (final scale in [1.0, 1.5]) {
+      final at = 'text $scale';
+
+      for (final (name, screen) in [
+        ('lead detail', const LeadDetailScreen(leadId: 'l1')),
+        ('deal detail', const DealDetailScreen(dealId: 'd1')),
+        ('task detail', const TaskDetailScreen(taskId: 't1')),
+        ('contact detail', const ContactDetailScreen(contactId: 'c1')),
+        ('account detail', const AccountDetailScreen(accountId: 'a1')),
+        ('invoice detail', const InvoiceDetailScreen(invoiceId: 'i1')),
+        ('ticket detail', const TicketDetailScreen(ticketId: 'k1')),
+      ]) {
+        testWidgets('$name with long custom fields, $at', (tester) async {
+          await pump(tester, plain(screen), textScale: scale);
+          expect(tester.takeException(), isNull);
+          await scrollToEnd(tester);
+          expect(tester.takeException(), isNull);
+          expect(find.byType(CustomFieldsDisplay), findsOneWidget);
+        });
+      }
+
+      testWidgets('the invoice field sheet, $at', (tester) async {
+        await pump(
+          tester,
+          plain(const InvoiceDetailScreen(invoiceId: 'i1')),
+          textScale: scale,
+        );
+        await tester.ensureVisible(find.text('Edit fields'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Edit fields'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Save'), findsOneWidget);
+        _expectTappablesThumbSized(tester);
+      });
+
+      for (final (name, screen, names) in [
+        ('new contact', const ContactFormScreen(), 2),
+        ('new account', const AccountFormScreen(), 1),
+      ]) {
+        testWidgets('$name with a required field refused, $at', (tester) async {
+          await pump(tester, plain(screen), textScale: scale);
+          for (var i = 0; i < names; i++) {
+            await tester.enterText(find.byType(TextField).at(i), 'Ana$i');
+          }
+          final submit = find.byType(FilledButton);
+          while (tester.getCenter(submit).dy > 780) {
+            await tester.drag(
+              find.byType(Scrollable).first,
+              const Offset(0, -300),
+            );
+            await tester.pumpAndSettle();
+          }
+          await tester.tap(submit);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(
+            find.text(
+              'Preferred possession date for the whole family is required',
+            ),
+            findsWidgets,
+          );
+          expect(find.byType(CustomFieldsForm), findsOneWidget);
+        });
+      }
+
+      for (final (name, screen) in [
+        ('new invoice', const NewInvoiceScreen()),
+        ('new estimate', const NewEstimateScreen()),
+        ('new schedule', const NewRecurringScreen()),
+      ]) {
+        testWidgets('$name with custom fields, $at', (tester) async {
+          await pump(tester, invoiceForm(screen), textScale: scale);
+          await scrollForm(tester, find.byType(CustomFieldsForm));
+          expect(find.byType(CustomFieldsForm), findsOneWidget);
+          await scrollForm(tester, find.text('Budget ceiling'));
+          expect(tester.takeException(), isNull);
+        });
+      }
+
+      testWidgets('apps, with a long module name, $at', (tester) async {
+        await pump(tester, appsApp(), textScale: scale);
+        expect(tester.takeException(), isNull);
+        _expectTappablesThumbSized(tester);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      for (final (label, title) in [
+        ('Install', 'Install Professional Services?'),
+        ('Update', 'Update Real Estate?'),
+        ('Remove', 'Remove Real Estate?'),
+      ]) {
+        testWidgets('the $label preview sheet, $at', (tester) async {
+          await pump(tester, appsApp(), textScale: scale);
+          for (var i = 0; i < 10 && find.text(label).evaluate().isEmpty; i++) {
+            await tester.drag(
+              find.byType(Scrollable).first,
+              const Offset(0, -200),
+            );
+            await tester.pumpAndSettle();
+          }
+          await tester.ensureVisible(find.text(label).first);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(label).first);
+          await tester.pumpAndSettle();
+          expect(find.text(title), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          _expectTappablesThumbSized(tester);
+          await tester.drag(
+            find.byType(Scrollable).last,
+            const Offset(0, -600),
+          );
+          await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
         });
       }

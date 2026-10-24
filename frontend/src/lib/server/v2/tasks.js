@@ -40,6 +40,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 
@@ -240,7 +241,10 @@ export async function getTask({ cookies }, id) {
     activity: buildTaskActivity(response),
     // Who this task could be handed to. The API narrows it to admins for a
     // non-admin, which is the same list the v1 detail page used.
-    owners: (response.users ?? []).map(toPerson)
+    owners: (response.users ?? []).map(toPerson),
+    customFields: fieldsForDetail(response, response.task_obj?.custom_fields),
+    // The edit page's inputs, from the same response.
+    customFieldInputs: fieldsForEdit(response, response.task_obj?.custom_fields)
   };
 }
 
@@ -359,6 +363,7 @@ function toBody(values) {
     if (!(field in values)) continue;
     body[field] = values[field];
   }
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
   return body;
 }
 

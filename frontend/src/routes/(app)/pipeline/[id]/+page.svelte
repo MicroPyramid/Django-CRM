@@ -7,6 +7,7 @@
   import LogActivity from '#lib/v2/components/LogActivity.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
   import { relatedView } from '#lib/v2/custom-objects.js';
   import { isOn } from '#lib/v2/modules.js';
@@ -134,6 +135,12 @@
           nothing to render. A suggestion the system invented is worse than no
           suggestion, because people act on it.
         -->
+        {#if data.customFields?.length}
+          <div style="margin-bottom:22px">
+            <CustomFieldsCard fields={data.customFields} flush />
+          </div>
+        {/if}
+
         <div class="act-head">
           <div class="v2-label">Activity</div>
           {#if data.interactions.live && !logging}

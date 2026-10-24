@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/contact.dart';
+import '../data/models/custom_field_definition.dart';
 import '../services/api_service.dart';
 
 /// Contacts, the module rather than the picker.
@@ -123,6 +124,7 @@ class ContactsNotifier extends AsyncNotifier<ContactsListData> {
     return Contact.fromJson(
       raw,
       canDelete: response.data!['can_delete'] == true,
+      customFieldDefinitions: customFieldDefinitionsIn(response.data),
     );
   }
 

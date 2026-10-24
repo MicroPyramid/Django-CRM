@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getContactForEdit, updateContact } from '#lib/server/v2/contacts.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import { readCustomFields, saveRefusal } from '#lib/server/v2/record-custom-fields.js';
 
 /** Fields the form submits as checkboxes: absent means false, not "unchanged". */
 const FLAGS = ['do_not_call', 'is_active'];
@@ -48,10 +48,17 @@ export const actions = {
     const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
     if (owner !== ownerWas) values.assigned_to = owner;
 
+    const custom = await readCustomFields(cookies, 'Contact', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     try {
       await updateContact({ cookies }, params.id, values);
     } catch (/** @type {any} */ err) {
-      return fail(400, { values, error: readableError(err, 'Could not save this contact.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not save this contact.')
+      });
     }
 
     redirect(303, `/contacts/${params.id}`);

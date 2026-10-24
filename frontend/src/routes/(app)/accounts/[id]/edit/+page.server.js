@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, getAccountForEdit, updateAccount } from '#lib/server/v2/accounts.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import { readCustomFields, saveRefusal } from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
@@ -12,7 +12,7 @@ export const actions = {
   save: async ({ cookies, params, request }) => {
     const form = await request.formData();
 
-    /** @type {Record<string, string>} */
+    /** @type {Record<string, any>} */
     const values = {};
     for (const field of EDITABLE_FIELDS) {
       // Only fields the form actually submitted. A control that is absent or
@@ -34,10 +34,17 @@ export const actions = {
     const ownerWas = form.get('assigned_to_original')?.toString().trim() ?? '';
     if (owner !== ownerWas) values.assigned_to = owner;
 
+    const custom = await readCustomFields(cookies, 'Account', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     try {
       await updateAccount({ cookies }, params.id, values);
     } catch (/** @type {any} */ err) {
-      return fail(400, { values, error: readableError(err, 'Could not save this account.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not save this account.')
+      });
     }
 
     redirect(303, `/accounts/${params.id}`);

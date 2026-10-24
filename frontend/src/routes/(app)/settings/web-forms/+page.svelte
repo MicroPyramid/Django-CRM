@@ -124,7 +124,7 @@
       <div style="margin-bottom:18px">
         <NextAction
           label="Nothing to create"
-          text="Web forms create leads or tickets, and both are switched off. An admin can switch one on in Settings › Modules."
+          text="Web forms create leads or tickets, and both are switched off. An admin can switch one on in Settings › Apps."
         />
       </div>
     {:else if creating}

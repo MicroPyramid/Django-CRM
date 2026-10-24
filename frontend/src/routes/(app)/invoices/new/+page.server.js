@@ -3,7 +3,11 @@ import { listAccounts } from '#lib/server/v2/accounts.js';
 import { listContacts } from '#lib/server/v2/contacts.js';
 import { listProducts } from '#lib/server/v2/products.js';
 import { createInvoice } from '#lib/server/v2/invoices.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 import { getNumbering } from '#lib/server/v2/organization.js';
 
 /**
@@ -17,11 +21,12 @@ import { getNumbering } from '#lib/server/v2/organization.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load({ cookies }) {
-  const [accounts, contacts, products, numbering] = await Promise.all([
+  const [accounts, contacts, products, numbering, customFields] = await Promise.all([
     listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
     listProducts({ cookies }),
-    getNumbering({ cookies })
+    getNumbering({ cookies }),
+    fieldsForNew(cookies, 'Invoice')
   ]);
 
   return {
@@ -35,7 +40,8 @@ export async function load({ cookies }) {
     products: products.results
       .filter((p) => p.is_active)
       .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price })),
-    numbering
+    numbering,
+    customFields
   };
 }
 
@@ -56,6 +62,12 @@ export const actions = {
       return fail(400, { error: 'The invoice form could not be read. Please try again.' });
     }
 
+    // Custom fields come from their own inputs, never from the builder's payload.
+    delete body.custom_fields;
+    const custom = await readCustomFields(cookies, 'Invoice', form);
+    if (custom.refusal) return fail(503, custom.refusal);
+    if (custom.values) body.custom_fields = custom.values;
+
     if (!body.account_id) return fail(400, { error: 'Choose an account.' });
     if (!body.contact_id) return fail(400, { error: 'Choose a contact.' });
     if (!Array.isArray(body.line_items) || body.line_items.length === 0) {
@@ -67,7 +79,7 @@ export const actions = {
       created = await createInvoice({ cookies }, body);
     } catch (/** @type {any} */ err) {
       return fail(err?.status === 403 ? 403 : 400, {
-        error: readableError(err, 'Could not create the invoice.')
+        ...saveRefusal(err, custom.definitions, 'Could not create the invoice.')
       });
     }
 

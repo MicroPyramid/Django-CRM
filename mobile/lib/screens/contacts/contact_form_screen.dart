@@ -5,11 +5,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/contact.dart';
+import '../../data/models/custom_field_definition.dart';
 import '../../data/models/lookup_models.dart';
 import '../../providers/contacts_provider.dart';
 import '../../providers/duplicates_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../widgets/duplicates/duplicate_notice.dart';
+import '../../widgets/forms/custom_fields_section.dart';
 import '../../widgets/forms/unsaved_changes.dart';
 
 /// Create or edit a contact.
@@ -44,6 +46,8 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
 
   bool _doNotCall = false;
   String? _accountId;
+  Map<String, dynamic> _customFields = {};
+  Map<String, String> _customFieldErrors = const {};
 
   Contact? _existing;
   String? _baseline;
@@ -122,6 +126,14 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
     _description.text = contact.description ?? '';
     _doNotCall = contact.doNotCall;
     _accountId = contact.accountId;
+    _customFields = Map<String, dynamic>.from(contact.customFields);
+  }
+
+  /// An edit reads the fields from its own detail response; a create asks.
+  List<CustomFieldDefinition> _definitions({required bool watch}) {
+    if (widget.isEditMode) return _existing?.customFieldDefinitions ?? const [];
+    final provider = customFieldDefinitionsProvider('Contact');
+    return (watch ? ref.watch(provider) : ref.read(provider)).value ?? const [];
   }
 
   Map<String, dynamic> _buildPayload() {
@@ -146,6 +158,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
           doNotCall: _doNotCall,
           accountId: _accountId,
           clearAccount: _accountId == null,
+          customFields: _customFields,
         )
         .toPayload();
   }
@@ -157,10 +170,23 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
   Future<void> _submit() async {
     if (_saving) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final definitions = _definitions(watch: false);
+    final missing = customFieldProblems(definitions, _customFields);
+    if (missing.isNotEmpty) {
+      setState(() => _customFieldErrors = missing);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(missing.values.first),
+          backgroundColor: AppColors.danger600,
+        ),
+      );
+      return;
+    }
 
     setState(() => _saving = true);
     final notifier = ref.read(contactsProvider.notifier);
-    final payload = _buildPayload();
+    final payload = _buildPayload()
+      ..['custom_fields'] = sendableCustomFields(definitions, _customFields);
 
     final String? failure;
     if (widget.isEditMode) {
@@ -225,6 +251,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
     }
 
     final accounts = ref.watch(accountOptionsProvider);
+    final definitions = _definitions(watch: true);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -317,6 +344,15 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
               },
             ),
             _field(_description, 'Notes', maxLines: 4),
+            CustomFieldsSection(
+              definitions: definitions,
+              values: _customFields,
+              errors: _customFieldErrors,
+              onChanged: (next, errors) => setState(() {
+                _customFields = next;
+                _customFieldErrors = errors;
+              }),
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,

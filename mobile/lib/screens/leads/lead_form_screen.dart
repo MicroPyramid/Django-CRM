@@ -813,7 +813,7 @@ class _LeadFormScreenState extends ConsumerState<LeadFormScreen> {
                   _buildRelationshipsSection(),
                   if (_customFieldDefs.isNotEmpty) ...[
                     const SizedBox(height: 32),
-                    _buildSectionTitle('Custom Fields'),
+                    _buildSectionTitle('Custom fields'),
                     const SizedBox(height: 16),
                     _buildCustomFieldsSection(),
                   ],

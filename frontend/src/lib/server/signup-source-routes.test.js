@@ -8,6 +8,7 @@ import { SIGNUP_SOURCE_COOKIE } from './signup-source.js';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 vi.mock('#lib/server/packs.js', () => ({ listPacks: vi.fn(), applyPack: vi.fn() }));
+vi.mock('#lib/server/v2/apps.js', () => ({ installApp: vi.fn() }));
 
 const axios = (await import('axios')).default;
 const login = await import('../../routes/(no-layout)/login/+page.server.js');

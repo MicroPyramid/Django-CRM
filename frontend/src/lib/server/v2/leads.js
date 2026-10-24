@@ -27,11 +27,7 @@ import { apiRequest } from '#lib/api-helpers.js';
 import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 import { recordDuplicates } from '#lib/server/v2/duplicates.js';
-import {
-  leadFieldDefinitions,
-  pairForDisplay,
-  pairForEdit
-} from '#lib/server/v2/lead-custom-fields.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 
 /** See the note on FILTER_FIELDS in tickets.js. */
 export const FILTER_FIELDS = ['assigned_to', 'status', 'source', 'tags'];
@@ -203,12 +199,6 @@ export async function getLead({ cookies }, id) {
   // than widening every list row to carry a paragraph nobody scans.
   const lead = { ...toRow(response.lead_obj), description: response.lead_obj.description ?? '' };
 
-  // Per-org custom fields. A vertical pack's whole promise is the fields it
-  // sets up for the industry, and they are stored on the lead, so the detail
-  // page reads them here rather than leaving them visible only under
-  // Settings → Custom fields.
-  const definitions = await leadFieldDefinitions(cookies);
-
   return {
     lead,
     // The pipeline stage the lead sits in, with its pipeline's name, or null.
@@ -222,7 +212,7 @@ export async function getLead({ cookies }, id) {
           }
         }
       : null,
-    customFields: pairForDisplay(definitions, response.lead_obj.custom_fields),
+    customFields: fieldsForDetail(response, response.lead_obj.custom_fields),
     activity: buildActivity(response),
     // The API's delete rule for this caller, so Delete is offered only when it would work.
     canDelete: Boolean(response.can_delete),
@@ -381,15 +371,13 @@ export async function getLeadForEdit({ cookies }, id) {
   // to a name, which reads the same on screen and cannot be saved.
   form.assigned_to = response.lead_obj.assigned_to?.[0]?.id ?? '';
 
-  const definitions = await leadFieldDefinitions(cookies);
-
   return {
     lead,
     form,
     // The definitions drive both the inputs rendered here and the keys read
     // back off the submitted form, so a field the org has not defined has
     // nowhere to enter the request in the first place.
-    customFields: pairForEdit(definitions, response.lead_obj.custom_fields),
+    customFields: fieldsForEdit(response, response.lead_obj.custom_fields),
     owners: await listOwners(cookies),
     server: {
       // The DB constraint `unique_lead_email_per_org` is case-insensitive and
@@ -548,6 +536,7 @@ export async function createLead({ cookies }, values) {
   // Single-select owner, sent as the list the API expects. Empty means
   // unassigned, which is a real state, so it is sent rather than skipped.
   body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
 
   return await apiRequest('/leads/', { method: 'POST', body }, { cookies });
 }

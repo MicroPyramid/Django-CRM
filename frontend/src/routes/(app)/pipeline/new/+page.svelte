@@ -2,6 +2,7 @@
   import { resolve } from '$app/paths';
   import { untrack, tick } from 'svelte';
   import { enhance } from '$app/forms';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
   import { money } from '#lib/v2/format.js';
@@ -398,6 +399,13 @@
         </div>
       {/if}
     </div>
+
+    <RecordFieldInputs
+      fields={data.customFields ?? []}
+      typed={result?.values?.custom_fields}
+      errors={result?.fieldErrors}
+      heading="Details"
+    />
 
     <div style="display:flex;gap:8px;align-items:center;margin-top:22px">
       <button class="v2-btn v2-btn-primary" type="submit">Create deal</button>

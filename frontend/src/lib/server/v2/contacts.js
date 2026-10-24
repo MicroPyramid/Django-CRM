@@ -41,6 +41,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 
 /** See the note on FILTER_FIELDS in tickets.js. */
@@ -219,6 +220,7 @@ export async function getContact({ cookies }, id) {
       title: person.title ?? ''
     })),
     activity: buildContactActivity(response),
+    customFields: fieldsForDetail(response, response.contact_obj.custom_fields),
     // The API's delete rule for this caller, so Delete is offered only when it would work.
     canDelete: Boolean(response.can_delete)
   };
@@ -414,6 +416,7 @@ export async function getContactForEdit({ cookies }, id) {
     contact,
     ...choices,
     accounts,
+    customFields: fieldsForEdit(response, raw.custom_fields),
     form: {
       first_name: contact.first_name,
       last_name: contact.last_name,
@@ -473,6 +476,7 @@ function toBody(values) {
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
   return body;
 }
 

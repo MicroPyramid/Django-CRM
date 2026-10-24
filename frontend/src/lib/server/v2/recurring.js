@@ -203,7 +203,9 @@ export const CREATE_FIELDS = [
   'tax_rate',
   'notes',
   'terms',
-  'line_items'
+  'line_items',
+  // Read by the view, not the serializer: validated against the org's definitions.
+  'custom_fields'
 ];
 
 /**

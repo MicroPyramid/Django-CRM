@@ -140,9 +140,25 @@ class ApiConfig {
   /// context, because its first caller is someone creating their first org.
   static String get packs => '$apiBaseUrl/packs/';
 
-  /// Apply one pack. Admin-only, additive-only, and safe to repeat: a pack
-  /// already applied reports everything skipped rather than refusing.
+  /// Apply one pack: on a server with industry apps, an install with sample
+  /// data. Kept for signup against a server that has no `/api/apps/`.
   static String packApply(String packId) => '$apiBaseUrl/packs/$packId/apply/';
+
+  /// The industry apps with this org's install state. Any member may read;
+  /// preview, install, upgrade and remove are admin-only. An older server
+  /// answers 404.
+  static String get apps => '$apiBaseUrl/apps/';
+
+  static String _app(String appId) =>
+      '$apiBaseUrl/apps/${Uri.encodeComponent(appId)}/';
+
+  /// What [action] (`install`, `upgrade` or `remove`) would do. Writes nothing.
+  static String appPreview(String appId, String action) =>
+      '${_app(appId)}preview/?action=${Uri.encodeQueryComponent(action)}';
+
+  static String appInstall(String appId) => '${_app(appId)}install/';
+  static String appUpgrade(String appId) => '${_app(appId)}upgrade/';
+  static String appRemove(String appId) => '${_app(appId)}remove/';
 
   /// Delete the demo records a pack created for this org, and nothing else.
   /// Admin-only. A sample record the org has since attached real work to is

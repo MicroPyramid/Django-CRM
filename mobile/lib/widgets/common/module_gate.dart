@@ -87,9 +87,9 @@ class ModuleOffView extends ConsumerWidget {
                           borderRadius: AppLayout.borderRadiusMd,
                         ),
                       ),
-                      onPressed: () => context.push(AppRoutes.settingsModules),
+                      onPressed: () => context.push(AppRoutes.settingsApps),
                       child: const Text(
-                        'Open Modules settings',
+                        'Open Apps settings',
                         textAlign: TextAlign.center,
                       ),
                     ),

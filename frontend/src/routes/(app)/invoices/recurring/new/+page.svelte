@@ -36,6 +36,7 @@
    */
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import SectionTabs from '#lib/v2/components/SectionTabs.svelte';
   import PortalLineItems from '#lib/v2/components/PortalLineItems.svelte';
@@ -53,7 +54,7 @@
   import { todayIn } from '#lib/v2/dates.js';
   import { CURRENCY_CODES } from '#lib/constants/filters.js';
 
-  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], org: { timezone: string } }, form: any }} */
+  /** @type {{ data: { products: any[], accounts: any[], contacts: any[], customFields: any[], org: { timezone: string } }, form: any }} */
   let { data, form } = $props();
 
   // The org's day: a UTC date is yesterday for a morning east of UTC.
@@ -386,6 +387,16 @@
           <textarea rows="3" bind:value={terms} placeholder="Payment terms and conditions"
           ></textarea>
         </div>
+        {#if data.customFields?.length}
+          <div class="v2-card" style="padding:16px 18px;margin-top:14px">
+            <div class="v2-label" style="margin-bottom:12px">Details</div>
+            <RecordFieldInputs
+              fields={data.customFields}
+              errors={form?.fieldErrors}
+              form="recurring-form"
+            />
+          </div>
+        {/if}
       </div>
 
       <!-- what each generated invoice will total, from the lines priced in so far -->

@@ -55,28 +55,28 @@ silently ignored or half-applied.
 
 ## Applying a pack
 
-Applying a pack is handled by `backend/common/packs/applier.py`'s `apply_pack()`, reachable
-through:
+Each pack is installed as an [industry app](../features/industry-apps.md), which records the
+version an org has, lets an admin update it when the pack offers something new, and remove it
+again. Installing runs `backend/common/packs/applier.py`'s `apply_pack()`, reachable through:
 
-- **The UI**: the Settings → Organization page (for an existing org) and the organization
-  creation page (for a brand-new org) both offer a pack picker, calling the same backend endpoint.
-  Both exist in the web app and the mobile app. On creation the picker asks "What kind of
+- **The UI**: Settings, then Apps (for an existing org), and the organization creation page (for a
+  brand-new org), in the web app and the mobile app. On creation the picker asks "What kind of
   business is this?" and defaults to "Skip for now". It is hidden when the pack list cannot be
-  loaded. A pack that fails to apply never undoes the new org; the mobile app says so and points
-  to Settings → Organization, where the pack can be applied again.
-- **The API**: `POST /api/packs/<pack_id>/apply/`, restricted to an organization admin
-  (`request.profile.role == "ADMIN"`); any authenticated member can list available packs via
-  `GET /api/packs/`, but only an admin can apply one.
+  loaded. An app that fails to install never undoes the new org.
+- **The API**: `POST /api/apps/<id>/install/`, restricted to an organization admin, as
+  [Industry apps](../features/industry-apps.md#api) describes. Any authenticated member can list
+  the packs via `GET /api/packs/` and the apps via `GET /api/apps/`. The older
+  `POST /api/packs/<pack_id>/apply/` installs the app with sample records.
 
 **Applying a pack is strictly additive.** The applier's own description of itself: it creates
 what's missing and skips what already exists, and it "never calls `.update()`, never calls
 `.save()` on a row it did not just construct, and never deletes." A pipeline whose name already
 exists in the org is skipped entirely (along with its stages); a custom field, tag or product that
-already exists by its matching key is skipped individually. This makes applying the same pack
-twice, or applying a second pack to an org that already has one, safe: it can only add what's
-still missing, never overwrite or remove something you've since changed. The one exception is
-terminology and the org's `vertical` label, which are merged in (only keys not already set are
-added) rather than duplicated.
+already exists by its matching key is skipped individually. This makes installing a second pack
+on an org that already has one safe: it can only add what's still missing, never overwrite or
+remove something you've since changed. The one exception is terminology and the org's `vertical`
+label, which are merged in (only keys not already set are added) rather than duplicated. An app
+update runs the same applier over only the parts the app has never offered the org.
 
 Sample records created by a pack (accounts, contacts, deals/opportunities, tickets/cases, leads
 and tasks) are marked with an `is_sample` boolean field, set only by the applier. It is
@@ -92,16 +92,16 @@ and today in the org's timezone. A task written as due the next day is due the d
 is applied, and a deal that closed three weeks earlier still closed three weeks earlier. A manifest
 whose sample rows hold dates without `sample_dates_written_on` fails validation.
 
-If an org already has any sample rows (from this pack or a previous one), applying `sample_data`
-again is skipped. A pack's sample data is only ever created once per org, regardless of how many
-times you re-apply.
+Sample rows are optional when installing an app, and are on by default only for an org with no
+real leads, contacts or accounts. If an org already has any sample rows (from this pack or a
+previous one), they are not offered again: a pack's sample data is only ever created once per org.
 
 ## Clearing sample data
 
 **Only `clear_sample_data()` deletes sample records**, via `DELETE /api/packs/sample-data/`
-(also admin-only, also reachable from the Settings → Organization page). It is the sole
-counterpart to pack-applied sample data: nothing else in the system deletes rows just because
-`is_sample` is set.
+(also admin-only, also reachable from Settings, then Apps). That function is the sole counterpart
+to pack-applied sample data: nothing else in the system deletes rows just because `is_sample` is
+set, and removing an app does not delete them either.
 
 Clearing is scoped strictly to rows where `is_sample=True` for the calling org, deleted in an
 order that removes child records (tasks, leads) before the parents they can reference (tickets,

@@ -5,22 +5,26 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/theme.dart';
 import '../../data/models/org_module.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/org_apps_provider.dart';
 import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
 
 const _groupTitles = {'sell': 'Sell', 'serve': 'Serve', 'bill': 'Bill'};
 
-/// Switches the organization's modules off and on and orders them. Admin
-/// only; the server refuses anyone else, so a member is told without asking.
-class ModulesScreen extends ConsumerStatefulWidget {
-  const ModulesScreen({super.key});
+/// Switches the organization's modules off and on and orders them, the lower
+/// half of the Apps screen. The server refuses anyone but an admin, and says
+/// so in `can_edit`, so a member is told without asking.
+class ModulesSection extends ConsumerStatefulWidget {
+  const ModulesSection({super.key, this.showHeading = false});
+
+  /// Whether to title the section, which the screen does when apps sit above.
+  final bool showHeading;
 
   @override
-  ConsumerState<ModulesScreen> createState() => _ModulesScreenState();
+  ConsumerState<ModulesSection> createState() => _ModulesSectionState();
 }
 
-class _ModulesScreenState extends ConsumerState<ModulesScreen> {
+class _ModulesSectionState extends ConsumerState<ModulesSection> {
   bool _saving = false;
   List<String> _refusals = const [];
   String? _refusedKey;
@@ -38,6 +42,7 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
     final messages = await ref
         .read(orgModulesProvider.notifier)
         .save(off: body.off, order: body.order);
+    if (messages.isEmpty) ref.invalidate(orgAppsProvider);
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -71,25 +76,14 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = ref.watch(isOrgAdminProvider);
-    return Scaffold(
-      backgroundColor: AppColors.surfaceDim,
-      appBar: AppBar(
-        title: const Text('Modules'),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-      ),
-      body: isAdmin ? _body() : const _Notice(_memberText),
-    );
-  }
-
-  Widget _body() {
     final async = ref.watch(orgModulesProvider);
     final answer = ref.watch(shownModulesProvider);
     if (answer == null) {
       if (async.isLoading) {
-        return const Center(child: CircularProgressIndicator());
+        return const Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: CircularProgressIndicator()),
+        );
       }
       if (async.hasError) {
         return _ErrorState(
@@ -100,43 +94,47 @@ class _ModulesScreenState extends ConsumerState<ModulesScreen> {
       return const _Notice('This server does not offer modules yet.');
     }
     if (!answer.canEdit) return const _Notice(_memberText);
-    final children = <Widget>[
-      if (_saving) const LinearProgressIndicator(minHeight: 2),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Text(
-          'Switch off what this organization does not use. Nothing is '
-          'deleted: switching a module back on brings everything back as it '
-          'was.',
-          style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_saving) const LinearProgressIndicator(minHeight: 2),
+        if (widget.showHeading)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
+            child: Text('Modules', style: AppTypography.h3),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Text(
+            'Switch off what this organization does not use. Nothing is '
+            'deleted: switching a module back on brings everything back as it '
+            'was.',
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+          ),
         ),
-      ),
-      if (_refusals.isNotEmpty)
-        _RefusalBox(
-          messages: _refusals,
-          moduleKey: _refusedKey,
-          onWebForms: () => context.push(AppRoutes.settingsWebForms),
-          onInboundEmail: () => context.push(AppRoutes.settingsInboundEmail),
-        ),
-      for (final group in moduleGroups) ...[
-        _SectionHeader(_groupTitles[group] ?? group),
-        for (final m in answer.modules)
-          if (m.group == group)
-            _ModuleCard(
-              module: m,
-              answer: answer,
-              saving: _saving,
-              canUp: answer.moveBody(m.key, 'up') != null,
-              canDown: answer.moveBody(m.key, 'down') != null,
-              onSwitchOff: () => _switchOff(answer, m),
-              onSwitchOn: () => _save(m.key, answer.switchBody(m.key, true)),
-              onMove: (d) => _save(m.key, answer.moveBody(m.key, d)),
-            ),
+        if (_refusals.isNotEmpty)
+          _RefusalBox(
+            messages: _refusals,
+            moduleKey: _refusedKey,
+            onWebForms: () => context.push(AppRoutes.settingsWebForms),
+            onInboundEmail: () => context.push(AppRoutes.settingsInboundEmail),
+          ),
+        for (final group in moduleGroups) ...[
+          _SectionHeader(_groupTitles[group] ?? group),
+          for (final m in answer.modules)
+            if (m.group == group)
+              _ModuleCard(
+                module: m,
+                answer: answer,
+                saving: _saving,
+                canUp: answer.moveBody(m.key, 'up') != null,
+                canDown: answer.moveBody(m.key, 'down') != null,
+                onSwitchOff: () => _switchOff(answer, m),
+                onSwitchOn: () => _save(m.key, answer.switchBody(m.key, true)),
+                onMove: (d) => _save(m.key, answer.moveBody(m.key, d)),
+              ),
+        ],
       ],
-    ];
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 48),
-      children: children,
     );
   }
 }

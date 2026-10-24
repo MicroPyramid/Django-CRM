@@ -21,12 +21,16 @@ class CustomFieldsForm extends ConsumerWidget {
   final Map<String, dynamic> values;
   final ValueChanged<Map<String, dynamic>> onChanged;
 
+  /// A sentence to show under a field, keyed by field key.
+  final Map<String, String> errors;
+
   const CustomFieldsForm({
     super.key,
     this.targetModel,
     this.definitions,
     required this.values,
     required this.onChanged,
+    this.errors = const {},
   }) : assert(
          (targetModel == null) != (definitions == null),
          'Give exactly one of targetModel and definitions',
@@ -51,6 +55,14 @@ class CustomFieldsForm extends ConsumerWidget {
             value: values[def.key],
             onChanged: (v) => _setValue(def.key, v),
           ),
+          if (errors[def.key] ?? customFieldNumberError(def, values[def.key])
+              case final error?) ...[
+            const SizedBox(height: 4),
+            Text(
+              error,
+              style: AppTypography.caption.copyWith(color: AppColors.danger600),
+            ),
+          ],
           const SizedBox(height: 16),
         ],
       ],
@@ -110,20 +122,19 @@ class _CustomFieldInput extends StatelessWidget {
       definition.isRequired ? '${definition.label} *' : definition.label;
 
   Widget _textInput({required int maxLines}) {
-    return FloatingLabelInput(
+    return _TypedInput(
       label: _label(),
-      controller: TextEditingController(text: value?.toString() ?? ''),
+      value: value,
       maxLines: maxLines,
       onChanged: onChanged,
     );
   }
 
   Widget _numberInput() {
-    return FloatingLabelInput(
+    return _TypedInput(
       label: _label(),
-      controller: TextEditingController(text: value?.toString() ?? ''),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))],
+      value: value,
+      number: true,
       onChanged: (v) {
         if (v.isEmpty) {
           onChanged(null);
@@ -291,6 +302,72 @@ class _CustomFieldInput extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A text or number input that keeps one controller for its lifetime, so a
+/// parent rebuilding on every keystroke does not reset the cursor. The value
+/// from outside replaces the text only when it says something different, such
+/// as a form cleared after a save.
+class _TypedInput extends StatefulWidget {
+  const _TypedInput({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.maxLines = 1,
+    this.number = false,
+  });
+
+  final String label;
+  final dynamic value;
+  final ValueChanged<String> onChanged;
+  final int maxLines;
+  final bool number;
+
+  @override
+  State<_TypedInput> createState() => _TypedInputState();
+}
+
+class _TypedInputState extends State<_TypedInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value?.toString() ?? '',
+  );
+
+  bool _shows(dynamic value) {
+    final text = _controller.text;
+    if (value == null) return text.isEmpty;
+    if (widget.number && value is num) return num.tryParse(text) == value;
+    return text == value.toString();
+  }
+
+  @override
+  void didUpdateWidget(_TypedInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_shows(widget.value)) {
+      _controller.text = widget.value?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingLabelInput(
+      label: widget.label,
+      controller: _controller,
+      maxLines: widget.maxLines,
+      keyboardType: widget.number
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : null,
+      inputFormatters: widget.number
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))]
+          : null,
+      onChanged: widget.onChanged,
     );
   }
 }

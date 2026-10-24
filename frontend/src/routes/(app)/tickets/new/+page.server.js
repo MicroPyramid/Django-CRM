@@ -1,10 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { createTicket, getTicketFormOptions } from '#lib/server/v2/tickets.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, url }) {
-  return await getTicketFormOptions({ cookies }, url.searchParams.get('account'));
+  const [options, customFields] = await Promise.all([
+    getTicketFormOptions({ cookies }, url.searchParams.get('account')),
+    fieldsForNew(cookies, 'Case')
+  ]);
+  return { ...options, customFields };
 }
 
 /** @type {import('./$types').Actions} */
@@ -23,6 +31,10 @@ export const actions = {
     const contacts = form.getAll('contacts').map((id) => id.toString());
     if (contacts.length) values.contacts = contacts;
 
+    const custom = await readCustomFields(cookies, 'Case', form);
+    if (custom.refusal) return fail(503, { values, ...custom.refusal });
+    if (custom.values) values.custom_fields = custom.values;
+
     if (!values.name) {
       return fail(400, { values, error: 'A ticket needs a subject.' });
     }
@@ -32,7 +44,10 @@ export const actions = {
     try {
       created = await createTicket({ cookies }, values);
     } catch (/** @type {any} */ err) {
-      return fail(400, { values, error: readableError(err, 'Could not raise this ticket.') });
+      return fail(400, {
+        values,
+        ...saveRefusal(err, custom.definitions, 'Could not raise this ticket.')
+      });
     }
 
     // `CaseListView.post` returns the new id, so this lands on the ticket

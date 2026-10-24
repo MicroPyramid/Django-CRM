@@ -431,19 +431,7 @@ class DealsNotifier extends AsyncNotifier<DealsListData> {
         print('[deals_provider] attachments parse failed: $e\n$st');
       }
 
-      List<CustomFieldDefinition> defs = const [];
-      try {
-        final defsData = data['custom_field_definitions'] as List<dynamic>?;
-        defs = (defsData ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(CustomFieldDefinition.fromJson)
-            .toList();
-      } catch (e, st) {
-        // ignore: avoid_print
-        print(
-          '[deals_provider] custom_field_definitions parse failed: $e\n$st',
-        );
-      }
+      final defs = customFieldDefinitionsIn(data);
 
       List<AssignableUser> users = const [];
       try {

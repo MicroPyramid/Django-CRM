@@ -91,7 +91,14 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                         Icon(widget.icon, size: 20, color: Colors.white),
                         const SizedBox(width: 8),
                       ],
-                      Text(widget.label, style: AppTypography.buttonLarge),
+                      Flexible(
+                        child: Text(
+                          widget.label,
+                          style: AppTypography.buttonLarge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       if (widget.icon != null && widget.iconRight) ...[
                         const SizedBox(width: 8),
                         Icon(widget.icon, size: 20, color: Colors.white),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/api_config.dart';
+import '../data/models/custom_field_definition.dart';
 import '../data/models/invoice.dart';
 import '../services/api_service.dart';
 
@@ -161,7 +162,24 @@ class InvoicesNotifier extends AsyncNotifier<InvoicesListData> {
     // accepted too so a serializer change degrades to a miss, not a crash.
     final raw = body['invoice'] ?? body;
     if (raw is! Map<String, dynamic>) return null;
-    return Invoice.fromJson(raw);
+    return Invoice.fromJson(
+      raw,
+      customFieldDefinitions: customFieldDefinitionsIn(body),
+    );
+  }
+
+  /// Saves the invoice's custom fields and nothing else. The issued lock
+  /// covers lines and amounts, so this works on a sent invoice too.
+  Future<String?> updateCustomFields(
+    String id,
+    Map<String, dynamic> values,
+  ) async {
+    final response = await _api.put(ApiConfig.invoice(id), {
+      'custom_fields': values,
+    });
+    if (!response.success) return _message(response);
+    await refresh();
+    return null;
   }
 
   /// Emails the invoice to its client. Returns null on success.

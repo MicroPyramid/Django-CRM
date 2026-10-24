@@ -3,6 +3,8 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import NextAction from '#lib/v2/components/NextAction.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
+  import CustomFieldsCard from '#lib/v2/components/CustomFieldsCard.svelte';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import { money, longDate, relativeDays, daysSince } from '#lib/v2/format.js';
   import { INVOICE_STATUS_TONE, invoiceStatusLabel } from '#lib/v2/enums.js';
   import { enhance } from '$app/forms';
@@ -15,6 +17,8 @@
 
   let daysLate = $derived(invoice.due_date ? daysSince(invoice.due_date) : null);
   let busy = $state(false);
+  // A link opens the fields form, so it works without JavaScript; a refused save keeps it open.
+  let editingFields = $derived(data.editFields || Boolean(form?.fieldsError));
 
   /** The real INVOICE_STATUS progression, up to whatever this invoice is. */
   const PATH = ['Draft', 'Sent', 'Viewed', 'Paid'];
@@ -232,6 +236,33 @@
             Leave the amount blank to settle the full {money(invoice.amount_due, invoice.currency)} balance.
           </p>
         {/if}
+
+        {#if data.customFields?.length}
+          {#if editingFields}
+            <form method="POST" action="?/fields" use:enhance={working} class="inv-fields">
+              <div class="v2-label" style="margin-bottom:10px">Details</div>
+              {#if form?.fieldsError}
+                <p class="v2-error" role="alert" style="margin:0 0 12px">{form.fieldsError}</p>
+              {/if}
+              <RecordFieldInputs
+                fields={data.customFieldInputs}
+                typed={form?.values?.custom_fields}
+                errors={form?.fieldErrors}
+              />
+              <div class="inv-fields-actions">
+                <button class="v2-btn v2-btn-primary" disabled={busy}>Save fields</button>
+                <a class="v2-btn" href={resolve(`invoices/${invoice.id}`)}>Cancel</a>
+              </div>
+            </form>
+          {:else}
+            <CustomFieldsCard fields={data.customFields} />
+            <a
+              class="v2-btn v2-btn-sm inv-tap"
+              style="margin-top:10px"
+              href="{resolve(`invoices/${invoice.id}`)}?fields=edit">Edit fields</a
+            >
+          {/if}
+        {/if}
       </div>
     </div>
   </div>
@@ -277,3 +308,21 @@
     </dl>
   </aside>
 </div>
+
+<style>
+  .inv-fields {
+    margin-top: 22px;
+  }
+  .inv-fields-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  @media (max-width: 768px) {
+    .inv-tap,
+    .inv-fields-actions .v2-btn {
+      min-height: 44px;
+    }
+  }
+</style>

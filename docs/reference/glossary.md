@@ -48,6 +48,12 @@ deciding what to set. A request with no context set sees zero rows from every RL
 The fail-safe every isolation policy's `NULLIF(current_setting(...), '')` clause is built around.
 See [Multi-tenancy and RLS](../architecture/multi-tenancy-and-rls.md).
 
+### Industry app
+
+A [vertical pack](#vertical-pack) installed on an organization, with a record (`InstalledApp`) of
+its version and of what it created and has offered there, so an admin can update it and remove it
+again. See [Industry apps](../features/industry-apps.md).
+
 ### Vertical pack
 
 A small, declarative JSON manifest (`backend/common/packs/manifests/*.json`, validated by

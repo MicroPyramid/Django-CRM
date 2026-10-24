@@ -45,6 +45,7 @@
  */
 import { error, redirect } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 import { rethrowModuleOff } from '#lib/server/v2/modules.js';
 import { attachmentHref } from '#lib/server/v2/files.js';
 import { RESTRICTED_TICKET_NAME } from '#lib/v2/enums.js';
@@ -341,7 +342,8 @@ export async function getTicket({ cookies }, id) {
       merged_at: src.merged_at ?? null,
       restricted: Boolean(src.restricted),
       can_unmerge: src.can_unmerge === true
-    }))
+    })),
+    customFields: fieldsForDetail(response, response.cases_obj?.custom_fields)
   };
 }
 
@@ -568,6 +570,7 @@ export async function getTicketForEdit({ cookies }, id) {
   return {
     ticket,
     ...choices,
+    customFields: fieldsForEdit(response, raw.custom_fields),
     form: {
       name: ticket.name,
       status: ticket.status,
@@ -618,6 +621,7 @@ function toBody(values) {
   if ('contacts' in values) {
     body.contacts = values.contacts ?? [];
   }
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
   return body;
 }
 

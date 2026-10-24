@@ -44,6 +44,17 @@ void main() {
       );
     });
 
+    test('a custom field refusal names the field, not the wrapper', () async {
+      answer(400, {
+        'error': true,
+        'errors': {
+          'custom_fields': {'licence_no': 'is required'},
+        },
+      });
+      final response = await ApiService().post(url, const {});
+      expect(response.message, 'Licence no: is required');
+    });
+
     test('DELETE', () async {
       answer(400, {'error': 'This stage still has 2 lead(s).'});
       final response = await ApiService().delete(url);

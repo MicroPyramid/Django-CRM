@@ -65,9 +65,7 @@
       {/if}
       <a class="v2-btn" href={resolve('')}>Back to Today</a>
       {#if moduleOff && isOrgAdmin(page.data)}
-        <a class="v2-btn" href={resolve(asInternalPath('/settings/modules'))}
-          >Open Settings › Modules</a
-        >
+        <a class="v2-btn" href={resolve(asInternalPath('/settings/apps'))}>Open Settings › Apps</a>
       {/if}
     {/snippet}
   </EmptyState>

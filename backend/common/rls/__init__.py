@@ -85,6 +85,8 @@ ORG_SCOPED_TABLES = [
     # Settings
     "apiSettings",  # Note: camelCase
     "pack_application",
+    # Industry apps installed on the org, stamped by common/0061.
+    "installed_app",
     # Email & Invoicing
     "account_email",
     "emailLogs",

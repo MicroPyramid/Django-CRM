@@ -658,7 +658,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
 
             if (_customFieldDefs.isNotEmpty) ...[
               const SizedBox(height: 32),
-              _buildSectionTitle('Custom Fields'),
+              _buildSectionTitle('Custom fields'),
               const SizedBox(height: 16),
               CustomFieldsForm(
                 targetModel: 'Opportunity',

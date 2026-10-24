@@ -76,6 +76,9 @@ EVENT_DETAILS = {
     "API_TOKEN_CREATED": _API_TOKEN_DETAILS,
     "API_TOKEN_REVOKED": _API_TOKEN_DETAILS,
     "MODULES_CHANGED": ("switched_off", "switched_on", "reordered"),
+    "APP_INSTALLED": ("app_id", "version"),
+    "APP_UPGRADED": ("app_id", "version"),
+    "APP_REMOVED": ("app_id", "version"),
 }
 
 PUBLIC_PREFIX = "/api/public/"

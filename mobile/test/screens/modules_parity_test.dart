@@ -1,6 +1,7 @@
 import 'package:bottle_crm/data/models/org_settings.dart';
 import 'package:bottle_crm/providers/settings_provider.dart';
 import 'package:bottle_crm/providers/webhooks_provider.dart';
+import 'package:bottle_crm/screens/settings/apps_screen.dart';
 import 'package:bottle_crm/screens/settings/organization_edit_screen.dart';
 import 'package:bottle_crm/screens/settings/organization_screen.dart';
 import 'package:bottle_crm/screens/settings/webhooks_screen.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/apps_fixtures.dart';
 import '../support/modules_fixtures.dart';
 
 /// Organization settings and the webhooks empty state follow the modules that
@@ -66,6 +68,7 @@ void main() {
     List<String> off, {
     double textScale = 1.0,
     double height = 4000,
+    bool apps = false,
   }) async {
     usePhone(tester, textScale: textScale, height: height);
     final org = _Org();
@@ -75,6 +78,7 @@ void main() {
         overrides: [
           ...modulesOverrides(
             FakeOrgModules(() async => modulesAnswer(off: off)),
+            apps: apps ? FakeOrgApps(() async => appsAnswer()) : null,
           ),
           orgSettingsProvider.overrideWith(() => org),
           orgTimezonesProvider.overrideWith(
@@ -82,7 +86,6 @@ void main() {
               TimezoneOption(name: 'UTC', offsetMinutes: 0),
             ],
           ),
-          orgPacksProvider.overrideWith((ref) async => const <VerticalPack>[]),
           webhooksProvider.overrideWith(_Hooks.new),
         ],
         child: MaterialApp(home: screen),
@@ -145,33 +148,23 @@ void main() {
       expect(find.text('INVOICE NUMBERS'), findsOneWidget);
       expect(find.text('BEHAVIOUR'), findsOneWidget);
       expect(find.text('Satisfaction surveys'), findsOneWidget);
-      expect(
-        find.textContaining(
-          'A pack adds starter pipelines, tags, custom fields, products and '
-          'sample records',
-        ),
-        findsOneWidget,
-      );
     });
 
-    testWidgets('the pack sentence names products only while they are used', (
+    testWidgets('the apps sentence names products only while they are used', (
       tester,
     ) async {
-      await pump(tester, const OrganizationScreen(), const [
+      await pump(tester, const AppsScreen(), const [
         'deals',
         'invoices',
-      ]);
+      ], apps: true);
       expect(
-        find.textContaining(
-          'A pack adds starter pipelines, tags, custom fields and sample '
-          'records',
-        ),
+        find.textContaining('fields, pipelines, tags and lead sources.'),
         findsOneWidget,
       );
       // Products serve Pipeline or Invoices: one of them on keeps the word.
-      await pump(tester, const OrganizationScreen(), const ['deals']);
+      await pump(tester, const AppsScreen(), const ['deals'], apps: true);
       expect(
-        find.textContaining('custom fields, products and'),
+        find.textContaining('tags, lead sources and products.'),
         findsOneWidget,
       );
     });

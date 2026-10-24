@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../config/api_config.dart';
 import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/org_apps_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
 import '../../services/api_service.dart';
@@ -34,7 +35,7 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
   List<_Zone> _zones = const [];
   String _timezone = 'UTC';
 
-  /// The chosen pack id; empty is "Skip for now".
+  /// The chosen app id (a pack id); empty is "Skip for now".
   String _vertical = '';
   bool _loadingZones = true;
   bool _submitting = false;
@@ -106,26 +107,25 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
       return;
     }
 
-    // The org already exists and is selected, so a pack that will not apply
-    // must not undo it, as on the web. Unlike the web, say so: Settings >
-    // Organization can apply it again.
-    String? packFailure;
+    // The org already exists and is selected, so an app that will not
+    // install must not undo it, as on the web. Unlike the web, say so: the
+    // Apps settings can install it again.
+    String? installFailure;
     if (_vertical.isNotEmpty) {
-      final result = await ref
-          .read(orgSettingsProvider.notifier)
-          .applyPack(_vertical);
-      packFailure = result.error;
+      installFailure = await ref
+          .read(orgAppsProvider.notifier)
+          .installAtSignup(_vertical);
     }
 
     if (!mounted) return;
     setState(() => _submitting = false);
-    if (packFailure != null) {
+    if (installFailure != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Your organization is ready, but the industry setup did not '
-            'apply ($packFailure). You can apply it again from Organization '
-            'settings.',
+            'install ($installFailure). You can install it from Apps in '
+            'Organization settings.',
           ),
         ),
       );

@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getTask, getTaskFormOptions, updateTask } from '#lib/server/v2/tasks.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
 import { listTickets } from '#lib/server/v2/tickets.js';
 import { listDeals } from '#lib/server/v2/deals.js';
 import { listLeads } from '#lib/server/v2/leads.js';
 import { getModules } from '#lib/server/v2/modules.js';
 import { isOn } from '#lib/v2/modules.js';
+import { readCustomFields, saveRefusal } from '#lib/server/v2/record-custom-fields.js';
 
 /** @type {any} */
 const NONE = { results: [] };
@@ -16,7 +16,10 @@ export async function load(event) {
   const modulesP = getModules(event);
   /** @param {string} key */
   const when = (key) => modulesP.then((m) => isOn(m?.modules ?? null, key));
-  const [{ task }, answer] = await Promise.all([getTask(event, event.params.id), modulesP]);
+  const [{ task, customFieldInputs }, answer] = await Promise.all([
+    getTask(event, event.params.id),
+    modulesP
+  ]);
   const [options, tickets, deals, leads] = await Promise.allSettled([
     getTaskFormOptions(event),
     when('tickets').then((on) =>
@@ -37,6 +40,7 @@ export async function load(event) {
   return {
     modules: answer?.modules ?? null,
     task,
+    customFields: customFieldInputs,
     owners: settled.owners,
     parents: {
       account: settled.accounts ?? [],
@@ -117,12 +121,21 @@ export const actions = {
       if (kind && id) values[kind] = id;
     }
 
+    const custom = await readCustomFields(event.cookies, 'Task', form);
+    if (custom.refusal) {
+      return fail(503, {
+        values: { ...values, parent_kind: kind, parent_id: id },
+        ...custom.refusal
+      });
+    }
+    if (custom.values) values.custom_fields = custom.values;
+
     try {
       await updateTask(event, event.params.id, values);
     } catch (/** @type {any} */ err) {
       return fail(400, {
         values: { ...values, parent_kind: kind, parent_id: id },
-        error: readableError(err, 'Could not save this task.')
+        ...saveRefusal(err, custom.definitions, 'Could not save this task.')
       });
     }
 

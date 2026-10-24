@@ -50,7 +50,7 @@ const corePaths = {
   '/more/settings/api-tokens',
   '/more/settings/organization',
   '/more/settings/organization/edit',
-  '/more/settings/modules',
+  '/more/settings/apps',
   '/more/settings/lead-sources',
   '/more/objects/:key',
   '/more/objects/:key/new',
@@ -114,7 +114,7 @@ void main() {
     expect(needFor('/accounts'), isNull);
     expect(needFor('/accounts/:id/edit'), isNull);
     expect(needFor('/more/settings/web-forms'), isNull);
-    expect(needFor('/more/settings/modules'), isNull);
+    expect(needFor('/more/settings/apps'), isNull);
     expect(needFor('/more/settings/lead-sources'), isNull);
     expect(needFor('/dashboard'), isNull);
     expect(needFor('/leadsx'), isNull);

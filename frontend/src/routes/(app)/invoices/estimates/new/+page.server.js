@@ -4,7 +4,11 @@ import { listContacts } from '#lib/server/v2/contacts.js';
 import { listDeals } from '#lib/server/v2/deals.js';
 import { listProducts } from '#lib/server/v2/products.js';
 import { createEstimate, estimateFromDeal } from '#lib/server/v2/estimates.js';
-import { readableError } from '#lib/server/v2/form-errors.js';
+import {
+  fieldsForNew,
+  readCustomFields,
+  saveRefusal
+} from '#lib/server/v2/record-custom-fields.js';
 import { getNumbering } from '#lib/server/v2/organization.js';
 import { getModules } from '#lib/server/v2/modules.js';
 import { isOn } from '#lib/v2/modules.js';
@@ -25,23 +29,26 @@ export async function load({ cookies, locals, url }) {
   const modulesP = getModules({ cookies, locals });
   const dealsOnP = modulesP.then((m) => isOn(m?.modules ?? null, 'deals'));
   const requested = url.searchParams.get('opportunity');
-  const [accounts, contacts, products, deals, prefill, numbering] = await Promise.all([
-    listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
-    listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
-    listProducts({ cookies }),
-    // A failed deal list costs the optional deal picker, not the form.
-    dealsOnP.then((on) =>
-      on
-        ? listDeals({ cookies }, new URLSearchParams({ limit: '1000' })).catch(() => ({
-            results: []
-          }))
-        : { results: [] }
-    ),
-    requested
-      ? dealsOnP.then((on) => (on ? estimateFromDeal({ cookies }, requested) : null))
-      : null,
-    getNumbering({ cookies })
-  ]);
+  const [accounts, contacts, products, deals, prefill, numbering, customFields] = await Promise.all(
+    [
+      listAccounts({ cookies }, new URLSearchParams({ limit: '1000' })),
+      listContacts({ cookies }, new URLSearchParams({ limit: '1000' })),
+      listProducts({ cookies }),
+      // A failed deal list costs the optional deal picker, not the form.
+      dealsOnP.then((on) =>
+        on
+          ? listDeals({ cookies }, new URLSearchParams({ limit: '1000' })).catch(() => ({
+              results: []
+            }))
+          : { results: [] }
+      ),
+      requested
+        ? dealsOnP.then((on) => (on ? estimateFromDeal({ cookies }, requested) : null))
+        : null,
+      getNumbering({ cookies }),
+      fieldsForNew(cookies, 'Estimate')
+    ]
+  );
 
   return {
     modules: (await modulesP)?.modules ?? null,
@@ -57,7 +64,8 @@ export async function load({ cookies, locals, url }) {
       .map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price })),
     deals: deals.results.map((d) => ({ id: d.id, name: d.name, account_id: d.account.id })),
     prefill,
-    numbering
+    numbering,
+    customFields
   };
 }
 
@@ -77,6 +85,12 @@ export const actions = {
       return fail(400, { error: 'The estimate form could not be read. Please try again.' });
     }
 
+    // Custom fields come from their own inputs, never from the builder's payload.
+    delete body.custom_fields;
+    const custom = await readCustomFields(cookies, 'Estimate', form);
+    if (custom.refusal) return fail(503, custom.refusal);
+    if (custom.values) body.custom_fields = custom.values;
+
     if (!body.account_id) return fail(400, { error: 'Choose an account.' });
     if (!body.contact_id) return fail(400, { error: 'Choose a contact.' });
     if (!body.title) return fail(400, { error: 'Give the estimate a title.' });
@@ -88,7 +102,7 @@ export const actions = {
       await createEstimate({ cookies }, body);
     } catch (/** @type {any} */ err) {
       return fail(err?.status === 403 ? 403 : 400, {
-        error: readableError(err, 'Could not create the estimate.')
+        ...saveRefusal(err, custom.definitions, 'Could not create the estimate.')
       });
     }
 

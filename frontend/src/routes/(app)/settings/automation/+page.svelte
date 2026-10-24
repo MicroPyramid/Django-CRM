@@ -73,7 +73,7 @@
               tone="rust"
               text={modulePausedNote(r)}
               action="Open Modules"
-              href="/settings/modules"
+              href="/settings/apps"
             />
           {:else}
             <NextAction

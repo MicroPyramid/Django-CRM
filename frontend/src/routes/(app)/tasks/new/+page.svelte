@@ -8,6 +8,7 @@
    * pickers would let somebody fill two and learn about the rule from a 400.
    * Pick the kind, then pick the record.
    */
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { enhance } from '$app/forms';
   import { untrack } from 'svelte';
@@ -143,6 +144,13 @@
         >{values.description ?? ''}</textarea
       >
     </label>
+
+    <RecordFieldInputs
+      fields={data.customFields ?? []}
+      typed={form?.values?.custom_fields}
+      errors={form?.fieldErrors}
+      heading="Details"
+    />
 
     <div style="display:flex;gap:9px;margin-top:6px">
       <button class="v2-btn v2-btn-primary" type="submit">Create task</button>

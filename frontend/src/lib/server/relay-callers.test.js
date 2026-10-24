@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 vi.mock('#lib/server/packs.js', () => ({ listPacks: vi.fn(), applyPack: vi.fn() }));
+vi.mock('#lib/server/v2/apps.js', () => ({ installApp: vi.fn() }));
 
 const axios = (await import('axios')).default;
 // The stub that vitest.config.js aliases `$app/env/private` to, so this is the module the code

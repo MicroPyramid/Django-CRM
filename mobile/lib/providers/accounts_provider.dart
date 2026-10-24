@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../data/api_envelope.dart';
 import '../data/models/account.dart';
+import '../data/models/custom_field_definition.dart';
 import '../services/api_service.dart';
 
 /// Accounts, the module rather than the picker.
@@ -170,7 +171,11 @@ class AccountsNotifier extends AsyncNotifier<AccountsListData> {
     // than a crash.
     final raw = body['account_obj'] ?? body['account'] ?? body;
     if (raw is! Map<String, dynamic>) return null;
-    return Account.fromJson(raw, canDelete: body['can_delete'] == true);
+    return Account.fromJson(
+      raw,
+      canDelete: body['can_delete'] == true,
+      customFieldDefinitions: customFieldDefinitionsIn(body),
+    );
   }
 
   /// Returns the new account's id, or an error message.

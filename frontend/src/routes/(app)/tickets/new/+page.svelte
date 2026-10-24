@@ -12,6 +12,7 @@
    */
   import { tick, untrack } from 'svelte';
   import { enhance } from '$app/forms';
+  import RecordFieldInputs from '#lib/v2/components/RecordFieldInputs.svelte';
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { ChevronRight, TriangleAlert } from '@lucide/svelte';
 
@@ -181,6 +182,13 @@
         rows="4"
         bind:value={form.description}></textarea>
     </div>
+
+    <RecordFieldInputs
+      fields={data.customFields ?? []}
+      typed={result?.values?.custom_fields}
+      errors={result?.fieldErrors}
+      heading="Details"
+    />
 
     <div class="actions">
       <button class="v2-btn v2-btn-primary" type="submit">Raise ticket</button>

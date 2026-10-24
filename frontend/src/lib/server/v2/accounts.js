@@ -47,6 +47,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { apiRequest } from '#lib/api-helpers.js';
+import { fieldsForDetail, fieldsForEdit } from '#lib/server/v2/record-custom-fields.js';
 
 /** DRF decimals are strings. `null` stays `null`. It means "not recorded". */
 function num(value) {
@@ -318,6 +319,7 @@ export async function getAccount({ cookies }, id) {
       by: comment.commented_by_user?.email || comment.commented_by?.user_details?.email || null,
       body: comment.comment
     })),
+    customFields: fieldsForDetail(response, response.account_obj.custom_fields),
     // The API's delete rule for this caller, so Delete is offered only when it would work.
     canDelete: Boolean(response.can_delete)
   };
@@ -401,6 +403,7 @@ export async function getAccountForEdit({ cookies }, id) {
   return {
     account,
     ...choices,
+    customFields: fieldsForEdit(response, raw.custom_fields),
     form: {
       name: account.name,
       industry: account.industry_value,
@@ -457,6 +460,7 @@ function toBody(values) {
   if ('assigned_to' in values) {
     body.assigned_to = values.assigned_to ? [values.assigned_to] : [];
   }
+  if (values.custom_fields) body.custom_fields = values.custom_fields;
   return body;
 }
 
