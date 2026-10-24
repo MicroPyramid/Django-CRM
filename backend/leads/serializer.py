@@ -27,6 +27,11 @@ class LeadSerializer(serializers.ModelSerializer):
     lead_attachment = AttachmentsSerializer(read_only=True, many=True)
     teams = TeamsSerializer(read_only=True, many=True)
     lead_comments = LeadCommentSerializer(read_only=True, many=True)
+    first_response_by_details = serializers.SerializerMethodField()
+    # Annotations from `leads.response.with_response_state`, which every
+    # queryset this serializer reads is built with.
+    waiting_since = serializers.DateTimeField(read_only=True, allow_null=True)
+    is_unanswered = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Lead
@@ -88,6 +93,13 @@ class LeadSerializer(serializers.ModelSerializer):
             "external_source",
             "external_id",
             "last_enquiry_at",
+            # Response tracking (`interactions.service`, `leads.response`)
+            "first_response_at",
+            "first_response_by",
+            "first_response_by_details",
+            "last_outbound_at",
+            "waiting_since",
+            "is_unanswered",
         )
         # is_sample is server-set only (see leads/models.py). Read-only here
         # even though this serializer is a read/list path today (writes go
@@ -100,7 +112,16 @@ class LeadSerializer(serializers.ModelSerializer):
             "external_source",
             "external_id",
             "last_enquiry_at",
+            "first_response_at",
+            "first_response_by",
+            "last_outbound_at",
         )
+
+    def get_first_response_by_details(self, obj) -> dict | None:
+        profile = obj.first_response_by
+        if profile is None:
+            return None
+        return {"id": str(profile.id), "name": profile.user.name or profile.user.email}
 
 
 class LeadPickerSerializer(serializers.ModelSerializer):

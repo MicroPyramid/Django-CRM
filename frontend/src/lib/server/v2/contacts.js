@@ -99,6 +99,7 @@ function toRow(contact) {
     other_accounts,
     email: contact.email ?? '',
     phone: contact.phone ?? '',
+    phone_e164: contact.phone_e164 ?? '',
     do_not_call: Boolean(contact.do_not_call),
     linkedin_url: contact.linkedin_url ?? '',
     city: contact.city ?? '',

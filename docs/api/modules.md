@@ -146,7 +146,10 @@ either is on. `GET /api/org/help-center/` is the Knowledge base's settings route
 same `404` for every method while it is off.
 
 Anything outside the nine modules (accounts, contacts, web forms, webhooks, automation, search,
-the dashboard and the rest of `/api/org/`) is always reachable.
+the dashboard and the rest of `/api/org/`) is always reachable. `/api/interactions/` is core too,
+but a request naming a lead, deal or ticket answers that module's `404` while it is off, and
+interactions homed on such a record are left out of every list (see
+[Interactions](interactions.md#who-sees-what)).
 
 ### Public, portal and inbound entry points
 

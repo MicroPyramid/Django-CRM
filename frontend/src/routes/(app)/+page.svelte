@@ -6,6 +6,8 @@
   import { money, count } from '#lib/v2/format.js';
   import { todayLayout } from '#lib/v2/today-layout.js';
   import { todayClearText } from '#lib/v2/modules.js';
+  import { secondsSince, spanText } from '#lib/v2/interactions.js';
+  import { t } from '#lib/terminology.js';
   import { Target } from '@lucide/svelte';
 
   /** @type {{ data: any }} */
@@ -46,6 +48,21 @@
   // list. "That's everything" is only true when nothing was left out.
   let layout = $derived(todayLayout(summary, queue.length));
 
+  // Leads nobody has answered yet. The Today queue does not hold them, so the
+  // card sits above it, and neither the header nor the all-clear may say
+  // nothing is waiting while it shows.
+  let waiting = $derived(data.unanswered?.count > 0 ? data.unanswered : null);
+  let terms = $derived(data.org?.terminology);
+  let waitingTitle = $derived(
+    waiting
+      ? `${waiting.count} ${(waiting.count === 1
+          ? t(terms, 'lead.singular', 'lead')
+          : t(terms, 'lead.plural', 'Leads')
+        ).toLowerCase()} waiting for a first reply`
+      : ''
+  );
+  let oldestWait = $derived(waiting ? spanText(secondsSince(waiting.oldest_since)) : '');
+
   // Built as one string rather than conditional markup: the "quiet deals"
   // clause only makes sense when there are any, and the numbers are often zero
   // in a real org, so the copy adapts instead of reading "0 deals … have gone
@@ -60,7 +77,9 @@
     layout.importCard
       ? 'Your workspace is new. Start by bringing in your people.'
       : summary.count === 0
-        ? 'Nothing needs you right now: you’re all clear for today.'
+        ? waiting
+          ? 'Nothing else is due today.'
+          : 'Nothing needs you right now: you’re all clear for today.'
         : summary.quiet_deals === 0
           ? `${plural(summary.count, 'thing wants', 'things want')} you today.`
           : `${plural(summary.count, 'thing wants', 'things want')} you today. ` +
@@ -95,6 +114,33 @@
       new coat: if everything is the primary action then nothing is, and the
       colour stops carrying information.
     -->
+    {#if waiting}
+      <div class="v2-card" style="margin-bottom:8px">
+        <div class="v2-queue-item">
+          <span class="v2-queue-spine" style="background:var(--v2-rust)"></span>
+          <div class="v2-queue-body">
+            <a
+              href={resolve(asInternalPath('/leads?unanswered=true'))}
+              style="color:inherit;text-decoration:none"
+            >
+              <div style="font-weight:640;letter-spacing:-0.012em">{waitingTitle}</div>
+            </a>
+            <div class="v2-sub" style="margin-top:2px">
+              Longest wait first. A call or message logged on a lead answers it.
+            </div>
+          </div>
+          <div class="v2-queue-actions">
+            {#if oldestWait}<Pill tone="rust">Waiting {oldestWait}</Pill>{/if}
+            <a
+              class="v2-btn"
+              class:v2-btn-primary={!layout.importCard}
+              href={resolve(asInternalPath('/leads?unanswered=true'))}>Answer</a
+            >
+          </div>
+        </div>
+      </div>
+    {/if}
+
     {#each queue as item, i (item.id)}
       <div class="v2-card" style="margin-bottom:8px">
         <div class="v2-queue-item">
@@ -111,7 +157,7 @@
             <Pill tone={item.tone}>{item.due}</Pill>
             <a
               class="v2-btn"
-              class:v2-btn-primary={i === 0 && !layout.importCard}
+              class:v2-btn-primary={i === 0 && !layout.importCard && !waiting}
               href={resolve(asInternalPath(item.href))}>{item.action}</a
             >
           </div>
@@ -130,7 +176,7 @@
             style="color:inherit">{source.count} {source.label}</a
           >{i < summary.sources.length - 1 ? ', ' : '.'}{/each}
       </p>
-    {:else if layout.tail === 'clear'}
+    {:else if layout.tail === 'clear' && !waiting}
       <div class="v2-card" style="margin-bottom:8px">
         <div class="v2-pad" style="padding:20px;text-align:center">
           <div style="font-weight:640;letter-spacing:-0.012em">Inbox zero for today</div>

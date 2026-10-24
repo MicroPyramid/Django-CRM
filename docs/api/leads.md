@@ -63,7 +63,8 @@ Filters beyond `source` and `status`, `name`, `salutation`, `assigned_to`, `tags
 `rating`, `search`, `created_at__gte/lte`, `close_date__gte/lte`, `cf_<key>`, are documented in full,
 with exact match-vs-contains semantics for each, in
 [Conventions: Filtering and search](conventions.md#filtering-and-search), which uses this exact
-endpoint as its example.
+endpoint as its example. `?unanswered=true` keeps the leads waiting for an answer, longest wait
+first; see [Unanswered leads](#unanswered-leads).
 
 ## Create a lead
 
@@ -231,6 +232,84 @@ transaction:
 
 The response is `{"error": false, "message": "...", "id": "<kept id>"}`.
 
+## Unanswered leads
+
+`GET /api/leads/?unanswered=true` keeps only the leads waiting for an answer, ordered by
+`waiting_since` (longest wait first, then by id), and combines with every other filter, such as
+`assigned_to` or `open`. The CSV export (`GET /api/leads/export/?unanswered=true`) and saved views
+take it too, so an exported or saved Unanswered list holds the same leads in the same order. Any
+value but `true` leaves the list unfiltered. The rule lives in `backend/leads/response.py`.
+
+With `arrival_at` the lead's `last_enquiry_at`, or its `created_at` when it has none, a lead is
+unanswered when all three hold:
+
+- its status is `assigned`, `in process` or `recycled` (never `converted` or `closed`);
+- `last_outbound_at` is null or earlier than `arrival_at`;
+- `arrival_at` is at or after the org's `lead_response_since`, the moment the org started measuring
+  (stamped when it upgraded to this release, and at creation for a newer org), so years of old open
+  leads do not flood the list.
+
+`waiting_since` is null unless the lead is unanswered. Then it is the lead's `created_at` when
+nothing outbound was ever logged on it and it was created at or after `lead_response_since`, and
+`arrival_at` otherwise. A new lead that enquires twice waits from its creation; a lead that was
+answered and then enquired again waits from that enquiry; and an old lead from before the stamp
+that enquires again waits from the new enquiry, not from the day it was created.
+`last_outbound_at`, `first_response_at` and `first_response_by` are kept from the lead's logged
+interactions ([Interactions](interactions.md#a-leads-response-fields)).
+
+`GET /api/dashboard/` and `GET /api/dashboard/today/` both carry the count:
+
+```json
+"unanswered_leads": {"count": 3, "oldest_since": "2026-10-24T09:46:00Z"}
+```
+
+over the leads the caller can see (an admin's whole org; a member's own and assigned leads), where
+`oldest_since` is the earliest `waiting_since`, or null when nothing is waiting. While the Leads
+module is off it is `{"count": 0, "oldest_since": null}`.
+
+## Response times
+
+`GET /api/leads/response-times/?days=30` answers how fast each person gives a lead its first
+response:
+
+```json
+{
+  "since": "2026-09-25",
+  "rows": [
+    {
+      "profile": "8d6c...",
+      "name": "Maria Lopez",
+      "answered": 12,
+      "median_seconds": 340,
+      "within_5_minutes": 50,
+      "within_1_hour": 83,
+      "unanswered_now": 2
+    }
+  ]
+}
+```
+
+- **Who gets which rows.** An org admin gets a row for every active member, themselves included;
+  anyone else gets exactly one row, their own. Comparing colleagues is an org aggregate.
+- **`days`** is a whole number from 7 to 90, default 30; anything else is a `400` naming `days`.
+  The window is the last `days` days of the org's calendar, today included. `since` is the first
+  of them, and the window opens at the org's midnight on that date.
+- **`answered`** counts the leads the person responded to first (`first_response_by`) with
+  `first_response_at` inside the window. A lead created before the org's `lead_response_since` is
+  left out: its response time would count the years before anything was logged.
+- A lead's response time is `first_response_at` minus `created_at`, on the clock, so nights and
+  weekends count. **`median_seconds`** is the median over the row's leads (the middle one, or the
+  mean of the middle two) in whole seconds rounded down, and null when there are none.
+- **`within_5_minutes`** and **`within_1_hour`** are the percentage of those leads answered in at
+  most five minutes and at most an hour, rounded down so that 100 means every one; 0 when there
+  are none.
+- **`unanswered_now`** counts the person's assigned leads that are unanswered right now, whatever
+  the window.
+- **`name`** is the member's name, or their email when the name is empty. Rows are sorted by it.
+
+Like every `/api/leads/` route it is refused while the Leads module is off
+([Modules](modules.md)).
+
 ## Lead sources
 
 Where a lead came from is a key from a per-org list. The endpoints are not tied to the Leads
@@ -294,7 +373,11 @@ instead. See [Create a lead](#create-a-lead)).
 | `is_active` | boolean | optional | Defaults `true` |
 
 Read-only on the lead payload: `phone_e164` (the phone normalised for matching), `external_source`,
-`external_id` and `last_enquiry_at` (set when an intake delivers the lead).
+`external_id` and `last_enquiry_at` (set when an intake delivers the lead), and the response fields:
+`first_response_at`, `first_response_by` (a profile id) with `first_response_by_details`
+(`{"id", "name"}`, or null), `last_outbound_at`, `waiting_since` and `is_unanswered` (see
+[Unanswered leads](#unanswered-leads)). The list and the detail both carry them; a write that sends
+them is answered as usual and changes none of them.
 
 Not part of the serializer, but accepted in the same request body and resolved by the view on
 `POST`/`PUT`/`PATCH` (each a list of ids, org-scoped): `tags`, `contacts`, `teams`, `assigned_to`; plus

@@ -91,6 +91,15 @@ describe('list queries', () => {
     expect(q.has('include_deleted')).toBe(false);
   });
 
+  it('forward the Unanswered preset to the list and its export, and only its one value', async () => {
+    expect(queries.leadListQuery(page('/leads?unanswered=true')).get('unanswered')).toBe('true');
+    expect(queries.leadListQuery(page('/leads?unanswered=yes')).has('unanswered')).toBe(false);
+    fetchMock.mockResolvedValueOnce(new Response('id\n', { status: 200 }));
+    await leadsExport.GET(event('/api/leads/export?unanswered=true', { jwt_access: 'tok' }));
+    const [url] = fetchMock.mock.calls[0];
+    expect(new URL(url).searchParams.get('unanswered')).toBe('true');
+  });
+
   it('default the ticket queue to open statuses, and drop that on all=1', () => {
     expect(queries.ticketListQuery(page('/tickets')).getAll('status')).toEqual([
       'New',

@@ -252,6 +252,7 @@ class TestValidation:
             "ticket",
             "invoice",
             "task",
+            "interaction",
         ]
         assert body["limit"] == views.MAX_ENDPOINTS_PER_ORG
 

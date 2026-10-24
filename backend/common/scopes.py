@@ -71,6 +71,8 @@ API_RESOURCES = frozenset(
         "custom-fields",
         "dashboard",
         "documents",
+        # Calls, meetings and messages logged on a record, and enquiries.
+        "interactions",
         "invoices",
         "leads",
         "macros",

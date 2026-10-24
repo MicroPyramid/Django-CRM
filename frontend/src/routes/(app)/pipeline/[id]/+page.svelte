@@ -4,6 +4,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
   import Timeline from '#lib/v2/components/Timeline.svelte';
+  import LogActivity from '#lib/v2/components/LogActivity.svelte';
   import Pill from '#lib/v2/components/Pill.svelte';
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import RelatedRecords from '#lib/v2/components/RelatedRecords.svelte';
@@ -22,6 +23,9 @@
      other stage kind, so the button is offered only where it can succeed; a
      deal with no lines still gets the server's own sentence below. */
   let invoicing = $state(false);
+
+  let logging = $state(false);
+  let logKind = $state('call');
 
   let { deal, activity, lineItems, contacts } = $derived(data);
   /* The deal's own pipeline's open stages: the path a deal walks. Won and
@@ -130,8 +134,41 @@
           nothing to render. A suggestion the system invented is worse than no
           suggestion, because people act on it.
         -->
-        <div class="v2-label" style="margin-bottom:12px">Activity</div>
+        <div class="act-head">
+          <div class="v2-label">Activity</div>
+          {#if data.interactions.live && !logging}
+            <button class="v2-btn v2-btn-sm" type="button" onclick={() => (logging = true)}>
+              Log activity
+            </button>
+          {/if}
+        </div>
+        {#if logging}
+          <div style="margin-bottom:16px">
+            <LogActivity
+              bind:kind={logKind}
+              result={form?.activity}
+              timeZone={data.org?.timezone}
+              oncancel={() => (logging = false)}
+              onlogged={() => (logging = false)}
+            />
+          </div>
+        {/if}
+        {#if data.interactions.failed}
+          <p class="deal-error" style="margin-bottom:12px">
+            Calls and messages could not be loaded, so they are missing below.
+          </p>
+        {/if}
+        {#if form?.activity?.deleteError}
+          <p class="deal-error" role="alert" style="margin-bottom:12px">
+            {form.activity.deleteError}
+          </p>
+        {/if}
         <Timeline events={activity} />
+        {#if data.interactions.more}
+          <p class="v2-sub" style="font-size:12px">
+            Showing the latest calls and messages; {data.interactions.more} older ones are not shown.
+          </p>
+        {/if}
 
         {#if lineItems.length}
           <div class="v2-label" style="margin:22px 0 10px">Line items</div>
@@ -249,6 +286,13 @@
 </div>
 
 <style>
+  .act-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
   .deal-error {
     margin: 0;
     padding: 9px 12px;

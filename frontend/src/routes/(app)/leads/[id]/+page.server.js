@@ -3,20 +3,37 @@ import { addLeadNote, convertLead, deleteLead, getLead } from '#lib/server/v2/le
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
+import {
+  interactionActions,
+  listInteractions,
+  withInteractions
+} from '#lib/server/v2/interactions.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  const [lead, related, { sources }] = await Promise.all([
+  const [lead, related, { sources }, logged] = await Promise.all([
     getLead({ cookies }, params.id),
     loadRelated({ cookies }, 'lead', params.id),
-    getLeadSources({ cookies })
+    getLeadSources({ cookies }),
+    listInteractions({ cookies }, 'lead', params.id)
   ]);
-  return { ...lead, related, sources };
+  return {
+    ...lead,
+    activity: withInteractions(lead.activity, logged.interactions),
+    interactions: {
+      live: logged.state !== 'absent',
+      failed: logged.state === 'failed',
+      more: Math.max(0, logged.count - logged.interactions.length)
+    },
+    related,
+    sources
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
   ...relatedActions('lead'),
+  ...interactionActions('lead'),
   /**
    * Log a note against the lead. The body carries only the note text; who
    * wrote it and which org it belongs to are derived server-side from the JWT

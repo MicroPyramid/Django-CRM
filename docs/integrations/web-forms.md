@@ -200,14 +200,14 @@ route (see [Lead capture](../features/lead-capture.md#what-happens-to-an-arrivin
 - **A repeat enquiry merges**, matched within the same org by email address (ignoring case) or,
   failing that, by phone number in international form (read with the org's default country). The
   merge **fills blank fields only and never overwrites a populated one**, and a match by phone
-  alone never takes the submitted email address: it goes into the enquiry comment instead. Anyone who knows a
+  alone never takes the submitted email address: it goes into the enquiry instead. Anyone who knows a
   prospect's email address can post your form, so an overwrite would let a stranger rewrite that
   prospect's record. Assignment, source and the pipeline columns are never touched by a merge:
   they belong to whoever owns the lead now. The form's tags are added. A closed lead is reopened as
   Recycled, and a converted lead is left alone: the message goes on the contact it became instead.
-- **The message becomes a comment**, not an overwrite. `description` is deliberately outside the
-  mergeable set, so a returning visitor's second message is added to the lead's timeline rather
-  than replacing the first.
+- **The message becomes an enquiry**, not an overwrite. `description` is deliberately outside the
+  mergeable set, so a returning visitor's second message is added to the lead's timeline as an
+  `enquiry` [interaction](../api/interactions.md) rather than replacing the first.
 - **Every submission is stored**, accepted or rejected, which is what makes spam review and an
   honest conversion rate possible. `GET /api/webforms/<id>/submissions/` lists them. The internal
   reject reason is never returned: naming the control that caught a bot is how the next bot gets

@@ -35,7 +35,7 @@ import { FILTERS } from '#lib/v2/filters.js';
  * really is forwarded by the page's list query.
  */
 export const SAVED_VIEW_KEYS = {
-  leads: [...LEAD_FIELDS, 'search', 'rating'],
+  leads: [...LEAD_FIELDS, 'search', 'rating', 'unanswered'],
   contacts: [...CONTACT_FIELDS, 'search', 'name', 'email', 'phone'],
   accounts: [...ACCOUNT_FIELDS, 'search', 'name'],
   opportunities: [...DEAL_FIELDS, 'search', 'open', 'rotten', 'pipeline'],

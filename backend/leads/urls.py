@@ -33,6 +33,7 @@ from leads.views.lead_interactions import (
     LeadCommentView,
 )
 from leads.views.lead_views import LeadDetailView, LeadListView
+from leads.views.response_views import LeadResponseTimesView
 from leads.views.source_views import (
     LeadSourceDetailView,
     LeadSourceListCreateView,
@@ -78,6 +79,11 @@ urlpatterns = [
     ),
     path(
         "intakes/<uid:pk>/test/", LeadIntakeTestView.as_view(), name="lead_intake_test"
+    ),
+    path(
+        "response-times/",
+        LeadResponseTimesView.as_view(),
+        name="lead_response_times",
     ),
     # Kanban endpoints
     path("kanban/", LeadKanbanView.as_view(), name="lead_kanban"),

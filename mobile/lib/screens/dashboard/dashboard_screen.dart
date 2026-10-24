@@ -148,8 +148,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
 
         // Urgent Metrics
-        if (_hasUrgentItems(data.urgentCounts, tasksOn, leadsOn)) ...[
-          _buildUrgentSection(data.urgentCounts, tasksOn, leadsOn),
+        if (_hasUrgentItems(data, tasksOn, leadsOn)) ...[
+          _buildUrgentSection(data, tasksOn, leadsOn),
           const SizedBox(height: 16),
         ],
 
@@ -190,9 +190,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  bool _hasUrgentItems(UrgentCounts counts, bool tasksOn, bool leadsOn) {
+  bool _hasUrgentItems(DashboardData data, bool tasksOn, bool leadsOn) {
+    final counts = data.urgentCounts;
     return (tasksOn && (counts.overdueTasks > 0 || counts.tasksDueToday > 0)) ||
-        (leadsOn && (counts.followupsToday > 0 || counts.hotLeads > 0));
+        (leadsOn &&
+            (counts.followupsToday > 0 ||
+                counts.hotLeads > 0 ||
+                (data.unansweredLeads ?? 0) > 0));
   }
 
   String _getGreeting() {
@@ -300,7 +304,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildUrgentSection(UrgentCounts counts, bool tasksOn, bool leadsOn) {
+  Widget _buildUrgentSection(DashboardData data, bool tasksOn, bool leadsOn) {
+    final counts = data.urgentCounts;
+    final unanswered = data.unansweredLeads ?? 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
@@ -334,6 +340,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               spacing: 12,
               runSpacing: 6,
               children: [
+                if (leadsOn && unanswered > 0)
+                  _UrgentBadge(
+                    label: 'Unanswered',
+                    count: unanswered,
+                    color: AppColors.danger500,
+                    route:
+                        '${AppRoutes.leads}?view=${AppRoutes.viewUnanswered}',
+                  ),
                 if (tasksOn && counts.overdueTasks > 0)
                   _UrgentBadge(
                     label: 'Overdue',

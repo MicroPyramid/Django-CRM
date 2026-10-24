@@ -23,21 +23,23 @@ import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 export async function load({ cookies, url, locals }) {
   const params = leadListQuery(url);
 
-  const [{ results, totals }, orgPeople, tagList, savedViews, { sources }] = await Promise.all([
-    listLeads({ cookies }, params),
-    getOrgPeopleAndTeams(cookies),
-    // A failed tag fetch should cost the Tag dropdown in the filter bar, not
-    // the whole list. Follows the tickets.js pattern; see the note there.
-    getTags({ cookies }).catch(() => ({ tags: [] })),
-    loadSavedViews({ cookies, url }, 'leads'),
-    getLeadSources({ cookies })
-  ]);
+  const [{ results, totals, responseLive }, orgPeople, tagList, savedViews, { sources }] =
+    await Promise.all([
+      listLeads({ cookies }, params),
+      getOrgPeopleAndTeams(cookies),
+      // A failed tag fetch should cost the Tag dropdown in the filter bar, not
+      // the whole list. Follows the tickets.js pattern; see the note there.
+      getTags({ cookies }).catch(() => ({ tags: [] })),
+      loadSavedViews({ cookies, url }, 'leads'),
+      getLeadSources({ cookies })
+    ]);
 
   return {
     // `listLeads` returns `{ results, totals }`; the page reads `data.leads`,
     // so this renames rather than spreading `list` verbatim.
     leads: results,
     totals,
+    responseLive,
     people: orgPeople.people,
     tags: tagList.tags ?? [],
     savedViews,

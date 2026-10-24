@@ -141,7 +141,7 @@ Each row says which field of the post fills which lead field:
 
 **Nothing is lost.** Whatever the mapping does not use (other than the preset's own id, timestamp
 and key) is written into the lead as `Label: value` lines: into its notes for a new lead, after the
-mapped message if there is one, and into the enquiry comment for a merge.
+mapped message if there is one, and into the enquiry for every arrival.
 
 ## What happens to an arriving lead
 
@@ -168,21 +168,28 @@ emailed that the lead is theirs.
   overwritten, so whoever knows a person's email address cannot rewrite their record. A match by
   phone number alone never takes the incoming email address, and an address another lead already
   holds is never copied. An email or phone number that differs from the lead's is not lost: it is
-  written into the enquiry comment as `Email: ...` or `Phone: ...`. The webhook's tags are added,
-  the enquiry is added as a comment, and the lead's active owners are emailed that the person
-  enquired again. Status, owner, source and pipeline stay as they are. If the lead had no lead id
+  written into the enquiry as `Email: ...` or `Phone: ...`. The webhook's tags are added, the
+  enquiry is recorded on the lead's timeline, and the lead's active owners are emailed that the
+  person enquired again. Status, owner, source and pipeline stay as they are. If the lead had no lead id
   yet, it takes this one.
 - **Closed**: the same, and its status becomes Recycled, so it is open again. A lead on a won or
   lost stage of a pipeline moves to that pipeline's first open stage.
 - **Converted**: no new lead, and none of the old one's fields are filled (it takes the lead id if
-  it had none). The enquiry is added as a comment on the contact it became (found by the lead's
-  email address; on the lead itself when there is no such contact), and that contact's owners are
-  told.
+  it had none). The enquiry is recorded on the timeline of the contact it became (found by the
+  lead's email address, and linked to that contact's account; on the lead itself when there is no
+  such contact), and that contact's owners are told.
 
 **Retries.** A webhook post with a lead id the webhook has already received and placed on a lead
 answers `duplicate` with that lead, even when the first post merged into a lead that already had
 another sender's id. Posts to one webhook are received one at a time, so two copies of a post
-arriving together make one lead and one comment.
+arriving together make one lead and one enquiry.
+
+**Every arrival is an enquiry.** Each one, new lead or merge, is recorded as an `enquiry`
+[interaction](../api/interactions.md) on the lead's timeline (or the contact's, for a converted
+lead): inbound, with the form, webhook or address as its subject and the message, plus any
+`Label: value` lines, as its text, up to 10,000 characters. A `duplicate` records nothing.
+Enquiries are read-only, and they never count as answering the lead. Enquiries from before this
+was added are comments, and stay comments.
 
 Every arrival stamps the lead's **last enquiry** time (`last_enquiry_at`).
 

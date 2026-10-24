@@ -94,6 +94,7 @@ backend/
 │                    # and the anonymous client-portal views (invoices.public_urls)
 ├── orders/          # Sales orders and order line items
 ├── business_hours/  # Per-org working-hours calendars that SLA timers honor
+├── interactions/    # Calls, meetings, emails, messages and enquiries logged on records
 └── macros/          # Canned responses / saved replies
 ```
 

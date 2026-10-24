@@ -9,6 +9,7 @@ class Contact {
     required this.lastName,
     this.email,
     this.phone,
+    this.phoneE164 = '',
     this.organization,
     this.title,
     this.department,
@@ -38,6 +39,10 @@ class Contact {
   final String lastName;
   final String? email;
   final String? phone;
+
+  /// The phone in international form, set by the server; empty when it
+  /// does not parse. WhatsApp needs it.
+  final String phoneE164;
 
   final String? organization;
   final String? title;
@@ -119,6 +124,7 @@ class Contact {
       lastName: json['last_name'] as String? ?? '',
       email: _str(json['email']) ?? _str(json['primary_email']),
       phone: _str(json['phone']) ?? _str(json['mobile_number']),
+      phoneE164: json['phone_e164']?.toString() ?? '',
       organization: _str(json['organization']),
       title: _str(json['title']),
       department: _str(json['department']),
@@ -199,6 +205,7 @@ class Contact {
       lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      phoneE164: phoneE164,
       organization: organization ?? this.organization,
       title: title ?? this.title,
       department: department ?? this.department,

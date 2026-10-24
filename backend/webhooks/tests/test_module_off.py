@@ -59,6 +59,7 @@ def test_each_event_group_names_the_model_that_emits_it():
         "ticket": "tickets",
         "invoice": "invoices",
         "task": "tasks",
+        "interaction": None,
     }
 
 

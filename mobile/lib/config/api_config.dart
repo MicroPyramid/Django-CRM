@@ -287,6 +287,10 @@ class ApiConfig {
   static String leadIntakeDeliveries(String id) =>
       '$apiBaseUrl/leads/intakes/$id/deliveries/';
 
+  /// Calls, meetings, emails, WhatsApp, SMS and enquiries. GET takes one of
+  /// `lead`, `contact`, `account`, `opportunity` or `case`; POST logs one.
+  static String get interactions => '$apiBaseUrl/interactions/';
+
   /// Contacts management
   static String get contacts => '$apiBaseUrl/contacts/';
 

@@ -4,20 +4,37 @@ import { invoiceFromDeal } from '#lib/server/v2/invoices.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
+import {
+  interactionActions,
+  listInteractions,
+  withInteractions
+} from '#lib/server/v2/interactions.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
-  const [deal, related, { sources }] = await Promise.all([
+  const [deal, related, { sources }, logged] = await Promise.all([
     getDeal(event, event.params.id),
     loadRelated(event, 'deal', event.params.id),
-    getLeadSources(event)
+    getLeadSources(event),
+    listInteractions(event, 'opportunity', event.params.id)
   ]);
-  return { ...deal, related, sources };
+  return {
+    ...deal,
+    activity: withInteractions(deal.activity, logged.interactions),
+    interactions: {
+      live: logged.state !== 'absent',
+      failed: logged.state === 'failed',
+      more: Math.max(0, logged.count - logged.interactions.length)
+    },
+    related,
+    sources
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
   ...relatedActions('deal'),
+  ...interactionActions('opportunity'),
   /**
    * Raise a Draft invoice from this deal and open it. The deal id is the
    * route's, never the body's, and the API decides the rest: a deal this

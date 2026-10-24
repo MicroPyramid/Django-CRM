@@ -266,12 +266,10 @@ class TestOtherPathsAreUnchanged:
         assert form.rotation_last_assigned == three[0]
         assert _assignees(_submit(form)) == [three[1]]
 
-    def test_the_merge_comment_is_not_credited_to_a_leftover_person(
+    def test_the_merge_enquiry_is_not_credited_to_a_leftover_person(
         self, org_a, admin_user, admin_profile, three
     ):
-        from django.contrib.contenttypes.models import ContentType
-
-        from common.models import Comment
+        from interactions.models import Interaction
 
         form = _form(org_a, admin_user, three, assign_to=admin_profile)
         _submit(form, "pat@example.com")
@@ -279,10 +277,8 @@ class TestOtherPathsAreUnchanged:
             form, {"email": "pat@example.com", "description": "Again"}
         ).lead
 
-        comment = Comment.objects.get(
-            content_type=ContentType.objects.get_for_model(Lead), object_id=lead.id
-        )
-        assert comment.commented_by is None
+        enquiry = Interaction.objects.get(kind="enquiry", lead=lead, body="Again")
+        assert enquiry.logged_by is None
 
     def test_the_form_row_is_locked_before_the_cursor_is_read(
         self, org_a, admin_user, three

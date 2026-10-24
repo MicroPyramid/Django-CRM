@@ -131,6 +131,8 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/documents/` | GET, POST |
 | `/api/documents/{id}/` | DELETE, GET, PATCH, PUT |
 | `/api/documents/{id}/download/` | GET |
+| `/api/interactions/` | GET, POST |
+| `/api/interactions/{id}/` | DELETE, PATCH |
 | `/api/invoices/` | GET, POST |
 | `/api/invoices/attachments/{id}/` | DELETE |
 | `/api/invoices/comments/{id}/` | DELETE, PUT |
@@ -185,6 +187,7 @@ Interactive versions of the same schema are served by a running backend at
 | `/api/leads/pipelines/{id}/` | DELETE, GET, PUT |
 | `/api/leads/pipelines/{pipeline_pk}/stages/` | POST |
 | `/api/leads/pipelines/{pipeline_pk}/stages/reorder/` | POST |
+| `/api/leads/response-times/` | GET |
 | `/api/leads/sources/` | GET, POST |
 | `/api/leads/sources/order/` | POST |
 | `/api/leads/sources/{id}/` | PATCH |

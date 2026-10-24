@@ -14,11 +14,10 @@ import { isOn } from '#lib/v2/modules.js';
  * @type {import('./$types').PageServerLoad}
  */
 export async function load(event) {
+  const modules = getModules(event).then((answer) => answer?.modules);
   const [today, goals] = await Promise.all([
     getToday(event),
-    getModules(event).then((answer) =>
-      isOn(answer?.modules, 'goals') ? getCurrentGoals(event) : []
-    )
+    modules.then((on) => (isOn(on, 'goals') ? getCurrentGoals(event) : []))
   ]);
   return { ...today, goals };
 }

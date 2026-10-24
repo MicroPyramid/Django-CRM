@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "webforms",
     "webhooks",
     "automation",
+    "interactions",
     # "teams",  # Merged into common app
 ]
 

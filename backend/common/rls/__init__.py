@@ -148,6 +148,9 @@ ORG_SCOPED_TABLES = [
     "lead_source",
     "lead_intake",
     "lead_intake_event",
+    # Calls, meetings, messages and enquiries logged on records, stamped by
+    # interactions/0002.
+    "interaction",
     # Outbound webhooks (G12). Both carry org_id; the delivery worker sets the
     # context from the org it was queued for. See webhooks/tasks.py.
     "webhook_endpoint",

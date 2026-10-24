@@ -246,4 +246,5 @@ class AppRoutes {
   static const String viewDueToday = 'due-today';
   static const String viewFollowUps = 'follow-ups';
   static const String viewHot = 'hot';
+  static const String viewUnanswered = 'unanswered';
 }

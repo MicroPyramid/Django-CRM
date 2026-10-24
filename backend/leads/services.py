@@ -11,6 +11,7 @@ from common.models import Attachments, Comment
 from common.modules import module_is_available
 from contacts.access import has_contact_access, visible_contacts_qs
 from contacts.models import Contact
+from interactions.models import Interaction
 from opportunity.models import Opportunity
 
 CONVERSION_REFUSED = (
@@ -47,6 +48,25 @@ def conversion_refusal(request, lead):
     return None
 
 
+def _move_interactions(lead, contact, account, opportunity):
+    """The lead's interactions keep their lead link, move home to the contact
+    it became (the account when no contact was made or linked), and gain the
+    account and deal, so the history follows the person.
+
+    One write sets the home and its link together, as the home check needs.
+    """
+    moved = {"account": account}
+    if contact is not None:
+        moved.update(home="contact", contact=contact)
+    else:
+        moved["home"] = "account"
+    if opportunity is not None:
+        moved["opportunity"] = opportunity
+    Interaction.objects.filter(org_id=lead.org_id, lead=lead, home="lead").update(
+        **moved
+    )
+
+
 def convert_lead_to_account(lead_obj, request, create_opportunity=True):
     """
     Convert a Lead to Account, Contact, and optionally Opportunity.
@@ -57,7 +77,7 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
        existing one with that email if the converter may open it
     3. Optionally creates an Opportunity (if create_opportunity=True and lead has opportunity_amount)
     4. Copies tags, assigned_to, teams
-    5. Migrates Comments and Attachments
+    5. Migrates Comments and Attachments, and moves interactions to the contact
     6. Auto-links the Lead.contacts the converter may open to the new Account
     7. Sets lead status to "converted"
 
@@ -221,6 +241,8 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
         # Link contact to opportunity
         if contact:
             opportunity.contacts.add(contact)
+
+    _move_interactions(lead_obj, contact, account, opportunity)
 
     # Update lead status to converted
     lead_obj.status = "converted"

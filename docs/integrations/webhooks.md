@@ -40,11 +40,15 @@ An org can have up to 10 webhooks.
 | Tickets  | `ticket.created`, `ticket.updated`, `ticket.comment_added`                      |
 | Invoices | `invoice.created`, `invoice.updated`, `invoice.paid`                            |
 | Tasks    | `task.created`, `task.updated`, `task.deleted`                                  |
+| Interactions | `interaction.created`                                                       |
 
 - `deal.won` / `deal.lost` fire when a deal moves into a stage whose kind is won or lost, whatever
   the stage is called in your pipeline. Saving a deal that is already won does not fire again.
 - `invoice.paid` fires when an invoice's status becomes Paid.
 - `ticket.comment_added` fires for **public** replies only. Internal notes are never sent anywhere.
+- `interaction.created` fires for every [interaction](../api/interactions.md): a call, meeting or
+  message someone logged, and each enquiry a lead makes. A lead's response fields
+  (`first_response_at`, `last_outbound_at`) change with it and send no `lead.updated`.
 - An org can switch the Leads, Pipeline, Tickets, Invoices and Tasks modules off (see
   [Modules](../api/modules.md#records-that-mention-an-off-module)). Nothing is sent for an off
   module, the catalogue leaves its events out, and an endpoint keeps the events it already

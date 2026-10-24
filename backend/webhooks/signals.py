@@ -19,8 +19,9 @@ SAVED = (
     "cases.Case",
     "invoices.Invoice",
     "tasks.Task",
+    "interactions.Interaction",
 )
-# Tickets and invoices have no delete event in the catalogue.
+# Tickets, invoices and interactions have no delete event in the catalogue.
 DELETED = (
     "leads.Lead",
     "contacts.Contact",

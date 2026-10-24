@@ -105,6 +105,10 @@ class Lead {
   final String lastName;
   final String email;
   final String? phone;
+
+  /// The phone in international form, set by the server; empty when it
+  /// does not parse. WhatsApp needs it.
+  final String phoneE164;
   final String? jobTitle;
   final String? website;
   final String? linkedinUrl;
@@ -146,6 +150,11 @@ class Lead {
   final DateTime? updatedAt;
   final bool isActive;
 
+  /// Null from an API that predates response times, true when the lead waits
+  /// for a first reply, since [waitingSince].
+  final bool? isUnanswered;
+  final DateTime? waitingSince;
+
   const Lead({
     required this.id,
     this.title,
@@ -154,6 +163,7 @@ class Lead {
     required this.lastName,
     required this.email,
     this.phone,
+    this.phoneE164 = '',
     this.jobTitle,
     this.website,
     this.linkedinUrl,
@@ -187,6 +197,8 @@ class Lead {
     required this.createdAt,
     this.updatedAt,
     this.isActive = true,
+    this.isUnanswered,
+    this.waitingSince,
   });
 
   /// Full name combining first and last name
@@ -319,6 +331,7 @@ class Lead {
       lastName: json['last_name'] as String? ?? '',
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
+      phoneE164: json['phone_e164']?.toString() ?? '',
       jobTitle: json['job_title'] as String?,
       website: json['website'] as String?,
       linkedinUrl: json['linkedin_url'] as String?,
@@ -368,6 +381,10 @@ class Lead {
           ? DateTime.tryParse(json['updated_at'] as String)
           : null,
       isActive: json['is_active'] as bool? ?? true,
+      isUnanswered: json['is_unanswered'] is bool
+          ? json['is_unanswered'] as bool
+          : null,
+      waitingSince: DateTime.tryParse(json['waiting_since']?.toString() ?? ''),
     );
   }
 
@@ -413,6 +430,7 @@ class Lead {
     String? lastName,
     String? email,
     String? phone,
+    String? phoneE164,
     String? jobTitle,
     String? website,
     String? linkedinUrl,
@@ -446,6 +464,8 @@ class Lead {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    bool? isUnanswered,
+    DateTime? waitingSince,
   }) {
     return Lead(
       id: id ?? this.id,
@@ -455,6 +475,7 @@ class Lead {
       lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      phoneE164: phoneE164 ?? this.phoneE164,
       jobTitle: jobTitle ?? this.jobTitle,
       website: website ?? this.website,
       linkedinUrl: linkedinUrl ?? this.linkedinUrl,
@@ -488,6 +509,8 @@ class Lead {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
+      isUnanswered: isUnanswered ?? this.isUnanswered,
+      waitingSince: waitingSince ?? this.waitingSince,
     );
   }
 

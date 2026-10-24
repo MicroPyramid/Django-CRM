@@ -47,7 +47,8 @@ function sample(/** @type {string} */ module, /** @type {string} */ key) {
   if (field?.type === 'stage') return 'QUALIFIED';
   if (field?.type === 'date-range') return '2026-01-02';
   if (field?.type === 'number-range') return '10';
-  if (field?.type === 'boolean' || key === 'open' || key === 'rotten') return 'true';
+  if (field?.type === 'boolean' || key === 'open' || key === 'rotten' || key === 'unanswered')
+    return 'true';
   if (key === 'pipeline') return UUID;
   if (key === 'status') return 'New';
   return 'x';

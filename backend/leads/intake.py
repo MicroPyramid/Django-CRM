@@ -11,23 +11,26 @@ A match is merged (blanks filled, never overwritten), a closed lead comes back
 as recycled, and a converted lead gets the enquiry on its contact instead of a
 second lead. The same external id twice is a `duplicate` that changes nothing.
 A match by phone alone never takes the incoming email, and an email or number
-that differs from the lead's is written into the enquiry comment instead.
+that differs from the lead's is written into the enquiry instead.
+
+Every arrival but a duplicate is recorded as an `enquiry` interaction: on the
+lead, or on the contact a converted lead became.
 """
 
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
-from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.db.models.functions import Lower
 from django.utils import timezone
 
 from automation.capture import suppress_rules
 from common.kanban import place_in_column
-from common.models import COMMENT_MAX_LENGTH, Comment, Profile
+from common.models import Profile
 from common.phones import to_e164
 from contacts.models import Contact
+from interactions.service import log_interaction
 from leads.models import Lead, LeadStage
 from leads.sources import source_keys
 from leads.tasks import send_email_to_assigned_user, send_enquired_again_email
@@ -37,6 +40,9 @@ FALLBACK_SOURCE = "other"
 # Older than this, an arrival is history: no automation rules, no emails.
 LATE_AFTER = timedelta(hours=24)
 DESCRIPTION_MAX = 20_000
+ENQUIRY_MAX = 10_000
+# The route an arrival took, from the prefix of its `external_source`.
+ENQUIRY_ORIGINS = ("intake", "email", "webform")
 
 # What a repeat enquiry may fill when the lead has it blank. Assignment,
 # status, source and the pipeline columns belong to whoever owns the lead now,
@@ -71,7 +77,7 @@ class IncomingLead:
     tags: tuple = ()
     assignee: "Profile | None" = None
     enquiry_text: str = ""
-    channel_label: str = ""  # shown in the enquiry comment and the email
+    channel_label: str = ""  # the enquiry's subject, and named in the email
     occurred_at: "datetime | None" = None
 
 
@@ -188,9 +194,7 @@ def _create(org, data, when):
     tags = [tag for tag in data.tags if tag.org_id == org.id]
     if tags:
         lead.tags.add(*tags)
-    # The notes hold the mapped message; anything more is kept as a comment.
-    if text and values.get("description") and text != values["description"]:
-        _comment(org, lead, data)
+    _enquiry(org, lead, data, when)
     return lead
 
 
@@ -203,7 +207,7 @@ def _merge(org, lead, data, when, how):
         contact = _converted_contact(org, lead)
         changed |= _stamp(lead, data, when)
         _save(lead, changed, claimed)
-        _comment(org, contact or lead, data, _differing(org, lead, values))
+        _enquiry(org, lead, data, when, _differing(org, lead, values), contact)
         return IntakeResult("merged", lead, contact)
 
     for key in MERGE_FIELDS:
@@ -240,7 +244,7 @@ def _merge(org, lead, data, when, how):
     tags = [tag for tag in data.tags if tag.org_id == org.id]
     if tags:
         lead.tags.add(*tags)
-    _comment(org, lead, data, _differing(org, lead, values))
+    _enquiry(org, lead, data, when, _differing(org, lead, values))
     return IntakeResult("merged", lead)
 
 
@@ -287,7 +291,7 @@ def _reopened_stage(org, lead):
 
 def _differing(org, lead, values):
     """`Label: value` lines for an incoming email or number the lead did not
-    take, so the enquiry comment keeps them."""
+    take, so the enquiry keeps them."""
     lines = []
     email = values.get("email")
     if email and email.lower() != (lead.email or "").strip().lower():
@@ -333,22 +337,31 @@ def _notify(org, data, result):
         )
 
 
-def _comment(org, record, data, lines=()):
-    text = "\n\n".join(part for part in (_text(data), "\n".join(lines)) if part)
-    if not text:
-        return
-    head = (
-        f"New enquiry ({data.channel_label}):" if data.channel_label else "New enquiry:"
-    )
-    body = f"{head}\n{text}"
-    if len(body) > COMMENT_MAX_LENGTH:
-        body = body[: COMMENT_MAX_LENGTH - 1] + "…"
-    Comment.objects.create(
-        org=org,
-        content_type=ContentType.objects.get_for_model(type(record)),
-        object_id=record.id,
-        comment=body,
-        commented_by=None,
+def _enquiry(org, lead, data, when, lines=(), contact=None):
+    """Record the arrival on `lead`, or on `contact` (and its account) when
+    the lead was converted into one."""
+    body = "\n\n".join(part for part in (_text(data), "\n".join(lines)) if part)
+    if len(body) > ENQUIRY_MAX:
+        body = body[: ENQUIRY_MAX - 1] + "…"
+    route = (data.external_source or "").partition(":")[0]
+    home, record, links = "lead", lead, {}
+    if contact is not None:
+        account = contact.account
+        home, record = "contact", contact
+        links = {"lead": lead}
+        if account is not None and account.org_id == org.id:
+            links["account"] = account
+    log_interaction(
+        org,
+        home=home,
+        record=record,
+        kind="enquiry",
+        direction="inbound",
+        occurred_at=when,
+        origin=route if route in ENQUIRY_ORIGINS else "intake",
+        subject=(data.channel_label or "")[:200],
+        body=body,
+        **links,
     )
 
 
@@ -358,6 +371,7 @@ def _converted_contact(org, lead):
         return None
     return (
         Contact.objects.filter(org=org, email__iexact=lead.email)
+        .select_related("account")
         .order_by("-created_at")
         .first()
     )

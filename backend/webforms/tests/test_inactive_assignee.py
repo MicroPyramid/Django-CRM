@@ -18,6 +18,7 @@ from django.core import mail
 
 from common.models import APISettings, Comment, Profile, User
 from contacts.models import Contact
+from interactions.models import Interaction
 from leads.models import Lead
 from webforms.models import WebForm, WebFormField
 from webforms.service import submit_form
@@ -76,7 +77,7 @@ class TestSubmission:
         assert list(lead.assigned_to.all()) == [user_profile]
         assert lead.created_by == user_profile.user
 
-    def test_the_merge_comment_is_not_credited_to_an_inactive_assignee(
+    def test_the_merge_enquiry_is_not_credited_to_an_inactive_assignee(
         self, org_a, admin_user, inactive_profile
     ):
         form = _form(org_a, inactive_profile, admin_user)
@@ -86,10 +87,11 @@ class TestSubmission:
             form, {"email": "pat@example.com", "description": "Again"}
         ).lead
 
-        comment = Comment.objects.get(
+        enquiry = Interaction.objects.get(kind="enquiry", lead=lead, body="Again")
+        assert enquiry.logged_by is None
+        assert not Comment.objects.filter(
             content_type=ContentType.objects.get_for_model(Lead), object_id=lead.id
-        )
-        assert comment.commented_by is None
+        ).exists()
 
 
 @pytest.mark.django_db

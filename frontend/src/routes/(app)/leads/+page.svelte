@@ -10,7 +10,8 @@
   import { money, count, relativeDays, daysSince } from '#lib/v2/format.js';
   import { LEAD_STATUS_TONE } from '#lib/v2/enums.js';
   import { sourceFilterOptions, sourceLabel } from '#lib/v2/lead-sources.js';
-  import { Download, Plus, Upload, Target } from '@lucide/svelte';
+  import { secondsSince, spanText } from '#lib/v2/interactions.js';
+  import { Download, Plus, Upload, Target, Timer } from '@lucide/svelte';
   import { t } from '#lib/terminology.js';
 
   /** @type {{ data: any }} */
@@ -37,15 +38,32 @@
    * @param {{ last_contacted: string | null, created_at: string }} lead
    */
   const stale = (lead) => (daysSince(lead.last_contacted ?? lead.created_at) ?? 0) > 7;
+
+  // An API without response tracking ignores `?unanswered=true` and lists every
+  // open lead, so the view is only claimed when the rows prove it was applied.
+  let asked = $derived(page.url.searchParams.get('unanswered') === 'true');
+  let responseOff = $derived(data.responseLive === false);
+  let unanswered = $derived(asked && !responseOff);
+
+  /** @param {{ is_unanswered: boolean, waiting_since: string | null }} lead */
+  const waitFor = (lead) =>
+    lead.is_unanswered && lead.waiting_since ? spanText(secondsSince(lead.waiting_since)) : '';
 </script>
 
 <PageHeader title={plural}>
   {#snippet sub()}
-    <span class="v2-num">{count(totals.count)}</span> open ·
-    <span class="v2-num">{totals.unworked_over_a_week}</span> unworked for more than a week
+    {#if unanswered}
+      <span class="v2-num">{count(totals.count)}</span> waiting for a first reply
+    {:else}
+      <span class="v2-num">{count(totals.count)}</span> open ·
+      <span class="v2-num">{totals.unworked_over_a_week}</span> unworked for more than a week
+    {/if}
   {/snippet}
   {#snippet actions()}
     <a class="v2-btn" href={resolve('leads/board')}>Board</a>
+    {#if !responseOff}
+      <a class="v2-btn" href={resolve('leads/response-times')}><Timer />Response time</a>
+    {/if}
     <button class="v2-btn" onclick={() => (importOpen = true)}><Upload />Import</button>
     <!-- The page's own query string: the export rebuilds the same API query
          from it, so the file holds every row this list would page through. -->
@@ -68,8 +86,15 @@
   sources={sourceFilterOptions(data.sources)}
   meId={data.meId}
   saved={data.savedViews}
-  meta="Least recently touched first"
+  onlyPresets={responseOff ? ['open', 'mine'] : undefined}
+  meta={unanswered ? 'Longest wait first' : 'Least recently touched first'}
 />
+
+{#if asked && responseOff}
+  <p class="v2-sub v2-pad" style="font-size:12.5px;margin:10px 0 0">
+    Unanswered leads are not available here, so this lists every open lead.
+  </p>
+{/if}
 
 <LeadImportDrawer
   bind:open={importOpen}
@@ -78,7 +103,14 @@
 />
 
 <div class="v2-scroll">
-  {#if leads.length === 0}
+  {#if leads.length === 0 && unanswered}
+    <EmptyState
+      title="Nobody is waiting"
+      body="A lead waits here from the moment it arrives, or enquires again, until someone logs an outgoing call, message, email or meeting on it."
+    >
+      {#snippet icon()}<Timer size={21} />{/snippet}
+    </EmptyState>
+  {:else if leads.length === 0}
     <EmptyState
       title="No {plural.toLowerCase()} yet"
       body="A lead is somebody who might buy, before you know enough to call it a deal. Import a list, or add the last person who emailed you."
@@ -99,7 +131,7 @@
             <th>Status</th>
             <th>Source</th>
             <th class="v2-r">Est. value</th>
-            <th>Last touch</th>
+            <th>{unanswered ? 'Waiting' : 'Last touch'}</th>
             <th>Owner</th>
           </tr>
         </thead>
@@ -132,8 +164,10 @@
               conversation, and a column that quietly counts them stops being
               worth reading.
             -->
-              <td class:v2-muted={!stale(l)} class:overdue={stale(l)}>
-                {#if l.last_contacted}
+              <td class:v2-muted={!stale(l) && !waitFor(l)} class:overdue={stale(l) || waitFor(l)}>
+                {#if waitFor(l)}
+                  Waiting {waitFor(l)}
+                {:else if l.last_contacted}
                   {relativeDays(l.last_contacted)}
                 {:else}
                   <div>Not contacted</div>

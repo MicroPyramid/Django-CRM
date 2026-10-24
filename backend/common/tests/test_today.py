@@ -55,7 +55,12 @@ class TestTodayView:
     def test_today_shape(self, admin_client, org_a):
         resp = admin_client.get(self.url)
         assert resp.status_code == status.HTTP_200_OK
-        assert set(resp.data.keys()) == {"queue", "summary", "later"}
+        assert set(resp.data.keys()) == {
+            "queue",
+            "summary",
+            "later",
+            "unanswered_leads",
+        }
         assert set(resp.data["summary"].keys()) == {
             "count",
             "shown",

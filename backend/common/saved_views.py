@@ -75,6 +75,7 @@ LISTS = {
                 "close_date__lte",
                 "next_follow_up",
                 "open",
+                "unanswered",
             }
         ),
     ),
