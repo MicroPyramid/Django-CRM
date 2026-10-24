@@ -5,7 +5,7 @@ Hello {{ user.get_username }}
 {% endblock heading %}
 
 {% block content_body %}
-<p>You have <strong>{{ deal_count }}</strong> stale deal{{ deal_count|pluralize }} that {{ deal_count|pluralize:"needs,need" }} attention:</p>
+<p><strong>{{ deal_count }}</strong> of your deal{{ deal_count|pluralize }} just went stale, past the time {{ deal_count|pluralize:"its stage expects,their stages expect" }}:</p>
 
 <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
   <thead>
@@ -27,6 +27,8 @@ Hello {{ user.get_username }}
     {% endfor %}
   </tbody>
 </table>
+
+<p>Each deal is emailed about once in each stage.{% if still_waiting %} {{ still_waiting }} more stale deal{{ still_waiting|pluralize }} from earlier {{ still_waiting|pluralize:"is,are" }} still waiting.{% endif %}</p>
 {% endblock content_body %}
 
 {% block button_link %}
