@@ -18,6 +18,7 @@ from common.serializer import (
     ProfileSerializer,
     ShowOrganizationListSerializer,
 )
+from common.signup_source import clean_signup_source
 
 
 class OrgProfileCreateView(APIView):
@@ -42,7 +43,12 @@ class OrgProfileCreateView(APIView):
         # auditing where org keys come from read the wrong line.
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            org_obj = serializer.save()
+            org_obj = serializer.save(
+                signup_source=clean_signup_source(
+                    request.data.get("signup_source"),
+                    request.headers.get("User-Agent", ""),
+                )
+            )
 
             # now creating the profile
             profile_obj = self.model2.objects.create(user=request.user, org=org_obj)

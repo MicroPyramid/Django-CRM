@@ -164,6 +164,11 @@ class Org(BaseModel):
     # explicit confirmation; this flag only controls the default state.
     auto_close_children_on_parent_close = models.BooleanField(default=False)
 
+    # Where the org came from, written once at creation by
+    # `common.signup_source.clean_signup_source`. Growth analytics only:
+    # NEVER used in a permission check or a queryset filter.
+    signup_source = models.JSONField(default=dict, blank=True)
+
     # Vertical packs. Descriptive only: records which pack was applied at
     # signup. NEVER used in a permission check or a queryset filter.
     vertical = models.CharField(

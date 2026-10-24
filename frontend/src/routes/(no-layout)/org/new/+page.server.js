@@ -9,6 +9,7 @@ import axios from 'axios';
 import { describeError } from '#lib/server/log-safe.js';
 import { relayHeaders } from '#lib/server/relay.js';
 import { listPacks, applyPack } from '#lib/server/packs.js';
+import { SIGNUP_SOURCE_COOKIE, readSignupSource } from '#lib/server/signup-source.js';
 import { listTimezones } from '#lib/server/v2/organization.js';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -79,9 +80,14 @@ export const actions = {
 
       // Create organization and profile via Django API
       // Django's OrgProfileCreateView creates both org and profile
+      const signupSource = readSignupSource(cookies);
       const response = await axios.post(
         `${apiUrl}/api/org/`,
-        timezone ? { name: orgName.trim(), timezone } : { name: orgName.trim() },
+        {
+          name: orgName.trim(),
+          ...(timezone ? { timezone } : {}),
+          ...(signupSource ? { signup_source: signupSource } : {})
+        },
         {
           headers: {
             Authorization: `Bearer ${jwtAccess}`,
@@ -92,6 +98,9 @@ export const actions = {
 
       // Response should contain the created org
       const newOrg = response.data.org || response.data;
+
+      // Spent: a second org this person creates did not come from that visit.
+      cookies.delete(SIGNUP_SOURCE_COOKIE, { path: '/' });
 
       // Set org cookie for the newly created org
       await cookies.set('org', newOrg.id, {

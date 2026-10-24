@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from datetime import timedelta
 
 from celery import shared_task
 from django.conf import settings
@@ -9,7 +10,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from common.links import frontend_url
-from common.models import Org, Profile
+from common.models import Activity, Org, Profile
 from common.modules import module_is_available, module_on_since
 from common.org_time import activate_org_timezone, org_timezone
 from opportunity.models import Opportunity, SalesGoal
@@ -51,6 +52,23 @@ def send_email_to_assigned_user(recipients, opportunity_id, org_id):
             msg.send()
 
 
+# Stale-deal alerts go only to orgs someone used lately. A dormant org's admin
+# would otherwise get the same email every day about deals nobody works.
+STALE_ALERT_ACTIVE_DAYS = 30
+
+
+def _used_recently(org):
+    """Whether anyone worked in the org, or signed in to it, in the last
+    STALE_ALERT_ACTIVE_DAYS days. Runs under the org's RLS context."""
+    since = timezone.now() - timedelta(days=STALE_ALERT_ACTIVE_DAYS)
+    return (
+        Activity.objects.filter(org=org, created_at__gte=since).exists()
+        or Profile.objects.filter(
+            org=org, is_active=True, user__last_login__gte=since
+        ).exists()
+    )
+
+
 @shared_task
 def check_stale_opportunities():
     """Daily task: find rotten deals across all orgs and send email alerts."""
@@ -63,6 +81,8 @@ def check_stale_opportunities():
             continue
         try:
             _set_rls_context_safe(str(org.id))
+            if not _used_recently(org):
+                continue
 
             stages = stage_index(org.id)
             rotten_q = aging_q(stages.values(), "red")
@@ -71,8 +91,9 @@ def check_stale_opportunities():
                 # Already rotten when Pipeline came back on: it went stale
                 # while nobody could see it, so it is never alerted.
                 rotten_q &= ~aging_q(stages.values(), "red", since)
+            # A pack's sample deals are nobody's work, so they never alert.
             rotten = Opportunity.objects.filter(
-                rotten_q, org=org, is_active=True
+                rotten_q, org=org, is_active=True, is_sample=False
             ).select_related("org")
 
             stale_opps = []

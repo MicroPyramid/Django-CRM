@@ -270,6 +270,9 @@ class TestStaleDealsTask:
             stage_changed_at=timezone.now() - timedelta(days=30),
         )
         rotten.assigned_to.add(admin_profile)
+        # Alerts reach only orgs used in the last 30 days.
+        admin_user.last_login = timezone.now()
+        admin_user.save(update_fields=["last_login"])
 
         from opportunity.tasks import check_stale_opportunities
 
@@ -303,3 +306,81 @@ class TestStaleDealsTask:
 
         # Alert should not be called since no deals are stale
         mock_alert.assert_not_called()
+
+
+class TestStaleDealsReachOnlyRealWork:
+    """Alerts skip a pack's sample deals and orgs nobody has used lately."""
+
+    def _rotten(self, org, user, profile, **fields):
+        deal = Opportunity.objects.create(
+            name=fields.pop("name", "Stale"),
+            stage="PROSPECTING",
+            org=org,
+            created_by=user,
+            stage_changed_at=timezone.now() - timedelta(days=30),
+            **fields,
+        )
+        deal.assigned_to.add(profile)
+        return deal
+
+    def _go_dormant(self, org, user):
+        from common.models import Activity
+
+        Activity.objects.filter(org=org).update(
+            created_at=timezone.now() - timedelta(days=60)
+        )
+        user.last_login = None
+        user.save(update_fields=["last_login"])
+
+    @patch("opportunity.tasks.send_stale_deals_alert")
+    def test_sample_deals_never_alert(
+        self, mock_alert, org_a, admin_user, admin_profile
+    ):
+        from opportunity.tasks import check_stale_opportunities
+
+        self._rotten(org_a, admin_user, admin_profile, is_sample=True)
+        check_stale_opportunities()
+        mock_alert.assert_not_called()
+
+    @patch("opportunity.tasks.send_stale_deals_alert")
+    def test_an_org_nobody_used_for_30_days_is_not_alerted(
+        self, mock_alert, org_a, admin_user, admin_profile
+    ):
+        from opportunity.tasks import check_stale_opportunities
+
+        self._rotten(org_a, admin_user, admin_profile)
+        self._go_dormant(org_a, admin_user)
+        check_stale_opportunities()
+        mock_alert.assert_not_called()
+
+    @patch("opportunity.tasks.send_stale_deals_alert")
+    def test_recent_work_counts_as_use(
+        self, mock_alert, org_a, admin_user, admin_profile
+    ):
+        from common.models import Activity
+        from opportunity.tasks import check_stale_opportunities
+
+        deal = self._rotten(org_a, admin_user, admin_profile)
+        self._go_dormant(org_a, admin_user)
+        Activity.objects.create(
+            user=admin_profile,
+            org=org_a,
+            action="UPDATE",
+            entity_type="Opportunity",
+            entity_id=deal.id,
+        )
+        check_stale_opportunities()
+        assert mock_alert.called
+
+    @patch("opportunity.tasks.send_stale_deals_alert")
+    def test_a_recent_sign_in_counts_as_use(
+        self, mock_alert, org_a, admin_user, admin_profile
+    ):
+        from opportunity.tasks import check_stale_opportunities
+
+        self._rotten(org_a, admin_user, admin_profile)
+        self._go_dormant(org_a, admin_user)
+        admin_user.last_login = timezone.now() - timedelta(days=3)
+        admin_user.save(update_fields=["last_login"])
+        check_stale_opportunities()
+        assert mock_alert.called

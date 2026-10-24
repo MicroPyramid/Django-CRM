@@ -17,6 +17,7 @@ import * as publicEnv from '$app/env/public';
 import { generateCodeVerifier, generateCodeChallenge, generateState } from '#lib/utils/pkce.js';
 import { describeError } from '#lib/server/log-safe.js';
 import { relayHeaders } from '#lib/server/relay.js';
+import { rememberSignupSource } from '#lib/server/signup-source.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_SCOPES = ['openid', 'email', 'profile'].join(' ');
@@ -61,6 +62,10 @@ export async function load({ url, cookies, getClientAddress, request }) {
   if (code) {
     return handleOAuthCallback(code, returnedState, cookies, { getClientAddress, request });
   }
+
+  // After the error and callback returns: Google's redirect back is not where
+  // the person came from.
+  rememberSignupSource({ url, request, cookies }, env.NODE_ENV === 'production');
 
   // Check if user is already authenticated
   const jwtAccess = cookies.get('jwt_access');
