@@ -261,13 +261,13 @@ class TestStaleDealsTask:
     def test_task_detects_stale_deals(
         self, mock_alert, org_a, admin_user, admin_profile
     ):
-        # Create a rotten deal assigned to admin
+        # A deal that went stale an hour ago, assigned to admin
         rotten = Opportunity.objects.create(
             name="Very Stale",
             stage="PROSPECTING",
             org=org_a,
             created_by=admin_user,
-            stage_changed_at=timezone.now() - timedelta(days=30),
+            stage_changed_at=timezone.now() - timedelta(days=21, hours=1),
         )
         rotten.assigned_to.add(admin_profile)
         # Alerts reach only orgs used in the last 30 days.
@@ -288,7 +288,7 @@ class TestStaleDealsTask:
             opp.name: (label, days, expected)
             for opp, label, days, expected in stale_list
         }
-        assert stale["Very Stale"] == ("Prospecting", 30, 14)
+        assert stale["Very Stale"] == ("Prospecting", 21, 14)
 
     @patch("opportunity.tasks.send_stale_deals_alert")
     def test_task_ignores_fresh_deals(self, mock_alert, org_a, admin_user):
@@ -317,7 +317,7 @@ class TestStaleDealsReachOnlyRealWork:
             stage="PROSPECTING",
             org=org,
             created_by=user,
-            stage_changed_at=timezone.now() - timedelta(days=30),
+            stage_changed_at=timezone.now() - timedelta(days=21, hours=1),
             **fields,
         )
         deal.assigned_to.add(profile)
@@ -384,3 +384,104 @@ class TestStaleDealsReachOnlyRealWork:
         admin_user.save(update_fields=["last_login"])
         check_stale_opportunities()
         assert mock_alert.called
+
+
+class TestStaleDealsEmailOncePerStage:
+    """A deal is emailed about on the run after it goes stale, and not again
+    until it goes stale in another stage."""
+
+    @pytest.fixture
+    def clock(self):
+        class Clock:
+            now = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0)
+
+            def advance(self, **delta):
+                self.now += timedelta(**delta)
+
+        c = Clock()
+        with patch("django.utils.timezone.now", side_effect=lambda: c.now):
+            yield c
+
+    @pytest.fixture(autouse=True)
+    def signed_in(self, admin_user, clock):
+        admin_user.last_login = timezone.now()
+        admin_user.save(update_fields=["last_login"])
+
+    def _deal(self, org, user, profile, name, days):
+        # Prospecting expects 14 days, so a deal is stale after 21.
+        deal = Opportunity.objects.create(
+            name=name,
+            stage="PROSPECTING",
+            org=org,
+            created_by=user,
+            stage_changed_at=timezone.now() - timedelta(days=days),
+        )
+        deal.assigned_to.add(profile)
+        return deal
+
+    def _check(self):
+        from opportunity.tasks import check_stale_opportunities
+
+        check_stale_opportunities()
+
+    def test_emailed_the_day_it_goes_stale_and_not_after(
+        self, clock, org_a, admin_user, admin_profile
+    ):
+        from django.core import mail
+
+        self._deal(org_a, admin_user, admin_profile, "Acme renewal", 21.5)
+        self._check()
+        assert [m.subject for m in mail.outbox] == ["[BottleCRM] 1 deal went stale"]
+        assert "Acme renewal" in mail.outbox[0].body
+
+        for _ in range(3):
+            clock.advance(days=1)
+            self._check()
+        assert len(mail.outbox) == 1
+
+    def test_deals_long_stale_when_the_scheduler_starts_send_nothing(
+        self, org_a, admin_user, admin_profile
+    ):
+        from django.core import mail
+
+        self._deal(org_a, admin_user, admin_profile, "Old", 30)
+        self._deal(org_a, admin_user, admin_profile, "Older", 90)
+        self._check()
+        assert mail.outbox == []
+
+    def test_older_stale_deals_are_counted_not_listed(
+        self, org_a, admin_user, admin_profile
+    ):
+        from django.core import mail
+
+        self._deal(org_a, admin_user, admin_profile, "Went stale today", 21.5)
+        self._deal(org_a, admin_user, admin_profile, "Stale for weeks", 40)
+        self._check()
+        assert len(mail.outbox) == 1
+        body = mail.outbox[0].body
+        assert "Went stale today" in body
+        assert "Stale for weeks" not in body
+        assert "1 more stale deal from earlier is still waiting" in body
+
+    def test_going_stale_in_a_new_stage_emails_again(
+        self, clock, org_a, admin_user, admin_profile
+    ):
+        from django.core import mail
+
+        from opportunity.stages import stage_index
+        from opportunity.workflow import aging_thresholds
+
+        deal = self._deal(org_a, admin_user, admin_profile, "Acme renewal", 21.5)
+        self._check()
+        assert len(mail.outbox) == 1
+
+        deal.stage = "QUALIFICATION"
+        deal.save()
+        stage = deal.current_stage(stage_index(org_a.id))
+        red_days = aging_thresholds(
+            stage.kind, stage.expected_days, stage.warning_days
+        )[1]
+        clock.advance(days=red_days, hours=12)
+        self._check()
+        assert len(mail.outbox) == 2
+        assert "Acme renewal" in mail.outbox[1].body

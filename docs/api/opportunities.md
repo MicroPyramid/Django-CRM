@@ -130,9 +130,12 @@ an open stage, and `red` (stalled, rotting) at `ceil(expected_days * 1.5)` (`agi
 
 The daily stale-deal email (`check_stale_opportunities` in `opportunity/tasks.py`, run by Celery
 beat) uses the same `red` threshold. It goes to each stalled deal's assignees, or to the org's
-admins when nobody is assigned. It skips a pack's sample deals (`is_sample`), and it skips an org
-nobody has used in the last 30 days: no activity and no member sign-in, so a dormant org is not
-sent the same email every day.
+admins when nobody is assigned. A deal is emailed about once in each stage: each run lists only
+the deals that went red in the day since the previous run (whole hours, so daily runs tile), and
+counts the recipient's older stale deals without listing them. A deal already red when the
+scheduler first runs is never emailed, so a late start sends no backlog, and a day the scheduler
+misses is not caught up. The email skips a pack's sample deals (`is_sample`) and any org nobody
+has used in the last 30 days: no activity and no member sign-in.
 
 ### Pipeline administration
 

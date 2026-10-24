@@ -1,5 +1,5 @@
 import logging
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 
 from celery import shared_task
@@ -69,11 +69,23 @@ def _used_recently(org):
     )
 
 
+def _alert_window(now=None):
+    """The day since the previous daily run, on whole hours so runs tile.
+
+    A deal is alerted by the run after it goes stale and never again in that
+    stage, so a deal stuck for weeks is one email, not one a day. A scheduler
+    that starts late therefore sends no backlog.
+    """
+    end = (now or timezone.now()).replace(minute=0, second=0, microsecond=0)
+    return end - timedelta(days=1), end
+
+
 @shared_task
 def check_stale_opportunities():
-    """Daily task: find rotten deals across all orgs and send email alerts."""
+    """Daily task: email each person the deals that went stale since the last run."""
     from opportunity.stages import aging_q, stage_index
 
+    start, end = _alert_window()
     orgs = Org.objects.filter(is_active=True)
 
     for org in orgs:
@@ -85,46 +97,62 @@ def check_stale_opportunities():
                 continue
 
             stages = stage_index(org.id)
-            rotten_q = aging_q(stages.values(), "red")
+            rotten_q = aging_q(stages.values(), "red", end)
             since = module_on_since(org, "deals")
             if since is not None:
                 # Already rotten when Pipeline came back on: it went stale
                 # while nobody could see it, so it is never alerted.
                 rotten_q &= ~aging_q(stages.values(), "red", since)
             # A pack's sample deals are nobody's work, so they never alert.
-            rotten = Opportunity.objects.filter(
-                rotten_q, org=org, is_active=True, is_sample=False
-            ).select_related("org")
+            rotten = (
+                Opportunity.objects.filter(
+                    rotten_q, org=org, is_active=True, is_sample=False
+                )
+                .select_related("org")
+                .prefetch_related("assigned_to")
+            )
+            newly = set(
+                rotten.exclude(aging_q(stages.values(), "red", start)).values_list(
+                    "id", flat=True
+                )
+            )
+            if not newly:
+                continue
 
-            stale_opps = []
+            stale_opps, still_waiting = [], []
             for opp in rotten:
+                if opp.id not in newly:
+                    still_waiting.append(opp)
+                    continue
                 stage = opp.current_stage(stages)
                 stale_opps.append(
                     (opp, stage.label, opp.days_in_current_stage, stage.expected_days)
                 )
-
-            if stale_opps:
-                send_stale_deals_alert(org, stale_opps)
+            send_stale_deals_alert(org, stale_opps, still_waiting)
         except Exception:
             logger.exception("Error processing stale deals for org %s", org.id)
 
 
-def send_stale_deals_alert(org, stale_opps):
-    """Send per-user email alerts for rotten deals."""
-    # Pre-fetch org admins for unassigned deals
+def _alert_recipients(opp, org_admins):
+    """A deal's active assignees, or the org's admins when nobody is assigned."""
+    assigned = [profile for profile in opp.assigned_to.all() if profile.is_active]
+    return assigned or org_admins
+
+
+def send_stale_deals_alert(org, stale_opps, still_waiting=()):
+    """Email each person the deals in `stale_opps` that are theirs, with a
+    count of their other stale deals (`still_waiting`), which are not listed."""
     org_admins = list(Profile.objects.filter(org=org, role="ADMIN", is_active=True))
 
-    # Group by assigned users
     user_deals = defaultdict(list)
     for opp, label, days, expected in stale_opps:
-        assigned = list(opp.assigned_to.filter(is_active=True))
-        if assigned:
-            for profile in assigned:
-                user_deals[profile].append((opp, label, days, expected))
-        else:
-            # No one assigned - alert org admins
-            for admin in org_admins:
-                user_deals[admin].append((opp, label, days, expected))
+        for profile in _alert_recipients(opp, org_admins):
+            user_deals[profile].append((opp, label, days, expected))
+
+    waiting = Counter()
+    for opp in still_waiting:
+        for profile in _alert_recipients(opp, org_admins):
+            waiting[profile] += 1
 
     for profile, deals in user_deals.items():
         context = {
@@ -140,8 +168,11 @@ def send_stale_deals_alert(org, stale_opps):
             ],
             "url": frontend_url("/pipeline?rotten=true"),
             "deal_count": len(deals),
+            "still_waiting": waiting[profile],
         }
-        subject = f"[BottleCRM] {len(deals)} stale deal{'s' if len(deals) > 1 else ''} need attention"
+        subject = (
+            f"[BottleCRM] {len(deals)} deal{'s' if len(deals) > 1 else ''} went stale"
+        )
         html_content = render_to_string(
             "opportunity/stale_deals_alert.html", context=context
         )

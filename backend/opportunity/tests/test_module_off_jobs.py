@@ -115,9 +115,9 @@ def test_stale_deal_alert_skips_an_org_with_deals_off(
     mock_alert, org_a, org_b, admin_user, admin_profile, user_b, profile_b
 ):
     _switch(org_a, admin_profile, "deals")
-    _deal(org_a, admin_user, "Ours", 30)
+    _deal(org_a, admin_user, "Ours", 21.5)
     with rls_org(org_b):
-        _deal(org_b, user_b, "Theirs", 30)
+        _deal(org_b, user_b, "Theirs", 21.5)
     _signed_in(admin_user)
     _signed_in(user_b)
 
@@ -140,7 +140,8 @@ def test_deals_that_went_stale_while_off_are_not_alerted(
     check_stale_opportunities()
     assert _alerted(mock_alert) == []
 
-    clock.advance(days=7)
+    # It goes stale on day 21 in its stage, half a day before this run.
+    clock.advance(days=6, hours=12)
     check_stale_opportunities()
     assert _alerted(mock_alert) == [(org_a.id, ["Turns stale later"])]
 
