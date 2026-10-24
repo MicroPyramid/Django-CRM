@@ -60,6 +60,10 @@ through:
 
 - **The UI**: the Settings → Organization page (for an existing org) and the organization
   creation page (for a brand-new org) both offer a pack picker, calling the same backend endpoint.
+  Both exist in the web app and the mobile app. On creation the picker asks "What kind of
+  business is this?" and defaults to "Skip for now". It is hidden when the pack list cannot be
+  loaded. A pack that fails to apply never undoes the new org; the mobile app says so and points
+  to Settings → Organization, where the pack can be applied again.
 - **The API**: `POST /api/packs/<pack_id>/apply/`, restricted to an organization admin
   (`request.profile.role == "ADMIN"`); any authenticated member can list available packs via
   `GET /api/packs/`, but only an admin can apply one.

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/api_config.dart';
+import '../../data/models/org_settings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../routes/app_router.dart';
 import '../../services/api_service.dart';
 import '../../widgets/forms/unsaved_changes.dart';
@@ -31,6 +33,9 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
   /// different spelling of the same zone.
   List<_Zone> _zones = const [];
   String _timezone = 'UTC';
+
+  /// The chosen pack id; empty is "Skip for now".
+  String _vertical = '';
   bool _loadingZones = true;
   bool _submitting = false;
 
@@ -93,13 +98,37 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
         .createOrganization(_nameController.text.trim(), timezone: _timezone);
 
     if (!mounted) return;
-    setState(() => _submitting = false);
-
     if (failure != null) {
+      setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(failure), backgroundColor: Colors.red),
       );
       return;
+    }
+
+    // The org already exists and is selected, so a pack that will not apply
+    // must not undo it, as on the web. Unlike the web, say so: Settings >
+    // Organization can apply it again.
+    String? packFailure;
+    if (_vertical.isNotEmpty) {
+      final result = await ref
+          .read(orgSettingsProvider.notifier)
+          .applyPack(_vertical);
+      packFailure = result.error;
+    }
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    if (packFailure != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Your organization is ready, but the industry setup did not '
+            'apply ($packFailure). You can apply it again from Organization '
+            'settings.',
+          ),
+        ),
+      );
     }
     // A new workspace is empty, so the first thing offered is bringing in
     // the people from a spreadsheet, with a skip to the dashboard. The web's
@@ -107,12 +136,23 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
     context.go(AppRoutes.importWelcome);
   }
 
+  Widget _packOption(String id, String name, String description) =>
+      RadioListTile<String>(
+        value: id,
+        enabled: !_submitting,
+        contentPadding: EdgeInsets.zero,
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: description.isEmpty ? null : Text(description),
+      );
+
   /// The timezone is a guess the screen made, not something the user typed,
   /// so only a name counts as work worth keeping.
   bool get _hasUnsavedChanges => _nameController.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
+    // A list that fails to load hides the question, as the web does.
+    final packs = ref.watch(orgPacksProvider).value ?? const <VerticalPack>[];
     return UnsavedChangesGuard(
       hasUnsavedChanges: () => _hasUnsavedChanges,
       isSaving: _submitting,
@@ -195,6 +235,39 @@ class _OrgCreateScreenState extends ConsumerState<OrgCreateScreen> {
                     'Settings.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
+                  if (packs.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'What kind of business is this?',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sets up a starter pipeline, tags and fields for your '
+                      'industry. You can change everything later.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    RadioGroup<String>(
+                      groupValue: _vertical,
+                      onChanged: (value) {
+                        if (value != null) setState(() => _vertical = value);
+                      },
+                      child: Column(
+                        children: [
+                          _packOption(
+                            '',
+                            'Skip for now',
+                            'Start with a blank workspace.',
+                          ),
+                          for (final pack in packs)
+                            _packOption(pack.id, pack.name, pack.description),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,

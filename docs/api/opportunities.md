@@ -128,6 +128,12 @@ an open stage, and `red` (stalled, rotting) at `ceil(expected_days * 1.5)` (`agi
 `workflow.py`). `?rotten=true` and the `stalled_count` in `totals` use the same thresholds as
 `Opportunity.get_aging_status()`, as queryset cutoffs (`opportunity/stages.py`, `aging_q`).
 
+The daily stale-deal email (`check_stale_opportunities` in `opportunity/tasks.py`, run by Celery
+beat) uses the same `red` threshold. It goes to each stalled deal's assignees, or to the org's
+admins when nobody is assigned. It skips a pack's sample deals (`is_sample`), and it skips an org
+nobody has used in the last 30 days: no activity and no member sign-in, so a dormant org is not
+sent the same email every day.
+
 ### Pipeline administration
 
 Reads are open to every member of the org; every write is admin-only (`403` otherwise). An id from

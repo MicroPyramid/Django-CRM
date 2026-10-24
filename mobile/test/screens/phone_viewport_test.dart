@@ -56,6 +56,7 @@ import 'package:bottle_crm/screens/settings/macros_screen.dart';
 import 'package:bottle_crm/screens/settings/mailbox_form_sheet.dart';
 import 'package:bottle_crm/screens/settings/organization_edit_screen.dart';
 import 'package:bottle_crm/screens/settings/organization_screen.dart';
+import 'package:bottle_crm/screens/auth/org_create_screen.dart';
 import 'package:bottle_crm/screens/tickets/close_with_children_dialog.dart';
 import 'package:bottle_crm/screens/tickets/macro_picker_sheet.dart';
 import 'package:bottle_crm/screens/settings/settings_hub_screen.dart';
@@ -3009,6 +3010,58 @@ void main() {
       expect(find.textContaining('cannot be closed by anyone'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('new organization at 390px', () {
+    // Every pack listed, the longest description included, so the radio rows
+    // are at their tallest.
+    Widget orgCreateApp() => ProviderScope(
+      overrides: [
+        orgPacksProvider.overrideWith(
+          (ref) async => const [
+            VerticalPack(
+              id: 'professional-services',
+              name: 'Professional services',
+              description:
+                  'Agencies, consultancies and accounting firms selling '
+                  'billable work.',
+            ),
+            VerticalPack(
+              id: 'education-admissions',
+              name: 'Education admissions',
+              description:
+                  'Coaching centres, training institutes and colleges '
+                  'managing admissions.',
+            ),
+            VerticalPack(
+              id: 'events-weddings',
+              name: 'Events & weddings',
+              description:
+                  'Wedding planners, event agencies and venues taking '
+                  'enquiries through to a delivered event.',
+            ),
+            VerticalPack(
+              id: 'real-estate',
+              name: 'Real estate',
+              description:
+                  'Brokers, agencies and developers selling residential and '
+                  'commercial property.',
+            ),
+          ],
+        ),
+      ],
+      child: const MaterialApp(home: OrgCreateScreen()),
+    );
+
+    for (final scale in [1.0, 1.5]) {
+      testWidgets('the industry choice fits at text scale $scale', (
+        tester,
+      ) async {
+        await pump(tester, orgCreateApp(), textScale: scale);
+        expect(find.text('What kind of business is this?'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   group('organization at 390px', () {

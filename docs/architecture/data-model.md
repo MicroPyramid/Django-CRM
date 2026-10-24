@@ -127,3 +127,20 @@ directly in the serializer instead of relying on `full_clean()`, `opportunity/se
 own comment. If you add a `clean()` method to a model, verify whether that model's `save()` calls
 `full_clean()` before assuming the rule is enforced anywhere outside a unit test that calls
 `full_clean()` directly.
+
+## Where an org came from
+
+`Org.signup_source` records, once, how the org's creator arrived, for growth analytics. It is never
+read by a permission check or a queryset filter.
+
+- The web app's sign-in page stores the first visit's `utm_source`, `utm_medium` and
+  `utm_campaign` tags and the referring site's host name in an httpOnly `signup_source` cookie
+  (30 days). An existing cookie is kept, so the first visit wins. Google's redirect back to the
+  sign-in page and the app's own pages are never taken as a source.
+- Creating an org sends that value with `POST /api/org/` as `signup_source`, and the cookie is
+  then deleted.
+- The API keeps only those four keys, as short printable text and a bare host name (never a full
+  URL, whose path or query can carry tokens), and adds `client`: `phone` for the mobile app,
+  `web` otherwise. A malformed value is dropped and never blocks the create.
+
+Nothing personal is stored: no address, no email and no full referring URL.
