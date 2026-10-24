@@ -27,7 +27,17 @@
   import Avatar from '#lib/v2/components/Avatar.svelte';
   import DuplicatesPanel from '#lib/v2/components/DuplicatesPanel.svelte';
   import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
-  import { money, moneyEach, shortDate, relativeDays, daysSince } from '#lib/v2/format.js';
+  import LogActivity from '#lib/v2/components/LogActivity.svelte';
+  import InteractionIcon from '#lib/v2/components/InteractionIcon.svelte';
+  import {
+    money,
+    moneyEach,
+    shortDate,
+    relativeDays,
+    relativeTime,
+    daysSince
+  } from '#lib/v2/format.js';
+  import { whatsappHref } from '#lib/v2/interactions.js';
   import {
     CLOSED_KINDS,
     PRIORITY_TONE,
@@ -39,6 +49,7 @@
   import {
     ChevronRight,
     Mail,
+    MessageCircle,
     Phone,
     PhoneOff,
     Pencil,
@@ -95,7 +106,7 @@
   // only be cleared through the DOM, not by rebinding.
   let fileName = $state('');
   /** @type {HTMLInputElement | undefined} */
-  let fileInput;
+  let fileInput = $state();
 
   /** @param {Event} e */
   function pickFile(e) {
@@ -111,17 +122,34 @@
   // either a note or a file, and the button says which it will do.
   let canSubmit = $derived(Boolean(note.trim() || fileName));
 
+  // Notes stay comments; calls and messages are interactions, logged through
+  // their own form when the API has them.
+  let logLive = $derived(data.interactions.live);
+  let composer = $state(/** @type {'note'|'log'} */ ('note'));
+  let logKind = $state('call');
+  /** @type {HTMLElement | undefined} */
+  let composerEl = $state();
+  let whatsapp = $derived(whatsappHref(contact.phone_e164));
+
+  /** Opens the form set to `kind`; the link itself still dials or opens WhatsApp. */
+  function startLog(/** @type {string} */ kind) {
+    if (!logLive) return;
+    logKind = kind;
+    composer = 'log';
+    composerEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
   // ── activity feed ────────────────────────────────────────────────────────
-  // Three real kinds (note / file / created). The filter only appears once there
-  // is a file to filter. With nothing but notes it would sort one pile.
-  let hasFiles = $derived(activity.some((/** @type {any} */ e) => e.type === 'file'));
-  let filter = $state(/** @type {'all'|'notes'|'files'} */ ('all'));
+  // Notes, logged calls and messages, files, and the creation. The filter
+  // appears once there are two of the first three to choose between.
+  let filter = $state(/** @type {'all'|'note'|'interaction'|'file'} */ ('all'));
+  let kinds = $derived(
+    ['note', 'interaction', 'file'].filter((k) =>
+      activity.some((/** @type {any} */ e) => e.type === k)
+    )
+  );
   let shown = $derived(
-    filter === 'files'
-      ? activity.filter((/** @type {any} */ e) => e.type === 'file')
-      : filter === 'notes'
-        ? activity.filter((/** @type {any} */ e) => e.type !== 'file')
-        : activity
+    filter === 'all' ? activity : activity.filter((/** @type {any} */ e) => e.type === filter)
   );
   let newestId = $derived(shown[0]?.id ?? null);
 
@@ -134,7 +162,7 @@
     const parts = [];
     if (e.type === 'file') parts.push('Attached');
     if (e.by) parts.push(e.by);
-    parts.push(relativeDays(e.at));
+    parts.push(relativeTime(e.at));
     return parts.join(' · ');
   }
 
@@ -215,7 +243,17 @@
         <PhoneOff />Do not call
       </button>
     {:else if contact.phone}
-      <a class="v2-btn" href="tel:{contact.phone}"><Phone />Call</a>
+      <a class="v2-btn" href="tel:{contact.phone}" onclick={() => startLog('call')}><Phone />Call</a
+      >
+    {/if}
+    {#if whatsapp}
+      <a
+        class="v2-btn"
+        href={whatsapp}
+        target="_blank"
+        rel="external noreferrer noopener"
+        onclick={() => startLog('whatsapp')}><MessageCircle />WhatsApp</a
+      >
     {/if}
     <a class="v2-btn v2-btn-primary" href={resolve(`contacts/${contact.id}/edit`)}><Pencil />Edit</a
     >
@@ -378,81 +416,124 @@
 
         <div class="act-head">
           <div class="v2-label">Activity</div>
-          {#if hasFiles}
-            <!-- Only real kinds. There is no calls/emails/meetings split because
-                 there are no such records to split on. -->
-            <div class="seg" role="tablist" aria-label="Filter activity">
-              <button class:on={filter === 'all'} onclick={() => (filter = 'all')}>All</button>
-              <button class:on={filter === 'notes'} onclick={() => (filter = 'notes')}>Notes</button
-              >
-              <button class:on={filter === 'files'} onclick={() => (filter = 'files')}>Files</button
-              >
+          {#if kinds.length > 1}
+            <div class="seg" role="group" aria-label="Filter activity">
+              <button aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>All</button>
+              {#if kinds.includes('interaction')}
+                <button
+                  aria-pressed={filter === 'interaction'}
+                  onclick={() => (filter = 'interaction')}>Conversations</button
+                >
+              {/if}
+              {#if kinds.includes('note')}
+                <button aria-pressed={filter === 'note'} onclick={() => (filter = 'note')}
+                  >Notes</button
+                >
+              {/if}
+              {#if kinds.includes('file')}
+                <button aria-pressed={filter === 'file'} onclick={() => (filter = 'file')}
+                  >Files</button
+                >
+              {/if}
             </div>
           {/if}
         </div>
 
-        <!-- The composer. `reset: false` plus clearing state by hand on success
-             keeps the box and the binding in step; a failed save keeps the words
-             and the picked file. A contact takes a note, a file, or both. -->
-        <form
-          method="POST"
-          action="?/note"
-          enctype="multipart/form-data"
-          class="note-form"
-          use:enhance={() => {
-            saving = true;
-            return async ({ result, update }) => {
-              saving = false;
-              if (result.type === 'success') {
-                note = '';
-                clearFile();
-              }
-              await update({ reset: false });
-            };
-          }}
-        >
-          <textarea
-            name="comment"
-            rows="2"
-            bind:value={note}
-            class="note-input"
-            placeholder="Log a call, a reply, what they said…"></textarea>
-          <div class="note-actions">
-            <button class="v2-btn v2-btn-primary" type="submit" disabled={saving || !canSubmit}>
-              {saving
-                ? 'Saving…'
-                : note.trim()
-                  ? 'Add note'
-                  : fileName
-                    ? 'Attach file'
-                    : 'Add note'}
-            </button>
-            <label class="v2-btn" class:has-file={fileName}>
-              <Paperclip size={14} />
-              <span class="attach-label">{fileName || 'Attach file'}</span>
-              <input
-                bind:this={fileInput}
-                type="file"
-                name="attachment"
-                onchange={pickFile}
-                hidden
-              />
-            </label>
-            {#if fileName}
-              <button
-                type="button"
-                class="v2-btn-quiet clear-file"
-                onclick={clearFile}
-                title="Remove file"
+        <div class="composer" bind:this={composerEl}>
+          {#if logLive}
+            <div class="seg composer-switch" role="group" aria-label="Add to the timeline">
+              <button aria-pressed={composer === 'note'} onclick={() => (composer = 'note')}
+                >Note</button
               >
-                <X size={13} />
-              </button>
-            {/if}
-            {#if form?.message}
-              <span class="note-err">{form.message}</span>
-            {/if}
-          </div>
-        </form>
+              <button aria-pressed={composer === 'log'} onclick={() => (composer = 'log')}
+                >Log activity</button
+              >
+            </div>
+          {/if}
+          {#if composer === 'log' && logLive}
+            <LogActivity
+              bind:kind={logKind}
+              result={form?.activity}
+              timeZone={data.org?.timezone}
+              oncancel={() => (composer = 'note')}
+              onlogged={() => (composer = 'note')}
+            />
+          {:else}
+            <!-- The note composer. `reset: false` plus clearing state by hand on
+                 success keeps the box and the binding in step; a failed save
+                 keeps the words and the picked file. A contact takes a note, a
+                 file, or both. -->
+            <form
+              method="POST"
+              action="?/note"
+              enctype="multipart/form-data"
+              class="note-form"
+              use:enhance={() => {
+                saving = true;
+                return async ({ result, update }) => {
+                  saving = false;
+                  if (result.type === 'success') {
+                    note = '';
+                    clearFile();
+                  }
+                  await update({ reset: false });
+                };
+              }}
+            >
+              <textarea
+                name="comment"
+                rows="2"
+                bind:value={note}
+                class="note-input"
+                placeholder={logLive ? 'Write a note…' : 'Log a call, a reply, what they said…'}
+              ></textarea>
+              <div class="note-actions">
+                <button class="v2-btn v2-btn-primary" type="submit" disabled={saving || !canSubmit}>
+                  {saving
+                    ? 'Saving…'
+                    : note.trim()
+                      ? 'Add note'
+                      : fileName
+                        ? 'Attach file'
+                        : 'Add note'}
+                </button>
+                <label class="v2-btn" class:has-file={fileName}>
+                  <Paperclip size={14} />
+                  <span class="attach-label">{fileName || 'Attach file'}</span>
+                  <input
+                    bind:this={fileInput}
+                    type="file"
+                    name="attachment"
+                    onchange={pickFile}
+                    hidden
+                  />
+                </label>
+                {#if fileName}
+                  <button
+                    type="button"
+                    class="v2-btn-quiet clear-file"
+                    onclick={clearFile}
+                    title="Remove file"
+                  >
+                    <X size={13} />
+                  </button>
+                {/if}
+                {#if form?.message}
+                  <span class="note-err">{form.message}</span>
+                {/if}
+              </div>
+            </form>
+          {/if}
+        </div>
+
+        {#if data.interactions.failed}
+          <p class="note-err" style="margin:0 0 12px">
+            Calls and messages could not be loaded, so they are missing below.
+          </p>
+        {/if}
+        {#if form?.activity?.deleteError}
+          <p class="note-err" role="alert" style="margin:0 0 12px">{form.activity.deleteError}</p>
+        {/if}
 
         <div class="tl">
           {#each feed as row (row.id)}
@@ -464,10 +545,17 @@
                 <span class="tl-ico" data-kind={e.type}>
                   {#if e.type === 'file'}<Paperclip size={13} />
                   {:else if e.type === 'status'}<Sparkles size={13} />
+                  {:else if e.type === 'interaction'}<InteractionIcon
+                      kind={e.kind}
+                      direction={e.direction}
+                    />
                   {:else}<MessageSquare size={13} />{/if}
                 </span>
                 <div class="tl-body">
-                  {#if e.type === 'file' && e.href}
+                  {#if e.type === 'interaction'}
+                    <div class="tl-text">{e.body}</div>
+                    {#if e.detail}<div class="tl-detail">{e.detail}</div>{/if}
+                  {:else if e.type === 'file' && e.href}
                     <a
                       class="tl-file"
                       href={resolve(asInternalPath(e.href))}
@@ -480,6 +568,17 @@
                     <div class="tl-text" class:note={e.type === 'note'}>{e.body}</div>
                   {/if}
                   <div class="tl-meta">{metaFor(e)}</div>
+                  {#if e.canDelete}
+                    <div class="tl-act">
+                      <ConfirmAction
+                        action="?/deleteActivity"
+                        hidden={{ interaction: e.interaction }}
+                        label="Delete"
+                        confirmLabel="Delete for good"
+                        explain="Removes it from every timeline it is on."
+                      />
+                    </div>
+                  {/if}
                 </div>
               </div>
             {/if}
@@ -488,6 +587,11 @@
               Nothing logged yet. The first note you add shows up here.
             </p>
           {/each}
+          {#if data.interactions.more}
+            <p class="v2-sub" style="font-size:12px">
+              Showing the latest calls and messages; {data.interactions.more} older ones are not shown.
+            </p>
+          {/if}
         </div>
       </div>
     </div>
@@ -686,10 +790,40 @@
   .seg button + button {
     border-left: 1px solid var(--v2-line);
   }
-  .seg button.on {
+  .seg button[aria-pressed='true'] {
     color: var(--v2-ink);
     background: var(--v2-hover);
     font-weight: 600;
+  }
+  .act-head {
+    flex-wrap: wrap;
+  }
+  .composer {
+    margin-bottom: 22px;
+  }
+  .composer .note-form {
+    margin-bottom: 0;
+  }
+  .composer-switch {
+    display: inline-flex;
+    margin-bottom: 8px;
+  }
+  .tl-detail {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--v2-ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin-top: 2px;
+  }
+  .tl-act {
+    margin-top: 4px;
+  }
+  @media (max-width: 767px) {
+    .seg button {
+      min-height: 40px;
+      padding: 6px 12px;
+    }
   }
 
   .tl-day {

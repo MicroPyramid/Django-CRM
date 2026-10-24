@@ -68,6 +68,9 @@ export const FILTERS = {
   leads: {
     presets: [
       { key: 'open', label: 'Open leads', params: {} },
+      // Before `mine`, so a view of my own unanswered leads is named for the
+      // stronger claim; the owner shows as a chip.
+      { key: 'unanswered', label: 'Unanswered', params: { unanswered: 'true' } },
       { key: 'mine', label: 'Mine', params: { assigned_to: '@me' } }
     ],
     fields: [

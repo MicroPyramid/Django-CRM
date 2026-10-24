@@ -83,6 +83,7 @@ nav:
       - Tokens and API keys: api/tokens-and-api-keys.md
       - Modules: api/modules.md
       - Leads: api/leads.md
+      - Interactions: api/interactions.md
       - Accounts: api/accounts.md
       - Contacts: api/contacts.md
       - Opportunities: api/opportunities.md
@@ -99,6 +100,7 @@ nav:
       - AI agents: integrations/ai-agents.md
       - Web forms: integrations/web-forms.md
       - Lead capture: features/lead-capture.md
+      - Answering leads: features/answering-leads.md
       - Inbound email: integrations/inbound-email.md
       - Webhooks: integrations/webhooks.md
       - Automation rules: integrations/automation.md

@@ -33,6 +33,10 @@ urlpatterns = [
         name="healthz",
     ),
     path("api/", include("common.app_urls", namespace="common_urls")),
+    path(
+        "api/interactions/",
+        include("interactions.urls", namespace="api_interactions"),
+    ),
     # Public help center (anonymous, opt-in per org). Mounted before the
     # invoice routes that share the /api/public/ root. The org comes from the
     # slug and the RLS context is set from it before any org-scoped read; see

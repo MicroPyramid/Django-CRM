@@ -20,6 +20,14 @@ class LeadCard extends StatelessWidget {
   final VoidCallback? onLongPress;
   final LeadTagTap? onTagTap;
 
+  /// "waiting 2 h 14 min", shown instead of the lead's age.
+  final String? waitingLabel;
+
+  /// What the phone and mail icons do instead of opening the app directly,
+  /// such as offering to log the call afterwards.
+  final VoidCallback? onCall;
+  final VoidCallback? onEmail;
+
   const LeadCard({
     super.key,
     required this.lead,
@@ -27,6 +35,9 @@ class LeadCard extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.onTagTap,
+    this.waitingLabel,
+    this.onCall,
+    this.onEmail,
   });
 
   @override
@@ -126,12 +137,32 @@ class LeadCard extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 2),
-            Text(
-              _formatTimeAgo(lead.createdAt),
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textTertiary,
+            if (waitingLabel != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LucideIcons.hourglass,
+                    size: 11,
+                    color: AppColors.warning700,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    waitingLabel!,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.warning700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(
+                _formatTimeAgo(lead.createdAt),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textTertiary,
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -203,16 +234,18 @@ class LeadCard extends StatelessWidget {
           _CardActionIcon(
             icon: LucideIcons.phone,
             tooltip: 'Call ${lead.phone}',
-            onTap: () =>
-                _launch(context, Uri(scheme: 'tel', path: lead.phone!)),
+            onTap:
+                onCall ??
+                () => _launch(context, Uri(scheme: 'tel', path: lead.phone!)),
           ),
         if (hasPhone && hasEmail) const SizedBox(width: 2),
         if (hasEmail)
           _CardActionIcon(
             icon: LucideIcons.mail,
             tooltip: 'Email ${lead.email}',
-            onTap: () =>
-                _launch(context, Uri(scheme: 'mailto', path: lead.email)),
+            onTap:
+                onEmail ??
+                () => _launch(context, Uri(scheme: 'mailto', path: lead.email)),
           ),
         if (!hasPhone && !hasEmail && sourceLabel.isNotEmpty) ...[
           // Fall back to the source pill when no actions are available.

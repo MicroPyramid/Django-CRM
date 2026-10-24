@@ -55,6 +55,7 @@ SPECS = {
     "common.comment": ("ticket", events.comment_data),
     "invoices.invoice": ("invoice", events.invoice_data),
     "tasks.task": ("task", events.task_data),
+    "interactions.interaction": ("interaction", events.interaction_data),
 }
 
 

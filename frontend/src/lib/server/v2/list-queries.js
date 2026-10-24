@@ -32,11 +32,13 @@ function copyKeys(params, url, keys) {
 
 /** @param {URL} url */
 export function leadListQuery(url) {
-  return copyKeys(buildFilterQuery(LEAD_FIELDS, readFilters(url, 'leads')), url, [
+  const params = copyKeys(buildFilterQuery(LEAD_FIELDS, readFilters(url, 'leads')), url, [
     'search',
     'rating',
     'limit'
   ]);
+  if (url.searchParams.get('unanswered') === 'true') params.set('unanswered', 'true');
+  return params;
 }
 
 /**

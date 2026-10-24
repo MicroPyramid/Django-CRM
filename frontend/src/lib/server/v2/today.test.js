@@ -60,4 +60,21 @@ describe('getToday', () => {
     expect(later).toEqual([]);
     expect(summary.count).toBe(0);
   });
+
+  it('reads the unanswered-leads figure off the same response', async () => {
+    apiRequest.mockResolvedValue({
+      unanswered_leads: { count: 3, oldest_since: '2026-10-24T09:46:00Z' }
+    });
+    const { unanswered } = await getToday(event);
+    expect(unanswered).toEqual({ count: 3, oldest_since: '2026-10-24T09:46:00Z' });
+    expect(apiRequest).toHaveBeenCalledTimes(1);
+    expect(apiRequest.mock.calls[0][0]).toBe('/dashboard/today/');
+  });
+
+  it('answers zero as zero, and hides the card when the figure is absent', async () => {
+    apiRequest.mockResolvedValueOnce({ unanswered_leads: { count: 0, oldest_since: null } });
+    expect((await getToday(event)).unanswered).toEqual({ count: 0, oldest_since: null });
+    apiRequest.mockResolvedValueOnce({});
+    expect((await getToday(event)).unanswered).toBeNull();
+  });
 });

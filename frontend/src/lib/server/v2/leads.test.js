@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiRequest = vi.fn();
 vi.mock('#lib/api-helpers.js', () => ({ apiRequest: (...a) => apiRequest(...a) }));
 
-const { createLead, convertLead, updateLead, getLeadForEdit } =
-  await import('#lib/server/v2/leads.js');
+const leadsModule = await import('#lib/server/v2/leads.js');
+const { createLead, convertLead, updateLead, getLeadForEdit } = leadsModule;
 // Cast rather than shaping a full Cookies mock: createLead only ever calls
 // `cookies.get`, and `apiRequest` itself is mocked above, so nothing here
 // touches `getAll`/`set`/`delete`/`serialize`. Without the cast svelte-check
@@ -142,5 +142,139 @@ describe('the source fields', () => {
     const { form, lead } = await getLeadForEdit(event, 'lead-1');
     expect(form).toMatchObject({ source: 'fax', source_detail: 'Zillow', source_ref: 'L-42' });
     expect(lead.source_detail).toBe('Zillow');
+  });
+});
+
+describe('unanswered leads and response times', () => {
+  const { listLeads, getResponseTimes, responseDays } = /** @type {any} */ (leadsModule);
+  const row = (/** @type {Record<string, any>} */ extra) => ({
+    id: extra.id,
+    first_name: extra.id,
+    status: 'assigned',
+    created_at: '2026-10-20T09:00:00Z',
+    last_contacted: null,
+    assigned_to: [],
+    ...extra
+  });
+
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('forwards ?unanswered=true and keeps the oldest wait first', async () => {
+    apiRequest.mockResolvedValueOnce({
+      open_leads: {
+        open_leads: [
+          row({ id: 'b', is_unanswered: true, waiting_since: '2026-10-24T08:00:00Z' }),
+          row({ id: 'a', is_unanswered: true, waiting_since: '2026-10-23T08:00:00Z' })
+        ]
+      },
+      totals: { count: 2, unworked_over_a_week: 0 }
+    });
+    const { results, totals, responseLive } = await listLeads(
+      event,
+      new URLSearchParams({ unanswered: 'true' })
+    );
+    expect(apiRequest.mock.calls[0][0]).toBe('/leads/?unanswered=true&limit=25');
+    expect(results.map((/** @type {any} */ r) => r.id)).toEqual(['a', 'b']);
+    expect(results[0]).toMatchObject({
+      is_unanswered: true,
+      waiting_since: '2026-10-23T08:00:00Z'
+    });
+    expect(totals.count).toBe(2);
+    expect(responseLive).toBe(true);
+  });
+
+  it('carries the response fields and the E.164 phone on every row', async () => {
+    apiRequest.mockResolvedValueOnce({
+      open_leads: {
+        open_leads: [
+          row({
+            id: 'a',
+            phone_e164: '+919876543210',
+            is_unanswered: false,
+            first_response_at: '2026-10-20T09:12:00Z',
+            first_response_by_details: { id: 'p1', name: 'Maria Lopez' }
+          })
+        ]
+      }
+    });
+    const { results } = await listLeads(event);
+    expect(results[0]).toMatchObject({
+      phone_e164: '+919876543210',
+      first_response_at: '2026-10-20T09:12:00Z',
+      first_response_by: 'Maria Lopez',
+      is_unanswered: false,
+      waiting_since: null
+    });
+  });
+
+  it('tells an API without response tracking by its rows, and cannot tell from none', async () => {
+    apiRequest.mockResolvedValueOnce({ open_leads: { open_leads: [row({ id: 'a' })] } });
+    expect((await listLeads(event, new URLSearchParams({ unanswered: 'true' }))).responseLive).toBe(
+      false
+    );
+    apiRequest.mockResolvedValueOnce({ open_leads: { open_leads: [] } });
+    expect((await listLeads(event)).responseLive).toBeNull();
+  });
+
+  it('reads response times for the period asked, and shapes each row', async () => {
+    apiRequest.mockResolvedValueOnce({
+      since: '2026-09-24',
+      rows: [
+        {
+          profile: 'p1',
+          name: 'Maria Lopez',
+          answered: 12,
+          median_seconds: 420,
+          within_5_minutes: 42,
+          within_1_hour: 92,
+          unanswered_now: 1,
+          email: 'not read'
+        },
+        { profile: 'p2', name: '', answered: 0, median_seconds: null }
+      ]
+    });
+    const { since, rows } = await getResponseTimes(event, 30);
+    expect(apiRequest.mock.calls[0][0]).toBe('/leads/response-times/?days=30');
+    expect(since).toBe('2026-09-24');
+    expect(rows[0]).toEqual({
+      profile: 'p1',
+      name: 'Maria Lopez',
+      answered: 12,
+      median_seconds: 420,
+      within_5_minutes: 42,
+      within_1_hour: 92,
+      unanswered_now: 1
+    });
+    expect(rows[1]).toMatchObject({ name: 'Unknown', median_seconds: null, unanswered_now: 0 });
+  });
+
+  it('asks only for a period the API takes', async () => {
+    expect([responseDays('7'), responseDays('90'), responseDays('30')]).toEqual([7, 90, 30]);
+    expect([responseDays('6'), responseDays('91'), responseDays('x'), responseDays(null)]).toEqual([
+      30, 30, 30, 30
+    ]);
+    apiRequest.mockResolvedValueOnce({ since: null, rows: [] });
+    await getResponseTimes(event, 365);
+    expect(apiRequest.mock.calls[0][0]).toBe('/leads/response-times/?days=30');
+  });
+
+  it('answers a page 404 on an API without response times, and the module page when Leads is off', async () => {
+    apiRequest.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 404, body: {} }));
+    await expect(getResponseTimes(event, 30)).rejects.toMatchObject({
+      status: 404,
+      body: { message: 'Response times are not available here.' }
+    });
+    apiRequest.mockRejectedValueOnce(
+      Object.assign(new Error('x'), {
+        status: 404,
+        body: { code: 'module_off', detail: 'Leads is switched off.', module: 'leads' }
+      })
+    );
+    await expect(getResponseTimes(event, 30)).rejects.toMatchObject({
+      status: 404,
+      body: { code: 'module_off' }
+    });
   });
 });

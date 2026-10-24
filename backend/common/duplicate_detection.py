@@ -444,4 +444,10 @@ def merge_records(keeper, loser):
 
     loser.delete()
     keeper.save()
+    if model._meta.label == "leads.Lead":
+        from interactions.service import refresh_lead_response
+
+        # The loser's interactions now point at the keeper, and its response
+        # fields were only copied where the keeper's were blank.
+        refresh_lead_response(keeper)
     return keeper

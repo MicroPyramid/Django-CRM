@@ -5,19 +5,24 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
+import '../../data/models/interaction.dart';
 import '../../data/models/models.dart';
 import '../../data/models/lead_board.dart' show LeadStageRef;
 import '../../providers/auth_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/interactions_provider.dart';
 import '../../providers/lead_sources_provider.dart';
 import '../../providers/leads_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../providers/org_modules_provider.dart';
 import '../../config/api_config.dart';
+import '../../services/after_tap.dart';
 import '../../services/attachment_upload.dart';
 import '../../services/org_date.dart';
 import '../../widgets/common/common.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
+import '../../widgets/interactions/after_tap_logging.dart';
+import '../../widgets/interactions/record_timeline.dart';
 import '../../widgets/objects/related_objects_section.dart';
 
 /// Lead Detail Screen
@@ -32,7 +37,7 @@ class LeadDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AfterTapLogging<LeadDetailScreen> {
   late TabController _tabController;
   final TextEditingController _noteController = TextEditingController();
 
@@ -81,6 +86,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     ref.invalidate(
       recordDuplicatesProvider((DuplicateModule.leads, widget.leadId)),
     );
+    ref.invalidate(recordInteractionsProvider(_target));
     var notFound = false;
     final detail = await ref
         .read(leadsProvider.notifier)
@@ -104,6 +110,12 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       });
     }
   }
+
+  InteractionTarget get _target =>
+      (home: InteractionHome.lead, id: widget.leadId);
+
+  @override
+  void onInteractionLogged() => _fetchLead();
 
   @override
   Widget build(BuildContext context) {
@@ -155,12 +167,17 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
       );
     }
 
-    // Compact header that scales with the user's text size setting without
-    // resorting to shrinking content via FittedBox. The natural content
-    // (avatar + name + company + status row + quick actions) needs ~285px
-    // at default text scale; we add headroom for accessibility scales.
+    // Sized to the header's content plus the 48px tab bar, which is laid over
+    // the bottom of it: without that share the tabs covered the Call row.
+    // Measured at 390px for text scales 1 to 2, with and without the subject
+    // and stage lines.
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final expandedHeight = 285 + (60 * (textScale - 1.0).clamp(0.0, 1.0));
+    final line = 16 * textScale;
+    final expandedHeight =
+        331 +
+        70 * (textScale - 1.0).clamp(0.0, 1.0) +
+        ((_lead!.title?.trim() ?? '').isEmpty ? 0 : 2 + line) +
+        (_stage == null ? 0 : 8 + line);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -278,6 +295,7 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
         ? lead.name
         : '$salutation ${lead.name}';
     final subject = lead.title?.trim() ?? '';
+    final whatsApp = whatsAppUri(lead.phoneE164, lead.firstName);
 
     return Container(
       decoration: BoxDecoration(
@@ -366,28 +384,40 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
               ],
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _QuickActionButton(
-                    icon: LucideIcons.phone,
-                    label: 'Call',
-                    enabled: _hasPhone,
-                    onTap: () => _launchPhone(lead.phone),
-                  ),
-                  const SizedBox(width: 24),
-                  _QuickActionButton(
-                    icon: LucideIcons.mail,
-                    label: 'Email',
-                    enabled: _hasEmail,
-                    onTap: () => _launchEmail(lead.email),
-                  ),
-                  const SizedBox(width: 24),
-                  _QuickActionButton(
-                    icon: LucideIcons.messageSquare,
-                    label: 'Message',
-                    enabled: _hasPhone,
-                    onTap: () => _launchSms(lead.phone),
-                  ),
+                  for (final action in [
+                    RoundActionButton(
+                      icon: LucideIcons.phone,
+                      label: 'Call',
+                      enabled: _hasPhone,
+                      onTap: () => _launchPhone(lead.phone),
+                    ),
+                    RoundActionButton(
+                      icon: LucideIcons.mail,
+                      label: 'Email',
+                      enabled: _hasEmail,
+                      onTap: () => _launchEmail(lead.email),
+                    ),
+                    RoundActionButton(
+                      icon: LucideIcons.messageSquare,
+                      label: 'Message',
+                      enabled: _hasPhone,
+                      onTap: () => _launchSms(lead.phone),
+                    ),
+                    if (whatsApp != null)
+                      RoundActionButton(
+                        icon: LucideIcons.messageCircle,
+                        label: 'WhatsApp',
+                        onTap: () => launchAndOfferLog(
+                          whatsApp,
+                          kind: InteractionKind.whatsapp,
+                          target: _target,
+                          personName: _personName,
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                  ])
+                    Expanded(child: action),
                 ],
               ),
             ],
@@ -1034,58 +1064,41 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
   }
 
   Widget _buildTimelineTab() {
-    final events = _buildTimelineEvents();
-    if (events.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _fetchLead,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const SizedBox(height: 120),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.clock, size: 48, color: AppColors.gray400),
-                  const SizedBox(height: 16),
-                  Text('No activity yet', style: AppTypography.h3),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Activity will appear here as it happens',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final interactions = ref.watch(recordInteractionsProvider(_target)).value;
+    final events = _buildTimelineEvents(interactions);
     return RefreshIndicator(
       onRefresh: _fetchLead,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemCount: events.length,
+        itemCount: events.length + 1,
         itemBuilder: (context, index) {
-          final e = events[index];
-          final isLast = index == events.length - 1;
-          return _TimelineRow(event: e, isLast: isLast);
+          if (index == 0) {
+            return InteractionsBar(
+              answer: interactions,
+              onLog: () async {
+                if (await logActivity(context, ref, _target)) _fetchLead();
+              },
+            );
+          }
+          return TimelineEventRow(
+            event: events[index - 1],
+            isLast: index == events.length,
+          );
         },
       ),
     );
   }
 
-  /// Merge known activity sources into a single, newest-first list:
-  /// comments, attachments, and the lead-created event.
-  List<_TimelineEvent> _buildTimelineEvents() {
+  /// Comments, files, logged interactions and enquiries, and the lead's
+  /// creation, newest first.
+  List<TimelineEvent> _buildTimelineEvents(RecordInteractions? interactions) {
     final lead = _lead!;
-    final events = <_TimelineEvent>[
+    final events = <TimelineEvent>[
       for (final c in lead.comments)
-        _TimelineEvent(
-          kind: _TimelineKind.comment,
+        TimelineEvent(
+          icon: LucideIcons.messageSquare,
+          tint: AppColors.primary600,
           ts: c.commentedOn,
           actor: c.authorName,
           summary: 'commented',
@@ -1093,14 +1106,18 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
         ),
       for (final a in lead.attachments)
         if (a.createdAt != null)
-          _TimelineEvent(
-            kind: _TimelineKind.attachment,
+          TimelineEvent(
+            icon: LucideIcons.paperclip,
+            tint: AppColors.warning600,
             ts: a.createdAt!,
             actor: a.createdBy ?? '',
             summary: 'uploaded ${a.fileName}',
           ),
-      _TimelineEvent(
-        kind: _TimelineKind.created,
+      for (final i in interactions?.items ?? const <Interaction>[])
+        TimelineEvent.interaction(i),
+      TimelineEvent(
+        icon: LucideIcons.sparkles,
+        tint: AppColors.success600,
         ts: lead.createdAt,
         actor: '',
         summary: 'Lead created',
@@ -1875,62 +1892,40 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen>
     }
   }
 
+  /// "Maria" in "Log this call to Maria?".
+  String get _personName {
+    final lead = _lead;
+    if (lead == null) return '';
+    return lead.firstName.trim().isNotEmpty ? lead.firstName.trim() : lead.name;
+  }
+
   Future<void> _launchPhone(String? phone) async {
     if (phone == null || phone.trim().isEmpty) return;
-    await _launch(Uri(scheme: 'tel', path: phone));
+    await launchAndOfferLog(
+      Uri(scheme: 'tel', path: phone),
+      kind: InteractionKind.call,
+      target: _target,
+      personName: _personName,
+    );
   }
 
   Future<void> _launchEmail(String email) async {
     if (email.trim().isEmpty) return;
-    await _launch(Uri(scheme: 'mailto', path: email));
+    await launchAndOfferLog(
+      Uri(scheme: 'mailto', path: email),
+      kind: InteractionKind.email,
+      target: _target,
+      personName: _personName,
+    );
   }
 
   Future<void> _launchSms(String? phone) async {
     if (phone == null || phone.trim().isEmpty) return;
-    await _launch(Uri(scheme: 'sms', path: phone));
-  }
-}
-
-/// Quick action button for header
-class _QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.enabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = enabled ? AppColors.primary100 : AppColors.gray100;
-    final fg = enabled ? AppColors.primary600 : AppColors.gray400;
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.6,
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              child: Icon(icon, color: fg, size: 22),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
+    await launchAndOfferLog(
+      Uri(scheme: 'sms', path: phone),
+      kind: InteractionKind.sms,
+      target: _target,
+      personName: _personName,
     );
   }
 }
@@ -2394,132 +2389,6 @@ class _RatingChip extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-enum _TimelineKind { created, comment, attachment }
-
-class _TimelineEvent {
-  final _TimelineKind kind;
-  final DateTime ts;
-  final String actor;
-  final String summary;
-  final String? body;
-
-  const _TimelineEvent({
-    required this.kind,
-    required this.ts,
-    required this.actor,
-    required this.summary,
-    this.body,
-  });
-}
-
-class _TimelineRow extends StatelessWidget {
-  final _TimelineEvent event;
-  final bool isLast;
-
-  const _TimelineRow({required this.event, required this.isLast});
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, tint) = switch (event.kind) {
-      _TimelineKind.created => (LucideIcons.sparkles, AppColors.success600),
-      _TimelineKind.comment => (
-        LucideIcons.messageSquare,
-        AppColors.primary600,
-      ),
-      _TimelineKind.attachment => (LucideIcons.paperclip, AppColors.warning600),
-    };
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 14, color: tint),
-              ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.border)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text.rich(
-                          TextSpan(
-                            style: AppTypography.body,
-                            children: [
-                              if (event.actor.isNotEmpty) ...[
-                                TextSpan(
-                                  text: event.actor,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const TextSpan(text: ' '),
-                              ],
-                              TextSpan(text: event.summary),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _relTime(event.ts),
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (event.body != null && event.body!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.gray50,
-                        borderRadius: AppLayout.borderRadiusMd,
-                      ),
-                      child: Text(
-                        event.body!,
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _relTime(DateTime dt) {
-    final d = DateTime.now().difference(dt);
-    if (d.inDays > 30) return '${(d.inDays / 30).floor()}mo';
-    if (d.inDays > 0) return '${d.inDays}d';
-    if (d.inHours > 0) return '${d.inHours}h';
-    if (d.inMinutes > 0) return '${d.inMinutes}m';
-    return 'now';
   }
 }
 

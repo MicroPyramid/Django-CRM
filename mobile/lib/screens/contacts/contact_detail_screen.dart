@@ -3,14 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/theme/theme.dart';
 import '../../data/models/contact.dart';
+import '../../data/models/interaction.dart';
 import '../../data/models/lead_source.dart';
 import '../../providers/contacts_provider.dart';
 import '../../providers/duplicates_provider.dart';
+import '../../providers/interactions_provider.dart';
 import '../../providers/lead_sources_provider.dart';
 import '../../routes/app_router.dart';
+import '../../services/after_tap.dart';
+import '../../widgets/common/round_action_button.dart';
 import '../../widgets/duplicates/duplicates_panel.dart';
+import '../../widgets/interactions/after_tap_logging.dart';
+import '../../widgets/interactions/record_timeline.dart';
 import '../../widgets/objects/related_objects_section.dart';
 
 /// One contact.
@@ -24,7 +32,8 @@ class ContactDetailScreen extends ConsumerStatefulWidget {
       _ContactDetailScreenState();
 }
 
-class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
+class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen>
+    with AfterTapLogging<ContactDetailScreen> {
   Contact? _contact;
   bool _loading = true;
   String? _error;
@@ -44,6 +53,7 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
     ref.invalidate(
       recordDuplicatesProvider((DuplicateModule.contacts, widget.contactId)),
     );
+    ref.invalidate(recordInteractionsProvider(_target));
     var notFound = false;
     final contact = await ref
         .read(contactsProvider.notifier)
@@ -61,6 +71,9 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
       }
     });
   }
+
+  InteractionTarget get _target =>
+      (home: InteractionHome.contact, id: widget.contactId);
 
   /// The server's delete rule for this user (`can_delete` on the detail
   /// response), not a copy of it. The DELETE asks the same rule again.
@@ -169,12 +182,14 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 48),
         children: [
           if (contact.doNotCall) _doNotCallBanner(),
+          _reach(contact),
           DuplicatesPanel(
             module: DuplicateModule.contacts,
             recordId: contact.id,
           ),
           _details(contact),
           _accounts(contact),
+          _activity(),
           RelatedObjectsSection(to: 'contact', recordId: contact.id),
         ],
       ),
@@ -203,6 +218,132 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
               style: AppTypography.caption.copyWith(color: AppColors.danger600),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Call, Email, Message and WhatsApp. Call stays visible but off for
+  /// someone who asked not to be phoned, as on the web.
+  Widget _reach(Contact contact) {
+    final phone = contact.phone?.trim() ?? '';
+    final email = contact.email?.trim() ?? '';
+    final name = contact.firstName.trim().isNotEmpty
+        ? contact.firstName.trim()
+        : contact.fullName;
+    final whatsApp = whatsAppUri(contact.phoneE164, contact.firstName);
+    void open(Uri uri, InteractionKind kind, {LaunchMode? mode}) =>
+        launchAndOfferLog(
+          uri,
+          kind: kind,
+          target: _target,
+          personName: name,
+          mode: mode ?? LaunchMode.platformDefault,
+        );
+    return _card(
+      child: Wrap(
+        alignment: WrapAlignment.spaceEvenly,
+        spacing: 16,
+        runSpacing: 12,
+        children: [
+          RoundActionButton(
+            icon: contact.doNotCall ? LucideIcons.phoneOff : LucideIcons.phone,
+            label: contact.doNotCall ? 'Do not call' : 'Call',
+            enabled: phone.isNotEmpty && !contact.doNotCall,
+            onTap: () =>
+                open(Uri(scheme: 'tel', path: phone), InteractionKind.call),
+          ),
+          RoundActionButton(
+            icon: LucideIcons.mail,
+            label: 'Email',
+            enabled: email.isNotEmpty,
+            onTap: () =>
+                open(Uri(scheme: 'mailto', path: email), InteractionKind.email),
+          ),
+          RoundActionButton(
+            icon: LucideIcons.messageSquare,
+            label: 'Message',
+            enabled: phone.isNotEmpty,
+            onTap: () =>
+                open(Uri(scheme: 'sms', path: phone), InteractionKind.sms),
+          ),
+          if (whatsApp != null)
+            RoundActionButton(
+              icon: LucideIcons.messageCircle,
+              label: 'WhatsApp',
+              onTap: () => open(
+                whatsApp,
+                InteractionKind.whatsapp,
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Logged calls, meetings, emails and messages, and enquiries. Absent on an
+  /// API without them.
+  Widget _activity() {
+    final async = ref.watch(recordInteractionsProvider(_target));
+    final answer = async.value;
+    if (async.hasError && answer == null) {
+      return _card(
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Could not load the activity.',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () =>
+                  ref.invalidate(recordInteractionsProvider(_target)),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (answer == null || !answer.offered) return const SizedBox.shrink();
+    final events = [for (final i in answer.items) TimelineEvent.interaction(i)];
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                LucideIcons.history,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Activity',
+                style: AppTypography.label.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          InteractionsBar(
+            answer: answer,
+            onLog: () => logActivity(context, ref, _target),
+          ),
+          if (events.isEmpty)
+            Text(
+              'Nothing logged yet.',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          for (var i = 0; i < events.length; i++)
+            TimelineEventRow(event: events[i], isLast: i == events.length - 1),
         ],
       ),
     );

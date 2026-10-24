@@ -4,21 +4,39 @@ import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
 import { recordDuplicates } from '#lib/server/v2/duplicates.js';
 import { getLeadSources } from '#lib/server/v2/lead-sources.js';
+import {
+  interactionActions,
+  listInteractions,
+  withInteractions
+} from '#lib/server/v2/interactions.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  const [contact, duplicates, related, { sources }] = await Promise.all([
+  const [contact, duplicates, related, { sources }, logged] = await Promise.all([
     getContact({ cookies }, params.id),
     recordDuplicates({ cookies }, 'contacts', params.id),
     loadRelated({ cookies }, 'contact', params.id),
-    getLeadSources({ cookies })
+    getLeadSources({ cookies }),
+    listInteractions({ cookies }, 'contact', params.id)
   ]);
-  return { ...contact, duplicates, related, sources };
+  return {
+    ...contact,
+    activity: withInteractions(contact.activity, logged.interactions),
+    interactions: {
+      live: logged.state !== 'absent',
+      failed: logged.state === 'failed',
+      more: Math.max(0, logged.count - logged.interactions.length)
+    },
+    duplicates,
+    related,
+    sources
+  };
 }
 
 /** @type {import('./$types').Actions} */
 export const actions = {
   ...relatedActions('contact'),
+  ...interactionActions('contact'),
   /**
    * Log a note against the contact, with an optional file. The body carries only
    * the note text and the file; who wrote it and which org it belongs to are

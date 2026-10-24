@@ -755,12 +755,10 @@ class TestRefusals:
 
 
 class TestRetries:
-    def test_a_retried_merge_is_a_duplicate_with_one_comment_and_one_email(
+    def test_a_retried_merge_is_a_duplicate_with_one_enquiry_and_one_email(
         self, anon, org_a, intake, django_capture_on_commit_callbacks
     ):
-        from django.contrib.contenttypes.models import ContentType
-
-        from common.models import Comment
+        from interactions.models import Interaction
 
         # The lead already carries another sender's id, so it cannot take this one.
         lead = Lead.objects.create(
@@ -779,10 +777,7 @@ class TestRetries:
         assert first.json() == {"result": "merged", "lead": str(lead.id)}
         assert again.status_code == 200
         assert again.json() == {"result": "duplicate", "lead": str(lead.id)}
-        comments = Comment.objects.filter(
-            content_type=ContentType.objects.get_for_model(Lead), object_id=lead.id
-        )
-        assert comments.count() == 1
+        assert Interaction.objects.filter(kind="enquiry", lead=lead).count() == 1
         assert mailed.call_count == 1
         assert [e.result for e in events(intake)] == ["merged", "duplicate"]
 
@@ -870,9 +865,7 @@ class TestLongValues:
 
 class TestWebForms:
     def test_a_phone_only_match_does_not_take_the_forms_email(self, anon, org_a):
-        from django.contrib.contenttypes.models import ContentType
-
-        from common.models import Comment
+        from interactions.models import Interaction
         from webforms.models import WebForm, WebFormField
 
         org_a.default_country = "US"
@@ -899,10 +892,8 @@ class TestWebForms:
         assert Lead.objects.filter(org=org_a).count() == 1
         lead.refresh_from_db()
         assert lead.email is None
-        comment = Comment.objects.get(
-            content_type=ContentType.objects.get_for_model(Lead), object_id=lead.id
-        )
-        assert "Email: pat@example.com" in comment.comment
+        enquiry = Interaction.objects.get(kind="enquiry", lead=lead)
+        assert "Email: pat@example.com" in enquiry.body
 
 
 @pytest.mark.postgres_only
@@ -910,14 +901,12 @@ class TestWebForms:
 def test_two_posts_with_one_id_at_once_merge_once(org_a):
     """Both posts start together and both match the lead by email. The second
     waits on the intake row's lock, then finds the first's delivery and
-    answers duplicate. Without the lock both merged (two comments): the lead
+    answers duplicate. Without the lock both merged (two enquiries): the lead
     already holds another sender's id, so the lead row cannot tell them apart."""
     import threading
 
-    from django.contrib.contenttypes.models import ContentType
-
-    from common.models import Comment
     from common.tasks import set_rls_context
+    from interactions.models import Interaction
 
     if connection.vendor != "postgresql":
         pytest.skip("row locks need PostgreSQL")
@@ -949,8 +938,5 @@ def test_two_posts_with_one_id_at_once_merge_once(org_a):
     assert errors == []
     assert sorted(answers) == ["duplicate", "merged"]
     set_rls_context(org_a.id)
-    comments = Comment.objects.filter(
-        content_type=ContentType.objects.get_for_model(Lead), object_id=lead.id
-    )
-    assert comments.count() == 1
+    assert Interaction.objects.filter(kind="enquiry", lead=lead).count() == 1
     assert Lead.objects.filter(org=org_a).count() == 1

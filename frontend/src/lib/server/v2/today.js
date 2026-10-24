@@ -4,7 +4,7 @@
  * Server-only. Reads one endpoint, `GET /dashboard/today/`, which rolls four
  * sources into a single prioritised action list: support cases still awaiting a
  * first reply, invoices past due, deals that have gone quiet (stage-aging), and
- * tasks overdue or due today. The endpoint is org-scoped from the JWT and, for a
+ * tasks overdue or due today, plus the unanswered-leads figure. The endpoint is org-scoped from the JWT and, for a
  * member, narrowed to rows whose action they can take (a ticket they only watch
  * is left out, since they cannot reply to it), so nothing here decides
  * visibility; the API does.
@@ -20,10 +20,25 @@
 import { apiRequest } from '#lib/api-helpers.js';
 
 /**
+ * Null hides the lead card: an API older than response tracking has no
+ * `unanswered_leads`.
+ *
+ * @param {any} block
+ * @returns {{ count: number, oldest_since: string | null } | null}
+ */
+function unansweredBlock(block) {
+  if (!block || !Number.isInteger(block.count)) return null;
+  return {
+    count: block.count,
+    oldest_since: typeof block.oldest_since === 'string' ? block.oldest_since : null
+  };
+}
+
+/**
  * The current user's Today queue, shaped for the page.
  *
  * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
- * @returns {Promise<{ queue: any[], summary: any, later: any[] }>}
+ * @returns {Promise<{ queue: any[], summary: any, later: any[], unanswered: { count: number, oldest_since: string | null } | null }>}
  */
 export async function getToday({ cookies }) {
   const resp = await apiRequest('/dashboard/today/', {}, { cookies });
@@ -45,6 +60,7 @@ export async function getToday({ cookies }) {
       empty_workspace: summary.empty_workspace ?? false,
       can_import: summary.can_import ?? false
     },
-    later: resp.later ?? []
+    later: resp.later ?? [],
+    unanswered: unansweredBlock(resp.unanswered_leads)
   };
 }

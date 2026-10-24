@@ -17,6 +17,7 @@ from django.utils import timezone
 from automation.models import AutomationRule
 from common.models import Comment, CustomFieldDefinition, Profile, Tags, User
 from contacts.models import Contact
+from interactions.models import Interaction
 from leads import intake
 from leads.intake import IncomingLead, IntakeResult, receive_lead
 from leads.models import Lead, LeadPipeline, LeadSource, LeadStage
@@ -29,6 +30,14 @@ def comments_on(record):
         content_type=ContentType.objects.get_for_model(type(record)),
         object_id=record.id,
     )
+
+
+def enquiries_on(record):
+    """The enquiries homed on `record`, oldest first."""
+    home = "lead" if isinstance(record, Lead) else "contact"
+    return Interaction.objects.filter(
+        kind="enquiry", home=home, **{home: record}
+    ).order_by("created_at")
 
 
 def incoming(**overrides):
@@ -128,10 +137,11 @@ class TestCreate:
         assert list(lead.tags.all()) == [tag]
         assert list(lead.assigned_to.all()) == [member]
         assert lead.created_by_id == member.user_id
-        # The text went to the notes, so no comment repeats it.
+        # The arrival is an enquiry on the timeline, not a comment.
         assert comments_on(lead).count() == 0
+        assert enquiries_on(lead).get().body == "Wants a quote"
 
-    def test_a_mapped_description_keeps_the_text_as_a_comment(
+    def test_a_mapped_description_keeps_the_text_on_the_enquiry(
         self, org_a, django_capture_on_commit_callbacks
     ):
         result = run(
@@ -143,7 +153,8 @@ class TestCreate:
             django_capture_on_commit_callbacks,
         )
         assert result.lead.description == "Hello"
-        assert "Budget: 5000" in comments_on(result.lead).get().comment
+        assert enquiries_on(result.lead).get().body == "Budget: 5000"
+        assert comments_on(result.lead).count() == 0
 
     def test_only_whitelisted_columns_are_written(
         self, org_a, django_capture_on_commit_callbacks
@@ -268,10 +279,11 @@ class TestMergeByEmail:
         assert lead.source == "call"
         assert lead.last_enquiry_at is not None
         assert list(lead.tags.all()) == [tag]
-        comment = comments_on(lead).get()
-        assert "Second ask" in comment.comment
-        assert "webhook Ads" in comment.comment
-        assert comment.commented_by is None
+        enquiry = enquiries_on(lead).get()
+        assert enquiry.body == "Second ask"
+        assert enquiry.subject == "webhook Ads"
+        assert enquiry.logged_by is None
+        assert comments_on(lead).count() == 0
         assert Lead.objects.filter(org=org_a).count() == 1
 
     def test_emails_the_active_assignees(
@@ -336,13 +348,14 @@ class TestMergeByEmail:
         lead.refresh_from_db()
         assert (lead.external_source, lead.external_id) == ("intake:other", "X-1")
 
-    def test_a_merge_with_no_text_writes_no_empty_comment(
+    def test_a_merge_with_no_text_is_an_empty_enquiry_and_no_comment(
         self, org_a, lead, django_capture_on_commit_callbacks
     ):
         run(org_a, incoming(enquiry_text=""), django_capture_on_commit_callbacks)
         assert comments_on(lead).count() == 0
+        assert enquiries_on(lead).get().body == ""
 
-    def test_a_long_enquiry_is_cut_to_fit_a_comment(
+    def test_a_long_enquiry_is_cut_to_fit(
         self, org_a, lead, django_capture_on_commit_callbacks
     ):
         run(
@@ -350,7 +363,7 @@ class TestMergeByEmail:
             incoming(enquiry_text="x" * 30_000),
             django_capture_on_commit_callbacks,
         )
-        assert len(comments_on(lead).get().comment) <= 10_000
+        assert len(enquiries_on(lead).get().body) <= 10_000
 
 
 class TestMergeByPhone:
@@ -375,7 +388,7 @@ class TestMergeByPhone:
         assert lead.first_name == "Pat"
         # A number alone does not make the sender this person's mailbox.
         assert lead.email is None
-        assert "Email: pat@example.com" in comments_on(lead).get().comment
+        assert "Email: pat@example.com" in enquiries_on(lead).get().body
 
     def test_a_different_number_creates(
         self, us_org, django_capture_on_commit_callbacks
@@ -484,7 +497,8 @@ class TestStatuses:
         lead.refresh_from_db()
         assert lead.status == "converted"
         assert lead.company_name is None
-        assert "Back again" in comments_on(contact).get().comment
+        assert enquiries_on(contact).get().body == "Back again"
+        assert comments_on(contact).count() == 0
         assert comments_on(lead).count() == 0
         assert sent == [
             (
@@ -519,7 +533,8 @@ class TestDuplicates:
         assert second.lead.pk == first.lead.pk
         lead = Lead.objects.get(pk=first.lead.pk)
         assert lead.company_name is None
-        assert comments_on(lead).count() == 0
+        # Only the first arrival's enquiry.
+        assert enquiries_on(lead).count() == 1
         assert Lead.objects.filter(org=org_a).count() == 1
         assert sent == []
 
@@ -711,7 +726,7 @@ class TestEnquiredAgainEmail:
 
 
 class TestWhatTheMergeKeeps:
-    def test_a_different_email_and_number_go_into_the_comment(
+    def test_a_different_email_and_number_go_into_the_enquiry(
         self, us_org, django_capture_on_commit_callbacks
     ):
         lead = Lead.objects.create(
@@ -727,11 +742,11 @@ class TestWhatTheMergeKeeps:
         )
         lead.refresh_from_db()
         assert lead.phone == "+1 555 123 4567"
-        comment = comments_on(lead).get().comment
-        assert "Call me" in comment
-        assert "Phone: (555) 999-0000" in comment
+        body = enquiries_on(lead).get().body
+        assert "Call me" in body
+        assert "Phone: (555) 999-0000" in body
         # The same address in another case is not a conflict.
-        assert "Email:" not in comment
+        assert "Email:" not in body
 
     def test_the_same_number_in_another_format_is_not_a_conflict(
         self, us_org, django_capture_on_commit_callbacks
@@ -744,7 +759,7 @@ class TestWhatTheMergeKeeps:
             incoming(values={"email": "pat@example.com", "phone": "555-123-4567"}),
             django_capture_on_commit_callbacks,
         )
-        assert comments_on(lead).count() == 0
+        assert enquiries_on(lead).get().body == ""
 
     def test_a_phone_match_with_another_email_keeps_both(
         self, us_org, django_capture_on_commit_callbacks
@@ -759,7 +774,7 @@ class TestWhatTheMergeKeeps:
         )
         lead.refresh_from_db()
         assert lead.email == "old@example.com"
-        assert "Email: new@example.com" in comments_on(lead).get().comment
+        assert "Email: new@example.com" in enquiries_on(lead).get().body
 
     def test_an_email_match_still_fills_a_blank_phone(
         self, us_org, django_capture_on_commit_callbacks
@@ -772,7 +787,7 @@ class TestWhatTheMergeKeeps:
         )
         lead.refresh_from_db()
         assert (lead.phone, lead.phone_e164) == ("555-123-4567", "+15551234567")
-        assert comments_on(lead).count() == 0
+        assert enquiries_on(lead).get().body == ""
 
 
 class TestReopenedStage:

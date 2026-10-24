@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { todayIn, addDays } from '#lib/v2/dates.js';
+import { todayIn, addDays, wallTimeToIso } from '#lib/v2/dates.js';
 
 describe('todayIn', () => {
   // 23:30 UTC on 31 Dec is 05:00 on 1 Jan in Kolkata (UTC+5:30).
@@ -35,5 +35,34 @@ describe('addDays', () => {
 
   it('is not moved by a DST change', () => {
     expect(addDays('2026-03-07', 2)).toBe('2026-03-09');
+  });
+});
+
+describe('wallTimeToIso', () => {
+  it('reads the wall clock in the org’s zone', () => {
+    expect(wallTimeToIso('2026-10-24T14:30', 'Asia/Kolkata')).toBe('2026-10-24T09:00:00.000Z');
+    expect(wallTimeToIso('2026-10-24T14:30', 'UTC')).toBe('2026-10-24T14:30:00.000Z');
+    expect(wallTimeToIso('2026-01-15T09:05:30', 'America/New_York')).toBe(
+      '2026-01-15T14:05:30.000Z'
+    );
+  });
+
+  it('follows daylight saving on either side of the change', () => {
+    // New York moved to EDT (UTC-4) at 02:00 on 8 March 2026.
+    expect(wallTimeToIso('2026-03-07T12:00', 'America/New_York')).toBe('2026-03-07T17:00:00.000Z');
+    expect(wallTimeToIso('2026-03-09T12:00', 'America/New_York')).toBe('2026-03-09T16:00:00.000Z');
+  });
+
+  it('refuses what is not a datetime-local value or not a real date', () => {
+    expect(wallTimeToIso('', 'UTC')).toBeNull();
+    expect(wallTimeToIso(null, 'UTC')).toBeNull();
+    expect(wallTimeToIso('2026-10-24', 'UTC')).toBeNull();
+    expect(wallTimeToIso('2026-02-31T10:00', 'UTC')).toBeNull();
+    expect(wallTimeToIso('2026-10-24T25:00', 'UTC')).toBeNull();
+    expect(wallTimeToIso('2026-10-24T10:00Z', 'UTC')).toBeNull();
+  });
+
+  it('reads an unknown zone as UTC', () => {
+    expect(wallTimeToIso('2026-10-24T14:30', 'Not/AZone')).toBe('2026-10-24T14:30:00.000Z');
   });
 });

@@ -9,7 +9,8 @@ from django.db.models import Q
 from django.db.models.functions import Coalesce, TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -50,6 +51,7 @@ from common.validators import (
 from contacts.access import replace_visible_contacts, visible_contacts_qs
 from leads import access, swagger_params
 from leads.models import Lead
+from leads.response import unanswered, with_response_state
 from leads.serializer import (
     LeadCreateSerializer,
     LeadCreateSwaggerSerializer,
@@ -120,7 +122,8 @@ def lead_list_queryset(profile, params):
     downloads holds exactly the leads the page would show them with the same
     filters. Converted leads are never listed. ``?open=true`` leaves out the
     closed ones too, which is what the web list shows; without it both halves
-    come back, as the mobile list reads them.
+    come back, as the mobile list reads them. ``?unanswered=true`` keeps only
+    the leads waiting for an answer (`leads.response`), longest wait first.
     """
     queryset = (
         access.visible_leads_qs(profile).exclude(status="converted").order_by("-id")
@@ -188,6 +191,10 @@ def lead_list_queryset(profile, params):
                 queryset = queryset.filter(custom_fields__contains={cf_key: raw_value})
     if params.get("open") == "true":
         queryset = queryset.exclude(status="closed")
+    if params.get("unanswered") == "true":
+        queryset = unanswered(queryset, profile.org).order_by("waiting_since", "id")
+    else:
+        queryset = with_response_state(queryset, profile.org)
     return queryset.distinct()
 
 
@@ -228,10 +235,19 @@ class LeadListView(APIView, LimitOffsetPagination):
             .count(),
         }
 
+    def _next_offset(self, page):
+        """Where the next page starts, None after the last one, 0 for an empty
+        page. Counted from the page itself rather than from ids, so it holds
+        for the unanswered order as well as the default one."""
+        if not page:
+            return 0
+        following = self.offset + len(page)
+        return None if following >= self.count else following
+
     def get_context_data(self, **kwargs):
         queryset = (
             lead_list_queryset(self.request.profile, self.request.query_params)
-            .select_related("created_by")
+            .select_related("created_by", "first_response_by__user")
             .prefetch_related("tags", "assigned_to")
         )
         context = {}
@@ -240,12 +256,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             queryset_open.distinct(), self.request, view=self
         )
         open_leads = LeadSerializer(results_leads_open, many=True).data
-        if results_leads_open:
-            offset = queryset_open.filter(id__gte=results_leads_open[-1].id).count()
-            if offset == queryset_open.count():
-                offset = None
-        else:
-            offset = 0
+        offset = self._next_offset(results_leads_open)
         context["per_page"] = 10
         page_number = int(self.offset / 10) + 1
         context["page_number"] = page_number
@@ -261,12 +272,7 @@ class LeadListView(APIView, LimitOffsetPagination):
             queryset_close.distinct(), self.request, view=self
         )
         close_leads = LeadSerializer(results_leads_close, many=True).data
-        if results_leads_close:
-            offset = queryset_close.filter(id__gte=results_leads_close[-1].id).count()
-            if offset == queryset_close.count():
-                offset = None
-        else:
-            offset = 0
+        offset = self._next_offset(results_leads_close)
 
         context["close_leads"] = {
             "leads_count": self.count,
@@ -298,7 +304,15 @@ class LeadListView(APIView, LimitOffsetPagination):
     @extend_schema(
         tags=["Leads"],
         operation_id="leads_list",
-        parameters=swagger_params.lead_list_get_params,
+        parameters=[
+            *swagger_params.lead_list_get_params,
+            OpenApiParameter(
+                "unanswered",
+                OpenApiTypes.BOOL,
+                OpenApiParameter.QUERY,
+                description="true: only leads waiting for an answer, longest wait first",
+            ),
+        ],
         responses={
             200: inline_serializer(
                 name="LeadListResponse",
@@ -502,6 +516,8 @@ class LeadDetailView(APIView):
             visible = Lead.objects.select_for_update().filter(
                 pk__in=visible.values("pk")
             )
+        else:
+            visible = with_response_state(visible, self.request.profile.org)
         return get_object_or_404(visible, id=pk)
 
     def get_context_data(self, **kwargs):

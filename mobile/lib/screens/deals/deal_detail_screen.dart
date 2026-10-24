@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/theme.dart';
+import '../../data/models/interaction.dart';
 import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/deal_pipelines_provider.dart';
 import '../../providers/deals_provider.dart';
+import '../../providers/interactions_provider.dart';
 import '../../providers/lead_sources_provider.dart';
 import '../../providers/invoices_provider.dart';
 import '../../providers/org_modules_provider.dart';
@@ -15,6 +17,8 @@ import '../../config/api_config.dart';
 import '../../services/attachment_upload.dart';
 import '../../widgets/cards/deal_aging_badge.dart';
 import '../../widgets/common/common.dart';
+import '../../widgets/interactions/after_tap_logging.dart';
+import '../../widgets/interactions/record_timeline.dart';
 import '../../widgets/misc/stage_stepper.dart';
 import '../../widgets/objects/related_objects_section.dart';
 
@@ -76,6 +80,7 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       _error = null;
     });
 
+    ref.invalidate(recordInteractionsProvider(_target));
     var notFound = false;
     final detail = await ref
         .read(dealsProvider.notifier)
@@ -97,6 +102,9 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       });
     }
   }
+
+  InteractionTarget get _target =>
+      (home: InteractionHome.opportunity, id: widget.dealId);
 
   /// The deal's pipeline, once both have loaded. Null while loading, or
   /// when the list does not hold the deal's pipeline: then no stage control
@@ -875,70 +883,55 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
   // ===========================================================================
 
   Widget _buildActivityTab() {
-    final events = _buildTimelineEvents();
-    if (events.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _fetchDeal,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const SizedBox(height: 120),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.clock, size: 48, color: AppColors.gray400),
-                  const SizedBox(height: 16),
-                  Text('No activity yet', style: AppTypography.h3),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Activity will appear here as it happens',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final interactions = ref.watch(recordInteractionsProvider(_target)).value;
+    final events = _buildTimelineEvents(interactions);
     return RefreshIndicator(
       onRefresh: _fetchDeal,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemCount: events.length,
+        itemCount: events.length + 1,
         itemBuilder: (context, index) {
-          final e = events[index];
-          final isLast = index == events.length - 1;
-          return _TimelineRow(event: e, isLast: isLast);
+          if (index == 0) {
+            return InteractionsBar(
+              answer: interactions,
+              onLog: () => logActivity(context, ref, _target),
+            );
+          }
+          return TimelineEventRow(
+            event: events[index - 1],
+            isLast: index == events.length,
+          );
         },
       ),
     );
   }
 
-  List<_TimelineEvent> _buildTimelineEvents() {
+  List<TimelineEvent> _buildTimelineEvents(RecordInteractions? interactions) {
     final deal = _deal!;
-    final events = <_TimelineEvent>[
+    final events = <TimelineEvent>[
       for (final c in deal.comments)
-        _TimelineEvent(
-          kind: _TimelineKind.comment,
+        TimelineEvent(
+          icon: LucideIcons.messageSquare,
+          tint: AppColors.primary600,
           ts: c.commentedOn,
           actor: c.authorName,
           summary: 'commented',
           body: c.comment,
         ),
       for (final a in deal.attachments)
-        _TimelineEvent(
-          kind: _TimelineKind.attachment,
+        TimelineEvent(
+          icon: LucideIcons.paperclip,
+          tint: AppColors.warning600,
           ts: a.createdAt ?? deal.createdAt,
           actor: a.createdBy ?? 'Someone',
           summary: 'uploaded ${a.fileName}',
         ),
-      _TimelineEvent(
-        kind: _TimelineKind.created,
+      for (final i in interactions?.items ?? const <Interaction>[])
+        TimelineEvent.interaction(i),
+      TimelineEvent(
+        icon: LucideIcons.sparkles,
+        tint: AppColors.success600,
         ts: deal.createdAt,
         actor: deal.createdByName ?? deal.createdByEmail ?? '',
         summary: deal.createdByName != null || deal.createdByEmail != null
@@ -2021,130 +2014,5 @@ class _NoteCard extends StatelessWidget {
     if (d.inHours > 0) return '${d.inHours}h ago';
     if (d.inMinutes > 0) return '${d.inMinutes}m ago';
     return 'just now';
-  }
-}
-
-enum _TimelineKind { created, comment, attachment }
-
-class _TimelineEvent {
-  final _TimelineKind kind;
-  final DateTime ts;
-  final String actor;
-  final String summary;
-  final String? body;
-
-  const _TimelineEvent({
-    required this.kind,
-    required this.ts,
-    required this.actor,
-    required this.summary,
-    this.body,
-  });
-}
-
-class _TimelineRow extends StatelessWidget {
-  final _TimelineEvent event;
-  final bool isLast;
-  const _TimelineRow({required this.event, required this.isLast});
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, tint) = switch (event.kind) {
-      _TimelineKind.created => (LucideIcons.sparkles, AppColors.success600),
-      _TimelineKind.comment => (
-        LucideIcons.messageSquare,
-        AppColors.primary600,
-      ),
-      _TimelineKind.attachment => (LucideIcons.paperclip, AppColors.warning600),
-    };
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 14, color: tint),
-              ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.border)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text.rich(
-                          TextSpan(
-                            style: AppTypography.body,
-                            children: [
-                              if (event.actor.isNotEmpty) ...[
-                                TextSpan(
-                                  text: event.actor,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const TextSpan(text: ' '),
-                              ],
-                              TextSpan(text: event.summary),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _relTime(event.ts),
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (event.body != null && event.body!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.gray50,
-                        borderRadius: AppLayout.borderRadiusMd,
-                      ),
-                      child: Text(
-                        event.body!,
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _relTime(DateTime dt) {
-    final d = DateTime.now().difference(dt);
-    if (d.inDays > 30) return '${(d.inDays / 30).floor()}mo';
-    if (d.inDays > 0) return '${d.inDays}d';
-    if (d.inHours > 0) return '${d.inHours}h';
-    if (d.inMinutes > 0) return '${d.inMinutes}m';
-    return 'now';
   }
 }

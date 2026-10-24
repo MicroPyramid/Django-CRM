@@ -278,6 +278,10 @@ class DashboardData {
   /// The import views would let the caller in (`can_mass_import`).
   final bool canImport;
 
+  /// Visible leads waiting for a first reply, from `unanswered_leads`. Null
+  /// from an API that predates response times.
+  final int? unansweredLeads;
+
   const DashboardData({
     this.accountsCount = 0,
     this.contactsCount = 0,
@@ -292,6 +296,7 @@ class DashboardData {
     this.goalSummary = const [],
     this.emptyWorkspace = false,
     this.canImport = false,
+    this.unansweredLeads,
   });
 
   /// Whether the home screen offers an import, as the web home page's "Bring
@@ -416,6 +421,10 @@ class DashboardData {
       goalSummary: goalSummaryList,
       emptyWorkspace: json['empty_workspace'] == true,
       canImport: json['can_import'] == true,
+      unansweredLeads: switch (json['unanswered_leads']) {
+        {'count': final num count} => count.toInt(),
+        _ => null,
+      },
     );
   }
 }

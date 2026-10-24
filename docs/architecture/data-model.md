@@ -29,6 +29,13 @@ which is exactly why they're written down here with the file and line that makes
   `Product`, `Payment`, and `InvoiceTemplate` in the same app. This app also owns the anonymous
   client-portal views (see [Multi-tenancy and RLS](multi-tenancy-and-rls.md#portal-tokens)).
 - **Order** (`backend/orders/models.py`), `Order`/`OrderLineItem`.
+- **Interaction** (`backend/interactions/models.py`): a call, meeting, email, WhatsApp message or
+  SMS logged on a record, or an enquiry a lead made. It links to any of a lead, contact, account,
+  deal and ticket, and `home` names the one it was logged on, whose visibility alone decides who
+  sees it. Deleting the home record deletes the interaction; deleting any other linked record only
+  unlinks it. A merge moves it to the surviving record. The lead's `first_response_at`,
+  `first_response_by` and `last_outbound_at` are derived from its outbound interactions, and
+  `Org.lead_response_since` marks when the org started measuring responses.
 
 ## Relationships
 

@@ -11,6 +11,7 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 
 from common.models import Comment, CustomFieldDefinition, Tags
+from interactions.models import Interaction
 from leads.models import Lead
 from webforms.models import WebForm, WebFormField, WebFormSubmission
 from webforms.service import submit_form
@@ -146,16 +147,19 @@ class TestDuplicateEmail:
         )
         assert second.lead.custom_fields["budget"] == 5000
 
-    def test_appends_the_new_message_as_a_comment(self, form):
+    def test_records_each_message_as_an_enquiry(self, form):
         submit_form(form, {"email": "pat@example.com", "description": "First ask"})
         second = submit_form(
             form, {"email": "pat@example.com", "description": "Second ask"}
         )
-        comments = lead_comments(second.lead)
-        assert comments.count() == 1
-        assert "Second ask" in comments.first().comment
+        enquiries = Interaction.objects.filter(
+            kind="enquiry", lead=second.lead
+        ).order_by("created_at")
+        assert [e.body for e in enquiries] == ["First ask", "Second ask"]
+        assert {e.origin for e in enquiries} == {"webform"}
+        assert lead_comments(second.lead).count() == 0
 
-    def test_a_duplicate_with_no_message_writes_no_empty_comment(self, form):
+    def test_a_duplicate_with_no_message_writes_no_comment(self, form):
         submit_form(form, {"email": "pat@example.com"})
         second = submit_form(form, {"email": "pat@example.com", "first_name": "Pat"})
         assert lead_comments(second.lead).count() == 0

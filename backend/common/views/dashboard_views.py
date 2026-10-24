@@ -29,6 +29,7 @@ from invoices.models import UNPAID_STATUSES, Invoice
 from invoices.permissions import visible_invoices_qs
 from leads.access import visible_leads_qs
 from leads.models import Lead
+from leads.response import unanswered_summary
 from opportunity.access import visible_deals_qs
 from opportunity.models import DealPipeline, Opportunity, stage_kind_q
 from opportunity.stages import aging_q, stage_index
@@ -108,6 +109,16 @@ def _readable(queryset, visible):
     return queryset.filter(pk__in=visible.values("pk"))
 
 
+# Leads waiting for an answer that the caller can see (`leads.response`).
+_UNANSWERED_LEADS = inline_serializer(
+    name="UnansweredLeads",
+    fields={
+        "count": serializers.IntegerField(),
+        "oldest_since": serializers.DateTimeField(allow_null=True),
+    },
+)
+
+
 # Activity rows store the bare model name, not the registry label.
 _MODEL_NAME_MODULES = {label.split(".")[1]: key for label, key in MODEL_MODULES.items()}
 
@@ -164,6 +175,7 @@ class ApiHomeView(APIView):
                     "goal_summary": serializers.ListField(),
                     "empty_workspace": serializers.BooleanField(),
                     "can_import": serializers.BooleanField(),
+                    "unanswered_leads": _UNANSWERED_LEADS,
                 },
             )
         },
@@ -412,6 +424,7 @@ class ApiHomeView(APIView):
         ).data
 
         context.update(import_prompt_facts(profile))
+        context["unanswered_leads"] = unanswered_summary(all_leads, org)
 
         return Response(context, status=status.HTTP_200_OK)
 
@@ -466,6 +479,7 @@ class ApiTodayView(APIView):
                         },
                     ),
                     "later": serializers.ListField(child=serializers.DictField()),
+                    "unanswered_leads": _UNANSWERED_LEADS,
                 },
             )
         },
@@ -763,8 +777,19 @@ class ApiTodayView(APIView):
         later_rows.sort(key=lambda r: r[0])
         later = [row for _, row in later_rows[:6]]
 
+        # Beside the queue rather than in it: a count of leads waiting for an
+        # answer, for the card the full dashboard shows too.
+        leads = _readable(
+            only_available(org, "leads", Lead.objects.filter(org=org)),
+            visible_leads_qs(profile),
+        )
         return Response(
-            {"queue": queue, "summary": summary, "later": later},
+            {
+                "queue": queue,
+                "summary": summary,
+                "later": later,
+                "unanswered_leads": unanswered_summary(leads, org),
+            },
             status=status.HTTP_200_OK,
         )
 

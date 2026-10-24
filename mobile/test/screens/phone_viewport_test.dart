@@ -1,3 +1,15 @@
+import 'dart:convert';
+
+import 'package:bottle_crm/config/api_config.dart';
+import 'package:bottle_crm/data/models/interaction.dart';
+import 'package:bottle_crm/screens/contacts/contact_detail_screen.dart';
+import 'package:bottle_crm/screens/leads/leads_list_screen.dart';
+import 'package:bottle_crm/services/after_tap.dart';
+import 'package:bottle_crm/services/api_service.dart';
+import 'package:bottle_crm/widgets/common/round_action_button.dart';
+import 'package:bottle_crm/widgets/interactions/log_interaction_sheet.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:bottle_crm/data/models/access_token.dart';
 import 'package:bottle_crm/data/models/auth_response.dart';
 import 'package:bottle_crm/data/models/dashboard_data.dart';
@@ -4402,6 +4414,249 @@ void main() {
           expect(tester.takeException(), isNull);
         });
       }
+    }
+  });
+
+  group('logging calls and the unanswered list at 390px', () {
+    late Map<String, http.Response Function(http.Request)> routes;
+    final interactionsPath = Uri.parse(ApiConfig.interactions).path;
+    final waitingSince = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(hours: 26, minutes: 40))
+        .toIso8601String();
+    final person = {
+      'first_name': 'Maximiliana',
+      'last_name': 'Montgomery-Okonkwo',
+      'email': 'maximiliana.montgomery-okonkwo@harbour-homes.example.com',
+      'phone': '+44 7700 900123',
+      'phone_e164': '+447700900123',
+      'created_at': '2026-10-01T09:00:00Z',
+    };
+    final activity = {
+      'interactions': [
+        {
+          'id': 'i1',
+          'kind': 'call',
+          'direction': 'outbound',
+          'occurred_at': '2026-10-23T09:15:00Z',
+          'duration_seconds': 3900,
+          'duration_estimated': true,
+          'outcome': 'wrong_number',
+          'subject': 'Second viewing at the Harbour Road flat, with parking',
+          'body': 'Asked for the floor plan and the service charge.',
+          'logged_by_details': {
+            'id': 'p1',
+            'name': 'Alexandra Featherstonehaugh',
+            'email': 'a@x.io',
+          },
+          'origin': 'phone_tap',
+        },
+        {
+          'id': 'i2',
+          'kind': 'enquiry',
+          'direction': 'inbound',
+          'occurred_at': '2026-10-22T08:00:00Z',
+          'body': 'Is the flat still free?',
+          'origin': 'webform',
+        },
+      ],
+      'count': 120,
+    };
+
+    setUp(() {
+      routes = {
+        'GET $interactionsPath': (_) =>
+            http.Response(jsonEncode(activity), 200),
+        'GET ${Uri.parse('${ApiConfig.leads}l1/').path}': (_) => http.Response(
+          jsonEncode({
+            'lead_obj': {
+              'id': 'l1',
+              ...person,
+              'title': 'Website enquiry about the two-bedroom flat',
+              'company_name': 'Harbour Homes International Lettings',
+              'status': 'in process',
+            },
+            'pipeline_stage': {
+              'name': 'Viewing booked',
+              'color': 'blue',
+              'pipeline': {'name': 'Residential lettings'},
+            },
+          }),
+          200,
+        ),
+        'GET ${Uri.parse('${ApiConfig.contacts}c1/').path}': (_) =>
+            http.Response(
+              jsonEncode({
+                'contact_obj': {'id': 'c1', ...person, 'do_not_call': true},
+              }),
+              200,
+            ),
+        'GET ${Uri.parse(ApiConfig.leads).path}': (_) => http.Response(
+          jsonEncode({
+            'open_leads': {
+              'open_leads': [
+                for (final id in ['l1', 'l2', 'l3'])
+                  {
+                    'id': id,
+                    ...person,
+                    'company_name': 'Harbour Homes International Lettings',
+                    'status': 'assigned',
+                    'rating': 'HOT',
+                    'opportunity_amount': '250000',
+                    'is_unanswered': true,
+                    'waiting_since': waitingSince,
+                  },
+              ],
+              'leads_count': 3,
+            },
+            'close_leads': {'close_leads': [], 'leads_count': 0},
+          }),
+          200,
+        ),
+      };
+      ApiService().setClientForTesting(
+        MockClient(
+          (r) async =>
+              routes['${r.method} ${r.url.path}']?.call(r) ??
+              http.Response('{}', 404),
+        ),
+      );
+    });
+
+    tearDown(() => ApiService().setClientForTesting(http.Client()));
+
+    Widget sheetApp({PendingTap? tap}) => ProviderScope(
+      key: UniqueKey(),
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => showLogInteractionSheet(
+                  context,
+                  target: (home: InteractionHome.lead, id: 'l1'),
+                  save: (_) async => 'Could not log this. Try again.',
+                  clock: () => DateTime(2026, 10, 24, 10),
+                  tap: tap,
+                  away: const Duration(minutes: 64),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final callTap = PendingTap(
+      kind: InteractionKind.call,
+      target: (home: InteractionHome.lead, id: 'l1'),
+      personName: 'Maximiliana',
+      tappedAt: DateTime(2026, 10, 24, 8, 56),
+    );
+
+    for (final scale in [1.0, 1.3, 1.5]) {
+      final at = 'text $scale';
+
+      testWidgets('the after-tap sheet for a call, and its retry, $at', (
+        tester,
+      ) async {
+        await pump(tester, sheetApp(tap: callTap), textScale: scale);
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Log this call to Maximiliana?'), findsOneWidget);
+        await tester.tap(find.text('Wrong number'));
+        await tester.tap(find.widgetWithText(FilledButton, 'Log'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final retry = find.widgetWithText(FilledButton, 'Retry');
+        expect(retry, findsOneWidget);
+        expect(tester.getSize(retry).height, greaterThanOrEqualTo(44));
+        expect(
+          tester.getSize(find.widgetWithText(TextButton, 'Skip')).height,
+          greaterThanOrEqualTo(44),
+        );
+      });
+
+      testWidgets('Log activity with every kind offered, $at', (tester) async {
+        await pump(tester, sheetApp(), textScale: scale);
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Meeting'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a lead with every way to reach them, above its tabs, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          ProviderScope(
+            key: UniqueKey(),
+            child: MaterialApp(
+              theme: AppTheme.light,
+              home: const LeadDetailScreen(leadId: 'l1'),
+            ),
+          ),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        final tabsTop = tester.getTopLeft(find.byType(TabBar)).dy;
+        final buttons = find.byType(RoundActionButton);
+        expect(buttons, findsNWidgets(4));
+        for (final button in buttons.evaluate()) {
+          final rect = tester.getRect(find.byWidget(button.widget));
+          expect(rect.bottom, lessThanOrEqualTo(tabsTop));
+        }
+        await tester.tap(find.text('Timeline'));
+        await tester.pumpAndSettle();
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a contact who asked not to be called, with activity, $at', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          ProviderScope(
+            key: UniqueKey(),
+            child: MaterialApp(
+              theme: AppTheme.light,
+              home: const ContactDetailScreen(contactId: 'c1'),
+            ),
+          ),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('Do not call'), findsOneWidget);
+        await scrollToEnd(tester);
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text('Showing the newest 2 of 120 activities.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the unanswered leads with their waits, $at', (tester) async {
+        await pump(
+          tester,
+          ProviderScope(
+            key: UniqueKey(),
+            child: MaterialApp(
+              theme: AppTheme.light,
+              home: const LeadsListScreen(initialView: 'unanswered'),
+            ),
+          ),
+          textScale: scale,
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('waiting 1 d 2 h'), findsWidgets);
+      });
     }
   });
 }

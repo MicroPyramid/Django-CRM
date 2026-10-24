@@ -83,6 +83,9 @@ class LeadFilters {
   // ISO date (yyyy-MM-dd). Follow-ups due on exactly this day.
   final String? nextFollowUp;
 
+  /// Leads waiting for a first reply, oldest wait first (server-side).
+  final bool unanswered;
+
   const LeadFilters({
     this.search,
     this.statuses = const {},
@@ -93,6 +96,7 @@ class LeadFilters {
     this.tagId,
     this.tagLabel,
     this.nextFollowUp,
+    this.unanswered = false,
   });
 
   /// The single selected status, or null when none or several are selected.
@@ -115,6 +119,9 @@ class LeadFilters {
         '${day.month.toString().padLeft(2, '0')}-'
         '${day.day.toString().padLeft(2, '0')}',
   );
+
+  /// The home screen's "Unanswered" badge.
+  factory LeadFilters.unansweredOnly() => const LeadFilters(unanswered: true);
 
   /// A saved view's filters (`{param: [value, ...]}`) as this list's state:
   /// the parameters [filterQuery] sends, read back. A value this list does not
@@ -153,6 +160,7 @@ class LeadFilters {
       tagId: tag,
       tagLabel: tag == null ? null : tagLabel,
       nextFollowUp: one('next_follow_up'),
+      unanswered: one('unanswered') == 'true',
     );
   }
 
@@ -163,7 +171,8 @@ class LeadFilters {
       rating == null &&
       (assignedToId == null || assignedToId!.isEmpty) &&
       tagId == null &&
-      nextFollowUp == null;
+      nextFollowUp == null &&
+      !unanswered;
 
   bool get isActive => !isEmpty;
 
@@ -178,6 +187,7 @@ class LeadFilters {
     bool assignedTo = false,
     bool tag = false,
     bool nextFollowUp = false,
+    bool unanswered = false,
   }) {
     return LeadFilters(
       search: search ? null : this.search,
@@ -189,6 +199,7 @@ class LeadFilters {
       tagId: tag ? null : tagId,
       tagLabel: tag ? null : tagLabel,
       nextFollowUp: nextFollowUp ? null : this.nextFollowUp,
+      unanswered: unanswered ? false : this.unanswered,
     );
   }
 
@@ -202,6 +213,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
   );
 
   LeadFilters withStatus(LeadStatus? value) =>
@@ -217,6 +229,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
   );
 
   LeadFilters withSource(String? value) => LeadFilters(
@@ -229,6 +242,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
   );
 
   LeadFilters withRating(LeadRating? value) => LeadFilters(
@@ -241,6 +255,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
   );
 
   LeadFilters withAssignee({String? id, String? label}) => LeadFilters(
@@ -253,6 +268,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
   );
 
   LeadFilters withTag({String? id, String? label}) => LeadFilters(
@@ -265,6 +281,20 @@ class LeadFilters {
     tagId: id,
     tagLabel: label,
     nextFollowUp: nextFollowUp,
+    unanswered: unanswered,
+  );
+
+  LeadFilters withUnanswered(bool value) => LeadFilters(
+    search: search,
+    statuses: statuses,
+    source: source,
+    rating: rating,
+    assignedToId: assignedToId,
+    assignedToLabel: assignedToLabel,
+    tagId: tagId,
+    tagLabel: tagLabel,
+    nextFollowUp: nextFollowUp,
+    unanswered: value,
   );
 
   LeadFilters withNextFollowUp(String? value) => LeadFilters(
@@ -277,6 +307,7 @@ class LeadFilters {
     tagId: tagId,
     tagLabel: tagLabel,
     nextFollowUp: value,
+    unanswered: unanswered,
   );
 }
 
@@ -293,6 +324,10 @@ class LeadsListData {
     this.hasMore = true,
     this.currentOffset = 0,
   });
+
+  /// The API marks each lead answered or not, so it can list unanswered ones.
+  /// An older API sends no `is_unanswered` and ignores the filter.
+  bool get offersUnanswered => leads.any((l) => l.isUnanswered != null);
 
   LeadsListData copyWith({
     List<Lead>? leads,
@@ -363,6 +398,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
       if (f.tagId != null && f.tagId!.isNotEmpty) 'tags': f.tagId!,
       if (f.nextFollowUp != null && f.nextFollowUp!.isNotEmpty)
         'next_follow_up': f.nextFollowUp!,
+      if (f.unanswered) 'unanswered': 'true',
     };
   }
 

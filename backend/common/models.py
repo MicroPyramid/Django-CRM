@@ -15,6 +15,7 @@ from django.db import models, transaction
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.timesince import timesince
+from django.utils.timezone import now as timezone_now
 from django.utils.translation import gettext_lazy as _
 
 from common.base import BaseModel, BaseOrgModel
@@ -188,6 +189,12 @@ class Org(BaseModel):
     modules_off = models.JSONField(default=list, blank=True)
     module_order = models.JSONField(default=list, blank=True)
     modules_on_at = models.JSONField(default=dict, blank=True)
+
+    # A lead counts as unanswered only if it arrived or enquired after this, so
+    # an org's years of open leads do not flood the list on day one. Existing
+    # orgs got the time the column was added. Server-set only. (`timezone` is a
+    # field name in this class body, hence the alias.)
+    lead_response_since = models.DateTimeField(default=timezone_now)
 
     # Public help center at `/help-center/<slug>` on the app frontend. Off by default:
     # it publishes the org's approved, published articles to anyone, search

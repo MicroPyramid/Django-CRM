@@ -35,6 +35,7 @@ from common.models import Attachments, Comment, PortalAccessToken, Profile, User
 from common.portal_tokens import portal_token_hash
 from common.testing import set_modules_off
 from conftest import rls_org
+from interactions.models import Interaction
 from leads.models import Lead, LeadSource
 
 ADDRESS = "leads@acme.test"
@@ -113,6 +114,14 @@ def _comments(record):
             content_type=ContentType.objects.get_for_model(type(record)),
             object_id=record.id,
         ).values_list("comment", flat=True)
+    )
+
+
+def _enquiries(lead):
+    return list(
+        Interaction.objects.filter(kind="enquiry", lead=lead)
+        .order_by("created_at")
+        .values_list("origin", "body")
     )
 
 
@@ -615,6 +624,7 @@ class TestDropsAndRepeats:
         assert again.dropped is True and again.drop_reason == "already_received"
         assert Lead.objects.filter(org=us_org).count() == 1
         assert _comments(first.lead) == []
+        assert len(_enquiries(first.lead)) == 1
 
     def test_a_repeat_delivery_of_a_merged_email_does_not_merge_twice(
         self, mailbox, us_org
@@ -629,7 +639,9 @@ class TestDropsAndRepeats:
 
         assert merged.result == "merged"
         assert again.drop_reason == "already_received"
-        assert len(_comments(merged.lead)) == 1
+        assert _comments(merged.lead) == []
+        assert [body for _, body in _enquiries(merged.lead)] == ["1", "two"]
+        assert {origin for origin, _ in _enquiries(merged.lead)} == {"email"}
 
     def test_the_same_email_to_two_lead_addresses_in_one_org_is_one_arrival(
         self, mailbox, us_org

@@ -65,12 +65,17 @@ function toRow(lead) {
     industry: lead.industry ?? '',
     email: lead.email ?? '',
     phone: lead.phone ?? '',
+    phone_e164: lead.phone_e164 ?? '',
     website: lead.website ?? '',
     status: lead.status ?? 'assigned',
     source: lead.source ?? '',
     source_detail: lead.source_detail ?? '',
     source_ref: lead.source_ref ?? '',
     last_enquiry_at: lead.last_enquiry_at ?? null,
+    first_response_at: lead.first_response_at ?? null,
+    first_response_by: lead.first_response_by_details?.name || null,
+    waiting_since: lead.waiting_since ?? null,
+    is_unanswered: lead.is_unanswered === true,
     opportunity_amount: lead.opportunity_amount ? Number(lead.opportunity_amount) : null,
     // A lead's amount is stored in the lead's own currency, which the
     // serializer stamps from the org default at create time and the user can
@@ -108,19 +113,79 @@ export async function listLeads({ cookies }, params) {
   if (!query.has('limit')) query.set('limit', '25');
 
   const response = await apiRequest(`/leads/?${query}`, {}, { cookies });
-  const rows = (response.open_leads?.open_leads ?? []).map(toRow);
+  const raw = response.open_leads?.open_leads ?? [];
+  const rows = raw.map(toRow);
 
-  rows.sort((a, b) => lastTouch(a) - lastTouch(b));
+  if (query.get('unanswered') === 'true') rows.sort((a, b) => waited(a) - waited(b));
+  else rows.sort((a, b) => lastTouch(a) - lastTouch(b));
 
   return {
     results: rows,
-    totals: response.totals ?? { count: rows.length, unworked_over_a_week: 0 }
+    totals: response.totals ?? { count: rows.length, unworked_over_a_week: 0 },
+    // An API without response tracking ignores `?unanswered=true` rather than
+    // answering 404, so its rows are the only tell: they lack the field. Null
+    // when there is no row to read it from.
+    responseLive: raw.length ? raw.some((/** @type {any} */ l) => 'is_unanswered' in l) : null
   };
 }
 
 /** @param {{ last_contacted: string | null, created_at: string }} row */
 function lastTouch(row) {
   return new Date(row.last_contacted ?? row.created_at).getTime();
+}
+
+/** Oldest wait first, the API's own order for the unanswered list. @param {any} row */
+function waited(row) {
+  return row.waiting_since ? new Date(row.waiting_since).getTime() : Infinity;
+}
+
+/** The periods the Response time view offers; the API takes 7 to 90 days. */
+export const RESPONSE_DAYS = [7, 30, 90];
+
+/**
+ * @param {string | null} raw a `?days=` value
+ * @returns {number} one of RESPONSE_DAYS, 30 for anything else
+ */
+export function responseDays(raw) {
+  const n = Number(raw);
+  return RESPONSE_DAYS.includes(n) ? n : 30;
+}
+
+/**
+ * Time to first response per person. The API answers an admin with every
+ * active member and a member with their own row; this passes on what it got.
+ * An API without response tracking answers 404, which is the page's answer.
+ *
+ * @param {{ cookies: import('@sveltejs/kit').Cookies }} event
+ * @param {number} days
+ */
+export async function getResponseTimes({ cookies }, days) {
+  let resp;
+  try {
+    resp = await apiRequest(
+      `/leads/response-times/?days=${responseDays(String(days))}`,
+      { expectedStatuses: [404] },
+      { cookies }
+    );
+  } catch (/** @type {any} */ err) {
+    rethrowModuleOff(err);
+    if (err?.status === 404) error(404, 'Response times are not available here.');
+    throw err;
+  }
+  /** @param {any} n */
+  const int = (n) => (Number.isFinite(n) ? n : 0);
+  return {
+    since: typeof resp?.since === 'string' ? resp.since : null,
+    rows: (Array.isArray(resp?.rows) ? resp.rows : []).map((/** @type {any} */ r) => ({
+      profile: typeof r?.profile === 'string' ? r.profile : '',
+      name: typeof r?.name === 'string' && r.name ? r.name : 'Unknown',
+      answered: int(r?.answered),
+      median_seconds: Number.isFinite(r?.median_seconds) ? r.median_seconds : null,
+      within_5_minutes: int(r?.within_5_minutes),
+      within_1_hour: int(r?.within_1_hour),
+      unanswered_now: int(r?.unanswered_now)
+    }))
+  };
 }
 
 /**

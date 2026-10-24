@@ -161,6 +161,18 @@ class Lead(AssignableMixin, BaseModel):
     external_id = models.CharField(max_length=255, blank=True, default="")
     last_enquiry_at = models.DateTimeField(null=True, blank=True)
 
+    # Recomputed from the lead's outbound interactions after every change to
+    # them (`interactions.service`). Server-set only.
+    first_response_at = models.DateTimeField(null=True, blank=True)
+    first_response_by = models.ForeignKey(
+        Profile,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="first_responses",
+    )
+    last_outbound_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         verbose_name = "Lead"
         verbose_name_plural = "Leads"
@@ -172,6 +184,8 @@ class Lead(AssignableMixin, BaseModel):
             models.Index(fields=["org", "-created_at"]),
             models.Index(fields=["stage", "kanban_order"]),
             models.Index(fields=["status", "kanban_order"]),
+            # The unanswered list: open statuses, then no outbound or an old one.
+            models.Index(fields=["org", "status", "last_outbound_at"]),
         ]
         constraints = [
             # Case-insensitive unique email per organization (when email is not null)

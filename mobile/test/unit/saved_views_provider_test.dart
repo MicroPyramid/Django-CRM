@@ -235,6 +235,7 @@ void main() {
         assignedToId: 'u1',
         tagId: 't1',
         nextFollowUp: '2026-09-26',
+        unanswered: true,
       );
       await notifier.setFilters(filters);
       final back = LeadFilters.fromQuery(
@@ -248,6 +249,7 @@ void main() {
             'assigned_to',
             'tags',
             'next_follow_up',
+            'unanswered',
           },
           multi: {'status'},
         ),
@@ -263,6 +265,7 @@ void main() {
       expect(back.tagId, 't1');
       expect(back.tagLabel, 'vip');
       expect(back.nextFollowUp, '2026-09-26');
+      expect(back.unanswered, isTrue);
     });
 
     test('leads drop a value the list does not offer', () {

@@ -49,6 +49,12 @@ CATALOGUE = (
         ("invoice.created", "invoice.updated", "invoice.paid"),
     ),
     ("task", "Tasks", "tasks.Task", ("task.created", "task.updated", "task.deleted")),
+    (
+        "interaction",
+        "Interactions",
+        "interactions.Interaction",
+        ("interaction.created",),
+    ),
 )
 
 EVENT_NAMES = tuple(name for *_, names in CATALOGUE for name in names)
@@ -209,6 +215,31 @@ def task_data(task):
         "lead_id": task.lead_id,
         "assigned_to": _assigned(task),
         **_stamps(task),
+    }
+
+
+def interaction_data(interaction):
+    return {
+        "id": interaction.id,
+        "kind": interaction.kind,
+        "direction": interaction.direction,
+        "occurred_at": interaction.occurred_at,
+        "duration_seconds": interaction.duration_seconds,
+        "duration_estimated": interaction.duration_estimated,
+        "outcome": interaction.outcome,
+        "subject": interaction.subject,
+        "body": interaction.body,
+        "logged_by": interaction.logged_by_id,
+        "participants": interaction.participants,
+        "home": interaction.home,
+        "lead_id": interaction.lead_id,
+        "contact_id": interaction.contact_id,
+        "account_id": interaction.account_id,
+        "opportunity_id": interaction.opportunity_id,
+        "ticket_id": interaction.case_id,
+        "origin": interaction.origin,
+        "external_id": interaction.external_id,
+        **_stamps(interaction),
     }
 
 

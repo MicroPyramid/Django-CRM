@@ -11,3 +11,4 @@ export 'buttons.dart';
 export 'input_field.dart';
 export 'loading.dart';
 export 'menu_row.dart';
+export 'round_action_button.dart';
