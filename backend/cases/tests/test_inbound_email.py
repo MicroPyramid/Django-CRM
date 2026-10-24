@@ -823,9 +823,9 @@ class TestMailboxAPI:
         assert mailbox.webhook_secret == "original"
 
     def test_unsupported_provider_returns_501(self, admin_client, org_a):
-        # Mailgun isn't yet wired into the webhook, but the model accepts it.
-        # Create a mailbox with provider=mailgun and verify the webhook 501s.
-        mailbox = _make_mailbox(org_a, provider="mailgun")
+        # IMAP needs polling, so the webhook cannot serve it; the model still
+        # accepts it. Postmark and Mailgun: test_inbound_providers.py.
+        mailbox = _make_mailbox(org_a, provider="imap")
         response = admin_client.post(
             f"/api/cases/inbound/{mailbox.id}/",
             {

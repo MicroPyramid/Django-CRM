@@ -28,6 +28,7 @@ const CORE_SETTINGS = [
   'audit-log',
   'automation',
   'custom-fields',
+  'lead-sources',
   'modules',
   'objects',
   'organization',

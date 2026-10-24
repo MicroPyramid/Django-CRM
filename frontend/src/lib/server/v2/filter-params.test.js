@@ -166,3 +166,18 @@ describe('deal stage filter', () => {
     expect(readFilters(pipeline(`stage=${'A'.repeat(65)}`), 'pipeline')).toEqual({});
   });
 });
+
+describe('readFilters on a lead source', () => {
+  const leads = (/** @type {string} */ qs) => new URL(`http://x/leads?${qs}`);
+
+  it('keeps any key the org might have, since the list is the org’s own', () => {
+    expect(readFilters(leads('source=google%20ads'), 'leads')).toEqual({ source: 'google ads' });
+    expect(readFilters(new URL('http://x/pipeline?lead_source=walk-in'), 'pipeline')).toEqual({
+      lead_source: 'walk-in'
+    });
+  });
+
+  it('drops a value longer than the column', () => {
+    expect(readFilters(leads(`source=${'x'.repeat(256)}`), 'leads')).toEqual({});
+  });
+});

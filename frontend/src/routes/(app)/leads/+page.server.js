@@ -4,6 +4,7 @@ import { getOrgPeopleAndTeams, resolveMe } from '#lib/server/v2/org-people.js';
 import { getTags } from '#lib/server/v2/tags.js';
 import { forwardCsvImport } from '#lib/server/v2/csv-import.js';
 import { loadSavedViews, savedViewActions } from '#lib/server/v2/saved-views.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /**
  * Server load, not a universal one. The access token is an httpOnly cookie;
@@ -22,13 +23,14 @@ import { loadSavedViews, savedViewActions } from '#lib/server/v2/saved-views.js'
 export async function load({ cookies, url, locals }) {
   const params = leadListQuery(url);
 
-  const [{ results, totals }, orgPeople, tagList, savedViews] = await Promise.all([
+  const [{ results, totals }, orgPeople, tagList, savedViews, { sources }] = await Promise.all([
     listLeads({ cookies }, params),
     getOrgPeopleAndTeams(cookies),
     // A failed tag fetch should cost the Tag dropdown in the filter bar, not
     // the whole list. Follows the tickets.js pattern; see the note there.
     getTags({ cookies }).catch(() => ({ tags: [] })),
-    loadSavedViews({ cookies, url }, 'leads')
+    loadSavedViews({ cookies, url }, 'leads'),
+    getLeadSources({ cookies })
   ]);
 
   return {
@@ -39,6 +41,7 @@ export async function load({ cookies, url, locals }) {
     people: orgPeople.people,
     tags: tagList.tags ?? [],
     savedViews,
+    sources,
     meId: resolveMe(orgPeople.people, /** @type {any} */ (locals).user?.email)
   };
 }

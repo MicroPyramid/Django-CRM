@@ -2,14 +2,16 @@ import { fail, redirect } from '@sveltejs/kit';
 import { addLeadNote, convertLead, deleteLead, getLead } from '#lib/server/v2/leads.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
 import { loadRelated, relatedActions } from '#lib/server/v2/related-records.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies, params }) {
-  const [lead, related] = await Promise.all([
+  const [lead, related, { sources }] = await Promise.all([
     getLead({ cookies }, params.id),
-    loadRelated({ cookies }, 'lead', params.id)
+    loadRelated({ cookies }, 'lead', params.id),
+    getLeadSources({ cookies })
   ]);
-  return { ...lead, related };
+  return { ...lead, related, sources };
 }
 
 /** @type {import('./$types').Actions} */

@@ -5,6 +5,7 @@
   import PageHeader from '#lib/v2/components/PageHeader.svelte';
   import { OPPORTUNITY_TYPE_LABEL } from '#lib/v2/enums.js';
   import { money } from '#lib/v2/format.js';
+  import { sourceOptions } from '#lib/v2/lead-sources.js';
   import { ChevronDown, ChevronRight, TriangleAlert } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -361,13 +362,28 @@
 
           <div class="v2-field">
             <label for="f-source">Source</label>
-            <input
-              id="f-source"
-              name="lead_source"
-              class="v2-input"
-              bind:value={form.lead_source}
-              placeholder="Existing customer"
-            />
+            {#if data.sourcesLive}
+              <select
+                id="f-source"
+                name="lead_source"
+                class="v2-input"
+                bind:value={form.lead_source}
+              >
+                <option value="">Not specified</option>
+                {#each sourceOptions(data.sources, form.lead_source) as s (s.key)}
+                  <option value={s.key}>{s.label}</option>
+                {/each}
+              </select>
+            {:else}
+              <!-- An API without the org's source list takes its own values. -->
+              <input
+                id="f-source"
+                name="lead_source"
+                class="v2-input"
+                bind:value={form.lead_source}
+                placeholder="Existing customer"
+              />
+            {/if}
           </div>
 
           <div class="v2-field">

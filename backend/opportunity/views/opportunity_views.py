@@ -93,7 +93,7 @@ def deal_list_queryset(profile, params):
     if params.get("stage"):
         queryset = queryset.filter(stage__contains=params.get("stage"))
     if params.get("lead_source"):
-        queryset = queryset.filter(lead_source__contains=params.get("lead_source"))
+        queryset = queryset.filter(lead_source=params.get("lead_source"))
     tags = uuid_list_param(params, "tags")
     if tags:
         queryset = queryset.filter(tags__id__in=tags).distinct()

@@ -24,6 +24,7 @@ const _documents = ModuleNeed(['documents']);
 const _needs = <String, ModuleNeed>{
   '/leads': _leads,
   '/more/settings/lead-pipelines': _leads,
+  '/more/settings/lead-capture': _leads,
   '/deals': _deals,
   '/more/settings/deal-pipelines': _deals,
   '/goals': _goals,

@@ -93,12 +93,10 @@ explicitly:
 ```
 
 (`accounts/views.py`.) `stages` is the org's default deal pipeline's stages as `[code, label]`
-pairs, and `sources` is `Opportunity`'s `SOURCES` enum, both surfaced here
+pairs, and `sources` is a fixed set of eight source keys, both surfaced here
 because the account detail page is where an "add opportunity against this account" form lives, not
-because an account has stages or sources of its own. `sources` on this endpoint is the *uppercase*
-vocabulary that includes `WEBSITE`; it is not `Lead.source`'s `LEAD_SOURCE`. See
-[Opportunities: Stages](opportunities.md#stages) for the distinction, and
-[Leads](leads.md#list-leads) for why conflating the two is a real failure mode with this API.
+because an account has stages or sources of its own. For the org's own list, which a deal's
+`lead_source` is checked against, read [Lead sources](leads.md#lead-sources).
 
 `PUT /api/accounts/{id}/` (`:453-575`) and `PATCH /api/accounts/{id}/` (`:763-871`) both call
 `assert_account_access` **before** validating the request body, deliberately, so an unauthorized

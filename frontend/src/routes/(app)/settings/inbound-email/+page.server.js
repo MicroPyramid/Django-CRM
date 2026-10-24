@@ -1,13 +1,16 @@
 import { fail } from '@sveltejs/kit';
+import * as env from '$app/env/public';
 import {
   getMailboxes,
   createMailbox,
   updateMailbox,
   deleteMailbox,
-  topicArnEdit
+  topicArnEdit,
+  webhookSecretEdit
 } from '#lib/server/v2/inbound-email.js';
 import { getOrgPeopleAndTeams } from '#lib/server/v2/org-people.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 // The mailbox list and the create/edit form's assignee picker are two
 // independent fetches: `getMailboxes` does not fold `getOrgPeopleAndTeams`
@@ -20,17 +23,18 @@ import { readableError } from '#lib/server/v2/form-errors.js';
 // `getOrgPeopleAndTeams` returns both and spreading both is harmless.
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ cookies }) {
-  const [data, options] = await Promise.all([
+  const [data, options, { sources }] = await Promise.all([
     getMailboxes({ cookies }),
-    getOrgPeopleAndTeams(cookies)
+    getOrgPeopleAndTeams(cookies),
+    getLeadSources({ cookies })
   ]);
-  return { ...data, ...options };
+  return { ...data, ...options, sources, api_base: env.PUBLIC_DJANGO_API_URL ?? '' };
 }
 
 /**
- * Everything both the create and edit form submit. There is no signing-secret
- * key read here: no field on either form carries one, and reading one would be
- * the first step toward sending it. `is_active` is likewise deliberately not
+ * Everything both the create and edit form submit. `webhook_secret` is read
+ * only when typed (`webhookSecretEdit`); the form is never prefilled with it.
+ * `is_active` is likewise deliberately not
  * read here: only the create form carries that checkbox (the edit form's own
  * row control, Turn off / Turn on, owns that state), so reading
  * `form.get('is_active')` here would answer `false` on every edit submit,
@@ -44,14 +48,25 @@ export async function load({ cookies }) {
  * @param {FormData} form
  */
 function readValues(form) {
-  return {
-    address: form.get('address')?.toString().trim() ?? '',
-    provider: form.get('provider')?.toString() ?? '',
+  /** @type {Record<string, any>} */
+  const values = {
+    // Absent when the server generates the address, or for a generated one,
+    // whose address and provider are the server's.
+    address: form.has('address') ? (form.get('address')?.toString().trim() ?? '') : undefined,
+    provider: form.has('provider') ? (form.get('provider')?.toString() ?? '') : undefined,
     default_priority: form.get('default_priority')?.toString() ?? '',
     default_case_type: form.get('default_case_type')?.toString() ?? '',
     default_assignee_id: form.get('default_assignee_id')?.toString() ?? '',
-    topic_arn: topicArnEdit(form.get('topic_arn'), form.get('topic_arn_was'))
+    topic_arn: topicArnEdit(form.get('topic_arn'), form.get('topic_arn_was')),
+    webhook_secret: webhookSecretEdit(form.get('webhook_secret'))
   };
+  // The lead fields travel only when the form drew them: an API that cannot
+  // make lead addresses gets the body it always got.
+  for (const key of ['creates', 'lead_source', 'lead_source_detail']) {
+    const value = form.get(key);
+    if (value !== null) values[key] = value.toString();
+  }
+  return values;
 }
 
 /** @type {import('./$types').Actions} */
@@ -60,7 +75,12 @@ export const actions = {
   // `_is_admin` first). `can_edit` only hides the control.
   async create(event) {
     const form = await event.request.formData();
-    const values = { ...readValues(form), is_active: form.get('is_active') === 'true' };
+    const values = {
+      ...readValues(form),
+      is_active: form.get('is_active') === 'true',
+      // "Generate an address" is offered only while the server has a domain.
+      generate_address: form.get('address_mode') === 'generate'
+    };
     try {
       await createMailbox(event, values);
     } catch (/** @type {any} */ err) {

@@ -68,6 +68,9 @@ function toRow(lead) {
     website: lead.website ?? '',
     status: lead.status ?? 'assigned',
     source: lead.source ?? '',
+    source_detail: lead.source_detail ?? '',
+    source_ref: lead.source_ref ?? '',
+    last_enquiry_at: lead.last_enquiry_at ?? null,
     opportunity_amount: lead.opportunity_amount ? Number(lead.opportunity_amount) : null,
     // A lead's amount is stored in the lead's own currency, which the
     // serializer stamps from the org default at create time and the user can
@@ -247,10 +250,24 @@ export const EDITABLE_FIELDS = [
   'website',
   'status',
   'source',
+  'source_detail',
+  'source_ref',
   'industry',
   'opportunity_amount',
   'description'
 ];
+
+/**
+ * Fields whose "no value" is '' rather than null: the source columns are
+ * blank-only strings, and a null there is refused.
+ */
+const BLANK_NOT_NULL = ['source', 'source_detail', 'source_ref'];
+
+/** @param {string} field @param {any} value */
+function emptyAs(field, value) {
+  if (value !== '' && value !== undefined && value !== null) return value;
+  return BLANK_NOT_NULL.includes(field) ? '' : null;
+}
 
 /**
  * Profiles in this org, for the owner select.
@@ -365,8 +382,7 @@ export async function updateLead({ cookies }, id, values) {
   const body = {};
   for (const field of EDITABLE_FIELDS) {
     if (!(field in values)) continue;
-    const value = values[field];
-    body[field] = value === '' ? null : value;
+    body[field] = emptyAs(field, values[field]);
   }
 
   if ('opportunity_amount' in values) {
@@ -456,8 +472,7 @@ export async function createLead({ cookies }, values) {
   /** @type {Record<string, any>} */
   const body = {};
   for (const field of EDITABLE_FIELDS) {
-    const value = values[field];
-    body[field] = value === '' || value === undefined ? null : value;
+    body[field] = emptyAs(field, values[field]);
   }
 
   if (values.opportunity_amount !== undefined) {

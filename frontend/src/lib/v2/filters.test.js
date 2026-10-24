@@ -310,3 +310,15 @@ describe('deal stage chip', () => {
     expect(chips[0].value).toBe('GONE');
   });
 });
+
+describe('the source chip', () => {
+  it('names the source from the list, and shows the key when it is not there', () => {
+    const sources = [{ id: 'google ads', name: 'Google ads' }];
+    const named = activeChips('leads', new URL('http://x/leads?source=google%20ads'), { sources });
+    expect(named).toEqual([
+      { key: 'source', label: 'Source', value: 'Google ads', href: '/leads' }
+    ]);
+    const raw = activeChips('pipeline', new URL('http://x/pipeline?lead_source=fax'), { sources });
+    expect(raw[0].value).toBe('fax');
+  });
+});

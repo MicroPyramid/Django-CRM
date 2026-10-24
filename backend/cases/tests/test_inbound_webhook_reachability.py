@@ -213,12 +213,16 @@ class TestExemptionIsOnlyTheWebhook:
         for path in (
             _webhook(uuid.uuid4()),
             "/api/cases/inbound/",
+            "/api/cases/inbound/email/",
             MAILBOXES_URL,
             "/api/cases/",
         ):
             assert middleware._is_exempt(path) is False
         assert RequireOrgContext.EXEMPT_VIEW_NAMES == frozenset(
-            {"common_urls:api_cases:inbound_webhook"}
+            {
+                "common_urls:api_cases:inbound_webhook",
+                "common_urls:api_cases:inbound_catch_all",
+            }
         )
 
     def test_a_lookalike_path_under_the_webhook_is_not_served(self, anon, org_a):

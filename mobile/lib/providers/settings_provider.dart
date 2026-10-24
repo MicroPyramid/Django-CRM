@@ -1198,6 +1198,8 @@ class MailboxesState {
     this.mailboxes = const [],
     this.count = 0,
     this.casesLast30d = 0,
+    this.leadsOffered = false,
+    this.generatedDomain,
   });
 
   /// Live addresses first, then alphabetically.
@@ -1212,7 +1214,15 @@ class MailboxesState {
   /// server-side so an address cross-posted to two mailboxes counts once.
   final int casesLast30d;
 
+  /// Whether this API has lead addresses. An older one would take `creates`
+  /// and quietly make a ticket address, so the form offers it only here.
+  final bool leadsOffered;
+
+  /// Where the server makes addresses itself, when it does; null otherwise.
+  final String? generatedDomain;
+
   int get delivering => deliveringMailboxCount(mailboxes);
+  int get deliveringLeads => deliveringMailboxCount(mailboxes, leads: true);
 
   List<Mailbox> get silent => silentMailboxes(mailboxes);
 }
@@ -1234,14 +1244,21 @@ class MailboxesNotifier extends AsyncNotifier<MailboxesState> {
       throw Exception(response.message ?? 'Failed to load inbound email');
     }
     final body = response.data!;
-    final rows = listFromEnvelope(body, const [
-      'mailboxes',
-    ]).map(Mailbox.fromJson).toList();
+    final raw = body['generated_domain'];
+    final domain = raw is String && raw.isNotEmpty ? raw : null;
+    final json = listFromEnvelope(body, const ['mailboxes']);
+    final rows = [
+      for (final row in json) Mailbox.fromJson(row, generatedDomain: domain),
+    ];
     final totals = body['totals'];
     return MailboxesState(
       mailboxes: sortedMailboxes(rows),
       count: _int(totals, 'count', rows.length),
       casesLast30d: _int(totals, 'cases_last_30d', 0),
+      leadsOffered:
+          body.containsKey('generated_domain') ||
+          json.any((row) => row.containsKey('creates')),
+      generatedDomain: domain,
     );
   }
 

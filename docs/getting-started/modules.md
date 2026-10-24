@@ -64,9 +64,9 @@ to clear:
 - **Published web forms.** Leads, or Tickets, still receives submissions from a published web
   form. Unpublish the form first, so no submission is lost. This also covers the website lead key
   the older embed used, once it has been used.
-- **Active inbound mailboxes.** Tickets still receives email at an address. Switch that mailbox off
-  first, so no email is lost. Switching Tickets off also takes Timesheet with it, so it is
-  refused for these reasons too.
+- **Active inbound mailboxes.** Tickets still receives email at a ticket address, or Leads at a
+  lead address. Switch that mailbox off first, so no email is lost. Switching Tickets off also
+  takes Timesheet with it, so it is refused for these reasons too.
 
 Reordering the modules is never refused, even while one is off.
 

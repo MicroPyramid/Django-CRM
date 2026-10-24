@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import 'attachment.dart';
 import 'comment.dart';
@@ -26,43 +25,6 @@ enum LeadStatus {
     return LeadStatus.values.firstWhere(
       (s) => s.value == normalized,
       orElse: () => LeadStatus.assigned,
-    );
-  }
-}
-
-/// Lead source enumeration matching backend LEAD_SOURCE
-enum LeadSource {
-  none('', 'None', LucideIcons.circleHelp),
-  call('call', 'Call', LucideIcons.phone),
-  email('email', 'Email', LucideIcons.mail),
-  existingCustomer('existing customer', 'Existing Customer', LucideIcons.users),
-  partner('partner', 'Partner', LucideIcons.handshake),
-  publicRelations(
-    'public relations',
-    'Public Relations',
-    LucideIcons.newspaper,
-  ),
-  campaign(
-    'compaign',
-    'Campaign',
-    LucideIcons.megaphone,
-  ), // Note: backend has typo "compaign"
-  other('other', 'Other', LucideIcons.ellipsis);
-
-  final String value;
-  final String label;
-  final IconData icon;
-
-  const LeadSource(this.value, this.label, this.icon);
-
-  String get displayName => label;
-
-  static LeadSource fromString(String? value) {
-    if (value == null || value.isEmpty) return LeadSource.none;
-    final normalized = value.toLowerCase().trim();
-    return LeadSource.values.firstWhere(
-      (s) => s.value == normalized,
-      orElse: () => LeadSource.other,
     );
   }
 }
@@ -148,7 +110,12 @@ class Lead {
   final String? linkedinUrl;
   final String companyName;
   final LeadStatus status;
-  final LeadSource source;
+
+  /// A key from the org's source list, exactly as the server sent it (empty
+  /// for none). Label it with `leadSourceLabel`.
+  final String source;
+  final String sourceDetail;
+  final String sourceRef;
   final LeadRating rating;
   final String? industry;
   final double? opportunityAmount;
@@ -192,7 +159,9 @@ class Lead {
     this.linkedinUrl,
     required this.companyName,
     required this.status,
-    required this.source,
+    this.source = '',
+    this.sourceDetail = '',
+    this.sourceRef = '',
     required this.rating,
     this.industry,
     this.opportunityAmount,
@@ -355,7 +324,9 @@ class Lead {
       linkedinUrl: json['linkedin_url'] as String?,
       companyName: json['company_name'] as String? ?? '',
       status: LeadStatus.fromString(json['status'] as String?),
-      source: LeadSource.fromString(json['source'] as String?),
+      source: json['source']?.toString() ?? '',
+      sourceDetail: json['source_detail']?.toString() ?? '',
+      sourceRef: json['source_ref']?.toString() ?? '',
       rating: LeadRating.fromString(json['rating'] as String?),
       industry: json['industry'] as String?,
       opportunityAmount: json['opportunity_amount'] != null
@@ -415,7 +386,7 @@ class Lead {
       'linkedin_url': linkedinUrl,
       'company_name': companyName,
       'status': status.value,
-      'source': source.value,
+      'source': source,
       'rating': rating.value,
       'industry': industry,
       'opportunity_amount': opportunityAmount,
@@ -447,7 +418,9 @@ class Lead {
     String? linkedinUrl,
     String? companyName,
     LeadStatus? status,
-    LeadSource? source,
+    String? source,
+    String? sourceDetail,
+    String? sourceRef,
     LeadRating? rating,
     String? industry,
     double? opportunityAmount,
@@ -488,6 +461,8 @@ class Lead {
       companyName: companyName ?? this.companyName,
       status: status ?? this.status,
       source: source ?? this.source,
+      sourceDetail: sourceDetail ?? this.sourceDetail,
+      sourceRef: sourceRef ?? this.sourceRef,
       rating: rating ?? this.rating,
       industry: industry ?? this.industry,
       opportunityAmount: opportunityAmount ?? this.opportunityAmount,

@@ -70,7 +70,8 @@ class LeadFilters {
   // "not converted, not closed". The filter sheet is still single-select and
   // stores its choice as a one-element set.
   final Set<LeadStatus> statuses;
-  final LeadSource? source;
+  // A source key. The org edits its list, so any key is taken as given.
+  final String? source;
   final LeadRating? rating;
   // Assignee profile id. null = anyone (no filter).
   final String? assignedToId;
@@ -138,13 +139,14 @@ class LeadFilters {
 
     final assignee = one('assigned_to');
     final tag = one('tags');
+    final source = one('source');
     return LeadFilters(
       search: one('search'),
       statuses: {
         for (final raw in query['status'] ?? const <String>[])
           ?match(LeadStatus.values, raw, (s) => s.value),
       },
-      source: match(LeadSource.values, one('source'), (s) => s.value),
+      source: source == null || source.isEmpty ? null : source,
       rating: match(LeadRating.values, one('rating'), (r) => r.value),
       assignedToId: assignee,
       assignedToLabel: assignee == null ? null : assignedToLabel,
@@ -217,7 +219,7 @@ class LeadFilters {
     nextFollowUp: nextFollowUp,
   );
 
-  LeadFilters withSource(LeadSource? value) => LeadFilters(
+  LeadFilters withSource(String? value) => LeadFilters(
     search: search,
     statuses: statuses,
     source: value,
@@ -354,7 +356,7 @@ class LeadsNotifier extends AsyncNotifier<LeadsListData> {
       if (f.search != null && f.search!.isNotEmpty) 'search': f.search!,
       if (f.statuses.isNotEmpty)
         'status': f.statuses.map((s) => s.value).toList(),
-      if (f.source != null) 'source': f.source!.value,
+      if (f.source != null) 'source': f.source!,
       if (f.rating != null) 'rating': f.rating!.value,
       if (f.assignedToId != null && f.assignedToId!.isNotEmpty)
         'assigned_to': f.assignedToId!,

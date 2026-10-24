@@ -1,8 +1,9 @@
 /// Inbound email addresses, the ones that turn mail into tickets.
 ///
-/// **No secrets here.** `InboundMailbox` carries a `webhook_secret` column,
-/// write-only server-side, so it never arrives and this model has no field for
-/// it. The `topic_arn` pin is not a secret but embeds the AWS account id, so the
+/// **No secrets here.** `InboundMailbox` carries a `webhook_secret` column
+/// (Postmark's basic-auth password, Mailgun's signing key), write-only
+/// server-side, so it never arrives and this model has no field for it. Admins
+/// are sent [Mailbox.hasWebhookSecret], whether one is stored. The `topic_arn` pin is not a secret but embeds the AWS account id, so the
 /// server sends it to admins only; [Mailbox.topicArn] holds it for the admin's
 /// form. Every viewer gets [Mailbox.hasTopicArn], the boolean that says whether
 /// the address is connected.
@@ -11,6 +12,7 @@
 /// same rules.
 library;
 
+import 'lead_source.dart';
 import 'lookup_models.dart';
 
 /// What an address actually does with mail, as opposed to what its switch says.
@@ -18,10 +20,11 @@ import 'lookup_models.dart';
 /// `isActive` is one of three gates, and the settings pages used to draw it as
 /// the only one. Two states read as working and are silent:
 ///
-/// - [unsupported]: `InboundMailboxWebhookView.post` answers 501 for every
-///   provider except SES, and the model offers four.
+/// - [unsupported]: `InboundMailboxWebhookView.post` answers 501 for `imap`,
+///   and the model offers it.
 /// - [unconfirmed]: an SES address with no SNS topic pin rejects every
-///   message. It gets one when an admin enters the Topic ARN, or when a
+///   message, as does a Postmark or Mailgun one with no stored webhook secret.
+///   An SES address gets its pin when an admin enters the Topic ARN, or when a
 ///   verified SubscriptionConfirmation arrives from a topic in an AWS account
 ///   the server allows (`INBOUND_SNS_ACCOUNT_IDS`); until then it is here.
 ///
@@ -42,7 +45,10 @@ enum MailboxDelivery {
 }
 
 /// The providers the webhook actually handles. Everything else 501s.
-const List<String> supportedMailboxProviders = ['ses'];
+const List<String> supportedMailboxProviders = ['ses', 'mailgun', 'postmark'];
+
+/// Providers whose deliveries are proved by a stored `webhook_secret`.
+const List<String> secretMailboxProviders = ['mailgun', 'postmark'];
 
 /// `InboundMailbox.PROVIDER_CHOICES`, in the model's order.
 const Map<String, String> mailboxProviderLabels = {
@@ -54,9 +60,8 @@ const Map<String, String> mailboxProviderLabels = {
 
 /// The label a provider picker shows.
 ///
-/// The three unimplemented providers stay selectable: the column accepts them,
-/// an admin may be recording an address before the integration exists, and
-/// hiding them would silently rewrite a mailbox already set to one.
+/// `imap` stays selectable: the column accepts it, and hiding it would
+/// silently rewrite a mailbox already set to it.
 String mailboxProviderLabel(String provider) {
   final label = mailboxProviderLabels[provider] ?? provider;
   return supportedMailboxProviders.contains(provider)
@@ -71,12 +76,17 @@ class Mailbox {
     this.provider = 'ses',
     this.isActive = true,
     this.hasTopicArn = false,
+    this.hasWebhookSecret = false,
     this.topicArn,
     this.defaultPriority = 'Normal',
     this.defaultCaseType,
     this.defaultAssignee,
     this.casesLast30d = 0,
     this.lastReceivedAt,
+    this.creates = mailboxCreatesTickets,
+    this.leadSource = '',
+    this.leadSourceDetail = '',
+    this.isGenerated = false,
   });
 
   final String id;
@@ -88,6 +98,10 @@ class Mailbox {
   /// reads as "not connected yet": failing closed is the safe direction for the
   /// flag a green pill is drawn from.
   final bool hasTopicArn;
+
+  /// Whether a Postmark or Mailgun secret is stored. Admins are sent it; for
+  /// anyone else it is absent and reads false, which fails closed.
+  final bool hasWebhookSecret;
 
   /// The pin itself, which the server sends to admins only. Null for a member,
   /// and for an admin whose mailbox has none (the server sends `""`).
@@ -108,14 +122,35 @@ class Mailbox {
 
   final DateTime? lastReceivedAt;
 
-  factory Mailbox.fromJson(Map<String, dynamic> json) {
+  /// [mailboxCreatesTickets] or [mailboxCreatesLeads]. An older API has no
+  /// lead addresses and sends neither, which reads as tickets.
+  final String creates;
+
+  /// A lead address's source key and sub-source, for every lead it makes.
+  final String leadSource;
+  final String leadSourceDetail;
+
+  /// Made by the server on its own inbound domain and routed by one shared
+  /// webhook, so it needs no topic pin of its own.
+  final bool isGenerated;
+
+  bool get createsLeads => creates == mailboxCreatesLeads;
+
+  /// [generatedDomain] is the list's: an API that does not say which rows it
+  /// made is read by the address.
+  factory Mailbox.fromJson(
+    Map<String, dynamic> json, {
+    String? generatedDomain,
+  }) {
     final assignee = json['default_assignee'];
+    final address = json['address']?.toString() ?? '';
     return Mailbox(
       id: json['id']?.toString() ?? '',
-      address: json['address']?.toString() ?? '',
+      address: address,
       provider: json['provider']?.toString() ?? 'ses',
       isActive: json['is_active'] as bool? ?? true,
       hasTopicArn: json['has_topic_arn'] == true,
+      hasWebhookSecret: json['has_webhook_secret'] == true,
       topicArn: json['topic_arn'] is String && json['topic_arn'] != ''
           ? json['topic_arn'] as String
           : null,
@@ -131,6 +166,12 @@ class Mailbox {
       lastReceivedAt: json['last_received_at'] == null
           ? null
           : DateTime.tryParse(json['last_received_at'].toString())?.toLocal(),
+      creates: json['creates']?.toString() ?? mailboxCreatesTickets,
+      leadSource: json['lead_source']?.toString() ?? '',
+      leadSourceDetail: json['lead_source_detail']?.toString() ?? '',
+      isGenerated: json['is_generated'] is bool
+          ? json['is_generated'] as bool
+          : generatedDomain != null && address.endsWith('@$generatedDomain'),
     );
   }
 
@@ -140,22 +181,41 @@ class Mailbox {
     if (!supportedMailboxProviders.contains(provider)) {
       return MailboxDelivery.unsupported;
     }
-    if (!hasTopicArn) return MailboxDelivery.unconfirmed;
+    if (secretMailboxProviders.contains(provider)) {
+      return hasWebhookSecret
+          ? MailboxDelivery.live
+          : MailboxDelivery.unconfirmed;
+    }
+    if (!hasTopicArn && !isGenerated) return MailboxDelivery.unconfirmed;
     return MailboxDelivery.live;
   }
+
+  /// The URL to give the provider for this address, built from [apiBase]
+  /// (`ApiConfig.baseUrl`), or null for SES and IMAP. See [mailboxSetupUrl].
+  String? setupUrl(String apiBase) => mailboxSetupUrl(provider, id, apiBase);
+
+  String get deliveryLabel =>
+      delivery.isLive && createsLeads ? 'Creating leads' : delivery.label;
 
   /// Why nothing is arriving, or null when something is.
   String? get deliveryExplanation {
     switch (delivery) {
       case MailboxDelivery.off:
-        return 'Mail still arrives here and no ticket is opened. Nothing '
+        return 'Mail still arrives here and no '
+            '${createsLeads ? 'lead is created' : 'ticket is opened'}. Nothing '
             'bounces, so whoever wrote gets silence rather than an error.';
       case MailboxDelivery.unsupported:
         final label = mailboxProviderLabels[provider] ?? provider;
         return '$label deliveries are not implemented. The webhook refuses '
             'them, so mail to this address becomes nothing whatever else is '
-            'set here. Only AWS SES is wired up.';
+            'set here.';
       case MailboxDelivery.unconfirmed:
+        if (secretMailboxProviders.contains(provider)) {
+          return 'Waiting for its '
+              '${provider == 'postmark' ? 'basic-auth password' : 'signing key'}. '
+              'Every post is refused until an admin stores the webhook secret '
+              'on this address.';
+        }
         return 'Waiting for its SNS topic. Every message is refused until '
             'this address has a Topic ARN: an admin can enter it here, or it is '
             'set when AWS confirms a subscription from an AWS account this '
@@ -165,8 +225,20 @@ class Mailbox {
     }
   }
 
-  /// What a ticket from here starts out as, in one line.
+  /// What a ticket or lead from here starts out as, in one line. A ticket
+  /// address's reads after "Opens as"; a lead address's stands alone.
   String get opensAs {
+    if (createsLeads) {
+      final source = leadSourceLabel(leadSource);
+      return [
+        'Makes leads',
+        if (source.isNotEmpty) source,
+        if (leadSourceDetail.isNotEmpty) leadSourceDetail,
+        defaultAssignee == null
+            ? 'unassigned'
+            : 'assigned to ${defaultAssignee!.displayName}',
+      ].join(' · ');
+    }
     final parts = <String>[defaultPriority];
     if (defaultCaseType != null) parts.add(defaultCaseType!);
     parts.add(
@@ -178,14 +250,35 @@ class Mailbox {
   }
 }
 
-/// The addresses that would actually open a ticket right now.
+/// The URL to give the provider for one mailbox, from the API origin.
+///
+/// Postmark carries the secret as the basic-auth password, so the URL shows a
+/// `<secret>` placeholder, never a stored value (the client never has one).
+/// Mailgun's route action wraps the URL in `forward()`. Null for SES and IMAP.
+String? mailboxSetupUrl(String provider, String id, String apiBase) {
+  if (!secretMailboxProviders.contains(provider) || id.isEmpty) return null;
+  final base = apiBase.replaceAll(RegExp(r'/+$'), '');
+  if (base.isEmpty) return null;
+  final path = '/api/cases/inbound/$id/';
+  if (provider == 'postmark') {
+    return base.replaceFirstMapped(
+          RegExp(r'^(https?://)'),
+          (m) => '${m[1]}postmark:<secret>@',
+        ) +
+        path;
+  }
+  return 'forward("$base$path")';
+}
+
+/// The addresses that would actually open a ticket (or, with [leads], make a
+/// lead) right now.
 ///
 /// Derived from the rows rather than from the server's `totals.active`, which
 /// counts `is_active` alone. `GET /cases/mailboxes/` returns every mailbox in
 /// the org unfiltered and unpaginated, so this counts the same set and answers
 /// the question the header asks.
-int deliveringMailboxCount(List<Mailbox> mailboxes) =>
-    mailboxes.where((m) => m.delivery.isLive).length;
+int deliveringMailboxCount(List<Mailbox> mailboxes, {bool leads = false}) =>
+    mailboxes.where((m) => m.delivery.isLive && m.createsLeads == leads).length;
 
 /// The rows worth a banner: switched on, and creating nothing.
 ///
@@ -211,15 +304,18 @@ List<Mailbox> sortedMailboxes(List<Mailbox> mailboxes) {
   return out;
 }
 
+const String mailboxCreatesTickets = 'tickets';
+const String mailboxCreatesLeads = 'leads';
+
 /// `cases.models.PRIORITY_CHOICE` and the mailbox's own case-type choices.
 const List<String> mailboxPriorities = ['Low', 'Normal', 'High', 'Urgent'];
 const List<String> mailboxCaseTypes = ['Question', 'Incident', 'Problem'];
 
 /// The body for creating or editing a mailbox.
 ///
-/// **No `webhook_secret`.** It would mean a credential travels to a phone and
-/// back on every edit, and an empty field would blank the column, so it is not
-/// a field on the form, which is the surest way not to send one.
+/// `webhookSecret` is write-only and goes only when typed: pass the field's
+/// text and a blank one is left out, so a save cannot blank the stored secret.
+/// The form is never prefilled with it.
 ///
 /// `topicArn` is sent only when given: pass [mailboxTopicArnEdit]'s answer, so
 /// a save sends the pin only when the admin changed it, and `''` clears it.
@@ -227,18 +323,32 @@ const List<String> mailboxCaseTypes = ['Question', 'Incident', 'Problem'];
 /// `isActive` is optional because the edit form does not own it: the row's own
 /// Turn off / Turn on control does, and sending it from an edit would let a
 /// stale form flip an address back on.
+///
+/// `creates`, `leadSource` and `leadSourceDetail` go only when given, which the
+/// form does on a create and when one changed. A null [address] sends no
+/// address, provider or topic: [generateAddress] asks the server to make one,
+/// and an address it made is its own.
 Map<String, dynamic> mailboxPayload({
-  required String address,
+  required String? address,
   required String provider,
   required String defaultPriority,
   String? defaultCaseType,
   String? defaultAssigneeId,
   bool? isActive,
   String? topicArn,
+  String? webhookSecret,
+  String? creates,
+  String? leadSource,
+  String? leadSourceDetail,
+  bool generateAddress = false,
 }) {
   final body = <String, dynamic>{
-    'address': address.trim().toLowerCase(),
-    'provider': provider,
+    // A generated address is routed by the server's own SES catch-all.
+    if (generateAddress) ...{'generate_address': true, 'provider': 'ses'},
+    if (address != null) ...{
+      'address': address.trim().toLowerCase(),
+      'provider': provider,
+    },
     'default_priority': defaultPriority,
     // Both are `allow_null=True`, and the empty string fails the ChoiceField
     // and the PK lookup alike, so "none selected" has to travel as null.
@@ -250,7 +360,17 @@ Map<String, dynamic> mailboxPayload({
         : defaultAssigneeId,
   };
   if (isActive != null) body['is_active'] = isActive;
-  if (topicArn != null) body['topic_arn'] = topicArn.trim();
+  if (topicArn != null && address != null) body['topic_arn'] = topicArn.trim();
+  if (webhookSecret != null &&
+      webhookSecret.trim().isNotEmpty &&
+      address != null) {
+    body['webhook_secret'] = webhookSecret.trim();
+  }
+  if (creates != null) body['creates'] = creates;
+  if (leadSource != null) body['lead_source'] = leadSource;
+  if (leadSourceDetail != null) {
+    body['lead_source_detail'] = leadSourceDetail.trim();
+  }
   return body;
 }
 
@@ -310,9 +430,8 @@ const String mailboxDeactivateExplanation =
 
 /// The two checks a delivery has to clear, said once on the screen.
 ///
-/// This replaced a card that claimed a per-address shared secret proved a
-/// delivery genuine and that the server minted one on create. Neither is true:
-/// nothing in the backend compares that column.
+/// Postmark and Mailgun are proved by a secret an admin stores on the address
+/// instead; with none, every post is refused.
 const String mailboxAuthExplanation =
     'AWS signs each notification, and the address has to be pinned to the exact '
     'SNS topic it was subscribed to. The signature alone proves only that some '
@@ -321,4 +440,6 @@ const String mailboxAuthExplanation =
     'enter the pin as the address\'s Topic ARN. Left blank, it is set by the '
     'first subscription AWS confirms from an AWS account this server allows; '
     'a subscription from any other account is refused. Only admins can see '
-    'the ARN, because it carries the AWS account id.';
+    'the ARN, because it carries the AWS account id. A Postmark or Mailgun '
+    'address is proved by a webhook secret an admin stores on it instead, '
+    'which is never shown back.';

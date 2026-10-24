@@ -32,8 +32,10 @@ import { listTeam } from './team.js';
 import { getApprovalRules } from './ticket-approvals.js';
 import { listOrgTokens } from './tokens.js';
 import { getWebForms } from './web-forms.js';
+import { leadSourcesSummary } from './lead-sources.js';
+import { intakesSummary } from './lead-intakes.js';
 import { moduleOffError } from './modules.js';
-import { isOn } from '#lib/v2/modules.js';
+import { isOn, mailboxesOn } from '#lib/v2/modules.js';
 
 /** @typedef {import('#lib/v2/modules.js').ModuleRow[] | null} ModuleList */
 
@@ -108,20 +110,26 @@ async function reopenOrNull(promise) {
 export async function getSettingsHub(event, modules = null) {
   const listP = Promise.resolve(modules);
   /**
-   * A module's call, run only while it is on. A `module_off` answer (the
-   * list could not be read, or it went stale) is null too, not a hub error.
+   * A module's call, run only while `on` says the list allows it. A
+   * `module_off` answer (the list could not be read, or it went stale) is
+   * null too, not a hub error.
    *
-   * @template T @param {string} key @param {() => Promise<T>} call @returns {Promise<T | null>}
+   * @template T
+   * @param {(list: ModuleList) => boolean} on
+   * @param {() => Promise<T>} call
+   * @returns {Promise<T | null>}
    */
-  const ifOn = (key, call) =>
+  const when = (on, call) =>
     listP.then((list) =>
-      isOn(list, key)
+      on(list)
         ? call().catch((/** @type {unknown} */ err) => {
             if (moduleOffError(err)) return null;
             throw err;
           })
         : null
     );
+  /** @template T @param {string} key @param {() => Promise<T>} call */
+  const ifOn = (key, call) => when((list) => isOn(list, key), call);
   const [
     org,
     calendar,
@@ -137,7 +145,9 @@ export async function getSettingsHub(event, modules = null) {
     field,
     webForm,
     helpCenter,
-    automation
+    automation,
+    leadSources,
+    leadIntakes
   ] = await Promise.all([
     getOrgSettings(event),
     ifOn('tickets', () => getBusinessHours(event)),
@@ -145,7 +155,7 @@ export async function getSettingsHub(event, modules = null) {
     listTeam(event),
     ifOn('tickets', () => getRoutingRules(event)),
     ifOn('tickets', () => getEscalationPolicies(event)),
-    ifOn('tickets', () => getMailboxes(event)),
+    when(mailboxesOn, () => getMailboxes(event)),
     ifOn('tickets', () => reopenOrNull(getReopenPolicy(event))),
     ifOn('tickets', () => getApprovalRules(event)),
     ifOn('tickets', () => getMacros(event)),
@@ -154,7 +164,11 @@ export async function getSettingsHub(event, modules = null) {
     getWebForms(event),
     ifOn('knowledge_base', () => getHelpCenterSettings(event)),
     // Never throws: null when the rules cannot be read, so the hub still loads.
-    automationSummary(event)
+    automationSummary(event),
+    // Neither throws; false where the API has no such list. Sources are
+    // read whatever is switched off: deals use them too.
+    leadSourcesSummary(event),
+    ifOn('leads', () => intakesSummary(event))
   ]);
 
   const now = Date.now();
@@ -170,6 +184,7 @@ export async function getSettingsHub(event, modules = null) {
     mailboxTotals: mailbox
       ? { ...mailbox.totals, silently_dropping: silentlyDropping(mailbox.mailboxes, now) }
       : null,
+    mailboxLeads: mailbox ? mailbox.can_create_leads === true : false,
     reopen: reopenPolicy,
     approvalRules: approval ? approval.rules : null,
     approvalTotals: approval ? approval.totals : null,
@@ -178,6 +193,8 @@ export async function getSettingsHub(event, modules = null) {
     fieldTotals: field.totals,
     webFormTotals: webForm.totals,
     helpCenter,
-    automation
+    automation,
+    leadSources,
+    leadIntakes
   };
 }

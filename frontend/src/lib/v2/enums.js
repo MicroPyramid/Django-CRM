@@ -3,7 +3,7 @@
  * field mapping, not a translation.
  *
  *   OPPORTUNITY_TYPES, SOURCES          → backend/common/utils.py
- *   LEAD_STATUS, LEAD_SOURCE            → backend/common/utils.py
+ *   LEAD_STATUS                         → backend/common/utils.py
  *   STATUS_CHOICE, PRIORITY_CHOICE,
  *   CASE_TYPE                           → backend/common/utils.py (cases)
  *   INVOICE_STATUS                      → backend/invoices/models.py
@@ -49,10 +49,9 @@ export const LEAD_STATUS_TONE = {
 };
 
 /**
- * common.utils LEAD_STATUS / LEAD_SOURCE / INDCHOICES: the stored values,
- * verbatim, lowercase and misspellings included. "compaign" is the value in
- * the database; correcting it here would produce a form that writes a value
- * the column rejects.
+ * common.utils LEAD_STATUS / INDCHOICES: the stored values, verbatim. Lead
+ * sources are not here: each org edits its own list, read from the API
+ * (`#lib/v2/lead-sources.js`).
  *
  * Labels are separate because these are stored the way somebody typed them in
  * 2015 and SHOUTING an industry at a person is not a design decision.
@@ -75,26 +74,6 @@ export const LEAD_STATUS_LABEL = {
  * The full set stays in LEAD_STATUSES for the detail page's status select.
  */
 export const LEAD_LIST_STATUSES = ['assigned', 'in process', 'recycled'];
-
-export const LEAD_SOURCES = [
-  'call',
-  'email',
-  'existing customer',
-  'partner',
-  'public relations',
-  'compaign',
-  'other'
-];
-
-export const LEAD_SOURCE_LABEL = {
-  call: 'Call',
-  email: 'Email',
-  'existing customer': 'Existing customer',
-  partner: 'Partner',
-  'public relations': 'Public relations',
-  compaign: 'Campaign',
-  other: 'Other'
-};
 
 /**
  * Mirrors `leads/workflow.py::IRREVERSIBLE_STATUSES`. A converted lead can be

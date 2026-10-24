@@ -230,7 +230,7 @@ void main() {
       const filters = LeadFilters(
         search: 'ada',
         statuses: {LeadStatus.assigned, LeadStatus.inProcess},
-        source: LeadSource.email,
+        source: 'google ads',
         rating: LeadRating.hot,
         assignedToId: 'u1',
         tagId: 't1',
@@ -256,7 +256,7 @@ void main() {
       );
       expect(back.search, 'ada');
       expect(back.statuses, filters.statuses);
-      expect(back.source, LeadSource.email);
+      expect(back.source, 'google ads');
       expect(back.rating, LeadRating.hot);
       expect(back.assignedToId, 'u1');
       expect(back.assignedToLabel, 'Me');

@@ -138,6 +138,9 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
                 "last_name": lead_obj.last_name or "",
                 "email": lead_obj.email,
                 "phone": lead_obj.phone,
+                "source": lead_obj.source or "",
+                "source_detail": lead_obj.source_detail,
+                "source_ref": lead_obj.source_ref,
                 "organization": lead_obj.company_name or "",
                 "title": lead_obj.job_title,
                 "description": lead_obj.description,
@@ -204,6 +207,8 @@ def convert_lead_to_account(lead_obj, request, create_opportunity=True):
             probability=lead_obj.probability or 0,
             closed_on=lead_obj.close_date,
             lead_source=lead_obj.source,
+            source_detail=lead_obj.source_detail,
+            source_ref=lead_obj.source_ref,
             description=lead_obj.description,
             stage="QUALIFICATION",  # Initial stage after lead conversion
             created_by=request.profile.user,

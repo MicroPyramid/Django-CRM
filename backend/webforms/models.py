@@ -19,7 +19,7 @@ from django.db import models
 
 from common.base import BaseOrgModel
 from common.models import APISettings, CustomFieldDefinition, Profile, Tags
-from common.utils import CASE_TYPE, LEAD_SOURCE, PRIORITY_CHOICE
+from common.utils import CASE_TYPE, PRIORITY_CHOICE
 from webforms.constants import LEAD_FIELD_CHOICES, TICKET_FIELD_CHOICES
 
 
@@ -142,11 +142,10 @@ class WebForm(BaseOrgModel):
     notify_profiles = models.ManyToManyField(
         Profile, blank=True, related_name="webforms_notified"
     )
-    # Must be a LEAD_SOURCE member, because Lead.source declares those as its
-    # choices. Which form a lead came from is recorded by
-    # WebFormSubmission.form, not by writing a URL into this column the way
-    # the legacy view does.
-    lead_source = models.CharField(max_length=32, choices=LEAD_SOURCE, default="other")
+    # A key from the org's LeadSource list, which the serializer checks. Which
+    # form a lead came from is recorded by WebFormSubmission.form, not by
+    # writing a URL into this column the way the legacy view does.
+    lead_source = models.CharField(max_length=64, default="web form")
     tags = models.ManyToManyField(Tags, blank=True, related_name="webforms")
     # Ticket forms only. Case.priority is a choice with no default, so the form
     # has to supply one; the visitor never does.

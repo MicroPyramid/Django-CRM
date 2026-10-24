@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from accounts.access import has_account_access
 from accounts.serializer import AccountPickerSerializer
+from common.client_version import is_legacy_phone
 from common.serializer import (
     OrganizationSerializer,
     ProfileSerializer,
@@ -16,6 +17,7 @@ from common.serializer import (
 from common.utils import OPPORTUNITY_TYPES
 from contacts.serializer import ContactLinkSerializer, ContactPickerSerializer
 from invoices.serializer import LineAmountsMixin, ProductSerializer
+from leads.source_rules import DEAL_PICKER_KEYS, check_source
 from opportunity.access import has_deal_access
 from opportunity.models import (
     DealPipeline,
@@ -243,6 +245,8 @@ class OpportunitySerializer(DealStageFieldsMixin, serializers.ModelSerializer):
             "closed_on",
             # Source & Context
             "lead_source",
+            "source_detail",
+            "source_ref",
             # Relationships
             "contacts",
             # Line Items / Products
@@ -314,6 +318,7 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
         # Set by `validate`: whether this save puts the deal in a won or lost
         # stage it named, which is when the view records who closed it.
         self.closing = False
+        self.legacy_phone = is_legacy_phone(request_obj)
         # An id that matches no account at all reads the same as one the
         # caller may not open; see `validate_account`.
         self.fields["account"].error_messages["does_not_exist"] = "No such account."
@@ -323,6 +328,18 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             # Only this org's pipelines resolve; another org's id is "does not
             # exist", the same answer as an id nobody has.
             self.fields["pipeline"].queryset = DealPipeline.objects.filter(org=self.org)
+
+    def validate_lead_source(self, value):
+        try:
+            return check_source(
+                value,
+                self.org,
+                getattr(self.instance, "lead_source", None),
+                self.legacy_phone,
+                DEAL_PICKER_KEYS,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
 
     def validate_name(self, name):
         if self.instance:
@@ -475,6 +492,8 @@ class OpportunityCreateSerializer(serializers.ModelSerializer):
             "closed_on",
             # Source & Context
             "lead_source",
+            "source_detail",
+            "source_ref",
             # Notes
             "description",
             # Status
@@ -636,6 +655,8 @@ class OpportunityCreateSwaggerSerializer(serializers.ModelSerializer):
             "probability",
             "closed_on",
             "lead_source",
+            "source_detail",
+            "source_ref",
             "description",
             "assigned_to",
             "contacts",

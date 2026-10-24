@@ -51,13 +51,17 @@ from contacts.services.csv_import import CONTACT_SYNONYMS
 from leads.access import visible_leads_qs
 from leads.models import Lead
 from leads.serializer import LeadCreateSerializer
+from leads.sources import org_sources
 from leads.workflow import IRREVERSIBLE_STATUSES
 
 REQUIRED_HEADERS = ("first_name", "last_name")
 # Every field the create API accepts, bar `is_active`: an import that creates
-# leads already hidden from the list is a mistake, not a use case.
+# leads already hidden from the list is a mistake, not a use case. The source
+# detail and reference are for intakes and the forms, not for a sheet.
 FIELD_HEADERS = tuple(
-    name for name in LeadCreateSerializer.Meta.fields if name != "is_active"
+    name
+    for name in LeadCreateSerializer.Meta.fields
+    if name not in ("is_active", "source_detail", "source_ref")
 )
 REFERENCE_HEADERS = ("assigned_emails", "team_names", "tags")
 KNOWN_HEADERS = FIELD_HEADERS + REFERENCE_HEADERS
@@ -392,6 +396,20 @@ _NEEDS_NAME = "A lead needs a first or last name"
 _EMAIL_EXISTS = "A lead with this email already exists"
 
 
+def _source_lookup(request) -> dict[str, str]:
+    """The org's active sources by lowercase key and label, to the key. Read
+    once per import (kept on the request), not once per row."""
+    lookup = getattr(request, "_lead_source_lookup", None)
+    if lookup is None:
+        lookup = {}
+        for source in org_sources(request.profile.org, create=False):
+            if source.is_active:
+                lookup.setdefault(source.label.lower(), source.key)
+                lookup[source.key.lower()] = source.key
+        request._lead_source_lookup = lookup
+    return lookup
+
+
 def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, archived):
     errors: list[RowError] = []
 
@@ -411,6 +429,11 @@ def _validate_row(idx, record, request, profiles, teams, seen_emails, legacy, ar
     for name, choices in CHOICE_MAPS.items():
         if name in data:
             data[name] = choices.get(data[name].lower(), data[name])
+
+    if "source" in data:
+        data["source"] = _source_lookup(request).get(
+            data["source"].strip().lower(), data["source"]
+        )
 
     if data.get("status") in IRREVERSIBLE_STATUSES:
         errors.append(

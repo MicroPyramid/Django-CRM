@@ -67,7 +67,10 @@ import '../screens/settings/inbound_email_screen.dart';
 import '../screens/settings/deal_pipeline_detail_screen.dart';
 import '../screens/settings/deal_pipelines_screen.dart';
 import '../screens/settings/lead_pipeline_detail_screen.dart';
+import '../screens/settings/lead_capture_screen.dart';
+import '../screens/settings/lead_intake_detail_screen.dart';
 import '../screens/settings/lead_pipelines_screen.dart';
+import '../screens/settings/lead_sources_screen.dart';
 import '../screens/settings/organization_edit_screen.dart';
 import '../screens/settings/organization_screen.dart';
 import '../screens/settings/help_center_screen.dart';
@@ -628,6 +631,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path: AppRoutes.settingsLeadPipelineDetail,
           child: LeadPipelineDetailScreen(
             pipelineId: state.pathParameters['pipelineId'] ?? '',
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsLeadSources,
+        name: 'settingsLeadSources',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsLeadSources,
+          child: const LeadSourcesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsLeadCapture,
+        name: 'settingsLeadCapture',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsLeadCapture,
+          child: const LeadCaptureScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsLeadCaptureWebhookDetail,
+        name: 'settingsLeadCaptureWebhookDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ModuleGate(
+          path: AppRoutes.settingsLeadCaptureWebhookDetail,
+          child: LeadIntakeDetailScreen(
+            intakeId: state.pathParameters['intakeId'] ?? '',
           ),
         ),
       ),

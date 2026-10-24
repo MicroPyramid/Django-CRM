@@ -96,9 +96,11 @@ def _blockers(row, key):
                 f"web forms: {_named(forms)}. Unpublish them first, so no "
                 "submission is lost."
             )
-    if key == "tickets":
+    # A mailbox counts against the module its mail becomes; the `creates`
+    # values are the two module keys.
+    if key in (InboundMailbox.CREATES_TICKETS, InboundMailbox.CREATES_LEADS):
         addresses = list(
-            InboundMailbox.objects.filter(org=row, is_active=True)
+            InboundMailbox.objects.filter(org=row, is_active=True, creates=key)
             .order_by("address")
             .values_list("address", flat=True)
         )

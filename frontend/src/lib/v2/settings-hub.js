@@ -54,6 +54,34 @@ export function hubGroups(data) {
     (/** @type {any} */ r) => r.is_active && r.approver_role === 'MANAGER' && !r.approvers.length
   ).length;
 
+  // Webhooks are admins' to see; a member's row says only what the page holds.
+  const intakes = data.leadIntakes;
+  const leadCaptureValue = intakes
+    ? intakes.count
+      ? `${intakes.active} of ${intakes.count} webhooks on`
+      : 'No webhooks yet'
+    : null;
+
+  // Filed with the ticket rows, or with the lead rows while Tickets is off
+  // and the addresses can only make leads.
+  const leadAddresses = data.mailboxLeads === true && isOn(data.modules, 'leads');
+  const inboundEmail = {
+    href: '/settings/inbound-email',
+    title: 'Inbound email',
+    body: !ticketsOn
+      ? 'The addresses that turn email into leads.'
+      : leadAddresses
+        ? 'The addresses that turn email into tickets or leads.'
+        : 'The addresses that turn email into tickets.',
+    value: data.mailboxTotals
+      ? `${data.mailboxTotals.active} of ${data.mailboxTotals.count} active`
+      : null,
+    // Off AND still receiving, not merely off. An address switched off and
+    // left alone is a decision; one still getting mail and creating nothing
+    // is a customer being ignored.
+    warn: (data.mailboxTotals?.silently_dropping ?? 0) > 0
+  };
+
   return [
     {
       label: 'People and access',
@@ -162,6 +190,23 @@ export function hubGroups(data) {
           : [])
       ]
     },
+    ...(isOn(data.modules, 'leads')
+      ? [
+          {
+            label: 'How leads arrive',
+            items: [
+              {
+                href: '/settings/lead-capture',
+                title: 'Lead capture',
+                body: 'Webhooks, web forms and lead addresses: every way a lead gets in.',
+                value: leadCaptureValue,
+                warn: false
+              },
+              ...(!ticketsOn && leadAddresses ? [inboundEmail] : [])
+            ]
+          }
+        ]
+      : []),
     ...(ticketsOn
       ? [
           {
@@ -215,18 +260,7 @@ export function hubGroups(data) {
                 // vanish, not just the late ones.
                 warn: data.reopen ? !data.reopen.is_enabled : false
               },
-              {
-                href: '/settings/inbound-email',
-                title: 'Inbound email',
-                body: 'The addresses that turn email into tickets.',
-                value: data.mailboxTotals
-                  ? `${data.mailboxTotals.active} of ${data.mailboxTotals.count} active`
-                  : null,
-                // Off AND still receiving, not merely off. An address switched off
-                // and left alone is a decision; one still getting mail and creating
-                // nothing is a customer being ignored.
-                warn: (data.mailboxTotals?.silently_dropping ?? 0) > 0
-              }
+              inboundEmail
             ]
           }
         ]
@@ -266,6 +300,20 @@ export function hubGroups(data) {
                 title: 'Lead pipelines',
                 body: 'The stages leads move through on the board.',
                 value: null,
+                warn: false
+              }
+            ]
+          : []),
+        // Not tied to Leads: deals pick from the same list. Hidden only where
+        // the API has no list (false); a failed read still lists the
+        // destination, without a number.
+        ...(data.leadSources !== false
+          ? [
+              {
+                href: '/settings/lead-sources',
+                title: 'Lead sources',
+                body: 'Where leads come from: the list every source picker offers.',
+                value: data.leadSources ? `${data.leadSources.active} in use` : null,
                 warn: false
               }
             ]

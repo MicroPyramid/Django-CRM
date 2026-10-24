@@ -9,6 +9,8 @@ the discussion-tab renderer can decide what to display.
 from __future__ import annotations
 
 import email
+import email.header
+import email.message
 import email.policy
 import email.utils
 import logging
@@ -47,6 +49,9 @@ class ParsedEmail:
     # stamps with the envelope recipient it delivered to. Read by the webhook
     # to tell whether a raw message was addressed to its mailbox.
     delivered_to: list[str] = field(default_factory=list)
+    # "spam" or "virus" when the provider flagged the message, else "". Only
+    # lead addresses act on it (`spam.lead_drop_reason`).
+    spam_verdict: str = ""
 
 
 def _strip_brackets(value: str) -> str:
@@ -203,6 +208,68 @@ def parse_raw_email(raw: bytes | str) -> ParsedEmail:
             for value in msg.get_all(name) or []
             for addr in _addresses_from(str(value))
         ],
+    )
+
+
+# Header names the fields above are read from, whatever case a provider sends.
+_CANONICAL_HEADERS = {
+    name.lower(): name
+    for name in (
+        "Message-ID", "In-Reply-To", "References", "From", "To", "Cc", "Subject",
+        "Date", "Reply-To", "Delivered-To", "X-Original-To", "Content-Type",
+    )
+}  # fmt: skip
+
+
+def _decoded(value: str) -> str:
+    """An RFC 2047 encoded header value (`=?utf-8?q?...?=`) as text."""
+    try:
+        return str(email.header.make_header(email.header.decode_header(value)))
+    except Exception:  # keep the raw value rather than fail
+        return value
+
+
+def parse_parts(
+    headers: Iterable[tuple[str, str]],
+    *,
+    text: str = "",
+    html: str = "",
+    attachments: Iterable[ParsedAttachment] = (),
+    fallback_message_id: str = "",
+) -> ParsedEmail:
+    """A ParsedEmail from a provider that has already taken the message apart
+    (Postmark's JSON, Mailgun's form fields): its headers as (name, value)
+    pairs, a later pair replacing an earlier one, plus bodies and files."""
+    raw_headers: dict[str, str] = {}
+    delivered: list[str] = []
+    for name, value in headers:
+        if not isinstance(name, str) or not isinstance(value, str) or not name.strip():
+            continue
+        name = _CANONICAL_HEADERS.get(name.strip().lower(), name.strip())
+        value = _decoded(value)
+        raw_headers[name] = value
+        if name in ("Delivered-To", "X-Original-To"):
+            delivered += _addresses_from(value)
+    from_name, from_addr = _split_from(raw_headers.get("From"))
+    content_type = email.message.Message()
+    content_type["Content-Type"] = raw_headers.get("Content-Type", "text/plain")
+    return ParsedEmail(
+        raw_headers=raw_headers,
+        message_id=_strip_brackets(raw_headers.get("Message-ID", ""))
+        or fallback_message_id,
+        in_reply_to=_strip_brackets(raw_headers.get("In-Reply-To", "")),
+        references=_split_references(raw_headers.get("References")),
+        from_address=from_addr,
+        from_display_name=from_name,
+        to_addresses=_addresses_from(raw_headers.get("To")),
+        cc_addresses=_addresses_from(raw_headers.get("Cc")),
+        subject=raw_headers.get("Subject", "")[:512],
+        body_text=text if isinstance(text, str) else "",
+        body_html=html if isinstance(html, str) else "",
+        received_at=_coerce_timestamp(raw_headers.get("Date")),
+        attachments=list(attachments),
+        is_bounce=_is_bounce(content_type),
+        delivered_to=delivered,
     )
 
 

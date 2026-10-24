@@ -144,6 +144,10 @@ ORG_SCOPED_TABLES = [
     "web_form_field",
     "web_form_submission",
     "web_form_daily_stat",
+    # Lead sources, lead webhooks and their deliveries, stamped by leads/0020.
+    "lead_source",
+    "lead_intake",
+    "lead_intake_event",
     # Outbound webhooks (G12). Both carry org_id; the delivery worker sets the
     # context from the org it was queued for. See webhooks/tasks.py.
     "webhook_endpoint",

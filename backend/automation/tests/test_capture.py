@@ -197,8 +197,9 @@ def test_no_active_rule_means_no_old_row_query(org_a, django_assert_num_queries)
     assert not any(q["sql"].startswith("SAVEPOINT") for q in quiet.captured_queries)
 
     _rule(org_a, "lead")
-    # Four of the ten are the savepoints around capture's reads.
-    with django_assert_num_queries(10) as watched:
+    # Four of the eleven are the savepoints around capture's reads, and one
+    # reads the org's lead sources for the field catalogue.
+    with django_assert_num_queries(11) as watched:
         lead.title = "Watched"
         lead.save()
     assert sum(_reads_old_row(q, "lead") for q in watched.captured_queries) == 1

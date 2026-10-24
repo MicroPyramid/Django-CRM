@@ -273,7 +273,7 @@ class WebForm {
     this.rotationCap,
     this.rotationLastAssigned,
     this.notifyProfiles = const [],
-    this.leadSource = 'other',
+    this.leadSource = '',
     this.tags = const [],
     this.ticketPriority = 'Normal',
     this.ticketType = '',
@@ -351,6 +351,9 @@ class WebForm {
   final UserLookup? rotationLastAssigned;
 
   final List<String> notifyProfiles;
+
+  /// The source key every lead from this form gets. This app has no control
+  /// for it, so it is never sent: a save cannot overwrite it.
   final String leadSource;
   final List<String> tags;
 
@@ -456,7 +459,7 @@ class WebForm {
       rotationCap: json['rotation_cap'] as int?,
       rotationLastAssigned: _profile(json['rotation_last_assigned_details']),
       notifyProfiles: _stringList(json['notify_profiles']),
-      leadSource: json['lead_source']?.toString() ?? 'other',
+      leadSource: json['lead_source']?.toString() ?? '',
       tags: _stringList(json['tags']),
       ticketPriority: json['ticket_priority']?.toString() ?? 'Normal',
       ticketType: json['ticket_type']?.toString() ?? '',
@@ -489,7 +492,6 @@ class WebForm {
       'redirect_url': redirectUrl,
       'assign_to': assignTo,
       'notify_profiles': notifyProfiles,
-      'lead_source': leadSource,
       'tags': tags,
       'ticket_priority': ticketPriority,
       'ticket_type': ticketType,
@@ -525,7 +527,6 @@ class WebForm {
     int? rotationCap,
     bool clearRotationCap = false,
     List<String>? notifyProfiles,
-    String? leadSource,
     List<String>? tags,
     String? ticketPriority,
     String? ticketType,
@@ -552,7 +553,7 @@ class WebForm {
       rotationCap: clearRotationCap ? null : (rotationCap ?? this.rotationCap),
       rotationLastAssigned: rotationLastAssigned,
       notifyProfiles: notifyProfiles ?? this.notifyProfiles,
-      leadSource: leadSource ?? this.leadSource,
+      leadSource: leadSource,
       tags: tags ?? this.tags,
       ticketPriority: ticketPriority ?? this.ticketPriority,
       ticketType: ticketType ?? this.ticketType,

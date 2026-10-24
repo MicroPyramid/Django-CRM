@@ -33,12 +33,16 @@ vi.mock('./ticket-approvals.js', () => ({
 }));
 vi.mock('./tokens.js', () => ({ listOrgTokens: stub('tokens', { totals: {} }) }));
 vi.mock('./web-forms.js', () => ({ getWebForms: stub('forms', { totals: {} }) }));
+vi.mock('./lead-sources.js', () => ({
+  leadSourcesSummary: stub('sources', { active: 15, count: 15 })
+}));
+vi.mock('./lead-intakes.js', () => ({ intakesSummary: stub('intakes', false) }));
 
 const { getSettingsHub } = await import('./settings.js');
 const { getRoutingRules } = await import('./routing.js');
 const event = /** @type {any} */ ({ cookies: { get: () => undefined } });
 
-const UNGATED = ['org', 'tokens', 'team', 'tags', 'fields', 'forms', 'automation'];
+const UNGATED = ['org', 'tokens', 'team', 'tags', 'fields', 'forms', 'automation', 'sources'];
 const GATED = [
   'hours',
   'routing',
@@ -47,7 +51,8 @@ const GATED = [
   'reopen',
   'approvals',
   'macros',
-  'help'
+  'help',
+  'intakes'
 ];
 
 /** A promise and the function that settles it. */
@@ -67,13 +72,38 @@ describe('getSettingsHub', () => {
     const hub = await getSettingsHub(event, null);
     expect(calls).toEqual(expect.arrayContaining(['hours', 'routing', 'macros', 'help']));
     expect(hub.helpCenter).toEqual({ x: 1 });
+    expect(hub.leadSources).toEqual({ active: 15, count: 15 });
+    expect(hub.leadIntakes).toBe(false);
+  });
+
+  it('skips the webhooks while Leads is off, but still counts the sources deals use', async () => {
+    calls.length = 0;
+    const hub = await getSettingsHub(event, /** @type {any} */ (off('leads')));
+    expect(calls).not.toContain('intakes');
+    expect(hub.leadIntakes).toBeNull();
+    expect(hub.leadSources).toEqual({ active: 15, count: 15 });
+  });
+
+  it('asks for the mailboxes while Tickets or Leads is on, and skips them when both are off', async () => {
+    calls.length = 0;
+    const leadsOnly = await getSettingsHub(event, /** @type {any} */ (off('tickets')));
+    expect(calls).toContain('mailboxes');
+    expect(leadsOnly.mailboxTotals).not.toBeNull();
+
+    calls.length = 0;
+    const neither = await getSettingsHub(
+      event,
+      /** @type {any} */ ([...off('tickets'), ...off('leads')])
+    );
+    expect(calls).not.toContain('mailboxes');
+    expect(neither.mailboxTotals).toBeNull();
   });
 
   it('skips the settings calls of off modules and still answers', async () => {
     calls.length = 0;
     const hub = await getSettingsHub(
       event,
-      /** @type {any} */ ([...off('tickets'), ...off('knowledge_base')])
+      /** @type {any} */ ([...off('tickets'), ...off('leads'), ...off('knowledge_base')])
     );
     for (const name of [
       'hours',

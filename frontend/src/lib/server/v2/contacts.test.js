@@ -142,3 +142,32 @@ describe('getContactForEdit account picker', () => {
     expect(accounts).toEqual([{ id: 'a-visible', name: 'Visible Co' }]);
   });
 });
+
+describe('getContact source', () => {
+  beforeEach(() => {
+    apiRequest.mockReset();
+  });
+
+  it('carries where the person came from, and blanks for an older server', async () => {
+    const base = detail(undefined);
+    apiRequest.mockResolvedValueOnce({
+      ...base,
+      contact_obj: {
+        ...base.contact_obj,
+        source: 'google ads',
+        source_detail: 'Spring',
+        source_ref: 'AD-9'
+      }
+    });
+    const { contact } = await getContact(event, 'c1');
+    expect(contact).toMatchObject({
+      source: 'google ads',
+      source_detail: 'Spring',
+      source_ref: 'AD-9'
+    });
+
+    apiRequest.mockResolvedValueOnce(detail(undefined));
+    const older = await getContact(event, 'c1');
+    expect(older.contact).toMatchObject({ source: '', source_detail: '', source_ref: '' });
+  });
+});

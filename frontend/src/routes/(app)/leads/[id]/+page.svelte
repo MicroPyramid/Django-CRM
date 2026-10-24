@@ -27,6 +27,7 @@
   import ConfirmAction from '#lib/v2/components/ConfirmAction.svelte';
   import { money, relativeDays, daysSince, shortDate } from '#lib/v2/format.js';
   import { LEAD_STATUS_TONE, LEAD_STATUS_LABEL, industryLabel } from '#lib/v2/enums.js';
+  import { sourceLabel } from '#lib/v2/lead-sources.js';
   import { t } from '#lib/terminology.js';
   import { enhance } from '$app/forms';
   import {
@@ -500,7 +501,15 @@
       <dt>Owner</dt>
       <dd>{lead.assigned_to || 'Nobody'}</dd>
       <dt>Source</dt>
-      <dd>{lead.source || '—'}</dd>
+      <dd>{sourceLabel(data.sources, lead.source) || 'Not recorded'}</dd>
+      {#if lead.source_detail}
+        <dt>Sub-source</dt>
+        <dd>{lead.source_detail}</dd>
+      {/if}
+      {#if lead.source_ref}
+        <dt>Reference</dt>
+        <dd class="v2-num" style="font-size:12px;overflow-wrap:anywhere">{lead.source_ref}</dd>
+      {/if}
       <dt>Industry</dt>
       <dd>{industryLabel(lead.industry) || '—'}</dd>
       <dt>Est. value</dt>
@@ -513,6 +522,10 @@
     <dl class="v2-kv">
       <dt>Last contacted</dt>
       <dd>{lead.last_contacted ? relativeDays(lead.last_contacted) : 'Never'}</dd>
+      {#if lead.last_enquiry_at}
+        <dt>Last enquiry</dt>
+        <dd>{relativeDays(lead.last_enquiry_at)}</dd>
+      {/if}
       <dt>Created</dt>
       <dd>{relativeDays(lead.created_at)}</dd>
     </dl>

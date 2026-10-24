@@ -1,38 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/api_config.dart';
 import '../../core/theme/theme.dart';
+import '../../data/models/lead_source.dart';
 import '../../data/models/mailbox.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/lookup_provider.dart';
 
 /// Add or edit an inbound address.
 ///
 /// Returns the request body, or null if dismissed.
 ///
-/// **No secret field, and none is coming.** The signing-secret column is
-/// write-only server-side and reserved for providers that sign deliveries that
-/// way, none of which are implemented. A field for it would mean a credential
-/// travels to a phone and back on every edit, and an empty one posted on a save
-/// would blank the column.
+/// The webhook secret (Postmark's basic-auth password, Mailgun's signing key)
+/// is write-only: the field is never prefilled, the sheet says only whether one
+/// is stored, and a blank field sends nothing, so a save cannot blank it.
 ///
 /// The SNS Topic ARN is a field. Only admins reach this sheet, and the server
 /// sends the ARN to admins only; it is sent back only when changed
 /// ([mailboxTopicArnEdit]).
+///
+/// [leadsOffered] and [generatedDomain] come from the list
+/// ([MailboxesState]): an API without lead addresses gets the ticket form only,
+/// and "Generate an address" appears only where the server makes them.
 Future<Map<String, dynamic>?> showMailboxFormSheet(
   BuildContext context, {
   Mailbox? existing,
+  bool leadsOffered = false,
+  String? generatedDomain,
+  bool startAsLeads = false,
 }) {
   return showModalBottomSheet<Map<String, dynamic>>(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _MailboxFormSheet(existing: existing),
+    builder: (context) => _MailboxFormSheet(
+      existing: existing,
+      leadsOffered: leadsOffered,
+      generatedDomain: generatedDomain,
+      startAsLeads: startAsLeads,
+    ),
   );
 }
 
 class _MailboxFormSheet extends ConsumerStatefulWidget {
-  const _MailboxFormSheet({this.existing});
+  const _MailboxFormSheet({
+    this.existing,
+    this.leadsOffered = false,
+    this.generatedDomain,
+    this.startAsLeads = false,
+  });
 
   final Mailbox? existing;
+  final bool leadsOffered;
+  final String? generatedDomain;
+  final bool startAsLeads;
 
   @override
   ConsumerState<_MailboxFormSheet> createState() => _MailboxFormSheetState();
@@ -41,13 +62,20 @@ class _MailboxFormSheet extends ConsumerStatefulWidget {
 class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
   late final TextEditingController _address;
   late final TextEditingController _topicArn;
+  final TextEditingController _secret = TextEditingController();
   late String _provider;
   late String _priority;
   String? _caseType;
   String? _assigneeId;
   String? _error;
+  late String _creates;
+  late String _leadSource;
+  late final TextEditingController _leadSourceDetail;
+  bool _generate = false;
 
   bool get _isCreate => widget.existing == null;
+  bool get _leads => widget.leadsOffered && _creates == mailboxCreatesLeads;
+  bool get _canGenerate => _isCreate && widget.generatedDomain != null;
 
   @override
   void initState() {
@@ -59,24 +87,44 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
     _priority = mailbox?.defaultPriority ?? 'Normal';
     _caseType = mailbox?.defaultCaseType;
     _assigneeId = mailbox?.defaultAssignee?.id;
+    _creates =
+        mailbox?.creates ??
+        (widget.startAsLeads ? mailboxCreatesLeads : mailboxCreatesTickets);
+    _leadSource = mailbox?.leadSource ?? 'email';
+    _leadSourceDetail = TextEditingController(
+      text: mailbox?.leadSourceDetail ?? '',
+    );
   }
 
   @override
   void dispose() {
     _address.dispose();
     _topicArn.dispose();
+    _secret.dispose();
+    _leadSourceDetail.dispose();
     super.dispose();
   }
 
+  /// On a create, or when changed; [mailboxPayload] leaves out a null.
+  String? _changed(String value, String? loaded) =>
+      _isCreate || value != loaded ? value : null;
+
+  /// The server's own address: one to generate, or one it already made.
+  bool get _serverAddress =>
+      (_canGenerate && _generate) || (widget.existing?.isGenerated ?? false);
+
   void _submit() {
-    final problem = mailboxAddressProblem(_address.text);
+    final problem = _serverAddress
+        ? null
+        : mailboxAddressProblem(_address.text);
     if (problem != null) {
       setState(() => _error = problem);
       return;
     }
+    final existing = widget.existing;
     Navigator.of(context).pop(
       mailboxPayload(
-        address: _address.text,
+        address: _serverAddress ? null : _address.text,
         provider: _provider,
         defaultPriority: _priority,
         defaultCaseType: _caseType,
@@ -89,6 +137,20 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
           _topicArn.text,
           widget.existing?.topicArn,
         ),
+        webhookSecret: secretMailboxProviders.contains(_provider)
+            ? _secret.text
+            : null,
+        generateAddress: _canGenerate && _generate,
+        creates: widget.leadsOffered
+            ? _changed(_creates, existing?.creates)
+            : null,
+        leadSource: _leads ? _changed(_leadSource, existing?.leadSource) : null,
+        leadSourceDetail: _leads
+            ? _changed(
+                _leadSourceDetail.text.trim(),
+                existing?.leadSourceDetail,
+              )
+            : null,
       ),
     );
   }
@@ -105,6 +167,7 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
     final offList = stored != null && !people.any((p) => p.id == stored.id)
         ? stored
         : null;
+    final made = _leads ? 'leads' : 'tickets';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -123,106 +186,165 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
               style: AppTypography.h3.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _address,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                helperText: _isCreate
-                    ? null
-                    : 'Mail to the old address stops becoming tickets.',
-                helperMaxLines: 2,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _provider,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Provider',
-                helperText:
-                    'Only AWS SES is implemented. Mail to an address using one '
-                    'of the others becomes nothing until that integration '
-                    'exists.',
-                helperMaxLines: 4,
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                for (final provider in mailboxProviderLabels.keys)
+            if (widget.leadsOffered) ...[
+              DropdownButtonFormField<String>(
+                key: const ValueKey('mailbox-creates'),
+                initialValue: _creates,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mail here creates',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
                   DropdownMenuItem(
-                    value: provider,
-                    child: Text(mailboxProviderLabel(provider)),
+                    value: mailboxCreatesTickets,
+                    child: Text('Tickets'),
                   ),
-              ],
-              onChanged: (v) => setState(() => _provider = v ?? _provider),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('mailbox-topic-arn'),
-              controller: _topicArn,
-              keyboardType: TextInputType.url,
-              autocorrect: false,
-              enableSuggestions: false,
-              decoration: const InputDecoration(
-                labelText: 'SNS Topic ARN',
-                hintText: 'arn:aws:sns:us-east-1:123456789012:inbound-mail',
-                helperText:
-                    'Mail is accepted only from this exact topic. Left blank, '
-                    'it is set by the first subscription AWS confirms from an '
-                    'AWS account this server allows. Clearing it stops mail '
-                    'until it is set again.',
-                helperMaxLines: 5,
-                border: OutlineInputBorder(),
+                  DropdownMenuItem(
+                    value: mailboxCreatesLeads,
+                    child: Text('Leads'),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _creates = v ?? _creates),
               ),
-            ),
+              const SizedBox(height: 12),
+            ],
+            if (_canGenerate) ...[
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _generate,
+                onChanged: (v) => setState(() => _generate = v),
+                title: const Text('Generate an address'),
+                subtitle: Text(
+                  'A new address at ${widget.generatedDomain}, ready to use. '
+                  'Nothing to set up with a mail provider.',
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (!_serverAddress) ...[
+              TextField(
+                controller: _address,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: 'Address',
+                  helperText: _isCreate
+                      ? null
+                      : 'Mail to the old address stops becoming $made.',
+                  helperMaxLines: 2,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _provider,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Provider',
+                  helperText:
+                      'AWS SES, Postmark and Mailgun deliver. Mail to an IMAP '
+                      'address becomes nothing until that integration exists.',
+                  helperMaxLines: 4,
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final provider in mailboxProviderLabels.keys)
+                    DropdownMenuItem(
+                      value: provider,
+                      child: Text(mailboxProviderLabel(provider)),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _provider = v ?? _provider),
+              ),
+              const SizedBox(height: 12),
+              if (secretMailboxProviders.contains(_provider))
+                ..._secretFields()
+              else
+                TextField(
+                  key: const ValueKey('mailbox-topic-arn'),
+                  controller: _topicArn,
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  decoration: const InputDecoration(
+                    labelText: 'SNS Topic ARN',
+                    hintText: 'arn:aws:sns:us-east-1:123456789012:inbound-mail',
+                    helperText:
+                        'Mail is accepted only from this exact topic. Left blank, '
+                        'it is set by the first subscription AWS confirms from an '
+                        'AWS account this server allows. Clearing it stops mail '
+                        'until it is set again.',
+                    helperMaxLines: 5,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+            ],
             const SizedBox(height: 16),
-            const _SectionLabel('What a ticket opens as'),
-            DropdownButtonFormField<String>(
-              initialValue: _priority,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Priority',
-                border: OutlineInputBorder(),
+            if (_leads) ...[
+              const _SectionLabel('What a lead arrives with'),
+              _leadSourceField(),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('mailbox-lead-source-detail'),
+                controller: _leadSourceDetail,
+                maxLength: 100,
+                decoration: const InputDecoration(
+                  labelText: 'Sub-source (optional)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              items: [
-                for (final priority in mailboxPriorities)
-                  DropdownMenuItem(value: priority, child: Text(priority)),
-              ],
-              onChanged: (v) => setState(() => _priority = v ?? _priority),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
-              initialValue: _caseType,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Type',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+            ] else ...[
+              const _SectionLabel('What a ticket opens as'),
+              DropdownButtonFormField<String>(
+                initialValue: _priority,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Priority',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  for (final priority in mailboxPriorities)
+                    DropdownMenuItem(value: priority, child: Text(priority)),
+                ],
+                onChanged: (v) => setState(() => _priority = v ?? _priority),
               ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('None')),
-                for (final type in mailboxCaseTypes)
-                  DropdownMenuItem(value: type, child: Text(type)),
-              ],
-              onChanged: (v) => setState(() => _caseType = v),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                initialValue: _caseType,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  for (final type in mailboxCaseTypes)
+                    DropdownMenuItem(value: type, child: Text(type)),
+                ],
+                onChanged: (v) => setState(() => _caseType = v),
+              ),
+              const SizedBox(height: 12),
+            ],
             DropdownButtonFormField<String?>(
               initialValue: _assigneeId,
               isExpanded: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Assigned to',
-                helperText:
-                    'Where a ticket goes after that is decided by routing, not '
-                    'by this.',
+                helperText: _leads
+                    ? 'Owns every lead this address makes.'
+                    : 'Where a ticket goes after that is decided by routing, '
+                          'not by this.',
                 helperMaxLines: 3,
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: null,
-                  child: Text('Unassigned, then routed'),
+                  child: Text(
+                    _leads ? 'Unassigned' : 'Unassigned, then routed',
+                  ),
                 ),
                 if (offList != null)
                   DropdownMenuItem(
@@ -246,8 +368,13 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
                 _assigneeId == offList.id) ...[
               const SizedBox(height: 8),
               Text(
-                'Deactivated users are not assigned. New tickets from this '
-                'address go to routing until you choose someone else.',
+                _leads
+                    ? 'Deactivated users are not assigned. New leads from this '
+                          'address stay unassigned until you choose someone '
+                          'else.'
+                    : 'Deactivated users are not assigned. New tickets from '
+                          'this address go to routing until you choose someone '
+                          'else.',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.warning600,
                 ),
@@ -289,6 +416,71 @@ class _MailboxFormSheetState extends ConsumerState<_MailboxFormSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  /// The write-only credential for Postmark or Mailgun, and the URL to give
+  /// the provider. A new address has no id yet, so no URL.
+  List<Widget> _secretFields() {
+    final existing = widget.existing;
+    final stored = existing?.hasWebhookSecret ?? false;
+    final postmark = _provider == 'postmark';
+    final url = existing == null
+        ? null
+        : mailboxSetupUrl(_provider, existing.id, ApiConfig.baseUrl);
+    return [
+      TextField(
+        key: const ValueKey('mailbox-webhook-secret'),
+        controller: _secret,
+        obscureText: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        decoration: InputDecoration(
+          labelText: postmark ? 'Basic-auth password' : 'Webhook signing key',
+          helperText:
+              '${stored ? 'A secret is stored. It is never shown; leave blank to keep it.' : 'No secret is stored, so every post to this address is refused.'} '
+              '${postmark ? 'Postmark sends it as the basic-auth password in the webhook URL.' : "This is your Mailgun account's HTTP webhook signing key."}',
+          helperMaxLines: 5,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (url != null)
+        SelectableText(
+          '${postmark ? 'Inbound webhook URL' : 'Route action'}: $url',
+          key: const ValueKey('mailbox-setup-url'),
+          style: AppTypography.caption,
+        )
+      else
+        Text(
+          'The setup URL appears here once the address is saved.',
+          style: AppTypography.caption,
+        ),
+    ];
+  }
+
+  Widget _leadSourceField() {
+    final async = ref.watch(leadSourcesProvider);
+    final answer = shownLeadSources(async);
+    final options = pickableSources(answer?.sources ?? const [], _leadSource);
+    return DropdownButtonFormField<String>(
+      key: const ValueKey('mailbox-lead-source'),
+      initialValue: _leadSource.isEmpty ? null : _leadSource,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Lead source',
+        helperText: async.hasError
+            ? 'Could not load the sources. Close this and try again.'
+            : answer == null
+            ? 'Loading the sources.'
+            : null,
+        border: const OutlineInputBorder(),
+      ),
+      items: [
+        for (final source in options)
+          DropdownMenuItem(value: source.key, child: Text(source.pickerLabel)),
+      ],
+      onChanged: (v) => setState(() => _leadSource = v ?? _leadSource),
     );
   }
 }

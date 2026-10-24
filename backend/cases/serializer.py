@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Manager, Max, Q, Sum
 from rest_framework import serializers
 
@@ -10,6 +11,7 @@ from cases.access import (
     visible_cases_qs,
 )
 from cases.approvals import Approval, ApprovalRule, close_refusal, closing_date
+from cases.inbound.generated import generated_domain, new_address, on_generated_domain
 from cases.inbound.sns import topic_account_id
 from cases.models import (
     Case,
@@ -30,7 +32,7 @@ from cases.workflow import (
     merged_status_refusal,
 )
 from common.models import Profile, Teams
-from common.modules import module_is_available, org_of
+from common.modules import module_is_available, module_off_message, org_of
 from common.permissions import is_org_admin
 from common.serializer import (
     OrganizationSerializer,
@@ -41,6 +43,7 @@ from common.serializer import (
 )
 from common.utils import STATUS_CHOICE
 from contacts.serializer import ContactLinkSerializer
+from leads.source_rules import check_source
 
 # Note: Removed unused serializer property:
 # - created_on_arrow (frontend computes its own humanized timestamps)
@@ -812,12 +815,12 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-    # Writable so an admin can paste a provider-issued signing key, never
-    # readable. Nothing in the codebase compares this value, so there is no
-    # caller that needs it back, and a stored credential returned by a list
-    # endpoint is reachable by anything holding an admin's session or personal
-    # access token. `has_webhook_secret` is what an admin screen needs: whether
-    # one is set, not what it is.
+    # Postmark's basic-auth password or Mailgun's signing key
+    # (`cases.inbound.providers`). Writable so an admin can paste it, never
+    # readable: only the webhook compares it, and a stored credential returned
+    # by a list endpoint is reachable by anything holding an admin's session or
+    # personal access token. `has_webhook_secret` is what an admin screen
+    # needs: whether one is set, not what it is.
     webhook_secret = serializers.CharField(
         write_only=True, required=False, allow_blank=True, max_length=128
     )
@@ -832,6 +835,11 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
     # never-connected address as working. The ARN itself stays admin-only
     # below, since it embeds the AWS account id.
     has_topic_arn = serializers.SerializerMethodField()
+    # Create only: make the address under INBOUND_EMAIL_DOMAIN instead of
+    # taking a typed one.
+    generate_address = serializers.BooleanField(
+        write_only=True, required=False, default=False
+    )
 
     class Meta:
         model = InboundMailbox
@@ -848,10 +856,21 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             "default_assignee",
             "default_assignee_id",
             "is_active",
+            "creates",
+            "lead_source",
+            "lead_source_detail",
+            "is_generated",
+            "generate_address",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "is_generated", "created_at", "updated_at")
+        extra_kwargs = {"address": {"required": False}}
+        # DRF would build one from `uniq_generated_inbound_address`, demanding
+        # an address on every create and probing other orgs' rows for it.
+        # `validate_address` checks the org's own duplicates; generated
+        # addresses are left to the unique index (see `create`).
+        validators = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -890,6 +909,20 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
         # mailbox must be excluded from its own duplicate check or saving a
         # record without changing its address would fail against itself.
         org = self.context.get("org")
+        instance = self.instance
+        if instance is not None and instance.is_generated:
+            if value.strip().lower() != instance.address.lower():
+                raise serializers.ValidationError(
+                    "A generated address cannot be changed."
+                )
+            return instance.address
+        # The catch-all routes the inbound domain's mail to generated mailboxes
+        # only, so a typed address there would silently receive nothing.
+        if on_generated_domain(value):
+            raise serializers.ValidationError(
+                f"Addresses at {generated_domain()} can only be generated. "
+                'Choose "Generate an address" instead.'
+            )
         if org:
             clash = InboundMailbox.objects.filter(org=org, address__iexact=value)
             if self.instance is not None:
@@ -911,6 +944,82 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_lead_source(self, value):
+        stored = getattr(self.instance, "lead_source", None)
+        try:
+            return check_source(value, self.context.get("org"), stored)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+    def validate(self, attrs):
+        org = self.context.get("org")
+        instance = self.instance
+        if attrs.pop("generate_address", False):
+            if instance is not None:
+                raise serializers.ValidationError(
+                    {
+                        "generate_address": "An address is generated only when "
+                        "the mailbox is created."
+                    }
+                )
+            if not generated_domain():
+                raise serializers.ValidationError(
+                    {
+                        "generate_address": "This server has no inbound email "
+                        "domain, so it cannot make an address. Type one instead."
+                    }
+                )
+            if attrs.get("address"):
+                raise serializers.ValidationError(
+                    {"address": "Leave the address empty to have one generated."}
+                )
+            attrs["is_generated"] = True
+        elif instance is None and not attrs.get("address"):
+            raise serializers.ValidationError({"address": "This field is required."})
+
+        generated = attrs.get("is_generated") or getattr(
+            instance, "is_generated", False
+        )
+        if generated and attrs.get("provider", "ses") != "ses":
+            raise serializers.ValidationError(
+                {"provider": "A generated address receives its mail through AWS SES."}
+            )
+
+        # A mailbox for a switched-off module would accept mail and make nothing,
+        # so it can be neither pointed at one nor switched on while it is off.
+        creates = attrs.get("creates", getattr(instance, "creates", None))
+        changed = instance is None or creates != instance.creates
+        turning_on = (
+            instance is not None
+            and attrs.get("is_active") is True
+            and not instance.is_active
+        )
+        module = "leads" if creates == InboundMailbox.CREATES_LEADS else "tickets"
+        if (
+            org is not None
+            and (changed or turning_on)
+            and not module_is_available(org, module)
+        ):
+            field = "creates" if changed else "is_active"
+            raise serializers.ValidationError({field: module_off_message(org, module)})
+        return attrs
+
+    def create(self, validated_data):
+        if not validated_data.get("is_generated"):
+            return super().create(validated_data)
+        org = validated_data["org"]
+        # The random part makes a clash rare; the unique index decides it.
+        for _ in range(5):
+            validated_data["address"] = new_address(org)
+            try:
+                with transaction.atomic():
+                    return super().create(dict(validated_data))
+            except IntegrityError:
+                continue
+        raise serializers.ValidationError(
+            {"generate_address": "No free address was found. Try again."}
+        )
+
     def get_has_webhook_secret(self, instance) -> bool:
         return bool(instance.webhook_secret)
 
@@ -931,12 +1040,10 @@ class InboundMailboxSerializer(serializers.ModelSerializer):
 
         `webhook_secret` itself is declared `write_only` above and so is never
         in `data` to begin with. This method used to pop it for non-admins,
-        which meant admins read it back on every list and detail call. Nothing
-        reads that value: `InboundMailboxWebhookView.post` authenticates with
-        the SNS signature and the `topic_arn` pin. Returning a stored
-        credential-shaped value that no code consumes only creates a way to
-        lose it, and it would become a live leak the day a provider
-        integration starts checking it, with no change here to notice."""
+        which meant admins read it back on every list and detail call. It is
+        now the credential a Postmark or Mailgun post is checked against, so
+        returning it would hand anyone holding an admin's session the means to
+        post mail into the org."""
         data = super().to_representation(instance)
         request = self.context.get("request")
         profile = getattr(request, "profile", None) if request else None

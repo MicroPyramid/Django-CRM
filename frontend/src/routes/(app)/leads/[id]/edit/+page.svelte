@@ -56,13 +56,12 @@
     LEAD_STATUSES,
     LEAD_STATUS_LABEL,
     LEAD_STATUS_TONE,
-    LEAD_SOURCES,
-    LEAD_SOURCE_LABEL,
     LEAD_IRREVERSIBLE_STATUSES,
     INDUSTRIES,
     industryLabel
   } from '#lib/v2/enums.js';
   import { money, longDate } from '#lib/v2/format.js';
+  import { sourceOptions } from '#lib/v2/lead-sources.js';
   import { ChevronRight, TriangleAlert, Lock } from '@lucide/svelte';
 
   /** @type {{ data: any, form: any }} */
@@ -390,12 +389,39 @@
       </div>
       <div class="v2-field">
         <label for="f-source">Source</label>
+        <!-- Offered against the value the lead opened with, so a retired
+             source stays selectable for the record that still carries it. -->
         <select id="f-source" name="source" class="v2-input" bind:value={form.source}>
           <option value="">Not specified</option>
-          {#each LEAD_SOURCES as s (s)}
-            <option value={s}>{LEAD_SOURCE_LABEL[s]}</option>
+          {#each sourceOptions(data.sources, data.form.source) as s (s.key)}
+            <option value={s.key}>{s.label}</option>
           {/each}
         </select>
+      </div>
+    </div>
+
+    <div class="pair">
+      <div class="v2-field">
+        <label for="f-source-detail">Sub-source</label>
+        <input
+          id="f-source-detail"
+          name="source_detail"
+          class="v2-input"
+          maxlength="100"
+          placeholder="e.g. Zillow, Spring open day"
+          bind:value={form.source_detail}
+        />
+      </div>
+      <div class="v2-field">
+        <label for="f-source-ref">Reference</label>
+        <input
+          id="f-source-ref"
+          name="source_ref"
+          class="v2-input"
+          maxlength="255"
+          placeholder="An ad, listing or campaign id"
+          bind:value={form.source_ref}
+        />
       </div>
     </div>
 

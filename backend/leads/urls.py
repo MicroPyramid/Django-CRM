@@ -11,6 +11,13 @@ from leads.views.import_views import (
     LeadImportPreviewView,
     LeadUploadView,
 )
+from leads.views.intake_views import (
+    LeadIntakeDeliveriesView,
+    LeadIntakeDetailView,
+    LeadIntakeKeyView,
+    LeadIntakeListCreateView,
+    LeadIntakeTestView,
+)
 from leads.views.kanban_views import (
     LeadKanbanView,
     LeadMoveView,
@@ -26,6 +33,11 @@ from leads.views.lead_interactions import (
     LeadCommentView,
 )
 from leads.views.lead_views import LeadDetailView, LeadListView
+from leads.views.source_views import (
+    LeadSourceDetailView,
+    LeadSourceListCreateView,
+    LeadSourceOrderView,
+)
 
 app_name = "api_leads"
 
@@ -51,6 +63,22 @@ urlpatterns = [
     path("import/commit/", LeadImportCommitView.as_view(), name="leads_import_commit"),
     # Deprecated single-step alias over import/commit/; kept for API clients.
     path("upload/", LeadUploadView.as_view()),
+    # Lead sources (before <uid:pk>/ like the other fixed paths)
+    path("sources/", LeadSourceListCreateView.as_view(), name="lead_sources"),
+    path("sources/order/", LeadSourceOrderView.as_view(), name="lead_sources_order"),
+    path("sources/<uid:pk>/", LeadSourceDetailView.as_view(), name="lead_source"),
+    # Lead webhooks, admins only (before <uid:pk>/ like the other fixed paths)
+    path("intakes/", LeadIntakeListCreateView.as_view(), name="lead_intakes"),
+    path("intakes/<uid:pk>/", LeadIntakeDetailView.as_view(), name="lead_intake"),
+    path("intakes/<uid:pk>/key/", LeadIntakeKeyView.as_view(), name="lead_intake_key"),
+    path(
+        "intakes/<uid:pk>/deliveries/",
+        LeadIntakeDeliveriesView.as_view(),
+        name="lead_intake_deliveries",
+    ),
+    path(
+        "intakes/<uid:pk>/test/", LeadIntakeTestView.as_view(), name="lead_intake_test"
+    ),
     # Kanban endpoints
     path("kanban/", LeadKanbanView.as_view(), name="lead_kanban"),
     # Pipeline management

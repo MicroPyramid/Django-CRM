@@ -153,7 +153,11 @@ class DuplicateCheckView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         profile = request.profile
-        found = find_duplicates(self.spec.visible(profile), query.validated_data)
+        found = find_duplicates(
+            self.spec.visible(profile),
+            query.validated_data,
+            region=profile.org.default_country,
+        )
         return Response({"duplicates": _hits(self.spec, profile, found)})
 
 
@@ -170,7 +174,10 @@ class RecordDuplicatesView(APIView):
         found = []
         if self.spec.merge_refusal(record) is None:
             found = find_duplicates(
-                visible, self.spec.criteria_of(record), exclude_id=record.pk
+                visible,
+                self.spec.criteria_of(record),
+                exclude_id=record.pk,
+                region=profile.org.default_country,
             )
         return Response(
             {

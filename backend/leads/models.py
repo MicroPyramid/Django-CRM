@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -5,13 +7,13 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel
+from common.base import SAMPLE_DATA_HELP_TEXT, AssignableMixin, BaseModel, BaseOrgModel
 from common.models import Org, Profile, Tags, Teams
+from common.phones import set_phone_e164
 from common.utils import (
     COUNTRIES,
     CURRENCY_CODES,
     INDCHOICES,
-    LEAD_SOURCE,
     LEAD_STATUS,
 )
 from common.validators import flexible_phone_validator
@@ -55,6 +57,7 @@ class Lead(AssignableMixin, BaseModel):
         blank=True,
         validators=[flexible_phone_validator],
     )
+    phone_e164 = models.CharField(max_length=32, blank=True, default="", db_index=True)
     job_title = models.CharField(
         _("Job Title"),
         max_length=255,
@@ -71,8 +74,13 @@ class Lead(AssignableMixin, BaseModel):
     status = models.CharField(
         _("Status"), max_length=255, blank=True, null=True, choices=LEAD_STATUS
     )
-    source = models.CharField(
-        _("Source"), max_length=255, blank=True, null=True, choices=LEAD_SOURCE
+    # A key from the org's LeadSource list (leads.sources).
+    source = models.CharField(_("Source"), max_length=255, blank=True, null=True)
+    source_detail = models.CharField(
+        _("Sub-source"), max_length=100, blank=True, default=""
+    )
+    source_ref = models.CharField(
+        _("Reference"), max_length=255, blank=True, default=""
     )
     industry = models.CharField(
         _("Industry"), max_length=255, choices=INDCHOICES, blank=True, null=True
@@ -146,6 +154,13 @@ class Lead(AssignableMixin, BaseModel):
         help_text="Per-org schema extension; values are validated against common.CustomFieldDefinition.",
     )
 
+    # Where an arrival from outside came from ("intake:<id>", "email:<mailbox
+    # id>", "webform:<id>") and that sender's own id for it, so a retry is
+    # recognised. Server-set only.
+    external_source = models.CharField(max_length=100, blank=True, default="")
+    external_id = models.CharField(max_length=255, blank=True, default="")
+    last_enquiry_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         verbose_name = "Lead"
         verbose_name_plural = "Leads"
@@ -166,6 +181,11 @@ class Lead(AssignableMixin, BaseModel):
                 name="unique_lead_email_per_org",
                 condition=Q(email__isnull=False) & ~Q(email=""),
             ),
+            models.UniqueConstraint(
+                fields=["org", "external_source", "external_id"],
+                name="unique_lead_external_id_per_org",
+                condition=~Q(external_id=""),
+            ),
             # Probability must be 0-100
             models.CheckConstraint(
                 condition=Q(probability__gte=0) & Q(probability__lte=100),
@@ -182,6 +202,10 @@ class Lead(AssignableMixin, BaseModel):
     def __str__(self):
         name_parts = [self.salutation, self.first_name, self.last_name]
         return " ".join(part for part in name_parts if part) or f"Lead {self.id}"
+
+    def save(self, *args, **kwargs):
+        set_phone_e164(self, kwargs)
+        super().save(*args, **kwargs)
 
     def clean(self):
         """Validate lead data."""
@@ -341,3 +365,125 @@ class LeadStage(BaseModel):
         if not self.org_id and self.pipeline_id:
             self.org_id = self.pipeline.org_id
         super().save(*args, **kwargs)
+
+
+class LeadSource(BaseOrgModel):
+    """One entry in an org's list of lead sources. `Lead.source`, `Contact.source`
+    and `Opportunity.lead_source` hold its `key`. A retired source (`is_active`
+    False) stays on the records that have it and cannot be picked for new ones.
+    The defaults are created on first use: `leads.sources.org_sources`."""
+
+    key = models.CharField(max_length=64)
+    label = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = "lead_source"
+        ordering = ("order", "label")
+        indexes = [models.Index(fields=["org", "-created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "key"], name="unique_lead_source_key_per_org"
+            ),
+        ]
+
+    def __str__(self):
+        return self.label
+
+
+class LeadIntake(BaseOrgModel):
+    """A lead webhook. Its id is the public URL's and never changes. Its key can
+    be replaced, the old one kept in `previous_key` until
+    `previous_key_expires_at`. Keys are stored as written, like outbound webhook
+    secrets, because a signing preset can only be checked with the key itself.
+    """
+
+    PRESET_GENERIC = "generic"
+    PRESET_CHOICES = (
+        (PRESET_GENERIC, "Generic"),
+        ("google_ads", "Google Ads lead form"),
+        ("tally", "Tally"),
+        ("gravity_forms", "Gravity Forms"),
+    )
+
+    name = models.CharField(max_length=100)
+    preset = models.CharField(
+        max_length=32, choices=PRESET_CHOICES, default=PRESET_GENERIC
+    )
+    key = models.CharField(max_length=64)
+    previous_key = models.CharField(max_length=64, blank=True, default="")
+    previous_key_expires_at = models.DateTimeField(null=True, blank=True)
+    # A list of {"from": "<dot path>", "to": "<lead field>"}.
+    mapping = models.JSONField(default=list, blank=True)
+    default_source = models.CharField(max_length=64, blank=True, default="")
+    source_detail = models.CharField(max_length=100, blank=True, default="")
+    tags = models.ManyToManyField(Tags, blank=True, related_name="lead_intakes")
+    assignee = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_lead_intakes",
+    )
+    is_active = models.BooleanField(default=True)
+    last_received_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "lead_intake"
+        ordering = ("name",)
+        indexes = [models.Index(fields=["org", "-created_at"])]
+
+    def __str__(self):
+        return self.name
+
+    def drop_old_events(self):
+        """Delete this webhook's deliveries older than `EVENT_DAYS`. They hold
+        personal data, and no scheduler runs, so each post and each admin read
+        of the webhook calls this."""
+        cutoff = timezone.now() - timedelta(days=LeadIntakeEvent.EVENT_DAYS)
+        LeadIntakeEvent.objects.filter(
+            org_id=self.org_id, intake=self, received_at__lt=cutoff
+        ).delete()
+
+
+class LeadIntakeEvent(BaseOrgModel):
+    """One delivery to a `LeadIntake`, whatever its outcome."""
+
+    EVENT_DAYS = 30
+
+    RESULT_CHOICES = (
+        ("created", "Created"),
+        ("merged", "Merged"),
+        ("duplicate", "Duplicate"),
+        ("test", "Test"),
+        ("rejected", "Rejected"),
+    )
+
+    intake = models.ForeignKey(
+        LeadIntake, on_delete=models.CASCADE, related_name="events"
+    )
+    received_at = models.DateTimeField(default=timezone.now)
+    result = models.CharField(max_length=16, choices=RESULT_CHOICES)
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="intake_events",
+    )
+    external_id = models.CharField(max_length=255, blank=True, default="")
+    error = models.TextField(blank=True, default="")
+    payload = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        db_table = "lead_intake_event"
+        ordering = ("-received_at",)
+        indexes = [
+            models.Index(fields=["org", "-created_at"]),
+            models.Index(fields=["intake", "received_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.result} at {self.received_at}"

@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { EDITABLE_FIELDS, createDeal, getDealFormOptions } from '#lib/server/v2/deals.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load(event) {
@@ -7,7 +8,8 @@ export async function load(event) {
   // via `(app)/+layout.server.js`). It is the currency this deal will be created
   // in: the form has no currency field, so the serializer stamps the org default
   // (`OpportunityCreateSerializer.create`).
-  return await getDealFormOptions(event);
+  const [options, sources] = await Promise.all([getDealFormOptions(event), getLeadSources(event)]);
+  return { ...options, sources: sources.sources, sourcesLive: sources.live };
 }
 
 /** @type {import('./$types').Actions} */

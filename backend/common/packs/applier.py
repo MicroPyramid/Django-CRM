@@ -26,7 +26,8 @@ from common.packs.schema import (
     sample_date_slots,
 )
 from invoices.models import Product
-from leads.models import LeadPipeline, LeadStage
+from leads.models import LeadPipeline, LeadSource, LeadStage
+from leads.sources import org_sources
 from tasks.models import TaskPipeline, TaskStage
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,26 @@ def _apply_tags(org, pack: dict, report: _Report) -> None:
             description=tag.get("description", ""),
         )
         report.add_created("tag", tag["name"])
+
+
+def _apply_lead_sources(org, pack: dict, report: _Report) -> None:
+    sources = pack.get("lead_sources") or []
+    if not sources:
+        return
+    # Seeds the defaults first so the pack's sources follow them in the list.
+    existing = org_sources(org)
+    have = {s.key for s in existing}
+    order = max((s.order for s in existing), default=-1) + 1
+    for source in sources:
+        if source["key"] in have:
+            report.add_skipped("lead_source", source["label"])
+            continue
+        LeadSource.objects.create(
+            org=org, key=source["key"], label=source["label"], order=order
+        )
+        have.add(source["key"])
+        order += 1
+        report.add_created("lead_source", source["label"])
 
 
 def _apply_products(org, pack: dict, report: _Report) -> None:
@@ -728,6 +749,7 @@ def apply_pack(org, pack: dict, actor) -> dict:
     _apply_pipelines(org, pack, report)
     _apply_custom_fields(org, pack, report)
     _apply_tags(org, pack, report)
+    _apply_lead_sources(org, pack, report)
     _apply_products(org, pack, report)
     _apply_terminology(org, pack, report)
     _apply_sample_data(org, pack, actor, report)

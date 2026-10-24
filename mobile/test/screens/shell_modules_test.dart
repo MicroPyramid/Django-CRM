@@ -252,6 +252,8 @@ void main() {
     fake.show(modulesAnswer(off: ['leads', 'tickets', 'knowledge_base']));
     await tester.pumpAndSettle();
     expect(find.text('Lead pipelines'), findsNothing);
+    // Deals pick from the same list, so it stays while Leads is off.
+    expect(find.text('Lead sources'), findsOneWidget);
     expect(find.text('TICKETS'), findsNothing);
     expect(find.text('Routing'), findsNothing);
     expect(find.text('Approval rules'), findsNothing);

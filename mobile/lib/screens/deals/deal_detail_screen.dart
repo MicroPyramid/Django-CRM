@@ -7,6 +7,7 @@ import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/deal_pipelines_provider.dart';
 import '../../providers/deals_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/invoices_provider.dart';
 import '../../providers/org_modules_provider.dart';
 import '../../routes/app_router.dart';
@@ -606,7 +607,12 @@ class _DealDetailScreenState extends ConsumerState<DealDetailScreen>
       _InfoRow(
         icon: LucideIcons.compass,
         label: 'SOURCE',
-        value: deal.leadSource.label,
+        value: deal.leadSource.isEmpty
+            ? 'None'
+            : shownLeadSources(
+                    ref.watch(leadSourcesProvider),
+                  )?.dealLabelFor(deal.leadSource) ??
+                  leadSourceLabel(deal.leadSource),
       ),
       _InfoRow(
         icon: LucideIcons.coins,

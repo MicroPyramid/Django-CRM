@@ -9,6 +9,7 @@ import {
   unpublishWebForm
 } from '#lib/server/v2/web-forms.js';
 import { readableError } from '#lib/server/v2/form-errors.js';
+import { getLeadSources } from '#lib/server/v2/lead-sources.js';
 
 /**
  * The form, its recent submissions, and its 30-day analytics.
@@ -33,12 +34,14 @@ export async function load(event) {
     throw err;
   }
 
-  const [submissions, analytics] = await Promise.all([
+  const [submissions, analytics, { sources }] = await Promise.all([
     getSubmissions(event, id).catch(() => ({ submissions: [], count: 0 })),
-    getAnalytics(event, id).catch(() => null)
+    getAnalytics(event, id).catch(() => null),
+    // Only a lead form records a source.
+    detail.form?.target === 'ticket' ? { sources: [] } : getLeadSources(event)
   ]);
 
-  return { ...detail, ...submissions, analytics };
+  return { ...detail, ...submissions, analytics, sources };
 }
 
 /**

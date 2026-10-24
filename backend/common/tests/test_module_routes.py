@@ -95,6 +95,8 @@ ROUTE_CASES = [
     ("api/cases/<uid:pk>/solution-suggestions/", (CU, "api_cases"), Requires(("tickets", "knowledge_base"))),
     ("api/cases/<uid:pk>/time-entries/start/", (CU, "api_cases"), Requires(("tickets", "timesheet"))),
     ("api/cases/<uid:pk>/time-summary/", (CU, "api_cases"), Requires(("tickets", "timesheet"))),
+    ("api/cases/mailboxes/<uid:pk>/", (CU, "api_cases"), Requires(any_of=("tickets", "leads"))),
+    ("api/cases/inbound/email/", (CU, "api_cases"), Requires(any_of=("tickets", "leads"))),
     ("api/invoices/products/<uuid:pk>/", (CU, "api_invoices"), Requires(any_of=("invoices", "deals"))),
     ("api/invoices/from-opportunity/<uuid:opportunity_id>/", (CU, "api_invoices"), Requires(("invoices", "deals"))),
     ("api/invoices/from-time-entries/", (CU, "api_invoices"), Requires(("invoices", "tickets", "timesheet"))),
@@ -108,6 +110,7 @@ ROUTE_CASES = [
     ("api/schema/redoc/", (), CORE),
     # One route per module namespace.
     ("api/leads/kanban/", (CU, "api_leads"), Requires(("leads",))),
+    ("api/leads/sources/order/", (CU, "api_leads"), CORE),
     ("api/opportunities/<uid:pk>/", (CU, "api_opportunities"), Requires(("deals",))),
     ("api/tasks/", (CU, "api_tasks"), Requires(("tasks",))),
     ("api/boards/<uid:pk>/", (CU, "api_boards"), Requires(("tasks",))),

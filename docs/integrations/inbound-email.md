@@ -1,7 +1,10 @@
 # Inbound email
 
 BottleCRM can turn email sent to a support address into a case (support ticket), and thread
-replies onto the same case automatically. This is an inbound webhook: BottleCRM *receives* mail
+replies onto the same case automatically. A mailbox set to make leads (`creates: "leads"`) turns
+email into leads instead: see [Lead addresses](../features/lead-capture.md#lead-addresses). This page
+describes ticket mailboxes, the providers, the webhooks and generated addresses, which both kinds
+share. This is an inbound webhook: BottleCRM *receives* mail
 through it. To have BottleCRM push events to a URL you configure (a ticket created, a public reply
 added, and so on), see [Webhooks](webhooks.md).
 
@@ -90,22 +93,21 @@ portal instead.
 `backend/cases/inbound_views.py`), admin-only for every write (`POST`, `PUT`, `DELETE` all check
 `role == "ADMIN"` or `is_admin`; a non-admin gets `403`). Reads are open to any org member.
 
-The model declares four provider choices (`ses`, `mailgun`, `postmark`, `imap`), but **only `ses`
-is actually implemented today**. The webhook itself checks this: any mailbox whose `provider` is
-not `"ses"` returns `501 Not Implemented` for every notification it receives
-(`InboundMailboxWebhookView.post`, `backend/cases/inbound_views.py`). The `imap_host` /
-`imap_port` / `imap_username` / `imap_password_enc` fields exist on the model already so that a
-future IMAP implementation doesn't need a schema migration, but nothing reads them yet, setting
-`provider` to anything but `ses` configures a mailbox that will reject every message sent to it.
+The model declares four provider choices. `ses`, `postmark` and `mailgun` deliver to the mailbox's
+webhook (see [Providers](#providers)); `imap` answers `501 Not Implemented` to every post, because
+it would need a scheduled job polling a stored mailbox password. The `imap_*` fields exist so that
+a future IMAP implementation needs no schema migration, and nothing reads them yet.
 
 Fields worth knowing when creating one:
 
 | Field | Notes |
 | --- | --- |
 | `address` | The inbound email address. `validate_address` pre-checks for a case-insensitive duplicate in your org on **both** create and update, excluding the mailbox from its own check so saving a record without changing its address still works, and returns a clean `400` when one exists. This used to be gated on `self.instance is None`, so a `PUT` that renamed a mailbox onto an address the org already had skipped the check and hit the database's `UniqueConstraint` on `(org, address)` instead, giving an unhandled `IntegrityError` (`500`) on every such rename rather than a `400`. |
-| `provider` | Must be `ses` for the mailbox to accept mail (see above). |
-| `webhook_secret` | Optional, and unused today. Nothing is generated for you, and the API never returns it. See [Securing the endpoint](#securing-the-endpoint). |
-| `has_webhook_secret` | Read-only boolean, admin-only, telling you whether a secret is stored without disclosing it. |
+| `provider` | `ses`, `postmark` or `mailgun` to accept mail; `imap` accepts nothing (see above). A generated address is always `ses`. |
+| `webhook_secret` | Postmark's basic-auth password or Mailgun's webhook signing key; required for those two, which accept nothing without it, and unused for SES. Nothing is generated for you, and the API never returns it. See [Providers](#providers). |
+| `has_webhook_secret` | Read-only boolean, admin-only, telling you whether a secret is stored without disclosing it. For a Postmark or Mailgun mailbox it says whether the mailbox can take mail at all. |
+| `creates` | `tickets` (the default) or `leads`. See [Lead addresses](../features/lead-capture.md#lead-addresses) for `lead_source`, `lead_source_detail` and what a lead address does. |
+| `is_generated`, `generate_address` | See [Generated addresses](#generated-addresses). |
 | `topic_arn` | The SNS Topic ARN this mailbox accepts mail from, in the form `arn:aws:sns:<region>:<12-digit account id>:<topic name>`. Admin-only, to read and to write: an admin can set it on create, change it, or clear it with `""`. Anything that is not a well-formed topic ARN in the commercial `aws` partition (no `aws-cn`, no `aws-us-gov`, no `.fifo` topic) is a `400`. Left blank, it can be pinned by a confirmation from an allowed AWS account. See [Securing the endpoint](#securing-the-endpoint). |
 | `has_topic_arn` | Read-only boolean, visible to every member: whether the mailbox has a Topic ARN yet. Without one it refuses every message. |
 | `default_priority`, `default_case_type` | Set directly on any new case this mailbox creates; both optional. There is no `default_status`. A new case's `status` is always `"New"`, not configurable per mailbox (see [above](#how-inbound-email-becomes-a-ticket)). |
@@ -122,12 +124,64 @@ an inbound message through that mailbox (a reply to an older case doesn't count 
 address still received mail even if the pipeline discarded it. Neither field is present on
 `GET /api/cases/mailboxes/{id}/`, which returns only the plain serializer.
 
-### When Tickets is switched off
+### When Tickets or Leads is switched off
 
-Switching Tickets off is refused while any mailbox is active, so no email is lost: switch the
-mailbox off first. A notification for a mailbox in an org with Tickets off answers the same `404`
-an unknown or inactive mailbox does, and nothing is ingested. See
-[Modules](../api/modules.md#public-portal-and-inbound-entry-points).
+The mailbox endpoints work while Tickets or Leads is on. A ticket mailbox takes mail only while
+Tickets is on, and a lead address only while Leads is on; choosing a `creates` whose module is off
+is a `400`. Switching Tickets off is refused while any ticket mailbox is active, and Leads while any
+lead address is, so no email is lost: switch the mailbox off first. A notification for a mailbox
+whose module is off answers the same `404` an unknown or inactive mailbox does, and nothing is
+ingested. See [Modules](../api/modules.md#public-portal-and-inbound-entry-points).
+
+## Providers
+
+Every provider posts to the same per-mailbox URL, `POST /api/cases/inbound/<mailbox_id>/`, and
+each proves the post is its own differently:
+
+| Provider | How a post is proven | Wrong or missing proof |
+| --- | --- | --- |
+| Amazon SES (`ses`) | The SNS signature, and the mailbox's pinned `topic_arn` | `403` |
+| Postmark (`postmark`) | The mailbox's `webhook_secret` as the basic-auth password | `401` |
+| Mailgun (`mailgun`) | `signature`: HMAC-SHA256 of `timestamp` + `token` under the mailbox's `webhook_secret` | `401` |
+
+### Postmark
+
+In the Postmark server's inbound settings, set the webhook URL with any user name and the mailbox's
+`webhook_secret` as the password:
+
+```
+https://postmark:<webhook_secret>@<your API host>/api/cases/inbound/<mailbox_id>/
+```
+
+Postmark sends it as an `Authorization: Basic` header, which is compared in constant time before
+the body is read. Choose a secret of letters and digits, since it sits in a URL. Postmark retries
+any answer but `200` (ten times over about ten hours) and stops at `403`, so a wrong password
+answers `401`: mail keeps being retried while you correct it. With **Include raw email content in
+JSON payload** on, the raw message is read; otherwise its parsed fields are, with the real
+`Message-ID` taken from its `Headers` (Postmark's own `MessageID` when that is missing). A post
+larger than 50 MB is refused with `413` unread.
+
+### Mailgun
+
+Create a route whose action is `forward("https://<your API host>/api/cases/inbound/<mailbox_id>/")`
+and store your Mailgun **HTTP webhook signing key** as the mailbox's `webhook_secret`. Every post
+carries `timestamp`, `token` and `signature`; the signature must equal the hex HMAC-SHA256 of
+`timestamp` followed by `token` under that key (a subaccount's `parent-signature`, made with the
+parent account's key, is accepted too). The `timestamp` must be at most 8 hours 5 minutes old and
+at most 5 minutes ahead, and a `token` is accepted once per mailbox: a signed post claims its
+token before its mail is delivered, so a later post with the same token is refused, even one that
+arrives while the first is still being delivered. A delivery that fails gives the token back, so
+Mailgun's retry of that post is accepted. Tokens are remembered in the shared cache for as long as
+their timestamp is accepted, so on a deployment with more than one worker set `CACHE_URL`. Mailgun
+retries any answer but `200` and `406` for 8 hours, so a refusal answers `401`. The parsed fields
+are read (`message-headers` for every header, `body-plain`, `body-html`, and the files in
+`attachment-1` onward); `stripped-text` is never used, because it drops a forwarded original. A
+post with a `body-mime` field (a forward URL ending in `mime`) is read from that raw message
+instead. A post larger than 50 MB is refused with `413` unread.
+
+### IMAP
+
+Not implemented: every post answers `501`.
 
 ## The SNS webhook
 
@@ -223,10 +277,45 @@ ingests only its own mail. Before django-crm 1.13.0 there was no recipient check
 mailbox subscribed to a shared topic turned every other mailbox's mail, from every org on it,
 into its own tickets.
 
+## Generated addresses
+
+When the server sets [`INBOUND_EMAIL_DOMAIN`](../reference/environment-variables.md#inbound-email)
+and `INBOUND_EMAIL_TOPIC_ARN`, an admin can have an address made instead of typing one:
+`POST /api/cases/mailboxes/` with `"generate_address": true` and no `address` makes
+`<org name slug>-<6 random lowercase letters and digits>@<domain>`, for example
+`acme-homes-k3x9q2@in.example.com`, unique across every org on the server, with `is_generated`
+`true` and `provider` `ses`. The list answers `generated_domain` (the domain, or `null`) so a client
+knows whether to offer it. Without the setting, `generate_address` is a `400`. A generated address
+cannot be renamed or moved to another provider (`400`), and it is the only kind the domain accepts:
+a hand-typed address at the domain or one of its subdomains is refused, on create and on rename.
+
+All generated addresses share one route in, the catch-all webhook:
+
+```
+POST /api/cases/inbound/email/
+```
+
+The operator verifies the domain for SES receiving, points its MX record at SES, and adds one
+receipt rule for the domain whose SNS action publishes to the `INBOUND_EMAIL_TOPIC_ARN` topic,
+subscribed to this URL. The catch-all checks what the per-mailbox webhook checks: the SNS signature
+(the same verifier), then that the `TopicArn` is exactly `INBOUND_EMAIL_TOPIC_ARN`; anything else,
+a `SubscriptionConfirmation` included, is refused with the same opaque `403`, and a refused
+confirmation is never fetched. Each recipient at the domain is then routed on its own: its org is
+looked up in the unscoped `portal_access_token` table, keyed on the SHA-256 of the address and
+registered when the mailbox is created; the context is set to that org; and the mail is delivered
+to that org's active generated mailbox with that address, if its module (Tickets or Leads, by
+`creates`) is on. A recipient with no such mailbox is dropped and logged under a hash of the
+address, never the address. Each recipient is delivered on its own, so a failure for one
+never stops the others. The answer is `200` `{"ok": true, "delivered": <mailboxes reached>,
+"failed": 0}` once every recipient has been delivered or dropped, so SNS does not retry a message
+that was correctly dropped; when any recipient failed it is `500` with `"ok": false` and the count
+of failures, so SNS delivers the notification again, and the recipients that already have the email
+answer as for a repeat delivery. With either setting empty, the catch-all answers `404`.
+
 ## Securing the endpoint
 
-Because the endpoint takes no credential, trust is established entirely by verifying the message
-itself, in two layers, and it takes both:
+Because the SES endpoint takes no credential, trust is established entirely by verifying the
+message itself, in two layers, and it takes both:
 
 1. **SNS signature verification** (`cases/inbound/sns.py`, `verify_sns_message`). The payload's
    `Signature` is checked against the certificate at its `SigningCertURL`, which is pinned to the
@@ -275,15 +364,14 @@ ids, notwithstanding the source comment's stated intent not to leak that. Mailbo
 not sequential, so this isn't practically brute-forceable, but it's not the airtight non-disclosure
 the comment claims either.
 
-**`webhook_secret` is not part of this verification.** Nothing in
-`InboundMailboxWebhookView.post` reads or compares it. The two checks above are what actually gate
-the endpoint, and the field is a placeholder for providers that sign with a shared secret, none of
-which are implemented. Two consequences follow, and both changed recently:
+**`webhook_secret` is not part of SES verification.** For an SES mailbox the two checks above
+are what gate the endpoint; the secret is what proves a [Postmark or Mailgun](#providers) post.
+Two things about it changed recently:
 
 - **Nothing generates one.** Creating a mailbox used to mint a `secrets.token_urlsafe(32)` when the
-  body carried none. A random value that no code compares, and that (see below) cannot be read back,
-  is indistinguishable from no value at all except that it makes a mailbox look configured. New
-  mailboxes now leave the column empty unless you set it.
+  body carried none, which nobody could read back and so nobody could give to a provider. New
+  mailboxes leave the column empty unless you set it, and a Postmark or Mailgun mailbox with no
+  secret accepts nothing.
 - **The API never returns it.** The field is `write_only`, so an admin can store a provider-issued
   key but no response contains it. It used to be returned to admins on both the list and the detail
   endpoint, which meant an admin's session, or any personal access token that admin had minted,
@@ -291,6 +379,6 @@ which are implemented. Two consequences follow, and both changed recently:
   a boolean, instead. If you lose a stored key, overwrite it with a `PUT`.
 
 `topic_arn` is returned to admins only, and is stripped for regular members along with
-`has_webhook_secret`: it embeds your AWS account id. Members still get `has_topic_arn`. That is the reason to treat mailbox
-configuration as admin-only, rather than any forgery risk from `webhook_secret`, which cannot exist
-until a provider integration starts checking it.
+`has_webhook_secret`: it embeds your AWS account id. Members still get `has_topic_arn`. Treat
+mailbox configuration as admin-only: the `webhook_secret` of a Postmark or Mailgun mailbox is
+what lets a post create tickets or leads in your org.

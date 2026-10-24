@@ -8,6 +8,7 @@ import '../../data/models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/deal_pipelines_provider.dart';
 import '../../providers/deals_provider.dart';
+import '../../providers/lead_sources_provider.dart';
 import '../../providers/lookup_provider.dart';
 import '../../services/org_date.dart';
 import '../../widgets/common/common.dart';
@@ -57,7 +58,9 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   // column is nullable; auto-stamping NEW_BUSINESS on every create silently
   // miscategorizes data.
   OpportunityType _opportunityType = OpportunityType.unspecified;
-  OpportunitySource _leadSource = OpportunitySource.none;
+  // A source key, empty for none, sent only when the user picks another one
+  // so a source this build does not know is never overwritten.
+  String _leadSource = '';
   Currency _currency = Currency.usd;
   DateTime? _closeDate;
   bool _isLoading = false;
@@ -295,7 +298,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   /// `toJson` is the submitted payload and excludes the fields `_buildDeal`
   /// derives from lookups, so a provider warming up cannot read as an edit. Key order is stable because the same
   /// builder produces every snapshot.
-  String _snapshot() => _buildDeal().toJson().toString();
+  String _snapshot() => _buildDeal().toJson(withLeadSource: true).toString();
 
   bool get _hasUnsavedChanges => _baseline != null && _snapshot() != _baseline;
 
@@ -405,9 +408,14 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     final deal = _buildDeal();
     final notifier = ref.read(dealsProvider.notifier);
 
+    final withLeadSource = _leadSource != (_existingDeal?.leadSource ?? '');
     final response = widget.isEditMode
-        ? await notifier.updateDeal(widget.dealId!, deal)
-        : await notifier.createDeal(deal);
+        ? await notifier.updateDeal(
+            widget.dealId!,
+            deal,
+            withLeadSource: withLeadSource,
+          )
+        : await notifier.createDeal(deal, withLeadSource: withLeadSource);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -455,7 +463,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       _amountController.clear();
       _notesController.clear();
       _opportunityType = OpportunityType.unspecified;
-      _leadSource = OpportunitySource.none;
+      _leadSource = '';
       _probabilityUserEdited = false;
       _closeDateUserEdited = false;
       _closeDate = null;
@@ -1041,7 +1049,12 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
         // Lead Source Dropdown
         _buildDropdownField(
           label: 'Lead Source',
-          value: _leadSource.label,
+          value: _leadSource.isEmpty
+              ? 'None'
+              : shownLeadSources(
+                      ref.watch(leadSourcesProvider),
+                    )?.dealLabelFor(_leadSource) ??
+                    leadSourceLabel(_leadSource),
           onTap: _showLeadSourcePicker,
         ),
       ],
@@ -1494,7 +1507,18 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     );
   }
 
-  void _showLeadSourcePicker() {
+  Future<void> _showLeadSourcePicker() async {
+    final answer = await leadSourcesForPicker(ref);
+    if (!mounted) return;
+    if (answer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load the lead sources. Try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1503,18 +1527,25 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
       ),
       builder: (context) => _PickerBottomSheet(
         title: 'Select Lead Source',
-        options: OpportunitySource.values
-            .map(
-              (source) => _PickerOption(
-                label: source.label,
-                isSelected: _leadSource == source,
-                onTap: () {
-                  setState(() => _leadSource = source);
-                  Navigator.pop(context);
-                },
-              ),
-            )
-            .toList(),
+        options: [
+          _PickerOption(
+            label: 'None',
+            isSelected: _leadSource.isEmpty,
+            onTap: () {
+              setState(() => _leadSource = '');
+              Navigator.pop(context);
+            },
+          ),
+          for (final source in answer.pickableForDeal(_leadSource))
+            _PickerOption(
+              label: source.pickerLabel,
+              isSelected: _leadSource == source.key,
+              onTap: () {
+                setState(() => _leadSource = source.key);
+                Navigator.pop(context);
+              },
+            ),
+        ],
       ),
     );
   }

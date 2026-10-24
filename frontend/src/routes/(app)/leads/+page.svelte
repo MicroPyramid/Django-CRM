@@ -9,6 +9,7 @@
   import LeadImportDrawer from '#lib/components/leads/LeadImportDrawer.svelte';
   import { money, count, relativeDays, daysSince } from '#lib/v2/format.js';
   import { LEAD_STATUS_TONE } from '#lib/v2/enums.js';
+  import { sourceFilterOptions, sourceLabel } from '#lib/v2/lead-sources.js';
   import { Download, Plus, Upload, Target } from '@lucide/svelte';
   import { t } from '#lib/terminology.js';
 
@@ -64,6 +65,7 @@
   url={page.url}
   people={data.people}
   tags={data.tags}
+  sources={sourceFilterOptions(data.sources)}
   meId={data.meId}
   saved={data.savedViews}
   meta="Least recently touched first"
@@ -115,7 +117,9 @@
                 <div class="v2-table-secondary" data-m="hide">{l.industry}</div>
               </td>
               <td data-m="tag"><Pill tone={LEAD_STATUS_TONE[l.status]}>{l.status}</Pill></td>
-              <td class="v2-muted" data-m="hide" style="font-size:12.5px">{l.source}</td>
+              <td class="v2-muted" data-m="hide" style="font-size:12.5px">
+                {sourceLabel(data.sources, l.source)}
+              </td>
               <td class="v2-r v2-num"
                 >{l.opportunity_amount ? money(l.opportunity_amount, l.currency) : '—'}</td
               >

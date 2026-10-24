@@ -1,0 +1,25 @@
+{% comment %}
+Sent to a lead's active owners (or to the owners of the contact a converted
+lead became) when the same person enquires again. `name` and `channel_label`
+come from outside: autoescaping keeps them text. Never add `|safe` here.
+{% endcomment %}<!doctype html>
+<html>
+  <body style="font-family: system-ui, sans-serif; color: #111827; margin: 0; padding: 24px;">
+    <p style="margin: 0 0 16px;">
+      <strong>{{ name }}</strong> enquired again{% if channel_label %} through {{ channel_label }}{% endif %}.
+    </p>
+    <p style="margin: 0 0 20px;">
+      {% if is_contact %}
+        They are already a contact, so the new enquiry was added to their contact record.
+      {% else %}
+        The new enquiry was added to their lead, and any field that was already filled in was left as it was.
+      {% endif %}
+    </p>
+    <p style="margin: 0;">
+      <a href="{{ record_url }}"
+         style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #ffffff; border-radius: 6px; text-decoration: none;">
+        {% if is_contact %}Open the contact{% else %}Open the lead{% endif %}
+      </a>
+    </p>
+  </body>
+</html>

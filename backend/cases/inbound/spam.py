@@ -41,3 +41,18 @@ def should_drop(parsed: ParsedEmail) -> tuple[bool, str]:
         return True, "mailing_list"
 
     return False, ""
+
+
+def lead_drop_reason(parsed: ParsedEmail, own_addresses) -> str:
+    """Why a lead address ignores this email (`bounce`, `own_address`, `spam`,
+    `virus`), or "". `own_addresses` are the org's inbound addresses, lowercased.
+
+    Unlike `should_drop`, Auto-Submitted, Precedence, X-Autoreply and list mail
+    are kept: portal notifications carry those headers, and a lead address
+    never replies, so there is no mail loop to guard against.
+    """
+    if parsed.is_bounce:
+        return "bounce"
+    if parsed.from_address and parsed.from_address in own_addresses:
+        return "own_address"
+    return parsed.spam_verdict

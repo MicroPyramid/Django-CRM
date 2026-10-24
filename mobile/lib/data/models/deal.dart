@@ -31,32 +31,6 @@ enum OpportunityType {
   }
 }
 
-/// Opportunity lead source enumeration (different from Lead's source)
-enum OpportunitySource {
-  none('NONE', 'None'),
-  call('CALL', 'Call'),
-  email('EMAIL', 'Email'),
-  existingCustomer('EXISTING CUSTOMER', 'Existing Customer'),
-  partner('PARTNER', 'Partner'),
-  publicRelations('PUBLIC RELATIONS', 'Public Relations'),
-  campaign('CAMPAIGN', 'Campaign'),
-  website('WEBSITE', 'Website'),
-  other('OTHER', 'Other');
-
-  final String value;
-  final String label;
-
-  const OpportunitySource(this.value, this.label);
-
-  static OpportunitySource fromString(String? value) {
-    if (value == null) return OpportunitySource.none;
-    return OpportunitySource.values.firstWhere(
-      (e) => e.value.toLowerCase() == value.toLowerCase(),
-      orElse: () => OpportunitySource.none,
-    );
-  }
-}
-
 /// Currency enumeration
 enum Currency {
   usd('USD', 'USD', '\$'),
@@ -194,7 +168,11 @@ class Deal {
   final List<String> contactIds;
   final String? notes;
   final OpportunityType opportunityType;
-  final OpportunitySource leadSource;
+
+  /// A key from the org's lead sources, as the server sent it; empty for
+  /// none. An older API's uppercase values (`CALL`, `WEBSITE`) arrive as they
+  /// are, except `NONE`, which meant none.
+  final String leadSource;
   final Currency currency;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -252,7 +230,7 @@ class Deal {
     this.contactIds = const [],
     this.notes,
     this.opportunityType = OpportunityType.newBusiness,
-    this.leadSource = OpportunitySource.none,
+    this.leadSource = '',
     this.currency = Currency.usd,
     required this.createdAt,
     required this.updatedAt,
@@ -514,7 +492,10 @@ class Deal {
       opportunityType: OpportunityType.fromString(
         json['opportunity_type'] as String?,
       ),
-      leadSource: OpportunitySource.fromString(json['lead_source'] as String?),
+      leadSource: switch (json['lead_source']?.toString()) {
+        null || 'NONE' => '',
+        final key => key,
+      },
       currency: Currency.fromString(json['currency'] as String?),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
@@ -556,7 +537,10 @@ class Deal {
   /// `pipeline` goes only when known, and `stage` only when chosen: with
   /// neither, the server keeps the deal's pipeline (or the org default for a
   /// new deal) and starts a new deal in its first open stage.
-  Map<String, dynamic> toJson() {
+  ///
+  /// `lead_source` goes only when [withLeadSource], which the form sets when
+  /// the user picked one, so a source this build does not know survives.
+  Map<String, dynamic> toJson({bool withLeadSource = false}) {
     return {
       'name': title,
       if (pipelineId != null && pipelineId!.isNotEmpty) 'pipeline': pipelineId,
@@ -577,7 +561,7 @@ class Deal {
       'opportunity_type': opportunityType == OpportunityType.unspecified
           ? null
           : opportunityType.value,
-      'lead_source': leadSource.value,
+      if (withLeadSource) 'lead_source': leadSource,
       'currency': currency.value,
       'custom_fields': customFieldValues,
     };
@@ -633,7 +617,7 @@ class Deal {
     List<String>? contactIds,
     String? notes,
     OpportunityType? opportunityType,
-    OpportunitySource? leadSource,
+    String? leadSource,
     Currency? currency,
     DateTime? createdAt,
     DateTime? updatedAt,

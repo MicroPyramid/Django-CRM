@@ -3,6 +3,7 @@ import {
   MODULE_KEYS,
   isOn,
   productsOn,
+  mailboxesOn,
   labelOf,
   requirementFor,
   refusalFor,
@@ -41,6 +42,7 @@ describe('module logic', () => {
     const table = [
       ['/(app)/leads', { all: ['leads'] }],
       ['/(app)/settings/lead-pipelines', { all: ['leads'] }],
+      ['/(app)/settings/lead-capture/[id]', { all: ['leads'] }],
       ['/(app)/pipeline', { all: ['deals'] }],
       ['/(app)/settings/deal-pipelines', { all: ['deals'] }],
       ['/(app)/goals', { all: ['goals'] }],
@@ -59,6 +61,8 @@ describe('module logic', () => {
       ['/(app)/accounts/[id]', null],
       ['/(app)/profile', null],
       ['/(app)/settings/web-forms', null],
+      ['/(app)/settings/lead-sources', null],
+      ['/(app)/settings/inbound-email', { any: ['tickets', 'leads'] }],
       ['/(app)/pipelinex', null]
     ];
     for (const [id, want] of table) expect(requirementFor(id), id).toEqual(want);
@@ -76,6 +80,23 @@ describe('module logic', () => {
     });
     expect(productsOn([off('invoices'), off('deals')])).toBe(false);
     expect(productsOn([off('invoices'), row('deals')])).toBe(true);
+  });
+
+  it('serves inbound email while Tickets or Leads is on, and names Tickets when both are off', () => {
+    const off = (/** @type {string} */ k) => row(k, { available: false, label: k });
+    expect(refusalFor('/settings/inbound-email', [off('tickets'), row('leads')])).toBeNull();
+    expect(refusalFor('/settings/inbound-email', [row('tickets'), off('leads')])).toBeNull();
+    expect(refusalFor('/settings/inbound-email', [off('tickets'), off('leads')])).toEqual({
+      key: 'tickets',
+      label: 'tickets'
+    });
+    expect(mailboxesOn([off('tickets'), row('leads')])).toBe(true);
+    expect(mailboxesOn([off('tickets'), off('leads')])).toBe(false);
+    expect(mailboxesOn(null)).toBe(true);
+  });
+
+  it('keeps lead sources open while Leads is off, since deals read them too', () => {
+    expect(refusalFor('/settings/lead-sources', [row('leads', { available: false })])).toBeNull();
   });
 
   it('refuses the first off key of a route and nothing for an on module', () => {
